@@ -17,7 +17,6 @@ from typing import Literal
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,

@@ -18,7 +18,6 @@ import pennylane.estimator as qre
 import pennylane.numpy as np
 from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -102,12 +101,12 @@ class UniformStatePrep(ResourceOperator):
         return {"num_states": self.num_states}
 
     @classmethod
-    def resource_rep(cls, num_states: int) -> CompressedResourceOp:
+    def resource_rep(cls, num_states: int) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         k = (num_states & -num_states).bit_length() - 1
         L = num_states // (2**k)
@@ -115,7 +114,7 @@ class UniformStatePrep(ResourceOperator):
         num_wires = k
         if L != 1:
             num_wires += int(math.ceil(math.log2(L)))
-        return CompressedResourceOp(cls, num_wires, {"num_states": num_states})
+        return ResourceOperator(cls, num_wires, {"num_states": num_states})
 
     @classmethod
     def resource_decomp(cls, num_states: int) -> list[GateCount]:
@@ -221,15 +220,15 @@ class AliasSampling(ResourceOperator):
         return {"num_coeffs": self.num_coeffs, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_coeffs: int, precision: float | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, num_coeffs: int, precision: float | None = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = int(math.ceil(math.log2(num_coeffs)))
-        return CompressedResourceOp(
+        return ResourceOperator(
             cls, num_wires, {"num_coeffs": num_coeffs, "precision": precision}
         )
 
@@ -362,7 +361,7 @@ class MPSPrep(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, num_mps_matrices: int, max_bond_dim: int, precision: float | None = None
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -372,7 +371,7 @@ class MPSPrep(ResourceOperator):
             precision (float | None): the precision used when loading the MPS matrices
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {
             "num_mps_matrices": num_mps_matrices,
@@ -380,7 +379,7 @@ class MPSPrep(ResourceOperator):
             "precision": precision,
         }
         num_wires = num_mps_matrices
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
@@ -527,11 +526,11 @@ class QROMStatePreparation(ResourceOperator):
 
         >>> print(res.gate_breakdown())
         Adjoint(QROM) total: 5
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
         QROM total: 5
             QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
@@ -554,11 +553,11 @@ class QROMStatePreparation(ResourceOperator):
         >>> res = qre.estimate(qrom_prep, gate_set)
         >>> print(res.gate_breakdown())
         Adjoint(QROM) total: 5
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
-            Adjoint(QROM) {'base_cmpr_op': CompressedResourceOp(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=9, params={'num_bit_flips':4, 'num_bitstrings':1, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=10, params={'num_bit_flips':9, 'num_bitstrings':2, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=11, params={'num_bit_flips':18, 'num_bitstrings':4, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=12, params={'num_bit_flips':36, 'num_bitstrings':8, 'restored':False, 'select_swap_depth':1, 'size_bitstring':9})}: 1
+            Adjoint(QROM) {'base_cmpr_op': ResourceOperator(QROM, num_wires=13, params={'num_bit_flips':72, 'num_bitstrings':16, 'restored':False, 'select_swap_depth':None, 'size_bitstring':9})}: 1
         QROM total: 5
             QROM {'num_bit_flips': 4, 'num_bitstrings': 1, 'restored': False, 'select_swap_depth': 1, 'size_bitstring': 9}: 1
             QROM {'num_bit_flips': 9, 'num_bitstrings': 2, 'restored': False, 'select_swap_depth': None, 'size_bitstring': 9}: 1
@@ -629,7 +628,7 @@ class QROMStatePreparation(ResourceOperator):
         precision: float | None = None,
         positive_and_real: bool = False,
         selswap_depths=1,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -643,7 +642,7 @@ class QROMStatePreparation(ResourceOperator):
                 used to trade-off extra qubits for reduced circuit depth
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
         if isinstance(selswap_depths, (list, tuple, np.ndarray)):
@@ -661,7 +660,7 @@ class QROMStatePreparation(ResourceOperator):
             "selswap_depths": selswap_depths,
         }
         num_wires = num_state_qubits
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def _decomp_selection_helper(
@@ -1009,7 +1008,7 @@ class PrepTHC(ResourceOperator):
         thc_ham: THCHamiltonian,
         coeff_precision: int = 15,
         select_swap_depth: int | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1021,7 +1020,7 @@ class PrepTHC(ResourceOperator):
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
@@ -1051,7 +1050,7 @@ class PrepTHC(ResourceOperator):
             "coeff_precision": coeff_precision,
             "select_swap_depth": select_swap_depth,
         }
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(

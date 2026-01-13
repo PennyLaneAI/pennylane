@@ -30,79 +30,6 @@ from pennylane.wires import Wires
 from .resources_base import Resources
 
 
-class CompressedResourceOp:
-    r"""This class is a minimal representation of a :class:`~.pennylane.estimator.ResourceOperator`,
-    containing only the operator type and the necessary parameters to estimate its resources.
-
-    The ``CompressedResourceOp`` object is returned by the ``.resource_rep()`` method of resource
-    operators. The object is used by resource operators to efficiently compute the resource counts.
-
-    .. code-block:: pycon
-
-        >>> import pennylane.estimator as qre
-        >>> cmpr_op = qre.PauliRot.resource_rep(pauli_string="XYZ")
-        >>> print(cmpr_op)
-        CompressedResourceOp(PauliRot, num_wires=3, params={'pauli_string':'XYZ', 'precision':None})
-
-    Args:
-        op_type (type[ResourceOperator]): the class object of an operation which inherits from :class:`~.pennylane.estimator.ResourceOperator`
-        num_wires (int): The number of wires that the operation acts upon,
-            excluding any auxiliary wires that are allocated on decomposition.
-        params (dict): A dictionary containing the minimal pairs of parameter names and values
-            required to compute the resources for the given operator.
-        name (str | None): A custom name for the compressed operator. If not
-            provided, a name will be generated using ``op_type.make_tracking_name``
-            with the given parameters.
-
-    """
-
-    def __init__(
-        self,
-        op_type: type[ResourceOperator],
-        num_wires: int,
-        params: dict | None = None,
-        name: str | None = None,
-    ) -> None:
-
-        if not issubclass(op_type, ResourceOperator):
-            raise TypeError(f"op_type must be a subclass of ResourceOperator. Got {op_type}.")
-        self.op_type = op_type
-        self.num_wires = num_wires
-        self.params = params or {}
-        self._hashable_params = _make_hashable(params) if params else ()
-        self._name = name or op_type.tracking_name(**self.params)
-
-    def __hash__(self) -> int:
-        return hash((self.op_type, self.num_wires, self._hashable_params))
-
-    def __eq__(self, other: CompressedResourceOp) -> bool:
-        return (
-            isinstance(other, CompressedResourceOp)
-            and self.op_type == other.op_type
-            and self.num_wires == other.num_wires
-            and self.params == other.params
-        )
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__qualname__
-        op_type_name = self.op_type.__name__
-
-        num_wires_str = f"num_wires={self.num_wires}"
-
-        params_arg_str = ""
-        if self.params:
-            params = sorted(self.params.items())
-            params_str = ", ".join(f"{k!r}:{v!r}" for k, v in params)
-            params_arg_str = f", params={{{params_str}}}"
-
-        return f"{class_name}({op_type_name}, {num_wires_str}{params_arg_str})"
-
-    @property
-    def name(self) -> str:
-        r"""Returns the name of operator."""
-        return self._name
-
-
 def _make_hashable(d: Any) -> tuple:
     r"""Converts a potentially non-hashable object into a hashable tuple.
 
@@ -162,8 +89,7 @@ class ResourceOperator(ABC):
 
                 @classmethod
                 def resource_rep(cls, num_wires):   # Takes the same input as `resource_keys` and
-                    params = {"num_wires": num_wires}  #  produces a compressed representation
-                    return qre.CompressedResourceOp(cls, num_wires, params)
+                    return cls(num_wires=num_wires)
 
                 @classmethod
                 def resource_decomp(cls, num_wires):  # `resource_keys` are input
@@ -228,6 +154,9 @@ class ResourceOperator(ABC):
             and self.num_wires == other.num_wires
         )
 
+    def __hash__(self) -> int:
+        return hash((self.__class__, self.num_wires, _make_hashable(self.resource_params)))
+
     def queue(self, context: QueuingManager = QueuingManager) -> ResourceOperator:
         """Append the operator to the Operator queue."""
         context.append(self)
@@ -255,15 +184,20 @@ class ResourceOperator(ABC):
         ``resource_keys`` attribute of the operator class.
         """
 
+    @property
+    def name(self) -> str:
+        r"""Returns the name of operator."""
+        return self.tracking_name(**self.resource_params)
+
     @classmethod
     @abstractmethod
-    def resource_rep(cls, *args, **kwargs) -> CompressedResourceOp:
+    def resource_rep(cls, *args, **kwargs) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to estimate the resources."""
 
-    def resource_rep_from_op(self) -> CompressedResourceOp:
+    def resource_rep_from_op(self) -> ResourceOperator:
         r"""Returns a compressed representation directly from the operator"""
-        return self.__class__.resource_rep(**self.resource_params)
+        return self
 
     @classmethod
     @abstractmethod
@@ -475,7 +409,7 @@ class GateCount:
     (5 x QFT(3))
 
     Args:
-        gate (CompressedResourceOp): The compressed resource representation of the gate being counted.
+        gate (ResourceOperator): The compressed resource representation of the gate being counted.
         counts (int | None): The number of occurrences of the quantum gate in the circuit or
             decomposition. Defaults to ``1``.
 
@@ -484,7 +418,7 @@ class GateCount:
 
     """
 
-    def __init__(self, gate: CompressedResourceOp, count: int | None = 1) -> None:
+    def __init__(self, gate: ResourceOperator, count: int | None = 1) -> None:
         self.gate = gate
         self.count = count
 
@@ -506,24 +440,25 @@ class GateCount:
         return self.gate == other.gate and self.count == other.count
 
     def __repr__(self) -> str:
-        return f"({self.count} x {self.gate._name})"
+        return f"({self.count} x {self.gate.name})"
 
 
 def resource_rep(
     resource_op: type[ResourceOperator],
     resource_params: dict | None = None,
-) -> CompressedResourceOp:
+    **kwargs,
+) -> ResourceOperator:
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.
 
     This function produces the expected compressed representation of a resource operator class.
     The compressed representation
-    (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`) is used instead of
+    (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`) is used instead of
     the resource operator to enable faster performance of the resource estimation functionality.
 
     This function is used when defining the resource decompositions of a resource operator.
     Specifically, all resource decompositions are represented as a list of operators
-    (``CompressedResourceOp``) and the number of times they occur in the decomposition (``int``).
+    (``ResourceOperator``) and the number of times they occur in the decomposition (``int``).
     Those two pieces of information are tracked inside the
     :class:`~.pennylane.estimator.resource_operator.GateCount` class.
 
@@ -536,9 +471,10 @@ def resource_rep(
     Args:
         resource_op (type[ResourceOperator]]): The type of operator for which to retrieve the compact representation.
         resource_params (dict | None): The required set of parameters to specify the operator. Defaults to ``None``.
+        **kwargs: The required set of parameters to specify the operator.
 
     Returns:
-        :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of a resource operator
+        :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of a resource operator
 
     **Example**
 
@@ -554,7 +490,7 @@ def resource_rep(
     ...     {"num_wires": 3},
     ... )
     >>> cmpr_qft
-    CompressedResourceOp(QFT, num_wires=3, params={'num_wires':3})
+    ResourceOperator(QFT, num_wires=3, params={'num_wires':3})
 
     .. details::
         :title: Usage Details
@@ -569,7 +505,7 @@ def resource_rep(
 
             def custom_RX_decomp(precision):  # RX = H @ RZ @ H
                 h = qre.resource_rep(qre.Hadamard)
-                rz = qre.resource_rep(qre.RZ, resource_params={"precision": None})
+                rz = qre.resource_rep(qre.RZ, precision=None)
                 return [qre.GateCount(h, 2), qre.GateCount(rz, 1)]
 
         .. code-block:: pycon
@@ -605,4 +541,6 @@ def resource_rep(
     """
 
     resource_params = resource_params or {}
-    return resource_op.resource_rep(**resource_params)
+    resource_params.update(kwargs)
+    with QueuingManager.stop_recording():
+        return resource_op.resource_rep(**resource_params)

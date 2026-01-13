@@ -25,7 +25,6 @@ from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -63,9 +62,12 @@ class DummyCNOT(ResourceOperator):
     num_wires = 2
     resource_keys = {}
 
+    def __init__(self, wires=None) -> None:
+        super().__init__(wires=wires)
+
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, 2, {})
+        return cls()
 
     @property
     def resource_params(self):
@@ -82,9 +84,12 @@ class DummyHadamard(ResourceOperator):
     num_wires = 1
     resource_keys = {}
 
+    def __init__(self, wires=None) -> None:
+        super().__init__(wires=wires)
+
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, 1, {})
+        return cls()
 
     @property
     def resource_params(self):
@@ -101,9 +106,12 @@ class DummyT(ResourceOperator):
     num_wires = 1
     resource_keys = {}
 
+    def __init__(self, wires=None) -> None:
+        super().__init__(wires=wires)
+
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, 1, {})
+        return cls()
 
     @property
     def resource_params(self):
@@ -120,9 +128,12 @@ class DummyZ(ResourceOperator):
     num_wires = 1
     resource_keys = {}
 
+    def __init__(self, wires=None) -> None:
+        super().__init__(wires=wires)
+
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, 1, {})
+        return cls()
 
     @property
     def resource_params(self):
@@ -146,7 +157,7 @@ class DummyRZ(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, precision=None):
-        return CompressedResourceOp(cls, 1, {"precision": precision})
+        return cls(precision=precision)
 
     @property
     def resource_params(self):
@@ -165,13 +176,13 @@ class DummyAlg1(ResourceOperator):
     num_wires = 2
     resource_keys = {"num_iter"}
 
-    def __init__(self, num_iter, wires=None) -> None:
+    def __init__(self, num_iter=None, wires=None) -> None:
         self.num_iter = num_iter
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_rep(cls, num_iter):
-        return CompressedResourceOp(cls, 2, {"num_iter": num_iter})
+    def resource_rep(cls, num_iter=None):
+        return cls(num_iter=num_iter)
 
     @property
     def resource_params(self):
@@ -195,13 +206,13 @@ class DummyAlg2(ResourceOperator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, num_wires, wires=None) -> None:
+    def __init__(self, num_wires=None, wires=None) -> None:
         self.num_wires = num_wires
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_rep(cls, num_wires):
-        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
+    def resource_rep(cls, num_wires=None):
+        return cls(num_wires=num_wires)
 
     @property
     def resource_params(self):
@@ -209,8 +220,8 @@ class DummyAlg2(ResourceOperator):
 
     @classmethod
     def resource_decomp(cls, num_wires):
-        rz = resource_rep(DummyRZ, {"precision": 1e-2})
-        alg1 = resource_rep(DummyAlg1, {"num_iter": 3})
+        rz = resource_rep(DummyRZ, precision=1e-2)
+        alg1 = resource_rep(DummyAlg1, num_iter=3)
 
         return [
             Allocate(num_wires=num_wires),
@@ -267,7 +278,7 @@ class TestEstimateResources:
             zeroed_wires=0,
             any_state_wires=0,
             algo_wires=4,
-            gate_types={resource_rep(DummyAlg2, {"num_wires": 4}): 1},
+            gate_types={resource_rep(DummyAlg2, num_wires=4): 1},
         )
         assert res == expected
 
@@ -324,8 +335,8 @@ class TestEstimateResources:
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(DummyRZ, {"precision": 1e-2}): 4,
-                resource_rep(DummyAlg1, {"num_iter": 3}): 2,
+                resource_rep(DummyRZ, precision=1e-2): 4,
+                resource_rep(DummyAlg1, num_iter=3): 2,
             },
         )
         expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
@@ -339,8 +350,8 @@ class TestEstimateResources:
         expected_gates = defaultdict(
             int,
             {
-                resource_rep(DummyRZ, {"precision": 1e-2}): 8,
-                resource_rep(DummyAlg1, {"num_iter": 3}): 4,
+                resource_rep(DummyRZ, precision=1e-2): 8,
+                resource_rep(DummyAlg1, num_iter=3): 4,
             },
         )
         expected_resources = Resources(zeroed_wires=4, algo_wires=4, gate_types=expected_gates)
@@ -351,8 +362,8 @@ class TestEstimateResources:
         gates = defaultdict(
             int,
             {
-                resource_rep(DummyRZ, {"precision": 1e-2}): 4,
-                resource_rep(DummyAlg1, {"num_iter": 3}): 2,
+                resource_rep(DummyRZ, precision=1e-2): 4,
+                resource_rep(DummyAlg1, num_iter=3): 2,
             },
         )
         resources = Resources(zeroed_wires=0, algo_wires=4, gate_types=gates)
@@ -434,8 +445,8 @@ class TestEstimateResources:
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(DummyRZ, {"precision": 1e-2}): 4,
-                            resource_rep(DummyAlg1, {"num_iter": 3}): 2,
+                            resource_rep(DummyRZ, precision=1e-2): 4,
+                            resource_rep(DummyAlg1, num_iter=3): 2,
                             resource_rep(DummyZ): 4,
                         },
                     ),

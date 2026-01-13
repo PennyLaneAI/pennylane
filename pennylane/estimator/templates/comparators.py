@@ -16,7 +16,6 @@ r"""Resource operators for PennyLane subroutine templates."""
 import pennylane.estimator as qre
 from pennylane.estimator.ops.op_math.symbolic import apply_adj
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -87,14 +86,14 @@ class SingleQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, cls.num_wires, {})
+        return ResourceOperator(cls, cls.num_wires, {})
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -202,9 +201,9 @@ class TwoQubitComparator(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, cls.num_wires, {})
+        return ResourceOperator(cls, cls.num_wires, {})
 
     @classmethod
     def resource_decomp(cls):
@@ -379,7 +378,7 @@ class IntegerComparator(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, value: int, register_size: int, geq: bool = False
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -390,10 +389,10 @@ class IntegerComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`n \lt L`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = register_size + 1
-        return CompressedResourceOp(
+        return ResourceOperator(
             cls, num_wires, {"value": value, "register_size": register_size, "geq": geq}
         )
 
@@ -599,7 +598,7 @@ class RegisterComparator(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, first_register: int, second_register: int, geq: bool = False
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -610,10 +609,10 @@ class RegisterComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`a \lt b`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = first_register + second_register + 1
-        return CompressedResourceOp(
+        return ResourceOperator(
             cls,
             num_wires,
             {"first_register": first_register, "second_register": second_register, "geq": geq},

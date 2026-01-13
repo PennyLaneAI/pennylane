@@ -29,7 +29,6 @@ from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, PauliRot
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     _dequeue,
@@ -179,7 +178,7 @@ class TrotterProduct(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
+                * first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): A list of operators,
                   in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the Suzuki-Trotter approximation, must be 1 or even
@@ -199,12 +198,12 @@ class TrotterProduct(ResourceOperator):
         num_steps: int,
         order: int,
         num_wires: int,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
+            first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): A list of operators,
                 in the compressed representation, constituting
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
@@ -212,7 +211,7 @@ class TrotterProduct(ResourceOperator):
             num_wires (int): number of wires the operator acts on
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {
             "first_order_expansion": first_order_expansion,
@@ -220,7 +219,7 @@ class TrotterProduct(ResourceOperator):
             "order": order,
             "num_wires": num_wires,
         }
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
@@ -234,7 +233,7 @@ class TrotterProduct(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
+            first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): A list of operators,
                 in the compressed representation, constituting
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
@@ -414,7 +413,7 @@ class TrotterCDF(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -425,7 +424,7 @@ class TrotterCDF(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         if not isinstance(cdf_ham, CDFHamiltonian):
             raise TypeError(
@@ -449,7 +448,7 @@ class TrotterCDF(ResourceOperator):
             "order": order,
         }
         num_wires = 2 * cdf_ham.num_orbitals
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
@@ -766,7 +765,7 @@ class TrotterTHC(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, thc_ham: THCHamiltonian, num_steps: int, order: int
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -777,7 +776,7 @@ class TrotterTHC(ResourceOperator):
             order (int): order of the approximation, must be 1 or even
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
@@ -801,7 +800,7 @@ class TrotterTHC(ResourceOperator):
             "order": order,
         }
         num_wires = thc_ham.tensor_rank * 2
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
@@ -1144,7 +1143,7 @@ class TrotterVibrational(ResourceOperator):
         order: int,
         phase_grad_precision: float | None = None,
         coeff_precision: float | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -1157,7 +1156,7 @@ class TrotterVibrational(ResourceOperator):
             coeff_precision (float | None): precision for the loading of coefficients
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
 
         if not isinstance(vibration_ham, VibrationalHamiltonian):
@@ -1184,7 +1183,7 @@ class TrotterVibrational(ResourceOperator):
             "coeff_precision": coeff_precision,
         }
         num_wires = vibration_ham.num_modes * vibration_ham.grid_size
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @staticmethod
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
@@ -1575,7 +1574,7 @@ class TrotterVibronic(ResourceOperator):
         order: int,
         phase_grad_precision: float | None = None,
         coeff_precision: float | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1587,7 +1586,7 @@ class TrotterVibronic(ResourceOperator):
             phase_grad_precision (float | None): precision for the phase gradient calculation
             coeff_precision (float | None): precision for the loading of coefficients
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         if not isinstance(vibronic_ham, VibronicHamiltonian):
             raise TypeError(
@@ -1616,7 +1615,7 @@ class TrotterVibronic(ResourceOperator):
             int(np.ceil(np.log2(vibronic_ham.num_states)))
             + vibronic_ham.num_modes * vibronic_ham.grid_size
         )
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @staticmethod
     def _cached_terms(
@@ -2042,7 +2041,7 @@ class TrotterPauli(ResourceOperator):
         pauli_ham: PauliHamiltonian,
         num_steps: int,
         order: int,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -2053,7 +2052,7 @@ class TrotterPauli(ResourceOperator):
             order (int): order of the approximation, must be 1 or even.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
 
         if not isinstance(pauli_ham, PauliHamiltonian):
@@ -2077,7 +2076,7 @@ class TrotterPauli(ResourceOperator):
             "order": order,
         }
         num_wires = pauli_ham.num_qubits
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(

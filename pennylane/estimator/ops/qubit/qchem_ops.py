@@ -14,7 +14,6 @@
 r"""Resource operators for qchem operations."""
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -74,11 +73,11 @@ class SingleExcitation(ResourceOperator):
     num_wires = 2
     resource_keys = {"precision"}
 
-    def __init__(self, precision: float | None = None, wires: WiresLike = None) -> None:
+    def __init__(self, precision: float | None = None, wires: WiresLike = None, **kwargs) -> None:
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         self.precision = precision
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, **kwargs)
 
     @classmethod
     def resource_decomp(cls, precision=None) -> list[GateCount]:
@@ -111,12 +110,12 @@ class SingleExcitation(ResourceOperator):
         """
         h = resource_rep(qre.Hadamard)
         s = resource_rep(qre.S)
-        s_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": s})
+        s_dag = resource_rep(qre.Adjoint, base_cmpr_op=s)
         cnot = resource_rep(qre.CNOT)
-        rz = resource_rep(qre.RZ, {"precision": precision})
-        ry = resource_rep(qre.RY, {"precision": precision})
+        rz = resource_rep(qre.RZ, precision=precision)
+        ry = resource_rep(qre.RY, precision=precision)
         t = resource_rep(qre.T)
-        t_dag = resource_rep(qre.Adjoint, {"base_cmpr_op": t})
+        t_dag = resource_rep(qre.Adjoint, base_cmpr_op=t)
 
         gate_types = [
             GateCount(t_dag, 2),
@@ -141,7 +140,7 @@ class SingleExcitation(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -149,6 +148,6 @@ class SingleExcitation(ResourceOperator):
             precision (float, optional): error threshold for clifford plus T decomposition of this operation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)

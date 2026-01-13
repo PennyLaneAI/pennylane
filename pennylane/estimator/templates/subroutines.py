@@ -20,7 +20,6 @@ import pennylane.estimator as qre
 from pennylane import numpy as qnp
 from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     _dequeue,
@@ -89,10 +88,10 @@ class OutOfPlaceSquare(ResourceOperator):
             register_size (int): the size of the input register
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = 3 * register_size
-        return CompressedResourceOp(cls, num_wires, {"register_size": register_size})
+        return ResourceOperator(cls, num_wires, {"register_size": register_size})
 
     @classmethod
     def resource_decomp(cls, register_size):
@@ -177,7 +176,7 @@ class IQP(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, num_wires, pattern, spin_sym) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires, pattern, spin_sym) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -190,9 +189,9 @@ class IQP(ResourceOperator):
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return CompressedResourceOp(
+        return ResourceOperator(
             cls,
             num_wires,
             {
@@ -307,7 +306,7 @@ class PhaseGradient(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -315,9 +314,9 @@ class PhaseGradient(ResourceOperator):
             num_wires (int): the number of qubits to prepare in the phase gradient state
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
+        return ResourceOperator(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
     def resource_decomp(cls, num_wires: int):
@@ -408,7 +407,7 @@ class OutMultiplier(ResourceOperator):
         return {"a_num_wires": self.a_num_wires, "b_num_wires": self.b_num_wires}
 
     @classmethod
-    def resource_rep(cls, a_num_wires, b_num_wires) -> CompressedResourceOp:
+    def resource_rep(cls, a_num_wires, b_num_wires) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -417,10 +416,10 @@ class OutMultiplier(ResourceOperator):
             b_num_wires (int): the size of the second input register
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = a_num_wires + b_num_wires + 2 * max((a_num_wires, b_num_wires))
-        return CompressedResourceOp(
+        return ResourceOperator(
             cls, num_wires, {"a_num_wires": a_num_wires, "b_num_wires": b_num_wires}
         )
 
@@ -521,10 +520,10 @@ class SemiAdder(ResourceOperator):
             max_register_size (int): the size of the larger of the two registers being added together
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = 2 * max_register_size
-        return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
+        return ResourceOperator(cls, num_wires, {"max_register_size": max_register_size})
 
     @classmethod
     def resource_decomp(cls, max_register_size: int):
@@ -717,7 +716,7 @@ class ControlledSequence(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                   to the operator that we will be applying controlled powers of.
                 * num_ctrl_wires (int): the number of controlled wires to run the sequence over
         """
@@ -725,22 +724,22 @@ class ControlledSequence(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int
-    ) -> CompressedResourceOp:
+        cls, base_cmpr_op: ResourceOperator, num_ctrl_wires: int
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the operator that we will be applying controlled powers of.
             num_ctrl_wires (int): the number of controlled wires to run the sequence over
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {"base_cmpr_op": base_cmpr_op, "num_ctrl_wires": num_ctrl_wires}
         num_wires = num_ctrl_wires + base_cmpr_op.num_wires
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(cls, base_cmpr_op, num_ctrl_wires):
@@ -748,7 +747,7 @@ class ControlledSequence(ResourceOperator):
         number of times it occurs in the circuit.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the operator that we will be applying controlled powers of.
             num_ctrl_wires (int): the number of controlled wires to run the sequence over
 
@@ -908,10 +907,10 @@ class QPE(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                   to the phase estimation operator.
                 * num_estimation_wires (int): the number of wires used for measuring out the phase
-                * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None]): An optional compressed
+                * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None]): An optional compressed
                   resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                   default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
         """
@@ -925,23 +924,23 @@ class QPE(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        base_cmpr_op: CompressedResourceOp,
+        base_cmpr_op: ResourceOperator,
         num_estimation_wires: int,
-        adj_qft_cmpr_op: CompressedResourceOp = None,
-    ) -> CompressedResourceOp:
+        adj_qft_cmpr_op: ResourceOperator = None,
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_estimation_wires (int): the number of wires used for measuring out the phase
-            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {
             "base_cmpr_op": base_cmpr_op,
@@ -949,23 +948,23 @@ class QPE(ResourceOperator):
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
         num_wires = num_estimation_wires + base_cmpr_op.num_wires
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
         cls,
-        base_cmpr_op: CompressedResourceOp,
+        base_cmpr_op: ResourceOperator,
         num_estimation_wires: int,
-        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+        adj_qft_cmpr_op: ResourceOperator | None = None,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_estimation_wires (int): the number of wires used for measuring out the phase
-            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                 resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
@@ -992,9 +991,9 @@ class QPE(ResourceOperator):
 
     @staticmethod
     def tracking_name(
-        base_cmpr_op: CompressedResourceOp,
+        base_cmpr_op: ResourceOperator,
         num_estimation_wires: int,
-        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+        adj_qft_cmpr_op: ResourceOperator | None = None,
     ) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
@@ -1052,7 +1051,7 @@ class IterativeQPE(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                   to the phase estimation operator.
                 * num_iter (int): the number of mid-circuit measurements made to read out the phase
         """
@@ -1060,21 +1059,21 @@ class IterativeQPE(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, base_cmpr_op: CompressedResourceOp, num_iter: int
-    ) -> CompressedResourceOp:
+        cls, base_cmpr_op: ResourceOperator, num_iter: int
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = base_cmpr_op.num_wires
-        return CompressedResourceOp(
+        return ResourceOperator(
             cls, num_wires, {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter}
         )
 
@@ -1084,7 +1083,7 @@ class IterativeQPE(ResourceOperator):
         number of times it occurs in the circuit.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the phase estimation operator.
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
@@ -1226,13 +1225,13 @@ class UnaryIterationQPE(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                * cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                   A compressed resource operator corresponding to the quantum walk operator
                   to apply the phase estimation protocol on.
                 * num_iterations (int): The total number of times the quantum walk operator
                   is applied in order to reach a target precision in the eigenvalue
                   estimate.
-                * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
+                * adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None):
                   An optional compressed resource operator corresponding to the adjoint QFT routine.
                   If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
                   will be used.
@@ -1247,26 +1246,26 @@ class UnaryIterationQPE(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        cmpr_walk_op: CompressedResourceOp,
+        cmpr_walk_op: ResourceOperator,
         num_iterations: int,
-        adj_qft_cmpr_op: CompressedResourceOp | None = None,
-    ) -> CompressedResourceOp:
+        adj_qft_cmpr_op: ResourceOperator | None = None,
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
             num_iterations (int): The total number of times the quantum walk operator
                 is applied in order to reach a target precision in the eigenvalue estimate.
-            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
                 will be used.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {
             "cmpr_walk_op": cmpr_walk_op,
@@ -1274,24 +1273,24 @@ class UnaryIterationQPE(ResourceOperator):
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
         num_wires = int(math.ceil(math.log2(num_iterations + 1))) + cmpr_walk_op.num_wires
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
         cls,
-        cmpr_walk_op: CompressedResourceOp,
+        cmpr_walk_op: ResourceOperator,
         num_iterations: int,
-        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+        adj_qft_cmpr_op: ResourceOperator | None = None,
     ) -> list[GateCount | Allocate | Deallocate]:
         r"""Returns the resources for Quantum Phase Estimation implemented using unary iteration.
 
         Args:
-            cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            cmpr_walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 A compressed resource operator corresponding to the quantum walk operator
                 to apply the phase estimation protocol on.
             num_iterations (int): The total number of times the quantum walk operator
                 is applied in order to reach a target precision in the eigenvalue estimate.
-            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None):
+            adj_qft_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None):
                 An optional compressed resource operator corresponding to the adjoint QFT routine.
                 If :code:`None`, the default :class:`~.pennylane.estimator.templates.subroutines.QFT`
                 will be used.
@@ -1353,9 +1352,9 @@ class UnaryIterationQPE(ResourceOperator):
 
     @staticmethod
     def tracking_name(
-        cmpr_walk_op: CompressedResourceOp,
+        cmpr_walk_op: ResourceOperator,
         num_iterations: int,
-        adj_qft_cmpr_op: CompressedResourceOp | None = None,
+        adj_qft_cmpr_op: ResourceOperator | None = None,
     ) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = cmpr_walk_op.name
@@ -1442,7 +1441,7 @@ class QFT(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -1450,10 +1449,10 @@ class QFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {"num_wires": num_wires}
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(cls, num_wires) -> list[GateCount]:
@@ -1609,7 +1608,7 @@ class AQFT(ResourceOperator):
         return {"order": self.order, "num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, order, num_wires) -> CompressedResourceOp:
+    def resource_rep(cls, order, num_wires) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -1618,10 +1617,10 @@ class AQFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {"order": order, "num_wires": num_wires}
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(cls, order, num_wires) -> list[GateCount]:
@@ -1794,7 +1793,7 @@ class BasisRotation(ResourceOperator):
         return {"dim": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, dim) -> CompressedResourceOp:
+    def resource_rep(cls, dim) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1803,11 +1802,11 @@ class BasisRotation(ResourceOperator):
                 as the number of columns of the matrix.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {"dim": dim}
         num_wires = dim
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @staticmethod
     def tracking_name(dim) -> str:
@@ -1896,7 +1895,7 @@ class BBQRAM(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         params = {
             "num_bitstrings": num_bitstrings,
@@ -1904,7 +1903,7 @@ class BBQRAM(ResourceOperator):
             "num_bit_flips": num_bit_flips,
             "num_wires": num_wires,
         }
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
@@ -2027,7 +2026,7 @@ class Select(ResourceOperator):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
-            cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): The list of operators, in the compressed
+            cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
             num_wires (int): The number of wires the operation acts on. This is a sum of the
                 control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
@@ -2074,7 +2073,7 @@ class Select(ResourceOperator):
         number of times it occurs in the circuit.
 
         Args:
-            cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): The list of operators, in the compressed
+            cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
             num_wires (int): The number of wires the operation acts on. This is a sum of the
                 control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
@@ -2116,7 +2115,7 @@ class Select(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
+                * cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
                 * num_wires (int): The number of wires the operation acts on. This is a sum of the
                   control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
                   targeted by the :code:`ops`.
@@ -2125,26 +2124,26 @@ class Select(ResourceOperator):
         return {"cmpr_ops": self.cmpr_ops, "num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, cmpr_ops, num_wires: WiresLike = None) -> CompressedResourceOp:
+    def resource_rep(cls, cmpr_ops, num_wires: WiresLike = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): The list of operators, in the compressed
+            cmpr_ops (list[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
             num_wires (int): An optional parameter representing the number of wires the operation
                 acts on. This is a sum of the control wires (:math:`\lceil(log_{2}(N))\rceil`)
                 required and the number of wires targeted by the :code:`ops`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_ctrl_wires = math.ceil(math.log2(len(cmpr_ops)))
         fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
 
         num_wires = num_wires or fewest_unique_wires + num_ctrl_wires
         params = {"cmpr_ops": cmpr_ops, "num_wires": num_wires}
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
 
 class QROM(ResourceOperator):
@@ -2720,7 +2719,7 @@ class QROM(ResourceOperator):
         num_bit_flips: int | None = None,
         restored: bool = True,
         select_swap_depth: int | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -2738,7 +2737,7 @@ class QROM(ResourceOperator):
                 depth that minimizes T-gate count.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         if num_bit_flips is None:
             num_bit_flips = num_bitstrings * size_bitstring // 2
@@ -2763,7 +2762,7 @@ class QROM(ResourceOperator):
             "restored": restored,
         }
         num_wires = size_bitstring + math.ceil(math.log2(num_bitstrings))
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
 
 class SelectPauliRot(ResourceOperator):
@@ -2852,10 +2851,10 @@ class SelectPauliRot(ResourceOperator):
             precision (float | None): the precision used in the single qubit rotations
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = num_ctrl_wires + 1
-        return CompressedResourceOp(
+        return ResourceOperator(
             cls,
             num_wires,
             {
@@ -3072,7 +3071,7 @@ class Reflection(ResourceOperator):
         cls,
         num_wires: int | None = None,
         alpha: float = math.pi,
-        cmpr_U: CompressedResourceOp | None = None,
+        cmpr_U: ResourceOperator | None = None,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -3080,7 +3079,7 @@ class Reflection(ResourceOperator):
         Args:
             num_wires (int): number of wires the operator acts on
             alpha (float): the angle of the operator, default is :math:`\pi`
-            cmpr_U (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the operator that prepares the state :math:`|\Psi\rangle`
+            cmpr_U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the state :math:`|\Psi\rangle`
 
         Resources:
             The resources are derived from the decomposition :math:`R(U, \alpha) = U R(\alpha) U^\dagger`.
@@ -3215,7 +3214,7 @@ class Reflection(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_wires (int | None): number of wires the operator acts on
                 * alpha (float | None): the angle of the operator, default is :math:`\pi`
-                * cmpr_U (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): the operator that prepares the
+                * cmpr_U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator` | None): the operator that prepares the
                   state :math:`|\Psi\rangle`
 
         """
@@ -3226,18 +3225,18 @@ class Reflection(ResourceOperator):
         cls,
         num_wires: int | None = None,
         alpha: float = math.pi,
-        cmpr_U: CompressedResourceOp | None = None,
-    ) -> CompressedResourceOp:
+        cmpr_U: ResourceOperator | None = None,
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             num_wires (int): number of wires the operator acts on
             alpha (float): the angle of the operator, default is :math:`\pi`
-            cmpr_U (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the operator that prepares the state :math:`|\Psi\rangle`
+            cmpr_U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the state :math:`|\Psi\rangle`
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         if not 0 <= alpha <= 2 * qnp.pi:
             raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
@@ -3246,7 +3245,7 @@ class Reflection(ResourceOperator):
             raise ValueError("Must provide atleast one of `num_wires` or `U`")
 
         params = {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U}
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)
 
 
 class Qubitization(ResourceOperator):
@@ -3321,14 +3320,14 @@ class Qubitization(ResourceOperator):
             self.wires = None
 
     @classmethod
-    def resource_decomp(cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp):
+    def resource_decomp(cls, prep_op: ResourceOperator, select_op: ResourceOperator):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
+            prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            select_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
+            select_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Resources:
@@ -3417,29 +3416,29 @@ class Qubitization(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
+                * prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): a compressed representation for the operator that
                   prepares the coefficients of the LCU
-                * select_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): a compressed representation for the operator that
+                * select_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): a compressed representation for the operator that
                   selectively applies the unitaries of the LCU
         """
         return {"prep_op": self.prep_op, "select_op": self.select_op}
 
     @classmethod
     def resource_rep(
-        cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
-    ) -> CompressedResourceOp:
+        cls, prep_op: ResourceOperator, select_op: ResourceOperator
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            prep_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that prepares
+            prep_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that prepares
                 the coefficients of the LCU.
-            select_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed representation for the operator that selectively
+            select_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed representation for the operator that selectively
                 applies the unitaries of the LCU.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = select_op.num_wires
         params = {"prep_op": prep_op, "select_op": select_op}
-        return CompressedResourceOp(cls, num_wires, params)
+        return ResourceOperator(cls, num_wires, params)

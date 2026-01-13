@@ -16,7 +16,6 @@ from collections.abc import Iterable
 from functools import singledispatch
 
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     _dequeue,
@@ -90,7 +89,7 @@ class Adjoint(ResourceOperator):
 
     resource_keys = {"base_cmpr_op"}
 
-    def __init__(self, base_op: ResourceOperator) -> None:
+    def __init__(self, base_op: ResourceOperator, **kwargs) -> None:
         _dequeue(op_to_remove=base_op)
         self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
@@ -98,6 +97,7 @@ class Adjoint(ResourceOperator):
         self.base_op = base_cmpr_op
         self.wires = base_op.wires
         self.num_wires = base_cmpr_op.num_wires
+        super().__init__(**kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -112,7 +112,7 @@ class Adjoint(ResourceOperator):
         return {"base_cmpr_op": self.base_op}
 
     @classmethod
-    def resource_rep(cls, base_cmpr_op: CompressedResourceOp) -> CompressedResourceOp:
+    def resource_rep(cls, base_cmpr_op: ResourceOperator) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -121,18 +121,17 @@ class Adjoint(ResourceOperator):
                 that we want the adjoint of.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = base_cmpr_op.num_wires
-        return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op})
+        return cls(base_cmpr_op)
 
     @classmethod
-    def resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
+    def resource_decomp(cls, base_cmpr_op: ResourceOperator, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A
                 compressed resource representation for the operator we want the adjoint of.
 
         Resources:
@@ -183,7 +182,7 @@ class Adjoint(ResourceOperator):
 
     @staticmethod
     # pylint: disable=arguments-renamed
-    def tracking_name(base_cmpr_op: CompressedResourceOp) -> str:
+    def tracking_name(base_cmpr_op: ResourceOperator) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
         return f"Adjoint({base_name})"
@@ -252,6 +251,7 @@ class Controlled(ResourceOperator):
         num_ctrl_wires: int,
         num_zero_ctrl: int,
         wires: WiresLike = None,
+        **kwargs,
     ) -> None:
         _dequeue(op_to_remove=base_op)
         self.queue()
@@ -270,6 +270,7 @@ class Controlled(ResourceOperator):
                 raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
         else:
             self.wires = None
+        super().__init__(**kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -277,7 +278,7 @@ class Controlled(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-             * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
+             * base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base
                operator to be controlled.
              * num_ctrl_wires (int): the number of qubits the operation is controlled on
              * num_zero_ctrl (int): the number of control qubits, that are controlled when in the
@@ -293,43 +294,34 @@ class Controlled(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        base_cmpr_op: CompressedResourceOp,
+        base_cmpr_op: ResourceOperator,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the
                 :math:`|0\rangle` state
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = num_ctrl_wires + base_cmpr_op.num_wires
-        return CompressedResourceOp(
-            cls,
-            num_wires,
-            {
-                "base_cmpr_op": base_cmpr_op,
-                "num_ctrl_wires": num_ctrl_wires,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
+        return cls(base_cmpr_op, num_ctrl_wires, num_zero_ctrl)
 
     @classmethod
     def resource_decomp(
-        cls, base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int, num_zero_ctrl: int, **kwargs
+        cls, base_cmpr_op: ResourceOperator, num_ctrl_wires: int, num_zero_ctrl: int, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The base
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): The base
                 operator to be controlled.
             num_ctrl_wires (int): the number of qubits the operation is controlled on
             num_zero_ctrl (int): the number of control qubits that are controlled when in the
@@ -409,7 +401,7 @@ class Controlled(ResourceOperator):
 
     @staticmethod
     def tracking_name(
-        base_cmpr_op: CompressedResourceOp,
+        base_cmpr_op: ResourceOperator,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
     ):
@@ -471,7 +463,7 @@ class Pow(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "z"}
 
-    def __init__(self, base_op: ResourceOperator, pow_z: int) -> None:
+    def __init__(self, base_op: ResourceOperator, pow_z: int, **kwargs) -> None:
         _dequeue(op_to_remove=base_op)
         self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
@@ -480,6 +472,7 @@ class Pow(ResourceOperator):
         self.base_op = base_cmpr_op
         self.wires = base_op.wires
         self.num_wires = base_cmpr_op.num_wires
+        super().__init__(**kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -497,7 +490,7 @@ class Pow(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(cls, base_cmpr_op: CompressedResourceOp, pow_z: int) -> CompressedResourceOp:
+    def resource_rep(cls, base_cmpr_op: ResourceOperator, pow_z: int) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation.
 
@@ -507,20 +500,19 @@ class Pow(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = base_cmpr_op.num_wires
-        return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op, "pow_z": pow_z})
+        return cls(base_cmpr_op, pow_z)
 
     @classmethod
     def resource_decomp(
-        cls, base_cmpr_op: CompressedResourceOp, pow_z: int, **kwargs
+        cls, base_cmpr_op: ResourceOperator, pow_z: int, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A
+            base_cmpr_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A
                 compressed resource representation for the operator we want to exponentiate.
             pow_z (float): the exponent (default value is 1)
 
@@ -574,7 +566,7 @@ class Pow(ResourceOperator):
         return [GateCount(cls.resource_rep(base_cmpr_op, pow_z * z))]
 
     @staticmethod
-    def tracking_name(base_cmpr_op: CompressedResourceOp, pow_z: int) -> str:
+    def tracking_name(base_cmpr_op: ResourceOperator, pow_z: int) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
         return f"Pow({base_name}, {pow_z})"
@@ -642,9 +634,17 @@ class Prod(ResourceOperator):
 
     def __init__(
         self,
-        res_ops: Iterable[ResourceOperator | tuple[ResourceOperator, int]],
+        res_ops: Iterable[ResourceOperator | tuple[ResourceOperator, int]] | None = None,
         wires: WiresLike = None,
+        **kwargs,
     ) -> None:
+
+        if res_ops is None:
+            self.cmpr_factors_and_counts = kwargs.get("cmpr_factors_and_counts")
+            self.wires = Wires(wires) if wires else None
+            self.num_wires = kwargs.get("num_wires")
+            super().__init__(wires=wires, **kwargs)
+            return
 
         ops = []
         counts = []
@@ -682,6 +682,7 @@ class Prod(ResourceOperator):
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires
                 self.num_wires = len(self.wires)
+        super().__init__(wires=wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -690,7 +691,7 @@ class Prod(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_wires (int): the number of wires the operator acts upon
-                * cmpr_factors_and_counts (Tuple[Tuple[:class:`~.estimator.CompressedResourceOp`, int]]):
+                * cmpr_factors_and_counts (Tuple[Tuple[:class:`~.estimator.ResourceOperator`, int]]):
                   A sequence of tuples containing the operations, in the compressed representation, and
                   a count for how many times they are repeated corresponding to the factors in the product.
 
@@ -703,25 +704,21 @@ class Prod(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, cmpr_factors_and_counts, num_wires: WiresLike = None
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation.
 
         Args:
-            cmpr_factors_and_counts (Tuple[Tuple[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, int]]):
+            cmpr_factors_and_counts (Tuple[Tuple[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`, int]]):
                 A sequence of tuples containing the operations, in the compressed representation, and
                 a count for how many times they are repeated corresponding to the factors in the product.
             num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         num_wires = num_wires or max(cmpr_op.num_wires for cmpr_op, _ in cmpr_factors_and_counts)
-        return CompressedResourceOp(
-            cls,
-            num_wires,
-            {"num_wires": num_wires, "cmpr_factors_and_counts": cmpr_factors_and_counts},
-        )
+        return cls(cmpr_factors_and_counts=cmpr_factors_and_counts, num_wires=num_wires)
 
     @classmethod
     def resource_decomp(
@@ -731,7 +728,7 @@ class Prod(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            cmpr_factors_and_counts (Tuple[Tuple[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`, int]]):
+            cmpr_factors_and_counts (Tuple[Tuple[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`, int]]):
                 A sequence of tuples containing the operations, in the compressed representation, and
                 a count for how many times they are repeated corresponding to the factors in the product.
             num_wires (int): the number of wires this operator acts upon
@@ -815,11 +812,22 @@ class ChangeOpBasis(ResourceOperator):
 
     def __init__(
         self,
-        compute_op: ResourceOperator,
-        target_op: ResourceOperator,
+        compute_op: ResourceOperator | None = None,
+        target_op: ResourceOperator | None = None,
         uncompute_op: None | ResourceOperator = None,
         wires: WiresLike = None,
+        **kwargs,
     ) -> None:
+
+        if compute_op is None:
+            self.cmpr_compute_op = kwargs.get("cmpr_compute_op")
+            self.cmpr_target_op = kwargs.get("cmpr_target_op")
+            self.cmpr_uncompute_op = kwargs.get("cmpr_uncompute_op")
+            self.num_wires = kwargs.get("num_wires")
+            self.wires = Wires(wires) if wires else None
+            super().__init__(wires=wires, **kwargs)
+            return
+
         ops_to_remove = (
             [compute_op, target_op, uncompute_op] if uncompute_op else [compute_op, target_op]
         )
@@ -860,6 +868,7 @@ class ChangeOpBasis(ResourceOperator):
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires
                 self.num_wires = len(self.wires)
+        super().__init__(wires=wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -867,11 +876,11 @@ class ChangeOpBasis(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                * cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                   to the compute operation.
-                * cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                * cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                   to the base operation.
-                * cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+                * cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                   to the uncompute operation.
                 * num_wires (int): the number of wires this operator acts upon
 
@@ -886,25 +895,25 @@ class ChangeOpBasis(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        cmpr_compute_op: CompressedResourceOp,
-        cmpr_target_op: CompressedResourceOp,
-        cmpr_uncompute_op: CompressedResourceOp | None = None,
+        cmpr_compute_op: ResourceOperator,
+        cmpr_target_op: ResourceOperator,
+        cmpr_uncompute_op: ResourceOperator | None = None,
         num_wires: int | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to estimate the resources.
 
         Args:
-            cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the compute operation.
-            cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the base operation.
-            cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): An optional compressed resource operator, corresponding
+            cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): An optional compressed resource operator, corresponding
                 to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
             num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
         cmpr_uncompute_op = cmpr_uncompute_op or resource_rep(
             Adjoint, {"base_cmpr_op": cmpr_compute_op}
@@ -912,34 +921,30 @@ class ChangeOpBasis(ResourceOperator):
         num_wires = num_wires or max(
             cmpr_compute_op.num_wires, cmpr_target_op.num_wires, cmpr_uncompute_op.num_wires
         )
-        return CompressedResourceOp(
-            cls,
-            num_wires,
-            {
-                "cmpr_compute_op": cmpr_compute_op,
-                "cmpr_target_op": cmpr_target_op,
-                "cmpr_uncompute_op": cmpr_uncompute_op,
-                "num_wires": num_wires,
-            },
+        return cls(
+            cmpr_compute_op=cmpr_compute_op,
+            cmpr_target_op=cmpr_target_op,
+            cmpr_uncompute_op=cmpr_uncompute_op,
+            num_wires=num_wires,
         )
 
     @classmethod
     def resource_decomp(
         cls,
-        cmpr_compute_op: CompressedResourceOp,
-        cmpr_target_op: CompressedResourceOp,
-        cmpr_uncompute_op: CompressedResourceOp,
+        cmpr_compute_op: ResourceOperator,
+        cmpr_target_op: ResourceOperator,
+        cmpr_uncompute_op: ResourceOperator,
         num_wires: int,  # pylint: disable=unused-argument
     ):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            cmpr_compute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the compute operation.
-            cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): A compressed resource operator, corresponding
+            cmpr_target_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): A compressed resource operator, corresponding
                 to the base operation.
-            cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): An optional compressed resource operator, corresponding
+            cmpr_uncompute_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): An optional compressed resource operator, corresponding
                 to the uncompute operation. The adjoint of the :code:`cmpr_compute_op` is used by default.
 
         Resources:
