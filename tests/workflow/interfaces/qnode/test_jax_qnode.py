@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 
 
 def get_device(device_name, wires, seed):
@@ -73,12 +73,17 @@ class TestQNode:
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -138,12 +143,17 @@ class TestQNode:
         b = jax.numpy.array(0.2)
         c = jax.numpy.array(0.3)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
@@ -163,12 +173,17 @@ class TestQNode:
         U = jax.numpy.array([[0, 1], [1, 0]])
         a = jax.numpy.array(0.1)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
@@ -194,6 +209,8 @@ class TestQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
 
         class U3(qml.U3):  # pylint:disable=too-few-public-methods
             def decomposition(self):
@@ -279,6 +296,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
@@ -340,6 +359,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -394,6 +415,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
@@ -444,6 +467,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 3
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
@@ -526,6 +551,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
@@ -591,7 +618,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
-
+        if diff_method == "hadamard":
+            kwargs["aux_wire"] = 2
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -871,12 +899,17 @@ class TestQubitIntegration:
             def decomposition(self):
                 return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface="jax",
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit1(weights):
             Template(weights, wires=[0, 1])
@@ -888,6 +921,7 @@ class TestQubitIntegration:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit2(data, weights):
             qml.templates.AngleEmbedding(jax.numpy.stack([data, 0.7]), wires=[0, 1])
@@ -984,6 +1018,8 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(get_device(dev_name, wires=0, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x):
@@ -1027,6 +1063,8 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1106,30 +1144,36 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = jax.jacobian(circuit)
-        g = jac_fn(x)
 
-        expected_g = [
-            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-        ]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
-
-        hess = jax.jacobian(jac_fn)(x)
-
-        expected_hess = [
-            [
-                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
-            ],
-            [
-                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-            ],
-        ]
-        if diff_method == "finite-diff":
-            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        if diff_method == "hadamard":
+            # Cannot find a way to specify an aux_wire that is not in use!
+            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
+                jac_fn(x)
         else:
-            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+            g = jac_fn(x)
+
+            expected_g = [
+                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+            ]
+            assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+            hess = jax.jacobian(jac_fn)(x)
+
+            expected_hess = [
+                [
+                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+                ],
+                [
+                    [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                    [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+                ],
+            ]
+            if diff_method == "finite-diff":
+                assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+            else:
+                assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(
         self, dev_name, diff_method, interface, grad_on_execution, device_vjp, tol, seed
@@ -1145,6 +1189,8 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1234,34 +1280,41 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = jax.jacobian(circuit, argnums=[0, 1])
-        g = jac_fn(a, b)
 
-        expected_g = np.array(
-            [
-                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-            ]
-        )
-        assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
-
-        hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
-
-        expected_hess = np.array(
-            [
-                [
-                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
-                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
-                ],
-                [
-                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
-                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
-                ],
-            ]
-        )
-        if diff_method == "finite-diff":
-            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        if diff_method == "hadamard":
+            # Cannot find a way to specify an aux wire that is not in use!
+            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
+                jac_fn(a, b)
         else:
-            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+            g = jac_fn(a, b)
+
+            expected_g = np.array(
+                [
+                    [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                    [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+                ]
+            )
+            assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
+
+            hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
+
+            expected_hess = np.array(
+                [
+                    [
+                        [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+                        [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+                    ],
+                    [
+                        [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+                        [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+                    ],
+                ]
+            )
+            if diff_method == "finite-diff":
+                assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+            else:
+                assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_state(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
@@ -1372,6 +1425,10 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,
@@ -1379,6 +1436,7 @@ class TestTapeExpansion:
             max_diff=max_diff,
             interface=interface,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.Hadamard(wires=0)
@@ -1589,6 +1647,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1596,6 +1658,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1616,6 +1679,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1623,6 +1690,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1646,6 +1714,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1653,6 +1725,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -1678,6 +1751,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1685,6 +1762,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1709,6 +1787,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1716,6 +1798,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -1746,6 +1829,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1753,6 +1840,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -1779,6 +1867,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1787,6 +1879,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             max_diff=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1824,6 +1917,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1831,6 +1928,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -1949,6 +2047,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1956,6 +2058,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1987,6 +2090,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1994,6 +2101,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2034,6 +2142,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2041,6 +2153,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2070,6 +2183,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
@@ -2081,6 +2198,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             max_diff=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2116,6 +2234,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         params = jax.numpy.array([0.1, 0.2])
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2124,6 +2246,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             max_diff=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
