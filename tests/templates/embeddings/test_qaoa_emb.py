@@ -158,6 +158,7 @@ class TestDecomposition:
         with pytest.raises(ValueError, match="did not recognize"):
             circuit(x=[1])
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state is correct if the weights are zero."""
 
@@ -180,6 +181,7 @@ class TestDecomposition:
         target = [1, -1, 0, 1, 1]
         assert np.allclose(res, target[:n_subsystems], atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "weights, target",
         [([[np.pi, 0, 0]], [1, 1]), ([[np.pi / 2, 0, 0]], [0, 0]), ([[0, 0, 0]], [-1, -1])],
@@ -199,6 +201,7 @@ class TestDecomposition:
 
         assert np.allclose(res, target, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "n_wires, features, weights, target",
         [

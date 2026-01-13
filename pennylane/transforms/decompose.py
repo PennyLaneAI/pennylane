@@ -725,6 +725,17 @@ def decompose(
         {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
         >>> qml.decomposition.disable_graph()
 
+        **Degenerate Graph Solutions**
+
+        There could be cases that arise where the decomposition graph solution is non-deterministic
+        if there are intermediate gate decompositions that have the same overall costs. This is not
+        normally an issue, except for in cases where graph decompositions are being used with
+        ``qjit`` and intermediate gates include operations that are non-executable by Catalyst.
+        An example of such a gate is the ``PauliRot`` operation. If an intermediate decomposition is
+        chosen that includes a ``qml.PauliRot`` instance, Catalyst cannot execute the program. If
+        this behaviour is encountered, this can be counteracted by adding a prohibitively large
+        penalty to the graph solution should it encounter a ``qml.PauliRot`` instance (e.g.,
+        ``qml.transforms.decomopose(..., gate_set={..., qml.PauliRot: 100_000})``).
     """
 
     if not enabled_graph() and (fixed_decomps or alt_decomps):

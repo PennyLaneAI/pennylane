@@ -115,6 +115,7 @@ class TestDecomposition:
         res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
         assert res_wires == exp_wires
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("init_state", "exp_state"),
         [
@@ -505,6 +506,7 @@ class TestDecomposition:
 
         assert qml.math.allclose(circuit(weight), exp_state, atol=tol)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("num_qubits", "layers", "exp_state"),
         [
@@ -625,6 +627,7 @@ class TestDecomposition:
 
         assert qml.math.allclose(circuit(weight), exp_state, atol=tol)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         weights = np.random.random(size=(1, 1, 2))
