@@ -79,7 +79,7 @@ def _expand_transform_spsa(
     expanded_tape = expand_invalid_trainable(tape)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]
@@ -265,10 +265,9 @@ def spsa_grad(
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
-        >>> from functools import partial
         >>> shots = (10, 100, 1000)
         >>> dev = qml.device("default.qubit")
-        >>> @partial(qml.set_shots, shots=shots)
+        >>> @qml.set_shots(shots=shots)
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)

@@ -30,7 +30,7 @@ from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.math import Interface
 from pennylane.ops.channel import __qubit_channels__ as channels
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
@@ -317,8 +317,8 @@ class DefaultMixed(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
-        """This function defines the device transform program to be applied and an updated device
+    ) -> tuple[CompilePipeline, ExecutionConfig]:
+        """This function defines the device compile pileline to be applied and an updated device
         configuration.
 
         Args:
@@ -326,7 +326,7 @@ class DefaultMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
@@ -339,11 +339,11 @@ class DefaultMixed(Device):
         """
         execution_config = execution_config or ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        transform_program = TransformProgram()
+        compile_pileline = CompilePipeline()
 
         # Defer first since it addes wires to the device
-        transform_program.add_transform(qml.defer_measurements, allow_postselect=False)
-        transform_program.add_transform(
+        compile_pileline.add_transform(qml.defer_measurements, allow_postselect=False)
+        compile_pileline.add_transform(
             decompose,
             stopping_condition=stopping_condition,
             name=self.name,
@@ -353,21 +353,21 @@ class DefaultMixed(Device):
         # we should handle this case directly within setup_execution_config. This would
         # eliminate the need for the no_sampling transform in this section.
         if config.gradient_method == "backprop":
-            transform_program.add_transform(no_sampling, name="backprop + default.mixed")
+            compile_pileline.add_transform(no_sampling, name="backprop + default.mixed")
 
         if self.readout_err is not None:
-            transform_program.add_transform(warn_readout_error_state)
+            compile_pileline.add_transform(warn_readout_error_state)
 
         # Add the validate section
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(
+        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pileline.add_transform(
             validate_measurements,
             analytic_measurements=qml.devices.default_qubit.accepted_analytic_measurement,
             sample_measurements=qml.devices.default_qubit.accepted_sample_measurement,
             name=self.name,
         )
-        transform_program.add_transform(
+        compile_pileline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
-        return transform_program, config
+        return compile_pileline, config

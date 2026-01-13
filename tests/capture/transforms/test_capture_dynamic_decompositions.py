@@ -21,7 +21,6 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-from functools import partial
 
 from pennylane.capture import expand_plxpr_transforms, run_autograph
 from pennylane.capture.primitives import (
@@ -1213,7 +1212,7 @@ class TestExpandPlxprTransformsDynamicDecompositions:
 
     def test_expand_plxpr_transforms_simple(self):
 
-        @partial(qml.transforms.decompose)
+        @qml.transforms.decompose
         def circuit():
             SimpleCustomOp(wires=0)
             return qml.probs(wires=[0, 1])
@@ -1233,7 +1232,7 @@ class TestExpandPlxprTransformsDynamicDecompositions:
         )
 
     def test_expand_plxpr_transforms_cond(self):
-        @partial(qml.transforms.decompose)
+        @qml.transforms.decompose
         def circuit():
             CustomOpCond(0.5, wires=0)
             return qml.probs(wires=[0, 1])
@@ -1252,7 +1251,7 @@ class TestExpandPlxprTransformsDynamicDecompositions:
         )
 
     def test_expand_plxpr_transforms_for_loop(self):
-        @partial(qml.transforms.decompose)
+        @qml.transforms.decompose
         def circuit():
             CustomOpForLoop(0.5, wires=0)
             return qml.probs(wires=[0, 1])
@@ -1271,7 +1270,7 @@ class TestExpandPlxprTransformsDynamicDecompositions:
         )
 
     def test_expand_plxpr_transforms_while_loop(self):
-        @partial(qml.transforms.decompose)
+        @qml.transforms.decompose
         def circuit():
             CustomOpWhileLoop(0.5, wires=0)
             return qml.probs(wires=[0, 1])

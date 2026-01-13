@@ -175,7 +175,7 @@ class TestExpandPlxprTransforms:
             m1 = g()
             qml.RX(x, 0)
 
-            @partial(qml.transforms.decompose, gate_set=[qml.RX, qml.RY, qml.RZ])
+            @qml.transforms.decompose(gate_set=[qml.RX, qml.RY, qml.RZ])
             def h(m, n, o):
                 qml.Rot(m, n, o, 0)
                 return qml.probs(wires=[0, 1])
@@ -225,7 +225,7 @@ class TestExpandPlxprTransforms:
                 qml.X(0)
                 qml.S(1)
 
-                @partial(qml.transforms.decompose, gate_set=[qml.RX, qml.RY, qml.RZ])
+                @qml.transforms.decompose(gate_set=[qml.RX, qml.RY, qml.RZ])
                 def h(m, n, o):
                     qml.Rot(m, n, o, 0)
                     return qml.probs(wires=[0, 1])

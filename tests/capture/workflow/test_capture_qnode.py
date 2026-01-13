@@ -14,7 +14,6 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
-from functools import partial
 
 # pylint: disable=protected-access
 import pytest
@@ -139,29 +138,24 @@ def test_simple_qnode():
     assert qml.math.allclose(output[0], jnp.cos(0.5))
 
 
-def test_providing_keyword_argument():
-    """Test that keyword arguments can be provided to the qnode."""
+def test_providing_keywords_dynamic():
+    """Test that keyword arguments can be provided to the qnode, but are treated as dynamic."""
 
     @qml.qnode(qml.device("default.qubit", wires=1))
-    def circuit(*, n_iterations=0):
-        for _ in range(n_iterations):
-            qml.X(0)
+    def circuit(*, x):
+        qml.RX(x, 0)
         return qml.probs()
 
-    jaxpr = jax.make_jaxpr(partial(circuit, n_iterations=3))()
+    jaxpr = jax.make_jaxpr(circuit)(x=2.0)
 
     assert jaxpr.eqns[0].primitive == qnode_prim
+    assert len(jaxpr.jaxpr.invars) == 1
 
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-    for i in range(3):
-        assert qfunc_jaxpr.eqns[i].primitive == qml.PauliX._primitive
-    assert len(qfunc_jaxpr.eqns) == 4
-
-    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-    assert qml.math.allclose(res, jnp.array([0, 1]))
-
-    res2 = circuit(n_iterations=4)
-    assert qml.math.allclose(res2, jnp.array([1, 0]))
+    assert len(qfunc_jaxpr.invars) == 1
+    assert qfunc_jaxpr.eqns[0].primitive == qml.RX._primitive
+    assert qfunc_jaxpr.eqns[0].invars[0] == qfunc_jaxpr.invars[0]
+    assert len(qfunc_jaxpr.eqns) == 2
 
 
 def test_multiple_measurements():
@@ -554,7 +548,7 @@ class TestUserTransforms:
         dev = qml.device("default.qubit", wires=3)
         monkeypatch.setattr(dev, "eval_jaxpr", dummy_eval_jaxpr)
 
-        @partial(qml.transforms.decompose, gate_set=[qml.RX, qml.RY, qml.RZ])
+        @qml.transforms.decompose(gate_set=[qml.RX, qml.RY, qml.RZ])
         @qml.qnode(dev)
         @qml.transforms.cancel_inverses
         def circuit(x, y, z):

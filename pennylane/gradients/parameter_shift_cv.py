@@ -519,7 +519,7 @@ def _expand_transform_param_shift_cv(
     expanded_tape = expand_invalid_trainable(tape)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

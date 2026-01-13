@@ -618,11 +618,11 @@ def shadow_expval(H, k=1, seed=None) -> ShadowExpvalMP:
 
     .. code-block:: python3
 
-        from functools import partial
         H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
 
         dev = qml.device("default.qubit", wires=range(2))
-        @partial(qml.set_shots, shots=10000)
+
+        @qml.set_shots(shots=10000)
         @qml.qnode(dev)
         def circuit(x, obs):
             qml.Hadamard(0)
@@ -688,10 +688,9 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
     .. code-block:: python3
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=5)
+        @qml.set_shots(shots=5)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)

@@ -1523,6 +1523,32 @@ class TestConditionalsAndMidMeasure:
 
         assert mid_meas == {m0: m_res[0], m1: m_res[1]}
 
+    def test_floating_point_mcm_bug(self):
+        """Test an edge case where the mcm probability is greater than one by an insignificant amount."""
+
+        ops = [
+            qml.RX(-5.754168297787336, wires=0),
+            qml.H(1),
+            qml.ops.MidMeasure(1),
+            qml.ops.MidMeasure(2),
+            qml.ops.MidMeasure(3),
+        ]
+        state = np.zeros((2, 2, 2, 2))
+        state[0, 0, 0, 0] = 1
+
+        for op in ops:
+            state = apply_operation(op, state, mid_measurements={})
+
+        # just need to make sure that ran without numpy complaining
+
+    def test_norm_greater_than_one_mcm(self):
+        """Test an error is raised about the norm if it is substantially greater than one."""
+
+        state = np.zeros((2,))
+        state[0] = 1.0005
+        with pytest.raises(ValueError, match="probabilities greater than 1."):
+            apply_operation(qml.ops.MidMeasure(0), state)
+
     def test_error_bactched_mid_measure(self):
         """Test that an error is raised when mid_measure is applied to a batched input state."""
 

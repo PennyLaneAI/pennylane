@@ -213,7 +213,7 @@ def mid_circuit_measurements(
     warnings.warn(
         "The mid_circuit_measurements transform is deprecated. Instead, the device should "
         "determine the best mcm method, and explicitly include qml.transforms.dynamic_one_shot "
-        "or qml.transforms.defer_measurements in the preprocess transform program if needed.",
+        "or qml.transforms.defer_measurements in the preprocess compile pileline if needed.",
         PennyLaneDeprecationWarning,
     )
 
@@ -427,6 +427,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             operations=decomposable_ops,
             target_gates=target_gates,
             num_work_wires=num_available_work_wires,
+            minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
         )
@@ -446,7 +447,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                max_work_wires=num_available_work_wires,
+                num_work_wires=num_available_work_wires,
                 graph_solution=graph_solution,
                 custom_decomposer=decomposer,
                 strict=True,

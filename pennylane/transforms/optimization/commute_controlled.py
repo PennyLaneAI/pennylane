@@ -409,7 +409,7 @@ def commute_controlled(
 
     .. code-block:: python
 
-        @partial(commute_controlled, direction="right")
+        @commute_controlled(direction="right")
         @qml.qnode(device=dev)
         def circuit(theta):
             qml.CZ(wires=[0, 2])
@@ -487,7 +487,7 @@ def commute_controlled(
     new_tape = tape.copy(operations=op_list)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

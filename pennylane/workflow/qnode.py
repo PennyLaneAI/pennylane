@@ -35,7 +35,7 @@ from pennylane.math import Interface
 from pennylane.measurements import Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core import CompilePipeline, Transform
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -162,9 +162,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
-def _validate_diff_method(
-    device: SupportedDeviceAPIs, diff_method: str | TransformDispatcher
-) -> None:
+def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform) -> None:
     if diff_method is None:
         return
 
@@ -179,7 +177,7 @@ def _validate_diff_method(
         )
     if isinstance(diff_method, str) and diff_method in tuple(get_args(SupportedDiffMethods)):
         return
-    if isinstance(diff_method, TransformDispatcher):
+    if isinstance(diff_method, Transform):
         return
 
     raise QuantumFunctionError(
@@ -230,8 +228,8 @@ class QNode:
             * ``"auto"``: The QNode automatically detects the interface from the input values of
               the quantum function.
 
-        diff_method (str or .TransformDispatcher): The method of differentiation to use in
-            the created QNode. Can either be a :class:`~.TransformDispatcher`, which includes all
+        diff_method (str or .Transform): The method of differentiation to use in
+            the created QNode. Can either be a :class:`~.Transform`, which includes all
             quantum gradient transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
             strings are allowed:
 
@@ -514,7 +512,7 @@ class QNode:
         func: Callable,
         device: SupportedDeviceAPIs,
         interface: str | Interface = Interface.AUTO,
-        diff_method: TransformDispatcher | SupportedDiffMethods = "best",
+        diff_method: Transform | SupportedDiffMethods = "best",
         *,
         shots: ShotsLike | Literal["unset"] = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
@@ -602,7 +600,7 @@ class QNode:
 
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = shots != "unset"
-        self._transform_program = TransformProgram()
+        self._transform_program = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
@@ -612,9 +610,7 @@ class QNode:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
-        copied_qnode._transform_program = qml.transforms.core.TransformProgram(
-            self.transform_program
-        )
+        copied_qnode._transform_program = CompilePipeline(self.transform_program)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
@@ -657,7 +653,7 @@ class QNode:
         self._interface = Interface(value)
 
     @property
-    def transform_program(self) -> TransformProgram:
+    def transform_program(self) -> CompilePipeline:
         """The transform program used by the QNode."""
         return self._transform_program
 
@@ -746,7 +742,7 @@ class QNode:
             updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
-        updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        updated_qn._transform_program = CompilePipeline(self.transform_program)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
@@ -877,9 +873,10 @@ qnode.__signature__ = inspect.signature(QNode)
 
 
 # pylint: disable=protected-access
-@TransformDispatcher.generic_register
+@Transform.generic_register
 def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
+    targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
     new_qnode = copy.copy(obj)

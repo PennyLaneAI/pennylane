@@ -18,17 +18,19 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
+from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ, ControlledPhaseShift, CRot
 from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
+from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, PauliRot
+from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, Rot
+from pennylane.estimator.ops.qubit.qchem_ops import SingleExcitation
 from pennylane.estimator.templates import (
+    GQSP,
+    QSP,
     AliasSampling,
+    GQSPTimeEvolution,
     MPSPrep,
-    PrepTHC,
     QROMStatePreparation,
-    QubitizeTHC,
     SelectPauliRot,
-    SelectTHC,
 )
 from pennylane.estimator.templates.trotter import TrotterVibrational, TrotterVibronic
 
@@ -110,26 +112,25 @@ class ResourceConfig:
 
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
-        _DEFAULT_BIT_PRECISION = 15
         _DEFAULT_PHASEGRAD_PRECISION = 1e-6
         self.resource_op_precisions = {
             RX: {"precision": _DEFAULT_PRECISION},
             RY: {"precision": _DEFAULT_PRECISION},
             RZ: {"precision": _DEFAULT_PRECISION},
-            CRX: {"precision": _DEFAULT_PRECISION},
-            CRY: {"precision": _DEFAULT_PRECISION},
-            CRZ: {"precision": _DEFAULT_PRECISION},
-            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
+            Rot: {"precision": None},
+            CRX: {"precision": None},
+            CRY: {"precision": None},
+            CRZ: {"precision": None},
+            CRot: {"precision": None},
+            ControlledPhaseShift: {"precision": None},
             QubitUnitary: {"precision": _DEFAULT_PRECISION},
+            MultiRZ: {"precision": None},
+            PauliRot: {"precision": None},
+            SingleExcitation: {"precision": None},
+            SelectPauliRot: {"precision": _DEFAULT_PRECISION},
             AliasSampling: {"precision": _DEFAULT_PRECISION},
-            MPSPrep: {"precision": _DEFAULT_PRECISION},
+            MPSPrep: {"precision": None},
             QROMStatePreparation: {"precision": _DEFAULT_PRECISION},
-            SelectTHC: {"rotation_precision": _DEFAULT_BIT_PRECISION},
-            PrepTHC: {"coeff_precision": _DEFAULT_BIT_PRECISION},
-            QubitizeTHC: {
-                "coeff_precision": _DEFAULT_BIT_PRECISION,
-                "rotation_precision": _DEFAULT_BIT_PRECISION,
-            },
             TrotterVibronic: {
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
@@ -138,6 +139,9 @@ class ResourceConfig:
                 "phase_grad_precision": _DEFAULT_PHASEGRAD_PRECISION,
                 "coeff_precision": 1e-3,
             },
+            GQSP: {"rotation_precision": None},
+            QSP: {"rotation_precision": None},
+            GQSPTimeEvolution: {"poly_approx_precision": None},
         }
         self._custom_decomps = {}
         self._adj_custom_decomps = {}
@@ -188,24 +192,24 @@ class ResourceConfig:
     def __repr__(self) -> str:
         return f"ResourceConfig(precisions = {self.resource_op_precisions}, custom_decomps = {self.custom_decomps}, adj_custom_decomps = {self.adj_custom_decomps}, ctrl_custom_decomps = {self.ctrl_custom_decomps}, pow_custom_decomps = {self.pow_custom_decomps})"
 
-    def set_precision(self, op_type: type[ResourceOperator], precision: float) -> None:
+    def set_precision(
+        self,
+        op_type: type[ResourceOperator],
+        precision: float | int,
+        resource_key: str = "precision",
+    ) -> None:
         r"""Sets the precision for a given resource operator.
-
-        This method updates the precision value for operators that use a single
-        tolerance parameter (e.g., for synthesis error). It will raise an error
-        if you attempt to set the precision for an operator that is not
-        configurable or uses bit-precisions. A negative precision will also raise an error.
 
         Args:
             op_type (type[:class:`~.pennylane.estimator.resource_operator.ResourceOperator`]): the operator class for which
                 to set the precision
-            precision (float): The desired precision tolerance. A smaller
-                value corresponds to a higher precision compilation, which may
-                increase the required gate counts. Must be greater than 0.
+            precision (float | int): The desired precision tolerance. Must be greater than 0.
+            resource_key (str): the name of the specific precision parameter to be updated
 
         Raises:
             ValueError: If ``op_type`` is not a configurable operator or if setting
                 the precision for it is not supported, or if ``precision`` is negative.
+            ValueError: If ``resource_key`` is not a supported parameter for the given ``op_type``.
 
         **Example**
 
@@ -228,27 +232,42 @@ class ResourceConfig:
 
             Default precision for SelectPauliRot: 1e-09
             New precision for SelectPauliRot: 1e-05
+
+        .. details::
+            :title: Usage Details
+
+            Some resource operators have multiple parameters which tune the precision
+            of the operator's decomposition. For example, the
+            :class:`~.estimator.templates.trotter.TrotterVibronic` operator has parameters
+            ``phase_grad_precision`` and ``coeff_precision``. A dictionary of all such parameters
+            of an operator can be accessed through ``ResourceConfig.resource_op_precisions``:
+
+            >>> import pennylane.estimator as qre
+            >>> my_config = qre.ResourceConfig()
+            >>> my_config.resource_op_precisions[qre.TrotterVibronic]
+            {'phase_grad_precision': 1e-06, 'coeff_precision': 0.001}
+
+            We can modify the default value of the ``coeff_precision``:
+
+            >>> my_config.set_precision(qre.TrotterVibronic, 1e-9, resource_key="coeff_precision")
+            >>> my_config.resource_op_precisions[qre.TrotterVibronic]
+            {'phase_grad_precision': 1e-06, 'coeff_precision': 1e-09}
+
         """
         if precision < 0:
             raise ValueError(f"Precision must be a non-negative value, but got {precision}.")
 
         if op_type not in self.resource_op_precisions:
-            configurable_ops = sorted(
-                [
-                    op.__name__
-                    for op, params in self.resource_op_precisions.items()
-                    if "precision" in params
-                ]
-            )
+            configurable_ops = sorted([op.__name__ for op in self.resource_op_precisions])
             raise ValueError(
                 f"{op_type.__name__} is not a configurable operator. "
                 f"Configurable operators are: {', '.join(configurable_ops)}"
             )
 
-        if "precision" not in self.resource_op_precisions[op_type]:
-            raise ValueError(f"Setting precision for {op_type.__name__} is not supported.")
+        if resource_key not in self.resource_op_precisions[op_type]:
+            raise ValueError(f"Setting '{resource_key}' for {op_type.__name__} is not supported.")
 
-        self.resource_op_precisions[op_type]["precision"] = precision
+        self.resource_op_precisions[op_type][resource_key] = precision
 
     def set_single_qubit_rot_precision(self, precision: float) -> None:
         r"""Sets the synthesis precision for all single-qubit rotation gates.

@@ -15,8 +15,6 @@
 Tests for the TemporaryAND template.
 """
 
-from functools import partial
-
 import pytest
 
 import pennylane as qml
@@ -144,8 +142,7 @@ class TestTemporaryAND:
 
         @qml.set_shots(1)
         @qml.qnode(qml.device("default.qubit", wires=wires), interface=None)
-        @partial(
-            qml.transforms.decompose,
+        @qml.transforms.decompose(
             gate_set=gate_set,
             fixed_decomps={
                 qml.Select: qml.templates.subroutines.select._select_decomp_unary  # pylint: disable=protected-access

@@ -103,7 +103,7 @@ def hadamard_grad(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
+    mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "standard",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
@@ -115,14 +115,15 @@ def hadamard_grad(
             trainable parameters are returned. Note that the indices are with respect to
             the list of trainable parameters.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests.
-            If ``None`` (the default), a suitable wire is inferred from the wires used in
-            the original circuit and ``device_wires``.
+            If ``None`` (the default) and ``mode`` is "standard" or "reversed", a suitable wire
+            is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire`` is ``None``.
         mode (str): Specifies the gradient computation mode. Accepted values are
-            ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``.
-            The default ``"auto"`` chooses the method that leads to the
-            fewest total executions.
+            ``"standard"``, ``"reversed"``, ``"direct"``, ``"reversed-direct"``, or ``"auto"``. Defaults to ``"standard"``.
+            The ``"auto"`` mode chooses the method that leads to the
+            fewest total executions, based on the circuit observable and whether or not an
+            auxiliary wire has been provided.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
@@ -159,7 +160,7 @@ def hadamard_grad(
 
     >>> import jax
     >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard"})
+    >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
@@ -167,9 +168,8 @@ def hadamard_grad(
     ...     return qml.expval(qml.Z(0)), qml.probs(wires=0)
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64),
-     Array([[-0.1937586 , -0.09442394, -0.19177852],
-            [ 0.1937586 ,  0.09442394,  0.19177852]], dtype=float64))
+    (Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64), Array([[-0.1937586 , -0.09442393, -0.19177853],
+           [ 0.1937586 ,  0.09442393,  0.19177853]], dtype=float64))
 
     .. details::
         :title: Usage Details
@@ -184,19 +184,19 @@ def hadamard_grad(
             ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x )
             ...     return qml.expval(qml.Z(0))
             ...
-            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit))(qml.numpy.array(0.5)) )
+            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit, aux_wire=2))(qml.numpy.array(0.5)) )
             0: ─╭Exp(-0.50j 𝓗)─╭X────┤ ╭<Z@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
             2: ──H─────────────╰●──H─┤ ╰<Z@Y>
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)─╭X@X────┤ ╭<Z@Y>
             1: ─╰Exp(-0.50j 𝓗)─├X@X────┤ │
             2: ──H─────────────╰●────H─┤ ╰<Z@Y>
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<Z@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
             2: ──H─────────────╰●──H─┤ ╰<Z@Y>
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)─╭Z@Z────┤ ╭<Z@Y>
             1: ─╰Exp(-0.50j 𝓗)─├Z@Z────┤ │
             2: ──H─────────────╰●────H─┤ ╰<Z@Y>
@@ -213,8 +213,8 @@ def hadamard_grad(
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.Z(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.hadamard_grad(circuit)(params)
+        >>> params = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.gradients.hadamard_grad(circuit, mode="auto", aux_wire=1)(params)
         tensor([-0.3875172 , -0.18884787, -0.38355704], requires_grad=True)
 
         This quantum gradient transform can also be applied to low-level
@@ -225,7 +225,7 @@ def hadamard_grad(
         >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.Z(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
+        >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape, mode="auto", aux_wire=1)
         >>> gradient_tapes
         [<QuantumScript: wires=[0, 1], params=3>,
          <QuantumScript: wires=[0, 1], params=3>,
@@ -242,7 +242,7 @@ def hadamard_grad(
         ...     [qml.expval(qml.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qml.gradients.hadamard_grad(tape, argnum=1)
+        >>> qml.gradients.hadamard_grad(tape, argnum=1, mode="auto", aux_wire=1)  # doctest: +SKIP
 
         The code above will differentiate the third parameter rather than the second.
 
@@ -250,15 +250,13 @@ def hadamard_grad(
 
         >>> dev = qml.device("default.qubit")
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        (tensor(-0.3875172, requires_grad=True),
-         tensor(-0.18884787, requires_grad=True),
-         tensor(-0.38355704, requires_grad=True))
+        [np.float64(-0.3875172020222171), np.float64(-0.18884787122715604), np.float64(-0.38355704238148114)]
 
         This transform can be registered directly as the quantum gradient transform
         to use during autodifferentiation:
 
         >>> dev = qml.device("default.qubit")
-        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
@@ -266,9 +264,9 @@ def hadamard_grad(
         ...     return qml.expval(qml.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
+        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
-        If you use custom wires on your device, you need to pass an auxiliary wire.
+        If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
 
         >>> dev_wires = ("a", "c")
         >>> dev = qml.device("default.qubit", wires=dev_wires)
@@ -281,7 +279,7 @@ def hadamard_grad(
         ...    return qml.expval(qml.Z("a"))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
+        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
     .. details::
         :title: Variants of the standard hadamard gradient
@@ -303,7 +301,7 @@ def hadamard_grad(
             ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
             ...     return qml.expval(qml.Z(0))
             ...
-            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed')
+            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed', aux_wire=2)
             >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<(-1.00*𝓗)@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ ├<(-1.00*𝓗)@Y>
@@ -320,25 +318,25 @@ def hadamard_grad(
             >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)───────────────┤
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j X@X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j X@X)─┤
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j X@X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j X@X)─┤
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)───────────────┤
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(-0.79j Z@Z)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)─╰Exp(-0.79j Z@Z)─┤
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)─╭Exp(0.79j Z@Z)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)─╰Exp(0.79j Z@Z)─┤
 
@@ -354,20 +352,20 @@ def hadamard_grad(
             >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤ ╭<-1.00*𝓗>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤ ╰<-1.00*𝓗>
-
+            <BLANKLINE>
             0: ─╭Exp(-0.50j 𝓗)──Exp(0.79j Z)─┤ ╭<-1.00*𝓗>
             1: ─╰Exp(-0.50j 𝓗)───────────────┤ ╰<-1.00*𝓗>
 
         **Auto mode**
 
         Using auto mode will result in an automatic selection of the method which results in the fewest
-        total executions. This takes into account the number of observables and the number of generators
-        invovled in each problem to choose whether the standard or reversed order is preferred.
-        It also takes into account whether we have one or multiple measurements, and whether we have an
-        auxilliary wire.
+        total executions, given the wires available. Any auxiliary wires must be provided explicitly.
+        This method takes into account the number of observables and the number of generators involved
+        in each problem to choose whether the standard or reversed order is preferred. It also takes
+        into account whether we have one or multiple measurements, and whether we have an auxiliary wire.
 
         ===============  ===============  ==============================
-        Auxilliary Wire  Standard Order   Method
+        Auxiliary Wire   Standard Order   Method
         ===============  ===============  ==============================
         False            True             Direct Hadamard test
         False            False            Reversed direct Hadamard test
@@ -601,6 +599,14 @@ def _quantum_automatic_differentiation(tape, trainable_param_idx, aux_wire) -> t
     # formulas.
 
     direct = not aux_wire
+
+    if any(isinstance(m, ProbabilityMP) for m in tape.measurements):
+        if aux_wire:
+            return _hadamard_test(tape, trainable_param_idx, aux_wire)
+        raise ValueError(
+            "Computing the gradient of probabilities is only possible with the standard "
+            "Hadamard gradient, which requires an auxiliary wire. Please provide a value for aux_wire."
+        )
 
     if len(tape.measurements) > 1:
         standard = True

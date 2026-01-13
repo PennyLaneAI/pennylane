@@ -46,7 +46,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.time_evolution.trotter import _recursive_expression
-from pennylane.transforms.core import TransformProgram
+from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch, TensorLike
 
 has_quimb = True
@@ -609,14 +609,14 @@ class DefaultTensor(Device):
         self,
         execution_config: ExecutionConfig | None = None,
     ):
-        """This function defines the device transform program to be applied and an updated device configuration.
+        """This function defines the device compile pileline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns :class:`~.QuantumTape`'s that the
+            CompilePipeline, ExecutionConfig: A compile pileline that when called returns :class:`~.QuantumTape`'s that the
             device can natively execute as well as a postprocessing function to be called after execution, and a configuration
             with unset specifications filled in.
 
@@ -631,7 +631,7 @@ class DefaultTensor(Device):
 
         config = self._setup_execution_config(execution_config)
 
-        program = TransformProgram()
+        program = CompilePipeline()
 
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
