@@ -47,8 +47,8 @@ shots_list = [None, 100]
 #   3. The wire to measure in a single-qubit measurement process
 #   4. The wires(s) to measure in a multi-qubit measurement process
 wire_specs_list = [
-    (1, [0], 0, 0),
-    (2, [0, 1], 0, [0, 1]),
+    (2, [0, 1], 0, 0),
+    (3, [0, 1, 2], 0, [0, 1]),
     # (["a"], ["a"], "a", "a"),
     # (["a", "b"], ["a", "b"], "a", ["a", "b"]),
 ]

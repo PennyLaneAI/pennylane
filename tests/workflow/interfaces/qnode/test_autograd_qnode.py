@@ -2035,12 +2035,17 @@ class TestReturn:
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qnode(
             dev,
             interface="autograd",
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
