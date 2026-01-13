@@ -22,6 +22,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The :attr:`pennylane.operation.Operator.is_hermitian` property has been removed and replaced 
+  with :attr:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
+  Alternatively, consider using the :func:`pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity.
+  Please be aware that it comes with a higher computational cost.
+  [(#)]()
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
