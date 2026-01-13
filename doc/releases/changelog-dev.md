@@ -22,6 +22,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Remove NumPy 1.X support.
+  [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
