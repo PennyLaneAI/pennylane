@@ -22,6 +22,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
+  and all subclasses that implemented them. The graph decomposition system should be used to enable capture instead.
+  [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
