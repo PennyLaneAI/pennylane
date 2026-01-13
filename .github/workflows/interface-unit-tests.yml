@@ -496,7 +496,7 @@ jobs:
         ${{ inputs.additional_python_packages }}
       # TODO: Remove once Numba supports NumPy>2.3 
       additional_pip_packages_post: |
-        numpy<=2.3
+        numpy>=2.0,<=2.3
 
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
 
