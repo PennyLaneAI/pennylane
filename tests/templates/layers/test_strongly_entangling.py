@@ -22,7 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import ops as qml_ops
-from pennylane.capture.autograph import run_autograph
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 

@@ -19,7 +19,6 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qml
-from pennylane.capture.autograph import run_autograph
 
 
 @pytest.mark.jax
