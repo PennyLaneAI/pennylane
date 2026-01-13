@@ -50,3 +50,7 @@ _CLIFFORD_T_RZ = {op: 1.0 for op in _CLIFFORD_T} | {op: 0.0 for op in IDENTITY} 
 CLIFFORDD_T_PLUS_RZ = MappingProxyType(_CLIFFORD_T_RZ)  # readonly view
 
 ROTATIONS_PLUS_CNOT = frozenset({ops.RX, ops.RY, ops.RZ, ops.CNOT}) | IDENTITY | _MID_MEASURE
+
+_MBQC_GATES = frozenset({ops.CNOT, ops.H, ops.S, "RotXZX", ops.RZ, ops.X, ops.Y, ops.Z})
+
+MBQC_GATES = _MBQC_GATES | IDENTITY | _MID_MEASURE
