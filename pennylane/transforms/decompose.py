@@ -28,7 +28,7 @@ from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.transforms.core import transform
@@ -970,28 +970,6 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
         raise TypeError(
             "The gate_set argument is required when the graph-based decomposition system "
             "is enabled via qml.decomposition.enable_graph()"
-        )
-
-    return gate_set, gate_set_contains
-
-
-@_process_gate_set_contains.register
-def _(gate_set: Callable):
-    # This branch exists for backwards compatibility reasons.
-    gate_set_contains = gate_set
-    gate_set = set()
-
-    warnings.warn(
-        "Passing a function to the gate_set argument is deprecated. The gate_set "
-        "expects a static iterable of operator types and/or operator names, and the "
-        "function should be passed to the stopping_condition argument instead.",
-        PennyLaneDeprecationWarning,
-    )
-
-    if enabled_graph():
-        raise TypeError(
-            "Specifying gate_set as a function is not supported with the new "
-            "graph-based decomposition system enabled."
         )
 
     return gate_set, gate_set_contains

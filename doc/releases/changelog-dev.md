@@ -28,6 +28,11 @@
   Please be aware that it comes with a higher computational cost.
   [(#)]()
 
+* Passing a function to the `gate_set` argument in the :func:`~pennylane.transforms.decompose` transform
+  is removed. The `gate_set` argument expects a static iterable of operator type and/or operator names,
+  and the function should be passed to the `stopping_condition` argument instead.
+  [(#)]()
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
@@ -40,5 +45,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni
