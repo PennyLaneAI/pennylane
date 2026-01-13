@@ -22,6 +22,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is removed. Instead,
+  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
+  :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and 
+  :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
