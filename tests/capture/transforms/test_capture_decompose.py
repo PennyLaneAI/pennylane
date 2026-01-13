@@ -465,8 +465,8 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    @pytest.xfail(
-        reason="the decompose interpreter pauses capture in order to create an instance to then decompose. "
+    @pytest.mark.xfail(
+        reason="The decompose interpreter pauses capture in order to create an instance to then decompose. "
         "When capture is paused, the mid measure primitive creates a MeasurementValue (incompatible with capture)."
     )
     def test_decompose_conditionals(self):
