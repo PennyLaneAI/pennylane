@@ -23,17 +23,6 @@ Pending deprecations
   - Deprecated in v0.44
   - Will be removed in v0.45
 
-* Access to the following functions and classes from the `~pennylane.resources` module are 
-  deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
-
-    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
-
-  - Deprecated in v0.44
-  - Removed in v0.45
-
 * ``argnum`` has been renamed ``argnums`` in ``qml.grad``, ``qml.jacobian``, ``qml.jvp``, and ``qml.vjp``
   to better match catalyst and jax.
 
@@ -108,6 +97,17 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Access to the following functions and classes from the `~pennylane.resources` module have 
+  been removed. Instead, these functions must be imported from the `~pennylane.estimator` module.
+
+    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+
+  - Deprecated in v0.44
+  - Removed in v0.45
 
 * Passing a function to the ``gate_set`` argument in the :func:`~pennylane.transforms.decompose` transform
   is removed. The ``gate_set`` argument expects a static iterable of operator type and/or operator names,
