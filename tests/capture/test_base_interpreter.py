@@ -715,7 +715,7 @@ class TestHigherOrderPrimitiveRegistrations:
         jaxpr = jax.make_jaxpr(c)(0.5)
 
         jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
-        assert jaxpr0.eqns[0].primitive.name == "add"
+        assert jaxpr0.eqns[0].primitive.name == "mul"
         assert jaxpr0.eqns[1].primitive == qml.RX._primitive  # pylint: disable=protected-access
 
         assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
