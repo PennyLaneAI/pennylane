@@ -265,7 +265,7 @@ def _(op: qtemps.subroutines.QROM):
     bitstrings = op.data[0]
     num_bitstrings = len(bitstrings)
 
-    num_bit_flips = sum(sum(bits) for bits in bitstrings)
+    num_bit_flips = math.sum(bitstrings)
 
     num_work_wires = len(op.hyperparameters["work_wires"])
     size_bitstring = len(op.hyperparameters["target_wires"])
