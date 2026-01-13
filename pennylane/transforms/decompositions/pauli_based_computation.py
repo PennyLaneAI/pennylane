@@ -18,8 +18,7 @@ from functools import partial
 from pennylane.transforms.core import transform
 
 
-@partial(transform, pass_name="to-ppr")
-def to_ppr(tape):
+def to_ppr_setup_inputs():
     r"""A quantum compilation pass that converts Clifford+T gates into Pauli Product Rotation (PPR)
     gates.
 
@@ -113,16 +112,13 @@ def to_ppr(tape):
     (:func:`pennylane.measure`) in the circuit has been converted to a Pauli product measurement
     (PPM), as well.
     """
-    raise NotImplementedError(
-        "The 'to_ppr' compilation pass has no tape implementation, "
-        "and can only be applied when decorating the entire worfklow "
-        "with '@qml.qjit' and when it is placed after all transforms "
-        "that only have a tape implementation."
-    )
+    return (), {}
 
 
-@partial(transform, pass_name="commute-ppr")
-def commute_ppr(tape, *, max_pauli_size=0):
+to_ppr = transform(pass_name="to-ppr", setup_inputs=to_ppr_setup_inputs)
+
+
+def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     r"""A quantum compilation pass that commutes Clifford Pauli product rotation (PPR) gates,
     :math:`\exp(-{iP\tfrac{\pi}{4}})`, past non-Clifford PPRs gates,
     :math:`\exp(-{iP\tfrac{\pi}{8}})`, where :math:`P` is a Pauli word.
@@ -222,12 +218,11 @@ def commute_ppr(tape, *, max_pauli_size=0):
     Note that if a commutation resulted in a PPR acting on more than ``max_pauli_size`` qubits
     (here, ``max_pauli_size = 2``), that commutation would be skipped.
     """
-    raise NotImplementedError(
-        "The 'commute_ppr' compilation pass has no tape implementation, "
-        "and can only be applied when decorating the entire worfklow "
-        "with '@qml.qjit' and when it is placed after all transforms "
-        "that only have a tape implementation."
-    )
+    assert isinstance(max_pauli_size, int)
+    return (), {"max_pauli_size": max_pauli_size}
+
+
+commute_ppr = transform(pass_name="commute-ppr", setup_inputs=commute_ppr_setup_inputs)
 
 
 @partial(transform, pass_name="merge-ppr-ppm")

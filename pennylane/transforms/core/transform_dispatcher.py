@@ -913,7 +913,19 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     def __repr__(self):
         name = self.tape_transform.__name__ if self.tape_transform else self.pass_name
-        return f"<{name}({self._args}, {self._kwargs})>"
+        arg_str = ", ".join(repr(a) for a in self._args) if self._args else ""
+        kwarg_str = (
+            ", ".join(f"{key}={value}" for key, value in self._kwargs.items())
+            if self._kwargs
+            else ""
+        )
+        if arg_str and kwarg_str:
+            total_str = ", ".join([arg_str, kwarg_str])
+        elif arg_str:
+            total_str = arg_str
+        else:
+            total_str = kwarg_str
+        return f"<{name}({total_str})>"
 
     def __call__(self, obj):
         return self._transform(obj, *self.args, **self.kwargs)
@@ -1055,7 +1067,12 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 @Transform.generic_register
 def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.tape_transform is None:
-        raise NotImplementedError(f"transform {transform} has no defined tape transform.")
+        raise NotImplementedError(
+            f"transform {transform} has no defined tape transform, "
+            "and can only be applied when decorating the entire worfklow "
+            "with '@qml.qjit' and when it is placed after all transforms "
+            "that only have a tape implementation."
+        )
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform.expand_transform:
         expanded_tapes, expand_processing = transform.expand_transform(obj, *targs, **tkwargs)
