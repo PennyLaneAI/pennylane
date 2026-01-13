@@ -139,7 +139,7 @@ def _add_make_eqn_helper():
 
         outvars = [self.frame.newvar(aval) for aval in out_avals]
 
-        if jax_config.enable_checks.value:
+        if jax_config.enable_checks.value:  # pragma: no cover
             assert all(isinstance(x, DynamicJaxprTracer) for x in in_tracers)
             assert all(isinstance(v, Var) for v in outvars)
 
@@ -214,7 +214,7 @@ def _patch_pjit_staging_rule():
         """Patched version of pjit_staging_rule with dynamic shape fixes."""
         # Use the original implementation for most cases
         if not jax_config.dynamic_shapes.value:
-            return original_staging_rule(trace, source_info, *args, **params)
+            return original_staging_rule(trace, source_info, *args, **params)  # pragma: no cover
 
         # Check if we're in the inline path
         if (
@@ -282,7 +282,7 @@ def get_jax_patches():
         ...     jaxpr = jax.make_jaxpr(my_function)(args)
     """
     if not has_jax:
-        return ()
+        return ()  # pragma: no cover
 
     patches = []
 
