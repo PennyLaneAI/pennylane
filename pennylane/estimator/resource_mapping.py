@@ -294,7 +294,7 @@ def _(op: qtemps.BBQRAM):
     return re_temps.BBQRAM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        num_bit_flips=sum(sum(bitstring) for bitstring in bitstrings),
+        num_bit_flips=math.sum(bitstrings),
         num_wires=len(op.wires),
         control_wires=wire_manager.control_wires,
         target_wires=wire_manager.target_wires,
