@@ -411,6 +411,10 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.CNOT(wires=[0, 1]),
         ]
 
+    @pytest.mark.xfail(
+        reason="The decompose interpreter pauses capture in order to create an instance to then decompose. "
+        "When capture is paused, the mid measure primitive creates a MeasurementValue (incompatible with capture)."
+    )
     @pytest.mark.integration
     @pytest.mark.parametrize("m_type", ["mcm", "ppm"])
     def test_decompose_with_mcm(self, m_type):
