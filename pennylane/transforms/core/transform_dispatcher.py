@@ -267,7 +267,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         TypeError: setup_inputs() missing 1 required positional argument: 'a'
         >>> new_circuit = my_transform(circuit, a=2)
         >>> new_circuit.transform_program[0]
-        <my_pass((2, 1), {'metadata': 'my_value'})>
+        <my_pass(2, 1, metadata=my_value)>
 
         We will also have a docstring and signature. If a tape transform is present, the signature will
         be determined by that.
@@ -431,7 +431,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         ...
         Traceback (most recent call last):
             ...
-        ValueError: <cancel-inverses((), {})> without a tape definition occurs before tape transform <defer_measurements((), {})>.
+        ValueError: <cancel-inverses()> without a tape definition occurs before tape transform <defer_measurements()>.
 
     .. details::
         :title: Transforms with experimental program capture
@@ -850,12 +850,12 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     >>> bound_t = BoundTransform(qml.transforms.merge_rotations, (), {"atol": 1e-4})
     >>> bound_t
-    <merge_rotations((), {'atol': 0.0001})>
+    <merge_rotations(atol=0.0001)>
 
     The class can also be created by directly calling the transform with its inputs:
 
     >>> qml.transforms.merge_rotations(atol=1e-4)
-    <merge_rotations((), {'atol': 0.0001})>
+    <merge_rotations(atol=0.0001)>
 
     These objects can now directly applied to anything individual transforms can apply to:
 
