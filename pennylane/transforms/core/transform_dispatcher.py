@@ -21,6 +21,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
+from inspect import signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
@@ -133,9 +134,17 @@ def _dummy_register(obj):  # just used for sphinx
     return obj  # pragma: no cover
 
 
-def default_setup_inputs(*args, **kwargs):
-    """A default implementation of setup_inputs that leaves everything unchanged."""
-    return args, kwargs
+def _create_default_setup_inputs(transform):
+    def default_setup_inputs(*targs, **tkwargs):
+        """A default implementation of setup_inputs that leaves everything unchanged."""
+        if transform.tape_transform is None:
+            return targs, tkwargs
+        sig = signature(transform.tape_transform)
+        bound_args = sig.bind(None, *targs, **tkwargs)
+        bound_args.apply_defaults()
+        return (), {key: value for key, value in bound_args.arguments.items() if key != "tape"}
+
+    return default_setup_inputs
 
 
 class Transform:  # pylint: disable=too-many-instance-attributes
@@ -605,7 +614,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         self._pass_name = pass_name
         self._use_argnum_in_expand = use_argnum_in_expand
 
-        self._setup_inputs = setup_inputs or default_setup_inputs
+        self._setup_inputs = setup_inputs or _create_default_setup_inputs(self)
         if tape_transform:
             update_wrapper(self, tape_transform)
         elif setup_inputs:

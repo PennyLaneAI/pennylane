@@ -956,10 +956,10 @@ class TestPassName:
         assert repr(t) == "<transform: my_pass_name>"
 
         tape = qml.tape.QuantumScript()
-        with pytest.raises(NotImplementedError, match="has no defined tape transform."):
+        with pytest.raises(NotImplementedError, match="has no defined tape implementation"):
             t(tape)
 
-        with pytest.raises(NotImplementedError, match="has no defined tape transform."):
+        with pytest.raises(NotImplementedError, match="has no defined tape implementation"):
             t((tape, tape))
 
         @t
