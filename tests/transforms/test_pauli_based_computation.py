@@ -60,7 +60,7 @@ class TestPauliBasedComputationTransforms:
 
         with pytest.raises(
             NotImplementedError,
-            match=f"The '{pbc_transform.__name__}' compilation pass has no tape implementation",
+            match=f"Transform {pbc_transform} has no defined tape implementation",
         ):
             pbc_transform(tape)
 

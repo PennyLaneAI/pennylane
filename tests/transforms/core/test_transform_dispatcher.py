@@ -160,8 +160,14 @@ class TestBoundTransform:
 
     def test_repr(self):
         """Tests for the repr of a transform container."""
-        t1 = qml.transforms.core.BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
-        assert repr(t1) == "<compile((), {'num_passes': 2})>"
+        t1 = qml.transforms.compile(num_passes=2)
+        assert repr(t1) == "<compile(num_passes=2)>"
+
+        t2 = qml.transforms.merge_rotations(1e-6)
+        assert repr(t2) == "<merge_rotations(1e-06)>"
+
+        t3 = qml.transforms.merge_rotations(1e-6, include_gates=["RX"])
+        assert repr(t3) == "<merge_rotations(1e-06, include_gates=['RX'])>"
 
     def test_equality_and_hash(self):
         """Tests that we can compare BoundTransform objects with the '==' and '!=' operators."""
@@ -938,7 +944,7 @@ class TestPassName:
         assert repr(t) == "<transform: my_tape_def>"
 
         c = BoundTransform(t)
-        assert repr(c) == "<my_tape_def((), {})>"
+        assert repr(c) == "<my_tape_def()>"
 
     def test_providing_pass_name_without_tape_def(self):
         """Test that a transform can be defined by a pass_name without a tape based transform."""
@@ -963,7 +969,7 @@ class TestPassName:
 
         expected_container = BoundTransform(t)
         assert expected_container.pass_name == "my_pass_name"
-        assert repr(expected_container) == "<my_pass_name((), {})>"
+        assert repr(expected_container) == "<my_pass_name()>"
         assert expected_container.tape_transform is None
         assert c.transform_program[-1] == expected_container
         assert repr(c.transform_program) == "CompilePipeline(my_pass_name)"

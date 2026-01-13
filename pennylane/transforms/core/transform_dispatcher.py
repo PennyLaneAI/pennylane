@@ -1074,7 +1074,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.tape_transform is None:
         raise NotImplementedError(
-            f"transform {transform} has no defined tape transform, "
+            f"Transform {transform} has no defined tape implementation, "
             "and can only be applied when decorating the entire worfklow "
             "with '@qml.qjit' and when it is placed after all transforms "
             "that only have a tape implementation."

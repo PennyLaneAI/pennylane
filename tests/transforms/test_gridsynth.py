@@ -28,7 +28,7 @@ class TestGridsynth:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"The gridsynth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation.",
+            match=r"Transform <transform: gridsynth> has no defined tape implementation, and can only be applied when decorating the entire worfklow with '@qml.qjit' and when it is placed after all transforms that only have a tape implementation.",
         ):
             gridsynth(tape)
 

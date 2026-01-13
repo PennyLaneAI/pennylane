@@ -13,8 +13,6 @@
 # limitations under the License.
 """Aliases for pauli-based computation passes from Catalyst's passes module."""
 
-from functools import partial
-
 from pennylane.transforms.core import transform
 
 
@@ -225,8 +223,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
 commute_ppr = transform(pass_name="commute-ppr", setup_inputs=commute_ppr_setup_inputs)
 
 
-@partial(transform, pass_name="merge-ppr-ppm")
-def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
+def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     r"""
     A quantum compilation pass that absorbs Clifford Pauli product rotation (PPR) operations,
     :math:`\exp{-iP\tfrac{\pi}{4}}`, into the final Pauli product measurements (PPMs).
@@ -314,16 +311,14 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
     operation would be skipped.
     """
-    raise NotImplementedError(
-        "The 'merge_ppr_ppm' compilation pass has no tape implementation, "
-        "and can only be applied when decorating the entire worfklow "
-        "with '@qml.qjit' and when it is placed after all transforms "
-        "that only have a tape implementation."
-    )
+    assert isinstance(max_pauli_size, int)
+    return (), {"max_pauli_size": max_pauli_size}
 
 
-@partial(transform, pass_name="ppr-to-ppm")
-def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure=False):
+merge_ppr_ppm = transform(pass_name="merge-ppr-ppm", setup_inputs=merge_ppr_ppm_setup_inputs)
+
+
+def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=False):
     r"""
     A quantum compilation pass that decomposes Pauli product rotations (PPRs),
     :math:`P(\theta) = \exp(-iP\theta)`, into Pauli product measurements (PPMs).
@@ -435,17 +430,14 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
     correspond to Pauli operators (:math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`). Pauli
     operators can be commuted to the end of the circuit and absorbed into terminal measurements.
     """
-    raise NotImplementedError(
-        "The 'ppr_to_ppm' compilation pass has no tape implementation, "
-        "and can only be applied when decorating the entire worfklow "
-        "with '@qml.qjit' and when it is placed after all transforms "
-        "that only have a tape implementation."
-    )
+    return (), {"decompose_method": decompose_method, "avoid_y_measure": avoid_y_measure}
 
 
-@partial(transform, pass_name="ppm-compilation")
-def ppm_compilation(
-    tape=None, *, decompose_method="pauli-corrected", avoid_y_measure=False, max_pauli_size=0
+ppr_to_ppm = transform(pass_name="ppr-to-ppm", setup_inputs=ppr_to_ppm_setup_inputs)
+
+
+def ppm_compilation_setup_inputs(
+    decompose_method="pauli-corrected", avoid_y_measure=False, max_pauli_size=0
 ):
     r"""
     A quantum compilation pass that transforms Clifford+T gates into Pauli product measurements
@@ -551,16 +543,17 @@ def ppm_compilation(
     ``max_pauli_size`` qubits (here, ``max_pauli_size = 2``), that commutation or merge would be
     skipped.
     """
-    raise NotImplementedError(
-        "The 'ppm_compilation' compilation pass has no tape implementation, "
-        "and can only be applied when decorating the entire worfklow "
-        "with '@qml.qjit' and when it is placed after all transforms "
-        "that only have a tape implementation."
-    )
+    return (), {
+        "decompose_method": decompose_method,
+        "avoid_y_measure": avoid_y_measure,
+        "max_pauli_size": max_pauli_size,
+    }
 
 
-@partial(transform, pass_name="reduce-t-depth")
-def reduce_t_depth(qnode):
+ppm_compilation = transform(pass_name="ppm-compilation", setup_inputs=ppm_compilation_setup_inputs)
+
+
+def reduce_t_depth_setup_inputs():
     r"""
     A quantum compilation pass that reduces the depth and count of non-Clifford Pauli product
     rotation (PPR, :math:`P(\theta) = \exp(-iP\theta)`) operators (e.g., ``T`` gates) by commuting
@@ -653,16 +646,13 @@ def reduce_t_depth(qnode):
         :alt: Graphical representation of circuit with ``reduce_t_depth``
         :align: left
     """
-    raise NotImplementedError(
-        "The 'reduce_t_depth' compilation pass has no tape implementation, "
-        "and can only be applied when decorating the entire worfklow "
-        "with '@qml.qjit' and when it is placed after all transforms "
-        "that only have a tape implementation."
-    )
+    return (), {}
 
 
-@partial(transform, pass_name="decompose-arbitrary-ppr")
-def decompose_arbitrary_ppr(qnode):
+reduce_t_depth = transform(pass_name="reduce-t-depth", setup_inputs=reduce_t_depth_setup_inputs)
+
+
+def decompose_arbitrary_ppr_setup_inputs():
     r"""
     A quantum compilation pass that decomposes arbitrary-angle Pauli product rotations (PPRs) into a
     collection of PPRs (with angles of rotation of :math:`\tfrac{\pi}{2}`, :math:`\tfrac{\pi}{4}`,
@@ -740,9 +730,9 @@ def decompose_arbitrary_ppr(qnode):
     ``theta`` is the PPR angle (:math:`\theta`). ``PPR-Phi`` corresponds to a PPR whose angle of
     rotation is not :math:`\tfrac{\pi}{2}`, :math:`\tfrac{\pi}{4}`, or :math:`\tfrac{\pi}{8}`.
     """
-    raise NotImplementedError(
-        "The 'decompose_arbitrary_ppr' compilation pass has no tape "
-        "implementation, and can only be applied when decorating the "
-        "entire workflow with '@qml.qjit' and when it is placed after "
-        "all transforms that only have a tape implementation."
-    )
+    return (), {}
+
+
+decompose_arbitrary_ppr = transform(
+    pass_name="decompose-arbitrary-ppr", setup_inputs=decompose_arbitrary_ppr_setup_inputs
+)
