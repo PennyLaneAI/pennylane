@@ -85,7 +85,7 @@ Pending deprecations
   :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
 
   - Deprecated in v0.44
-  - Will be removed in v0.45
+  - Removed in v0.45
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
