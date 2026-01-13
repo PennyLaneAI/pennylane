@@ -368,17 +368,16 @@ class TestDecomposeGraphEnabled:
         # So this also tests logic involving custom controlled operators.
         ops = [qml.ctrl(qml.MultiRZ(0.5, wires=[0, 1]), control=[2])]
         tape = qml.tape.QuantumScript(ops)
-        [new_tape], _ = qml.transforms.decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
+        [new_tape], _ = qml.transforms.decompose(tape, gate_set={"RZ": 1, "CNOT": 2, "Toffoli": 5})
         assert new_tape.operations == [
-            # Decomposition of C(CNOT)
-            qml.Toffoli(wires=[2, 1, 0]),
+            qml.CNOT(wires=[1, 0]),
             # Decomposition of C(RZ) -> CRZ
             qml.RZ(0.25, wires=[0]),
             qml.CNOT(wires=[2, 0]),
             qml.RZ(-0.25, wires=[0]),
             qml.CNOT(wires=[2, 0]),
             # Decomposition of C(CNOT)
-            qml.Toffoli(wires=[2, 1, 0]),
+            qml.CNOT(wires=[1, 0]),
         ]
 
     @pytest.mark.integration

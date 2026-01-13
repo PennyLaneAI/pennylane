@@ -441,240 +441,101 @@ class TestDecompositions:
         op = qml.PSWAP(param, wires=[0, 1])
         res = op.decomposition()
 
-        assert len(res) == 4
+        assert len(res) == 2
+        expected = [
+            qml.SWAP([0, 1]),
+            qml.change_op_basis(
+                qml.CNOT(wires=[0, 1]),
+                qml.PhaseShift(param, wires=[1]),
+                qml.CNOT(wires=[0, 1]),
+            ),
+        ]
 
-        assert res[0].wires == Wires([0, 1])
-        assert res[1].wires == Wires([0, 1])
-        assert res[2].wires == Wires([1])
-        assert res[3].wires == Wires([0, 1])
+        for actual, expected_op in zip(res, expected):
+            qml.assert_equal(actual, expected_op)
 
-        assert res[0].name == "SWAP"
-        assert res[1].name == "CNOT"
-        assert res[2].name == "PhaseShift"
-        assert res[3].name == "CNOT"
+        decomposed_matrix = qml.matrix(qml.prod(*reversed(res)), wire_order=[0, 1])
+        assert qml.math.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([1]):
-                # PhaseShift gate
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingxx_decomposition(self, tol):
+    @pytest.mark.parametrize("param", [0.123, [-0.1, 0.2, 0.5]])
+    def test_isingxx_decomposition(self, tol, param):
         """Tests that the decomposition of the IsingXX gate is correct"""
-        param = 0.1234
+
         op = qml.IsingXX(param, wires=[3, 2])
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 1
+        qml.assert_equal(
+            res[0],
+            qml.change_op_basis(
+                qml.CNOT(wires=[3, 2]),
+                qml.RX(param, wires=[3]),
+                qml.CNOT(wires=[3, 2]),
+            ),
+        )
 
-        assert res[0].wires == Wires([3, 2])
-        assert res[1].wires == Wires([3])
-        assert res[2].wires == Wires([3, 2])
+        decomposed_matrix = qml.matrix(qml.prod(*reversed(res)), wire_order=[3, 2])
+        assert qml.math.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-        assert res[0].name == "CNOT"
-        assert res[1].name == "RX"
-        assert res[2].name == "CNOT"
-
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([3]):
-                # RX gate
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingxy_decomposition(self, tol):
+    @pytest.mark.parametrize("param", [0.123, [-0.1, 0.2, 0.5]])
+    def test_isingxy_decomposition(self, tol, param):
         """Tests that the decomposition of the IsingXY gate is correct"""
-        param = 0.1234
+        param = np.array(param)
         op = qml.IsingXY(param, wires=[3, 2])
         res = op.decomposition()
 
-        assert len(res) == 6
+        assert len(res) == 1
+        expected = qml.change_op_basis(
+            qml.CY(wires=[3, 2]) @ qml.Hadamard(wires=[3]),
+            qml.RY(param / 2, wires=[3]) @ qml.RX(-param / 2, wires=[2]),
+            qml.Hadamard(wires=[3]) @ qml.CY(wires=[3, 2]),
+        )
+        qml.assert_equal(res[0], expected)
 
-        assert res[0].wires == Wires([3])
-        assert res[1].wires == Wires([3, 2])
-        assert res[2].wires == Wires([3])
-        assert res[3].wires == Wires([2])
-        assert res[4].wires == Wires([3, 2])
-        assert res[5].wires == Wires([3])
+        decomposed_matrix = qml.matrix(qml.prod(*reversed(res)), wire_order=[3, 2])
+        assert qml.math.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-        assert res[0].name == "Hadamard"
-        assert res[1].name == "CY"
-        assert res[2].name == "RY"
-        assert res[3].name == "RX"
-        assert res[4].name == "CY"
-        assert res[5].name == "Hadamard"
-
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([3]):
-                # RY and Hadamard gate
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            elif i.wires == Wires([2]):
-                # RX gate
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingxx_decomposition_broadcasted(self, tol):
-        """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
-        param = np.array([-0.1, 0.2, 0.5])
-        op = qml.IsingXX(param, wires=[3, 2])
-        res = op.decomposition()
-
-        assert len(res) == 3
-
-        assert res[0].wires == Wires([3, 2])
-        assert res[1].wires == Wires([3])
-        assert res[2].wires == Wires([3, 2])
-
-        assert res[0].name == "CNOT"
-        assert res[1].name == "RX"
-        assert res[2].name == "CNOT"
-
-        mats = []
-        for i in reversed(res):
-            mat = i.matrix()
-            if i.wires == Wires([3]):
-                # RX gate
-                I = np.eye(2)[np.newaxis] if len(mat.shape) == 3 else np.eye(2)
-                mats.append(np.kron(mat, I))
-            else:
-                mats.append(mat)
-
-        decomposed_matrix = multi_dot_broadcasted(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingyy_decomposition(self, tol):
+    @pytest.mark.parametrize("param", [0.123, [-0.1, 0.2, 0.5]])
+    def test_isingyy_decomposition(self, tol, param):
         """Tests that the decomposition of the IsingYY gate is correct"""
-        param = 0.1234
+
+        param = np.array(param)
         op = qml.IsingYY(param, wires=[3, 2])
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 1
 
-        assert res[0].wires == Wires([3, 2])
-        assert res[1].wires == Wires([3])
-        assert res[2].wires == Wires([3, 2])
+        expected = qml.change_op_basis(
+            qml.CY(wires=[3, 2]),
+            qml.RY(param, wires=[3]),
+            qml.CY(wires=[3, 2]),
+        )
 
-        assert res[0].name == "CY"
-        assert res[1].name == "RY"
-        assert res[2].name == "CY"
+        qml.assert_equal(res[0], expected)
 
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([3]):
-                # RY gate
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            else:
-                mats.append(i.matrix())
+        decomposed_matrix = qml.matrix(qml.prod(*reversed(res)), wire_order=[3, 2])
+        assert qml.math.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingyy_decomposition_broadcasted(self, tol):
-        """Tests that the decomposition of the broadcasted IsingYY gate is correct"""
-        param = np.array([-0.1, 0.2, 0.5])
-        op = qml.IsingYY(param, wires=[3, 2])
-        res = op.decomposition()
-
-        assert len(res) == 3
-
-        assert res[0].wires == Wires([3, 2])
-        assert res[1].wires == Wires([3])
-        assert res[2].wires == Wires([3, 2])
-
-        assert res[0].name == "CY"
-        assert res[1].name == "RY"
-        assert res[2].name == "CY"
-
-        mats = []
-        for i in reversed(res):
-            mat = i.matrix()
-            if i.wires == Wires([3]):
-                # RY gate
-                I = np.eye(2)[np.newaxis] if len(mat.shape) == 3 else np.eye(2)
-                mats.append(np.kron(mat, I))
-            else:
-                mats.append(mat)
-
-        decomposed_matrix = multi_dot_broadcasted(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingzz_decomposition(self, tol):
+    @pytest.mark.parametrize("param", [0.123, [-0.1, 0.2, 0.5]])
+    def test_isingzz_decomposition(self, tol, param):
         """Tests that the decomposition of the IsingZZ gate is correct"""
-        param = 0.1234
+
+        param = np.array(param)
         op = qml.IsingZZ(param, wires=[3, 2])
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 1
 
-        assert res[0].wires == Wires([3, 2])
-        assert res[1].wires == Wires([2])
-        assert res[2].wires == Wires([3, 2])
+        expected = qml.change_op_basis(
+            qml.CNOT(wires=[3, 2]),
+            qml.RZ(param, wires=[2]),
+            qml.CNOT(wires=[3, 2]),
+        )
 
-        assert res[0].name == "CNOT"
-        assert res[1].name == "RZ"
-        assert res[2].name == "CNOT"
+        qml.assert_equal(res[0], expected)
 
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([2]):
-                # RZ gate
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingzz_decomposition_broadcasted(self, tol):
-        """Tests that the decomposition of the broadcasted IsingZZ gate is correct"""
-        param = np.array([-0.1, 0.2, 0.5])
-        op = qml.IsingZZ(param, wires=[3, 2])
-        res = op.decomposition()
-
-        assert len(res) == 3
-
-        assert res[0].wires == Wires([3, 2])
-        assert res[1].wires == Wires([2])
-        assert res[2].wires == Wires([3, 2])
-
-        assert res[0].name == "CNOT"
-        assert res[1].name == "RZ"
-        assert res[2].name == "CNOT"
-
-        mats = []
-        for i in reversed(res):
-            mat = i.matrix()
-            if i.wires == Wires([2]):
-                # RX gate
-                I = np.eye(2)[np.newaxis] if len(mat.shape) == 3 else np.eye(2)
-                mats.append(np.kron(I, mat))
-            else:
-                mats.append(mat)
-
-        decomposed_matrix = multi_dot_broadcasted(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+        decomposed_matrix = qml.matrix(qml.prod(*reversed(res)), wire_order=[3, 2])
+        assert qml.math.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
@@ -2838,6 +2699,9 @@ class TestPauliRot:
         op2 = qml.PauliRot(0.5, "III", wires=[0, 1, 2])
         qml.ops.functions.assert_valid(op2)
 
+        op3 = qml.PauliRot(0.5, "ZZIZ", wires=[0, 1, 2, 3])
+        qml.ops.functions.assert_valid(op3)
+
     def test_paulirot_repr(self):
         op = qml.PauliRot(1.234, "XYX", wires=(0, 1, 2))
         assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
@@ -2923,9 +2787,7 @@ class TestPauliRot:
         assert np.allclose(op.matrix(), np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
 
         assert len(decomp_ops) == 1
-
         assert decomp_ops[0].name == "MultiRZ"
-
         assert decomp_ops[0].wires == Wires([0])
         assert decomp_ops[0].data[0] == theta
 
@@ -2980,25 +2842,15 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "XY", wires=[0, 1])
         decomp_ops = op.decomposition()
 
-        assert len(decomp_ops) == 5
-
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
-
-        assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == Wires([1])
-        assert decomp_ops[1].data[0] == np.pi / 2
-
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 1])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == Wires([1])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        assert len(decomp_ops) == 1
+        expected = qml.change_op_basis(
+            qml.RX(np.pi / 2, wires=1) @ qml.H(0),
+            qml.MultiRZ(theta, wires=[0, 1]),
+            qml.H(0) @ qml.RX(-np.pi / 2, wires=1),
+        )
+        qml.assert_equal(decomp_ops[0], expected)
+        decomp_matrix = qml.matrix(qml.prod(*reversed(decomp_ops)), wire_order=[0, 1])
+        assert qml.math.allclose(decomp_matrix, op.matrix())
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XIYZ(self, theta):
@@ -3007,27 +2859,16 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
         decomp_ops = op.decomposition()
 
-        assert len(decomp_ops) == 5
+        assert len(decomp_ops) == 1
+        expected = qml.change_op_basis(
+            qml.RX(np.pi / 2, wires=2) @ qml.H(0),
+            qml.MultiRZ(theta, wires=[0, 2, 3]),
+            qml.H(0) @ qml.RX(-np.pi / 2, wires=2),
+        )
+        qml.assert_equal(decomp_ops[0], expected)
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
-
-        assert decomp_ops[1].name == "RX"
-
-        assert decomp_ops[1].wires == Wires([2])
-        assert decomp_ops[1].data[0] == np.pi / 2
-
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 2, 3])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-
-        assert decomp_ops[4].wires == Wires([2])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        decomp_matrix = qml.matrix(qml.prod(*reversed(decomp_ops)), wire_order=[0, 1, 2, 3])
+        assert qml.math.allclose(decomp_matrix, op.matrix())
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
@@ -3264,17 +3105,17 @@ class TestMultiRZ:
 
         op = qml.MultiRZ(theta, wires=[0, 1])
         decomp_ops = op.decomposition()
+        expected = qml.change_op_basis(
+            qml.CNOT([1, 0]),
+            qml.RZ(theta, wires=0),
+            qml.CNOT([1, 0]),
+        )
 
-        assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([1, 0])
+        assert len(decomp_ops) == 1
+        qml.assert_equal(decomp_ops[0], expected)
 
-        assert decomp_ops[1].name == "RZ"
-
-        assert decomp_ops[1].wires == Wires([0])
-        assert np.allclose(decomp_ops[1].data[0], theta)
-
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == Wires([1, 0])
+        decomp_matrix = qml.matrix(qml.prod(*reversed(decomp_ops)), wire_order=[0, 1])
+        assert qml.math.allclose(decomp_matrix, op.matrix())
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZZ(self, theta):
@@ -3282,23 +3123,17 @@ class TestMultiRZ:
 
         op = qml.MultiRZ(theta, wires=[0, 2, 3])
         decomp_ops = op.decomposition()
+        expected = qml.change_op_basis(
+            qml.CNOT([2, 0]) @ qml.CNOT([3, 2]),
+            qml.RZ(theta, wires=0),
+            qml.CNOT([3, 2]) @ qml.CNOT([2, 0]),
+        )
 
-        assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([3, 2])
+        assert len(decomp_ops) == 1
+        qml.assert_equal(decomp_ops[0], expected)
 
-        assert decomp_ops[1].name == "CNOT"
-        assert decomp_ops[1].wires == Wires([2, 0])
-
-        assert decomp_ops[2].name == "RZ"
-
-        assert decomp_ops[2].wires == Wires([0])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "CNOT"
-        assert decomp_ops[3].wires == Wires([2, 0])
-
-        assert decomp_ops[4].name == "CNOT"
-        assert decomp_ops[4].wires == Wires([3, 2])
+        decomp_matrix = qml.matrix(qml.prod(*reversed(decomp_ops)), wire_order=[0, 2, 3])
+        assert qml.math.allclose(decomp_matrix, op.matrix())
 
     def test_MultiRZ_assert_valid(self):
         """Tests that MultiRZ is valid."""

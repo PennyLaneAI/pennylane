@@ -7,6 +7,12 @@
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
+* The decompositions for several templates and operators have been updated to use :class:`~.ops.op_math.ChangeOpBasis`, 
+  which makes their decompositions more resource efficient by eliminating unnecessary
+  controlled operations. The operators include :class:`~.MultiRZ`, :class:`~.PauliRot`,
+  :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`. 
+  [(#8688)](https://github.com/PennyLaneAI/pennylane/pull/8688)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the ``/labs/resource_estimation``
@@ -34,5 +40,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Omkar Sarkar,
 Jay Soni

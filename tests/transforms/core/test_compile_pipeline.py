@@ -1579,16 +1579,15 @@ class TestCompilePipelineCall:
 
         # pylint: disable=protected-access
         isingxx_decomp = [qml.CNOT(wires=[0, 1]), qml.RX(0.5, wires=[0]), qml.CNOT(wires=[0, 1])]
-        expected_primitives = [
+        expected_prims = [
             qml.CNOT._primitive,
             *[op._primitive for op in isingxx_decomp],
+            qml.change_op_basis(*isingxx_decomp)._primitive,
             qml.PauliZ._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        for eqn, expected_primitive in zip(
-            transformed_jaxpr.eqns, expected_primitives, strict=True
-        ):
-            assert eqn.primitive == expected_primitive
+        for eqn, expected_prim in zip(transformed_jaxpr.eqns, expected_prims, strict=True):
+            assert eqn.primitive == expected_prim
 
     def test_call_fallback_on_qnode(self):
         """Test that a CompilePipeline can be applied to a QNode using the fallback."""

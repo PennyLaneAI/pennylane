@@ -218,6 +218,16 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
+# pylint: disable=unused-argument
+@register_resources(_change_op_basis_resources)
+def _change_op_basis_decomp(*_, wires=None, operands):
+    for op in operands[::-1]:
+        pytrees.unflatten(*pytrees.flatten(op))
+
+
+add_decomps(ChangeOpBasis, _change_op_basis_decomp)
+
+
 def _adjoint_change_op_basis_resources(base_params, **_):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
@@ -285,12 +295,4 @@ def _controlled_change_op_basis_decomposition(
     pytrees.unflatten(*pytrees.flatten(base.operands[0]))
 
 
-# pylint: disable=unused-argument
-@register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands):
-    for op in operands[::-1]:
-        pytrees.unflatten(*pytrees.flatten(op))
-
-
-add_decomps(ChangeOpBasis, _change_op_basis_decomp)
 add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_decomposition)

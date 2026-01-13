@@ -972,9 +972,13 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
         return custom_op_cls.compute_decomposition(*op.data, op.wires)
+
     if isinstance(op.base, pauli_x_based_ctrl_ops):
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
+
+    if isinstance(op.base, qml.ops.ChangeOpBasis):
+        return [op.base[2], ctrl(op.base[1], control=op.control_wires), op.base[0]]
 
     if isinstance(op.base, qml.GlobalPhase):
         # A singly-controlled global phase is the same as a phase shift on the control wire
