@@ -554,9 +554,15 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 UserWarning,
             )
 
-            tape_transform.custom_qnode_transform = lambda x: x
-            tape_transform.register = _dummy_register
-            return tape_transform
+            if tape_transform:
+                tape_transform.custom_qnode_transform = lambda x: x
+                tape_transform.register = _dummy_register
+                return tape_transform
+            if setup_inputs:
+                setup_inputs.custom_qnode_transform = lambda x: x
+                setup_inputs.register = _dummy_register
+                return setup_inputs
+            raise ValueError("needs at least a tape_transform or setup_inputs for use with sphinx.")
 
         return super().__new__(cls)
 
