@@ -303,13 +303,11 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
 
-            # _evaluate_jaxpr_decomposition should be used when the operator defines a
-            # compute_qfunc_decomposition, or if graph-based decomposition is enabled and
-            # a solution is found for this operator in the graph.
-            if (
-                op.has_qfunc_decomposition
-                or self._decomp_graph_solution
-                and self._decomp_graph_solution.is_solved_for(op, self._num_work_wires)
+            # _evaluate_jaxpr_decomposition should be used when graph-based
+            # decomposition is enabled and a solution is found for this
+            # operator in the graph.
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
+                op, self._num_work_wires
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 

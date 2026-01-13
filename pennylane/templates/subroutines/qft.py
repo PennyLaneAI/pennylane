@@ -204,34 +204,6 @@ class QFT(Operation):
     def resource_params(self) -> dict:
         return {"num_wires": len(self.wires)}
 
-    # pylint:disable = no-value-for-parameter
-    @staticmethod
-    def compute_qfunc_decomposition(*wires, n_wires):  # pylint: disable=arguments-differ
-        wires = math.array(wires, like="jax")
-
-        shifts = math.array([2 * np.pi * 2**-i for i in range(2, n_wires + 1)], like="jax")
-        shift_len = len(shifts)
-
-        @for_loop(n_wires)
-        def outer_loop(i):
-            Hadamard(wires[i])
-
-            if n_wires > 1:
-
-                @for_loop(shift_len - i)
-                def cphaseshift_loop(j):
-                    ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
-
-                cphaseshift_loop()
-
-        outer_loop()
-
-        @for_loop(n_wires // 2)
-        def swaps(i):
-            SWAP(wires=[wires[i], wires[n_wires - i - 1]])
-
-        swaps()
-
 
 def _qft_decomposition_resources(num_wires):
     return {

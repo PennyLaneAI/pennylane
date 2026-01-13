@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 
 jax = pytest.importorskip("jax")
 
@@ -475,10 +476,16 @@ class TestDecomposeInterpreter:
             def resource_params(self) -> dict:
                 return {}
 
-            def compute_qfunc_decomposition(self, *wires, **_):
-                qml.H(wires[0])
-                m0 = qml.measure(wires[0])
-                qml.cond(m0, qml.H)(wires[1])
+        def _custom_resources():
+            return {resource_rep(qml.H): 2}
+
+        @register_resources(_custom_resources, exact=False)
+        def _custom_decomposition(wires):
+            qml.H(wires[0])
+            m0 = qml.measure(wires[0])
+            qml.cond(m0, qml.H)(wires[1])
+
+        add_decomps(CustomOp, _custom_decomposition)
 
         @DecomposeInterpreter(gate_set={qml.RX, qml.RZ})
         def circuit():
