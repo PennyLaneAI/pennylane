@@ -26,12 +26,12 @@
   with :attr:`pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
   Alternatively, consider using the :func:`pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity.
   Please be aware that it comes with a higher computational cost.
-  [(#)]()
+  [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
 * Passing a function to the `gate_set` argument in the :func:`~pennylane.transforms.decompose` transform
   is removed. The `gate_set` argument expects a static iterable of operator type and/or operator names,
   and the function should be passed to the `stopping_condition` argument instead.
-  [(#)]()
+  [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
 <h3>Deprecations 👋</h3>
 
