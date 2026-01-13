@@ -27,6 +27,7 @@
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
   :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and 
   :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+  [(#8926)](https://github.com/PennyLaneAI/pennylane/pull/8926)
 
 <h3>Deprecations 👋</h3>
 
