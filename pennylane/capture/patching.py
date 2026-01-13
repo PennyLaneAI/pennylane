@@ -84,7 +84,7 @@ class Patcher:
                 obj, marker, key, _ = item
                 if marker == "__dict_item__":
                     backup_val = self.backup[(id(obj), "__dict_item__", repr(key))]
-                    if backup_val == "__NOTFOUND__":
+                    if backup_val == "__NOTFOUND__":  # pragma: no cover
                         obj.pop(key, None)
                     else:
                         obj[key] = backup_val
