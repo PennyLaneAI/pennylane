@@ -30,7 +30,7 @@ import scipy
 if find_spec("jax"):
     jax_version = version("jax")
 else:
-    jax_version = None
+    jax_version = None  # pragma: no cover
 
 
 def _pkg_location():
