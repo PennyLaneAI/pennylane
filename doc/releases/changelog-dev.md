@@ -33,6 +33,10 @@
   and the function should be passed to the `stopping_condition` argument instead.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
+* `argnum` has been renamed `argnums` in `qml.grad`, `qml.jacobian`, `qml.jvp`, and `qml.vjp`
+  to better match Catalyst and JAX.
+  [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
