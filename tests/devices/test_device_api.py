@@ -289,7 +289,7 @@ class TestPreprocessTransforms:
 
         dev = DeviceNoCapabilities()
         program = dev.preprocess_transforms()
-        assert program == CompilePipeline()puis
+        assert program == CompilePipeline()
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
