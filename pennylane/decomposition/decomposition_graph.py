@@ -35,6 +35,7 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.decomposition.gate_sets import GateSet
 from pennylane.exceptions import DecompositionError
 from pennylane.operation import Operator
 
@@ -187,7 +188,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
-        gate_set (set[str | type] | dict[type | str, float]): A set of gates in the target gate set or a dictionary
+        gate_set (Set | Mapping | GateSet): A set of gates in the target gate set or a dictionary
             mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
@@ -222,17 +223,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def __init__(
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: Set[type | str] | Mapping[type | str, float],
+        gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
     ):
-        self._gate_set_weights: dict[str, float]
-        if isinstance(gate_set, Mapping):
-            # the gate_set is a dict
-            self._gate_set_weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
-        else:
-            # The names of the gates in the target gate set.
-            self._gate_set_weights = {_to_name(gate): 1.0 for gate in gate_set}
+
+        if not isinstance(gate_set, GateSet):
+            gate_set = GateSet(gate_set)
+
+        self._gate_set_weights = gate_set
 
         # The list of operator indices for every op in the original list of operators that the
         # graph is initialized with. This is used to check whether we have found a decomposition
