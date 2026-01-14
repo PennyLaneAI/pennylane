@@ -60,7 +60,7 @@ jobs:
       - name: Set skip tests list
         # if: ${{ inputs.workflow != 'documentation-tests' && inputs.workflow != 'docs' && inputs.workflow != 'format' && inputs.workflow != 'module-validation' && inputs.workflow != 'package-warning-as-errors' && inputs.workflow != 'test-numpy1-compat' }}
         id: set-skip-tests
-        out:puts:
+        outputs:
           skip-tests: ${{ steps.compute-skip-tests.outputs.skip-tests }}
         run: |
           ALL_TESTS='("autograd-tests", "jax-tests", "torch-tests", "capture-jax-tests", "core-tests", "all-interfaces-tests", "external-library-tests", "qcut-tests", "qchem-tests", "gradient-tests", "data-tests", "device-tests")'
@@ -130,8 +130,6 @@ jobs:
 
   interface-unit-tests:
     name: Run interface-unit-tests
-    env:
-        ALL_TESTS: '["autograd-tests", "jax-tests", "torch-tests", "capture-jax-tests", "core-tests", "all-interface-tests", "external-library-tests", "qcut-tests", "qchem-tests", "gradient-tests", "data-tests", "device-tests"]'
     needs: prepare-run-count
     if: >
       ${{
