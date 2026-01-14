@@ -184,28 +184,25 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             ):
                 rule = self._decomp_graph_solution.decomposition(
                     op, num_work_wires=self._num_work_wires
-                )
+                ):
                 num_wires = len(op.wires)
 
                 def compute_qfunc_decomposition(*_args, **_kwargs):
                     wires = math.array(_args[-num_wires:], like="jax")
                     rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
-            else:
-                compute_qfunc_decomposition = op.compute_qfunc_decomposition
+                args = (*op.parameters, *op.wires)
 
-            args = (*op.parameters, *op.wires)
+                decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
+                jaxpr_decomp = make_plxpr(decomp_fn)(*args)
 
-            decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
-            jaxpr_decomp = make_plxpr(decomp_fn)(*args)
+                self._current_depth += 1
+                # We don't need to copy the interpreter here, as the jaxpr of the decomposition
+                # is evaluated with a new environment frame placed on top of the stack.
+                out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
+                self._current_depth -= 1
 
-            self._current_depth += 1
-            # We don't need to copy the interpreter here, as the jaxpr of the decomposition
-            # is evaluated with a new environment frame placed on top of the stack.
-            out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
-            self._current_depth -= 1
-
-            return out
+                return out
 
         # pylint: disable=too-many-branches
         def eval(self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args) -> list:

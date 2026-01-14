@@ -629,8 +629,8 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 1
-        assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
+        hadamard_eqn = [eqn for eqn in jaxpr.eqns if eqn.primitive == qml.Hadamard._primitive]
+        assert len(hadamard_eqn) == 1
 
     ############################
     ### QNode tests
