@@ -275,7 +275,7 @@ def _custom_op_cond_resources():
 
 
 @register_resources(_custom_op_cond_resources, exact=False)
-def _custom_op_cond_decomposition(wires, phi):
+def _custom_op_cond_decomposition(phi, wires):
     def true_fn(phi, wires):
         qml.RX(phi, wires=wires)
 
@@ -309,7 +309,7 @@ def _custom_op_cond_no_false_resources():
 
 
 @register_resources(_custom_op_cond_no_false_resources, exact=False)
-def _custom_op_cond_no_false_decomposition(wires, phi):
+def _custom_op_cond_no_false_decomposition(phi, wires):
     def true_fn(phi, wires):
         qml.RX(phi, wires=wires)
 
@@ -340,7 +340,7 @@ def _custom_op_for_loop_resources():
 
 
 @register_resources(_custom_op_for_loop_resources)
-def _custom_op_for_loop_decomposition(wires, phi):
+def _custom_op_for_loop_decomposition(phi, wires):
     @qml.for_loop(0, 3, 1)
     def loop_rx(i, phi):
         qml.RX(phi, wires)
@@ -374,7 +374,7 @@ def _custom_op_while_loop_resources():
 
 
 @register_resources(_custom_op_while_loop_resources)
-def _custom_op_while_loop_decomposition(wires, phi):
+def _custom_op_while_loop_decomposition(phi, wires):
     def while_f(i):
         return i < 3
 
@@ -411,7 +411,7 @@ def _custom_op_nested_cond_resources():
 
 
 @register_resources(_custom_op_nested_cond_resources, exact=False)
-def _custom_op_nested_cond_decomposition(wires, phi):
+def _custom_op_nested_cond_decomposition(phi, wires):
     def true_fn(phi, wires):
         @qml.for_loop(0, 3, 1)
         def loop_rx(i, phi):
@@ -463,7 +463,7 @@ def _custom_op_autograph_resources():
 
 
 @register_resources(_custom_op_autograph_resources, exact=False)
-def _custom_op_autograph_decomposition(wires, phi):
+def _custom_op_autograph_decomposition(phi, wires):
     if phi > 0.5:
         qml.RX(phi, wires=wires)
 
@@ -497,7 +497,7 @@ def _custom_op_nested_op_resources():
 
 
 @register_resources(_custom_op_nested_op_resources)
-def _custom_op_nested_op_decomposition(wires, phi):
+def _custom_op_nested_op_decomposition(phi, wires):
     qml.RX(phi, wires=wires)
     SimpleCustomOp(wires=wires)
 
@@ -532,7 +532,7 @@ def _custom_op_nested_op_ctrl_flow_resources():
 
 
 @register_resources(_custom_op_nested_op_ctrl_flow_resources, exact=False)
-def _custom_op_nested_op_ctrl_flow_decomposition(wires, phi):
+def _custom_op_nested_op_ctrl_flow_decomposition(phi, wires):
     qml.Rot(0.1, 0.2, 0.3, wires=wires)
     CustomOpNestedOp(phi, wires)
 
