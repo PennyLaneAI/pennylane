@@ -123,7 +123,20 @@ jobs:
         ALL_TESTS: '["autograd-tests", "jax-tests", "torch-tests", "capture-jax-tests", "core-tests", "all-interface-tests", "external-library-tests", "qcut-tests", "qchem-tests", "gradient-tests", "data-tests", "device-tests"]'
     needs: prepare-run-count
     if: >
-      ${{ contains(fromJSON(env.ALL_TESTS), inputs.workflow) }}
+      ${{
+        inputs.workflow == 'autograd-tests' ||
+        inputs.workflow == 'jax-tests' ||
+        inputs.workflow == 'torch-tests' ||
+        inputs.workflow == 'capture-jax-tests' ||
+        inputs.workflow == 'core-tests' ||
+        inputs.workflow == 'all-interfaces-tests' ||
+        inputs.workflow == 'external-library-tests' ||
+        inputs.workflow == 'qcut-tests' ||
+        inputs.workflow == 'qchem-tests' ||
+        inputs.workflow == 'gradient-tests' ||
+        inputs.workflow == 'data-tests' ||
+        inputs.workflow == 'device-tests'
+      }}
     strategy:
       max-parallel: 5
       matrix:
