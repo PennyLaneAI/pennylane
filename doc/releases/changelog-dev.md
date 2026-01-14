@@ -34,6 +34,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes an issue when binding a transform when the first positional arg
+  is a `Sequence`, but not a `Sequence` of tapes.
+  [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
