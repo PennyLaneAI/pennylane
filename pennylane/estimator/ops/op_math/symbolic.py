@@ -97,7 +97,7 @@ class Adjoint(ResourceOperator):
         self.base_op = base_cmpr_op
         self.wires = base_op.wires
         self.num_wires = base_cmpr_op.num_wires
-        super().__init__(**kwargs)
+        super().__init__(wires=self.wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -150,7 +150,7 @@ class Adjoint(ResourceOperator):
         # NOTE: This method is not called by the estimate function.
         # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
         # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
-        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_class, base_params = (type(base_cmpr_op), base_cmpr_op.resource_params)
 
         base_params.update(
             (key, value)
@@ -345,7 +345,7 @@ class Controlled(ResourceOperator):
         # NOTE: This method is not called by the estimate function.
         # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
         # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
-        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_class, base_params = (type(base_cmpr_op), base_cmpr_op.resource_params)
         base_params.update(
             (key, value)
             for key, value in kwargs.items()
@@ -472,7 +472,7 @@ class Pow(ResourceOperator):
         self.base_op = base_cmpr_op
         self.wires = base_op.wires
         self.num_wires = base_cmpr_op.num_wires
-        super().__init__(**kwargs)
+        super().__init__(wires=self.wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -533,7 +533,7 @@ class Pow(ResourceOperator):
         # NOTE: This method is not called by the estimate function.
         # The logic is instead implemented in `pennylane.estimator.estimate._get_resource_decomposition`
         # and `pennylane.estimator.estimate._update_counts_from_compressed_res_op`.
-        base_class, base_params = (base_cmpr_op.op_type, base_cmpr_op.params)
+        base_class, base_params = (type(base_cmpr_op), base_cmpr_op.resource_params)
         base_params.update(
             (key, value)
             for key, value in kwargs.items()
@@ -682,7 +682,7 @@ class Prod(ResourceOperator):
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires
                 self.num_wires = len(self.wires)
-        super().__init__(wires=wires, **kwargs)
+        super().__init__(wires=self.wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -702,9 +702,7 @@ class Prod(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
-        cls, cmpr_factors_and_counts, num_wires: WiresLike = None
-    ) -> ResourceOperator:
+    def resource_rep(cls, cmpr_factors_and_counts, num_wires: WiresLike = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation.
 
@@ -868,7 +866,7 @@ class ChangeOpBasis(ResourceOperator):
             else:  # If there are more wire labels, use that as the operator wires
                 self.wires = ops_wires
                 self.num_wires = len(self.wires)
-        super().__init__(wires=wires, **kwargs)
+        super().__init__(wires=self.wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:

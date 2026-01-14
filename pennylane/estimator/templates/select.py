@@ -227,17 +227,7 @@ class SelectTHC(ResourceOperator):
                 f"`num_batches` must be a positive integer less than the number of orbitals ({thc_ham.num_orbitals}), but got {num_batches}."
             )
 
-        num_orb = thc_ham.num_orbitals
-        tensor_rank = thc_ham.tensor_rank
-
-        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
-        params = {
-            "thc_ham": thc_ham,
-            "num_batches": num_batches,
-            "rotation_precision": rotation_precision,
-            "select_swap_depth": select_swap_depth,
-        }
-        return ResourceOperator(cls, num_wires, params)
+        return cls(thc_ham, num_batches, rotation_precision, select_swap_depth)
 
     @classmethod
     def resource_decomp(
@@ -806,7 +796,4 @@ class SelectPauli(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))
-        num_wires = pauli_ham.num_qubits + num_ctrl_wires
-        params = {"pauli_ham": pauli_ham}
-        return ResourceOperator(cls, num_wires, params)
+        return cls(pauli_ham)

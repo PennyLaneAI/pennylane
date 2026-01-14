@@ -28,6 +28,7 @@ from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
+
 class DummyOp(ResourceOperator):
     """A dummy class to test ResourceOperator instantiation."""
 
@@ -556,6 +557,7 @@ class TestGateCount:
         gc = GateCount(op, count=3)
 
         assert repr(gc) == "(3 x DummyOp)"
+
 
 def test_resource_rep():
     """Test that the resource_rep method works as expected"""

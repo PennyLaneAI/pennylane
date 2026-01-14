@@ -16,7 +16,7 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
+from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.exceptions import ResourcesUndefinedError
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
@@ -43,7 +43,7 @@ class TestHadamard:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = CompressedResourceOp(Hadamard, 1, {})
+        expected = Hadamard()
         assert Hadamard.resource_rep() == expected
 
     def test_adjoint_decomp(self):
@@ -142,14 +142,14 @@ class TestSWAP:
 
     def test_resource_rep(self):
         """Test the compact representation"""
-        expected = CompressedResourceOp(SWAP, 2, {})
+        expected = SWAP()
         assert SWAP.resource_rep() == expected
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
 
         op = SWAP([0, 1])
-        expected = CompressedResourceOp(SWAP, 2, {})
+        expected = SWAP()
         assert op.resource_rep_from_op() == expected
 
     def test_adjoint_decomp(self):
@@ -240,7 +240,7 @@ class TestS:
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct"""
-        expected = CompressedResourceOp(S, 1, {})
+        expected = S()
         assert S.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -249,9 +249,7 @@ class TestS:
         expected = [GateCount(T.resource_rep(), 2)]
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert op_compressed_rep.resource_decomp() == expected
 
     def test_adjoint_decomposition(self):
         """Test that the adjoint resources are correct."""
@@ -387,7 +385,7 @@ class TestT:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = CompressedResourceOp(T, 1, {})
+        expected = T()
         assert T.resource_rep() == expected
 
     def test_adjoint_decomposition(self):
@@ -515,7 +513,7 @@ class TestX:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = CompressedResourceOp(X, 1, {})
+        expected = X()
         assert X.resource_rep() == expected
 
     def test_adjoint_decomposition(self):
@@ -629,7 +627,7 @@ class TestY:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = CompressedResourceOp(Y, 1, {})
+        expected = Y()
         assert Y.resource_rep() == expected
 
     def test_adjoint_decomposition(self):
@@ -740,7 +738,7 @@ class TestZ:
 
     def test_resource_rep(self):
         """Test that the compact representation is correct"""
-        expected = CompressedResourceOp(Z, 1, {})
+        expected = Z()
         assert Z.resource_rep() == expected
 
     def test_adjoint_decomposition(self):

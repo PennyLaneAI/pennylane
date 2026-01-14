@@ -728,6 +728,7 @@ class T(ResourceOperator):
 
         return gate_lst
 
+
 class X(ResourceOperator):
     r"""Resource class for the X-gate.
 

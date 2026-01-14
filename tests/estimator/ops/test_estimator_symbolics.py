@@ -40,9 +40,9 @@ class DummyOp(qre.ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> qre.CompressedResourceOp:
+    def resource_rep(cls, num_wires) -> qre.ResourceOperator:
         params = {"num_wires": num_wires}
-        return qre.CompressedResourceOp(cls, num_wires, params)
+        return cls(**params)
 
     @classmethod
     def resource_decomp(cls, num_wires) -> list[GateCount]:
@@ -713,15 +713,10 @@ class TestChangeOpBasis:
         else:
             cmpr_uncompute_op = resource_rep(qre.Adjoint, {"base_cmpr_op": cmpr_compute_op})
 
-        expected = qre.CompressedResourceOp(
-            qre.ChangeOpBasis,
-            3,
-            {
-                "cmpr_compute_op": cmpr_compute_op,
-                "cmpr_target_op": cmpr_target_op,
-                "cmpr_uncompute_op": cmpr_uncompute_op,
-                "num_wires": 3,
-            },
+        expected = qre.ChangeOpBasis(
+            compute_op=cmpr_compute_op,
+            target_op=cmpr_target_op,
+            uncompute_op=cmpr_uncompute_op,
         )
 
         assert (

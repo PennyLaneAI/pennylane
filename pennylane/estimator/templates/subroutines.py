@@ -90,8 +90,7 @@ class OutOfPlaceSquare(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = 3 * register_size
-        return ResourceOperator(cls, num_wires, {"register_size": register_size})
+        return cls(register_size=register_size)
 
     @classmethod
     def resource_decomp(cls, register_size):
@@ -191,15 +190,7 @@ class IQP(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return ResourceOperator(
-            cls,
-            num_wires,
-            {
-                "spin_sym": spin_sym,
-                "pattern": pattern,
-                "num_wires": num_wires,
-            },
-        )
+        return cls(num_wires=num_wires, pattern=pattern, spin_sym=spin_sym)
 
     @classmethod
     def resource_decomp(cls, num_wires, pattern, spin_sym) -> list[GateCount]:
@@ -316,7 +307,7 @@ class PhaseGradient(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return ResourceOperator(cls, num_wires, {"num_wires": num_wires})
+        return cls(num_wires=num_wires)
 
     @classmethod
     def resource_decomp(cls, num_wires: int):
@@ -418,10 +409,7 @@ class OutMultiplier(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = a_num_wires + b_num_wires + 2 * max((a_num_wires, b_num_wires))
-        return ResourceOperator(
-            cls, num_wires, {"a_num_wires": a_num_wires, "b_num_wires": b_num_wires}
-        )
+        return cls(a_num_wires=a_num_wires, b_num_wires=b_num_wires)
 
     @classmethod
     def resource_decomp(cls, a_num_wires, b_num_wires) -> list[GateCount]:
@@ -522,8 +510,7 @@ class SemiAdder(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = 2 * max_register_size
-        return ResourceOperator(cls, num_wires, {"max_register_size": max_register_size})
+        return cls(max_register_size=max_register_size)
 
     @classmethod
     def resource_decomp(cls, max_register_size: int):
@@ -691,24 +678,41 @@ class ControlledSequence(ResourceOperator):
     resource_keys = {"base_cmpr_op", "num_ctrl_wires"}
 
     def __init__(
-        self, base: ResourceOperator, num_control_wires: int, wires: WiresLike = None
+        self,
+        base: ResourceOperator = None,
+        num_control_wires: int = None,
+        wires: WiresLike = None,
+        base_cmpr_op: ResourceOperator = None,
+        num_ctrl_wires: int = None,
     ) -> None:
-        _dequeue(op_to_remove=base)
-        self.queue()
-        base_cmpr_op = base.resource_rep_from_op()
+        if base is not None:
+            _dequeue(op_to_remove=base)
+            self.queue()
+            base_cmpr_op = base.resource_rep_from_op()
 
-        self.base_cmpr_op = base_cmpr_op
-        self.num_ctrl_wires = num_control_wires
+            self.base_cmpr_op = base_cmpr_op
+            self.num_ctrl_wires = num_control_wires
 
-        self.num_wires = num_control_wires + base_cmpr_op.num_wires
-        if wires:
-            self.wires = Wires(wires)
-            if base_wires := base.wires:
-                self.wires = Wires.all_wires([self.wires, base_wires])
-            if len(self.wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
-        else:
+            self.num_wires = num_control_wires + base_cmpr_op.num_wires
+            if wires:
+                self.wires = Wires(wires)
+                if base_wires := base.wires:
+                    self.wires = Wires.all_wires([self.wires, base_wires])
+                if len(self.wires) != self.num_wires:
+                    raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
+            else:
+                self.wires = None
+
+        elif base_cmpr_op is not None and num_ctrl_wires is not None:
+            self.base_cmpr_op = base_cmpr_op
+            self.num_ctrl_wires = num_ctrl_wires
+            self.num_wires = num_ctrl_wires + base_cmpr_op.num_wires
             self.wires = None
+
+        else:
+            raise ValueError(
+                "Either 'base' and 'num_control_wires' or 'base_cmpr_op' and 'num_ctrl_wires' must be provided."
+            )
 
     @property
     def resource_params(self):
@@ -723,9 +727,7 @@ class ControlledSequence(ResourceOperator):
         return {"base_cmpr_op": self.base_cmpr_op, "num_ctrl_wires": self.num_ctrl_wires}
 
     @classmethod
-    def resource_rep(
-        cls, base_cmpr_op: ResourceOperator, num_ctrl_wires: int
-    ) -> ResourceOperator:
+    def resource_rep(cls, base_cmpr_op: ResourceOperator, num_ctrl_wires: int) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -737,9 +739,7 @@ class ControlledSequence(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {"base_cmpr_op": base_cmpr_op, "num_ctrl_wires": num_ctrl_wires}
-        num_wires = num_ctrl_wires + base_cmpr_op.num_wires
-        return ResourceOperator(cls, num_wires, params)
+        return cls(base_cmpr_op=base_cmpr_op, num_ctrl_wires=num_ctrl_wires)
 
     @classmethod
     def resource_decomp(cls, base_cmpr_op, num_ctrl_wires):
@@ -769,10 +769,10 @@ class ControlledSequence(ResourceOperator):
         gate_counts = []
         base_op = base_cmpr_op
 
-        if base_cmpr_op.op_type == qre.ChangeOpBasis:
-            base_op = base_cmpr_op.params["cmpr_target_op"]
-            compute_op = base_cmpr_op.params["cmpr_compute_op"]
-            uncompute_op = base_cmpr_op.params["cmpr_uncompute_op"]
+        if type(base_cmpr_op) == qre.ChangeOpBasis:
+            base_op = base_cmpr_op.resource_params["cmpr_target_op"]
+            compute_op = base_cmpr_op.resource_params["cmpr_compute_op"]
+            uncompute_op = base_cmpr_op.resource_params["cmpr_uncompute_op"]
 
             gate_counts.append(GateCount(compute_op))
 
@@ -784,7 +784,7 @@ class ControlledSequence(ResourceOperator):
             )
             gate_counts.append(GateCount(ctrl_pow_u))
 
-        if base_cmpr_op.op_type == qre.ChangeOpBasis:
+        if type(base_cmpr_op) == qre.ChangeOpBasis:
             gate_counts.append(GateCount(uncompute_op))
 
         return gate_counts
@@ -875,31 +875,46 @@ class QPE(ResourceOperator):
 
     def __init__(
         self,
-        base: ResourceOperator,
-        num_estimation_wires: int,
+        base: ResourceOperator = None,
+        num_estimation_wires: int = None,
         adj_qft_op: ResourceOperator | None = None,
         wires: WiresLike | None = None,
+        base_cmpr_op: ResourceOperator = None,
+        adj_qft_cmpr_op: ResourceOperator = None,
     ):
-        remove_ops = [base, adj_qft_op] if adj_qft_op is not None else [base]
-        _dequeue(remove_ops)
-        self.queue()
+        if base is not None and num_estimation_wires is not None:
+            remove_ops = [base, adj_qft_op] if adj_qft_op is not None else [base]
+            _dequeue(remove_ops)
+            self.queue()
 
-        base_cmpr_op = base.resource_rep_from_op()
-        adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
+            base_cmpr_op = base.resource_rep_from_op()
+            adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
 
-        self.base_cmpr_op = base_cmpr_op
-        self.adj_qft_cmpr_op = adj_qft_cmpr_op
-        self.num_estimation_wires = num_estimation_wires
+            self.base_cmpr_op = base_cmpr_op
+            self.adj_qft_cmpr_op = adj_qft_cmpr_op
+            self.num_estimation_wires = num_estimation_wires
 
-        self.num_wires = self.num_estimation_wires + base_cmpr_op.num_wires
-        if wires:
-            self.wires = Wires(wires)
-            if base_wires := base.wires:
-                self.wires = Wires.all_wires([self.wires, base_wires])
-            if len(self.wires) != self.num_wires:
-                raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
-        else:
+            self.num_wires = self.num_estimation_wires + base_cmpr_op.num_wires
+            if wires:
+                self.wires = Wires(wires)
+                if base_wires := base.wires:
+                    self.wires = Wires.all_wires([self.wires, base_wires])
+                if len(self.wires) != self.num_wires:
+                    raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}.")
+            else:
+                self.wires = None
+
+        elif base_cmpr_op is not None and num_estimation_wires is not None:
+            self.base_cmpr_op = base_cmpr_op
+            self.adj_qft_cmpr_op = adj_qft_cmpr_op
+            self.num_estimation_wires = num_estimation_wires
+            self.num_wires = num_estimation_wires + base_cmpr_op.num_wires
             self.wires = None
+
+        else:
+            raise ValueError(
+                "Must provide either 'base' and 'num_estimation_wires' or 'base_cmpr_op' and 'num_estimation_wires'."
+            )
 
     @property
     def resource_params(self) -> dict:
@@ -942,13 +957,11 @@ class QPE(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {
-            "base_cmpr_op": base_cmpr_op,
-            "num_estimation_wires": num_estimation_wires,
-            "adj_qft_cmpr_op": adj_qft_cmpr_op,
-        }
-        num_wires = num_estimation_wires + base_cmpr_op.num_wires
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            base=base_cmpr_op,
+            num_estimation_wires=num_estimation_wires,
+            adj_qft_op=adj_qft_cmpr_op,
+        )
 
     @classmethod
     def resource_decomp(
@@ -1035,15 +1048,32 @@ class IterativeQPE(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_iter"}
 
-    def __init__(self, base: ResourceOperator, num_iter: int):
-        _dequeue(base)
-        self.queue()
+    def __init__(
+        self,
+        base: ResourceOperator = None,
+        num_iter: int = None,
+        base_cmpr_op: ResourceOperator = None,
+    ):
+        if base is not None and num_iter is not None:
+            _dequeue(base)
+            self.queue()
 
-        self.base_cmpr_op = base.resource_rep_from_op()
-        self.num_iter = num_iter
+            self.base_cmpr_op = base.resource_rep_from_op()
+            self.num_iter = num_iter
 
-        self.wires = base.wires
-        self.num_wires = self.base_cmpr_op.num_wires
+            self.wires = base.wires
+            self.num_wires = self.base_cmpr_op.num_wires
+
+        elif base_cmpr_op is not None and num_iter is not None:
+            self.base_cmpr_op = base_cmpr_op
+            self.num_iter = num_iter
+            self.num_wires = base_cmpr_op.num_wires
+            self.wires = None
+
+        else:
+            raise ValueError(
+                "Either 'base' and 'num_iter' or 'base_cmpr_op' and 'num_iter' must be provided."
+            )
 
     @property
     def resource_params(self):
@@ -1058,9 +1088,7 @@ class IterativeQPE(ResourceOperator):
         return {"base_cmpr_op": self.base_cmpr_op, "num_iter": self.num_iter}
 
     @classmethod
-    def resource_rep(
-        cls, base_cmpr_op: ResourceOperator, num_iter: int
-    ) -> ResourceOperator:
+    def resource_rep(cls, base_cmpr_op: ResourceOperator, num_iter: int) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -1072,10 +1100,7 @@ class IterativeQPE(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = base_cmpr_op.num_wires
-        return ResourceOperator(
-            cls, num_wires, {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter}
-        )
+        return cls(base=base_cmpr_op, num_iter=num_iter)
 
     @classmethod
     def resource_decomp(cls, base_cmpr_op, num_iter):
@@ -1267,13 +1292,11 @@ class UnaryIterationQPE(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {
-            "cmpr_walk_op": cmpr_walk_op,
-            "num_iterations": num_iterations,
-            "adj_qft_cmpr_op": adj_qft_cmpr_op,
-        }
-        num_wires = int(math.ceil(math.log2(num_iterations + 1))) + cmpr_walk_op.num_wires
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            walk_op=cmpr_walk_op,
+            num_iterations=num_iterations,
+            adj_qft_op=adj_qft_cmpr_op,
+        )
 
     @classmethod
     def resource_decomp(
@@ -1306,8 +1329,8 @@ class UnaryIterationQPE(ResourceOperator):
         num_wires = int(math.ceil(math.log2(num_iterations + 1)))
 
         # extract prep and select from walk operator:
-        prep_op = cmpr_walk_op.params["prep_op"]
-        select_op = cmpr_walk_op.params["select_op"]
+        prep_op = cmpr_walk_op.resource_params["prep_op"]
+        select_op = cmpr_walk_op.resource_params["select_op"]
 
         # build controlled reflection:
         reflection_operator = resource_rep(
@@ -1451,8 +1474,7 @@ class QFT(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {"num_wires": num_wires}
-        return ResourceOperator(cls, num_wires, params)
+        return cls(num_wires=num_wires)
 
     @classmethod
     def resource_decomp(cls, num_wires) -> list[GateCount]:
@@ -1619,8 +1641,7 @@ class AQFT(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {"order": order, "num_wires": num_wires}
-        return ResourceOperator(cls, num_wires, params)
+        return cls(order=order, num_wires=num_wires)
 
     @classmethod
     def resource_decomp(cls, order, num_wires) -> list[GateCount]:
@@ -1804,9 +1825,7 @@ class BasisRotation(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {"dim": dim}
-        num_wires = dim
-        return ResourceOperator(cls, num_wires, params)
+        return cls(dim=dim)
 
     @staticmethod
     def tracking_name(dim) -> str:
@@ -1897,13 +1916,12 @@ class BBQRAM(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {
-            "num_bitstrings": num_bitstrings,
-            "size_bitstring": size_bitstring,
-            "num_bit_flips": num_bit_flips,
-            "num_wires": num_wires,
-        }
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            num_bitstrings=num_bitstrings,
+            size_bitstring=size_bitstring,
+            num_wires=num_wires,
+            num_bit_flips=num_bit_flips,
+        )
 
     @classmethod
     def resource_decomp(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
@@ -1992,34 +2010,49 @@ class Select(ResourceOperator):
 
     resource_keys = {"num_wires", "cmpr_ops"}
 
-    def __init__(self, ops: list, wires: WiresLike = None) -> None:
-        _dequeue(op_to_remove=ops)
-        self.queue()
-        num_select_ops = len(ops)
-        num_ctrl_wires = math.ceil(math.log2(num_select_ops))
+    def __init__(
+        self,
+        ops: list = None,
+        wires: WiresLike = None,
+        cmpr_ops: tuple = None,
+        num_wires: int = None,
+    ) -> None:
+        if ops is not None:
+            _dequeue(op_to_remove=ops)
+            self.queue()
+            num_select_ops = len(ops)
+            num_ctrl_wires = math.ceil(math.log2(num_select_ops))
 
-        try:
-            cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
-            self.cmpr_ops = cmpr_ops
-        except AttributeError as error:
-            raise ValueError(
-                "All factors of the Select must be instances of `ResourceOperator` in order to obtain resources."
-            ) from error
-
-        ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
-        fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
-        minimum_num_wires = max(fewest_unique_wires, len(ops_wires)) + num_ctrl_wires
-
-        if wires:
-            self.wires = Wires.all_wires([Wires(wires), ops_wires])
-            if len(self.wires) < minimum_num_wires:
+            try:
+                cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+                self.cmpr_ops = cmpr_ops
+            except AttributeError as error:
                 raise ValueError(
-                    f"Expected at least {minimum_num_wires} wires ({num_ctrl_wires} control + {fewest_unique_wires} target), got {len(Wires(wires))}."
-                )
-            self.num_wires = len(self.wires)
-        else:
+                    "All factors of the Select must be instances of `ResourceOperator` in order to obtain resources."
+                ) from error
+
+            ops_wires = Wires.all_wires([op.wires for op in ops if op.wires is not None])
+            fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+            minimum_num_wires = max(fewest_unique_wires, len(ops_wires)) + num_ctrl_wires
+
+            if wires:
+                self.wires = Wires.all_wires([Wires(wires), ops_wires])
+                if len(self.wires) < minimum_num_wires:
+                    raise ValueError(
+                        f"Expected at least {minimum_num_wires} wires ({num_ctrl_wires} control + {fewest_unique_wires} target), got {len(Wires(wires))}."
+                    )
+                self.num_wires = len(self.wires)
+            else:
+                self.wires = None
+                self.num_wires = minimum_num_wires
+
+        elif cmpr_ops is not None and num_wires is not None:
+            self.cmpr_ops = cmpr_ops
+            self.num_wires = num_wires
             self.wires = None
-            self.num_wires = minimum_num_wires
+
+        else:
+            raise ValueError("Must provide either 'ops' or 'cmpr_ops' and 'num_wires'.")
 
     @classmethod
     def resource_decomp(cls, cmpr_ops, num_wires):  # pylint: disable=unused-argument
@@ -2138,12 +2171,7 @@ class Select(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_ctrl_wires = math.ceil(math.log2(len(cmpr_ops)))
-        fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
-
-        num_wires = num_wires or fewest_unique_wires + num_ctrl_wires
-        params = {"cmpr_ops": cmpr_ops, "num_wires": num_wires}
-        return ResourceOperator(cls, num_wires, params)
+        return cls(ops=cmpr_ops, wires=range(num_wires) if num_wires else None)
 
 
 class QROM(ResourceOperator):
@@ -2739,30 +2767,13 @@ class QROM(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        if num_bit_flips is None:
-            num_bit_flips = num_bitstrings * size_bitstring // 2
-
-        if select_swap_depth is not None:
-            if not isinstance(select_swap_depth, int):
-                raise ValueError(
-                    f"`select_swap_depth` must be None or an integer. Got {type(select_swap_depth)}"
-                )
-
-            exponent = int(math.log2(select_swap_depth))
-            if 2**exponent != select_swap_depth:
-                raise ValueError(
-                    f"`select_swap_depth` must be 1 or a positive integer power of 2. Got f{select_swap_depth}"
-                )
-
-        params = {
-            "num_bitstrings": num_bitstrings,
-            "num_bit_flips": num_bit_flips,
-            "size_bitstring": size_bitstring,
-            "select_swap_depth": select_swap_depth,
-            "restored": restored,
-        }
-        num_wires = size_bitstring + math.ceil(math.log2(num_bitstrings))
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            num_bitstrings=num_bitstrings,
+            size_bitstring=size_bitstring,
+            num_bit_flips=num_bit_flips,
+            restored=restored,
+            select_swap_depth=select_swap_depth,
+        )
 
 
 class SelectPauliRot(ResourceOperator):
@@ -2853,15 +2864,10 @@ class SelectPauliRot(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = num_ctrl_wires + 1
-        return ResourceOperator(
-            cls,
-            num_wires,
-            {
-                "num_ctrl_wires": num_ctrl_wires,
-                "rot_axis": rot_axis,
-                "precision": precision,
-            },
+        return cls(
+            rot_axis=rot_axis,
+            num_ctrl_wires=num_ctrl_wires,
+            precision=precision,
         )
 
     @classmethod
@@ -3238,14 +3244,7 @@ class Reflection(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        if not 0 <= alpha <= 2 * qnp.pi:
-            raise ValueError(f"alpha must be within [0, 2pi], got {alpha}")
-
-        if cmpr_U is None and num_wires is None:
-            raise ValueError("Must provide atleast one of `num_wires` or `U`")
-
-        params = {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U}
-        return ResourceOperator(cls, num_wires, params)
+        return cls(num_wires=num_wires, alpha=alpha, U=cmpr_U)
 
 
 class Qubitization(ResourceOperator):
@@ -3439,6 +3438,4 @@ class Qubitization(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = select_op.num_wires
-        params = {"prep_op": prep_op, "select_op": select_op}
-        return ResourceOperator(cls, num_wires, params)
+        return cls(prep_op=prep_op, select_op=select_op)

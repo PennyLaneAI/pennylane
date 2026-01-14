@@ -194,14 +194,12 @@ class GQSP(ResourceOperator):
                 f"Expected 'rotation_precision' to be a positive real number greater than zero, got {rotation_precision}"
             )
 
-        num_wires = cmpr_signal_op.num_wires + 1  # add control wire
-        params = {
-            "cmpr_signal_op": cmpr_signal_op,
-            "d_plus": d_plus,
-            "d_minus": d_minus,
-            "rotation_precision": rotation_precision,
-        }
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            signal_operator=cmpr_signal_op,
+            d_plus=d_plus,
+            d_minus=d_minus,
+            rotation_precision=rotation_precision,
+        )
 
     @classmethod
     def resource_decomp(
@@ -417,14 +415,12 @@ class GQSPTimeEvolution(ResourceOperator):
                     )
                 )
 
-        num_wires = walk_op.num_wires + 1
-        params = {
-            "walk_op": walk_op,
-            "time": time,
-            "one_norm": one_norm,
-            "poly_approx_precision": poly_approx_precision,
-        }
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            walk_op=walk_op,
+            time=time,
+            one_norm=one_norm,
+            poly_approx_precision=poly_approx_precision,
+        )
 
     @classmethod
     def resource_decomp(
@@ -673,13 +669,11 @@ class QSVT(ResourceOperator):
                 f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
             )
 
-        num_wires = block_encoding.num_wires
-        params = {
-            "block_encoding": block_encoding,
-            "encoding_dims": encoding_dims,
-            "poly_deg": poly_deg,
-        }
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            block_encoding=block_encoding,
+            encoding_dims=encoding_dims,
+            poly_deg=poly_deg,
+        )
 
     @classmethod
     def resource_decomp(
@@ -869,13 +863,12 @@ class QSP(ResourceOperator):
         if not (convention in {"Z", "X"}):
             raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
 
-        params = {
-            "block_encoding": block_encoding,
-            "poly_deg": poly_deg,
-            "convention": convention,
-            "rotation_precision": rotation_precision,
-        }
-        return ResourceOperator(cls, num_wires=1, params=params)
+        return cls(
+            block_encoding=block_encoding,
+            poly_deg=poly_deg,
+            convention=convention,
+            rotation_precision=rotation_precision,
+        )
 
     @classmethod
     def resource_decomp(

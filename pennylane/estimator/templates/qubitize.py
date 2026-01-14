@@ -137,10 +137,7 @@ class QubitizeTHC(ResourceOperator):
         self.rotation_precision = rotation_precision
 
         if prep_op is None:
-            prep_op = PrepTHC(
-                thc_ham,
-                coeff_precision=coeff_precision
-            )
+            prep_op = PrepTHC(thc_ham, coeff_precision=coeff_precision)
         _dequeue(prep_op)
         self.prep_op = prep_op.resource_rep_from_op()
 
@@ -290,9 +287,9 @@ class QubitizeTHC(ResourceOperator):
 
         select_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": select_op.resource_params["select_swap_depth"]
-            if select_op
-            else None,
+            "select_swap_depth": (
+                select_op.resource_params["select_swap_depth"] if select_op else None
+            ),
             "num_batches": select_op.resource_params["num_batches"] if select_op else 1,
         }
         if rotation_precision:
@@ -373,9 +370,9 @@ class QubitizeTHC(ResourceOperator):
 
         select_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": select_op.resource_params["select_swap_depth"]
-            if select_op
-            else None,
+            "select_swap_depth": (
+                select_op.resource_params["select_swap_depth"] if select_op else None
+            ),
             "num_batches": select_op.resource_params["num_batches"] if select_op else 1,
         }
         if rotation_precision:

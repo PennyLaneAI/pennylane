@@ -20,7 +20,6 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
-from pennylane.estimator.resource_operator import CompressedResourceOp
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
@@ -80,15 +79,10 @@ class TestResourceTrotterProduct:
     def test_resource_rep(self, ops, num_steps, order, num_wires, _):
         """Test that the resource params are correct"""
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
-        expected = qre.CompressedResourceOp(
-            qre.TrotterProduct,
-            num_wires,
-            {
-                "first_order_expansion": cmpr_ops,
-                "num_steps": num_steps,
-                "order": order,
-                "num_wires": num_wires,
-            },
+        expected = qre.TrotterProduct(
+            first_order_expansion=cmpr_ops,
+            num_steps=num_steps,
+            order=order,
         )
         assert qre.TrotterProduct.resource_rep(cmpr_ops, num_steps, order, num_wires) == expected
 
@@ -804,17 +798,13 @@ class TestTrotterPauli:
                 1,
                 1,
                 [0, 1, 2, 3, 4],
-                CompressedResourceOp(
-                    op_type=qre.TrotterPauli,
-                    num_wires=5,
-                    params={
-                        "pauli_ham": qre.PauliHamiltonian(
-                            num_qubits=5,
-                            pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
-                        ),
-                        "num_steps": 1,
-                        "order": 1,
-                    },
+                qre.TrotterPauli(
+                    pauli_ham=qre.PauliHamiltonian(
+                        num_qubits=5,
+                        pauli_terms={"XXXXX": 11, "YYYYY": 11, "ZZZZZ": 13},
+                    ),
+                    num_steps=1,
+                    order=1,
                 ),
             ),
             (
@@ -825,17 +815,13 @@ class TestTrotterPauli:
                 10,
                 2,
                 ["w1", "w2", "w3", "w4"],
-                CompressedResourceOp(
-                    op_type=qre.TrotterPauli,
-                    num_wires=4,
-                    params={
-                        "pauli_ham": qre.PauliHamiltonian(
-                            num_qubits=4,
-                            pauli_terms={"XX": 10, "YY": 10, "Z": 5},
-                        ),
-                        "num_steps": 10,
-                        "order": 2,
-                    },
+                qre.TrotterPauli(
+                    pauli_ham=qre.PauliHamiltonian(
+                        num_qubits=4,
+                        pauli_terms={"XX": 10, "YY": 10, "Z": 5},
+                    ),
+                    num_steps=10,
+                    order=2,
                 ),
             ),
             (
@@ -850,21 +836,17 @@ class TestTrotterPauli:
                 5,
                 4,
                 None,
-                CompressedResourceOp(
-                    op_type=qre.TrotterPauli,
-                    num_wires=5,
-                    params={
-                        "pauli_ham": qre.PauliHamiltonian(
-                            num_qubits=5,
-                            pauli_terms=(
-                                {"XX": 15, "X": 5},
-                                {"ZZ": 10},
-                                {"YY": 5, "X": 5},
-                            ),
+                qre.TrotterPauli(
+                    pauli_ham=qre.PauliHamiltonian(
+                        num_qubits=5,
+                        pauli_terms=(
+                            {"XX": 15, "X": 5},
+                            {"ZZ": 10},
+                            {"YY": 5, "X": 5},
                         ),
-                        "num_steps": 5,
-                        "order": 4,
-                    },
+                    ),
+                    num_steps=5,
+                    order=4,
                 ),
             ),
         ),

@@ -18,7 +18,7 @@ import pytest
 
 import pennylane.estimator as qre
 from pennylane.estimator.ops import GlobalPhase, Identity
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane.estimator.resource_operator import GateCount
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
@@ -43,7 +43,7 @@ class TestIdentity:
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        expected = CompressedResourceOp(Identity, 1, {})
+        expected = Identity()
         assert Identity.resource_rep() == expected
 
     def test_resource_params(self):
@@ -57,8 +57,8 @@ class TestIdentity:
         expected = []
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
+        op_resource_type = type(op_compressed_rep)
+        op_resource_params = op_compressed_rep.resource_params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     def test_resource_adjoint(self):
@@ -113,7 +113,7 @@ class TestGlobalPhase:
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        expected = CompressedResourceOp(GlobalPhase, 1, {})
+        expected = GlobalPhase()
         assert GlobalPhase.resource_rep() == expected
 
     def test_resource_params(self):
@@ -127,8 +127,8 @@ class TestGlobalPhase:
         expected = []
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
+        op_resource_type = type(op_compressed_rep)
+        op_resource_params = op_compressed_rep.resource_params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     def test_resource_adjoint(self):

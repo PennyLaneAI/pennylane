@@ -141,9 +141,7 @@ class MultiRZ(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        return ResourceOperator(
-            cls, num_wires, {"num_wires": num_wires, "precision": precision}
-        )
+        return cls(num_wires=num_wires, precision=precision)
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -391,10 +389,7 @@ class PauliRot(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:: the operator in a compressed representation
         """
-        num_wires = len(pauli_string)
-        return ResourceOperator(
-            cls, num_wires, {"pauli_string": pauli_string, "precision": precision}
-        )
+        return cls(pauli_string=pauli_string, precision=precision)
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -714,8 +709,7 @@ class PCPhase(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {"num_wires": num_wires, "dim": dim, "rotation_precision": rotation_precision}
-        return ResourceOperator(cls, num_wires, params)
+        return cls(num_wires=num_wires, dim=dim, rotation_precision=rotation_precision)
 
     @staticmethod
     def _ctrl_phase_shift_resource(

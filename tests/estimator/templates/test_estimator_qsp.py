@@ -15,14 +15,14 @@
 import pytest
 
 import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import CompressedResourceOp, ResourceOperator
+from pennylane.estimator.resource_operator import ResourceOperator
 
 # pylint: disable=no-self-use, too-many-arguments
 
 
 class DummyOp(ResourceOperator):
-    def __init__(self, wires):
-        self.num_wires = len(wires)
+    def __init__(self, wires=None):
+        self.num_wires = len(wires) if wires else 1
         super().__init__(wires=wires)
 
     @property
@@ -31,7 +31,7 @@ class DummyOp(ResourceOperator):
 
     @classmethod
     def resource_rep(cls):
-        return CompressedResourceOp(cls, 1, {})
+        return cls(wires=[0])
 
     # pylint: disable=unused-argument
     @classmethod
@@ -122,14 +122,10 @@ class TestQSVT:
             (encoding_dims, encoding_dims) if isinstance(encoding_dims, int) else encoding_dims
         )
 
-        expected = qre.CompressedResourceOp(
-            qre.QSVT,
-            1,
-            {
-                "block_encoding": op.resource_rep(),
-                "encoding_dims": expected_dims,
-                "poly_deg": poly_deg,
-            },
+        expected = qre.QSVT(
+            block_encoding=op.resource_rep(),
+            encoding_dims=expected_dims,
+            poly_deg=poly_deg,
         )
         assert qre.QSVT.resource_rep(op.resource_rep(), expected_dims, poly_deg) == expected
 
@@ -176,7 +172,7 @@ class TestQSP:
         class MultiWireOp(ResourceOperator):
             num_wires = 2
 
-            def __init__(self, wires):
+            def __init__(self, wires=None):
                 super().__init__(wires=wires)
 
             @property
@@ -185,7 +181,7 @@ class TestQSP:
 
             @classmethod
             def resource_rep(cls):
-                return CompressedResourceOp(cls, 2, {})
+                return cls()
 
             # pylint: disable=unused-argument
             @classmethod
@@ -249,15 +245,11 @@ class TestQSP:
     def test_resource_rep(self, poly_deg, convention, rot_precision):
         """Test that the compressed representation is correct."""
         op = DummyOp(wires=[0])
-        expected = qre.CompressedResourceOp(
-            qre.QSP,
-            1,
-            {
-                "block_encoding": op.resource_rep(),
-                "poly_deg": poly_deg,
-                "convention": convention,
-                "rotation_precision": rot_precision,
-            },
+        expected = qre.QSP(
+            block_encoding=op.resource_rep(),
+            poly_deg=poly_deg,
+            convention=convention,
+            rotation_precision=rot_precision,
         )
         assert (
             qre.QSP.resource_rep(op.resource_rep(), poly_deg, convention, rot_precision) == expected
@@ -361,7 +353,7 @@ class TestGQSP:
         assert gqsp.resource_params["d_plus"] == poly_deg
         assert gqsp.resource_params["d_minus"] == neg_poly_deg
         assert gqsp.resource_params["rotation_precision"] == rot_precision
-        assert gqsp.resource_params["cmpr_signal_op"].op_type == qre.RX
+        assert isinstance(gqsp.resource_params["cmpr_signal_op"], qre.RX)
 
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, rot_precision",
@@ -375,15 +367,11 @@ class TestGQSP:
         op = qre.RX(0.1, wires=0)
         cmpr_op = op.resource_rep_from_op()
 
-        expected = qre.CompressedResourceOp(
-            qre.GQSP,
-            2,  # 1 wire for RX + 1 control
-            {
-                "cmpr_signal_op": cmpr_op,
-                "d_plus": poly_deg,
-                "d_minus": neg_poly_deg,
-                "rotation_precision": rot_precision,
-            },
+        expected = qre.GQSP(
+            signal_operator=cmpr_op,
+            d_plus=poly_deg,
+            d_minus=neg_poly_deg,
+            rotation_precision=rot_precision,
         )
         assert qre.GQSP.resource_rep(cmpr_op, poly_deg, neg_poly_deg, rot_precision) == expected
 
@@ -499,22 +487,18 @@ class TestGQSPTimeEvolution:
         assert hamsim.resource_params["time"] == 1.0
         assert hamsim.resource_params["one_norm"] == 2.0
         assert hamsim.resource_params["poly_approx_precision"] == 0.01
-        assert hamsim.resource_params["walk_op"].op_type == qre.RX
+        assert isinstance(hamsim.resource_params["walk_op"], qre.RX)
 
     def test_resource_rep(self):
         """Test that the compressed representation for GQSPTimeEvolution is correct."""
         op = qre.RX(0.1, wires=0)
         cmpr_op = op.resource_rep_from_op()
 
-        expected = qre.CompressedResourceOp(
-            qre.GQSPTimeEvolution,
-            2,
-            {
-                "walk_op": cmpr_op,
-                "time": 1.0,
-                "one_norm": 2.0,
-                "poly_approx_precision": 0.01,
-            },
+        expected = qre.GQSPTimeEvolution(
+            walk_op=cmpr_op,
+            time=1.0,
+            one_norm=2.0,
+            poly_approx_precision=0.01,
         )
         assert qre.GQSPTimeEvolution.resource_rep(cmpr_op, 1.0, 2.0, 0.01) == expected
 
@@ -533,4 +517,4 @@ class TestGQSPTimeEvolution:
             cmpr_op, time=1.0, one_norm=1.0, poly_approx_precision=0.1
         )
         assert len(decomp) == 1
-        assert decomp[0].gate.op_type == qre.GQSP
+        assert type(decomp[0].gate) == qre.GQSP

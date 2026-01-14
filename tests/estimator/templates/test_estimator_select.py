@@ -66,30 +66,22 @@ class TestSelectTHC:
     def test_resource_rep(self, thc_ham, num_batches, rotation_prec, selswap_depth, num_wires):
         """Test that the compressed representation for SelectTHC is correct."""
         if rotation_prec:
-            expected = qre.CompressedResourceOp(
-                qre.SelectTHC,
-                num_wires,
-                {
-                    "thc_ham": thc_ham,
-                    "num_batches": num_batches,
-                    "rotation_precision": rotation_prec,
-                    "select_swap_depth": selswap_depth,
-                },
+            expected = qre.SelectTHC(
+                thc_ham,
+                num_batches=num_batches,
+                rotation_precision=rotation_prec,
+                select_swap_depth=selswap_depth,
             )
             assert (
                 qre.SelectTHC.resource_rep(thc_ham, num_batches, rotation_prec, selswap_depth)
                 == expected
             )
         else:
-            expected = qre.CompressedResourceOp(
-                qre.SelectTHC,
-                num_wires,
-                {
-                    "thc_ham": thc_ham,
-                    "num_batches": num_batches,
-                    "rotation_precision": 15,
-                    "select_swap_depth": selswap_depth,
-                },
+            expected = qre.SelectTHC(
+                thc_ham,
+                num_batches=num_batches,
+                rotation_precision=15,
+                select_swap_depth=selswap_depth,
             )
             assert (
                 qre.SelectTHC.resource_rep(
@@ -299,7 +291,7 @@ class TestSelectPauli:
     def test_resource_rep(self):
         """Test that the compressed representation for SelectPauli is correct."""
         pauli_ham = qre.PauliHamiltonian(2, {"X": 1, "Z": 1})
-        expected = qre.CompressedResourceOp(qre.SelectPauli, 3, {"pauli_ham": pauli_ham})
+        expected = qre.SelectPauli(pauli_ham)
         assert qre.SelectPauli.resource_rep(pauli_ham) == expected
 
     @pytest.mark.parametrize(

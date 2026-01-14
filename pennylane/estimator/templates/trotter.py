@@ -213,13 +213,7 @@ class TrotterProduct(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {
-            "first_order_expansion": first_order_expansion,
-            "num_steps": num_steps,
-            "order": order,
-            "num_wires": num_wires,
-        }
-        return ResourceOperator(cls, num_wires, params)
+        return cls(first_order_expansion, num_steps, order, wires=range(num_wires))
 
     @classmethod
     def resource_decomp(
@@ -411,9 +405,7 @@ class TrotterCDF(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
-        cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int
-    ) -> ResourceOperator:
+    def resource_rep(cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -442,13 +434,7 @@ class TrotterCDF(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "cdf_ham": cdf_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
-        num_wires = 2 * cdf_ham.num_orbitals
-        return ResourceOperator(cls, num_wires, params)
+        return cls(cdf_ham, num_steps, order)
 
     @classmethod
     def resource_decomp(
@@ -763,9 +749,7 @@ class TrotterTHC(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
-        cls, thc_ham: THCHamiltonian, num_steps: int, order: int
-    ) -> ResourceOperator:
+    def resource_rep(cls, thc_ham: THCHamiltonian, num_steps: int, order: int) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -794,13 +778,7 @@ class TrotterTHC(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "thc_ham": thc_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
-        num_wires = thc_ham.tensor_rank * 2
-        return ResourceOperator(cls, num_wires, params)
+        return cls(thc_ham, num_steps, order)
 
     @classmethod
     def resource_decomp(
@@ -1175,15 +1153,7 @@ class TrotterVibrational(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "vibration_ham": vibration_ham,
-            "num_steps": num_steps,
-            "order": order,
-            "phase_grad_precision": phase_grad_precision,
-            "coeff_precision": coeff_precision,
-        }
-        num_wires = vibration_ham.num_modes * vibration_ham.grid_size
-        return ResourceOperator(cls, num_wires, params)
+        return cls(vibration_ham, num_steps, order, phase_grad_precision, coeff_precision)
 
     @staticmethod
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
@@ -1604,18 +1574,7 @@ class TrotterVibronic(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "vibronic_ham": vibronic_ham,
-            "num_steps": num_steps,
-            "order": order,
-            "phase_grad_precision": phase_grad_precision,
-            "coeff_precision": coeff_precision,
-        }
-        num_wires = (
-            int(np.ceil(np.log2(vibronic_ham.num_states)))
-            + vibronic_ham.num_modes * vibronic_ham.grid_size
-        )
-        return ResourceOperator(cls, num_wires, params)
+        return cls(vibronic_ham, num_steps, order, phase_grad_precision, coeff_precision)
 
     @staticmethod
     def _cached_terms(
@@ -2070,13 +2029,7 @@ class TrotterPauli(ResourceOperator):
                 f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
-        params = {
-            "pauli_ham": pauli_ham,
-            "num_steps": num_steps,
-            "order": order,
-        }
-        num_wires = pauli_ham.num_qubits
-        return ResourceOperator(cls, num_wires, params)
+        return cls(pauli_ham, num_steps, order)
 
     @classmethod
     def resource_decomp(

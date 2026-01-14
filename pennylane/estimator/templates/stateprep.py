@@ -108,13 +108,7 @@ class UniformStatePrep(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        k = (num_states & -num_states).bit_length() - 1
-        L = num_states // (2**k)
-
-        num_wires = k
-        if L != 1:
-            num_wires += int(math.ceil(math.log2(L)))
-        return ResourceOperator(cls, num_wires, {"num_states": num_states})
+        return cls(num_states=num_states)
 
     @classmethod
     def resource_decomp(cls, num_states: int) -> list[GateCount]:
@@ -227,10 +221,7 @@ class AliasSampling(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = int(math.ceil(math.log2(num_coeffs)))
-        return ResourceOperator(
-            cls, num_wires, {"num_coeffs": num_coeffs, "precision": precision}
-        )
+        return cls(num_coeffs=num_coeffs, precision=precision)
 
     @classmethod
     def resource_decomp(cls, num_coeffs: int, precision: float | None = None) -> list[GateCount]:
@@ -373,13 +364,9 @@ class MPSPrep(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        params = {
-            "num_mps_matrices": num_mps_matrices,
-            "max_bond_dim": max_bond_dim,
-            "precision": precision,
-        }
-        num_wires = num_mps_matrices
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            num_mps_matrices=num_mps_matrices, max_bond_dim=max_bond_dim, precision=precision
+        )
 
     @classmethod
     def resource_decomp(
@@ -644,23 +631,12 @@ class QROMStatePreparation(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
-        if isinstance(selswap_depths, (list, tuple, np.ndarray)):
-            if len(selswap_depths) != expected_size:
-                raise ValueError(
-                    f"Expected the length of `selswap_depths` to be {expected_size}, got {len(selswap_depths)}"
-                )
-        elif not (isinstance(selswap_depths, int) or selswap_depths is None):
-            raise TypeError("`selswap_depths` must be an integer, None or iterable")
-
-        params = {
-            "num_state_qubits": num_state_qubits,
-            "precision": precision,
-            "positive_and_real": positive_and_real,
-            "selswap_depths": selswap_depths,
-        }
-        num_wires = num_state_qubits
-        return ResourceOperator(cls, num_wires, params)
+        return cls(
+            num_state_qubits=num_state_qubits,
+            precision=precision,
+            positive_and_real=positive_and_real,
+            select_swap_depths=selswap_depths,
+        )
 
     @classmethod
     def _decomp_selection_helper(
@@ -1022,35 +998,9 @@ class PrepTHC(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        if not isinstance(thc_ham, THCHamiltonian):
-            raise TypeError(
-                f"Unsupported Hamiltonian representation for PrepTHC."
-                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
-            )
-
-        if not isinstance(coeff_precision, int):
-            raise TypeError(
-                f"`coeff_precision` must be an integer, but type {type(coeff_precision)} was provided."
-            )
-
-        num_orb = thc_ham.num_orbitals
-        tensor_rank = thc_ham.tensor_rank
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
-
-        num_wires = (
-            4 * int(math.ceil(math.log2(tensor_rank + 1)))
-            + coeff_register
-            + coeff_precision * 2
-            + 8
+        return cls(
+            thc_ham=thc_ham, coeff_precision=coeff_precision, select_swap_depth=select_swap_depth
         )
-
-        params = {
-            "thc_ham": thc_ham,
-            "coeff_precision": coeff_precision,
-            "select_swap_depth": select_swap_depth,
-        }
-        return ResourceOperator(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
