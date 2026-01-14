@@ -4,6 +4,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.matrix` can now also be applied to a sequence of operators.
+  [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
+
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
@@ -43,6 +46,6 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-
 Omkar Sarkar,
-Jay Soni
+Jay Soni,
+David Wierichs,
