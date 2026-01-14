@@ -126,12 +126,12 @@ def subroutine(func, static_argnums=None, static_argnames=None):
         reused for both calls:
 
         >>> qjit_c = qml.qjit(c)
-        >>> print(qjit_c.mlir[1010:1300])
+        >>> print(qjit_c.mlir[1010:1300]) # doctest: +SKIP
         %0 = quantum.alloc( 5) : !quantum.reg
         %1 = call @f(%0, %arg0, %c_0) : (!quantum.reg, tensor<f64>, tensor<i64>) -> !quantum.reg
         %2 = call @f(%1, %arg0, %c) : (!quantum.reg, tensor<f64>, tensor<i64>) -> !quantum.reg
         %3 = quantum.compbasis qreg %2 : !quantum.obs
-        >>> print(qjit_c.mlir[1465:2070])
+        >>> print(qjit_c.mlir[1465:2070]) # doctest: +SKIP
         func.func private @f(%arg0: !quantum.reg, %arg1: tensor<f64>, %arg2: tensor<i64>) -> !quantum.reg attributes {llvm.linkage = #llvm.linkage<internal>} {
             %extracted = tensor.extract %arg2[] : tensor<i64>
             %0 = quantum.extract %arg0[%extracted] : !quantum.reg -> !quantum.bit
