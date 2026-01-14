@@ -37,6 +37,16 @@
   to better match Catalyst and JAX.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
+* Access to the following functions and classes from the `~pennylane.resources` module has 
+  been removed. Instead, these functions must be imported from the `~pennylane.estimator` module.
+  [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
+
+    - `qml.estimator.estimate_shots` in favor of `qml.resources.estimate_shots`
+    - `qml.estimator.estimate_error` in favor of `qml.resources.estimate_error`
+    - `qml.estimator.FirstQuantization` in favor of `qml.resources.FirstQuantization`
+    - `qml.estimator.DoubleFactorization` in favor of `qml.resources.DoubleFactorization`
+
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
