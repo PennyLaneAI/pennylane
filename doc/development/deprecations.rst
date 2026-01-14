@@ -147,6 +147,12 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
+  and all subclasses that implemented them. The graph decomposition system should be used to enable capture instead.
+
+  - Deprecated in v0.44
+  - Removed in v0.45
+
 * The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
 
