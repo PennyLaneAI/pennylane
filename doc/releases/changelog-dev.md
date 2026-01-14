@@ -22,6 +22,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
+  [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
