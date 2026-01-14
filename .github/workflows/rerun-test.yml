@@ -153,3 +153,5 @@ jobs:
     with:
       job_name_suffix: " - rerun-${{ inputs.workflow }}"
       skip_ci_test_jobs: ${{ needs.prepare-run-count.outputs.skip-tests }}
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
