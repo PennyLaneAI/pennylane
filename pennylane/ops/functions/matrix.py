@@ -167,7 +167,7 @@ def matrix(
 
         if isinstance(op, Sequence):
             op = QuantumScript(op)
-        
+
         if isinstance(op, QuantumScript):
 
             if wire_order is None:
