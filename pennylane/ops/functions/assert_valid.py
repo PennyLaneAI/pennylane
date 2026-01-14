@@ -359,6 +359,8 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
+    if isinstance(op, qml.templates.SubroutineOp):
+        return
     try:
         import jax
     except ImportError:
