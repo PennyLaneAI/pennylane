@@ -14,51 +14,9 @@
 
 """This module contains definitions of common gate sets."""
 
-from __future__ import annotations
-
-from collections.abc import Iterable, Mapping
-
 from pennylane import ops
 
-from .utils import translate_op_alias
-
-
-class GateSet:
-    """Stores the target gate set of a decomposition pass."""
-
-    def __init__(self, gate_set: Iterable | Mapping, name=""):
-        if not isinstance(gate_set, Mapping):
-            gate_set = {op: 1.0 for op in gate_set}
-        if any(v < 0 for v in gate_set.values()):
-            raise ValueError("Negative weights are not supported in the gate_set.")
-        self.name = name
-        self._gate_set = {_to_name(op): weight for op, weight in gate_set.items()}
-
-    def __getitem__(self, key, /):
-        return self._gate_set[key]
-
-    def __setitem__(self, key, value, /) -> None:
-        raise TypeError("The GateSet is immutable.")
-
-    def __contains__(self, op) -> bool:
-        return op in self._gate_set
-
-    def __iter__(self):
-        return iter(self._gate_set)
-
-    def __or__(self, other: GateSet, /) -> GateSet:
-        return GateSet(self._gate_set | other._gate_set)
-
-    def __repr__(self) -> str:
-        return self.name if self.name else str(set(self._gate_set.keys()))
-
-
-def _to_name(op):
-    if isinstance(op, type):
-        return op.__name__
-    assert isinstance(op, str)
-    return translate_op_alias(op)
-
+from .gate_set import GateSet
 
 _CLIFFORD_T_ORIGINAL = GateSet(
     {
