@@ -127,7 +127,7 @@ jobs:
     strategy:
       max-parallel: 5
       matrix:
-      run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
     uses: ./.github/workflows/interface-unit-tests.yml
     with:
       job_name_suffix: " - rerun-${{ inputs.workflow }}"
