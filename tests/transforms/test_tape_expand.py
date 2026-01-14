@@ -18,11 +18,9 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 # pylint: disable=arguments-differ, arguments-renamed,
 
 import numpy as np
-import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.wires import Wires
 
 
 def crit_0(op: qml.operation.Operator):
