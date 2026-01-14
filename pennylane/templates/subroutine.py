@@ -16,11 +16,10 @@ Contains the abstractions for subroutines.
 """
 from collections.abc import Callable, Set
 from copy import deepcopy
-from functools import update_wrapper
+from functools import lru_cache, update_wrapper
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
-import jax
 import numpy as np
 
 from pennylane import capture, queuing
@@ -29,27 +28,42 @@ from pennylane.operation import Operator
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
+has_jax = True
+try:
+    import jax
+except ImportError:
+    jax = None
+    has_jax = False
+
 
 def _default_setup_inputs(*args, **kwargs):
     return args, kwargs
 
 
-array_types = (jax.numpy.ndarray, np.ndarray)
-iterable_wires_types = (
-    list,
-    tuple,
-    Wires,
-    range,
-    capture.autograph.ag_primitives.PRange,
-    set,
-    *array_types,
-)
+@lru_cache
+def _get_array_types():
+    if has_jax:
+        return (jax.numpy.ndarray, np.ndarray)
+    return (np.ndarray,)
+
+
+@lru_cache
+def _get_iterable_wires_types():
+    return (
+        list,
+        tuple,
+        Wires,
+        range,
+        capture.autograph.ag_primitives.PRange,
+        set,
+        *_get_array_types(),
+    )
 
 
 def _setup_wires(wires):
-    if isinstance(wires, array_types) and wires.shape == ():
+    if isinstance(wires, _get_array_types()) and wires.shape == ():
         return (wires,)
-    if isinstance(wires, iterable_wires_types):
+    if isinstance(wires, _get_iterable_wires_types()):
         return tuple(wires)
     return (wires,)
 
