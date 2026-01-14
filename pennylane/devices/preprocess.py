@@ -26,7 +26,6 @@ from pennylane.exceptions import (
     AllocationError,
     DecompositionUndefinedError,
     DeviceError,
-    PennyLaneDeprecationWarning,
     QuantumFunctionError,
     WireError,
 )
@@ -42,9 +41,7 @@ from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import (
-    defer_measurements,
     diagonalize_measurements,
-    dynamic_one_shot,
     resolve_dynamic_wires,
 )
 from pennylane.transforms.core import transform
@@ -54,8 +51,6 @@ from pennylane.transforms.decompose import (
 )
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-from .execution_config import MCMConfig
 
 
 def null_postprocessing(results):
