@@ -220,6 +220,7 @@ def _qft_decomposition(wires: WiresLike, n_wires, **__):
     shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
     if enabled():
         shifts = math.array(shifts, like="jax")
+        wires = math.array(wires, like="jax")
 
     shift_len = len(shifts)
 
