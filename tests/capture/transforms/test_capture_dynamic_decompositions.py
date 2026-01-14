@@ -40,9 +40,10 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 def check_jaxpr_eqns(qfunc_jaxpr_eqns, operations):
     """Assert that the primitives of the jaxpr equations match the provided operations."""
 
-    assert len(qfunc_jaxpr_eqns) == len(operations)
+    qfunc_op_eqns = [eqn for eqn in qfunc_jaxpr_eqns if "_:AbstractOperator" in str(eqn)]
+    assert len(qfunc_op_eqns) == len(operations)
 
-    for eqn, op in zip(qfunc_jaxpr_eqns, operations):
+    for eqn, op in zip(qfunc_op_eqns, operations):
         assert eqn.primitive == op._primitive
 
 
@@ -985,7 +986,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
-        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops)
 
     @pytest.mark.parametrize(
         "gate_set, expected_ops",
