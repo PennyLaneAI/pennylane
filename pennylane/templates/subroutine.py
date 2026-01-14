@@ -117,7 +117,7 @@ class SubroutineOp(Operator):
         self._subroutine = subroutine
         self._bound_args = bound_args
         self._decomp = decomposition
-        self.output = output
+        self._output = output
 
         wires = []
         for wire_argname in self._subroutine.wire_argnames:
@@ -125,13 +125,16 @@ class SubroutineOp(Operator):
             # allow same wires to exist in multiple registers
             reg_wires = [w for w in reg_wires if w not in wires]
             wires.extend(reg_wires)
-        wires = set(wires)
-
         super().__init__(wires=wires)
         self.name = subroutine.name
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
         self.data = tuple(flatten(dynamic_args)[0])
+
+    @property
+    def output(self):
+        """Test output of the subroutine."""
+        return self._output
 
     @property
     def subroutine(self) -> "Subroutine":
@@ -143,7 +146,10 @@ class SubroutineOp(Operator):
         for wire_argname in self._subroutine.wire_argnames:
             new_wires = tuple(wire_map.get(w, w) for w in self._bound_args.arguments[wire_argname])
             new_args.arguments[wire_argname] = new_wires
-        return self.subroutine.construct_op(*new_args.args, **new_args.kwargs)
+
+        with queuing.AnnotatedQueue() as decomposition:
+            output = self.subroutine.definition(*new_args.args, **new_args.kwargs)
+        return SubroutineOp(self.subroutine, new_args, decomposition.queue, output)
 
     def decomposition(self):
         if queuing.QueuingManager.recording():
@@ -210,7 +216,9 @@ class Subroutine:
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:
 
-    .. code-block::
+    .. code-block:: python
+
+        from functools import partial
 
         @partial(Subroutine, wire_argnames={"register1", "register2"})
         def MultiRegisterTemplate(register1, register2):
@@ -228,7 +236,7 @@ class Subroutine:
     be hashable. These are any inputs that are not numerical data or Operators. In the below
     example, the ``pauli_word`` argument is a string that is a static argument.
 
-    .. code-block::
+    .. code-block:: python
 
         @partial(Subroutine, static_argnames={"pauli_word"})
         def WithStaticArg(x, wires, pauli_word: str):
@@ -251,7 +259,7 @@ class Subroutine:
                 qml.PauliRot(x, word, wires)
 
 
-    >>> print(qml.draw(WithSetup)(0.5, [0, 1], ["XX", "XY, "XZ"]))
+    >>> print(qml.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
     0: ─╭WithSetup─┤
     1: ─╰WithSetup─┤
 
@@ -278,9 +286,6 @@ class Subroutine:
         self._wire_argnames = frozenset(wire_argnames)
         self._signature = signature(definition)
         update_wrapper(self, definition)
-        update_wrapper(self.definition, definition, assigned="__annotations__")
-        update_wrapper(self.setup_inputs, definition, assigned="__annotations__")
-        update_wrapper(self.__call__, definition, assigned="__annotations__")
 
     @property
     def name(self) -> str:

@@ -447,12 +447,13 @@ def _check_differentiation(op):
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
-
+    print(op.wires)
     if skip_wire_mapping:
         return
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
     new_wires = qml.wires.Wires(list(ascii_lowercase[: len(op.wires)]))
+    print(mapped_op.wires, new_wires)
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
