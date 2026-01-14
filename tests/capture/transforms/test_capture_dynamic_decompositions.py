@@ -37,11 +37,14 @@ from pennylane.transforms.decompose import DecomposeInterpreter
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
-def check_jaxpr_eqns(qfunc_jaxpr_eqns, operations):
+def check_jaxpr_eqns(qfunc_jaxpr_eqns, operations, start=0, end=None):
     """Assert that the primitives of the jaxpr equations match the provided operations."""
 
     qfunc_op_eqns = [eqn for eqn in qfunc_jaxpr_eqns if "_:AbstractOperator" in str(eqn)]
-    assert len(qfunc_op_eqns) == len(operations)
+    if end is not None:
+        assert len(qfunc_op_eqns[start:end]) == len(operations)
+    else:
+        assert len(qfunc_op_eqns[start]) == len(operations)
 
     for eqn, op in zip(qfunc_op_eqns, operations):
         assert eqn.primitive == op._primitive
@@ -582,6 +585,7 @@ class CustomOpNoPlxprDecomposition(Operation):
 
 
 # pylint: disable=too-many-public-methods
+@pytest.mark.capture
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDynamicDecomposeInterpreter:
     """Tests for the DynamicDecomposeInterpreter class"""
@@ -644,7 +648,7 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = qml.capture.make_plxpr(circuit)()
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
-        check_jaxpr_eqns(qfunc_jaxpr_eqns[0:3], [qml.RY, qml.Hadamard, qml.Hadamard])
+        check_jaxpr_eqns(qfunc_jaxpr_eqns, [qml.RY, qml.Hadamard, qml.Hadamard], 0, 3)
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
@@ -670,8 +674,10 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wires=wires)
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
         check_jaxpr_eqns(
-            qfunc_jaxpr_eqns[0:7],
+            qfunc_jaxpr_eqns,
             [qml.CNOT, qml.DoubleExcitation, qml.CNOT, qml.RX, qml.RY, qml.RZ, qml.RX],
+            0,
+            7
         )
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5, *wires)
@@ -705,8 +711,10 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(x, wires=wires)
         qfunc_jaxpr_eqns = get_qnode_eqns(jaxpr)
         check_jaxpr_eqns(
-            qfunc_jaxpr_eqns[0:6],
+            qfunc_jaxpr_eqns,
             [qml.CNOT, qml.RX, qml.RX, qml.RX, qml.RY, qml.RZ],
+            0,
+            6
         )
 
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, *wires)
@@ -1017,7 +1025,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
-        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops, 0, len(expected_ops))
 
     @pytest.mark.parametrize(
         "max_expansion, expected_ops, expected_ops_for_loop, expected_ops_while_loop",
@@ -1057,7 +1065,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
         ops_before_cond = len(expected_ops)
-        check_jaxpr_eqns(jaxpr_eqns[0:ops_before_cond], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops, 0, ops_before_cond)
 
         # The + 1 is for the operation that determines the branches of the cond primitive
         cond_eqns = get_eqns_cond_branches(jaxpr_eqns[ops_before_cond + 1])
@@ -1144,7 +1152,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
         ops_before_cond = len(expected_ops)
-        check_jaxpr_eqns(jaxpr_eqns[0:ops_before_cond], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops, 0, ops_before_cond)
 
         # The + 1 is for the operation that determines the branches of the cond primitive
         cond_eqns = get_eqns_cond_branches(jaxpr_eqns[ops_before_cond + 1])
@@ -1217,7 +1225,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
         ops_before_cond = len(expected_ops)
-        check_jaxpr_eqns(jaxpr_eqns[0:ops_before_cond], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops, 0, ops_before_cond)
 
         # The + 1 is for the operation that determines the branches of the cond primitive
         cond_eqns = get_eqns_cond_branches(jaxpr_eqns[ops_before_cond + 1])
@@ -1254,7 +1262,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
-        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops, 0, len(expected_ops))
 
     @pytest.mark.parametrize(
         "gate_set, expected_ops",
@@ -1282,7 +1290,7 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
-        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops, 0, len(expected_ops))
 
     @pytest.mark.parametrize(
         "max_expansion, gate_set, expected_ops",
@@ -1313,9 +1321,11 @@ class TestDynamicDecomposeInterpreter:
         jaxpr = jax.make_jaxpr(circuit)(0.5, wire=0)
         jaxpr_eqns = get_jaxpr_eqns(jaxpr)
 
-        check_jaxpr_eqns(jaxpr_eqns[0 : len(expected_ops)], expected_ops)
+        check_jaxpr_eqns(jaxpr_eqns, expected_ops, 0, len(expected_ops))
 
 
+@pytest.mark.capture
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestExpandPlxprTransformsDynamicDecompositions:
     """Unit tests for ``expand_plxpr_transforms`` with dynamic decompositions."""
 
