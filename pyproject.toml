@@ -17,7 +17,7 @@ dependencies = [
     "appdirs",
     "autoray==0.8.4",
     "cachetools",
-    "pennylane-lightning>=0.43",
+    "pennylane-lightning>=0.44",
     "requests",
     "tomlkit",
     "typing_extensions",
