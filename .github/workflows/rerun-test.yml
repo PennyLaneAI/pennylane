@@ -64,8 +64,8 @@ jobs:
         run: |
           ALL_TESTS='("autograd-tests", "jax-tests", "torch-tests", "capture-jax-tests", "core-tests", "all-interfaces-tests", "external-library-tests", "qcut-tests", "qchem-tests", "gradient-tests", "data-tests", "device-tests")'
           WORKFLOW="device-tests" #"${{ inputs.workflow }}"
-          skip-tests=${ALL_TESTS[@]/$WORKFLOW}
-          echo "skip-tests=$skip-tests" >> $GITHUB_OUTPUT
+          SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
+          echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
 
   docs:
     name: Run docs
