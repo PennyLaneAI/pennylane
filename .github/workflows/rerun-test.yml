@@ -18,7 +18,7 @@ on:
       workflow:
         description: 'The workflow to run multiple times'
         required: true
-        default: 'documentation-tests'
+        default: 'device-tests'
         type: choice
         options:
           - documentation-tests
@@ -27,6 +27,18 @@ on:
           - module-validation
           - package-warning-as-errors
           - test-numpy1-compat
+          - autograd-tests
+          - jax-tests
+          - torch-tests
+          - capture-jax-tests
+          - core-tests
+          - all-interfaces-tests
+          - external-library-tests
+          - qcut-tests
+          - qchem-tests
+          - gradient-tests
+          - data-tests
+          - device-tests
 
 jobs:
   prepare-run-count:
@@ -104,3 +116,19 @@ jobs:
       matrix:
         run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
     uses: ./.github/workflows/test_numpy_1_compat.yml
+
+  interface-unit-tests:
+    name: Run interface-unit-tests
+    env:
+        ALL_TESTS: '["autograd-tests", "jax-tests", "torch-tests", "capture-jax-tests", "core-tests", "all-interface-tests", "external-library-tests", "qcut-tests", "qchem-tests", "gradient-tests", "data-tests", "device-tests"]'
+    needs: prepare-run-count
+    if: >
+      ${{ contains(fromJSON(env.ALL_TESTS), inputs.workflow) }}
+    strategy:
+      max-parallel: 5
+      matrix:
+      run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/interface-unit-tests.yml
+    with:
+      job_name_suffix: " - rerun-${{ inputs.workflow }}"
+      skip_ci_test_jobs: ${{ toJSON(fromJSON(format('[{0}]', join(fromJSON('["autograd-tests", "jax-tests", "torch-tests", "capture-jax-tests", "core-tests", "all-interface-tests", "external-library-tests", "qcut-tests", "qchem-tests", "gradient-tests", "data-tests", "device-tests"]')[*] != "device-tests", ',')))) }}
