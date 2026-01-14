@@ -81,7 +81,7 @@ class CH(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return cls(cls.num_wires)
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -240,7 +240,7 @@ class CY(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return cls(cls.num_wires)
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -391,7 +391,7 @@ class CZ(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return cls(cls.num_wires)
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -549,7 +549,7 @@ class CSWAP(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return cls(cls.num_wires)
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -703,7 +703,7 @@ class CCZ(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return cls(cls.num_wires)
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -847,7 +847,7 @@ class CNOT(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return cls(cls.num_wires)
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -989,7 +989,7 @@ class TemporaryAND(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return cls(cls.num_wires)
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -1265,7 +1265,7 @@ class Toffoli(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return ResourceOperator(cls, cls.num_wires, {"elbow": elbow})
+        return cls(elbow=elbow)
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -1425,15 +1425,7 @@ class MultiControlledX(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
         """
-        num_wires = num_ctrl_wires + 1
-        return ResourceOperator(
-            cls,
-            num_wires,
-            {
-                "num_ctrl_wires": num_ctrl_wires,
-                "num_zero_ctrl": num_zero_ctrl,
-            },
-        )
+        return cls(num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl)
 
     @classmethod
     def resource_decomp(cls, num_ctrl_wires: int, num_zero_ctrl: int) -> list[GateCount]:
@@ -1638,7 +1630,7 @@ class CRX(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
 
-        return ResourceOperator(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -1806,7 +1798,7 @@ class CRY(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return ResourceOperator(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -1973,7 +1965,7 @@ class CRZ(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
 
-        return ResourceOperator(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -2149,7 +2141,7 @@ class CRot(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return ResourceOperator(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -2326,7 +2318,7 @@ class ControlledPhaseShift(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return ResourceOperator(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
