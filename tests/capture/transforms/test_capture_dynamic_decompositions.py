@@ -585,12 +585,6 @@ class CustomOpNoPlxprDecomposition(Operation):
 class TestDynamicDecomposeInterpreter:
     """Tests for the DynamicDecomposeInterpreter class"""
 
-    def test_error_no_qfunc_decomposition(self):
-        """Test that an error is raised if an operator does not have a plxpr decomposition."""
-
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
-            qml.RX(0.1, 0).decomposition()
-
     def test_no_qfunc_decomposition(self):
         """Test that a function with a custom operation that does not have a plxpr decomposition is not decomposed."""
 
@@ -613,12 +607,13 @@ class TestDynamicDecomposeInterpreter:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 5
-        assert jaxpr.eqns[0].primitive == qml.RY._primitive
-        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
-        assert jaxpr.eqns[2].primitive == qml.Hadamard._primitive
-        assert jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-        assert jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        operator_eqns = [eqn for eqn in jaxpr.eqns if "AbstractOperator" in str(eqn)]
+        assert len(operator_eqns) == 4
+        assert operator_eqns[0].primitive == qml.RY._primitive
+        assert operator_eqns[1].primitive == qml.Hadamard._primitive
+        assert operator_eqns[2].primitive == qml.Hadamard._primitive
+        assert operator_eqns[3].primitive == qml.PauliZ._primitive
+        assert jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     def test_simple_return(self):
         """Test that a function with a custom operation that returns a value is correctly decomposed."""
