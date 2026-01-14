@@ -22,6 +22,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been removed in 0.45. Instead, 
+  with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
