@@ -165,9 +165,10 @@ def matrix(
                 )
             return op.to_mat(wire_order=wire_order)
 
-        if isinstance(op, (QuantumScript, Sequence)):
-            if isinstance(op, Sequence):
-                op = QuantumScript(op)
+        if isinstance(op, Sequence):
+            op = QuantumScript(op)
+        
+        if isinstance(op, QuantumScript):
 
             if wire_order is None:
                 error_base_str = (
