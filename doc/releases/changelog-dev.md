@@ -18,6 +18,11 @@
   will be added to ``/labs/estimator_beta``
   [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
+* The integration test for computing perturbation error of a compressed double-factorized (CDF)
+  Hamiltonian in ``labs.trotter_error`` is upgraded to use a more realistic molecular geometry and
+  a more reliable reference error.
+  [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
