@@ -151,7 +151,9 @@ jobs:
         run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
     uses: ./.github/workflows/interface-unit-tests.yml
     with:
+      branch: ${{ github.ref }}
       job_name_suffix: " - rerun-${{ inputs.workflow }}"
+      upload_to_codecov: false
       skip_ci_test_jobs: ${{ needs.prepare-run-count.outputs.skip-tests }}
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
