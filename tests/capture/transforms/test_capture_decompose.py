@@ -491,7 +491,7 @@ class TestDecomposeInterpreter:
 
         add_decomps(CustomOp, _custom_decomposition)
 
-        @DecomposeInterpreter(gate_set={qml.RX, qml.RZ})
+        @DecomposeInterpreter(gate_set={qml.RX, qml.RZ}, fixed_decomps={qml.GlobalPhase: qml.decomposition.null_decomp})
         def circuit():
             CustomOp(wires=[1, 0])
             m0 = qml.measure(0)
