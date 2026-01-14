@@ -184,7 +184,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             ):
                 rule = self._decomp_graph_solution.decomposition(
                     op, num_work_wires=self._num_work_wires
-                ):
+                )
                 num_wires = len(op.wires)
 
                 def compute_qfunc_decomposition(*_args, **_kwargs):
