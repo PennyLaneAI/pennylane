@@ -7,6 +7,9 @@
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
+* ``ExecutionConfig`` now has a readable ``__str__`` method that uses multi-line formatting for better debugging.
+  [(#8839)](https://github.com/PennyLaneAI/pennylane/pull/8839)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the ``/labs/resource_estimation``
@@ -38,5 +41,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+David Ryan,
 Omkar Sarkar,
 Jay Soni
