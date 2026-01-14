@@ -82,6 +82,9 @@ def _check_decomposition(op, skip_wire_mapping):
             mapped_decomp = mapped_op.decomposition()
             orig_decomp = op.decomposition()
             for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+                print(mapped_op.wires)
+                print(orig_op.wires)
+                print(wire_map)
                 assert (
                     mapped_op.wires
                     == qml.map_wires(orig_op, wire_map).wires  # pylint: disable=no-member

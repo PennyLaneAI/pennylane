@@ -23,98 +23,91 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 
 
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
 @pytest.mark.jax
-def test_standard_validity_out_square():
+def test_standard_validity_out_square(output_wires_zeroed):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2, 3]
     output_wires = [4, 5, 6, 7, 8, 9, 10]
-    work_wires = [11, 12, 13, 14]
-    op = OutSquare(x_wires, output_wires, work_wires)
+    work_wires = [11, 12, 13, 14, 15]
+    op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
     qml.ops.functions.assert_valid(op)
 
 
 class TestOutSquare:
     """Test the OutSquare template."""
 
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "x", "y"),
+        ("x_wires", "output_wires", "work_wires", "x_values"),
         [
-            (
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                7,
-                [9, 10],
-                2,
-                3,
-            ),
             (
                 [0, 1],
                 [3, 4, 5],
-                [6, 7, 8, 2],
-                14,
-                [9, 10],
-                1,
-                2,
+                [6, 7, 8],
+                [0, 1, 2, 3],
             ),
             (
                 [0, 1, 2],
-                [3, 4],
-                [5, 6, 7, 8],
-                8,
-                [9, 10],
-                3,
-                3,
+                [3, 4, 5, 6, 7],
+                [8, 9, 10, 11],
+                [0, 1, 3, 4, 5],
+            ),
+            (
+                [0, 1, 2],
+                [3, 4, 5, 6, 7, 8, 9],
+                [10, 11, 12, 13],
+                [0, 1, 3, 6],
             ),
             (
                 [0, 1, 2, 3],
-                [4, 5],
-                [6, 7, 8, 9, 10],
-                22,
-                [11, 12],
-                0,
-                0,
+                [4, 5, 6, 7, 8],
+                [9, 10, 11, 12, 13],
+                [0, 2, 5, 9, 13],
             ),
             (
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                None,
-                [9, 10],
-                1,
-                3,
-            ),
-            (
-                [0, 1],
-                [3, 4, 5],
-                [6, 7, 8],
-                None,
-                None,
-                3,
-                3,
+                [0, 1, 2, 3],
+                [4, 5, 6, 7],
+                [9, 10, 11, 12, 13],
+                [0, 2, 5, 9, 13],
             ),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y
+        self,
+        x_wires,
+        output_wires,
+        work_wires,
+        x_values,
+        output_wires_zeroed,
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutSquare template output."""
-        dev = qml.device("default.qubit")
+        dev = qml.device("lightning.qubit")
+
+        mod = 2 ** len(output_wires)
+        if output_wires_zeroed:
+            z = 0
+        else:
+            z = mod - 2
+            print(f"{z=}")
+            print(f"{mod=}")
 
         @qml.set_shots(1)
         @qml.qnode(dev)
-        def circuit(x, y):
+        def circuit(x, z):
             qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            OutSquare(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            qml.BasisEmbedding(z, wires=output_wires)
+            OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+            return (
+                qml.sample(wires=x_wires),
+                qml.sample(wires=output_wires),
+                qml.sample(wires=work_wires),
+            )
 
-        if mod is None:
-            mod = 2 ** len(output_wires)
-
-        # pylint: disable=bad-reversed-sequence
-        out = circuit(x, y)[0, :]
-        assert np.allclose(sum(bit * (2**i) for i, bit in enumerate(reversed(out))), (x * y) % mod)
+        for x in x_values:
+            output = circuit(x, z)
+            out_ints = [int("".join(map(str, out[0])), 2) for out in output]
+            assert np.allclose(out_ints, [x, (z + x**2) % mod, 0])
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),

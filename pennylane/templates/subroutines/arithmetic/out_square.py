@@ -14,6 +14,7 @@
 """
 Contains the OutSquare template.
 """
+from collections import defaultdict
 from itertools import combinations
 
 from pennylane.decomposition import (
@@ -141,13 +142,14 @@ class OutSquare(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "num_output_wires", "num_work_wires"}
+    resource_keys = {"num_x_wires", "num_output_wires", "num_work_wires", "output_wires_zeroed"}
 
     def __init__(
         self,
         x_wires: WiresLike,
         output_wires: WiresLike,
         work_wires: WiresLike,
+        output_wires_zeroed: bool = False,
         id=None,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
@@ -176,6 +178,7 @@ class OutSquare(Operation):
         for wires, name in registers:
             self.hyperparameters[name] = wires
 
+        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
         all_wires = sum((self.hyperparameters[name] for _, name in registers), start=[])
         super().__init__(wires=all_wires, id=id)
 
@@ -185,6 +188,7 @@ class OutSquare(Operation):
             "num_x_wires": len(self.hyperparameters["x_wires"]),
             "num_output_wires": len(self.hyperparameters["output_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
+            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
         }
 
     @property
@@ -210,6 +214,7 @@ class OutSquare(Operation):
             new_dict["x_wires"],
             new_dict["output_wires"],
             new_dict["work_wires"],
+            self.hyperparameters["output_wires_zeroed"],
         )
 
     def decomposition(self):
@@ -221,7 +226,10 @@ class OutSquare(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires: WiresLike, output_wires: WiresLike, work_wires: WiresLike
+        x_wires: WiresLike,
+        output_wires: WiresLike,
+        work_wires: WiresLike,
+        output_wires_zeroed: bool,
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -235,104 +243,88 @@ class OutSquare(Operation):
 
         **Example**
 
-        >>> qml.OutSquare.compute_decomposition(x_wires=[0,1], output_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
+        >>> qml.OutSquare.compute_decomposition(x_wires=[0,1], output_wires=[2,3], output_wires=[5,6], work_wires=[4,7], output_wires_zeroed=True)
         """
+        n = len(x_wires)
+        m = len(output_wires)
         op_list = []
-        op_list.append(CNOT([x_wires[0], output_wires[0]]))
 
-        for w1, w2 in zip(x_wires[1:-1], output_wires[1:-1]):
-            op_list.append(TemporaryAND([x_wires[0], w1, w2]))
-
-        num_bits = len(x_wires)
-
-        for ix in range(num_bits // 2):
-            op_list.append(CNOT([x_wires[ix], work_wires[0]]))
-
-        op_list.append(
-            Controlled(
-                SemiAdder(
-                    x_wires=x_wires[:-1],
-                    y_wires=output_wires[1 : num_bits + 1],
-                    work_wires=work_wires[1:],
-                ),
-                control_wires=work_wires[0],
+        if output_wires_zeroed:
+            op_list.append(CNOT([x_wires[-1], work_wires[0]]))
+            op_list.append(
+                CNOT([x_wires[-1], output_wires[-1]])
+            )  # First control-copy reduces to CNOT
+            op_list.extend(
+                [
+                    TemporaryAND([work_wires[0], x_wire, out_wire])  # Subsequent control-copies
+                    for x_wire, out_wire in zip(
+                        x_wires[:-1][::-1], output_wires[:-1][::-1]
+                    )  # todo unify slicing
+                ]
             )
-        )
+            op_list.append(CNOT([x_wires[-1], work_wires[0]]))
+            x_wires_to_multiply = x_wires[:-1]
+            start = 1
+        else:
+            x_wires_to_multiply = x_wires
+            start = 0
 
-        for ix in range(num_bits // 2, num_bits):
-            op_list.append(CNOT([x_wires[ix - 1], work_wires[0]]))
-
-        op_list.append(
-            Controlled(
-                SemiAdder(
-                    x_wires=x_wires[:-1],
-                    y_wires=output_wires[2 : num_bits + 2],
-                    work_wires=work_wires[1:],
-                ),
-                control_wires=work_wires[0],
+        for i, x_wire in enumerate(reversed(x_wires_to_multiply), start=start):
+            op_list.extend(
+                [
+                    CNOT([x_wire, work_wires[0]]),
+                    Controlled(
+                        SemiAdder(
+                            x_wires=x_wires,
+                            y_wires=output_wires[max(0, m - n - i - 1) : max(0, m - i)],
+                            work_wires=work_wires[1:],
+                        ),
+                        control_wires=work_wires[:1],
+                    ),
+                    CNOT([x_wire, work_wires[0]]),
+                ]
             )
-        )
-
-        op_list.append(CNOT([x_wires[num_bits - 2], work_wires[0]]))
-        op_list.append(CNOT([x_wires[num_bits - 1], output_wires[2 * num_bits - 2]]))
-
-        op_list.append(CNOT([x_wires[num_bits - 1], work_wires[0]]))
-        op_list.append(CNOT([work_wires[0], x_wires[num_bits - 1]]))
-
-        for ix in range(num_bits, 2 * num_bits - 1):
-            op_list.append(X(output_wires[ix]))
-
-        op_list.append(
-            Controlled(
-                SemiAdder(
-                    x_wires=x_wires,
-                    y_wires=output_wires[num_bits : 2 * num_bits],
-                    work_wires=work_wires[1:],
-                ),
-                control_wires=work_wires[0],
-            )
-        )
-
-        for ix in range(num_bits, 2 * num_bits - 1):
-            op_list.append(X(output_wires[ix]))
-
-        op_list.append(CNOT([work_wires[0], x_wires[num_bits - 1]]))
-        op_list.append(CNOT([x_wires[num_bits - 1], work_wires[0]]))
 
         return op_list
 
 
-def _out_square_resources(num_x_wires, num_output_wires, num_work_wires) -> dict:
+def _out_square_resources(
+    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+) -> dict:
     # pylint: disable=unused-argument
-    return {
-        resource_rep(CNOT): num_x_wires + 7,
-        resource_rep(TemporaryAND): num_x_wires - 2,
-        resource_rep(X): 2 * num_x_wires - 2,
-        controlled_resource_rep(
-            base_class=SemiAdder,
-            base_params={
-                "num_y_wires": num_output_wires // 2 + 1,
-            },
-            num_control_wires=1,
-        ): 2,
-        controlled_resource_rep(
-            base_class=SemiAdder,
-            base_params={
-                "num_y_wires": num_output_wires // 2,
-            },
-            num_control_wires=1,
-        ): 1,
-    }
+    resources = defaultdict(int)
+    resources[resource_rep(CNOT)] = 2 * num_x_wires + output_wires_zeroed
+    resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (num_x_wires - 1)
+    for i in range(output_wires_zeroed, min(num_x_wires, num_output_wires)):
+        resources[
+            controlled_resource_rep(
+                base_class=SemiAdder,
+                base_params={
+                    "num_y_wires": max(0, num_output_wires - i)
+                    - max(0, num_output_wires - num_x_wires - i - 1)
+                },
+                num_control_wires=1,
+            )
+        ] += 1
+    return dict(resources)
 
 
-def _out_square_condition(num_x_wires, num_output_wires, num_work_wires):
-    return num_work_wires >= 0  # TODO
+def _out_square_condition(num_x_wires, num_work_wires, num_output_wires, **_):
+    # This condition ensures that we can use an efficient C(SemiAdder) decomposition, which
+    # requires num_x_wires work wires. One more work wire is required by the squaring itself.
+    return num_work_wires >= min(num_x_wires, num_output_wires) + 1
 
 
 @register_condition(_out_square_condition)
 @register_resources(_out_square_resources)
-def _out_square(x_wires: WiresLike, output_wires: WiresLike, work_wires: WiresLike, **_):
-    OutSquare.compute_decomposition(x_wires, output_wires, work_wires)
+def _out_square(
+    x_wires: WiresLike,
+    output_wires: WiresLike,
+    work_wires: WiresLike,
+    output_wires_zeroed: bool,
+    **_,
+):
+    OutSquare.compute_decomposition(x_wires, output_wires, work_wires, output_wires_zeroed)
 
 
 add_decomps(OutSquare, _out_square)
