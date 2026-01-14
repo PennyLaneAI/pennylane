@@ -275,7 +275,9 @@ class ResourceOperator(ABC):
 
     @classmethod
     def pow_resource_decomp(
-        cls, pow_z: int, target_resource_params: dict | None = None
+        cls,
+        pow_z: int,
+        target_resource_params: dict | None = None,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator
         raised to a power.
@@ -312,14 +314,14 @@ class ResourceOperator(ABC):
     def __mul__(self, scalar: int):
         if not isinstance(scalar, int):
             raise TypeError(f"Cannot multiply resource operator {self} with type {type(scalar)}.")
-        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        gate_types = defaultdict(int, {{self.resource_rep_from_op(): scalar}})
 
         return Resources(zeroed_wires=0, algo_wires=self.num_wires, gate_types=gate_types)
 
     def __matmul__(self, scalar: int):
         if not isinstance(scalar, int):
             raise TypeError(f"Cannot multiply resource operator {self} with type {type(scalar)}.")
-        gate_types = defaultdict(int, {self.resource_rep_from_op(): scalar})
+        gate_types = defaultdict(int, {{self.resource_rep_from_op(): scalar}})
 
         return Resources(zeroed_wires=0, algo_wires=self.num_wires * scalar, gate_types=gate_types)
 

@@ -28,27 +28,6 @@ from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
-
-class DummyX(ResourceOperator):
-    """Dummy testing class representing X gate"""
-
-
-class DummyQFT(ResourceOperator):
-    """Dummy testing class representing QFT gate"""
-
-
-class DummyQSVT(ResourceOperator):
-    """Dummy testing class representing QSVT gate"""
-
-
-class DummyTrotterProduct(ResourceOperator):
-    """Dummy testing class representing TrotterProduct gate"""
-
-
-class DummyAdjoint(ResourceOperator):
-    """Dummy testing class representing the Adjoint symbolic operator"""
-
-
 class DummyOp(ResourceOperator):
     """A dummy class to test ResourceOperator instantiation."""
 
@@ -573,11 +552,10 @@ class TestGateCount:
 
     def test_repr(self):
         """Test that the repr works as expected"""
-        op = DummyX(1, {"num_wires": 1})
+        op = DummyOp(1, {"num_wires": 1})
         gc = GateCount(op, count=3)
 
-        assert repr(gc) == "(3 x DummyX)"
-
+        assert repr(gc) == "(3 x DummyOp)"
 
 def test_resource_rep():
     """Test that the resource_rep method works as expected"""
