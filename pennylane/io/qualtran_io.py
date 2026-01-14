@@ -192,7 +192,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
         """Helper to create a QROM, count it and its adjoint."""
         qrom_op = qtemps.QROM(
-            bitstrings=bitstrings,
+            data=bitstrings,
             target_wires=precision_wires,
             control_wires=control_wires,
             work_wires=work_wires,
@@ -262,10 +262,10 @@ def _(op: qtemps.subroutines.QROM):
 
     # From ResourceQROM
     gate_types = defaultdict(int, {})
-    bitstrings = op.hyperparameters["bitstrings"]
+    bitstrings = op.data[0]
     num_bitstrings = len(bitstrings)
 
-    num_bit_flips = sum(bits.count("1") for bits in bitstrings)
+    num_bit_flips = math.sum(bitstrings)
 
     num_work_wires = len(op.hyperparameters["work_wires"])
     size_bitstring = len(op.hyperparameters["target_wires"])
@@ -567,7 +567,9 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     if mapped_op is not None:
         return mapped_op
 
-    data = np.array([int(b, 2) for b in op.bitstrings])
+    data = op.data[0]
+    powers_of_two = 2 ** np.arange(data.shape[1])[::-1]
+    data = math.sum(powers_of_two * data, axis=1)
     if op.clean:
         return QROAMClean.build_from_data(data)
 
