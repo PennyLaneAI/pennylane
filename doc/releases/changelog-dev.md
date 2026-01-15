@@ -54,6 +54,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated `tach.toml` to enforce public interfaces for various modules within our codebase.
+  [(#8940)](https://github.com/PennyLaneAI/pennylane/pull/8940)
+
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 
