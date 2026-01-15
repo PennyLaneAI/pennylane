@@ -342,7 +342,7 @@ class TestSpecsTransform:
                 return program
 
         dev = TestDevice(wires=2)
-        matrix = qml.matrix(qml.RX(1.2, 0))
+        matrix = qml.matrix([qml.RX(1.2, 0), qml.GlobalPhase(0.5)])
 
         @qml.qnode(dev)
         def circ():
