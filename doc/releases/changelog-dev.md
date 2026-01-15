@@ -4,7 +4,10 @@
 
 <h3>Improvements 🛠</h3>
 
-* The `qml.estimator.Resources` class now has a nice string representation in Jupyter Notebooks.
+* :func:`~.matrix` can now also be applied to a sequence of operators.
+  [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
+
+* The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
@@ -51,9 +54,19 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
+  [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
+
+* Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
+  [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes an issue when binding a transform when the first positional arg
+  is a `Sequence`, but not a `Sequence` of tapes.
+  [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
 <h3>Contributors ✍️</h3>
 
@@ -61,4 +74,5 @@ This release contains contributions from (in alphabetical order):
 
 Andrija Paurevic,
 Omkar Sarkar,
-Jay Soni
+Jay Soni,
+David Wierichs,
