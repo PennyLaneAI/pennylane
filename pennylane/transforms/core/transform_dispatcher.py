@@ -1074,7 +1074,7 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
     if transform.tape_transform is None:
         raise NotImplementedError(
             f"Transform {transform} has no defined tape implementation, "
-            "and can only be applied when decorating the entire worfklow "
+            "and can only be applied when decorating the entire workflow "
             "with '@qml.qjit' and when it is placed after all transforms "
             "that only have a tape implementation."
         )
