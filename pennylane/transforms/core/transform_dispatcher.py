@@ -124,7 +124,6 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     # If the first argument is not a valid dispatch target, return a BoundTransform
     # with the first argument and any additional args/kwargs stored as transform parameters.
     targs, tkwargs = transform.setup_inputs(obj, *targs, **tkwargs)
-    print(targs, tkwargs)
     return BoundTransform(transform, args=targs, kwargs=tkwargs)
 
 
