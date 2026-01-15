@@ -40,6 +40,12 @@ def compile(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
+    .. note::
+
+        While ``qml.compile`` is useful for initial exploration by appliying a default set of
+        transforms, the new :class:`~.CompilePipeline` class is the recommended tool for
+        constructing large & modular compilation pipelines in a natural way.
+
     The default set of transforms includes (in order):
 
     - pushing all commuting single-qubit gates as far right as possible
@@ -205,7 +211,7 @@ def compile(
                 [expanded_tape], _ = transf(expanded_tape)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

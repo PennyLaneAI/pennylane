@@ -14,12 +14,11 @@
 """
 Defines qml.vjp
 """
-import warnings
 from functools import lru_cache
 
 from pennylane import capture
 from pennylane.compiler import compiler
-from pennylane.exceptions import CompileError, PennyLaneDeprecationWarning
+from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
@@ -129,7 +128,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
-def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None):
+def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 
     This function allows the Vector-Jacobian Product of a hybrid quantum-classical function to be
@@ -147,11 +146,6 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
-
-    .. warning::
-
-        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
-        ``argnum`` will be removed in v0.45.
 
     Args:
         f(Callable): Function-like object to calculate VJP for
@@ -192,12 +186,6 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
     (Array([20., 60.], dtype=float64),)
 
     """
-    argnums = argnums if argnums is not None else argnum
-    if argnum is not None:
-        warnings.warn(
-            "argnum in qml.vjp has been renamed to argnums to match jax and catalyst.",
-            PennyLaneDeprecationWarning,
-        )
 
     if capture.enabled():
         return _capture_vjp(f, params, cotangents, argnums=argnums, method=method, h=h)

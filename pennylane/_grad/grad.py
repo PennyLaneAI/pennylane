@@ -27,7 +27,6 @@ from autograd.wrap_util import unary_to_nary
 
 from pennylane import capture
 from pennylane.compiler import compiler
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -234,11 +233,6 @@ class grad:
     .. warning::
         ``grad`` is intended to be used with the Autograd and Catalyst.
 
-    .. warning::
-
-        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
-        ``argnum`` will be removed in v0.45.
-
     .. note::
 
         When used with :func:`~.qjit`, this function currently only supports the
@@ -282,19 +276,14 @@ class grad:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, func, argnums=None, h=None, method=None, *, argnum=None):
+    def __init__(self, func, argnums=None, h=None, method=None):
         self._forward = None
         self._grad_fn = None
         self._h = h
         self._method = method
 
         self._func = func
-        self._argnums = argnums if argnums is not None else argnum
-        if argnum is not None:
-            warnings.warn(
-                "argnum in qml.grad has been renamed to argnums to match jax and catalyst.",
-                PennyLaneDeprecationWarning,
-            )
+        self._argnums = argnums
 
         if self._argnums is not None:
             # If the differentiable argnum is provided, we can construct
@@ -314,7 +303,7 @@ class grad:
     def _get_grad_fn(self, args):
         """Get the required gradient function.
 
-        * If the differentiable argnum was provided on initialization,
+        * If the differentiable argnums was provided on initialization,
           this has been pre-computed and is available via self._grad_fn
 
         * Otherwise, we must dynamically construct the gradient function by
@@ -451,10 +440,6 @@ class jacobian:
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
-    .. warning::
-
-        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
-        ``argnum`` will be removed in v0.45.
 
     Args:
         func (function): A vector-valued Python function or QNode that contains
@@ -486,20 +471,20 @@ class jacobian:
 
     Returns:
         function: the function that returns the Jacobian of the input function with respect to the
-        arguments in argnum
+        arguments in argnums
 
     .. note::
 
         Due to a limitation in Autograd, this function can only differentiate built-in scalar
         or NumPy array arguments.
 
-    For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
+    For ``argnums=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
     function and outputs a ``tuple``. The ``i``-th entry of the ``tuple`` has shape
-    ``(*output shape, *shape of args[argnum[i]])``.
+    ``(*output shape, *shape of args[argnums[i]])``.
 
     If a single trainable argument is inferred, or if a single integer
-    is provided as ``argnum``, the tuple is unpacked and its only entry is returned instead.
+    is provided as ``argnums``, the tuple is unpacked and its only entry is returned instead.
 
     **Example**
 
@@ -657,14 +642,9 @@ class jacobian:
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(self, func, argnums=None, method=None, h=None, *, argnum=None):
+    def __init__(self, func, argnums=None, method=None, h=None):
         self._func = func
-        if argnum is not None:
-            warnings.warn(
-                "argnum in qml.jacobian has been renamed to argnums to match jax and catalyst.",
-                PennyLaneDeprecationWarning,
-            )
-        self._argnums = argnums if argnums is not None else argnum
+        self._argnums = argnums
         self._method = method
         self._h = h
 
@@ -719,7 +699,7 @@ class jacobian:
             warnings.warn(
                 "Attempted to differentiate a function with no trainable parameters. "
                 "If this is unintended, please add trainable parameters via the "
-                "'requires_grad' attribute or 'argnum' keyword."
+                "'requires_grad' attribute or 'argnums' keyword."
             )
         jac = tuple(
             _jacobian(_error_if_not_array(self._func), arg)(*args, **kwargs) for arg in _argnums
