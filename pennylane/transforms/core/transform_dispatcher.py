@@ -124,6 +124,7 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     # If the first argument is not a valid dispatch target, return a BoundTransform
     # with the first argument and any additional args/kwargs stored as transform parameters.
     targs, tkwargs = transform.setup_inputs(obj, *targs, **tkwargs)
+    print(targs, tkwargs)
     return BoundTransform(transform, args=targs, kwargs=tkwargs)
 
 
@@ -722,7 +723,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
         if not args and kwargs:
             args, kwargs = self._setup_inputs(*args, **kwargs)
-            return BoundTransform(self, kwargs=kwargs)
+            return BoundTransform(self, args=args, kwargs=kwargs)
         return self._apply_transform(*args, **kwargs)
 
     def __repr__(self):
