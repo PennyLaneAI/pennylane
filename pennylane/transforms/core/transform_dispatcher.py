@@ -142,7 +142,8 @@ def _create_default_setup_inputs(transform):
         sig = signature(transform.tape_transform)
         bound_args = sig.bind(None, *targs, **tkwargs)
         bound_args.apply_defaults()
-        return (), {key: value for key, value in bound_args.arguments.items() if key != "tape"}
+        skip_dispatch_target = list(bound_args.arguments)[1:]
+        return (), {key: bound_args.arguments[key] for key in skip_dispatch_target}
 
     return default_setup_inputs
 
