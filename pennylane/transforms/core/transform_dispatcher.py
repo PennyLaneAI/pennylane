@@ -1217,12 +1217,10 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
 
 @Transform.generic_register
 def _apply_to_sequence(obj: Sequence, transform, *targs, **tkwargs):
-    if not all(isinstance(t, QuantumScript) for t in obj):
-        raise TransformError(
-            f"Transforms can only apply to sequences of QuantumScript, not {type(obj[0])}"
-        )
-
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
+    if not all(isinstance(t, QuantumScript) for t in obj):
+        # not a sequence of quantum script, treat as first argument
+        return BoundTransform(transform, args=(obj, *targs), kwargs=tkwargs)
     execution_tapes = []
     batch_fns = []
     tape_counts = []

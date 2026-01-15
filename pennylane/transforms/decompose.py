@@ -28,7 +28,7 @@ from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.transforms.core import transform
@@ -378,7 +378,7 @@ def decompose(
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_set (Iterable[str or type], Dict[type or str, float] or Callable, optional): The
+        gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
@@ -975,30 +975,8 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
     return gate_set, gate_set_contains
 
 
-@_process_gate_set_contains.register
-def _(gate_set: Callable):
-    # This branch exists for backwards compatibility reasons.
-    gate_set_contains = gate_set
-    gate_set = set()
-
-    warnings.warn(
-        "Passing a function to the gate_set argument is deprecated. The gate_set "
-        "expects a static iterable of operator types and/or operator names, and the "
-        "function should be passed to the stopping_condition argument instead.",
-        PennyLaneDeprecationWarning,
-    )
-
-    if enabled_graph():
-        raise TypeError(
-            "Specifying gate_set as a function is not supported with the new "
-            "graph-based decomposition system enabled."
-        )
-
-    return gate_set, gate_set_contains
-
-
 def _resolve_gate_set(
-    gate_set: Iterable[type | str] | dict[type | str, float] | Callable | None = None,
+    gate_set: Iterable[type | str] | dict[type | str, float] | None = None,
     stopping_condition: Callable[[Operator], bool] | None = None,
 ) -> tuple[set[type | str] | dict[type | str, float], Callable[[Operator], bool]]:
     """Resolve the gate set and the stopping condition from arguments.
@@ -1008,8 +986,7 @@ def _resolve_gate_set(
     to the following standardized form:
 
     - The ``gate_set`` is set of operator **types** and/or names, a dictionary mapping operator
-      types and/or names to their respective costs, or a Callable that returns True in place of a successful
-      check for membership in an Iterable gate_set. This is only used by the DecompositionGraph
+      types and/or names to their respective costs. This is only used by the DecompositionGraph.
     - The ``stopping_condition`` is a function that takes an operator **instances** and returns
       ``True`` if the operator does not need to be decomposed. This is used during decomposition.
 
