@@ -512,6 +512,14 @@ class TestDifferentModes:
         ):
             _, _ = qml.gradients.hadamard_grad(tape, mode="standard", aux_wire=None)
 
+        tape = qml.tape.QuantumScript([op], [mp])
+
+        with pytest.raises(
+            PennyLaneDeprecationWarning,
+            match="Providing a value of None to aux_wire",
+        ):
+            _, _ = qml.gradients.hadamard_grad(tape, mode="reversed", aux_wire=None)
+
     def test_automatic_mode_raises(self, mocker):
         # setup mocks
         standard = mocker.spy(hadamard_gradient, "_hadamard_test")
