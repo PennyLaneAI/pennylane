@@ -924,11 +924,12 @@ class TestQubitIntegration:
             # Cannot find a way to specify an aux_wire that is not already in use by the circuit!
             with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
                 jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
+                g = jac_fn(x)
+                hess = jacobian(jac_fn, x)
         else:
             jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
-
-        g = jac_fn(x)
-        hess = jacobian(jac_fn, x)
+            g = jac_fn(x)
+            hess = jacobian(jac_fn, x)
 
         a, b = x.detach().numpy()
 
@@ -997,11 +998,13 @@ class TestQubitIntegration:
             # Cannot find a way to specify an aux_wire that is not already in use by the circuit!
             with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
                 jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
+                g = jac_fn(x)
+                hess = jacobian(jac_fn, x)
         else:
             jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
+            g = jac_fn(x)
+            hess = jacobian(jac_fn, x)
 
-        g = jac_fn(x)
-        hess = jacobian(jac_fn, x)
         a, b = x.detach().numpy()
 
         assert isinstance(hess, torch.Tensor)
