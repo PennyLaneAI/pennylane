@@ -68,6 +68,7 @@ class TestDecomposeInterpreter:
         with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             DecomposeInterpreter(alt_decomps={qml.CNOT: [my_cnot]})
 
+    @pytest.mark.fixtures("disable_graph_decomposition")
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
     def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""
@@ -234,7 +235,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Controlled` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ, qml.CNOT]
         if not decompose:
-            gate_set.append(qml.ops.Controlled)
+            gate_set.extend([f"C({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
@@ -266,7 +267,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Adjoint` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ]
         if not decompose:
-            gate_set.append(qml.ops.Adjoint)
+            gate_set.extend([f"Adjoint({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):

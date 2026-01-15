@@ -29,6 +29,7 @@ OP_NAME_ALIASES = {
     "MidMeasure": "MidMeasureMP",
     "ppm": "PauliMeasure",
     "pauli_measure": "PauliMeasure",
+    "Elbow": "TemporaryAND",
 }
 
 

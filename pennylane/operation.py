@@ -184,7 +184,7 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable
+from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from typing import Any, ClassVar, Literal, Optional, Union
 
@@ -201,7 +201,6 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
-    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -682,7 +681,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     Optional[jax.extend.core.Primitive]
     """
 
-    resource_keys: ClassVar[set | frozenset] = set()
+    resource_keys: ClassVar[Set] = set()
     """The set of parameters that affects the resource requirement of the operator.
 
     All decomposition rules for this operator class are expected to have a resource function
@@ -713,16 +712,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         register_pytree(cls, cls._flatten, cls._unflatten)
         cls._primitive = create_operator_primitive(cls)
-
-        if cls.is_hermitian != Operator.is_hermitian:
-            warnings.warn(
-                "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
-                "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
-                "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
-                "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
-                "with a higher computational cost. ",
-                PennyLaneDeprecationWarning,
-            )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1318,57 +1307,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def pauli_rep(self) -> Optional["qml.pauli.PauliSentence"]:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
-
-    @property
-    def is_hermitian(self) -> bool:
-        """This property determines if an operator is verified to be Hermitian.
-
-        .. warning::
-
-            The ``is_hermitian`` property is deprecated and has been renamed to ``is_verified_hermitian``
-            as it better reflects the functionality of this property. The deprecated access through ``is_hermitian``
-            will be removed in PennyLane v0.45. Alternatively, consider using the :func:`~.is_hermitian`
-            function instead as it provides a more reliable check for hermiticity. Please be aware that it comes
-            with a higher computational cost.
-
-        .. note::
-
-            This property provides a fast, non-exhaustive check used for internal
-            optimizations. It relies on quick, provable shortcuts (e.g., operator
-            properties) rather than a full, computationally expensive check.
-
-            For a definitive check, use the :func:`pennylane.is_hermitian` function.
-            Please note that this comes with increased computational cost.
-
-        Returns:
-            bool: The property will return ``True`` if the operator is guaranteed to be Hermitian and
-            ``False`` if the check is inconclusive and the operator may or may not be Hermitian.
-
-        Consider this operator,
-
-        >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
-
-        In this case, Hermicity cannot be verified and leads to an inconclusive result:
-
-        >>> op.is_verified_hermitian # inconclusive
-        False
-
-        However, using :func:`pennylane.is_hermitian` will give the correct answer:
-
-        >>> qml.is_hermitian(op) # definitive
-        True
-
-        """
-        warnings.warn(
-            "The `is_hermitian` property is deprecated and has been renamed to `is_verified_hermitian` "
-            "as it better reflects the functionality of this property. The deprecated access through `is_hermitian` "
-            "will be removed in PennyLane v0.45. Alternatively, consider using the `pennylane.is_hermitian` "
-            "function instead as it provides a more reliable check for hermiticity. Please be aware that it comes "
-            "with a higher computational cost. ",
-            PennyLaneDeprecationWarning,
-        )
-
-        return self.is_verified_hermitian
 
     @property
     def is_verified_hermitian(self) -> bool:

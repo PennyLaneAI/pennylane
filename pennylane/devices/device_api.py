@@ -549,6 +549,7 @@ class Device(abc.ABC):
             # `diagonalize_measurements` may add additional gates that are not supported.
             program.add_transform(
                 decompose,
+                target_gates=capabilities_analytic.gate_set() & capabilities_shots.gate_set(),
                 stopping_condition=capabilities_analytic.supports_operation,
                 stopping_condition_shots=capabilities_shots.supports_operation,
                 name=self.name,
@@ -567,6 +568,7 @@ class Device(abc.ABC):
             program.add_transform(diagonalize_measurements, supported_base_obs=obs)
             program.add_transform(
                 decompose,
+                target_gates=capabilities_analytic.gate_set() & capabilities_shots.gate_set(),
                 stopping_condition=lambda o: capabilities_analytic.supports_operation(o.name),
                 stopping_condition_shots=lambda o: capabilities_shots.supports_operation(o.name),
                 name=self.name,
