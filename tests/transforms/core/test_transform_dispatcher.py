@@ -934,6 +934,19 @@ class TestTransform:  # pylint: disable=too-many-public-methods
                 tape._ops.pop(index)  # pylint:disable=protected-access
                 return [tape], lambda x: x
 
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            def setup_inputs(x, y):
+                return (x, y), {}
+
+            qml.transform(setup_inputs=setup_inputs, pass_name="bla")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+            with pytest.raises(
+                ValueError, match="tape_transform or setup_inputs for use with sphinx."
+            ):
+                qml.transform(pass_name="bla")
+
 
 def dummy_fn():
     return qml.state()
