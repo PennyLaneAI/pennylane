@@ -64,6 +64,10 @@
 * Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 
+* Internal calls to the `decompose` transform have been updated to provide a `target_gates` argument so that
+  they are compatible with the new graph-based decomposition system.
+  [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
