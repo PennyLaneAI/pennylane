@@ -35,3 +35,10 @@ class TestGridsynth:
     def test_pass_name(self):
         """Test the pass name is set on the gridsynth transform."""
         assert gridsynth.pass_name == "gridsynth"
+
+    def test_setup_inputs_to_kwargs(self):
+        """Test that positional inputs are promoted to kwargs."""
+
+        bound_t = gridsynth(1e-6)
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {"epsilon": 1e-6, "ppr_basis": False}

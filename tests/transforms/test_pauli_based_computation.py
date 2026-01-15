@@ -48,6 +48,11 @@ PASS_NAMES = [
 PBC_TRANSFORM_DATA = list(zip(PBC_TRANSFORMS, PASS_NAMES))
 
 
+@qml.qnode(qml.device("null.qubit", wires=1))
+def dummy_qnode():
+    return qml.probs()
+
+
 @pytest.mark.parametrize("pbc_transform, pass_name", PBC_TRANSFORM_DATA)
 class TestPauliBasedComputationTransforms:
 
@@ -67,3 +72,73 @@ class TestPauliBasedComputationTransforms:
     def test_pass_name(self, pbc_transform, pass_name):
         """Test the pass name is set on the given PBC transform."""
         assert pbc_transform.pass_name == pass_name
+
+
+class TestTransformsSetup:
+
+    def test_to_ppr_setup(self):
+        """Test that to_ppr has no arguments."""
+
+        transformed = to_ppr(dummy_qnode)
+        bound_t = transformed.transform_program[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {}
+        assert bound_t.pass_name == "to-ppr"
+
+    def test_commute_ppr_setup(self):
+        """Test that commute_ppr has a default max_pauli_size=0."""
+
+        transformed = commute_ppr(dummy_qnode)
+        bound_t = transformed.transform_program[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {"max_pauli_size": 0}
+        assert bound_t.pass_name == "commute-ppr"
+
+    def test_merge_ppr_ppm_setup(self):
+        """Test that merge_ppr_ppm has a default max_pauli_size=0."""
+
+        transformed = merge_ppr_ppm(dummy_qnode)
+        bound_t = transformed.transform_program[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {"max_pauli_size": 0}
+        assert bound_t.pass_name == "merge-ppr-ppm"
+
+    def test_ppr_to_ppm_setup(self):
+        """Test that ppr_to_ppm default setup."""
+
+        transformed = ppr_to_ppm(dummy_qnode)
+        bound_t = transformed.transform_program[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {"decompose_method": "pauli-corrected", "avoid_y_measure": False}
+        assert bound_t.pass_name == "ppr-to-ppm"
+
+    def test_ppm_compilation_setup(self):
+        """Test the ppm_compilation default setup."""
+
+        transformed = ppm_compilation(dummy_qnode)
+        bound_t = transformed.transform_program[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {
+            "decompose_method": "pauli-corrected",
+            "avoid_y_measure": False,
+            "max_pauli_size": 0,
+        }
+        assert bound_t.pass_name == "ppm-compilation"
+
+    def test_reduce_t_depth_setup(self):
+        """Test that ppr_to_ppm default setup."""
+
+        transformed = reduce_t_depth(dummy_qnode)
+        bound_t = transformed.transform_program[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {}
+        assert bound_t.pass_name == "reduce-t-depth"
+
+    def test_decompose_arbitrary_ppr_setup(self):
+        """Test that ppr_to_ppm default setup."""
+
+        transformed = decompose_arbitrary_ppr(dummy_qnode)
+        bound_t = transformed.transform_program[0]
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {}
+        assert bound_t.pass_name == "decompose-arbitrary-ppr"
