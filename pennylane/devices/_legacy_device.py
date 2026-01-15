@@ -16,7 +16,6 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=use-maxsplit-arg,protected-access
 import abc
-import types
 import warnings
 from collections import OrderedDict
 from collections.abc import Iterable, Sequence
