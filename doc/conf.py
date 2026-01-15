@@ -274,6 +274,7 @@ edit_on_github_branch = "master/doc"
 
 # -- Sitemap settings -----------------------------------------------------
 sitemap_url_scheme = "{link}"
+sitemap_excludes = []  # Explicitly set to empty to avoid accidental excludes
 
 # -- Options for LaTeX output ---------------------------------------------
 
