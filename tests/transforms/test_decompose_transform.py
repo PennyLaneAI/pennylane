@@ -101,7 +101,10 @@ class TestDecompose:
             [qml.Hadamard(0)],
             {qml.RX: 1, qml.RZ: 2},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
-            None,
+            {
+                "type": UserWarning,
+                "msg": "Gate weights were provided to a non-graph-based decomposition.",
+            },
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
@@ -149,8 +152,15 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-        qml.assert_equal(tape, decomposed_tape)
+        if isinstance(gate_set, dict):
+            with pytest.raises(
+                UserWarning, match="Gate weights were provided to a non-graph-based decomposition."
+            ):
+                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                qml.assert_equal(tape, decomposed_tape)
+        else:
+            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+            qml.assert_equal(tape, decomposed_tape)
 
     def test_stopping_cond_without_gate_set(self):
         gate_set = None
@@ -173,14 +183,12 @@ class TestDecompose:
         ):
             decompose(tape, gate_set=gate_set, stopping_condition=stopping_condition_2)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
         with pytest.warns(UserWarning, match="does not define a decomposition"):
             decompose(tape, stopping_condition=lambda op: op.name not in {"RX"})
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_infinite_decomposition_loop(self):
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
         tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
@@ -206,7 +214,6 @@ class TestDecompose:
             expected_tape = qml.tape.QuantumScript(expected_ops)
             qml.assert_equal(decomposed_tape, expected_tape)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", callables_test)
     def test_callable_stopping_condition(
         self, initial_ops, gate_set, expected_ops, warning_pattern
