@@ -976,7 +976,7 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
 
 
 def _resolve_gate_set(
-    gate_set: Iterable[type | str] | dict[type | str, float] | Callable | None = None,
+    gate_set: Iterable[type | str] | dict[type | str, float] | None = None,
     stopping_condition: Callable[[Operator], bool] | None = None,
 ) -> tuple[set[type | str] | dict[type | str, float], Callable[[Operator], bool]]:
     """Resolve the gate set and the stopping condition from arguments.
