@@ -477,10 +477,7 @@ class TestDecomposeInterpreter:
             def resource_params(self) -> dict:
                 return {}
 
-        def _custom_resources():
-            return {resource_rep(qml.H): 2}
-
-        @register_resources(_custom_resources, exact=False)
+        @register_resources({qml.H: 2}, exact=False)
         def _custom_decomposition(wires):
             qml.H(wires[0])
             m0 = qml.measure(wires[0])
