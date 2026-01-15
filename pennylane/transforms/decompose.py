@@ -986,8 +986,7 @@ def _resolve_gate_set(
     to the following standardized form:
 
     - The ``gate_set`` is set of operator **types** and/or names, a dictionary mapping operator
-      types and/or names to their respective costs, or a Callable that returns True in place of a successful
-      check for membership in an Iterable gate_set. This is only used by the DecompositionGraph
+      types and/or names to their respective costs. This is only used by the DecompositionGraph.
     - The ``stopping_condition`` is a function that takes an operator **instances** and returns
       ``True`` if the operator does not need to be decomposed. This is used during decomposition.
 
