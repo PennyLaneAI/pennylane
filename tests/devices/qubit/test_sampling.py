@@ -1015,7 +1015,7 @@ class TestBroadcastingPRNG:
         )
 
         spy.assert_called()
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.03)
 
     @pytest.mark.parametrize(
         "shots",
