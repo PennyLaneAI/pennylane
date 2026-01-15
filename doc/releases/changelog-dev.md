@@ -54,7 +54,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Updated `tach.toml` to enforce public interfaces for various modules within our codebase.
+* Enforced public interfaces for internal modules (e.g., transforms.core) using `tach`. 
+  This decouples internal file structures from inter-module imports, making refactoring safer and easier.
   [(#8940)](https://github.com/PennyLaneAI/pennylane/pull/8940)
 
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
