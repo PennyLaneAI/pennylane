@@ -22,6 +22,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.wires import Wires
 
 
@@ -63,6 +64,14 @@ class TestCreateExpandFn:
             docstring=self.doc_0,
         )
         assert expand_fn.__doc__ == "Test docstring."
+
+    def test_create_expand_fn_deprecated(self):
+        with pytest.warns(PennyLaneDeprecationWarning):
+            _ = qml.transforms.create_expand_fn(
+                depth=10,
+                stop_at=crit_0,
+                docstring=self.doc_0,
+            )
 
     def test_create_expand_fn_expansion(self):
         """Test expansion with created expand_fn."""

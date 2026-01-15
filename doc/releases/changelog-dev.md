@@ -52,6 +52,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``qml.transforms.create_expand_fn`` is deprecated in PennyLane v0.45 and will be removed in a future release.
+  Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+
 <h3>Internal changes ⚙️</h3>
 
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
