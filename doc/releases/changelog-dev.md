@@ -54,7 +54,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Enforced public interfaces for internal modules (e.g., transforms.core) using `tach`. 
+* Enforced public interfaces for internal modules (e.g., `transforms.core`) using `tach`. 
   This decouples internal file structures from inter-module imports, making refactoring safer and easier.
   [(#8940)](https://github.com/PennyLaneAI/pennylane/pull/8940)
 
