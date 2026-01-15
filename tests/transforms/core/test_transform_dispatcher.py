@@ -656,6 +656,19 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         assert dispatched_transform.expand_transform is None
         assert dispatched_transform.classical_cotransform is None
 
+    def test_first_positional_arg_a_sequence(self):
+        """Test that a BoundTransform is still created when the first positional arg is a sequence."""
+
+        # pylint: disable=unused-argument
+        @qml.transform
+        def f(tape, param):
+            return (tape,), lambda res: res[0]
+
+        bound_t = f("abcd")
+        assert isinstance(bound_t, BoundTransform)
+        assert bound_t.args == ("abcd",)
+        assert bound_t.kwargs == {}
+
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     @pytest.mark.parametrize("batch_type", (tuple, list))
     def test_batch_transform(self, valid_transform, batch_type, num_margin=1e-8):

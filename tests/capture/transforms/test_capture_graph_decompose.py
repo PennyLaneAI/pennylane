@@ -25,7 +25,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.ops import Conditional, MidMeasure, PauliMeasure
 
@@ -108,16 +107,6 @@ class TestDecomposeInterpreterGraphEnabled:
         assert interpreter.stopping_condition(qml.RZ(1.5, 0))
         assert interpreter.stopping_condition(qml.CNOT(wires=[0, 1]))
         assert not interpreter.stopping_condition(qml.Hadamard(0))
-
-    @pytest.mark.unit
-    def test_callable_gate_set_not_supported(self):
-        """Tests that specifying the gate_set as a function raises an error."""
-
-        with pytest.raises(
-            PennyLaneDeprecationWarning,
-            match="Passing a function to the gate_set argument is deprecated.",
-        ):
-            DecomposeInterpreter(gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"})
 
     @pytest.mark.integration
     def test_fall_back(self):
