@@ -359,9 +359,7 @@ class TestResourceOutMultiplier:
     @pytest.mark.parametrize("b_register_size", (4, 5, 6))
     def test_resource_rep(self, a_register_size, b_register_size):
         """Test that the compressed representation is correct."""
-        expected = qre.OutMultiplier(
-            a_num_wires=a_register_size, b_num_wires=b_register_size
-        )
+        expected = qre.OutMultiplier(a_num_wires=a_register_size, b_num_wires=b_register_size)
         assert qre.OutMultiplier.resource_rep(a_register_size, b_register_size) == expected
 
     def test_resources(self):
@@ -557,8 +555,8 @@ class TestResourceControlledSequence:
         """Test the resource params"""
         op = qre.ControlledSequence(base_op, num_ctrl_wires)
         expected_params = {
-            "base_cmpr_op": base_op.resource_rep_from_op(),
-            "num_ctrl_wires": num_ctrl_wires,
+            "base": base_op.resource_rep_from_op(),
+            "num_control_wires": num_ctrl_wires,
         }
 
         assert op.resource_params == expected_params
@@ -764,9 +762,9 @@ class TestResourceQPE:
             adj_qft_cmpr_op = adj_qft_op.resource_rep_from_op()
 
         assert op.resource_params == {
-            "base_cmpr_op": base_cmpr_op,
+            "base": base_cmpr_op,
             "num_estimation_wires": num_est_wires,
-            "adj_qft_cmpr_op": adj_qft_cmpr_op,
+            "adj_qft_op": adj_qft_cmpr_op,
         }
 
     @pytest.mark.parametrize(
@@ -873,7 +871,7 @@ class TestResourceIterativeQPE:
         """Test the resource_params method"""
         op = qre.IterativeQPE(base_op, num_iter)
         expected = {
-            "base_cmpr_op": base_op.resource_rep_from_op(),
+            "base": base_op.resource_rep_from_op(),
             "num_iter": num_iter,
         }
         assert op.resource_params == expected
@@ -1540,7 +1538,13 @@ class TestResourceQROM:
     )
     def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, restored):
         """Test that the compressed representation is correct."""
-        expected = qre.QROM(num_bitstrings=num_data_points, size_bitstring=size_data_points, num_bit_flips=num_bit_flips, restored=restored, select_swap_depth=depth)
+        expected = qre.QROM(
+            num_bitstrings=num_data_points,
+            size_bitstring=size_data_points,
+            num_bit_flips=num_bit_flips,
+            restored=restored,
+            select_swap_depth=depth,
+        )
         assert (
             qre.QROM.resource_rep(
                 num_bitstrings=num_data_points,
@@ -2392,9 +2396,9 @@ class TestResourceUnaryIterationQPE:
             adj_qft_cmpr = adj_qft.resource_rep_from_op()
 
         assert op.resource_params == {
-            "cmpr_walk_op": walk_operator_cmpr,
+            "walk_op": walk_operator_cmpr,
             "num_iterations": n_iter,
-            "adj_qft_cmpr_op": adj_qft_cmpr,
+            "adj_qft_op": adj_qft_cmpr,
         }
 
     @pytest.mark.parametrize(
