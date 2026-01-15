@@ -58,3 +58,5 @@ MBQC_GATES = _MBQC_GATES | IDENTITY | _MID_MEASURE
 MBQC_GATES.name = "MBQC"
 
 ALL_QUBIT_OPS = GateSet(ops.qubit.__all__, name="All Qubit Gates")
+
+ALL_OPS = GateSet(ops.__all__, name="All Pennylane Gates")

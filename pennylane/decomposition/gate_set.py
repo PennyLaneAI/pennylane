@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 
+from pennylane.operation import Operator
+
 from .utils import translate_op_alias
 
 
@@ -31,6 +33,11 @@ class GateSet:
             raise ValueError("Negative weights are not supported in the gate_set.")
         self.name = name
         self._gate_set = {_to_name(op): weight for op, weight in gate_set.items()}
+
+    def __eq__(self, value: object, /) -> bool:
+        if not isinstance(value, GateSet):
+            return False
+        return self._gate_set == value._gate_set
 
     def __getitem__(self, key, /):
         return self._gate_set[_to_name(key)]
@@ -56,6 +63,8 @@ class GateSet:
 
 def _to_name(op):
     if isinstance(op, type):
-        return op.__name__
+        op = op.__name__
+    if isinstance(op, Operator):
+        op = op.name
     assert isinstance(op, str)
     return translate_op_alias(op)

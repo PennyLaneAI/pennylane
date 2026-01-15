@@ -44,12 +44,25 @@ class TestGateSet:
         assert gate_set[qml.RX] == 1
         assert gate_set["CNOT"] == 2
 
+    def test_gate_set_eq(self):
+        """Tests comparing gate sets."""
+
+        gate_set = GateSet({qml.RX: 1, qml.RY: 1, qml.CNOT: 1})
+        gate_set_two = GateSet({"RX", "RY", "CNOT"})
+        assert gate_set == gate_set_two
+
     def test_gate_set_immutable(self):
         """Tests that GateSet cannot be mutated."""
 
         gate_set = GateSet({qml.RX, qml.RY, qml.CNOT})
         with pytest.raises(TypeError, match="immutable"):
             gate_set[qml.RZ] = 1
+
+    def test_gate_set_negative_weights(self):
+        """Tests that an error is raised when weights are negative."""
+
+        with pytest.raises(ValueError, match="Negative weights"):
+            GateSet({qml.RX: 1, qml.RY: 1, qml.CNOT: -2})
 
     def test_gate_set_join(self):
         """Tests joining two gate sets."""
