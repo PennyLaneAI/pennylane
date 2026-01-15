@@ -173,11 +173,12 @@ class TestDecompose:
         ):
             decompose(tape, gate_set=gate_set, stopping_condition=stopping_condition_2)
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
         with pytest.warns(UserWarning, match="does not define a decomposition"):
-            decompose(tape, gate_set={qml.RX}, stopping_condition=lambda op: op.name not in {"RX"})
+            decompose(tape, stopping_condition=lambda op: op.name not in {"RX"})
 
     @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_infinite_decomposition_loop(self):
