@@ -30,7 +30,6 @@ from pennylane.compiler import compiler
 
 make_vjp = unary_to_nary(_make_vjp)
 
-
 has_jax = True
 try:
     import jax
@@ -92,65 +91,101 @@ def _shape(shape, dtype, weak_type=False):
     return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
 
-def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
-    """Capture-compatible gradient computation."""
-    # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
+def _args_and_argnums(args, argnums):
+    """
+    Perform some setup for args and argnums that are consistent between grad and vjp.
 
+    Returns:
+        Flat arguments
+        Flat argnums
+        Pytree for all the args
+        Pytree for the trainable args
+
+    Processing steps are:
+    * set default values for argnums
+    * validating the length of the argnums
+    * flattening out the args and argnums
+    * extracting out the pytree just for the trainable args
+
+    """
     if argnums is None:
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):
         argnums = (argnums,)
     argnums = tuple(argnums)
 
+    if max(argnums) >= len(args):
+        raise ValueError(
+            f"Differentiating with respect to argnums {argnums} requires at least {max(argnums)+1}"
+            f" positional arguments. Got {len(args)} positional arguments."
+        )
+
+    from jax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
+
+    flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
+    full_in_tree = treedef_tuple(in_trees)
+
+    # Create a new input tree that only takes inputs marked by argnums into account
+    trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnums)
+    # If an integer was provided as argnums, unpack the arguments axis of the derivatives
+    if argnums_is_int:
+        trainable_in_tree = next(trainable_in_trees)
+    else:
+        trainable_in_tree = treedef_tuple(trainable_in_trees)
+
+    # Create argnums for the flat list of input arrays. For each flattened argument,
+    # add a list of flat argnums if the argument is trainable and an empty list otherwise.
+    start = 0
+    flat_argnums_gen = (
+        (
+            list(range(start, (start := start + len(flat_arg))))
+            if i in argnums
+            else list(range((start := start + len(flat_arg)), start))
+        )
+        for i, flat_arg in enumerate(flat_args)
+    )
+    flat_argnums = tuple(sum(flat_argnums_gen, start=[]))
+    flat_args = sum(flat_args, start=[])
+    return flat_args, flat_argnums, full_in_tree, trainable_in_tree
+
+
+def _setup_h(h):
     if h is None:
-        h = 1e-6
-    elif not isinstance(h, numbers.Number):
+        return 1e-6
+    if not isinstance(h, numbers.Number):
         raise ValueError(f"Invalid h value ({h}). number was expected.")
+    return h
+
+
+def _setup_method(method):
     method = method or "auto"
     if method not in {"auto", "fd"}:
         raise ValueError(f"Got unrecognized method {method}. Options are 'auto' and 'fd'.")
+    return method
+
+
+def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
+    """Capture-compatible gradient computation."""
+    # pylint: disable=import-outside-toplevel
+    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
+
+    h = _setup_h(h)
+    method = _setup_method(method)
+    _argnums = argnums  # somehow renaming stops it from being unbound?
 
     @wraps(func)
     def new_func(*args, **kwargs):
-        flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
-        full_in_tree = treedef_tuple(in_trees)
-
-        if max(argnums) >= len(args):
-            raise ValueError(
-                f"Differentiating with respect to argnums {argnums} requires at least {max(argnums)+1}"
-                f" positional arguments. Got {len(args)} positional arguments."
-            )
-
-        # Create a new input tree that only takes inputs marked by argnums into account
-        trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnums)
-        # If an integer was provided as argnums, unpack the arguments axis of the derivatives
-        if argnums_is_int:
-            trainable_in_tree = list(trainable_in_trees)[0]
-        else:
-            trainable_in_tree = treedef_tuple(trainable_in_trees)
-
-        # Create argnums for the flat list of input arrays. For each flattened argument,
-        # add a list of flat argnumss if the argument is trainable and an empty list otherwise.
-        start = 0
-        flat_argnums_gen = (
-            (
-                list(range(start, (start := start + len(flat_arg))))
-                if i in argnums
-                else list(range((start := start + len(flat_arg)), start))
-            )
-            for i, flat_arg in enumerate(flat_args)
-        )
-        flat_argnums = sum(flat_argnums_gen, start=[])
+        flat_args, flat_argnums, full_in_tree, trainable_in_tree = _args_and_argnums(args, _argnums)
 
         # Create fully flattened function (flat inputs & outputs)
         flat_fn = capture.FlatFn(func, full_in_tree)
-        flat_args = sum(flat_args, start=[])
+
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
 
         num_abstract_shapes = len(abstract_shapes)
-        shifted_argnums = tuple(a + num_abstract_shapes for a in flat_argnums)
+        shift = num_abstract_shapes
+        shifted_argnums = tuple(a + shift for a in flat_argnums)
 
         flat_inputs, _ = tree_flatten((args, kwargs))
         prim_kwargs = {

@@ -4,6 +4,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.vjp` can now be captured into plxpr.
+  [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
+
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
 
@@ -72,6 +75,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
