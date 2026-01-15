@@ -53,9 +53,7 @@ class TestMultiRZ:
     @pytest.mark.parametrize("num_wires", range(1, 5))
     def test_resource_rep(self, num_wires, precision):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.MultiRZ, num_wires, {"num_wires": num_wires, "precision": precision}
-        )
+        expected = qre.MultiRZ(num_wires, precision=precision)
         assert qre.MultiRZ.resource_rep(num_wires, precision=precision) == expected
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
@@ -79,8 +77,8 @@ class TestMultiRZ:
         ]
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
+        op_resource_type = type(op_compressed_rep)
+        op_resource_params = op_compressed_rep.resource_params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
@@ -178,11 +176,7 @@ class TestPauliRot:
     @pytest.mark.parametrize("pauli_string", pauli_words)
     def test_resource_rep(self, pauli_string, precision):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.PauliRot,
-            len(pauli_string),
-            {"pauli_string": pauli_string, "precision": precision},
-        )
+        expected = qre.PauliRot(pauli_string, precision)
         assert qre.PauliRot.resource_rep(pauli_string, precision) == expected
 
     expected_h_count = (0, 4, 6, 6, 0)
@@ -249,8 +243,8 @@ class TestPauliRot:
             expected.append(qre.GateCount(qre.CNOT.resource_rep(), 2 * (active_wires - 1)))
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
+        op_resource_type = type(op_compressed_rep)
+        op_resource_params = op_compressed_rep.resource_params
         assert op_resource_type.resource_decomp(**op_resource_params) == expected
 
     @pytest.mark.parametrize(
@@ -509,11 +503,7 @@ class TestPCPhase:
     )
     def test_resource_rep(self, num_wires, dim, rot_precision):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.PCPhase,
-            num_wires,
-            {"num_wires": num_wires, "dim": dim, "rotation_precision": rot_precision},
-        )
+        expected = qre.PCPhase(num_wires, dim, rotation_precision=rot_precision)
         assert qre.PCPhase.resource_rep(num_wires, dim, rot_precision) == expected
 
     @pytest.mark.parametrize(

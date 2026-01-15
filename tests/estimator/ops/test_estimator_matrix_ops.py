@@ -47,9 +47,7 @@ class TestResourceQubitUnitary:
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5, 6))
     def test_resource_rep(self, num_wires, precision):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.QubitUnitary, num_wires, {"num_wires": num_wires, "precision": precision}
-        )
+        expected = qre.QubitUnitary(num_wires=num_wires, precision=precision)
         assert qre.QubitUnitary.resource_rep(num_wires=num_wires, precision=precision) == expected
 
     @pytest.mark.parametrize(

@@ -38,7 +38,7 @@ class TestSingleQubitComparator:
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.SingleQubitComparator, 4, {})
+        expected = qre.SingleQubitComparator()
         assert qre.SingleQubitComparator.resource_rep() == expected
 
     def test_resources(self):
@@ -66,7 +66,7 @@ class TestTwoQubitComparator:
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.TwoQubitComparator, 4, {})
+        expected = qre.TwoQubitComparator()
         assert qre.TwoQubitComparator.resource_rep() == expected
 
     def test_resources(self):
@@ -122,11 +122,7 @@ class TestIntegerComparator:
     )
     def test_resource_rep(self, value, register_size, geq):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.IntegerComparator,
-            register_size + 1,
-            {"value": value, "register_size": register_size, "geq": geq},
-        )
+        expected = qre.IntegerComparator(value, register_size, geq)
         assert qre.IntegerComparator.resource_rep(value, register_size, geq) == expected
 
     @pytest.mark.parametrize(
@@ -257,11 +253,7 @@ class TestRegisterComparator:
     )
     def test_resource_rep(self, first_register, second_register, geq):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.RegisterComparator,
-            first_register + second_register + 1,
-            {"first_register": first_register, "second_register": second_register, "geq": geq},
-        )
+        expected = qre.RegisterComparator(first_register, second_register, geq)
         assert qre.RegisterComparator.resource_rep(first_register, second_register, geq) == expected
 
     @pytest.mark.parametrize(

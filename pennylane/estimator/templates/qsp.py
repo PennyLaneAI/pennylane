@@ -21,7 +21,6 @@ from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
 from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import PCPhase
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RZ, Rot
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     _dequeue,
@@ -146,7 +145,7 @@ class GQSP(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                * cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                   the compressed representation of the signal operator which encodes the target Hamiltonian
                 * d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
                 * d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the
@@ -165,16 +164,16 @@ class GQSP(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        cmpr_signal_op: CompressedResourceOp,
+        cmpr_signal_op: ResourceOperator,
         d_plus: int,
         d_minus: int = 0,
         rotation_precision: float | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 the compressed representation of the signal operator which encodes the target Hamiltonian
             d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
@@ -182,7 +181,7 @@ class GQSP(ResourceOperator):
             rotation_precision (float | None): The precision with which the general rotation gates are applied.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if (not isinstance(d_plus, int)) or d_plus <= 0:
             raise ValueError(f"'d_plus' must be a positive integer greater than zero, got {d_plus}")
@@ -195,19 +194,17 @@ class GQSP(ResourceOperator):
                 f"Expected 'rotation_precision' to be a positive real number greater than zero, got {rotation_precision}"
             )
 
-        num_wires = cmpr_signal_op.num_wires + 1  # add control wire
-        params = {
-            "cmpr_signal_op": cmpr_signal_op,
-            "d_plus": d_plus,
-            "d_minus": d_minus,
-            "rotation_precision": rotation_precision,
-        }
-        return CompressedResourceOp(cls, num_wires, params)
+        return cls(
+            signal_operator=cmpr_signal_op,
+            d_plus=d_plus,
+            d_minus=d_minus,
+            rotation_precision=rotation_precision,
+        )
 
     @classmethod
     def resource_decomp(
         cls,
-        cmpr_signal_op: CompressedResourceOp,
+        cmpr_signal_op: ResourceOperator,
         d_plus: int,
         d_minus: int = 0,
         rotation_precision: float | None = None,
@@ -216,7 +213,7 @@ class GQSP(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            cmpr_signal_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 the compressed representation of the signal operator which encodes the target Hamiltonian
             d_plus (int): The largest positive degree :math:`d^{+}` of the polynomial transformation.
             d_minus (int): The largest (in absolute value) negative degree :math:`d^{-}` of the polynomial
@@ -359,7 +356,7 @@ class GQSPTimeEvolution(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                * walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                   the quantum walk operator
                 * time (float): the simulation time
                 * one_norm (float): one norm of the Hamiltonian
@@ -377,23 +374,23 @@ class GQSPTimeEvolution(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        walk_op: CompressedResourceOp,
+        walk_op: ResourceOperator,
         time: float,
         one_norm: float,
         poly_approx_precision: float | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the
+            walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
             poly_approx_precision (float | None): the tolerance for error in the polynomial approximation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
 
         if (not isinstance(time, (int, float))) or time <= 0:
@@ -418,19 +415,17 @@ class GQSPTimeEvolution(ResourceOperator):
                     )
                 )
 
-        num_wires = walk_op.num_wires + 1
-        params = {
-            "walk_op": walk_op,
-            "time": time,
-            "one_norm": one_norm,
-            "poly_approx_precision": poly_approx_precision,
-        }
-        return CompressedResourceOp(cls, num_wires, params)
+        return cls(
+            walk_op=walk_op,
+            time=time,
+            one_norm=one_norm,
+            poly_approx_precision=poly_approx_precision,
+        )
 
     @classmethod
     def resource_decomp(
         cls,
-        walk_op: CompressedResourceOp,
+        walk_op: ResourceOperator,
         time: float,
         one_norm: float,
         poly_approx_precision: float | None = None,
@@ -439,7 +434,7 @@ class GQSPTimeEvolution(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            walk_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): the
+            walk_op (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the
                 quantum walk operator
             time (float): the simulation time
             one_norm (float): one norm of the Hamiltonian
@@ -617,7 +612,7 @@ class QSVT(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                * block_encoding (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                   the block encoding operator
                 * encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
                   If an integer is provided, a square matrix is assumed.
@@ -632,7 +627,7 @@ class QSVT(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        block_encoding: CompressedResourceOp,
+        block_encoding: ResourceOperator,
         encoding_dims: int,
         poly_deg: int,
     ):
@@ -640,14 +635,14 @@ class QSVT(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 the block encoding operator
             encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
                 If an integer is provided, a square matrix is assumed.
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if not isinstance(encoding_dims, (int, tuple)):
             raise TypeError(
@@ -674,18 +669,16 @@ class QSVT(ResourceOperator):
                 f"'poly_deg' must be a positive integer greater than zero, got {poly_deg}"
             )
 
-        num_wires = block_encoding.num_wires
-        params = {
-            "block_encoding": block_encoding,
-            "encoding_dims": encoding_dims,
-            "poly_deg": poly_deg,
-        }
-        return CompressedResourceOp(cls, num_wires, params)
+        return cls(
+            block_encoding=block_encoding,
+            encoding_dims=encoding_dims,
+            poly_deg=poly_deg,
+        )
 
     @classmethod
     def resource_decomp(
         cls,
-        block_encoding: CompressedResourceOp,
+        block_encoding: ResourceOperator,
         encoding_dims: int,
         poly_deg: int,
     ):
@@ -693,7 +686,7 @@ class QSVT(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 the block encoding operator
             encoding_dims (int | tuple(int)): The dimensions of the encoded matrix.
                 If an integer is provided, a square matrix is assumed.
@@ -828,7 +821,7 @@ class QSP(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+                * block_encoding (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                   the block encoding operator
                 * poly_deg (int): the degree of the polynomial transformation being applied
                 * convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
@@ -845,7 +838,7 @@ class QSP(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        block_encoding: CompressedResourceOp,
+        block_encoding: ResourceOperator,
         poly_deg: int,
         convention: str = "Z",
         rotation_precision: float | None = None,
@@ -854,7 +847,7 @@ class QSP(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Args:
-            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 the block encoding operator
             poly_deg (int): the degree of the polynomial transformation being applied
             convention (str):the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``
@@ -862,7 +855,7 @@ class QSP(ResourceOperator):
                 decomposition of the single qubit rotation gates used to implement this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if block_encoding.num_wires > 1:
             raise ValueError("The block encoding operator should act on a single qubit!")
@@ -870,18 +863,17 @@ class QSP(ResourceOperator):
         if not (convention in {"Z", "X"}):
             raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
 
-        params = {
-            "block_encoding": block_encoding,
-            "poly_deg": poly_deg,
-            "convention": convention,
-            "rotation_precision": rotation_precision,
-        }
-        return CompressedResourceOp(cls, num_wires=1, params=params)
+        return cls(
+            block_encoding=block_encoding,
+            poly_deg=poly_deg,
+            convention=convention,
+            rotation_precision=rotation_precision,
+        )
 
     @classmethod
     def resource_decomp(
         cls,
-        block_encoding: CompressedResourceOp,
+        block_encoding: ResourceOperator,
         poly_deg: int,
         convention: str = "Z",
         rotation_precision: float | None = None,
@@ -890,7 +882,7 @@ class QSP(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            block_encoding (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`):
+            block_encoding (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`):
                 the block encoding operator
             poly_deg (int): the degree of the polynomial transformation being applied
             convention (str): the basis used for the rotation operators, valid conventions are ``"X"`` or ``"Z"``

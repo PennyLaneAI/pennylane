@@ -42,7 +42,7 @@ class TestSingleExcitation:
     @pytest.mark.parametrize("precision", (None, 1e-3))
     def test_resource_rep(self, precision):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.SingleExcitation, 2, {"precision": precision})
+        expected = qre.SingleExcitation(precision=precision)
         assert qre.SingleExcitation.resource_rep(precision=precision) == expected
 
     @pytest.mark.parametrize("precision", (None, 1e-3))

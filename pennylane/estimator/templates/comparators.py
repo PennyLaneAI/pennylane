@@ -16,7 +16,6 @@ r"""Resource operators for PennyLane subroutine templates."""
 import pennylane.estimator as qre
 from pennylane.estimator.ops.op_math.symbolic import apply_adj
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -87,14 +86,14 @@ class SingleQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        return CompressedResourceOp(cls, cls.num_wires, {})
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -197,14 +196,14 @@ class TwoQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> dict:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        return CompressedResourceOp(cls, cls.num_wires, {})
+        return cls()
 
     @classmethod
     def resource_decomp(cls):
@@ -377,9 +376,7 @@ class IntegerComparator(ResourceOperator):
         return {"value": self.value, "register_size": self.register_size, "geq": self.geq}
 
     @classmethod
-    def resource_rep(
-        cls, value: int, register_size: int, geq: bool = False
-    ) -> CompressedResourceOp:
+    def resource_rep(cls, value: int, register_size: int, geq: bool = False) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -390,12 +387,9 @@ class IntegerComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`n \lt L`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        num_wires = register_size + 1
-        return CompressedResourceOp(
-            cls, num_wires, {"value": value, "register_size": register_size, "geq": geq}
-        )
+        return cls(value=value, register_size=register_size, geq=geq)
 
     @classmethod
     def resource_decomp(cls, value: int, register_size: int, geq: bool = False) -> list[GateCount]:
@@ -599,7 +593,7 @@ class RegisterComparator(ResourceOperator):
     @classmethod
     def resource_rep(
         cls, first_register: int, second_register: int, geq: bool = False
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -610,14 +604,9 @@ class RegisterComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`a \lt b`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        num_wires = first_register + second_register + 1
-        return CompressedResourceOp(
-            cls,
-            num_wires,
-            {"first_register": first_register, "second_register": second_register, "geq": geq},
-        )
+        return cls(first_register=first_register, second_register=second_register, geq=geq)
 
     @classmethod
     def resource_decomp(

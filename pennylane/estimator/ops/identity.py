@@ -15,7 +15,6 @@ r"""Resource operators for identity and global phase operations."""
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -65,10 +64,10 @@ class Identity(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, cls.num_wires, {})
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -192,10 +191,10 @@ class GlobalPhase(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, cls.num_wires, {})
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:

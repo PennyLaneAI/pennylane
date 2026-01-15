@@ -52,9 +52,7 @@ class TestUniformStatePrep:
     )
     def test_resource_rep(self, num_states, num_wires):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.UniformStatePrep, num_wires, {"num_states": num_states}
-        )
+        expected = qre.UniformStatePrep(num_states=num_states)
         assert qre.UniformStatePrep.resource_rep(num_states) == expected
 
     @pytest.mark.parametrize(
@@ -148,11 +146,7 @@ class TestAliasSampling:
     )
     def test_resource_rep(self, num_coeffs, precision, num_wires):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.AliasSampling,
-            num_wires,
-            {"num_coeffs": num_coeffs, "precision": precision},
-        )
+        expected = qre.AliasSampling(num_coeffs=num_coeffs, precision=precision)
         assert qre.AliasSampling.resource_rep(num_coeffs, precision) == expected
 
     @pytest.mark.parametrize(
@@ -272,14 +266,10 @@ class TestMPSPrep:
     )
     def test_resource_rep(self, num_mps, bond_dim, precision):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.MPSPrep,
-            num_mps,
-            {
-                "num_mps_matrices": num_mps,
-                "max_bond_dim": bond_dim,
-                "precision": precision,
-            },
+        expected = qre.MPSPrep(
+            num_mps_matrices=num_mps,
+            max_bond_dim=bond_dim,
+            precision=precision,
         )
 
         assert (
@@ -435,15 +425,8 @@ class TestQROMStatePrep:
         """Test that the resource rep is constructed as expected"""
         if all((_ is None for _ in (precision, positive_and_real, selswap_depths))):
             actual_resource_rep = qre.QROMStatePreparation.resource_rep(num_state_qubits)
-            expected = qre.CompressedResourceOp(
-                qre.QROMStatePreparation,
+            expected = qre.QROMStatePreparation(
                 num_state_qubits,
-                {
-                    "num_state_qubits": num_state_qubits,
-                    "precision": None,
-                    "positive_and_real": False,
-                    "selswap_depths": 1,
-                },
             )
         else:
             actual_resource_rep = qre.QROMStatePreparation.resource_rep(
@@ -452,15 +435,11 @@ class TestQROMStatePrep:
                 positive_and_real,
                 selswap_depths,
             )
-            expected = qre.CompressedResourceOp(
-                qre.QROMStatePreparation,
+            expected = qre.QROMStatePreparation(
                 num_state_qubits,
-                {
-                    "num_state_qubits": num_state_qubits,
-                    "precision": precision,
-                    "positive_and_real": positive_and_real,
-                    "selswap_depths": selswap_depths,
-                },
+                precision=precision,
+                positive_and_real=positive_and_real,
+                select_swap_depths=selswap_depths,
             )
 
         assert actual_resource_rep == expected
@@ -477,7 +456,7 @@ class TestQROMStatePrep:
             qre.QROMStatePreparation(10, select_swap_depths=sel_swapdepths)
 
         with pytest.raises(
-            TypeError, match="`selswap_depths` must be an integer, None or iterable"
+            TypeError, match="`select_swap_depths` must be an integer, None or iterable"
         ):
             qre.QROMStatePreparation.resource_rep(10, selswap_depths=sel_swapdepths)
 
@@ -489,7 +468,7 @@ class TestQROMStatePrep:
             qre.QROMStatePreparation(10, select_swap_depths=sel_swapdepths)
 
         with pytest.raises(
-            ValueError, match="Expected the length of `selswap_depths` to be 11, got 1"
+            ValueError, match="Expected the length of `select_swap_depths` to be 11, got 1"
         ):
             qre.QROMStatePreparation.resource_rep(10, selswap_depths=sel_swapdepths)
 
@@ -1710,14 +1689,10 @@ class TestPrepTHC:
     )
     def test_resource_rep(self, thc_ham, coeff_prec, selswap_depth, num_wires):
         """Test that the compressed representation of PrepTHC is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.PrepTHC,
-            num_wires,
-            {
-                "thc_ham": thc_ham,
-                "coeff_precision": coeff_prec,
-                "select_swap_depth": selswap_depth,
-            },
+        expected = qre.PrepTHC(
+            thc_ham=thc_ham,
+            coeff_precision=coeff_prec,
+            select_swap_depth=selswap_depth,
         )
         assert qre.PrepTHC.resource_rep(thc_ham, coeff_prec, selswap_depth) == expected
 
