@@ -103,7 +103,6 @@ both transforms and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.set_decomposition
     ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
