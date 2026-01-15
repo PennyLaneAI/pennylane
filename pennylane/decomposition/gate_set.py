@@ -33,13 +33,13 @@ class GateSet:
         self._gate_set = {_to_name(op): weight for op, weight in gate_set.items()}
 
     def __getitem__(self, key, /):
-        return self._gate_set[key]
+        return self._gate_set[_to_name(key)]
 
     def __setitem__(self, key, value, /) -> None:
         raise TypeError("The GateSet is immutable.")
 
     def __contains__(self, op) -> bool:
-        return op in self._gate_set
+        return _to_name(op) in self._gate_set
 
     def __iter__(self):
         return iter(self._gate_set)
@@ -48,7 +48,10 @@ class GateSet:
         return GateSet(self._gate_set | other._gate_set)
 
     def __repr__(self) -> str:
-        return self.name if self.name else str(set(self._gate_set.keys()))
+        if self.name:
+            return self.name
+        inner_str = ", ".join(list(self))
+        return f"{{{inner_str}}}"
 
 
 def _to_name(op):
