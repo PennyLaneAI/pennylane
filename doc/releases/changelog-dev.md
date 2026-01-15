@@ -52,8 +52,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* Deprecated passing ``None`` to ``aux_wire`` when using a mode that needs an ``aux_wire`` as we now 
-  use the resources available to choose a mode and not vice versa.
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` in reversed or standard mode has been
+  deprecated and will no longer be supported in 0.45. An ``aux_wire`` will no longer be automatically assigned.
   [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
 
 <h3>Internal changes ⚙️</h3>
