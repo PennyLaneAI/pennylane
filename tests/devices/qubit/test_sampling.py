@@ -978,10 +978,6 @@ class TestBroadcastingPRNG:
         # third batch of samples can be any of |00>, |01>, |10>, or |11>
         assert np.all(np.logical_or(res[2] == 0, res[2] == 1))
 
-    # NOTE: The accuracy checking of this test is necessary,
-    # but the definition of `atol` is too arbitrary. Further
-    # investigation is needed to establish a more systematic
-    # approach to test the final sampling distribution. [sc-91887]
     @pytest.mark.parametrize(
         "measurement, expected",
         [
