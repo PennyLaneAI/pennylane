@@ -1147,33 +1147,33 @@ class TestQubitIntegrationHigherOrder:
 
         if diff_method == "hadamard":
             # Cannot find a way to specify an aux_wire that is not in use!
-            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
-                jac_fn(x)
+            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
+                g = jac_fn(x)
         else:
             g = jac_fn(x)
 
-            expected_g = [
-                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-            ]
-            assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = [
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-            hess = jax.jacobian(jac_fn)(x)
+        hess = jax.jacobian(jac_fn)(x)
 
-            expected_hess = [
-                [
-                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
-                ],
-                [
-                    [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                    [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-                ],
-            ]
-            if diff_method == "finite-diff":
-                assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
-            else:
-                assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        expected_hess = [
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
+        ]
+        if diff_method == "finite-diff":
+            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(
         self, dev_name, diff_method, interface, grad_on_execution, device_vjp, tol, seed
@@ -1283,38 +1283,37 @@ class TestQubitIntegrationHigherOrder:
 
         if diff_method == "hadamard":
             # Cannot find a way to specify an aux wire that is not in use!
-            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
-                jac_fn(a, b)
+            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
+                g = jac_fn(a, b)
         else:
-
             g = jac_fn(a, b)
 
-            expected_g = np.array(
-                [
-                    [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                    [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-                ]
-            )
-            assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
+        expected_g = np.array(
+            [
+                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+            ]
+        )
+        assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
 
-            hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
+        hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
 
-            expected_hess = np.array(
+        expected_hess = np.array(
+            [
                 [
-                    [
-                        [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
-                        [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
-                    ],
-                    [
-                        [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
-                        [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
-                    ],
-                ]
-            )
-            if diff_method == "finite-diff":
-                assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
-            else:
-                assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+                ],
+                [
+                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+                ],
+            ]
+        )
+        if diff_method == "finite-diff":
+            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_state(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed

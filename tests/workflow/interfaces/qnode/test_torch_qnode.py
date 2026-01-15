@@ -922,45 +922,45 @@ class TestQubitIntegration:
 
         if diff_method == "hadamard":
             # Cannot find a way to specify an aux_wire that is not already in use by the circuit!
-            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
-                jacobian(circuit, x, create_graph=True)
+            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
+                jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
         else:
             jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
 
-            g = jac_fn(x)
-            hess = jacobian(jac_fn, x)
+        g = jac_fn(x)
+        hess = jacobian(jac_fn, x)
 
-            a, b = x.detach().numpy()
+        a, b = x.detach().numpy()
 
-            assert isinstance(hess, torch.Tensor)
-            assert tuple(hess.shape) == (2, 2, 2)
+        assert isinstance(hess, torch.Tensor)
+        assert tuple(hess.shape) == (2, 2, 2)
 
-            expected_res = [
-                0.5 + 0.5 * np.cos(a) * np.cos(b),
-                0.5 - 0.5 * np.cos(a) * np.cos(b),
-            ]
-            assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+        expected_res = [
+            0.5 + 0.5 * np.cos(a) * np.cos(b),
+            0.5 - 0.5 * np.cos(a) * np.cos(b),
+        ]
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
-            expected_g = [
-                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-            ]
-            assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+        expected_g = [
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
 
-            expected_hess = [
-                [
-                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
-                ],
-                [
-                    [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                    [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-                ],
-            ]
-            if diff_method == "finite-diff":
-                assert np.allclose(hess.detach(), expected_hess, atol=10e-2, rtol=0)
-            else:
-                assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+        expected_hess = [
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
+        ]
+        if diff_method == "finite-diff":
+            assert np.allclose(hess.detach(), expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
     def test_hessian_ragged(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test hessian calculation of a ragged QNode"""
@@ -995,50 +995,50 @@ class TestQubitIntegration:
 
         if diff_method == "hadamard":
             # Cannot find a way to specify an aux_wire that is not already in use by the circuit!
-            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
-                jacobian(circuit_stack, x, create_graph=True)
+            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
+                jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
         else:
             jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 
-            g = jac_fn(x)
-            hess = jacobian(jac_fn, x)
-            a, b = x.detach().numpy()
+        g = jac_fn(x)
+        hess = jacobian(jac_fn, x)
+        a, b = x.detach().numpy()
 
-            assert isinstance(hess, torch.Tensor)
-            assert tuple(hess.shape) == (3, 2, 2)
+        assert isinstance(hess, torch.Tensor)
+        assert tuple(hess.shape) == (3, 2, 2)
 
-            expected_res = [
-                np.cos(a) * np.cos(b),
-                0.5 + 0.5 * np.cos(a) * np.cos(b),
-                0.5 - 0.5 * np.cos(a) * np.cos(b),
-            ]
-            assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
+        expected_res = [
+            np.cos(a) * np.cos(b),
+            0.5 + 0.5 * np.cos(a) * np.cos(b),
+            0.5 - 0.5 * np.cos(a) * np.cos(b),
+        ]
+        assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
-            expected_g = [
-                [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)],
-                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-            ]
-            assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
+        expected_g = [
+            [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)],
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g.detach(), expected_g, atol=tol, rtol=0)
 
-            expected_hess = [
-                [
-                    [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
-                    [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
-                ],
-                [
-                    [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                    [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
-                ],
-                [
-                    [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-                    [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-                ],
-            ]
-            if diff_method == "finite-diff":
-                assert np.allclose(hess.detach(), expected_hess, atol=10e-2, rtol=0)
-            else:
-                assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
+        expected_hess = [
+            [
+                [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
+                [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
+            ],
+            [
+                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
+            ],
+            [
+                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
+                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
+            ],
+        ]
+        if diff_method == "finite-diff":
+            assert np.allclose(hess.detach(), expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
@@ -1882,13 +1882,13 @@ class TestReturn:
 
         if diff_method == "hadamard":
             # Cannot find a way to use an aux_wire that is not already in use by the circuit!
-            with pytest.raises(PennyLaneDeprecationWarning, match="aux_wire"):
-                jacobian(circuit, a)
+            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
+                jac = jacobian(circuit, a)
         else:
             jac = jacobian(circuit, a)
 
-            assert isinstance(jac, torch.Tensor)
-            assert jac.shape == (4, 2)
+        assert isinstance(jac, torch.Tensor)
+        assert jac.shape == (4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp, shots
