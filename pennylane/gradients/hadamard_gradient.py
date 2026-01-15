@@ -15,6 +15,7 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
 from itertools import islice
 from typing import Literal
@@ -441,11 +442,12 @@ def hadamard_grad(
     # unless using direct or reversed-direct modes
 
     if mode in ["standard", "reversed"] and aux_wire is None:
-        raise PennyLaneDeprecationWarning(
+        warnings.warn(
             """
             Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will 
             no longer be supported in v0.46. An aux_wire will no longer be automatically assigned.
-            """
+            """,
+            PennyLaneDeprecationWarning
         )
 
     aux_wire = (

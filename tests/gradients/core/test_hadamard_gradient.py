@@ -506,7 +506,7 @@ class TestDifferentModes:
         mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
         tape = qml.tape.QuantumScript([op], [mp, qml.probs((0, 1))])
 
-        with pytest.raises(
+        with pytest.warns(
             PennyLaneDeprecationWarning,
             match="Providing a value of None to aux_wire",
         ):
@@ -514,7 +514,7 @@ class TestDifferentModes:
 
         tape = qml.tape.QuantumScript([op], [mp])
 
-        with pytest.raises(
+        with pytest.warns(
             PennyLaneDeprecationWarning,
             match="Providing a value of None to aux_wire",
         ):
