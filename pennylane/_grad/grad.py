@@ -129,7 +129,7 @@ def _args_and_argnums(args, argnums):
     trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnums)
     # If an integer was provided as argnums, unpack the arguments axis of the derivatives
     if argnums_is_int:
-        trainable_in_tree = list(trainable_in_trees)[0]
+        trainable_in_tree = next(trainable_in_trees)
     else:
         trainable_in_tree = treedef_tuple(trainable_in_trees)
 
