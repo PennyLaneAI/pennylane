@@ -447,7 +447,7 @@ def hadamard_grad(
             Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will 
             no longer be supported in v0.46. An aux_wire will no longer be automatically assigned.
             """,
-            PennyLaneDeprecationWarning
+            PennyLaneDeprecationWarning,
         )
 
     aux_wire = (
