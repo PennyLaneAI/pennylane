@@ -31,6 +31,7 @@ from pennylane.decomposition.utils import translate_op_alias
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
+from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
 
 
@@ -846,6 +847,9 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     elif acceptance_function(op) or max_depth_reached:
         yield op
+
+    elif isinstance(op, SubroutineOp):
+        decomp = op.decomposition()
 
     elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
         op_rule = graph_solution.decomposition(op, num_work_wires)
