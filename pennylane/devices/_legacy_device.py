@@ -162,7 +162,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         self._parameters = None
 
         self.tracker = Tracker()
-        self.custom_expand_fn = None
 
     def __repr__(self):
         """String representation."""
@@ -617,32 +616,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             and (isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name))
         )
 
-    def custom_expand(self, fn):
-        """Register a custom expansion function for the device.
-
-        **Example**
-
-        .. code-block:: python
-
-            @dev.custom_expand
-            def my_expansion_function(self, tape, max_expansion=10):
-                ...
-                # can optionally call the default device expansion
-                tape = self.default_expand_fn(tape, max_expansion=max_expansion)
-                return tape
-
-        The custom device expansion function must have arguments
-        ``self`` (the device object), ``tape`` (the input circuit
-        to transform and execute), and ``max_expansion`` (the number of
-        times the circuit should be expanded).
-
-        The default :meth:`~.default_expand_fn` method of the original
-        device may be called. It is highly recommended to call this
-        before returning, to ensure that the expanded circuit is supported
-        on the device.
-        """
-        self.custom_expand_fn = types.MethodType(fn, self)
-
     def default_expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
         This method should be overwritten if custom expansion logic is
@@ -713,10 +686,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
-        if self.custom_expand_fn is not None:
-            # pylint:disable=not-callable
-            return self.custom_expand_fn(circuit, max_expansion=max_expansion)
-
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
     def batch_transform(self, circuit: QuantumScript):
