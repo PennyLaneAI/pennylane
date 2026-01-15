@@ -68,6 +68,7 @@ class TestDecomposeInterpreter:
         with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             DecomposeInterpreter(alt_decomps={qml.CNOT: [my_cnot]})
 
+    @pytest.mark.fixtures("disable_graph_decomposition")
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
     def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""

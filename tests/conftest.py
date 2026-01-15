@@ -202,6 +202,16 @@ def enable_graph_decomposition():
         qml.decomposition.disable_graph()
 
 
+@pytest.fixture(scope="function")
+def disable_graph_decomposition():
+    """disable graph-decomposition."""
+    qml.decomposition.disable_graph()
+    try:
+        yield
+    finally:
+        qml.decomposition.enable_graph()
+
+
 #######################################################################
 
 try:

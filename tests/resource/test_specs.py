@@ -335,7 +335,9 @@ class TestSpecsTransform:
             ):
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
-                    qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition
+                    qml.devices.preprocess.decompose,
+                    target_gates=qml.devices.default_qubit.ALL_DQ_GATE_SET,
+                    stopping_condition=self.stopping_condition,
                 )
                 return program
 
