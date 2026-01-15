@@ -478,7 +478,7 @@ def resource_rep(
 
     **Example**
 
-    This example shows how to obtain the compressed resource representation for the quantum Fourier
+    This example shows how to obtain the resource representation for the quantum Fourier
     transform (:code:`QFT`) operation. We begin by checking what parameters are required for
     resource estimation and then provide them accordingly:
 
@@ -490,7 +490,7 @@ def resource_rep(
     ...     {"num_wires": 3},
     ... )
     >>> cmpr_qft
-    ResourceOperator(QFT, num_wires=3, params={'num_wires':3})
+    QFT({'num_wires': 3})
 
     .. details::
         :title: Usage Details
