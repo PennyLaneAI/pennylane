@@ -971,6 +971,7 @@ class TestDensityMatrix:
         result = qml.devices.qubit_mixed.apply_operation(op, initial_state, is_state_batched=True)
 
         assert math.allclose(result, expected, atol=1e-8)
+
     def test_partial_trace_tensor_format_state(self, ml_framework):
         """Test partial tracing with state in tensor format (as used by the actual mixed device).
 
