@@ -452,9 +452,7 @@ from .tape_expand import (
     expand_nonunitary_gen,
     expand_trainable_multipar,
     create_expand_fn,
-    create_decomp_expand_fn,
     create_expand_trainable_multipar,
-    set_decomposition,
 )
 from .transpile import transpile
 from .zx import (
