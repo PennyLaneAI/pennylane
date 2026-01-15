@@ -682,8 +682,8 @@ class TestTransform:  # pylint: disable=too-many-public-methods
 
         bound_t = f("abcd")
         assert isinstance(bound_t, BoundTransform)
-        assert bound_t.args == ("abcd",)
-        assert bound_t.kwargs == {}
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {"param": "abcd"}
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     @pytest.mark.parametrize("batch_type", (tuple, list))
@@ -951,6 +951,15 @@ dummy_qnode = qml.QNode(dummy_fn, qml.device("default.qubit"))
 
 
 class TestSetupInputs:
+
+    def test_default_with_pass_name_def(self):
+        """Test that the default setup inputs when no tape definition exists just passes on the inputs."""
+
+        t = qml.transform(pass_name="my_pass_name")
+
+        bound_t = t(1.0, key="value")
+        assert bound_t.args == (1.0,)
+        assert bound_t.kwargs == {"key": "value"}
 
     def test_default_applies_defaults_args(self):
         """Test that the default implementation of setup_inputs fills in default inputs."""
