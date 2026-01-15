@@ -50,6 +50,7 @@ class TestGateSet:
         gate_set = GateSet({qml.RX: 1, qml.RY: 1, qml.CNOT: 1})
         gate_set_two = GateSet({"RX", "RY", "CNOT"})
         assert gate_set == gate_set_two
+        assert gate_set != qml.X
 
     def test_gate_set_immutable(self):
         """Tests that GateSet cannot be mutated."""
