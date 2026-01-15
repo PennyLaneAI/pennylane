@@ -148,6 +148,6 @@ class SingleExcitation(ResourceOperator):
             precision (float, optional): error threshold for clifford plus T decomposition of this operation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(precision=precision)

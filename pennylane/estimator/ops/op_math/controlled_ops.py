@@ -1423,7 +1423,7 @@ class MultiControlledX(ResourceOperator):
             num_zero_ctrl (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_ctrl_wires=num_ctrl_wires, num_zero_ctrl=num_zero_ctrl)
 

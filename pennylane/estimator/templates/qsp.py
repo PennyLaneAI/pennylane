@@ -181,7 +181,7 @@ class GQSP(ResourceOperator):
             rotation_precision (float | None): The precision with which the general rotation gates are applied.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if (not isinstance(d_plus, int)) or d_plus <= 0:
             raise ValueError(f"'d_plus' must be a positive integer greater than zero, got {d_plus}")
@@ -390,7 +390,7 @@ class GQSPTimeEvolution(ResourceOperator):
             poly_approx_precision (float | None): the tolerance for error in the polynomial approximation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
 
         if (not isinstance(time, (int, float))) or time <= 0:
@@ -642,7 +642,7 @@ class QSVT(ResourceOperator):
             poly_deg (int): the degree of the polynomial transformation being applied
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if not isinstance(encoding_dims, (int, tuple)):
             raise TypeError(
@@ -855,7 +855,7 @@ class QSP(ResourceOperator):
                 decomposition of the single qubit rotation gates used to implement this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if block_encoding.num_wires > 1:
             raise ValueError("The block encoding operator should act on a single qubit!")

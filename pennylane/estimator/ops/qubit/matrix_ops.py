@@ -108,7 +108,7 @@ class QubitUnitary(ResourceOperator):
                 qubit rotations used to synthesize the n-qubit unitary.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_wires=num_wires, precision=precision)
 

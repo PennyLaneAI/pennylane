@@ -208,7 +208,7 @@ class SelectTHC(ResourceOperator):
                 ``T``-gate count.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
 
         if not isinstance(thc_ham, THCHamiltonian):
@@ -794,6 +794,6 @@ class SelectPauli(ResourceOperator):
                 expressed as a linear combination of Pauli words, over which ``Select`` is applied.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(pauli_ham)

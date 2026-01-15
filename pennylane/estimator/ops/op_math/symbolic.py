@@ -121,7 +121,7 @@ class Adjoint(ResourceOperator):
                 that we want the adjoint of.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(base_cmpr_op)
 
@@ -309,7 +309,7 @@ class Controlled(ResourceOperator):
                 :math:`|0\rangle` state
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(base_cmpr_op, num_ctrl_wires, num_zero_ctrl)
 
@@ -500,7 +500,7 @@ class Pow(ResourceOperator):
             pow_z (int): the power that the operator is being raised to
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(base_cmpr_op, pow_z)
 
@@ -713,7 +713,7 @@ class Prod(ResourceOperator):
             num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         num_wires = num_wires or max(cmpr_op.num_wires for cmpr_op, _ in cmpr_factors_and_counts)
         return cls(cmpr_factors_and_counts=cmpr_factors_and_counts, num_wires=num_wires)
@@ -911,7 +911,7 @@ class ChangeOpBasis(ResourceOperator):
             num_wires (int): an optional integer representing the number of wires this operator acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         cmpr_uncompute_op = cmpr_uncompute_op or resource_rep(
             Adjoint, {"base_cmpr_op": cmpr_compute_op}

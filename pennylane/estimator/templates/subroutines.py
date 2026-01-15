@@ -88,7 +88,7 @@ class OutOfPlaceSquare(ResourceOperator):
             register_size (int): the size of the input register
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(register_size=register_size)
 
@@ -188,7 +188,7 @@ class IQP(ResourceOperator):
                 :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_wires=num_wires, pattern=pattern, spin_sym=spin_sym)
 
@@ -305,7 +305,7 @@ class PhaseGradient(ResourceOperator):
             num_wires (int): the number of qubits to prepare in the phase gradient state
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_wires=num_wires)
 
@@ -407,7 +407,7 @@ class OutMultiplier(ResourceOperator):
             b_num_wires (int): the size of the second input register
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(a_num_wires=a_num_wires, b_num_wires=b_num_wires)
 
@@ -508,7 +508,7 @@ class SemiAdder(ResourceOperator):
             max_register_size (int): the size of the larger of the two registers being added together
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(max_register_size=max_register_size)
 
@@ -722,7 +722,7 @@ class ControlledSequence(ResourceOperator):
             num_control_wires (int): the number of controlled wires to run the sequence over
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(base=base, num_control_wires=num_control_wires)
 
@@ -922,7 +922,7 @@ class QPE(ResourceOperator):
                 default :class:`~.pennylane.estimator.templates.subroutines.QFT` will be used.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             base=base,
@@ -1052,7 +1052,7 @@ class IterativeQPE(ResourceOperator):
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(base=base, num_iter=num_iter)
 
@@ -1243,7 +1243,7 @@ class UnaryIterationQPE(ResourceOperator):
                 will be used.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             walk_op=walk_op,
@@ -1425,7 +1425,7 @@ class QFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_wires=num_wires)
 
@@ -1592,7 +1592,7 @@ class AQFT(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(order=order, num_wires=num_wires)
 
@@ -1776,7 +1776,7 @@ class BasisRotation(ResourceOperator):
                 as the number of columns of the matrix.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(dim=dim)
 
@@ -1867,7 +1867,7 @@ class BBQRAM(ResourceOperator):
             num_wires (int): the number of qubits the operation acts upon
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             num_bitstrings=num_bitstrings,
@@ -2122,7 +2122,7 @@ class Select(ResourceOperator):
                 required and the number of wires targeted by the :code:`ops`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(ops=cmpr_ops, wires=range(num_wires) if num_wires else None)
 
@@ -2718,7 +2718,7 @@ class QROM(ResourceOperator):
                 depth that minimizes T-gate count.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             num_bitstrings=num_bitstrings,
@@ -2815,7 +2815,7 @@ class SelectPauliRot(ResourceOperator):
             precision (float | None): the precision used in the single qubit rotations
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             rot_axis=rot_axis,
@@ -3195,7 +3195,7 @@ class Reflection(ResourceOperator):
             cmpr_U (:class:`~.pennylane.estimator.resource_operator.ResourceOperator`): the operator that prepares the state :math:`|\Psi\rangle`
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_wires=num_wires, alpha=alpha, U=cmpr_U)
 
@@ -3389,6 +3389,6 @@ class Qubitization(ResourceOperator):
                 applies the unitaries of the LCU.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(prep_op=prep_op, select_op=select_op)

@@ -106,7 +106,7 @@ class UniformStatePrep(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_states=num_states)
 
@@ -219,7 +219,7 @@ class AliasSampling(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_coeffs=num_coeffs, precision=precision)
 
@@ -362,7 +362,7 @@ class MPSPrep(ResourceOperator):
             precision (float | None): the precision used when loading the MPS matrices
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             num_mps_matrices=num_mps_matrices, max_bond_dim=max_bond_dim, precision=precision
@@ -629,7 +629,7 @@ class QROMStatePreparation(ResourceOperator):
                 used to trade-off extra qubits for reduced circuit depth
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             num_state_qubits=num_state_qubits,
@@ -996,7 +996,7 @@ class PrepTHC(ResourceOperator):
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(
             thc_ham=thc_ham, coeff_precision=coeff_precision, select_swap_depth=select_swap_depth

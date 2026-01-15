@@ -219,7 +219,7 @@ class QubitizeTHC(ResourceOperator):
                 the rotation angles.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(

@@ -139,7 +139,7 @@ class MultiRZ(ResourceOperator):
             precision (float): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_wires=num_wires, precision=precision)
 
@@ -387,7 +387,7 @@ class PauliRot(ResourceOperator):
             precision (float | None): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`:: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(pauli_string=pauli_string, precision=precision)
 
@@ -707,7 +707,7 @@ class PCPhase(ResourceOperator):
                 decomposition of the :class:`~pennylane.estimator.ops.qubit.parametric_ops_single_qubit.PhaseShift` gates used to implement this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         return cls(num_wires=num_wires, dim=dim, rotation_precision=rotation_precision)
 
