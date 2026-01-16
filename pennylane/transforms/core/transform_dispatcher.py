@@ -263,7 +263,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         >>> my_transform(circuit)
         Traceback (most recent call last):
             ...
-        TypeError: my_transform_setup() missing 1 required positional argument: 'a'
+        TypeError: <transform: my_pass>() missing 1 required positional argument: 'a'
         >>> new_circuit = my_transform(circuit, a=2)
         >>> new_circuit.transform_program[0]
         <my_pass(2, 1, metadata=my_value)>
@@ -759,7 +759,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             return self._setup_inputs(*targs, **tkwargs)
         except TypeError as e:
             message = e.args[0]
-            new_message = message.replace(self._setup_inputs.__name__, repr(self))
+            new_message = message.replace(self._setup_inputs.__qualname__ + "()", repr(self))
             raise TypeError(new_message) from e
 
     @property

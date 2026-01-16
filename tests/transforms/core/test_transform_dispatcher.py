@@ -966,7 +966,7 @@ class TestSetupInputs:
         a = qml.transform(pass_name="bla", setup_inputs=setup_inputs)
 
         with pytest.raises(
-            TypeError, match="<transform: bla>() takes 1 positional argument but 2 were given"
+            TypeError, match=r"<transform: bla> takes 1 positional argument but 2 were given"
         ):
             a(1, 2)
 
