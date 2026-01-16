@@ -126,6 +126,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated test helper `get_device` to correctly seed lightning devices.
+  [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
+
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 

@@ -27,7 +27,7 @@ from pennylane.exceptions import DeviceError
 
 def get_device(device_name, wires, seed):
     if device_name == "lightning.qubit":
-        return qml.device("lightning.qubit", wires=wires)
+        return qml.device("lightning.qubit", wires=wires, seed=seed)
     return qml.device(device_name, seed=seed)
 
 
