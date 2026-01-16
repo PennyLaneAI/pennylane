@@ -15,13 +15,6 @@ Pending deprecations
   
   - Deprecated in v0.44
   - Will be removed in v0.45
-  
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
-  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
-
-  - Deprecated in v0.44
-  - Will be removed in v0.45
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
@@ -88,6 +81,13 @@ Completed deprecation cycles
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
   :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and
   :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+
+  - Deprecated in v0.44
+  - Removed in v0.45
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
   - Deprecated in v0.44
   - Removed in v0.45
