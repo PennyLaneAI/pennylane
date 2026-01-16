@@ -134,6 +134,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,
 Omkar Sarkar,
