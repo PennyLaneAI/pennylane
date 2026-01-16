@@ -23,7 +23,6 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.wires import Wires
 
 
 def crit_0(op: qml.operation.Operator):
@@ -446,4 +445,3 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
         qml.AngleEmbedding(weights[0], wires=wires),
         *cnot_broadcast,
     ]
-
