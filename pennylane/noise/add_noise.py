@@ -270,9 +270,7 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
 
     
     if level == "top":
-        cqnode._transform_program = qml.transforms.core.TransformProgram(
-            [qml.transforms.core.BoundTransform(self, *targs, **tkwargs)]
-        ) + base
+        cqnode._transform_program.insert(0, BoundTransform(self, targs, {**tkwargs}))
     else:
         # insert into the full program without dropping anything
         base.add_transform(self, *targs, **tkwargs, level=level)
