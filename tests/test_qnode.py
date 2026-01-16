@@ -820,8 +820,12 @@ class TestIntegration:
         x = pnp.array(0.543, requires_grad=True)
         y = pnp.array(-0.654, requires_grad=True)
 
+        gradient_kwargs = {"argnum": [1]}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
-            dev, diff_method=diff_method, gradient_kwargs={"argnum": [1]}
+            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
             qml.RX(x, wires=[0])

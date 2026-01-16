@@ -124,6 +124,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` in reversed or standard mode has been
+  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
+
 <h3>Internal changes ⚙️</h3>
 
 * Updated test helper `get_device` to correctly seed lightning devices.
