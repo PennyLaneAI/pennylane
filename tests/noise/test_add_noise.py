@@ -427,7 +427,7 @@ class TestAddNoiseLevels:
 
         noisy_qnode = add_noise(f, noise_model=noise_model, level=level1)
 
-        transform_level1 = noisy_qnode.transform_program
+        transform_level1 = noisy_qnode.compile_pipeline
         transform_level2 = qml.workflow.get_transform_program(f, level=level2)
         transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
 

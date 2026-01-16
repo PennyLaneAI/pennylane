@@ -148,28 +148,28 @@ def add_noise(tape, noise_model, level="user"):
         transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, as determined using the
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="device").transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline
         CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, _expand_metric_tensor, metric_tensor)
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
         to an empty compile pipeline, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
         end of device-specific transforms, and `"gradient"` will allow addition at the end of transforms that expand trainable operations. For example:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="top").transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level="top").compile_pipeline
         CompilePipeline(add_noise)
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="user").transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level="user").compile_pipeline
         CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, add_noise, _expand_metric_tensor, metric_tensor)
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="device").transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline
         CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, _expand_metric_tensor, metric_tensor)
 
         Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the compile pipeline. For example, one can do:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level=2).transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level=2).compile_pipeline
         CompilePipeline(cancel_inverses, merge_rotations, add_noise)
 
-        >>> qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).transform_program
+        >>> qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline
         CompilePipeline(merge_rotations, undo_swaps, add_noise)
 
     """
@@ -271,7 +271,7 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
 
     compile_pipeline = get_transform_program(qnode, level=level)
 
-    cqnode._transform_program = compile_pipeline
-    cqnode.transform_program.append(BoundTransform(self, targs, {**tkwargs}))
+    cqnode._compile_pipeline = compile_pipeline
+    cqnode.compile_pipeline.append(BoundTransform(self, targs, {**tkwargs}))
 
     return cqnode

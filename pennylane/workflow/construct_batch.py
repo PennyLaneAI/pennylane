@@ -78,7 +78,7 @@ def marker(tape, level: str):
 
 
 def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
-    program = CompilePipeline(qnode.transform_program)
+    program = CompilePipeline(qnode.compile_pipeline)
 
     if getattr(gradient_fn, "expand_transform", False):
         program.add_transform(
@@ -332,13 +332,13 @@ def get_transform_program(
     has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
-    num_user = len(qnode.transform_program)
-    if qnode.transform_program.has_final_transform:
+    num_user = len(qnode.compile_pipeline)
+    if qnode.compile_pipeline.has_final_transform:
         # final transform is placed after device transforms
         num_user -= 1
         if (
-            len(qnode.transform_program) > 1
-            and qnode.transform_program[-1].expand_transform == qnode.transform_program[-2]
+            len(qnode.compile_pipeline) > 1
+            and qnode.compile_pipeline[-1].expand_transform == qnode.compile_pipeline[-2]
         ):
             # The expand transform associated with the final transform
             num_user -= 1
@@ -364,13 +364,13 @@ def get_transform_program(
 
     resolved_program = full_transform_program[level]
 
-    if qnode.transform_program.has_final_transform and readd_final_transform:
+    if qnode.compile_pipeline.has_final_transform and readd_final_transform:
         if (
-            len(qnode.transform_program) > 1
-            and qnode.transform_program[-1].expand_transform == qnode.transform_program[-2]
+            len(qnode.compile_pipeline) > 1
+            and qnode.compile_pipeline[-1].expand_transform == qnode.compile_pipeline[-2]
         ):
             final_transform_start = -2
-        resolved_program += qnode.transform_program[final_transform_start:]
+        resolved_program += qnode.compile_pipeline[final_transform_start:]
 
     return resolved_program
 
@@ -471,7 +471,7 @@ def construct_batch(
     """
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
-    user_program = qnode.transform_program
+    user_program = qnode.compile_pipeline
     _validate_custom_levels(user_program)
     num_user_transforms = len(user_program)
 

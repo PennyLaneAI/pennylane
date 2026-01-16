@@ -28,7 +28,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
-from .transform_dispatcher import BoundTransform, Transform
+from .transform import BoundTransform, Transform
 
 if TYPE_CHECKING:
     import jax

@@ -188,7 +188,7 @@ def _specs_qjit_intermediate_passes(
     from catalyst.python_interface.inspection import mlir_specs
 
     # Note that this only gets transforms manually applied by the user
-    trans_prog = original_qnode.transform_program
+    trans_prog = original_qnode.compile_pipeline
 
     single_level = isinstance(level, (int, str)) and not level in ("all", "all-mlir")
 

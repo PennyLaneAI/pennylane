@@ -220,7 +220,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     # Expand user transforms applied to the qnode
-    qfunc_jaxpr = qnode.transform_program(qfunc_jaxpr, temp_consts, *temp_args)
+    qfunc_jaxpr = qnode.compile_pipeline(qfunc_jaxpr, temp_consts, *temp_args)
     temp_consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
@@ -516,7 +516,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     """
     # apply transform to a callable so will be captured when called
     qnode_func = partial(_bind_qnode, qnode)
-    for t in qnode.transform_program:
+    for t in qnode.compile_pipeline:
         qnode_func = t(qnode_func)
 
     return qnode_func(*args, **kwargs)
