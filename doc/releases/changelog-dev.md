@@ -25,6 +25,71 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is removed. Instead,
+  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
+  :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and 
+  :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+  [(#8926)](https://github.com/PennyLaneAI/pennylane/pull/8926)
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been removed in 0.45. Instead, 
+  with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+  [(#8928)](https://github.com/PennyLaneAI/pennylane/pull/8928)
+
+  As an example, consider the case of running the following circuit on a device that does not natively support ``CNOT`` gates:
+
+  .. code-block:: python3
+
+
+    def circuit():
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.X(1))
+
+  Instead of defining the ``CNOT`` decomposition as:
+
+  .. code-block:: python3
+
+    def custom_cnot(wires):
+      return [
+          qml.Hadamard(wires=wires[1]),
+          qml.CZ(wires=[wires[0], wires[1]]),
+          qml.Hadamard(wires=wires[1])
+      ]
+
+    dev = qml.device('default.qubit', wires=2, custom_decomps={"CNOT" : custom_cnot})
+    qnode = qml.QNode(circuit, dev)
+    print(qml.draw(qnode, level="device")())
+
+  The same result would now be obtained using:
+
+  .. code-block:: python3
+
+    @qml.decomposition.register_resources({
+        qml.H: 2,
+        qml.CZ: 1
+    })
+    def _custom_cnot_decomposition(wires, **_):
+      qml.Hadamard(wires=wires[1])
+      qml.CZ(wires=[wires[0], wires[1]])
+      qml.Hadamard(wires=wires[1])
+
+    qml.decomposition.add_decomps(qml.CNOT, _custom_cnot_decomposition)
+
+    qml.decomposition.enable_graph()
+
+    @qml.transforms.decompose(gate_set={qml.CZ, qml.H})
+    def circuit():
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.X(1))
+
+    dev = qml.device('default.qubit', wires=2)
+    qnode = qml.QNode(circuit, dev)
+
+  >>> print(qml.draw(qnode, level="device")())
+  0: ────╭●────┤
+  1: ──H─╰Z──H─┤  <X>
+
 * The `pennylane.operation.Operator.is_hermitian` property has been removed and replaced 
   with `pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
   Alternatively, consider using the `pennylane.is_hermitian` function instead as it provides a more reliable check for hermiticity.
@@ -72,6 +137,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Marcus Edwards,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
