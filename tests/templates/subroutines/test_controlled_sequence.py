@@ -252,6 +252,7 @@ class TestIntegration:
         assert jac.shape == (16,)
         assert np.allclose(jac, self.exp_jac, atol=0.006)
 
+    @pytest.mark.local_salt(0)
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):
