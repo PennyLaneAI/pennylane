@@ -143,7 +143,7 @@ jobs:
         inputs.workflow == 'qchem-tests' ||
         inputs.workflow == 'gradient-tests' ||
         inputs.workflow == 'data-tests' ||
-        inputs.workflow == 'device-tests' || true
+        inputs.workflow == 'device-tests' 
       }}
     strategy:
       max-parallel: 5
