@@ -34,5 +34,6 @@ requests==2.32.4
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme
 sphinxext-opengraph==0.9.0
+sphinx-sitemap
 matplotlib==3.10.0
 diastatic-malt
