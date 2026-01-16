@@ -1293,18 +1293,28 @@ class TestQubitIntegrationHigherOrder:
             # Cannot find a way to specify an aux wire that is not in use!
             with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
                 g = jac_fn(a, b)
+
+                expected_g = np.array(
+                    [
+                        [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                        [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+                    ]
+                )
+                assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
+
+                hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
         else:
             g = jac_fn(a, b)
 
-        expected_g = np.array(
-            [
-                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-            ]
-        )
-        assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
+            expected_g = np.array(
+                [
+                    [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                    [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+                ]
+            )
+            assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
 
-        hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
+            hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
 
         expected_hess = np.array(
             [
