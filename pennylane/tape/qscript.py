@@ -939,7 +939,7 @@ class QuantumScript:
             The tape.expand method is deprecated in PennyLane v0.45 and will be removed in v0.46.
             Please use the qml.transforms.decompose function for decomposing circuits.
             """,
-            PennyLaneDeprecationWarning
+            PennyLaneDeprecationWarning,
         )
 
         return qml.tape.expand_tape(

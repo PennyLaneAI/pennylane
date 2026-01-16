@@ -20,6 +20,7 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.noise.insert_ops import insert
 from pennylane.noise.mitigate import (
     _polyfit,
@@ -727,7 +728,8 @@ class TestDifferentiableZNE:
 
         theta = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
 
-        res = mitigated_qnode(theta)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = mitigated_qnode(theta)
 
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         res.backward()
@@ -865,15 +867,17 @@ class TestDifferentiableZNE:
 
         theta = torch.tensor([np.pi / 4, np.pi / 6], requires_grad=True)
 
-        res = qml.math.stack(mitigated_qnode(theta))
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
-        grad = torch.autograd.functional.jacobian(
-            lambda t: qml.math.stack(mitigated_qnode(t)), theta
-        )
-        grad_ideal = torch.autograd.functional.jacobian(
-            lambda t: qml.math.stack(qnode_ideal(t)), theta
-        )
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            grad = torch.autograd.functional.jacobian(
+                lambda t: qml.math.stack(mitigated_qnode(t)), theta
+            )
+            grad_ideal = torch.autograd.functional.jacobian(
+                lambda t: qml.math.stack(qnode_ideal(t)), theta
+            )
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 

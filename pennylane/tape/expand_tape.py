@@ -22,9 +22,9 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.queuing import QueuingManager
 
+from ..exceptions import PennyLaneDeprecationWarning
 from .qscript import QuantumScript
 from .tape import _validate_computational_basis_sampling, rotations_and_diagonal_measurements
-from ..exceptions import PennyLaneDeprecationWarning
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -143,7 +143,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         The expand_tape function is deprecated in PennyLane v0.45 and will be removed in v0.46.
         Please use the qml.transforms.decompose function for decomposing circuits.
         """,
-        PennyLaneDeprecationWarning
+        PennyLaneDeprecationWarning,
     )
 
     if depth == 0:
@@ -240,7 +240,7 @@ def expand_tape_state_prep(tape, skip_first=True):
         The expand_tape_state_prep function is deprecated in PennyLane v0.45 and will be removed in v0.46.
         Please use the qml.transforms.decompose function for decomposing circuits.
         """,
-        PennyLaneDeprecationWarning
+        PennyLaneDeprecationWarning,
     )
 
     first_op = tape.operations[0]

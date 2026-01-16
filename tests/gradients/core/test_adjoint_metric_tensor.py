@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
@@ -332,11 +333,14 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*t_params)
-        mt = qml.adjoint_metric_tensor(circuit)(*t_params)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
         assert qml.math.allclose(mt, expected)
 
         tape = qml.workflow.construct_tape(circuit)(*t_params)
-        met_tens = qml.adjoint_metric_tensor(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            met_tens = qml.adjoint_metric_tensor(tape)
         expected = qml.math.reshape(expected, qml.math.shape(met_tens))
         assert qml.math.allclose(met_tens.detach().numpy(), expected)
 
@@ -575,8 +579,9 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_fn = qml.adjoint_metric_tensor(circuit)
-        mt_jac = torch.autograd.functional.jacobian(mt_fn, *t_params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt_fn = qml.adjoint_metric_tensor(circuit)
+            mt_jac = torch.autograd.functional.jacobian(mt_fn, *t_params)
 
         if isinstance(mt_jac, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))

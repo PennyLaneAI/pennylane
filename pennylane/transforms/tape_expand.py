@@ -15,12 +15,12 @@
 generate such functions from."""
 import warnings
 
-# pylint: disable=unused-argument
-
 import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
+
+# pylint: disable=unused-argument
 
 
 def _update_trainable_params(tape):
@@ -187,7 +187,7 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
         The create_expand_trainable_multipar is deprecated in PennyLane v0.45 and will be removed in v0.46.
         Please use the qml.transforms.decompose function for decomposing circuits.
         """,
-        PennyLaneDeprecationWarning
+        PennyLaneDeprecationWarning,
     )
 
     if not use_tape_argnum:
