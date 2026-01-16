@@ -143,6 +143,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug that `qml.QubitDensityMatrix` was applied in `default.mixed` device using `qml.math.partial_trace` incorrectly.
+  This would cause wrong results as described in [this issue](https://github.com/PennyLaneAI/pennylane/pull/8932).
+  [(#8933)](https://github.com/PennyLaneAI/pennylane/pull/8933)
+
 * Fixes an issue when binding a transform when the first positional arg
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
@@ -151,6 +155,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,
 Omkar Sarkar,
