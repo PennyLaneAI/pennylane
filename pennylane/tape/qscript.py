@@ -19,12 +19,14 @@ executed by a device.
 
 import contextlib
 import copy
+import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
 from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
@@ -931,6 +933,15 @@ class QuantumScript:
             [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
         """
+
+        warnings.warn(
+            """
+            The tape.expand method is deprecated in PennyLane v0.45 and will be removed in v0.46.
+            Please use the qml.transforms.decompose function for decomposing circuits.
+            """,
+            PennyLaneDeprecationWarning
+        )
+
         return qml.tape.expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )

@@ -13,10 +13,13 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
+import warnings
+
 # pylint: disable=unused-argument
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 
 
@@ -178,6 +181,14 @@ expand_trainable_multipar = create_expand_fn(
 
 def create_expand_trainable_multipar(tape, use_tape_argnum=False):
     """Creates the expand_trainable_multipar expansion transform with an option to include argnums."""
+
+    warnings.warn(
+        """
+        The create_expand_trainable_multipar is deprecated in PennyLane v0.45 and will be removed in v0.46.
+        Please use the qml.transforms.decompose function for decomposing circuits.
+        """,
+        PennyLaneDeprecationWarning
+    )
 
     if not use_tape_argnum:
         return expand_trainable_multipar
