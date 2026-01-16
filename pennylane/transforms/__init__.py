@@ -103,7 +103,6 @@ both transforms and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.set_decomposition
     ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
@@ -452,9 +451,7 @@ from .tape_expand import (
     expand_nonunitary_gen,
     expand_trainable_multipar,
     create_expand_fn,
-    create_decomp_expand_fn,
     create_expand_trainable_multipar,
-    set_decomposition,
 )
 from .transpile import transpile
 from .zx import (
