@@ -59,4 +59,4 @@ MBQC_GATES.name = "MBQC"
 
 ALL_QUBIT_OPS = GateSet(ops.qubit.__all__, name="All Qubit Gates")
 
-ALL_OPS = GateSet(ops.__all__, name="All Pennylane Gates")
+ALL_OPS = GateSet(ops.__all__, name="All PennyLane Gates")
