@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
+  that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
+  [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+
 <h3>Improvements 🛠</h3>
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
@@ -151,6 +155,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,
