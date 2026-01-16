@@ -179,20 +179,14 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if self.stopping_condition(op):
                 return self.interpret_operation(op)
 
-            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
+            rule = self._decomp_graph_solution.decomposition(
                 op, num_work_wires=self._num_work_wires
-            ):
-                rule = self._decomp_graph_solution.decomposition(
-                    op, num_work_wires=self._num_work_wires
-                )
-                num_wires = len(op.wires)
+            )
+            num_wires = len(op.wires)
 
-                def compute_qfunc_decomposition(*_args, **_kwargs):
-                    wires = math.array(_args[-num_wires:], like="jax")
-                    rule(*_args[:-num_wires], wires=wires, **_kwargs)
-
-            else:
-                compute_qfunc_decomposition = op.compute_qfunc_decomposition
+            def compute_qfunc_decomposition(*_args, **_kwargs):
+                wires = math.array(_args[-num_wires:], like="jax")
+                rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
 
@@ -303,13 +297,11 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
 
-            # _evaluate_jaxpr_decomposition should be used when the operator defines a
-            # compute_qfunc_decomposition, or if graph-based decomposition is enabled and
-            # a solution is found for this operator in the graph.
-            if (
-                op.has_qfunc_decomposition
-                or self._decomp_graph_solution
-                and self._decomp_graph_solution.is_solved_for(op, self._num_work_wires)
+            # _evaluate_jaxpr_decomposition should be used when graph-based
+            # decomposition is enabled and a solution is found for this
+            # operator in the graph.
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
+                op, self._num_work_wires
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
