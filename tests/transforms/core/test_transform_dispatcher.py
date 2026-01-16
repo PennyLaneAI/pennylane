@@ -957,6 +957,19 @@ dummy_qnode = qml.QNode(dummy_fn, qml.device("default.qubit"))
 
 class TestSetupInputs:
 
+    def test_setup_inputs_type_error(self):
+        """Test that errors from the types indicate the original transform."""
+
+        def setup_inputs(a):
+            return (a,), {}
+
+        a = qml.transform(pass_name="bla", setup_inputs=setup_inputs)
+
+        with pytest.raises(
+            TypeError, match="<transform: bla>() takes 1 positional argument but 2 were given"
+        ):
+            a(1, 2)
+
     def test_default_with_pass_name_def(self):
         """Test that the default setup inputs when no tape definition exists just passes on the inputs."""
 

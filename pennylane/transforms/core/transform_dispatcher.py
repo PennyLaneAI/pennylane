@@ -710,7 +710,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 "or provide keyword arguments to create a BoundTransform for composition."
             )
         if not args and kwargs:
-            args, kwargs = self._setup_inputs(*args, **kwargs)
+            args, kwargs = self.setup_inputs(*args, **kwargs)
             return BoundTransform(self, args=args, kwargs=kwargs)
         return self._apply_transform(*args, **kwargs)
 
@@ -755,7 +755,12 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
     def setup_inputs(self, *targs, **tkwargs):
         """Call the setup_inputs function."""
-        return self._setup_inputs(*targs, **tkwargs)
+        try:
+            return self._setup_inputs(*targs, **tkwargs)
+        except TypeError as e:
+            message = e.args[0]
+            new_message = message.replace(self._setup_inputs.__name__, repr(self))
+            raise TypeError(new_message) from e
 
     @property
     def tape_transform(self):

@@ -60,8 +60,10 @@ def gridsynth_setup_inputs(epsilon: float = 1e-4, ppr_basis: bool = False):
         Note: Simulating with ``ppr_basis=True`` is currently not supported.
 
     """
-    assert isinstance(ppr_basis, bool)
-    assert isinstance(epsilon, float)
+    if not isinstance(ppr_basis, bool):
+        raise ValueError(f"ppr_basis must be of type bool. Got {ppr_basis}")
+    if not isinstance(epsilon, float):
+        raise ValueError(f"epsilon must be of type float. Got {epsilon}.")
     return (), {"epsilon": epsilon, "ppr_basis": ppr_basis}
 
 

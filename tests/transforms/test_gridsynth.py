@@ -42,3 +42,12 @@ class TestGridsynth:
         bound_t = gridsynth(1e-6)
         assert bound_t.args == ()
         assert bound_t.kwargs == {"epsilon": 1e-6, "ppr_basis": False}
+
+    def test_bad_inputs(self):
+        """Test that bad inputs raise errors."""
+
+        with pytest.raises(ValueError, match="ppr_basis must be of type bool"):
+            gridsynth(ppr_basis="a")
+
+        with pytest.raises(ValueError, match="epsilon must be of type float."):
+            gridsynth(epsilon="a")

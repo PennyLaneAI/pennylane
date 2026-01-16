@@ -94,6 +94,11 @@ class TestTransformsSetup:
         assert bound_t.kwargs == {"max_pauli_size": 0}
         assert bound_t.pass_name == "commute-ppr"
 
+        with pytest.raises(ValueError, match="max_pauli_size must be an int and >= 0."):
+            commute_ppr(max_pauli_size="a")
+        with pytest.raises(ValueError, match="max_pauli_size must be an int and >= 0."):
+            commute_ppr(max_pauli_size=-1)
+
     def test_merge_ppr_ppm_setup(self):
         """Test that merge_ppr_ppm has a default max_pauli_size=0."""
 
@@ -102,6 +107,11 @@ class TestTransformsSetup:
         assert bound_t.args == ()
         assert bound_t.kwargs == {"max_pauli_size": 0}
         assert bound_t.pass_name == "merge-ppr-ppm"
+
+        with pytest.raises(ValueError, match="max_pauli_size must be an int and >= 0."):
+            merge_ppr_ppm(max_pauli_size="a")
+        with pytest.raises(ValueError, match="max_pauli_size must be an int and >= 0."):
+            merge_ppr_ppm(max_pauli_size=-1)
 
     def test_ppr_to_ppm_setup(self):
         """Test that ppr_to_ppm default setup."""
@@ -124,6 +134,11 @@ class TestTransformsSetup:
             "max_pauli_size": 0,
         }
         assert bound_t.pass_name == "ppm-compilation"
+
+        with pytest.raises(ValueError, match="max_pauli_size must be an int and >= 0."):
+            ppm_compilation(max_pauli_size="a")
+        with pytest.raises(ValueError, match="max_pauli_size must be an int and >= 0."):
+            ppm_compilation(max_pauli_size=-1)
 
     def test_reduce_t_depth_setup(self):
         """Test that ppr_to_ppm default setup."""

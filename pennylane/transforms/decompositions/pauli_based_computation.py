@@ -216,7 +216,8 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     Note that if a commutation resulted in a PPR acting on more than ``max_pauli_size`` qubits
     (here, ``max_pauli_size = 2``), that commutation would be skipped.
     """
-    assert isinstance(max_pauli_size, int)
+    if not isinstance(max_pauli_size, int) or max_pauli_size < 0:
+        raise ValueError(f"max_pauli_size must be an int and >= 0. Got {max_pauli_size}")
     return (), {"max_pauli_size": max_pauli_size}
 
 
@@ -311,7 +312,8 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
     operation would be skipped.
     """
-    assert isinstance(max_pauli_size, int)
+    if not isinstance(max_pauli_size, int) or max_pauli_size < 0:
+        raise ValueError(f"max_pauli_size must be an int and >= 0. Got {max_pauli_size}")
     return (), {"max_pauli_size": max_pauli_size}
 
 
@@ -543,6 +545,8 @@ def ppm_compilation_setup_inputs(
     ``max_pauli_size`` qubits (here, ``max_pauli_size = 2``), that commutation or merge would be
     skipped.
     """
+    if not isinstance(max_pauli_size, int) or max_pauli_size < 0:
+        raise ValueError(f"max_pauli_size must be an int and >= 0. Got {max_pauli_size}")
     return (), {
         "decompose_method": decompose_method,
         "avoid_y_measure": avoid_y_measure,
