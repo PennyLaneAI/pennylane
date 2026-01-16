@@ -268,10 +268,17 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
 
+    
     if level == "top":
-        # "top" means prepend without discarding whatever is already there
-        cqnode._transform_program = BoundTransform(self, targs, dict(tkwargs)) + qnode.transform_program
-        return cqnode
+        cqnode._transform_program = qml.transforms.core.TransformProgram(
+            [qml.transforms.core.BoundTransform(self, *targs, **tkwargs)]
+        ) + base
+    else:
+        # insert into the full program without dropping anything
+        base.add_transform(self, *targs, **tkwargs, level=level)
+        cqnode._transform_program = base
+    
+    return cqnode
 
     # IMPORTANT:
     # Base program must be the same compile-pipeline *slice* used by the tests.
