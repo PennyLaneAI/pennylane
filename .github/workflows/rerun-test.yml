@@ -62,7 +62,7 @@ jobs:
         # if: ${{ inputs.workflow != 'documentation-tests' && inputs.workflow != 'docs' && inputs.workflow != 'format' && inputs.workflow != 'module-validation' && inputs.workflow != 'package-warning-as-errors' && inputs.workflow != 'test-numpy1-compat' }}
         id: set-skip-tests
         run: |
-          ALL_TESTS='("autograd-tests", "jax-tests", "torch-tests", "capture-jax-tests", "core-tests", "all-interfaces-tests", "external-library-tests", "qcut-tests", "qchem-tests", "gradient-tests", "data-tests", "device-tests")'
+          ALL_TESTS='autograd-tests,jax-tests,torch-tests,capture-jax-tests,core-tests,all-interfaces-tests,external-library-tests,qcut-tests,qchem-tests,gradient-tests,data-tests,device-tests'
           WORKFLOW="device-tests" #"${{ inputs.workflow }}"
           SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
           echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
