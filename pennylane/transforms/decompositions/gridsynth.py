@@ -13,13 +13,10 @@
 # limitations under the License.
 """Alias transform function for the Ross-Selinger decomposition (GridSynth) for qjit."""
 
-from functools import partial
-
 from pennylane.transforms.core import transform
 
 
-@partial(transform, pass_name="gridsynth")
-def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
+def gridsynth_setup_inputs(epsilon: float = 1e-4, ppr_basis: bool = False):
     r"""Decomposes RZ and PhaseShift gates into the Clifford+T basis or the PPR basis.
 
     .. warning::
@@ -63,7 +60,11 @@ def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
         Note: Simulating with ``ppr_basis=True`` is currently not supported.
 
     """
+    if not isinstance(ppr_basis, bool):
+        raise ValueError(f"ppr_basis must be of type bool. Got {ppr_basis}")
+    if not isinstance(epsilon, float):
+        raise ValueError(f"epsilon must be of type float. Got {epsilon}.")
+    return (), {"epsilon": epsilon, "ppr_basis": ppr_basis}
 
-    raise NotImplementedError(
-        "The gridsynth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
-    )
+
+gridsynth = transform(pass_name="gridsynth", setup_inputs=gridsynth_setup_inputs)
