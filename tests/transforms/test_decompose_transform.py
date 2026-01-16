@@ -67,6 +67,7 @@ class InfiniteOp(Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
+@pytest.mark.usefixtures("disable_graph_decomposition")
 class TestDecompose:
     """Unit tests for decompose function"""
 
@@ -284,7 +285,7 @@ class TestDecompose:
 def test_null_postprocessing():
     """Tests the null postprocessing function in the decompose transform"""
     tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
-    (_,), fn = qml.transforms.decompose(tape, gate_set={qml.RX, qml.RZ})
+    (_,), fn = qml.transforms.decompose(tape, gate_set={qml.RX, qml.RZ, qml.GlobalPhase})
     assert fn((1,)) == 1
 
 

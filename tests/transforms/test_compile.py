@@ -302,6 +302,7 @@ class TestCompileIntegration:
         tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         compare_operation_lists(tape.operations, names_expected, wires_expected)
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_decompose_into_basis_gates(self, wires):
         """Test that running multiple passes produces the correct results."""
@@ -341,6 +342,61 @@ class TestCompileIntegration:
 
         wires_expected = [
             Wires(wires[0]),
+            Wires(wires[0]),
+            Wires(wires[0]),
+            Wires([wires[2], wires[1]]),
+            Wires(wires[0]),
+            Wires(wires[1]),
+            Wires(wires[2]),
+            Wires(wires[2]),
+            Wires([wires[1], wires[2]]),
+            Wires(wires[2]),
+            Wires([wires[1], wires[2]]),
+            Wires([]),
+        ]
+
+        tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
+        transformed_ops = _fuse_global_phases(tape.operations)
+        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    def test_compile_decompose_into_basis_gates_graph(self, wires):
+        """Test that running multiple passes produces the correct results."""
+
+        qfunc = build_qfunc(wires)
+        dev = qml.device("default.qubit", wires=Wires(wires))
+
+        qnode = qml.QNode(qfunc, dev)
+
+        pipeline = [partial(commute_controlled, direction="left"), cancel_inverses, merge_rotations]
+
+        basis_set = ["CNOT", "RX", "RY", "RZ", "GlobalPhase"]
+
+        transformed_qfunc = compile(qfunc, pipeline=pipeline, basis_set=basis_set)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        original_result = qnode(0.3, 0.4, 0.5)
+        transformed_result = transformed_qnode(0.3, 0.4, 0.5)
+        assert np.allclose(
+            original_result, transformed_result
+        ), f"{original_result} != {transformed_result}"
+
+        names_expected = [
+            "RZ",
+            "RY",
+            "CNOT",
+            "RX",
+            "RZ",
+            "RY",
+            "RY",
+            "CNOT",
+            "RY",
+            "CNOT",
+            "GlobalPhase",
+        ]
+
+        wires_expected = [
             Wires(wires[0]),
             Wires(wires[0]),
             Wires([wires[2], wires[1]]),

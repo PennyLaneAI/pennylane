@@ -67,6 +67,7 @@ def test_weights_affect_graph_decomposition():
     ]
 
 
+@pytest.mark.usefixtures("disable_graph_decomposition")
 @pytest.mark.unit
 def test_fixed_alt_decomps_not_available():
     """Test that a TypeError is raised when graph is disabled and
