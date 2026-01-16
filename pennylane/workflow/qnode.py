@@ -662,11 +662,14 @@ class QNode:
             Access through ``transform_program`` will be removed in PennyLane v0.46.
 
         """
-        warnings.warn(
-            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
-            "Access through 'transform_program' will be removed in PennyLane v0.46.",
-            PennyLaneDeprecationWarning,
-        )
+        # TODO: After https://github.com/PennyLaneAI/catalyst/pull/2385/changes merges
+        # uncomment this deprecation message.
+
+        # warnings.warn(
+        #    "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
+        #    "Access through 'transform_program' will be removed in PennyLane v0.46.",
+        #    PennyLaneDeprecationWarning,
+        # )
         return self.compile_pipeline
 
     @property
