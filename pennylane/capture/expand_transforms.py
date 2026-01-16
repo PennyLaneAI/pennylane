@@ -20,7 +20,9 @@ from functools import wraps
 
 import jax
 
-from pennylane.transforms.core.transform_dispatcher import _create_transform_primitive
+from pennylane.transforms.core.transform_dispatcher import (  # tach-ignore
+    _create_transform_primitive,
+)
 
 from .base_interpreter import PlxprInterpreter
 

@@ -318,6 +318,17 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 path = "pennylane.transforms.core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+[[interfaces]]
+expose = [
+    "transform",
+    "Transform",
+    "TransformError",
+    "BoundTransform",
+    "CompilePipeline",
+    "TransformProgram"
+]
+from = ["pennylane.transforms.core"]
+
 [[modules]]
 path = "pennylane.operation"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
