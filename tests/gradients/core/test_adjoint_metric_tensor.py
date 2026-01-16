@@ -455,7 +455,8 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.adjoint_metric_tensor(circuit)(*t_params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
