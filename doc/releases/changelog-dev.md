@@ -29,6 +29,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
+  and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
+  [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
+
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is removed. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
   or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
@@ -117,7 +121,6 @@
     - `qml.estimator.estimate_error` in favor of `qml.resources.estimate_error`
     - `qml.estimator.FirstQuantization` in favor of `qml.resources.FirstQuantization`
     - `qml.estimator.DoubleFactorization` in favor of `qml.resources.DoubleFactorization`
-
 
 <h3>Deprecations 👋</h3>
 
