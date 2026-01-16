@@ -160,8 +160,14 @@ class TestBoundTransform:
 
     def test_repr(self):
         """Tests for the repr of a transform container."""
-        t1 = qml.transforms.core.BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
-        assert repr(t1) == "<compile((), {'num_passes': 2})>"
+        t1 = qml.transforms.compile(num_passes=2)
+        assert repr(t1) == "<compile(num_passes=2)>"
+
+        t2 = qml.transforms.merge_rotations(1e-6)
+        assert repr(t2) == "<merge_rotations(1e-06)>"
+
+        t3 = qml.transforms.merge_rotations(1e-6, include_gates=["RX"])
+        assert repr(t3) == "<merge_rotations(1e-06, include_gates=['RX'])>"
 
     def test_equality_and_hash(self):
         """Tests that we can compare BoundTransform objects with the '==' and '!=' operators."""
@@ -926,6 +932,121 @@ class TestTransform:  # pylint: disable=too-many-public-methods
                 tape._ops.pop(index)  # pylint:disable=protected-access
                 return [tape], lambda x: x
 
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            def setup_inputs(x, y):
+                return (x, y), {}
+
+            qml.transform(setup_inputs=setup_inputs, pass_name="bla")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+            with pytest.raises(
+                ValueError, match="tape_transform or setup_inputs for use with sphinx."
+            ):
+                qml.transform(pass_name="bla")
+
+
+def dummy_fn():
+    return qml.state()
+
+
+dummy_qnode = qml.QNode(dummy_fn, qml.device("default.qubit"))
+
+
+class TestSetupInputs:
+
+    def test_setup_inputs_type_error(self):
+        """Test that errors from the types indicate the original transform."""
+
+        def setup_inputs(a):
+            return (a,), {}
+
+        a = qml.transform(pass_name="bla", setup_inputs=setup_inputs)
+
+        with pytest.raises(
+            TypeError, match=r"<transform: bla> takes 1 positional argument but 2 were given"
+        ):
+            a(1, 2)
+
+    def test_default_with_pass_name_def(self):
+        """Test that the default setup inputs when no tape definition exists just passes on the inputs."""
+
+        t = qml.transform(pass_name="my_pass_name")
+
+        bound_t = t(1.0, key="value")
+        assert bound_t.args == (1.0,)
+        assert bound_t.kwargs == {"key": "value"}
+
+    def test_eager_error_on_bad_input(self):
+        """Test that an eager error is provided on binding a transform with bad inputs."""
+
+        # pylint: disable=unused-argument
+        def f(tape, val=1):
+            return (tape,), lambda res: res[0]
+
+        def setup_inputs(val=1):
+            return (val,), {}
+
+        t = qml.transform(f, setup_inputs=setup_inputs)
+
+        with pytest.raises(TypeError, match="got an unexpected keyword argument 'bad'"):
+            t(bad=3)
+
+    @pytest.mark.parametrize(
+        "target", (dummy_qnode, qml.device("default.qubit"), qml.CompilePipeline())
+    )
+    def test_eager_error_on_bad_input_dispatch(self, target):
+        """Test that an eager error is provided on binding a transform with bad inputs when dispatched onto various objects.."""
+
+        # pylint: disable=unused-argument
+        def f(tape, val=1):
+            return (tape,), lambda res: res[0]
+
+        def setup_inputs(val=1):
+            return (val,), {}
+
+        t = qml.transform(f, setup_inputs=setup_inputs)
+
+        with pytest.raises(TypeError, match="got an unexpected keyword argument 'bad'"):
+            t(target, bad=3)
+
+    def test_run_validation(self):
+        """Test that custom setup_input functions can be provided and are run at dispatch time."""
+
+        def setup_inputs(x):
+            if not isinstance(x, int):
+                raise ValueError("not an int")
+            return (x,), {}
+
+        # pylint: disable=unused-argument
+        def func(tape, x):
+            return (tape,), lambda res: res[0]
+
+        t = qml.transform(func, setup_inputs=setup_inputs)
+
+        with pytest.raises(ValueError, match="not an int"):
+            t(x="a")
+
+        bound_t = t(x=1)
+        assert bound_t.args == (1,)
+        assert bound_t.kwargs == {}
+
+        bound_t = t(1)
+        assert bound_t.args == (1,)
+        assert bound_t.kwargs == {}
+
+    def test_fill_in_defualt_value(self):
+        """Test that setup_inputs can fill in default values."""
+
+        def setup_inputs(x=1, y=2):
+            return (x, y), {}
+
+        t = qml.transform(pass_name="some_val", setup_inputs=setup_inputs)
+
+        bound_t = t(3)
+        assert bound_t.args == (3, 2)
+        assert bound_t.kwargs == {}
+
 
 class TestPassName:
 
@@ -949,7 +1070,7 @@ class TestPassName:
         assert repr(t) == "<transform: my_tape_def>"
 
         c = BoundTransform(t)
-        assert repr(c) == "<my_tape_def((), {})>"
+        assert repr(c) == "<my_tape_def()>"
 
     def test_providing_pass_name_without_tape_def(self):
         """Test that a transform can be defined by a pass_name without a tape based transform."""
@@ -961,10 +1082,16 @@ class TestPassName:
         assert repr(t) == "<transform: my_pass_name>"
 
         tape = qml.tape.QuantumScript()
-        with pytest.raises(NotImplementedError, match="has no defined tape transform."):
+        with pytest.raises(
+            NotImplementedError,
+            match="Transform <transform: my_pass_name> has no defined tape implementation",
+        ):
             t(tape)
 
-        with pytest.raises(NotImplementedError, match="has no defined tape transform."):
+        with pytest.raises(
+            NotImplementedError,
+            match="Transform <transform: my_pass_name> has no defined tape implementation",
+        ):
             t((tape, tape))
 
         @t
@@ -974,7 +1101,7 @@ class TestPassName:
 
         expected_container = BoundTransform(t)
         assert expected_container.pass_name == "my_pass_name"
-        assert repr(expected_container) == "<my_pass_name((), {})>"
+        assert repr(expected_container) == "<my_pass_name()>"
         assert expected_container.tape_transform is None
         assert c.compile_pipeline[-1] == expected_container
         assert repr(c.compile_pipeline) == "CompilePipeline(my_pass_name)"

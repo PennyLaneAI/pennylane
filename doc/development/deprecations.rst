@@ -22,15 +22,6 @@ Pending deprecations
   - Deprecated in v0.44
   - Will be removed in v0.45
 
-* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
-  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
-  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
-  :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and 
-  :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
-
-  - Deprecated in v0.44
-  - Will be removed in v0.45
-
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
   :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
@@ -90,6 +81,20 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
+  and all subclasses that implemented them. The graph decomposition system should be used to enable capture instead.
+
+  - Removed in v0.45
+
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
+  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
+  :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and
+  :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+
+  - Deprecated in v0.44
+  - Removed in v0.45
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
   in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as

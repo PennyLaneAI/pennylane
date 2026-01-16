@@ -10,6 +10,10 @@
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
+* A function for setting up transform inputs, including setting default values and basic validation,
+  can now be provided to `qml.transform` via `setup_inputs`.
+  [(#8732)](https://github.com/PennyLaneAI/pennylane/pull/8732)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -24,6 +28,17 @@
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
 <h3>Breaking changes 💔</h3>
+
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
+  and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
+  [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
+
+* The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is removed. Instead,
+  the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
+  or :func:`~pennylane.transforms.defer_measurements` in its preprocess transforms if necessary. See
+  :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>` and 
+  :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
+  [(#8926)](https://github.com/PennyLaneAI/pennylane/pull/8926)
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been removed in 0.45. Instead, 
   with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
@@ -107,7 +122,6 @@
     - `qml.estimator.FirstQuantization` in favor of `qml.resources.FirstQuantization`
     - `qml.estimator.DoubleFactorization` in favor of `qml.resources.DoubleFactorization`
 
-
 <h3>Deprecations 👋</h3>
 
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
@@ -115,6 +129,9 @@
   [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
 
 <h3>Internal changes ⚙️</h3>
+
+* Updated test helper `get_device` to correctly seed lightning devices.
+  [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
 
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
