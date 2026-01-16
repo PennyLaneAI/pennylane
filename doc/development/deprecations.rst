@@ -88,7 +88,6 @@ Completed deprecation cycles
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used to enable capture instead.
 
-  - Deprecated in v0.44
   - Removed in v0.45
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
