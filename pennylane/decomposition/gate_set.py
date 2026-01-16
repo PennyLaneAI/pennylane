@@ -23,7 +23,7 @@ from pennylane.operation import Operator
 from .utils import translate_op_alias
 
 
-class GateSet:
+class GateSet(Mapping):
     """Stores the target gate set of a decomposition pass."""
 
     def __init__(self, gate_set: Iterable | Mapping, name=""):
@@ -39,6 +39,12 @@ class GateSet:
             return False
         return self._gate_set == value._gate_set
 
+    def __ne__(self, value: object, /) -> bool:
+        return not self.__eq__(value)
+
+    def __len__(self) -> int:
+        return len(self._gate_set)
+
     def __getitem__(self, key, /):
         return self._gate_set[_to_name(key)]
 
@@ -53,6 +59,18 @@ class GateSet:
 
     def __or__(self, other: GateSet, /) -> GateSet:
         return GateSet(self._gate_set | other._gate_set)
+
+    def keys(self):
+        return self._gate_set.keys()
+
+    def values(self):
+        return self._gate_set.values()
+
+    def items(self):
+        return self._gate_set.items()
+
+    def get(self, key, default=None):
+        return self._gate_set.get(_to_name(key), default)
 
     def __repr__(self) -> str:
         if self.name:

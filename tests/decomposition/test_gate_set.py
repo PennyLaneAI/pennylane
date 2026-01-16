@@ -16,6 +16,8 @@
 
 # pylint: disable=protected-access
 
+from collections.abc import Mapping
+
 import pytest
 
 import pennylane as qml
@@ -51,6 +53,17 @@ class TestGateSet:
         gate_set_two = GateSet({"RX", "RY", "CNOT"})
         assert gate_set == gate_set_two
         assert gate_set != qml.X
+
+    def test_gate_set_is_mapping(self):
+        """Tests that the GateSet is a mapping."""
+
+        gate_set = GateSet({qml.RX: 1, qml.RY: 1, qml.CNOT: 2})
+        assert isinstance(gate_set, Mapping)
+        assert len(gate_set) == 3
+        assert gate_set.get(qml.RX) == 1
+        assert list(gate_set.keys()) == ["RX", "RY", "CNOT"]
+        assert list(gate_set.values()) == [1, 1, 2]
+        assert list(gate_set.items()) == [("RX", 1), ("RY", 1), ("CNOT", 2)]
 
     def test_gate_set_immutable(self):
         """Tests that GateSet cannot be mutated."""
