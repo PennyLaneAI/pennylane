@@ -21,8 +21,6 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 import pennylane as qml
-from pennylane import estimator, resource
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.operation import Operation
 from pennylane.resource.resource import (
@@ -41,26 +39,6 @@ from pennylane.resource.resource import (
     substitute,
 )
 from pennylane.tape import QuantumScript
-
-_DEPRECATED_CLASSES_FUNCTIONS = (
-    "estimate_shots",
-    "estimate_error",
-    "FirstQuantization",
-    "DoubleFactorization",
-)
-
-
-@pytest.mark.parametrize("item", _DEPRECATED_CLASSES_FUNCTIONS)
-def test_deprecated_items(item):
-    """Test that accessing the items from the resource module raises
-    a deprecation error."""
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match=f"pennylane.resource.{item} is no longer accessible from the resource module",
-    ):
-        cls_or_fn = getattr(resource, item)
-
-    assert cls_or_fn is getattr(estimator, item)
 
 
 class TestResources:

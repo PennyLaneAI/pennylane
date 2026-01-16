@@ -194,6 +194,12 @@ class CompilePipeline:
     >>> 2 * original
     CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
 
+    We can create a new pipeline that will do multiple passes of the original with multiplication:
+
+    >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+    >>> 2 * original
+    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
+
     You can specify a transform program (``pipeline``) by passing these transforms to the ``CompilePipeline``
     class. By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit will
     be transformed with each pass within the pipeline sequentially:
