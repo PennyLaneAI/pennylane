@@ -20,11 +20,15 @@ from itertools import chain
 import numpy as np
 
 from pennylane import math
+from pennylane.devices.default_qutrit_mixed import stopping_condition
 from pennylane.devices.qubit import apply_operation, create_initial_state
+from pennylane.exceptions import TermsUndefinedError
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.measurements import MeasurementProcess
 from pennylane.ops import StatePrep, adjoint
 from pennylane.ops.functions import generator, map_wires
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.transforms.tape_expand import create_expand_trainable_multipar
 from pennylane.typing import PostprocessingFn
@@ -71,15 +75,8 @@ def _expand_trainable_multipar(
     return [expand_fn(tape)], lambda x: x[0]
 
 
-@partial(
-    transform,
-    expand_transform=_expand_trainable_multipar,
-    classical_cotransform=_contract_metric_tensor_with_cjac,
-    is_informative=True,
-    use_argnum_in_expand=True,
-)
 def adjoint_metric_tensor(
-    tape: QuantumScript,
+    tape: QuantumScript
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
@@ -156,96 +153,132 @@ def adjoint_metric_tensor(
     shot simulations.
     """
 
-    def processing_fn(tapes):
-        tape = tapes[0]
-        if tape.shots:
-            raise ValueError(
-                "The adjoint method for the metric tensor is only implemented for shots=None"
+    def _multipar_stopping_fn(obj):
+        try:
+            return (
+                isinstance(obj, MeasurementProcess)
+                or len(obj.data) == 0
+                or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
             )
-        if set(tape.wires) != set(range(tape.num_wires)):
-            wire_map = {w: i for i, w in enumerate(tape.wires)}
-            tapes, fn = map_wires(tape, wire_map)
-            tape = fn(tapes)
+        except TermsUndefinedError:
+            return True
 
-        # Divide all operations of a tape into trainable operations and blocks
-        # of untrainable operations after each trainable one.
+    interface = tape.interface
+    if not interface == "jax":
+        stopping_condition = _multipar_stopping_fn
+    else:
+        # how to get trainable params off of a QNode??
+        trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
+        trainable_ops = [info["op"] for info in trainable_par_info]
 
-        trainable_operations, group_after_trainable_op = _group_operations(tape)
+        def _argnum_trainable_multipar(obj):
+            return _multipar_stopping_fn(obj) or obj not in trainable_ops
 
-        dim = 2**tape.num_wires
-        # generate and extract initial state
-        prep = tape[0] if len(tape) > 0 and isinstance(tape[0], StatePrep) else None
+        stopping_condition = _argnum_trainable_multipar
 
-        interface = math.get_interface(*tape.get_parameters(trainable_only=False))
-        psi = create_initial_state(tape.wires, prep, like=interface)
+    @partial(
+        transform,
+        expand_transform=partial(decompose, stopping_condition=stopping_condition),
+        classical_cotransform=_contract_metric_tensor_with_cjac,
+        is_informative=True,
+        use_argnum_in_expand=True,
+    )
+    def _adjoint_metric_tensor(
+        tape: QuantumScript,
+    ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
-        # initialize metric tensor components (which all will be real-valued)
-        like_real = math.real(psi[0])
-        L = math.convert_like(math.zeros((tape.num_params, tape.num_params)), like_real)
-        T = math.convert_like(math.zeros((tape.num_params,)), like_real)
-
-        for op in group_after_trainable_op[-1][int(prep is not None) :]:
-            psi = apply_operation(op, psi)
-
-        for j, outer_op in enumerate(trainable_operations):
-            generator_1, prefactor_1 = generator(outer_op)
-
-            # the state vector phi is missing a factor of 1j * prefactor_1
-            phi = apply_operation(generator_1, psi)
-
-            phi_real, phi_imag = _reshape_real_imag(phi, dim)
-            diag_value = prefactor_1**2 * (
-                math.dot(phi_real, phi_real) + math.dot(phi_imag, phi_imag)
-            )
-            L = math.scatter_element_add(L, (j, j), diag_value)
-
-            lam = psi * 1.0
-            lam_real, lam_imag = _reshape_real_imag(lam, dim)
-
-            # this entry is missing a factor of 1j
-            value = prefactor_1 * (math.dot(lam_real, phi_real) + math.dot(lam_imag, phi_imag))
-            T = math.scatter_element_add(T, (j,), value)
-
-            for i in range(j - 1, -1, -1):
-                # after first iteration of inner loop: apply U_{i+1}^\dagger
-                if i < j - 1:
-                    phi = apply_operation(adjoint(trainable_operations[i + 1], lazy=False), phi)
-                # apply V_{i}^\dagger
-                for op in reversed(group_after_trainable_op[i]):
-                    adj_op = adjoint(op, lazy=False)
-                    phi = apply_operation(adj_op, phi)
-                    lam = apply_operation(adj_op, lam)
-
-                inner_op = trainable_operations[i]
-                # extract and apply G_i
-                generator_2, prefactor_2 = generator(inner_op)
-                # this state vector is missing a factor of 1j * prefactor_2
-                mu = apply_operation(generator_2, lam)
-
-                phi_real, phi_imag = _reshape_real_imag(phi, dim)
-                mu_real, mu_imag = _reshape_real_imag(mu, dim)
-                # this entry is missing a factor of 1j * (-1j) = 1, i.e. none
-                value = (
-                    prefactor_1
-                    * prefactor_2
-                    * (math.dot(mu_real, phi_real) + math.dot(mu_imag, phi_imag))
+        def processing_fn(tapes):
+            tape = tapes[0]
+            if tape.shots:
+                raise ValueError(
+                    "The adjoint method for the metric tensor is only implemented for shots=None"
                 )
-                L = math.scatter_element_add(
-                    L, [(i, j), (j, i)], value * math.convert_like(math.ones((2,)), value)
-                )
-                # apply U_i^\dagger
-                lam = apply_operation(adjoint(inner_op, lazy=False), lam)
+            if set(tape.wires) != set(range(tape.num_wires)):
+                wire_map = {w: i for i, w in enumerate(tape.wires)}
+                tapes, fn = map_wires(tape, wire_map)
+                tape = fn(tapes)
 
-            # apply U_j and V_j
-            psi = apply_operation(outer_op, psi)
-            for op in group_after_trainable_op[j]:
+            # Divide all operations of a tape into trainable operations and blocks
+            # of untrainable operations after each trainable one.
+
+            trainable_operations, group_after_trainable_op = _group_operations(tape)
+
+            dim = 2**tape.num_wires
+            # generate and extract initial state
+            prep = tape[0] if len(tape) > 0 and isinstance(tape[0], StatePrep) else None
+
+            interface = math.get_interface(*tape.get_parameters(trainable_only=False))
+            psi = create_initial_state(tape.wires, prep, like=interface)
+
+            # initialize metric tensor components (which all will be real-valued)
+            like_real = math.real(psi[0])
+            L = math.convert_like(math.zeros((tape.num_params, tape.num_params)), like_real)
+            T = math.convert_like(math.zeros((tape.num_params,)), like_real)
+
+            for op in group_after_trainable_op[-1][int(prep is not None) :]:
                 psi = apply_operation(op, psi)
 
-        # postprocessing: combine L and T into the metric tensor.
-        # We require outer(conj(T), T) here, but as we skipped the factor 1j above,
-        # the stored T is real-valued. Thus we have -1j*1j*outer(T, T) = outer(T, T)
-        metric_tensor = L - math.tensordot(T, T, 0)
+            for j, outer_op in enumerate(trainable_operations):
+                generator_1, prefactor_1 = generator(outer_op)
 
-        return metric_tensor
+                # the state vector phi is missing a factor of 1j * prefactor_1
+                phi = apply_operation(generator_1, psi)
 
-    return [tape], processing_fn
+                phi_real, phi_imag = _reshape_real_imag(phi, dim)
+                diag_value = prefactor_1**2 * (
+                    math.dot(phi_real, phi_real) + math.dot(phi_imag, phi_imag)
+                )
+                L = math.scatter_element_add(L, (j, j), diag_value)
+
+                lam = psi * 1.0
+                lam_real, lam_imag = _reshape_real_imag(lam, dim)
+
+                # this entry is missing a factor of 1j
+                value = prefactor_1 * (math.dot(lam_real, phi_real) + math.dot(lam_imag, phi_imag))
+                T = math.scatter_element_add(T, (j,), value)
+
+                for i in range(j - 1, -1, -1):
+                    # after first iteration of inner loop: apply U_{i+1}^\dagger
+                    if i < j - 1:
+                        phi = apply_operation(adjoint(trainable_operations[i + 1], lazy=False), phi)
+                    # apply V_{i}^\dagger
+                    for op in reversed(group_after_trainable_op[i]):
+                        adj_op = adjoint(op, lazy=False)
+                        phi = apply_operation(adj_op, phi)
+                        lam = apply_operation(adj_op, lam)
+
+                    inner_op = trainable_operations[i]
+                    # extract and apply G_i
+                    generator_2, prefactor_2 = generator(inner_op)
+                    # this state vector is missing a factor of 1j * prefactor_2
+                    mu = apply_operation(generator_2, lam)
+
+                    phi_real, phi_imag = _reshape_real_imag(phi, dim)
+                    mu_real, mu_imag = _reshape_real_imag(mu, dim)
+                    # this entry is missing a factor of 1j * (-1j) = 1, i.e. none
+                    value = (
+                        prefactor_1
+                        * prefactor_2
+                        * (math.dot(mu_real, phi_real) + math.dot(mu_imag, phi_imag))
+                    )
+                    L = math.scatter_element_add(
+                        L, [(i, j), (j, i)], value * math.convert_like(math.ones((2,)), value)
+                    )
+                    # apply U_i^\dagger
+                    lam = apply_operation(adjoint(inner_op, lazy=False), lam)
+
+                # apply U_j and V_j
+                psi = apply_operation(outer_op, psi)
+                for op in group_after_trainable_op[j]:
+                    psi = apply_operation(op, psi)
+
+            # postprocessing: combine L and T into the metric tensor.
+            # We require outer(conj(T), T) here, but as we skipped the factor 1j above,
+            # the stored T is real-valued. Thus we have -1j*1j*outer(T, T) = outer(T, T)
+            metric_tensor = L - math.tensordot(T, T, 0)
+
+            return metric_tensor
+
+        return [tape], processing_fn
+
+    return partial(_adjoint_metric_tensor, tape=tape)
