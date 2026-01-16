@@ -153,7 +153,8 @@ jobs:
     with:
       branch: ${{ github.ref }}
       job_name_suffix: " - rerun-${{ inputs.workflow }}"
+      job_name_prefix: "rerun-"
       upload_to_codecov: false
-      skip_ci_test_jobs: ${{ needs.prepare-run-count.outputs.skip-tests }}
+      skip_ci_test_jobs: 'autograd-tests,jax-tests,torch-tests,capture-jax-tests,core-tests,all-interfaces-tests,external-library-tests,qcut-tests,qchem-tests,gradient-tests,data-tests,device-tests'
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
