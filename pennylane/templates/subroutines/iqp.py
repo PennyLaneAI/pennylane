@@ -61,7 +61,7 @@ class IQP(Operation):
             :math:`\frac{1}{\sqrt(2)}(|00\dots0> + |11\dots1>)` is used in place of :math:`|00\dots0>`.
 
     Raises:
-        Exception: when ``pattern`` and ``weights`` have a different number of elements.
+        ValueError: when ``pattern`` and ``weights`` have a different number of elements.
 
     **Example:**
 
@@ -80,8 +80,8 @@ class IQP(Operation):
     [np.float64(-0.20768100160878344), np.float64(0.47132836417373947)]
 
     >>> print(qml.draw(iqp_circuit, level="device")([0.89, 0.54], [[[0]], [[1]]], False))  # doctest: +SKIP
-    0: ──H──MultiRZ(1.78)──H─┤  <Z>
-    1: ──H──MultiRZ(1.08)──H─┤  <Z>
+    0: ─╭IQP─┤  <Z>
+    1: ─╰IQP─┤  <Z>
 
     .. seealso:: `IQP tutorial <https://pennylane.ai/qml/demos/tutorial_iqp_circuit_optimization_jax#parameterized-iqp-circuits>`__
     """
@@ -93,7 +93,8 @@ class IQP(Operation):
     ):  # pylint: disable=too-many-arguments
         if len(pattern) != len(weights):
             raise ValueError(
-                f"Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
+                "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
+                f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
             )
 
         if num_wires == 0:
