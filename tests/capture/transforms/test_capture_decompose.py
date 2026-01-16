@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 
 jax = pytest.importorskip("jax")
 
@@ -464,6 +465,7 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decompose_conditionals(self):
         """Tests decomposing a classically controlled operator"""
 
@@ -475,12 +477,18 @@ class TestDecomposeInterpreter:
             def resource_params(self) -> dict:
                 return {}
 
-            def compute_qfunc_decomposition(self, *wires, **_):
-                qml.H(wires[0])
-                m0 = qml.measure(wires[0])
-                qml.cond(m0, qml.H)(wires[1])
+        @register_resources({qml.H: 2}, exact=False)
+        def _custom_decomposition(wires):
+            qml.H(wires[0])
+            m0 = qml.measure(wires[0])
+            qml.cond(m0, qml.H)(wires[1])
 
-        @DecomposeInterpreter(gate_set={qml.RX, qml.RZ})
+        add_decomps(CustomOp, _custom_decomposition)
+
+        @DecomposeInterpreter(
+            gate_set={qml.RX, qml.RZ},
+            fixed_decomps={qml.GlobalPhase: qml.decomposition.null_decomp},
+        )
         def circuit():
             CustomOp(wires=[1, 0])
             m0 = qml.measure(0)
