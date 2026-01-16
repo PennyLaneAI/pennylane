@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
@@ -231,18 +230,6 @@ class TestDecompose:
         expected_tape = qml.tape.QuantumScript(expected_ops)
 
         qml.assert_equal(decomposed_tape, expected_tape)
-
-    def test_callable_gate_set_deprecated(self):
-        """Tests that passing a callable to gate_set is deprecated."""
-
-        with pytest.warns(PennyLaneDeprecationWarning, match="Passing a function to the gate_set"):
-            tape = qml.tape.QuantumScript([qml.Hadamard(0)])
-            [decomp], _ = decompose(tape, gate_set=lambda op: op.name in {"RZ", "RX"})
-
-        expected = qml.tape.QuantumScript(
-            [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)]
-        )
-        qml.assert_equal(decomp, expected)
 
     def test_decompose_with_mcm(self):
         """Tests that circuits and decomposition rules containing MCMs are supported."""
