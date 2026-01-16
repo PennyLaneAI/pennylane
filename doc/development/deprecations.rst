@@ -21,13 +21,6 @@ Pending deprecations
   
   - Deprecated in v0.44
   - Will be removed in v0.45
-  
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
-  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
-
-  - Deprecated in v0.44
-  - Will be removed in v0.45
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is deprecated. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
@@ -97,6 +90,13 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
+
+  - Deprecated in v0.44
+  - Removed in v0.45
 
 * ``argnum`` has been renamed ``argnums`` in ``qml.grad``, ``qml.jacobian``, ``qml.jvp``, and ``qml.vjp``
   to better match Catalyst and JAX.
