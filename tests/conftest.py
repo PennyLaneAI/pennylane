@@ -195,11 +195,25 @@ def enable_disable_dynamic_shapes():
 @pytest.fixture(scope="function")
 def enable_graph_decomposition():
     """enable and disable graph-decomposition around each test."""
+    enabled = qml.decomposition.enabled_graph()
     qml.decomposition.enable_graph()
     try:
         yield
     finally:
-        qml.decomposition.disable_graph()
+        if not enabled:
+            qml.decomposition.disable_graph()
+
+
+@pytest.fixture(scope="function")
+def disable_graph_decomposition():
+    """disable graph-decomposition."""
+    enabled = qml.decomposition.enabled_graph()
+    qml.decomposition.disable_graph()
+    try:
+        yield
+    finally:
+        if enabled:
+            qml.decomposition.enable_graph()
 
 
 #######################################################################
@@ -331,6 +345,7 @@ def enable_and_disable_graph_decomp(request):
     It automatically handles the setup (enabling/disabling) before the
     test runs and the teardown (always disabling) after the test completes.
     """
+    enabled = qml.decomposition.enabled_graph()
     try:
         use_graph_decomp = request.param
 
@@ -349,4 +364,7 @@ def enable_and_disable_graph_decomp(request):
         # --- Teardown Phase ---
         # This code runs after the test function has finished,
         # regardless of whether it passed or failed.
-        qml.decomposition.disable_graph()
+        if not enabled:
+            qml.decomposition.disable_graph()
+        else:
+            qml.decomposition.disable_graph()

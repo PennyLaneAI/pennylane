@@ -355,8 +355,8 @@ class TestCompileIntegration:
         ]
 
         tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
-        tansformed_ops = _fuse_global_phases(tape.operations)
-        compare_operation_lists(tansformed_ops, names_expected, wires_expected)
+        transformed_ops = _fuse_global_phases(tape.operations)
+        compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
     def test_compile_template(self):
         """Test that functions with templates are correctly expanded and compiled."""

@@ -28,6 +28,7 @@ from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
 from pennylane import math, pytrees
+from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
@@ -293,6 +294,7 @@ def _expand_transform_finite_diff(
     """Expand function to be applied before finite difference."""
     [new_tape], postprocessing = decompose(
         tape,
+        target_gates=gate_sets.ROTATIONS_PLUS_CNOT,
         stopping_condition=_finite_diff_stopping_condition,
         skip_initial_state_prep=False,
         name="finite_diff",
