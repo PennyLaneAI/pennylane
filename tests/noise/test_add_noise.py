@@ -392,14 +392,67 @@ class TestAddNoiseInterface:
 class TestAddNoiseLevels:
     """Tests for custom insertion of add_noise transform at correct level."""
 
-    @pytest.mark.xfail(strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/8779")
+    def test_add_noise_level_top_prepends_without_dropping_existing_transforms(self):
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def f():
+            qml.H(0)
+            qml.H(0)
+            qml.RX(0.5, 1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        fcond = qml.noise.op_eq(qml.RX)
+        fcall = qml.noise.partial_wires(qml.AmplitudeDamping, 0.1)
+        noise_model = qml.NoiseModel({fcond: fcall})
+
+        noisy_qnode = add_noise(f, noise_model=noise_model, level="top")
+
+        names = [t.tape_transform.__name__ for t in noisy_qnode.transform_program]
+        assert "add_noise" in names
+        assert "cancel_inverses" in names
+        assert names.index("add_noise") < names.index("cancel_inverses")
+
+    def test_add_noise_level_user_inserts_before_gradient_expansion(self):
+        """Test that level='user' inserts add_noise after user transforms and before gradient transforms."""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.metric_tensor
+        @qml.transforms.undo_swaps
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
+        def f(w, x, y, z):
+            qml.RX(w, wires=0)
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(y, wires=0)
+            qml.RX(z, wires=1)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        fcond = qml.noise.op_eq(qml.RX)
+        fcall = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
+        noise_model = qml.NoiseModel({fcond: fcall})
+
+        noisy_qnode = add_noise(f, noise_model=noise_model, level="user")
+        prog = qml.workflow.get_transform_program(noisy_qnode)
+
+        names = [t.tape_transform.__name__ for t in prog]
+
+        # Sanity: the transforms we care about exist
+        assert "add_noise" in names
+        assert "undo_swaps" in names
+        assert "_expand_transform_param_shift" in names
+
+        # Key property: "user" insertion is after user-decorators and before gradient expansion
+        assert names.index("undo_swaps") < names.index("add_noise")
+        assert names.index("add_noise") < names.index("_expand_transform_param_shift")
+
     @pytest.mark.parametrize(
         "level1, level2",
         [
-            ("top", 0),
             (0, slice(0, 0)),
-            ("user", 4),
-            ("user", slice(0, 4)),
             (-1, slice(0, -1)),
             ("device", slice(0, None)),
         ],
@@ -431,7 +484,7 @@ class TestAddNoiseLevels:
         transform_level2 = qml.workflow.get_transform_program(f, level=level2)
         transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
 
-        assert len(transform_level1) == len(transform_level2) + bool(level1 == "user")
+        assert len(transform_level1) == len(transform_level2)
         for t1, t2 in zip(transform_level1, transform_level2):
             if t1.tape_transform.__name__ == t2.tape_transform.__name__ == "expand_fn":
                 continue
