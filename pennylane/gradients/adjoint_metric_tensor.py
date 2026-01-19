@@ -19,7 +19,7 @@ from itertools import chain
 
 import numpy as np
 
-from pennylane import math
+from pennylane import math, QNode
 from pennylane.devices.default_qutrit_mixed import stopping_condition
 from pennylane.devices.qubit import apply_operation, create_initial_state
 from pennylane.exceptions import TermsUndefinedError
@@ -163,22 +163,22 @@ def adjoint_metric_tensor(
         except TermsUndefinedError:
             return True
 
-    interface = tape.interface
+    interface = tape.interface if isinstance(tape, QNode) else math.get_interface(*tape.get_parameters())
     if not interface == "jax":
         stopping_condition = _multipar_stopping_fn
     else:
-        # how to get trainable params off of a QNode??
-        trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
-        trainable_ops = [info["op"] for info in trainable_par_info]
 
         def _argnum_trainable_multipar(obj):
-            return _multipar_stopping_fn(obj) or obj not in trainable_ops
+            return _multipar_stopping_fn(obj) or not math.requires_grad(obj)
 
         stopping_condition = _argnum_trainable_multipar
 
+    decompose_func = partial(decompose, stopping_condition=stopping_condition)
+    decompose_func.__name__ = "decompose"
+
     @partial(
         transform,
-        expand_transform=partial(decompose, stopping_condition=stopping_condition),
+        expand_transform=decompose_func,
         classical_cotransform=_contract_metric_tensor_with_cjac,
         is_informative=True,
         use_argnum_in_expand=True,
@@ -281,4 +281,4 @@ def adjoint_metric_tensor(
 
         return [tape], processing_fn
 
-    return partial(_adjoint_metric_tensor, tape=tape)
+    return _adjoint_metric_tensor(tape)
