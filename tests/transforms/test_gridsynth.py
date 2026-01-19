@@ -28,10 +28,26 @@ class TestGridsynth:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"The gridsynth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation.",
+            match=r"Transform <transform: gridsynth> has no defined tape implementation, and can only be applied when decorating the entire workflow with '@qml.qjit' and when it is placed after all transforms that only have a tape implementation.",
         ):
             gridsynth(tape)
 
     def test_pass_name(self):
         """Test the pass name is set on the gridsynth transform."""
         assert gridsynth.pass_name == "gridsynth"
+
+    def test_setup_inputs_to_kwargs(self):
+        """Test that positional inputs are promoted to kwargs."""
+
+        bound_t = gridsynth(1e-6)
+        assert bound_t.args == ()
+        assert bound_t.kwargs == {"epsilon": 1e-6, "ppr_basis": False}
+
+    def test_bad_inputs(self):
+        """Test that bad inputs raise errors."""
+
+        with pytest.raises(ValueError, match="ppr_basis must be of type bool"):
+            gridsynth(ppr_basis="a")
+
+        with pytest.raises(ValueError, match="epsilon must be of type float."):
+            gridsynth(epsilon="a")
