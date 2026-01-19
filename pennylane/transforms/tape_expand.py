@@ -88,7 +88,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     warnings.warn(
         """
-        The create_expand_fn is deprecated in PennyLane v0.45 and will be removed in a future release.
+        The create_expand_fn is deprecated in PennyLane v0.45 and will be removed in v0.46.
         Please use the qml.transforms.decompose function for decomposing circuits.
         """,
         PennyLaneDeprecationWarning,
