@@ -3,6 +3,7 @@
 Help us shape the future of PennyLane by taking a few minutes to share your thoughts on our quantum programming survey. [Take the survey](https://bit.ly/pl-survey-2026-g)
 
 <br clear=left>
+<br>
 
 <p align="center">
   <!-- Tests (GitHub actions) -->
