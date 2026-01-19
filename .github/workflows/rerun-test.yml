@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       run-count: ${{ steps.set-run-count.outputs.run-count }}
-      skip-tests: ${{ steps.compute-skip-tests.outputs.skip-tests }}
+      skip-tests: ${{ steps.set-skip-tests.outputs.skip-tests }}
     steps:
       - name: Set run count
         id: set-run-count
@@ -62,10 +62,10 @@ jobs:
         # if: ${{ inputs.workflow != 'documentation-tests' && inputs.workflow != 'docs' && inputs.workflow != 'format' && inputs.workflow != 'module-validation' && inputs.workflow != 'package-warning-as-errors' && inputs.workflow != 'test-numpy1-compat' }}
         id: set-skip-tests
         run: |
-          ALL_TESTS='autograd-tests,jax-tests,torch-tests,capture-jax-tests,core-tests,all-interfaces-tests,external-library-tests,qcut-tests,qchem-tests,gradient-tests,data-tests,device-tests'
+          ALL_TESTS='all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
           WORKFLOW="device-tests" #"${{ inputs.workflow }}"
           SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
-          echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
+          echo "skip-tests=$ALL_TESTS" >> $GITHUB_OUTPUT
 
   docs:
     name: Run docs
@@ -158,4 +158,4 @@ jobs:
       upload_to_codecov: false
       run_lightened_ci: true  
       skip_ci_test_jobs: |
-        all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests
+        ${{ fromJSON(needs.prepare-run-count.outputs.skip-tests) }}
