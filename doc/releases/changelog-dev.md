@@ -128,6 +128,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* Deprecate `id` argument to `qml.Operator`. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+
 <h3>Internal changes ⚙️</h3>
 
 * Updated test helper `get_device` to correctly seed lightning devices.
