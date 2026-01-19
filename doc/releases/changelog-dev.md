@@ -112,6 +112,7 @@
 
 * The ``qml.transforms.create_expand_fn`` is deprecated in PennyLane v0.45 and will be removed in a future release.
   Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+  [(#8947)](https://github.com/PennyLaneAI/pennylane/pull/8947)
 
 <h3>Internal changes ⚙️</h3>
 
