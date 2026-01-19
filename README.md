@@ -1,6 +1,6 @@
 <img src=https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_PLSurvey_2024-03-05.png width=200px align="left" align-vertical=middle> 
 
-Help us shape the future of PennyLane by taking a few minutes to share your thoughts on our quantum programming survey. [Take the survey](https://bit.ly/pl-survey-2026-g)
+Help us shape the future of PennyLane by taking a few minutes to share your thoughts on our quantum programming survey. [Take the survey!](https://bit.ly/pl-survey-2026-g)
 
 <br clear=left>
 <br>
