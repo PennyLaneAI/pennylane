@@ -372,7 +372,7 @@ def _get_plxpr_defer_measurements():
         # the primitive corresponding to the class to get binded. We do not want the
         # MidMeasure's primitive to get recorded.
         meas = type.__call__(
-            MidMeasure, Wires(cur_target), reset=reset, postselect=postselect, id=str(cur_target)
+            MidMeasure, Wires(cur_target), reset=reset, postselect=postselect, uid=str(cur_target)
         )
 
         cnot_wires = (wires, cur_target)
@@ -789,7 +789,7 @@ def defer_measurements(
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
-                control_wires[op.id] = cur_wire
+                control_wires[op.uid] = cur_wire
 
                 with QueuingManager.stop_recording():
                     new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
@@ -807,7 +807,7 @@ def defer_measurements(
 
                 cur_wire += 1
             else:
-                control_wires[op.id] = op.wires[0]
+                control_wires[op.uid] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
             with QueuingManager.stop_recording():
@@ -825,7 +825,7 @@ def defer_measurements(
             # MidMeasures. Thus, we need to manually map wires for each MidMeasure.
             if isinstance(mp.mv, MeasurementValue):
                 new_ms = [
-                    qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
+                    qml.map_wires(m, {m.wires[0]: control_wires[m.uid]}) for m in mp.mv.measurements
                 ]
                 new_m = MeasurementValue(
                     new_ms, mp.mv.processing_fn if mp.mv.has_processing else None
@@ -834,7 +834,7 @@ def defer_measurements(
                 new_m = []
                 for val in mp.mv:
                     new_ms = [
-                        qml.map_wires(m, {m.wires[0]: control_wires[m.id]})
+                        qml.map_wires(m, {m.wires[0]: control_wires[m.uid]})
                         for m in val.measurements
                     ]
                     new_m.append(
@@ -863,10 +863,10 @@ def defer_measurements(
 def _add_control_gate(op, control_wires, reduce_postselected):
     """Helper function to add control gates"""
     if reduce_postselected:
-        control = [control_wires[m.id] for m in op.meas_val.measurements if m.postselect is None]
+        control = [control_wires[m.uid] for m in op.meas_val.measurements if m.postselect is None]
         items = op.meas_val.postselected_items()
     else:
-        control = [control_wires[m.id] for m in op.meas_val.measurements]
+        control = [control_wires[m.uid] for m in op.meas_val.measurements]
         items = op.meas_val.items()
 
     new_ops = []

@@ -34,6 +34,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qcut
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
 
@@ -313,8 +314,9 @@ class TestMeasurePrepareNodes:
 
     def test_id(self, cls):
         """Test that nodes can be initialized with an id or recieves its own UUID."""
-        n = cls(wires=0, id="hi")
-        assert n.id == "hi"
+        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+            n = cls(wires=0, id="hi")
+            assert n.id == "hi"
         n = cls(wires=0, id=None)
         assert n.id is not None
         n2 = cls(wires=0, id=None)
