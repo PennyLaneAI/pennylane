@@ -90,7 +90,7 @@ class TestQSVT:
         """Test that we can instantiate QSVT without providing wires."""
         op = qre.RX()
         qsvt = qre.QSVT(block_encoding=op, encoding_dims=(1, 1), poly_deg=5)
-        
+
         assert qsvt.num_wires == 1
         assert qsvt.encoding_dims == (1, 1)
         assert qsvt.block_encoding == qre.resource_rep(qre.RX)
