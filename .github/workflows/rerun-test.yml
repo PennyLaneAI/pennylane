@@ -158,12 +158,4 @@ jobs:
       upload_to_codecov: false
       run_lightened_ci: true  
       skip_ci_test_jobs: |
-        all-interfaces-tests
-        external-libraries-tests
-        qcut-tests
-        gradients-tests
-        device-tests
-        core-tests
-        capture-jax-tests
-        jax-tests
-        autograd-tests,,data-tests
+        all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests
