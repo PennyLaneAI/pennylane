@@ -15,6 +15,7 @@
 Defines qml.vjp
 """
 from functools import lru_cache
+from importlib.util import find_spec
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -22,13 +23,7 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = True
-try:
-    import jax
-
-    # not quite sure why the no jax import isn't getting hit
-except ImportError:  # pragma: no cover
-    has_jax = False
+has_jax = find_spec("jax") is not None
 
 
 # pylint: disable=unused-argument
@@ -36,6 +31,8 @@ except ImportError:  # pragma: no cover
 def _get_vjp_prim():
     if not has_jax:  # pragma: no cover
         return None
+
+    import jax  # pylint: disable=import-outside-toplevel
 
     vjp_prim = capture.QmlPrimitive("vjp")
     vjp_prim.multiple_results = True
@@ -61,6 +58,7 @@ def _get_vjp_prim():
 
 
 def _validate_cotangents(cotangents, out_avals):
+    import jax  # pylint: disable=import-outside-toplevel
     from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     def get_shape(x):
@@ -90,12 +88,8 @@ def _validate_cotangents(cotangents, out_avals):
 
 # pylint: disable=too-many-arguments
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
+    import jax  # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
-
-    if argnums is None:
-        argnums = [0]
-    elif isinstance(argnums, int):
-        argnums = [argnums]
 
     h = _setup_h(h)
     method = _setup_method(method)
@@ -170,20 +164,20 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
 
     .. code-block:: python
 
-        @qml.qjit
-        def vjp(params, cotangent):
+        @qml.qjit(static_argnames="argnums")
+        def calculate_vjp_qjit(params, cotangent, argnums=None):
           def f(x, y):
               return x * y
 
-          return qml.vjp(f, params, cotangent)
+          return qml.vjp(f, params, cotangent, argnums=argnums)
 
     >>> params = (jnp.array([1.0, 2.0]), jnp.array([2.0, 3.0]))
     >>> dy = jnp.array([10.0, 20.0])
-    >>> results, dparams = vjp(params, dy)
+    >>> results, dparams = calculate_vjp_qjit(params, dy)
     >>> results
     Array([2., 6.], dtype=float64)
     >>> dparams
-    (Array([20., 60.], dtype=float64),)
+    Array([20., 60.], dtype=float64)
 
     """
 
