@@ -158,4 +158,4 @@ jobs:
       upload_to_codecov: false
       run_lightened_ci: true  
       skip_ci_test_jobs: |
-        ${{ fromJSON(needs.prepare-run-count.outputs.skip-tests) }}
+        ${{ needs.prepare-run-count.outputs.skip-tests }}
