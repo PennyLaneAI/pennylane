@@ -14,6 +14,7 @@
 """Unit and integration tests for the compile pipeline."""
 # pylint: disable=no-member
 
+import pickle
 
 import pytest
 import rustworkx as rx
@@ -1908,3 +1909,102 @@ class TestCompilePipelineIntegration:
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is second_valid_transform
+
+
+class TestCompilePipelineSerialization:
+    """Tests for CompilePipeline pickle serialization."""
+
+    def test_pickle_simple_pipeline(self):
+        """Test pickling a simple compile pipeline."""
+        pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+        pickled = pickle.dumps(pipeline)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, CompilePipeline)
+        assert len(restored) == len(pipeline)
+        assert restored == pipeline
+
+    def test_pickle_pipeline_with_bound_arguments(self):
+        """Test pickling a compile pipeline with bound transform arguments."""
+        pipeline = qml.transforms.merge_rotations(atol=1e-6) + qml.transforms.cancel_inverses(
+            recursive=True
+        )
+        pickled = pickle.dumps(pipeline)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, CompilePipeline)
+        assert restored[0].kwargs == {"atol": 1e-6}
+        assert restored[1].kwargs == {"recursive": True}
+        assert restored == pipeline
+
+    def test_pickle_pipeline_with_multiplication(self):
+        """Test pickling a compile pipeline created with multiplication."""
+        pipeline = (qml.transforms.merge_rotations + qml.transforms.cancel_inverses) * 2
+        pickled = pickle.dumps(pipeline)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, CompilePipeline)
+        assert len(restored) == 4
+        assert restored == pipeline
+
+    def test_pickle_pipeline_with_decompose(self):
+        """Test pickling a compile pipeline with decompose transform."""
+        pipeline = (
+            qml.transforms.decompose(gate_set={qml.RX, qml.CNOT, qml.RZ})
+            + qml.transforms.merge_rotations
+        )
+        pickled = pickle.dumps(pipeline)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, CompilePipeline)
+        assert len(restored) == len(pipeline)
+        # Verify the decompose kwargs are preserved
+        assert "gate_set" in restored[0].kwargs
+        assert qml.RX in restored[0].kwargs["gate_set"]
+
+    def test_pickle_empty_pipeline(self):
+        """Test pickling an empty compile pipeline."""
+        pipeline = CompilePipeline()
+        pickled = pickle.dumps(pipeline)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, CompilePipeline)
+        assert len(restored) == 0
+        assert restored == pipeline
+
+    def test_restored_pipeline_applies_correctly(self):
+        """Test that a restored pipeline works correctly on a QNode."""
+        pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+        pickled = pickle.dumps(pipeline)
+        restored = pickle.loads(pickled)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.RX(x, 0)  # Should merge with above
+            qml.X(0)
+            qml.X(0)  # Should cancel with above
+            return qml.expval(qml.Z(0))
+
+        transformed_qnode = restored(circuit)
+        result = transformed_qnode(0.5)
+
+        # The result should be cos(2*0.5) = cos(1.0)
+        import numpy as np
+
+        assert np.isclose(result, np.cos(1.0))
+
+    def test_cotransform_cache_not_serialized(self):
+        """Test that cotransform_cache is not serialized (set to None after restore)."""
+        # Create a pipeline with cotransform_cache (simulated)
+        pipeline = CompilePipeline(
+            [BoundTransform(qml.transforms.merge_rotations)],
+            cotransform_cache=None,  # Normally this would be set
+        )
+        pickled = pickle.dumps(pipeline)
+        restored = pickle.loads(pickled)
+
+        # cotransform_cache should be None after deserialization
+        assert restored.cotransform_cache is None

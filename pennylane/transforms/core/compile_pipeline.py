@@ -298,6 +298,20 @@ class CompilePipeline:
     def __copy__(self):
         return CompilePipeline(self._compile_pipeline[:], cotransform_cache=self.cotransform_cache)
 
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a CompilePipeline.
+
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+
+        .. note::
+
+            The ``cotransform_cache`` is not serialized as it contains runtime-specific
+            information (QNode references, args, kwargs) that cannot be reliably pickled.
+            After unpickling, the ``cotransform_cache`` will be ``None``.
+
+        """
+        return (CompilePipeline, (list(self._compile_pipeline),))
+
     def __iter__(self):
         """list[BoundTransform]: Return an iterator to the underlying compile pipeline."""
         return self._compile_pipeline.__iter__()

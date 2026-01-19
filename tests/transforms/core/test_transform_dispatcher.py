@@ -14,6 +14,7 @@
 """Unit and integration tests for the transform dispatcher."""
 
 import inspect
+import pickle
 from collections.abc import Callable, Sequence
 
 import pytest
@@ -26,6 +27,7 @@ from pennylane.transforms.core import (
     Transform,
     TransformError,
 )
+from pennylane.transforms.core.transform_dispatcher import _get_transform_by_name
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
@@ -1113,3 +1115,88 @@ class TestPassName:
 
         with pytest.raises(NotImplementedError, match="has no defined tape transform"):
             c()
+
+
+class TestTransformSerialization:
+    """Tests for Transform and BoundTransform pickle serialization."""
+
+    def test_pickle_transform(self):
+        """Test pickling a Transform object."""
+        transform = qml.transforms.merge_rotations
+        pickled = pickle.dumps(transform)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, Transform)
+        assert restored.__name__ == transform.__name__
+        assert restored.__module__ == transform.__module__
+
+    def test_pickle_bound_transform(self):
+        """Test pickling a BoundTransform object."""
+        bound = qml.transforms.merge_rotations(atol=1e-6)
+        pickled = pickle.dumps(bound)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, BoundTransform)
+        assert restored.kwargs == {"atol": 1e-6}
+        assert restored.args == ()
+
+    def test_pickle_bound_transform_with_args(self):
+        """Test pickling a BoundTransform with positional arguments."""
+        # cancel_inverses doesn't take positional args, so we use a transform that does
+        bound = BoundTransform(qml.transforms.cancel_inverses, args=(), kwargs={"recursive": True})
+        pickled = pickle.dumps(bound)
+        restored = pickle.loads(pickled)
+
+        assert isinstance(restored, BoundTransform)
+        assert restored.kwargs == {"recursive": True}
+
+    def test_restored_transform_applies_correctly(self):
+        """Test that a restored transform works correctly."""
+        transform = qml.transforms.cancel_inverses
+        pickled = pickle.dumps(transform)
+        restored = pickle.loads(pickled)
+
+        tape = QuantumScript([qml.X(0), qml.X(0)])
+        result_tapes, _ = restored(tape)
+
+        assert len(result_tapes) == 1
+        assert len(result_tapes[0].operations) == 0
+
+    def test_restored_bound_transform_applies_correctly(self):
+        """Test that a restored BoundTransform works correctly."""
+        bound = qml.transforms.merge_rotations(atol=1e-6)
+        pickled = pickle.dumps(bound)
+        restored = pickle.loads(pickled)
+
+        tape = QuantumScript([qml.RX(0.1, 0), qml.RX(0.2, 0)])
+        result_tapes, _ = restored(tape)
+
+        assert len(result_tapes) == 1
+        assert len(result_tapes[0].operations) == 1
+        assert result_tapes[0].operations[0].name == "RX"
+
+    def test_get_transform_by_name_not_found(self):
+        """Test that _get_transform_by_name raises ValueError for non-existent transform."""
+
+        with pytest.raises(ValueError, match="Cannot find transform"):
+            _get_transform_by_name("pennylane.transforms.optimization", "nonexistent_transform")
+
+    def test_get_transform_by_name_not_a_transform(self):
+        """Test that _get_transform_by_name raises ValueError when object is not a Transform."""
+
+        # Try to get something that exists but is not a Transform
+        with pytest.raises(ValueError, match="is not a Transform"):
+            _get_transform_by_name("pennylane", "numpy")
+
+    def test_transform_without_name_cannot_be_pickled(self):
+        """Test that a Transform without __name__ raises TypeError when pickling."""
+        # Create a Transform with a pass_name only (no tape_transform)
+        # This won't have __name__ set by update_wrapper since there's no tape_transform
+        dynamic_transform = Transform(pass_name="test_pass")
+
+        # Verify this transform doesn't have __name__
+        assert not hasattr(dynamic_transform, "__name__")
+
+        # Should raise TypeError when trying to pickle
+        with pytest.raises(TypeError, match="Cannot pickle"):
+            pickle.dumps(dynamic_transform)
