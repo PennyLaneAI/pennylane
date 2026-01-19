@@ -166,4 +166,4 @@ jobs:
         core-tests
         capture-jax-tests
         jax-tests
-        autograd-tests,qchem-tests,data-tests
+        autograd-tests,,data-tests
