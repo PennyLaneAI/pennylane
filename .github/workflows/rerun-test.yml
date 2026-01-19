@@ -160,5 +160,10 @@ jobs:
         qcut-tests
         gradients-tests
         device-tests
+        jax-tests
+        torch-tests
+        autograd-tests
+        capture-jax-tests
+        core-tests
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
