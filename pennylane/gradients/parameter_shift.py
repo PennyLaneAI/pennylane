@@ -374,7 +374,7 @@ def expval_param_shift(
     # (num_tapes, coeffs, fn, unshifted_coeff, batch_size)
     gradient_data = []
     # Keep track of whether there is at least one unshifted term in all the parameter-shift rules
-    has_unshifted = False
+    at_least_one_unshifted = False
 
     for idx, _ in enumerate(tape.trainable_params):
         if idx not in argnum:
@@ -407,8 +407,8 @@ def expval_param_shift(
 
         else:
             recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
-            recipe, has_unshifted, unshifted_coeff = _extract_unshifted(
-                recipe, has_unshifted, f0, gradient_tapes, tape
+            recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
+                recipe, at_least_one_unshifted, f0, gradient_tapes, tape
             )
             coeffs, multipliers, op_shifts = recipe.T
             g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
@@ -426,7 +426,7 @@ def expval_param_shift(
     tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
-        start, r0 = (1, results[0]) if has_unshifted and f0 is None else (0, f0)
+        start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
         grads = []
         for data in gradient_data:
             num_tapes, *_, unshifted_coeff, batch_size = data
@@ -456,7 +456,7 @@ def expval_param_shift(
 
         return reorder_grads(grads, tape_specs)
 
-    processing_fn.first_result_unshifted = has_unshifted
+    processing_fn.first_result_unshifted = at_least_one_unshifted
 
     return gradient_tapes, processing_fn
 
