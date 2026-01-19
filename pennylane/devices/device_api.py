@@ -1153,6 +1153,7 @@ def apply_to_device(obj: Device, transform, *targs, **tkwargs):
         raise TransformError("Device transform does not support informative transforms.")
     if transform.is_final_transform:
         raise TransformError("Device transform does not support final transforms.")
+    targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
 
     if type(obj).preprocess != Device.preprocess:
         return _preprocess_device(obj, transform, targs, tkwargs)

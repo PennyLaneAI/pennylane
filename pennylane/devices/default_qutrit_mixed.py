@@ -50,7 +50,7 @@ logger.addHandler(logging.NullHandler())
 observables = {"THermitian", "GellMann"}
 
 
-ALL_DQT_GATES = DefaultQutrit.operations | {"Snapshot"} | channels
+ALL_DQT_MIXED_GATES = DefaultQutrit.operations | {"Snapshot"} | channels
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
@@ -67,7 +67,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    return op.name in ALL_DQT_GATES
+    return op.name in ALL_DQT_MIXED_GATES
 
 
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
@@ -357,7 +357,7 @@ class DefaultQutritMixed(Device):
         compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
         compile_pileline.add_transform(
             decompose,
-            target_gates=ALL_DQT_GATES,
+            target_gates=ALL_DQT_MIXED_GATES,
             stopping_condition=stopping_condition,
             name=self.name,
         )
