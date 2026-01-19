@@ -43,6 +43,8 @@
     <img src="./doc/_static/readme/pl-logo-darkmode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
 </p>
 
+Help us shape the future of PennyLane by taking a few minutes to share your thoughts on our quantum programming survey. [Take the survey](https://bit.ly/pl-survey-2026-g)!
+
 ## Key Features
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
