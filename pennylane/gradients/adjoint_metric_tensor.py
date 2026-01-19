@@ -19,8 +19,7 @@ from itertools import chain
 
 import numpy as np
 
-from pennylane import QNode, math
-from pennylane.devices.default_qutrit_mixed import stopping_condition
+from pennylane import math
 from pennylane.devices.qubit import apply_operation, create_initial_state
 from pennylane.exceptions import TermsUndefinedError
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
@@ -30,7 +29,6 @@ from pennylane.ops.functions import generator, map_wires
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
-from pennylane.transforms.tape_expand import create_expand_trainable_multipar
 from pennylane.typing import PostprocessingFn
 
 
@@ -153,7 +151,7 @@ def adjoint_metric_tensor(
             return True
 
     interface = (
-        tape.interface if isinstance(tape, QNode) else math.get_interface(*tape.get_parameters())
+        tape.interface if not isinstance(tape, QuantumScript) else math.get_interface(*tape.get_parameters())
     )
     if not interface == "jax":
         stopping_condition = _multipar_stopping_fn
