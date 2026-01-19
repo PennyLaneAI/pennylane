@@ -54,6 +54,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
+  to match the non-PRNG version and reduce stochastic test failures.
+  [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
+
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 
@@ -72,6 +76,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Yushao Chen,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
