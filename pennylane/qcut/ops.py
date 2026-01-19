@@ -14,6 +14,7 @@
 """
 Nodes for use in qcut.
 """
+
 import uuid
 
 from pennylane.operation import Operation
@@ -26,10 +27,14 @@ class PrepareNode(Operation):
     grad_method = None
     num_params = 0
 
-    def __init__(self, wires=None, id=None):
-        id = id or str(uuid.uuid4())
+    def __init__(self, wires=None, node_uid: str | None = None):
+        self._node_uid: str = node_uid or str(uuid.uuid4())
 
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
+
+    @property
+    def id(self) -> str:
+        return self._node_uid
 
     def label(self, decimals=None, base_label=None, cache=None):
         op_label = base_label or self.__class__.__name__
@@ -43,10 +48,14 @@ class MeasureNode(Operation):
     grad_method = None
     num_params = 0
 
-    def __init__(self, wires=None, id=None):
-        id = id or str(uuid.uuid4())
+    def __init__(self, wires=None, node_uid: str | None = None):
+        self._node_uid: str = node_uid or str(uuid.uuid4())
 
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
+
+    @property
+    def id(self) -> str:
+        return self._node_uid
 
     def label(self, decimals=None, base_label=None, cache=None):
         op_label = base_label or self.__class__.__name__
