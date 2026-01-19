@@ -23,6 +23,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -40,6 +41,18 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
+
+
+def test_id_is_deprecated():
+
+    class DummyOp(Operator):
+        """Custom dummy operator."""
+
+    _ = DummyOp(0.5, [0])
+    _ = DummyOp(0.5, [0], id=None)
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = DummyOp(0.5, [0], id="blah")
 
 
 class TestOperatorConstruction:
