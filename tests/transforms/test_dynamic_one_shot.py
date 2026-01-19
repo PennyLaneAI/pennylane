@@ -325,7 +325,7 @@ class TestInterfaces:
         param = qml.math.array(np.pi / 2, like=interface)
 
         mv = qml.measure(0)
-        mcms = [mv.measurements[0]] + [MidMeasure(0, id=str(i)) for i in range(n_mcms - 1)]
+        mcms = [mv.measurements[0]] + [MidMeasure(0, uid=str(i)) for i in range(n_mcms - 1)]
 
         tape = qml.tape.QuantumScript(
             [qml.RX(param, 0)] + mcms,

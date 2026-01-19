@@ -196,7 +196,7 @@ class MeasurementValue:
 
         # create a new merged list with no duplicates and in lexical ordering
         merged_measurements = list(set(self.measurements).union(set(other.measurements)))
-        merged_measurements.sort(key=lambda m: m.id)
+        merged_measurements.sort(key=lambda m: m.uid)
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
@@ -220,7 +220,7 @@ class MeasurementValue:
         for i in range(2**num_meas):
             branch = tuple(int(b) for b in f"{i:0{num_meas}b}")
             id_branch_mapping = [
-                f"{self.measurements[j].id}={branch[j]}" for j in range(len(branch))
+                f"{self.measurements[j].uid}={branch[j]}" for j in range(len(branch))
             ]
             lines.append(
                 "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
