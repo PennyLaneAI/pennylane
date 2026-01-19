@@ -1,4 +1,6 @@
-<img src=https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_PLSurvey_2024-03-05.png width=200px align="left" align-vertical=middle> 
+<img src="https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_PLSurvey_2024-03-05.png"
+     width="200px"
+     align="left" />
 
 Help us shape the future of PennyLane. We’d really appreciate a few minutes of your time to share feedback through our quantum programming survey. [Take the survey!](https://bit.ly/pl-survey-2026-g)
 
