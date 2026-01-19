@@ -1207,12 +1207,19 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
+        class CustomPhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
             has_generator = False
+            name = "CustomPhaseShift"
 
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
+
+        @qml.register_resources({qml.RY: 1})
+        def custom_decomposition(param, wires):
+            qml.RY(3 * param, wires=wires)
+
+        qml.add_decomps(CustomPhaseShift, custom_decomposition)
 
         @qnode(
             dev,
@@ -1224,7 +1231,7 @@ class TestTapeExpansion:
         )
         def circuit(x):
             qml.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
+            CustomPhaseShift(x, wires=0)
             return qml.expval(qml.PauliX(0))
 
         x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
