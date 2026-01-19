@@ -150,13 +150,13 @@ jobs:
       matrix:
         run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
     uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
       branch: ${{ github.ref }}
       job_name_suffix: " - rerun-${{ inputs.workflow }}"
       upload_to_codecov: false
-      run_lightened_ci: true
-      secrets:
-        codecov_token: ${{ secrets.CODECOV_TOKEN }}      
+      run_lightened_ci: true  
       skip_ci_test_jobs: |
         all-interfaces-tests
         external-libraries-tests
