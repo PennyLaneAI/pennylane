@@ -64,7 +64,7 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
-def adjoint_metric_tensor(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def adjoint_metric_tensor(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -270,4 +270,4 @@ def adjoint_metric_tensor(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
         return [tape], processing_fn
 
-    return _adjoint_metric_tensor(tape)
+    return _adjoint_metric_tensor(tape, **kwargs)
