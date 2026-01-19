@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 

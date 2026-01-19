@@ -62,6 +62,7 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
+# pylint: disable=too-many-statements
 def adjoint_metric_tensor(
     tape: QuantumScript, **kwargs
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -151,7 +152,9 @@ def adjoint_metric_tensor(
             return True
 
     interface = (
-        tape.interface if not isinstance(tape, QuantumScript) else math.get_interface(*tape.get_parameters())
+        tape.interface
+        if not isinstance(tape, QuantumScript)
+        else math.get_interface(*tape.get_parameters())
     )
     if not interface == "jax":
         stopping_condition = _multipar_stopping_fn
