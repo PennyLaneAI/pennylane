@@ -154,16 +154,12 @@ jobs:
       branch: ${{ github.ref }}
       job_name_suffix: " - rerun-${{ inputs.workflow }}"
       upload_to_codecov: false
+      run_lightened_ci: true
+      secrets:
+        codecov_token: ${{ secrets.CODECOV_TOKEN }}      
       skip_ci_test_jobs: |
         all-interfaces-tests
         external-libraries-tests
         qcut-tests
         gradients-tests
         device-tests
-        jax-tests
-        torch-tests
-        autograd-tests
-        capture-jax-tests
-        core-tests
-    secrets:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
