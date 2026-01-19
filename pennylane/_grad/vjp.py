@@ -165,19 +165,26 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     .. code-block:: python
 
         @qml.qjit(static_argnames="argnums")
-        def calculate_vjp_qjit(params, cotangent, argnums=None):
+        def calculate_vjp_qjit(x, y, cotangent, argnums):
           def f(x, y):
               return x * y
 
-          return qml.vjp(f, params, cotangent, argnums=argnums)
+          return qml.vjp(f, (x, y), cotangent, argnums=argnums)
 
     >>> params = (jnp.array([1.0, 2.0]), jnp.array([2.0, 3.0]))
     >>> dy = jnp.array([10.0, 20.0])
-    >>> results, dparams = calculate_vjp_qjit(params, dy)
+    >>> results, dparams = calculate_vjp_qjit(*params, dy, 0)
     >>> results
     Array([2., 6.], dtype=float64)
     >>> dparams
     Array([20., 60.], dtype=float64)
+
+    Similar to ``grad`` and ``jacobian``, if ``argnums`` is an array, the ``dparams``
+    gains an additional dimension that is squeezed out when ``argnums`` is an integer:
+
+    >>> calculate_vjp_qjit(*params, dy, (0,))[1]
+    (Array([20., 60.], dtype=float64),)
+
 
     """
 

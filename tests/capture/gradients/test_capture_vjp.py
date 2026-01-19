@@ -230,7 +230,29 @@ def test_pytrees_in_and_out():
     assert isinstance(results, dict)
     assert jnp.allclose(results["result"], 0.5 * 2 + 3.0 * 1.2)
 
+    assert isinstance(dparams, dict)
+    assert jnp.allclose(dparams["a"], -y[0])
+    assert jnp.allclose(dparams["b"], -y[1])
+
+
+def test_argnum_int_squeeze():
+    """Test that if argnum is an int, dparams looses a singleton dimension"""
+
+    def f(x):
+        return 2 * x
+
+    def w(x, argnums):
+        return qml.vjp(f, (x,), (1.0,), argnums=argnums)
+
+    # as int
+    results, dparams = w(0.5, 0)
+    assert qml.math.allclose(results, 1.0)
+    assert isinstance(dparams, jax.numpy.ndarray)
+    assert qml.math.allclose(dparams, 2)
+
+    # as array
+    results, dparams = w(0.5, [0])
+    assert qml.math.allclose(results, 1.0)
     assert isinstance(dparams, tuple)
-    assert len(dparams) == 1
-    assert jnp.allclose(dparams[0]["a"], -y[0])
-    assert jnp.allclose(dparams[0]["b"], -y[1])
+    assert isinstance(dparams[0], jax.numpy.ndarray)
+    assert qml.math.allclose(dparams[0], 2)
