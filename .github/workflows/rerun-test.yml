@@ -167,3 +167,4 @@ jobs:
         capture-jax-tests
         jax-tests
         autograd-tests
+        qchem-tests
