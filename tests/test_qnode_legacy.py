@@ -1345,7 +1345,7 @@ class TestTapeExpansion:
         dev = DefaultQubitLegacy(wires=1)
 
         # pylint: disable=too-few-public-methods
-        class PhaseShift(qml.PhaseShift):
+        class CustomPhaseShiftQNode(qml.PhaseShift):
             """custom phase shift."""
 
             grad_method = None
@@ -1356,8 +1356,14 @@ class TestTapeExpansion:
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
+            CustomPhaseShiftQNode(x, wires=0)
             return qml.expval(qml.PauliX(0))
+
+        @qml.register_resources({qml.RY: 1})
+        def custom_decomposition(param, wires):
+            qml.RY(3 * param, wires=wires)
+
+        qml.add_decomps(CustomPhaseShiftQNode, custom_decomposition)
 
         x = pnp.array(0.5, requires_grad=True)
         circuit(x)
