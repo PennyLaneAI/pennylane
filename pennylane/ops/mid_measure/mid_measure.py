@@ -38,7 +38,7 @@ def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int 
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
+    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, uid=measurement_id)
     return MeasurementValue([mp])
 
 
@@ -112,7 +112,7 @@ class MidMeasure(Operator):
         postselect (Optional[int]): Which basis state to postselect after a mid-circuit
             measurement. None by default. If postselection is requested, only the post-measurement
             state that is used for postselection will be considered in the remaining circuit.
-        id (str): Custom label given to a measurement instance.
+        uid (str | None): Custom unique id given to a measurement instance.
     """
 
     def __repr__(self):
@@ -128,10 +128,10 @@ class MidMeasure(Operator):
         wires: Wires | None = None,
         reset: bool = False,
         postselect: int | None = None,
-        id: str | None = None,
+        uid: str | None = None,
     ):
-        super().__init__(wires=Wires(wires), id=id)
-        self._hyperparameters = {"reset": reset, "postselect": postselect, "id": id}
+        super().__init__(wires=Wires(wires))
+        self._hyperparameters = {"reset": reset, "postselect": postselect, "uid": uid}
         self._name = "MidMeasureMP"
 
     @property
@@ -143,6 +143,11 @@ class MidMeasure(Operator):
     def postselect(self) -> int | None:
         """Which basis state to postselect after a mid-circuit measurement."""
         return self.hyperparameters["postselect"]
+
+    @property
+    def uid(self) -> str | None:
+        """The custom ID associated with the measurement instance."""
+        return self.hyperparameters["uid"]
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -181,7 +186,7 @@ class MidMeasure(Operator):
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.id))
+        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.uid))
 
 
 def measure(
