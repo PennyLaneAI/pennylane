@@ -231,7 +231,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Controlled` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ, qml.CNOT]
         if not decompose:
-            gate_set.append(qml.ops.Controlled)
+            gate_set.extend([f"C({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
@@ -263,7 +263,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Adjoint` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ]
         if not decompose:
-            gate_set.append(qml.ops.Adjoint)
+            gate_set.extend([f"Adjoint({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
