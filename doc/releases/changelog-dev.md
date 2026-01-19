@@ -151,7 +151,7 @@
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
-* Fixes a bug with `qml.estimator.QSVT` which allows users to instantiate the class without
+* Fixes a bug with `qml.estimator.templates.QSVT` which allows users to instantiate the class without
   providing wires. This is now consistent with the standard in the estimator module.
   [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
 
