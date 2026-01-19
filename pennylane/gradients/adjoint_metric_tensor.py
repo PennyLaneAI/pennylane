@@ -19,7 +19,7 @@ from itertools import chain
 
 import numpy as np
 
-from pennylane import math, QNode
+from pennylane import QNode, math
 from pennylane.devices.default_qutrit_mixed import stopping_condition
 from pennylane.devices.qubit import apply_operation, create_initial_state
 from pennylane.exceptions import TermsUndefinedError
@@ -64,20 +64,7 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
-def _expand_trainable_multipar(
-    tape: QuantumScript,
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Expand trainable multi-parameter operations in a quantum tape."""
-
-    interface = math.get_interface(*tape.get_parameters())
-    use_tape_argnum = interface == "jax"
-    expand_fn = create_expand_trainable_multipar(tape, use_tape_argnum=use_tape_argnum)
-    return [expand_fn(tape)], lambda x: x[0]
-
-
-def adjoint_metric_tensor(
-    tape: QuantumScript
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def adjoint_metric_tensor(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -163,7 +150,9 @@ def adjoint_metric_tensor(
         except TermsUndefinedError:
             return True
 
-    interface = tape.interface if isinstance(tape, QNode) else math.get_interface(*tape.get_parameters())
+    interface = (
+        tape.interface if isinstance(tape, QNode) else math.get_interface(*tape.get_parameters())
+    )
     if not interface == "jax":
         stopping_condition = _multipar_stopping_fn
     else:
