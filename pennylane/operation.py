@@ -184,7 +184,7 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable
+from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from typing import Any, ClassVar, Literal, Optional, Union
 
@@ -681,7 +681,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     Optional[jax.extend.core.Primitive]
     """
 
-    resource_keys: ClassVar[set | frozenset] = set()
+    resource_keys: ClassVar[Set] = set()
     """The set of parameters that affects the resource requirement of the operator.
 
     All decomposition rules for this operator class are expected to have a resource function
