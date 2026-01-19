@@ -303,8 +303,6 @@ class GlobalPhase(Operation):
 
     grad_method = "A"
 
-    parameter_frequencies = [(1,)]
-
     resource_keys = set()
 
     @classmethod

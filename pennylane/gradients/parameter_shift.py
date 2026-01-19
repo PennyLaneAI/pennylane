@@ -30,7 +30,7 @@ from pennylane.exceptions import (
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.operation import Operator
-from pennylane.ops import Prod, prod
+from pennylane.ops import Adjoint, Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
@@ -398,13 +398,21 @@ def expval_param_shift(
                     f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
-        recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
-        recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
-            recipe, at_least_one_unshifted, f0, gradient_tapes, tape
-        )
-        coeffs, multipliers, op_shifts = recipe.T
+        if op.name == "GlobalPhase" or (isinstance(op, Adjoint) and op.base.name == "GlobalPhase"):
+            # TODO: there has to be a better way!
+            coeffs = []
+            g_tapes = []
+            unshifted_coeff = None
+            batch_size = None
 
-        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+        else:
+            recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
+            recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
+                recipe, at_least_one_unshifted, f0, gradient_tapes, tape
+            )
+            coeffs, multipliers, op_shifts = recipe.T
+            g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+
         gradient_tapes.extend(g_tapes)
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
