@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.decomposition.gate_set import GateSet
 from pennylane.operation import Operation
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
@@ -653,7 +654,7 @@ def test_stopping_condition_graph_enabled():
     assert stopping_condition(qml.RY(0.1, wires=0))
     assert not stopping_condition(qml.RZ(0.1, wires=0))
     assert stopping_condition(qml.RZ(0, wires=1))
-    assert gate_set == {"RX", "RY"}
+    assert gate_set == GateSet({"RX", "RY"})
 
 
 @pytest.mark.integration
