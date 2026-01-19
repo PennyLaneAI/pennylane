@@ -16,6 +16,7 @@ from copy import copy
 from functools import lru_cache
 
 from pennylane import math, templates
+from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose, null_postprocessing
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.ops import Adjoint
@@ -188,7 +189,11 @@ def add_noise(tape, noise_model, level="user"):
             return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
         [tape], _ = decompose(
-            tape, stopping_condition=stop_at, name="add_noise", error=DecompositionUndefinedError
+            tape,
+            target_gates=gate_sets.ALL_OPS,
+            stopping_condition=stop_at,
+            name="add_noise",
+            error=DecompositionUndefinedError,
         )
 
     conditions, noises = [], []

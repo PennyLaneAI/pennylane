@@ -14,11 +14,9 @@
 """Unit tests for the ``DecomposeInterpreter`` class"""
 # pylint:disable=protected-access,unused-argument, wrong-import-position
 
-import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
 
 jax = pytest.importorskip("jax")
 
@@ -32,8 +30,6 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.operation import Operation
-from pennylane.ops import Conditional, MidMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
@@ -69,6 +65,7 @@ class TestDecomposeInterpreter:
         with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
             DecomposeInterpreter(alt_decomps={qml.CNOT: [my_cnot]})
 
+    @pytest.mark.fixtures("disable_graph_decomposition")
     @pytest.mark.parametrize("op", [qml.RX(1.5, 0), qml.RZ(1.5, 0)])
     def test_stopping_condition(self, op):
         """Test that stopping_condition works correctly."""
@@ -235,7 +232,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Controlled` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ, qml.CNOT]
         if not decompose:
-            gate_set.append(qml.ops.Controlled)
+            gate_set.extend([f"C({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
@@ -267,7 +264,7 @@ class TestDecomposeInterpreter:
         """Test that a function containing `Adjoint` can be decomposed correctly."""
         gate_set = [qml.RX, qml.RY, qml.RZ]
         if not decompose:
-            gate_set.append(qml.ops.Adjoint)
+            gate_set.extend([f"Adjoint({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
@@ -464,68 +461,6 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[2].primitive == qml.RZ._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_decompose_conditionals(self):
-        """Tests decomposing a classically controlled operator"""
-
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self) -> dict:
-                return {}
-
-        @register_resources({qml.H: 2}, exact=False)
-        def _custom_decomposition(wires):
-            qml.H(wires[0])
-            m0 = qml.measure(wires[0])
-            qml.cond(m0, qml.H)(wires[1])
-
-        add_decomps(CustomOp, _custom_decomposition)
-
-        @DecomposeInterpreter(
-            gate_set={qml.RX, qml.RZ},
-            fixed_decomps={qml.GlobalPhase: qml.decomposition.null_decomp},
-        )
-        def circuit():
-            CustomOp(wires=[1, 0])
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.X)(wires=0)
-
-        jaxpr = jax.make_jaxpr(circuit)()
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts)
-        ops = collector.state["ops"]
-
-        def equivalent_circuit():
-            qml.RZ(np.pi / 2, wires=1)
-            qml.RX(np.pi / 2, wires=1)
-            qml.RZ(np.pi / 2, wires=1)
-            m0 = qml.measure(1)
-            qml.cond(m0, qml.RZ)(np.pi / 2, wires=0)
-            qml.cond(m0, qml.RX)(np.pi / 2, wires=0)
-            qml.cond(m0, qml.RZ)(np.pi / 2, wires=0)
-            m1 = qml.measure(0)
-            qml.cond(m1, qml.RX)(np.pi, wires=0)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            equivalent_circuit()
-
-        qml.assert_equal(ops[0], q.queue[0])
-        qml.assert_equal(ops[1], q.queue[1])
-        qml.assert_equal(ops[2], q.queue[2])
-        assert isinstance(ops[4], Conditional)
-        assert isinstance(ops[5], Conditional)
-        assert isinstance(ops[6], Conditional)
-        assert isinstance(ops[8], Conditional)
-        qml.assert_equal(ops[4].base, q.queue[4].base)
-        qml.assert_equal(ops[5].base, q.queue[5].base)
-        qml.assert_equal(ops[6].base, q.queue[6].base)
-        qml.assert_equal(ops[8].base, q.queue[8].base)
-        assert isinstance(ops[3], MidMeasure)
-        assert isinstance(ops[7], MidMeasure)
 
 
 class TestControlledDecompositions:

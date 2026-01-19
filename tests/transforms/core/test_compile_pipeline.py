@@ -19,6 +19,7 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import (
@@ -1563,6 +1564,7 @@ class TestCompilePipelineCall:
         pipeline.add_transform(qml.transforms.defer_measurements, num_wires=3)
         pipeline.add_transform(
             qml.transforms.decompose,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             stopping_condition=lambda op: op.name != "IsingXX",
         )
 

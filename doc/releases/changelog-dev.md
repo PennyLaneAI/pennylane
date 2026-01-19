@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
+  that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
+  [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+
 <h3>Improvements 🛠</h3>
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
@@ -140,6 +144,10 @@
 * Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 
+* Internal calls to the `decompose` transform have been updated to provide a `target_gates` argument so that
+  they are compatible with the new graph-based decomposition system.
+  [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -152,10 +160,15 @@
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
+* Fixes a bug with `qml.estimator.templates.QSVT` which allows users to instantiate the class without
+  providing wires. This is now consistent with the standard in the estimator module.
+  [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,

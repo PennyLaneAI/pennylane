@@ -42,9 +42,6 @@ from scipy.linalg import block_diag
 from pennylane import math
 from pennylane.operation import CVObservable, CVOperation
 
-from .identity import I, Identity  # pylint: disable=unused-import
-from .meta import Snapshot  # pylint: disable=unused-import
-
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
 
@@ -1412,8 +1409,6 @@ class FockStateProjector(CVObservable):
 
 
 __ops__ = {
-    "Identity",
-    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",
