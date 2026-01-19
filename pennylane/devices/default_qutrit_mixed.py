@@ -50,7 +50,7 @@ logger.addHandler(logging.NullHandler())
 observables = {"THermitian", "GellMann"}
 
 
-ALL_DQT_GATES = DefaultQutrit.operations | {"Snapshot"} | channels
+ALL_DQT_MIXED_GATES = DefaultQutrit.operations | {"Snapshot"} | channels
 
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
