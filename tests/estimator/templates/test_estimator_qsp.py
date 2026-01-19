@@ -86,6 +86,15 @@ class TestQSVT:
         with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             qre.QSVT(op, encoding_dims=2, poly_deg=2, wires=[0, 1])
 
+    def test_init_without_wires(self):
+        """Test that we can instantiate QSVT without providing wires."""
+        op = qre.RX()
+        qsvt = qre.QSVT(block_encoding=op, encoding_dims=(1, 1), poly_deg=5)
+        
+        assert qsvt.num_wires == 1
+        assert qsvt.encoding_dims == (1, 1)
+        assert qsvt.block_encoding == qre.resource_rep(qre.RX)
+
     @pytest.mark.parametrize(
         "encoding_dims, poly_deg",
         [
