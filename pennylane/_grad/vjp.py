@@ -62,7 +62,7 @@ def _validate_cotangents(cotangents, out_avals):
     from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     def get_shape(x):
-        return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
+        return getattr(x, "shape", jax.numpy.shape(x))
 
     if len(cotangents) != len(out_avals):
         raise ValueError(
@@ -74,8 +74,8 @@ def _validate_cotangents(cotangents, out_avals):
             raise TypeError(
                 "function output params and cotangents arguments to qml.vjp do not match; "
                 "dtypes must be equal. "
-                f"Got function output params dtype {_dtype(p)} and expected matching cotangent dtype "
-                f", but got cotangent dtype {_dtype(t)} instead."
+                f"Got function output params dtype {_dtype(p)} and expected matching cotangent dtype, "
+                f"but got cotangent dtype {_dtype(t)} instead."
             )
 
         if get_shape(p) != get_shape(t):
@@ -157,8 +157,10 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
 
     .. seealso:: :func:`~.grad`, :func:`~.jvp`, :func:`~.jacobian`
 
-    Note that while ``jax.vjp`` has no ``argnums`` and treats all params as trainable as default, we
-    default to only the first argument as trainable by default.
+    .. note::
+    
+        While ``jax.vjp`` has no ``argnums`` and treats all params as trainable as default, we
+        default to only the first argument as trainable by default.
 
     **Example**
 
