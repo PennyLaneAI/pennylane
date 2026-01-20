@@ -83,10 +83,9 @@ class TestMitigateWithZNE:
         scale_factors = [1, 2, -4]
         folding_kwargs = {"Hello": "goodbye"}
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mitigate_with_zne(
-                tape, scale_factors, self.folding, self.extrapolate, folding_kwargs=folding_kwargs
-            )
+        mitigate_with_zne(
+            tape, scale_factors, self.folding, self.extrapolate, folding_kwargs=folding_kwargs
+        )
 
         args = spy.call_args_list
 
@@ -102,14 +101,13 @@ class TestMitigateWithZNE:
         random_results = [0.1, 0.2, 0.3]
         extrapolate_kwargs = {"Hello": "goodbye"}
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            tapes, fn = mitigate_with_zne(
-                tape,
-                scale_factors,
-                self.folding,
-                self.extrapolate,
-                extrapolate_kwargs=extrapolate_kwargs,
-            )
+        tapes, fn = mitigate_with_zne(
+            tape,
+            scale_factors,
+            self.folding,
+            self.extrapolate,
+            extrapolate_kwargs=extrapolate_kwargs,
+        )
         res = fn(random_results)
         assert res == 3.141
 
@@ -130,8 +128,7 @@ class TestMitigateWithZNE:
             [qml.expval(qml.PauliZ(0))],
             shots=1000,
         )
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            tapes, _ = mitigate_with_zne(_tape, [1, 2, 3], fold_global, exponential_extrapolate)
+        tapes, _ = mitigate_with_zne(_tape, [1, 2, 3], fold_global, exponential_extrapolate)
         assert all(t.shots.total_shots == 1000 for t in tapes)
 
     @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
@@ -162,9 +159,8 @@ class TestMitigateWithZNE:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res_mitigated = mitigated_circuit(w1, w2)
-            res_ideal = ideal_circuit(w1, w2)
+        res_mitigated = mitigated_circuit(w1, w2)
+        res_ideal = ideal_circuit(w1, w2)
 
         # check shapes
         assert isinstance(res_mitigated, tuple)
@@ -186,10 +182,9 @@ class TestMitigateWithZNE:
         scale_factors = [1, 2, -4]
         spy_fold = mocker.spy(self, "folding")
         spy_extrapolate = mocker.spy(self, "extrapolate")
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            _, fn = mitigate_with_zne(
-                tape, scale_factors, self.folding, self.extrapolate, reps_per_factor=2
-            )
+        _, fn = mitigate_with_zne(
+            tape, scale_factors, self.folding, self.extrapolate, reps_per_factor=2
+        )
         random_results = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
         args = spy_fold.call_args_list
@@ -224,9 +219,8 @@ class TestMitigateWithZNE:
         )
         rng = np.random.default_rng(seed=seed)
         inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            result_orig = mitigated_qnode_orig(inputs)  # pylint: disable=not-callable
-            result_expanded = mitigated_qnode_expanded(inputs)  # pylint: disable=not-callable
+        result_orig = mitigated_qnode_orig(inputs)  # pylint: disable=not-callable
+        result_expanded = mitigated_qnode_expanded(inputs)  # pylint: disable=not-callable
         # !TODO: double check if this shape mismatch needs to be taken care of from user side PR6684
         assert qml.math.allclose(
             np.array(result_orig).flatten(), np.array(result_expanded).flatten()
@@ -253,8 +247,7 @@ class TestMitigateWithZNE:
         #     mitiq.zne.scaling.fold_global, mitiq.zne.inference.RichardsonFactory.extrapolate
         # )()
         mitigated_result = 0.39843788456
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            assert qml.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
+        assert qml.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
 
     # pylint:disable=not-callable
     def test_zne_error_with_channels(self):
@@ -273,8 +266,7 @@ class TestMitigateWithZNE:
             match="Circuits containing quantum channels cannot be folded with mitigate_with_zne.",
         ):
             noisy_qnode = qml.add_noise(qml.QNode(circuit, device=dev_ideal), noise_model)
-            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-                mitigate_with_zne(noisy_qnode, [1, 2, 3], fold_global, richardson_extrapolate)()
+            mitigate_with_zne(noisy_qnode, [1, 2, 3], fold_global, richardson_extrapolate)()
 
 
 @pytest.fixture
@@ -656,11 +648,9 @@ class TestDifferentiableZNE:
 
         theta = np.array([np.pi / 4, np.pi / 4], requires_grad=True)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = mitigated_qnode(theta)
+        res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            grad = qml.grad(mitigated_qnode)(theta)
+        grad = qml.grad(mitigated_qnode)(theta)
         grad_ideal = qml.grad(qnode_ideal)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
@@ -685,12 +675,10 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 4],
         )
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = mitigated_qnode(theta)
+        res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            grad = jax.grad(mitigated_qnode)(theta)
-            grad_ideal = jax.grad(qnode_ideal)(theta)
+        grad = jax.grad(mitigated_qnode)(theta)
+        grad_ideal = jax.grad(qnode_ideal)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
         jax.grad(qnode_noisy)(theta)
@@ -716,8 +704,7 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 4],
         )
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = mitigated_qnode(theta)
+        res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         grad = jax.grad(mitigated_qnode)(theta)
         grad_ideal = jax.grad(qnode_ideal)(theta)
@@ -741,8 +728,7 @@ class TestDifferentiableZNE:
 
         theta = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = mitigated_qnode(theta)
+        res = mitigated_qnode(theta)
 
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         res.backward()
@@ -797,12 +783,10 @@ class TestDifferentiableZNE:
 
         theta = np.array([np.pi / 4, np.pi / 6], requires_grad=True)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = qml.math.stack(mitigated_qnode(theta))
+        res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            grad = qml.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        grad = qml.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
         grad_ideal = qml.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
@@ -827,12 +811,10 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 6],
         )
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = qml.math.stack(mitigated_qnode(theta))
+        res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
         grad_ideal = jax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
@@ -859,8 +841,7 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 6],
         )
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = qml.math.stack(mitigated_qnode(theta))
+        res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
         grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
@@ -885,17 +866,15 @@ class TestDifferentiableZNE:
 
         theta = torch.tensor([np.pi / 4, np.pi / 6], requires_grad=True)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = qml.math.stack(mitigated_qnode(theta))
+        res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            grad = torch.autograd.functional.jacobian(
-                lambda t: qml.math.stack(mitigated_qnode(t)), theta
-            )
-            grad_ideal = torch.autograd.functional.jacobian(
-                lambda t: qml.math.stack(qnode_ideal(t)), theta
-            )
+        grad = torch.autograd.functional.jacobian(
+            lambda t: qml.math.stack(mitigated_qnode(t)), theta
+        )
+        grad_ideal = torch.autograd.functional.jacobian(
+            lambda t: qml.math.stack(qnode_ideal(t)), theta
+        )
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 

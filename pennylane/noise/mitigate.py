@@ -20,7 +20,7 @@ from pennylane import math
 from pennylane.operation import Channel
 from pennylane.ops.op_math import adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform
+from pennylane.transforms import transform, decompose
 from pennylane.typing import PostprocessingFn
 
 
@@ -545,7 +545,7 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape = tape.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
+    tape = decompose(tape, stopping_condition=lambda op: not isinstance(op, QuantumScript))[0][0]
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [
