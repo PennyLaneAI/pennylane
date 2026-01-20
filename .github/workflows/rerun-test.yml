@@ -63,9 +63,9 @@ jobs:
         id: set-skip-tests
         run: |
           ALL_TESTS='all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
-          WORKFLOW="device-tests" #"${{ inputs.workflow }}"
+          WORKFLOW='device-tests' #"${{ inputs.workflow }}"
           SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
-          echo "skip-tests=$ALL_TESTS" >> $GITHUB_OUTPUT
+          echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
 
   docs:
     name: Run docs
