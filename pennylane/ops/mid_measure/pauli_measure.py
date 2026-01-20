@@ -101,7 +101,9 @@ class PauliMeasure(Operator):
     @property
     def hash(self) -> int:
         """int: An integer hash uniquely representing the measurement."""
-        return hash((self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.id))
+        return hash(
+            (self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.meas_uid)
+        )
 
 
 def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | None = None):

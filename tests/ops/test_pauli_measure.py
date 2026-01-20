@@ -70,15 +70,15 @@ class TestPauliMeasure:
     def test_hash(self):
         """Test that the hash for PauliMeasure is defined correctly."""
 
-        m1 = PauliMeasure("XY", wires=[0, 1], id="id1")
-        m2 = PauliMeasure("XY", wires=[1, 2], id="id1")
+        m1 = PauliMeasure("XY", wires=[0, 1], meas_uid="id1")
+        m2 = PauliMeasure("XY", wires=[1, 2], meas_uid="id1")
         assert hash(m1) != hash(m2)
 
-        m3 = PauliMeasure("XZ", wires=[0, 1], id="id1")
+        m3 = PauliMeasure("XZ", wires=[0, 1], meas_uid="id1")
         assert hash(m1) != hash(m3)
 
-        m4 = PauliMeasure("XY", wires=[0, 1], id="id2")
+        m4 = PauliMeasure("XY", wires=[0, 1], meas_uid="id2")
         assert hash(m1) != hash(m4)
 
-        m5 = PauliMeasure("XY", wires=[0, 1], id="id1")
+        m5 = PauliMeasure("XY", wires=[0, 1], meas_uid="id1")
         assert hash(m1) == hash(m5)

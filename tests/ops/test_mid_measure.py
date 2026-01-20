@@ -32,7 +32,7 @@ def test_id_is_deprecated():
     with pytest.warns(
         PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
     ):
-        op = MidMeasure(0, meas_uid="blah")
+        op = MidMeasure(0, id="blah")
     assert op.meas_uid == "blah"
 
 
@@ -466,7 +466,7 @@ class TestMeasurementValueManipulation:
         b = a.map_wires({0: "b"})
         [new_meas] = b.measurements
         assert new_meas.wires == Wires(["b"])
-        assert new_meas.id == mp1.id
+        assert new_meas.meas_uid == mp1.meas_uid
 
     def test_mod(self):
         """Test the __mod__ dunder method between two measurement values"""
