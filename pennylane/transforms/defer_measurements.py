@@ -372,7 +372,11 @@ def _get_plxpr_defer_measurements():
         # the primitive corresponding to the class to get binded. We do not want the
         # MidMeasure's primitive to get recorded.
         meas = type.__call__(
-            MidMeasure, Wires(cur_target), reset=reset, postselect=postselect, uid=str(cur_target)
+            MidMeasure,
+            Wires(cur_target),
+            reset=reset,
+            postselect=postselect,
+            meas_uid=str(cur_target),
         )
 
         cnot_wires = (wires, cur_target)

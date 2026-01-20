@@ -38,9 +38,9 @@ from pennylane.tape import QuantumScript
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_bit_map = {}
 
-default_mid_measure_1 = qml.ops.MidMeasure(0, uid="1")
-default_mid_measure_2 = qml.ops.MidMeasure(0, uid="2")
-default_mid_measure_3 = qml.ops.MidMeasure(0, uid="3")
+default_mid_measure_1 = qml.ops.MidMeasure(0, meas_uid="1")
+default_mid_measure_2 = qml.ops.MidMeasure(0, meas_uid="2")
+default_mid_measure_3 = qml.ops.MidMeasure(0, meas_uid="3")
 default_measurement_value_1 = qml.ops.MeasurementValue([default_mid_measure_1], lambda v: v)
 default_measurement_value_2 = qml.ops.MeasurementValue([default_mid_measure_2], lambda v: v)
 default_measurement_value_3 = qml.ops.MeasurementValue([default_mid_measure_3], lambda v: v)
