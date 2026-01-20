@@ -619,18 +619,19 @@ class TestGraphModeExclusiveFeatures:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomp_context():
+            qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-        tape = qml.tape.QuantumScript([MyOp(0)])
-        device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
-        target_gates = {"Hadamard", "PauliX"}
+            tape = qml.tape.QuantumScript([MyOp(0)])
+            device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+            target_gates = {"Hadamard", "PauliX"}
 
-        (out_tape,), _ = decompose(
-            tape,
-            lambda obj: obj.name in target_gates,
-            device_wires=device_wires,
-            target_gates=target_gates,
-        )
+            (out_tape,), _ = decompose(
+                tape,
+                lambda obj: obj.name in target_gates,
+                device_wires=device_wires,
+                target_gates=target_gates,
+            )
 
         # Should use fallback decomposition (2 Hadamards)
         assert len(out_tape.operations) == 2

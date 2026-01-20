@@ -90,6 +90,7 @@ Inspecting and Managing Decomposition Rules
     ~add_decomps
     ~list_decomps
     ~has_decomp
+    ~local_decomp_context
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
@@ -256,4 +257,5 @@ from .decomposition_rule import (
     add_decomps,
     list_decomps,
     has_decomp,
+    local_decomp_context,
 )

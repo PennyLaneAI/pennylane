@@ -1214,32 +1214,40 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        @qnode(
-            dev,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            max_diff=2,
-            device_vjp=device_vjp,
-            interface="torch",
-        )
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
-            return qml.expval(qml.PauliX(0))
+        with qml.decomposition.local_decomp_context():
 
-        x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
+            @qml.register_resources({qml.RY: 1})
+            def custom_decomposition(param, wires):
+                qml.RY(3 * param, wires=wires)
 
-        loss = circuit(x)
+            qml.add_decomps(PhaseShift, custom_decomposition)
 
-        loss.backward()
-        res = x.grad
+            @qnode(
+                dev,
+                diff_method=diff_method,
+                grad_on_execution=grad_on_execution,
+                max_diff=2,
+                device_vjp=device_vjp,
+                interface="torch",
+            )
+            def circuit(x):
+                qml.Hadamard(wires=0)
+                PhaseShift(x, wires=0)
+                return qml.expval(qml.PauliX(0))
 
-        assert torch.allclose(res, -3 * torch.sin(3 * x))
+            x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
-        if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
-            # test second order derivatives
-            res = torch.autograd.functional.hessian(circuit, x)
-            assert torch.allclose(res, -9 * torch.cos(3 * x))
+            loss = circuit(x)
+
+            loss.backward()
+            res = x.grad
+
+            assert torch.allclose(res, -3 * torch.sin(3 * x))
+
+            if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
+                # test second order derivatives
+                res = torch.autograd.functional.hessian(circuit, x)
+                assert torch.allclose(res, -9 * torch.cos(3 * x))
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(

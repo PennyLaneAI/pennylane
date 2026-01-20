@@ -1958,6 +1958,7 @@ class TestTapeExpansion:
     def test_gradient_expansion(self, mocker):
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
+
         dev = qml.device("default.qubit", wires=1)
 
         # pylint: disable=too-few-public-methods
@@ -1969,22 +1970,30 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
-            return qml.expval(qml.PauliX(0))
+        with qml.decomposition.local_decomp_context():
 
-        x = pnp.array(0.5, requires_grad=True)
-        circuit(x)
+            @qml.register_resources({qml.RY: 1})
+            def custom_decomposition(param, wires):
+                qml.RY(3 * param, wires=wires)
 
-        res = qml.grad(circuit)(x)
+            qml.add_decomps(PhaseShift, custom_decomposition)
 
-        assert np.allclose(res, -3 * np.sin(3 * x))
+            @qnode(dev, diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                qml.Hadamard(wires=0)
+                PhaseShift(x, wires=0)
+                return qml.expval(qml.PauliX(0))
 
-        # test second order derivatives
-        res = qml.grad(qml.grad(circuit))(x)
-        assert np.allclose(res, -9 * np.cos(3 * x))
+            x = pnp.array(0.5, requires_grad=True)
+            circuit(x)
+
+            res = qml.grad(circuit)(x)
+
+            assert np.allclose(res, -3 * np.sin(3 * x))
+
+            # test second order derivatives
+            res = qml.grad(qml.grad(circuit))(x)
+            assert np.allclose(res, -9 * np.cos(3 * x))
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""
