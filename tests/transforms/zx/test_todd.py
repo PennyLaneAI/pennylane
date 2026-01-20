@@ -64,8 +64,7 @@ class TestTODD:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.todd(qs)
 
         assert new_qs.operations == []
 
@@ -82,8 +81,7 @@ class TestTODD:
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.todd(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -101,8 +99,7 @@ class TestTODD:
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.todd(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -126,8 +123,7 @@ class TestTODD:
         qs = QuantumScript(ops=[gate])
 
         with pytest.raises(TypeError, match=r"The input circuit must be a Clifford \+ T circuit."):
-            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-                qml.transforms.zx.todd(qs)
+            qml.transforms.zx.todd(qs)
 
     @pytest.mark.parametrize(
         "angle, expected_ops",
@@ -148,8 +144,7 @@ class TestTODD:
         ops = [qml.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.todd(qs)
+        (new_qs,), _ = qml.transforms.zx.todd(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -176,8 +171,7 @@ class TestTODD:
         ]
         original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (transformed_tape,), _ = qml.transforms.zx.todd(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.todd(original_tape)
 
         expected_ops = [
             qml.adjoint(qml.S(wires=0)),
@@ -212,16 +206,14 @@ class TestTODD:
         reduced_circ = qml.transforms.zx.todd(original_circ)
 
         state1 = original_circ()
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            state2 = reduced_circ()
+        state2 = reduced_circ()
 
         # test that the states are equivalent up to a global phase
         check = qml.math.fidelity_statevector(state1, state2)
         assert np.isclose(check, 1)
 
         u1 = qml.matrix(original_circ, wire_order=range(num_wires))()
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))()
+        u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))()
 
         # test that the unitaries are equivalent up to a global phase
         prod = u1 @ np.conj(u2.T)
