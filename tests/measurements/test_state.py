@@ -19,7 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import QuantumFunctionError, WireError
+from pennylane.exceptions import QuantumFunctionError, WireError, PennyLaneDeprecationWarning
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
@@ -1009,7 +1009,8 @@ class TestDensityMatrix:
             return density_matrix(0), expval(qml.PauliZ(1))
 
         with pytest.raises(QuantumFunctionError, match="cannot be returned in combination"):
-            func()
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                func()
 
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning

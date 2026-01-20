@@ -24,6 +24,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
@@ -861,7 +862,8 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape = tape.expand(depth=1)
 
         @qml.qnode(dev)
         def f(bitstring):

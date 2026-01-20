@@ -629,7 +629,8 @@ def test_error_finite_shots():
     tape = qml.tape.QuantumScript.from_queue(q, shots=1)
 
     with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
-        qml.adjoint_metric_tensor(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            qml.adjoint_metric_tensor(tape)
 
 
 def test_works_with_state_prep():
@@ -652,6 +653,7 @@ def test_works_with_state_prep():
         return qml.expval(qml.Z(0) @ qml.X(1))
 
     angles = np.random.uniform(size=(2,), requires_grad=True)
-    qfim = qml.adjoint_metric_tensor(circuit)(angles)
+    with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+        qfim = qml.adjoint_metric_tensor(circuit)(angles)
     autodiff_qfim = autodiff_metric_tensor(ansatz, 2)(angles)
     assert onp.allclose(qfim, autodiff_qfim)

@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
@@ -95,7 +96,8 @@ class TestQubitCarry:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         if expand:
-            tape = tape.expand()
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                tape = tape.expand()
         result = dev.execute(tape)
         result = np.argmax(result)
         result = format(result, "04b")

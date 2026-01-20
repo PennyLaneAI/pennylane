@@ -83,9 +83,10 @@ class TestMitigateWithZNE:
         scale_factors = [1, 2, -4]
         folding_kwargs = {"Hello": "goodbye"}
 
-        mitigate_with_zne(
-            tape, scale_factors, self.folding, self.extrapolate, folding_kwargs=folding_kwargs
-        )
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mitigate_with_zne(
+                tape, scale_factors, self.folding, self.extrapolate, folding_kwargs=folding_kwargs
+            )
 
         args = spy.call_args_list
 
@@ -101,13 +102,14 @@ class TestMitigateWithZNE:
         random_results = [0.1, 0.2, 0.3]
         extrapolate_kwargs = {"Hello": "goodbye"}
 
-        tapes, fn = mitigate_with_zne(
-            tape,
-            scale_factors,
-            self.folding,
-            self.extrapolate,
-            extrapolate_kwargs=extrapolate_kwargs,
-        )
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tapes, fn = mitigate_with_zne(
+                tape,
+                scale_factors,
+                self.folding,
+                self.extrapolate,
+                extrapolate_kwargs=extrapolate_kwargs,
+            )
         res = fn(random_results)
         assert res == 3.141
 
@@ -128,7 +130,8 @@ class TestMitigateWithZNE:
             [qml.expval(qml.PauliZ(0))],
             shots=1000,
         )
-        tapes, _ = mitigate_with_zne(_tape, [1, 2, 3], fold_global, exponential_extrapolate)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tapes, _ = mitigate_with_zne(_tape, [1, 2, 3], fold_global, exponential_extrapolate)
         assert all(t.shots.total_shots == 1000 for t in tapes)
 
     @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
@@ -159,8 +162,9 @@ class TestMitigateWithZNE:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-        res_mitigated = mitigated_circuit(w1, w2)
-        res_ideal = ideal_circuit(w1, w2)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res_mitigated = mitigated_circuit(w1, w2)
+            res_ideal = ideal_circuit(w1, w2)
 
         # check shapes
         assert isinstance(res_mitigated, tuple)
@@ -182,9 +186,10 @@ class TestMitigateWithZNE:
         scale_factors = [1, 2, -4]
         spy_fold = mocker.spy(self, "folding")
         spy_extrapolate = mocker.spy(self, "extrapolate")
-        _, fn = mitigate_with_zne(
-            tape, scale_factors, self.folding, self.extrapolate, reps_per_factor=2
-        )
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            _, fn = mitigate_with_zne(
+                tape, scale_factors, self.folding, self.extrapolate, reps_per_factor=2
+            )
         random_results = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
 
         args = spy_fold.call_args_list
@@ -219,8 +224,9 @@ class TestMitigateWithZNE:
         )
         rng = np.random.default_rng(seed=seed)
         inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
-        result_orig = mitigated_qnode_orig(inputs)  # pylint: disable=not-callable
-        result_expanded = mitigated_qnode_expanded(inputs)  # pylint: disable=not-callable
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            result_orig = mitigated_qnode_orig(inputs)  # pylint: disable=not-callable
+            result_expanded = mitigated_qnode_expanded(inputs)  # pylint: disable=not-callable
         # !TODO: double check if this shape mismatch needs to be taken care of from user side PR6684
         assert qml.math.allclose(
             np.array(result_orig).flatten(), np.array(result_expanded).flatten()
@@ -247,7 +253,8 @@ class TestMitigateWithZNE:
         #     mitiq.zne.scaling.fold_global, mitiq.zne.inference.RichardsonFactory.extrapolate
         # )()
         mitigated_result = 0.39843788456
-        assert qml.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            assert qml.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
 
     # pylint:disable=not-callable
     def test_zne_error_with_channels(self):
@@ -266,7 +273,8 @@ class TestMitigateWithZNE:
             match="Circuits containing quantum channels cannot be folded with mitigate_with_zne.",
         ):
             noisy_qnode = qml.add_noise(qml.QNode(circuit, device=dev_ideal), noise_model)
-            mitigate_with_zne(noisy_qnode, [1, 2, 3], fold_global, richardson_extrapolate)()
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                mitigate_with_zne(noisy_qnode, [1, 2, 3], fold_global, richardson_extrapolate)()
 
 
 @pytest.fixture

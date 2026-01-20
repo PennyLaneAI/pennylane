@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
 
 
@@ -174,8 +175,9 @@ class TestIntegration:
         QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
 
         circ = qml.QNode(qfunc, dev)
-        QFIM = quantum_fisher(circ)(params)
-        QFIM1 = 4.0 * qml.adjoint_metric_tensor(circ)(params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            QFIM = quantum_fisher(circ)(params)
+            QFIM1 = 4.0 * qml.adjoint_metric_tensor(circ)(params)
         assert np.allclose(QFIM, QFIM1)
         assert np.allclose(QFIM_hard, QFIM1_hard, atol=1e-1)
 
