@@ -33,6 +33,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
+  [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
+  [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
+  
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
   [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
@@ -132,6 +136,10 @@
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
 
 <h3>Internal changes ⚙️</h3>
+
+* Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
+  to match the non-PRNG version and reduce stochastic test failures.
+  [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
 
 * Updated test helper `get_device` to correctly seed lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
