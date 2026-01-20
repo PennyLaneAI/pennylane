@@ -607,7 +607,7 @@ class QSVT(ResourceOperator):
         if wires is None and block_encoding.wires is not None:
             wires = block_encoding.wires
 
-        if len(wires) != self.num_wires:
+        if wires is not None and len(wires) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(wires)}.")
         super().__init__(wires=wires)
 
