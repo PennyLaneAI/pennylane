@@ -2841,18 +2841,17 @@ class ControlledPhaseShift(ControlledOp):
         ]
 
 
-def _cphase_rz_resource():
-    return {qml.RZ: 3, qml.CNOT: 2, qml.GlobalPhase: 1}
+def _cphase_ps_resource():
+    return {qml.PhaseShift: 3, qml.CNOT: 2}
 
 
-@register_resources(_cphase_rz_resource)
-def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qml.RZ(phi / 2, wires=wires[0])
+@register_resources(_cphase_ps_resource)
+def _cphase_to_ps_cnot(phi: TensorLike, wires: WiresLike, **__):
+    qml.PhaseShift(phi / 2, wires=wires[0])
     qml.CNOT(wires=wires)
-    qml.RZ(-phi / 2, wires=wires[1])
+    qml.PhaseShift(-phi / 2, wires=wires[1])
     qml.CNOT(wires=wires)
-    qml.RZ(phi / 2, wires=wires[1])
-    qml.GlobalPhase(-phi / 4)
+    qml.PhaseShift(phi / 2, wires=wires[1])
 
 
 def _cphase_to_ppr_resource():
@@ -2871,7 +2870,7 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     qml.GlobalPhase(-phi / 4)
 
 
-add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
+add_decomps(ControlledPhaseShift, _cphase_to_ps_cnot, _cphase_to_ppr)
 add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation)
 add_decomps("Pow(ControlledPhaseShift)", pow_rotation)
 
