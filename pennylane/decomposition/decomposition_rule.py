@@ -599,12 +599,57 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
 
 
 @contextmanager
-def local_decomp_context():
-    """Start a new context in which additions to decomposition rules are locallized."""
+def add_decomps_local(op_type: type[Operator] | str, *decomps: DecompositionRule):
+    """Register new decomposition rules with an operator class in a local context.
 
-    _new_decompositions = _decompositions_private.copy()
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
+        doing decompositions is generally more resource efficient and accommodates multiple alternative
+        decomposition rules for an operator. In this new system, custom decomposition rules are
+        defined as quantum functions, and it is currently required that every decomposition rule
+        declares its required resources using :func:`~pennylane.register_resources`
+
+    Args:
+        op_type (type or str): the operator type for which new decomposition rules are specified.
+            For symbolic operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
+        decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
+            A decomposition is a quantum function registered with a resource estimate using
+            ``qml.register_resources``.
+
+    Returns:
+        A context manager in which the added decomposition rules are effective.
+
+    .. seealso:: :func:`~pennylane.add_decomps`
+
+    **Example**
+
+    This example demonstrates adding a decomposition rule to the ``qml.Hadamard`` operator.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import numpy as np
+
+        @qml.register_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
+        def my_hadamard(wires):
+            qml.RZ(np.pi, wires=wires)
+            qml.RY(np.pi / 2, wires=wires)
+            qml.GlobalPhase(-np.pi / 2)
+
+        with qml.add_decomps_local(qml.Hadamard, my_hadamard):
+
+            @qml.qnode(qml.device("default.qubit"))
+            def circuit():
+                qml.H(0)
+                return qml.expval(qml.Z(0))
+
+    """
+    _new_decompositions = _decompositions_var.get().copy()
     token = _decompositions_var.set(_new_decompositions)
     try:
+        add_decomps(op_type, *decomps)
         yield
     finally:
         _decompositions_var.reset(token)
