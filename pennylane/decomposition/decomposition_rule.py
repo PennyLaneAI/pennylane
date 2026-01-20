@@ -19,14 +19,16 @@ from __future__ import annotations
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
 
+from pennylane.decomposition.gate_set import _to_name
 from pennylane.operation import Operator
 
 from .resources import Resources, auto_wrap
-from .utils import translate_op_alias
 
 
 @dataclass(frozen=True)
@@ -447,8 +449,10 @@ class DecompositionRule:
         self._work_wire_spec = work_wires
 
 
-_decompositions = defaultdict(list)
+_decompositions_private = defaultdict(list)
 """dict[str, list[DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
+
+_decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
 
 def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
@@ -524,9 +528,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    _decompositions[translate_op_alias(op_type)].extend(decomps)
+    _decompositions_var.get()[_to_name(op_type)].extend(decomps)
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
@@ -569,11 +571,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    if isinstance(op, Operator):
-        return _decompositions[op.name][:]
-    if isinstance(op, type):
-        op = op.__name__
-    return _decompositions[translate_op_alias(op)][:]
+    return _decompositions_var.get()[_to_name(op)][:]
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -595,12 +593,21 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    if isinstance(op, Operator):
-        return op.name in _decompositions and len(_decompositions[op.name]) > 0
-    if isinstance(op, type):
-        op = op.__name__
-    op = translate_op_alias(op)
-    return op in _decompositions and len(_decompositions[op]) > 0
+    op_name = _to_name(op)
+    _decompositions = _decompositions_var.get()
+    return op_name in _decompositions and len(_decompositions[op_name]) > 0
+
+
+@contextmanager
+def local_decomp_context():
+    """Start a new context in which additions to decomposition rules are locallized."""
+
+    _new_decompositions = _decompositions_private.copy()
+    token = _decompositions_var.set(_new_decompositions)
+    try:
+        yield
+    finally:
+        _decompositions_var.reset(token)
 
 
 @register_resources({})
