@@ -72,6 +72,7 @@ def _get_decompose_func(tape):
     Returns:
         The decompose transform pre-initialized with an appropriate stopping condition.
     """
+
     def _multipar_stopping_fn(obj):
         try:
             return (
