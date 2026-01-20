@@ -44,6 +44,7 @@ I_broadcasted = I[pnp.newaxis]
 
 
 def test_id_is_deprecated():
+    """Tests that the 'id' argument is deprecated."""
 
     class DummyOp(Operator):
         """Custom dummy operator."""
