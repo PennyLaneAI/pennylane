@@ -619,8 +619,7 @@ class TestGraphModeExclusiveFeatures:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        with qml.decomposition.local_decomp_context():
-            qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.add_decomps_local(MyOp, decomp_fallback, decomp_with_work_wire):
 
             tape = qml.tape.QuantumScript([MyOp(0)])
             device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable

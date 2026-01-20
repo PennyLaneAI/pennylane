@@ -1970,13 +1970,11 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        with qml.decomposition.local_decomp_context():
+        @qml.register_resources({qml.RY: 1})
+        def custom_decomposition(param, wires):
+            qml.RY(3 * param, wires=wires)
 
-            @qml.register_resources({qml.RY: 1})
-            def custom_decomposition(param, wires):
-                qml.RY(3 * param, wires=wires)
-
-            qml.add_decomps(PhaseShift, custom_decomposition)
+        with qml.decomposition.add_decomps_local(PhaseShift, custom_decomposition):
 
             @qnode(dev, diff_method="parameter-shift", max_diff=2)
             def circuit(x):

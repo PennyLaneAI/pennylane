@@ -246,8 +246,8 @@ class TestDecompositionRule:
 
         _decompositions_private.pop(CustomOp)  # cleanup
 
-    def test_local_decomp_context(self):
-        """Tests the local context manager for decompositions."""
+    def test_add_local_decomps(self):
+        """Tests the local context manager for adding decompositions."""
 
         class CustomOp(Operator):  # pylint: disable=too-few-public-methods
             pass
@@ -272,10 +272,10 @@ class TestDecompositionRule:
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RY(theta, wires=wires[0])
 
-        with qml.decomposition.local_decomp_context():
-
-            qml.add_decomps(CustomOp, custom_decomp)
-            qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
+        with (
+            qml.decomposition.add_decomps_local(CustomOp, custom_decomp),
+            qml.decomposition.add_decomps_local(CustomOp, custom_decomp2, custom_decomp3),
+        ):
 
             assert qml.decomposition.has_decomp(CustomOp)
             assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
