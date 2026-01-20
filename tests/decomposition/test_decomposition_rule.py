@@ -244,7 +244,7 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qml.add_decomps(CustomOp, custom_decomp4)
 
-        _decompositions_private.pop("CustomOp")  # cleanup
+        _decompositions_private.pop(CustomOp)  # cleanup
 
     def test_add_local_decomps(self):
         """Tests the local context manager for adding decompositions."""
