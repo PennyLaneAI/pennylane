@@ -600,7 +600,7 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
 
 @contextmanager
 def local_decomp_context():
-    """Start a new context in which additions to decomposition rules are locallized."""
+    """Start a new context in which additions to decomposition rules are localized."""
 
     _new_decompositions = _decompositions_private.copy()
     token = _decompositions_var.set(_new_decompositions)

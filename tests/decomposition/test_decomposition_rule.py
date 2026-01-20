@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
+    _decompositions_private,
     register_condition,
     register_resources,
 )
@@ -223,6 +224,54 @@ class TestDecompositionRule:
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RY(theta, wires=wires[0])
 
+        qml.add_decomps(CustomOp, custom_decomp)
+        qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
+
+        assert qml.decomposition.has_decomp(CustomOp)
+        assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
+        assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
+        assert qml.list_decomps(CustomOp(wires=[0, 1])) == [
+            custom_decomp,
+            custom_decomp2,
+            custom_decomp3,
+        ]
+
+        def custom_decomp4(theta, wires, **__):
+            qml.RZ(theta, wires=wires[0])
+            qml.CZ(wires=[wires[0], wires[1]])
+            qml.RZ(theta, wires=wires[0])
+
+        with pytest.raises(TypeError, match="must be a qfunc with a resource"):
+            qml.add_decomps(CustomOp, custom_decomp4)
+
+        _decompositions_private.pop(CustomOp)  # cleanup
+
+    def test_local_decomp_context(self):
+        """Tests the local context manager for decompositions."""
+
+        class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+            pass
+
+        assert not qml.decomposition.has_decomp(CustomOp)
+
+        @register_resources({qml.RZ: 2, qml.CNOT: 1})
+        def custom_decomp(theta, wires, **__):
+            qml.RZ(theta, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RZ(theta, wires=wires[0])
+
+        @register_resources({qml.RX: 2, qml.CZ: 1})
+        def custom_decomp2(theta, wires, **__):
+            qml.RX(theta, wires=wires[0])
+            qml.CZ(wires=[wires[0], wires[1]])
+            qml.RX(theta, wires=wires[0])
+
+        @register_resources({qml.RY: 2, qml.CNOT: 1})
+        def custom_decomp3(theta, wires, **__):
+            qml.RY(theta, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(theta, wires=wires[0])
+
         with qml.decomposition.local_decomp_context():
 
             qml.add_decomps(CustomOp, custom_decomp)
@@ -231,19 +280,6 @@ class TestDecompositionRule:
             assert qml.decomposition.has_decomp(CustomOp)
             assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
             assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
-            assert qml.list_decomps(CustomOp(wires=[0, 1])) == [
-                custom_decomp,
-                custom_decomp2,
-                custom_decomp3,
-            ]
-
-            def custom_decomp4(theta, wires, **__):
-                qml.RZ(theta, wires=wires[0])
-                qml.CZ(wires=[wires[0], wires[1]])
-                qml.RZ(theta, wires=wires[0])
-
-            with pytest.raises(TypeError, match="must be a qfunc with a resource"):
-                qml.add_decomps(CustomOp, custom_decomp4)
 
         # test that the context properly cleans up.
         assert qml.list_decomps(CustomOp) == []
