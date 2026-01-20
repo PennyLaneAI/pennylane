@@ -277,7 +277,8 @@ class TestAdjointMetricTensorTape:
 
         circuit(*params)
 
-        mt = qml.adjoint_metric_tensor(circuit)(*params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt = qml.adjoint_metric_tensor(circuit)(*params)
         assert qml.math.allclose(mt, expected)
 
         tape = qml.workflow.construct_tape(circuit)(*params)
@@ -400,7 +401,8 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.adjoint_metric_tensor(circuit)(*params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt = qml.adjoint_metric_tensor(circuit)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -528,7 +530,8 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_jac = qml.jacobian(qml.adjoint_metric_tensor(circuit))(*params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt_jac = qml.jacobian(qml.adjoint_metric_tensor(circuit))(*params)
 
         if isinstance(mt_jac, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))

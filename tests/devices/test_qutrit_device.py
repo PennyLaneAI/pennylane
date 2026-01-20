@@ -24,7 +24,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import QubitDevice, QutritDevice
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -1166,7 +1166,8 @@ class TestShotList:
             qml.QutritUnitary(U, wires=[0, 1])
             return qml.probs(wires=0), qml.probs(wires=1)
 
-        res = circuit(pnp.eye(9))
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = circuit(pnp.eye(9))
 
         if isinstance(shot_list[0], tuple):
             assert isinstance(res, tuple)
