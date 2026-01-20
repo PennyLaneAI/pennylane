@@ -2020,7 +2020,8 @@ class TestTapeExpansionWithControlled:
             qml.PauliX(wires=1),
         ]
         assert len(tape) == 9
-        expanded = qml.transforms.decompose(tape, stopping_condition=lambda obj: not isinstance(obj, Controlled))
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expanded = tape.expand(stop_at=lambda obj: not isinstance(obj, Controlled))
         assert expanded.circuit == expected
 
     @pytest.mark.parametrize(
@@ -2037,11 +2038,12 @@ class TestTapeExpansionWithControlled:
             op(0.1, 0.2, 0.3, wires=0)
 
         tape = QuantumScript.from_queue(q_tape)
-        assert decompose(tape, max_expansion=1)[0][0].circuit == [
-            Controlled(qml.RZ(0.1, 0), control_wires=[3, 7]),
-            Controlled(qml.RY(0.2, 0), control_wires=[3, 7]),
-            Controlled(qml.RZ(0.3, 0), control_wires=[3, 7]),
-        ]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            assert tape.expand(depth=1).circuit == [
+                Controlled(qml.RZ(0.1, 0), control_wires=[3, 7]),
+                Controlled(qml.RY(0.2, 0), control_wires=[3, 7]),
+                Controlled(qml.RZ(0.3, 0), control_wires=[3, 7]),
+            ]
 
         # Tests that the decomposition of the nested controlled _Rot gate is ultimately
         # equivalent to the decomposition of the controlled CRot
@@ -2053,8 +2055,9 @@ class TestTapeExpansionWithControlled:
         def stopping_condition(o):
             return not isinstance(o, Controlled) or not o.has_decomposition
 
-        actual = decompose(tape, max_expansion=10, stopping_condition=stopping_condition)[0][0]
-        expected = decompose(tape_expected, max_expansion=10, stopping_condition=stopping_condition)[0][0]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            actual = tape.expand(depth=10, stop_at=stopping_condition)
+            expected = tape_expected.expand(depth=10, stop_at=stopping_condition)
         actual_mat = qml.matrix(actual, wire_order=[3, 7, 0])
         expected_mat = qml.matrix(expected, wire_order=[3, 7, 0])
         assert qml.math.allclose(actual_mat, expected_mat, atol=tol, rtol=0)
@@ -2084,8 +2087,9 @@ class TestTapeExpansionWithControlled:
             *qml.CRY(4 * np.pi - 0.123, wires=[5, 3]).decomposition(),
             *qml.CRX(4 * np.pi - 0.789, wires=[5, 2]).decomposition(),
         ]
-        assert decompose(tape1, max_expansion=1)[0][0].circuit == expected
-        assert decompose(tape2, max_expansion=1)[0][0].circuit == expected
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            assert tape1.expand(depth=1).circuit == expected
+            assert tape2.expand(depth=1).circuit == expected
 
     def test_ctrl_with_qnode(self):
         """Test ctrl works when in a qnode cotext."""
@@ -2133,11 +2137,12 @@ class TestTapeExpansionWithControlled:
             controlled_ansatz([0.123, 0.456])
 
         tape = QuantumScript.from_queue(q_tape)
-        assert decompose(tape, max_expansion=1)[0][0].circuit == [
-            *qml.CRX(0.123, wires=[2, 0]).decomposition(),
-            *qml.Toffoli(wires=[2, 0, 1]).decomposition(),
-            *qml.CRX(0.456, wires=[2, 0]).decomposition(),
-        ]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            assert tape.expand(1).circuit == [
+                *qml.CRX(0.123, wires=[2, 0]).decomposition(),
+                *qml.Toffoli(wires=[2, 0, 1]).decomposition(),
+                *qml.CRX(0.456, wires=[2, 0]).decomposition(),
+            ]
 
     @pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
     def test_multi_ctrl_values(self, ctrl_values):
@@ -2162,7 +2167,8 @@ class TestTapeExpansionWithControlled:
         assert len(tape.operations) == 1
         op = tape.operations[0]
         assert isinstance(op, Controlled)
-        new_tape = decompose(tape, max_expansion=1)[0][0]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = expand_tape(tape, 1)
         assert equal_list(list(new_tape), expected_ops(ctrl_values))
 
     def test_diagonal_ctrl(self):
@@ -2170,7 +2176,8 @@ class TestTapeExpansionWithControlled:
         with qml.queuing.AnnotatedQueue() as q_tape:
             qml.ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
         tape = QuantumScript.from_queue(q_tape)
-        tape = decompose(tape, max_expansion=3, stopping_condition=lambda op: not isinstance(op, Controlled))[0][0]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
         assert tape[0] == qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
 
     @pytest.mark.parametrize("M", unitaries)
@@ -2184,7 +2191,8 @@ class TestTapeExpansionWithControlled:
         assert equal_list(list(tape), expected)
 
         # causes decomposition into more basic operators
-        tape = decompose(tape, max_expansion=3, stopping_condition=lambda op: not isinstance(op, Controlled))[0][0]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
         assert not equal_list(list(tape), expected)
 
     @pytest.mark.parametrize("M", unitaries)
@@ -2196,7 +2204,8 @@ class TestTapeExpansionWithControlled:
 
         tape = QuantumScript.from_queue(q_tape)
         # will immediately decompose according to selected decomposition algorithm
-        tape = decompose(tape, max_expansion=1, stopping_condition=lambda op: not isinstance(op, Controlled))[0][0]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape = tape.expand(1, stop_at=lambda op: not isinstance(op, Controlled))
 
         expected = qml.ControlledQubitUnitary(M, wires=[1, 2, 0]).decomposition()
         assert tape.circuit == expected
@@ -2214,7 +2223,8 @@ class TestTapeExpansionWithControlled:
         with qml.queuing.AnnotatedQueue() as q_tape:
             ctrl(op, 2)(*params, wires=[0, 1])
         tape = QuantumScript.from_queue(q_tape)
-        expanded_tape = decompose(tape, max_expansion=depth)[0][0]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expanded_tape = tape.expand(depth=depth)
         assert len(expanded_tape.operations) == expected
 
     def test_ctrl_template_and_operations(self):
@@ -2231,10 +2241,10 @@ class TestTapeExpansionWithControlled:
             ctrl(ansatz, 0)(weights, wires=[1, 2])
 
         tape = QuantumScript.from_queue(q_tape)
-        tape = decompose(tape, max_expansion=1, stopping_condition=lambda op: not isinstance(op, Controlled))[0][0]
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape = tape.expand(depth=1, stop_at=lambda obj: not isinstance(obj, Controlled))
         assert len(tape.operations) == 10
         assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
-
 
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
 class TestCtrlTransformDifferentiation:
