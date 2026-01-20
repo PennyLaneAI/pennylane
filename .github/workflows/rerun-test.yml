@@ -2,13 +2,6 @@ name: Run tests multiple times
 permissions: write-all
 
 on:
-  push:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review  
   workflow_dispatch:
     inputs:
       run_count:
@@ -143,7 +136,7 @@ jobs:
         inputs.workflow == 'qchem-tests' ||
         inputs.workflow == 'gradient-tests' ||
         inputs.workflow == 'data-tests' ||
-        inputs.workflow == 'device-tests' || true
+        inputs.workflow == 'device-tests'
       }}
     strategy:
       max-parallel: 5
