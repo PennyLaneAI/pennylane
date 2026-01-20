@@ -862,8 +862,7 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            tape = tape.expand(depth=1)
+        tape = qml.transforms.decompose(tape, max_expansion=1)[0][0]
 
         @qml.qnode(dev)
         def f(bitstring):

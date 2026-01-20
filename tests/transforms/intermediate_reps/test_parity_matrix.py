@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.transforms import parity_matrix
+from pennylane.transforms import parity_matrix, decompose
 
 circ1 = qml.tape.QuantumScript(
     [
@@ -48,8 +48,7 @@ class TestParityMatrix:
     def test_parity_matrix(self, circ, P_true):
         """Test parity matrix computation"""
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            circ = circ.expand()
+        circ = decompose(circ, gate_set={"CNOT"})[0][0]
 
         P = parity_matrix(circ, wire_order=range(len(circ.wires)))
 
