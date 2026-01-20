@@ -6,6 +6,10 @@
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
 
+* Added a :func:`qml.decomposition.local_decomp_context <pennylane.decomposition.local_decomp_context>` context
+  manager that allows one to add decomposition rules to an operator that only lives within the context.
+  [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
+
 <h3>Improvements 🛠</h3>
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
