@@ -78,8 +78,14 @@ def get_decompose_func(tape):
         if not isinstance(tape, QuantumScript)
         else math.get_interface(*tape.get_parameters())
     )
+
     if not interface == "jax":
-        stopping_condition = _multipar_stopping_fn
+
+        def _trainable_multipar_stopping_fn(obj):
+            return _multipar_stopping_fn(obj) or not any(math.requires_grad(d) for d in obj.data)
+
+        stopping_condition = _trainable_multipar_stopping_fn
+
     else:
 
         def _argnum_trainable_multipar(obj):
