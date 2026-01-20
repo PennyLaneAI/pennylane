@@ -62,7 +62,16 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
-def get_decompose_func(tape):
+def _get_decompose_func(tape):
+    """
+    Responsible for determining the correct stopping condition to use when expanding.
+
+    Args:
+        tape: (QNode or QuantumTape): Circuit we will compute the metric tensor of
+
+    Returns:
+        The decompose transform pre-initialized with an appropriate stopping condition.
+    """
     def _multipar_stopping_fn(obj):
         try:
             return (
@@ -178,7 +187,7 @@ def adjoint_metric_tensor(
     shot simulations.
     """
 
-    decompose_func = get_decompose_func(tape)
+    decompose_func = _get_decompose_func(tape)
 
     @partial(
         transform,
