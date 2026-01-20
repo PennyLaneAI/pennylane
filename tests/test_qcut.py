@@ -34,6 +34,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qcut
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.queuing import WrappedObj
 from pennylane.wires import Wires
 
@@ -4561,7 +4562,8 @@ class TestCutCircuitExpansion:
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             if isinstance(measurement, qml.measurements.SampleMP):
                 circuit = qml.set_shots(circuit, shots=10)
-            cut_transform(circuit, device_wires=[0])()
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                cut_transform(circuit, device_wires=[0])()
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
@@ -4591,7 +4593,8 @@ class TestCutCircuitExpansion:
         spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
         spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
 
-        res = qnode_cut(template_weights)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = qnode_cut(template_weights)
 
         spy_tapes.assert_called_once()
         spy_cc.assert_called_once()
@@ -4624,7 +4627,8 @@ class TestCutCircuitExpansion:
         spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
-        qnode_cut(template_weights)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            qnode_cut(template_weights)
 
         spy_tapes.assert_called_once()
         spy_mc.assert_called_once()
@@ -5228,9 +5232,11 @@ class TestAutoCutCircuit:
         grad_expected = qml.grad(circuit)(params)
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        res = cut_circuit(params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = cut_circuit(params)
         spy.assert_called_once()
-        grad = qml.grad(cut_circuit)(params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            grad = qml.grad(cut_circuit)(params)
 
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
@@ -5273,7 +5279,8 @@ class TestAutoCutCircuit:
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        res = cut_circuit()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = cut_circuit()
         spy.assert_called_once()
 
         atol = 1e-2 if shots else 1e-8
@@ -5297,7 +5304,8 @@ class TestAutoCutCircuit:
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = 0.4
-        res = circuit(x)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = circuit(x)
         assert np.allclose(res, np.cos(x))
 
     def test_circuit_with_trivial_wire_cut(self):
@@ -5348,7 +5356,8 @@ class TestAutoCutCircuit:
         target = circuit(v)
 
         cut_circuit_bs = qcut.cut_circuit_mc(circuit, device_wires=Wires([1, 2]), auto_cutter=True)
-        cut_res_bs = cut_circuit_bs(v)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            cut_res_bs = cut_circuit_bs(v)
 
         assert cut_res_bs.shape == target.shape
         assert isinstance(cut_res_bs, type(target))
@@ -5404,7 +5413,8 @@ class TestAutoCutCircuit:
             qml.expval(obs)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape = tape0.expand()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape = tape0.expand()
         graph = qcut.tape_to_graph(tape)
         cut_graph = qcut.find_and_place_cuts(
             graph=graph,
@@ -5543,7 +5553,8 @@ class TestCutCircuitWithHamiltonians:
         res_expected = circuit()
 
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-        res = cut_circuit()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = cut_circuit()
 
         assert spy.call_count == len(hamiltonian.ops)
         assert np.isclose(res, res_expected, atol=1e-8)
@@ -5581,7 +5592,8 @@ class TestCutCircuitWithHamiltonians:
             qml.expval(hamiltonian)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape = tape0.expand()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape = tape0.expand()
         tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 
         frag_lens = [5, 7]
