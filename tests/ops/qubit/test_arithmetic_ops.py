@@ -96,6 +96,7 @@ class TestQubitCarry:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         if expand:
+            # decompose does not register a call to the spy
             with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
                 tape = tape.expand()
         result = dev.execute(tape)
