@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
-    _decompositions,
     register_condition,
     register_resources,
 )
@@ -224,27 +223,31 @@ class TestDecompositionRule:
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RY(theta, wires=wires[0])
 
-        qml.add_decomps(CustomOp, custom_decomp)
-        qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
+        with qml.decomposition.local_decomp_context():
 
-        assert qml.decomposition.has_decomp(CustomOp)
-        assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
-        assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
-        assert qml.list_decomps(CustomOp(wires=[0, 1])) == [
-            custom_decomp,
-            custom_decomp2,
-            custom_decomp3,
-        ]
+            qml.add_decomps(CustomOp, custom_decomp)
+            qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
 
-        def custom_decomp4(theta, wires, **__):
-            qml.RZ(theta, wires=wires[0])
-            qml.CZ(wires=[wires[0], wires[1]])
-            qml.RZ(theta, wires=wires[0])
+            assert qml.decomposition.has_decomp(CustomOp)
+            assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
+            assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
+            assert qml.list_decomps(CustomOp(wires=[0, 1])) == [
+                custom_decomp,
+                custom_decomp2,
+                custom_decomp3,
+            ]
 
-        with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
-            qml.add_decomps(CustomOp, custom_decomp4)
+            def custom_decomp4(theta, wires, **__):
+                qml.RZ(theta, wires=wires[0])
+                qml.CZ(wires=[wires[0], wires[1]])
+                qml.RZ(theta, wires=wires[0])
 
-        _decompositions.pop("CustomOp")  # cleanup
+            with pytest.raises(TypeError, match="must be a qfunc with a resource"):
+                qml.add_decomps(CustomOp, custom_decomp4)
+
+        # test that the context properly cleans up.
+        assert qml.list_decomps(CustomOp) == []
+        assert not qml.decomposition.has_decomp(CustomOp)
 
     def test_custom_symbolic_decomposition(self):
         """Tests that custom decomposition rules for symbolic operators can be registered."""

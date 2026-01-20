@@ -1151,12 +1151,14 @@ class TestDefaultQubitGraphModeExclusive:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomp_context():
 
-        tape = qml.tape.QuantumScript([MyDefaultQubitOp(0)])
-        dev = qml.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-        program = dev.preprocess_transforms()
-        (out_tape,), _ = program([tape])
+            qml.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
+
+            tape = qml.tape.QuantumScript([MyDefaultQubitOp(0)])
+            dev = qml.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+            program = dev.preprocess_transforms()
+            (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == 2
         assert out_tape.operations[0].name == "Hadamard"
