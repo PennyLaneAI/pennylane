@@ -139,6 +139,9 @@ class MidMeasure(Operator):
                 "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
                 PennyLaneDeprecationWarning,
             )
+            # Only override if meas_uid wasn't explicitly provided
+            if meas_uid is None:
+                meas_uid = id
         super().__init__(wires=Wires(wires))
         self._hyperparameters = {"reset": reset, "postselect": postselect, "meas_uid": meas_uid}
         self._name = "MidMeasureMP"
