@@ -29,6 +29,7 @@ from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from .ops import MeasureNode, PrepareNode
+from ..transforms import decompose
 
 
 def tape_to_graph(tape: QuantumScript):
@@ -408,7 +409,7 @@ def _qcut_expand_fn(
             return tape
 
     if max_depth > 0:
-        return _qcut_expand_fn(tape.expand(), max_depth=max_depth - 1, auto_cutter=auto_cutter)
+        return _qcut_expand_fn(decompose(tape)[0][0], max_depth=max_depth - 1, auto_cutter=auto_cutter)
 
     if not (auto_cutter is True or callable(auto_cutter)):
         raise ValueError(
