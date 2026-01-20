@@ -303,8 +303,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._all_op_indices[op_node] = op_node_idx
         self._op_to_op_nodes[op].add(op_node)
 
-        if op.name in self._gate_set_weights:
-            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
+        op_name = _to_name(op)
+        if op_name in self._gate_set_weights:
+            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op_name])
             return op_node_idx
 
         work_wire_dependent = known_work_wire_dependent
@@ -531,7 +532,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {op.name for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS}
+            op_names = {
+                _to_name(op) for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS
+            }
             # If unsolved operators are left after filtering for those to be ignored, warn
             if op_names:
                 warnings.warn(

@@ -31,6 +31,8 @@ OP_NAME_ALIASES = {
     "ppm": "PauliMeasure",
     "pauli_measure": "PauliMeasure",
     "Elbow": "TemporaryAND",
+    "BasisStateProjector": "Projector",
+    "StateVectorProjector": "Projector",
 }
 
 

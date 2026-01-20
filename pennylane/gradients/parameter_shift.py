@@ -795,9 +795,7 @@ def _expand_transform_param_shift(
     [new_tape], postprocessing = decompose(
         tape,
         target_gates=gate_sets.ROTATIONS_PLUS_CNOT
-        | GateSet(
-            {"BasisStateProjector", "StateVectorProjector"}
-        ),  # may come from defer_measurements
+        | GateSet({"Projector"}),  # may come from defer_measurements
         stopping_condition=_param_shift_stopping_condition,
         skip_initial_state_prep=False,
         name="param_shift",

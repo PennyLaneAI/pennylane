@@ -121,7 +121,7 @@ ALL_DQ_GATE_SET = (
     _BASE_DQ_GATE_SET
     | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
     | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
-    | {"BasisStateProjector", "StateVectorProjector", "Snapshot"}
+    | {"Projector", "Snapshot"}
 )
 
 
