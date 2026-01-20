@@ -82,6 +82,12 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* Maintenance support of NumPy<2.0 has been removed. PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+  
+  - Deprecated in v0.44
+  - Removed in v0.45
+
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used to enable capture instead.
 
