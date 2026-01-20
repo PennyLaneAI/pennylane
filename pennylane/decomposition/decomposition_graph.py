@@ -36,7 +36,7 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qml
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DecompositionError
+from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
@@ -537,7 +537,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
                 warnings.warn(
                     f"The graph-based decomposition system is unable to find a decomposition for "
                     f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
-                    UserWarning,
+                    DecompositionWarning,
                 )
         return DecompGraphSolution(
             visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
