@@ -825,7 +825,8 @@ def defer_measurements(
             # MidMeasures. Thus, we need to manually map wires for each MidMeasure.
             if isinstance(mp.mv, MeasurementValue):
                 new_ms = [
-                    qml.map_wires(m, {m.wires[0]: control_wires[m.uid]}) for m in mp.mv.measurements
+                    qml.map_wires(m, {m.wires[0]: control_wires[m.meas_uid]})
+                    for m in mp.mv.measurements
                 ]
                 new_m = MeasurementValue(
                     new_ms, mp.mv.processing_fn if mp.mv.has_processing else None
@@ -834,7 +835,7 @@ def defer_measurements(
                 new_m = []
                 for val in mp.mv:
                     new_ms = [
-                        qml.map_wires(m, {m.wires[0]: control_wires[m.uid]})
+                        qml.map_wires(m, {m.wires[0]: control_wires[m.meas_uid]})
                         for m in val.measurements
                     ]
                     new_m.append(
@@ -863,10 +864,12 @@ def defer_measurements(
 def _add_control_gate(op, control_wires, reduce_postselected):
     """Helper function to add control gates"""
     if reduce_postselected:
-        control = [control_wires[m.uid] for m in op.meas_val.measurements if m.postselect is None]
+        control = [
+            control_wires[m.meas_uid] for m in op.meas_val.measurements if m.postselect is None
+        ]
         items = op.meas_val.postselected_items()
     else:
-        control = [control_wires[m.uid] for m in op.meas_val.measurements]
+        control = [control_wires[m.meas_uid] for m in op.meas_val.measurements]
         items = op.meas_val.items()
 
     new_ops = []
