@@ -258,7 +258,7 @@ class TestBoundTransform:
             return qml.state()
 
         new_c = container(c)
-        assert container == new_c.transform_program[0]
+        assert container == new_c.compile_pipeline[0]
 
     def test_construction_fallback(self):
         """Test that a BoundTransform can still be constructed in the old way."""
@@ -394,7 +394,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
-        assert not qnode_circuit.transform_program
+        assert not qnode_circuit.compile_pipeline
 
         assert qnode_transformed.device is qnode_circuit.device
 
@@ -403,9 +403,9 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         assert dev.tracker.totals["executions"] == 1
 
         assert isinstance(qnode_transformed, qml.QNode)
-        assert isinstance(qnode_transformed.transform_program, qml.CompilePipeline)
+        assert isinstance(qnode_transformed.compile_pipeline, qml.CompilePipeline)
         assert isinstance(
-            qnode_transformed.transform_program.pop(0), qml.transforms.core.BoundTransform
+            qnode_transformed.compile_pipeline.pop(0), qml.transforms.core.BoundTransform
         )
         assert dispatched_transform.is_informative is False
 
@@ -435,13 +435,13 @@ class TestTransform:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         qnode_transformed = dispatched_transform(qnode_circuit)
-        assert not qnode_circuit.transform_program
+        assert not qnode_circuit.compile_pipeline
 
         assert qnode_transformed(0.1) == 4
         assert isinstance(qnode_transformed, qml.QNode)
-        assert isinstance(qnode_transformed.transform_program, qml.CompilePipeline)
+        assert isinstance(qnode_transformed.compile_pipeline, qml.CompilePipeline)
         assert isinstance(
-            qnode_transformed.transform_program.pop(0), qml.transforms.core.BoundTransform
+            qnode_transformed.compile_pipeline.pop(0), qml.transforms.core.BoundTransform
         )
         assert dispatched_transform.is_informative
 
@@ -464,10 +464,8 @@ class TestTransform:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode_circuit, qml.QNode)
-        assert isinstance(qnode_circuit.transform_program, qml.CompilePipeline)
-        assert isinstance(
-            qnode_circuit.transform_program.pop(0), qml.transforms.core.BoundTransform
-        )
+        assert isinstance(qnode_circuit.compile_pipeline, qml.CompilePipeline)
+        assert isinstance(qnode_circuit.compile_pipeline.pop(0), qml.transforms.core.BoundTransform)
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_invalid_dispatch_target_returns_container(
@@ -598,15 +596,15 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         # Applied on a qfunc (return a qfunc)
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
 
-        assert isinstance(qnode_transformed.transform_program, qml.CompilePipeline)
-        expand_transform_container = qnode_transformed.transform_program.pop(0)
+        assert isinstance(qnode_transformed.compile_pipeline, qml.CompilePipeline)
+        expand_transform_container = qnode_transformed.compile_pipeline.pop(0)
         assert isinstance(expand_transform_container, qml.transforms.core.BoundTransform)
         assert expand_transform_container.args == (0,)
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-        transform_container = qnode_transformed.transform_program.pop(0)
+        transform_container = qnode_transformed.compile_pipeline.pop(0)
 
         assert isinstance(transform_container, qml.transforms.core.BoundTransform)
         assert transform_container.args == (0,)
@@ -762,8 +760,8 @@ class TestTransform:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode1, qml.QNode)
-        assert isinstance(qnode1.transform_program, qml.CompilePipeline)
-        assert isinstance(qnode1.transform_program.pop(0), qml.transforms.core.BoundTransform)
+        assert isinstance(qnode1.compile_pipeline, qml.CompilePipeline)
+        assert isinstance(qnode1.compile_pipeline.pop(0), qml.transforms.core.BoundTransform)
 
         @qml.qnode(dev)
         def qnode2():
@@ -775,8 +773,8 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         qnode2 = dispatched_transform(qnode2, 1)
 
         assert isinstance(qnode2, qml.QNode)
-        assert isinstance(qnode2.transform_program, qml.CompilePipeline)
-        assert isinstance(qnode2.transform_program.pop(0), qml.transforms.core.BoundTransform)
+        assert isinstance(qnode2.compile_pipeline, qml.CompilePipeline)
+        assert isinstance(qnode2.compile_pipeline.pop(0), qml.transforms.core.BoundTransform)
 
         # check that the custom qnode transform was called
         assert history == [((), {"index": 0}), ((1,), {})]
@@ -1105,11 +1103,11 @@ class TestPassName:
         assert expected_container.pass_name == "my_pass_name"
         assert repr(expected_container) == "<my_pass_name()>"
         assert expected_container.tape_transform is None
-        assert c.transform_program[-1] == expected_container
-        assert repr(c.transform_program) == "CompilePipeline(my_pass_name)"
+        assert c.compile_pipeline[-1] == expected_container
+        assert repr(c.compile_pipeline) == "CompilePipeline(my_pass_name)"
 
         with pytest.raises(NotImplementedError, match="has no defined tape transform"):
-            c.transform_program((tape,))
+            c.compile_pipeline((tape,))
 
         with pytest.raises(NotImplementedError, match="has no defined tape transform"):
             c()

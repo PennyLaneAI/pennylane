@@ -80,7 +80,7 @@ class TestTransformsSetup:
         """Test that to_ppr has no arguments."""
 
         transformed = to_ppr(dummy_qnode)
-        bound_t = transformed.transform_program[0]
+        bound_t = transformed.compile_pipeline[0]
         assert bound_t.args == ()
         assert bound_t.kwargs == {}
         assert bound_t.pass_name == "to-ppr"
@@ -89,7 +89,7 @@ class TestTransformsSetup:
         """Test that commute_ppr has a default max_pauli_size=0."""
 
         transformed = commute_ppr(dummy_qnode)
-        bound_t = transformed.transform_program[0]
+        bound_t = transformed.compile_pipeline[0]
         assert bound_t.args == ()
         assert bound_t.kwargs == {"max_pauli_size": 0}
         assert bound_t.pass_name == "commute-ppr"
@@ -103,7 +103,7 @@ class TestTransformsSetup:
         """Test that merge_ppr_ppm has a default max_pauli_size=0."""
 
         transformed = merge_ppr_ppm(dummy_qnode)
-        bound_t = transformed.transform_program[0]
+        bound_t = transformed.compile_pipeline[0]
         assert bound_t.args == ()
         assert bound_t.kwargs == {"max_pauli_size": 0}
         assert bound_t.pass_name == "merge-ppr-ppm"
@@ -117,7 +117,7 @@ class TestTransformsSetup:
         """Test that ppr_to_ppm default setup."""
 
         transformed = ppr_to_ppm(dummy_qnode)
-        bound_t = transformed.transform_program[0]
+        bound_t = transformed.compile_pipeline[0]
         assert bound_t.args == ()
         assert bound_t.kwargs == {"decompose_method": "pauli-corrected", "avoid_y_measure": False}
         assert bound_t.pass_name == "ppr-to-ppm"
@@ -126,7 +126,7 @@ class TestTransformsSetup:
         """Test the ppm_compilation default setup."""
 
         transformed = ppm_compilation(dummy_qnode)
-        bound_t = transformed.transform_program[0]
+        bound_t = transformed.compile_pipeline[0]
         assert bound_t.args == ()
         assert bound_t.kwargs == {
             "decompose_method": "pauli-corrected",
@@ -144,7 +144,7 @@ class TestTransformsSetup:
         """Test that ppr_to_ppm default setup."""
 
         transformed = reduce_t_depth(dummy_qnode)
-        bound_t = transformed.transform_program[0]
+        bound_t = transformed.compile_pipeline[0]
         assert bound_t.args == ()
         assert bound_t.kwargs == {}
         assert bound_t.pass_name == "reduce-t-depth"
@@ -153,7 +153,7 @@ class TestTransformsSetup:
         """Test that ppr_to_ppm default setup."""
 
         transformed = decompose_arbitrary_ppr(dummy_qnode)
-        bound_t = transformed.transform_program[0]
+        bound_t = transformed.compile_pipeline[0]
         assert bound_t.args == ()
         assert bound_t.kwargs == {}
         assert bound_t.pass_name == "decompose-arbitrary-ppr"
