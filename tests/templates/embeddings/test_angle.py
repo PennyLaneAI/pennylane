@@ -199,6 +199,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")

@@ -947,6 +947,7 @@ class TestOperationConstruction:
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute of an operator can be set."""
 
@@ -1051,6 +1052,7 @@ class TestObservableConstruction:
         expected = "Z('a')"
         assert str(m) == expected
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute of an observable can be set."""
 
