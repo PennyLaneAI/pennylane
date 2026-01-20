@@ -1662,11 +1662,11 @@ class TestMeasurementsEqual:
     def test_mid_measure(self):
         """Test that `MidMeasure`s are equal only if their wires
         an id are equal and their `reset` attribute match."""
-        mp = qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="test_id")
+        mp = qml.ops.MidMeasure(wires=Wires([0]), reset=True, meas_uid="test_id")
 
-        mp1 = qml.ops.MidMeasure(wires=Wires([1]), reset=True, id="test_id")
-        mp2 = qml.ops.MidMeasure(wires=Wires([0]), reset=False, id="test_id")
-        mp3 = qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="foo")
+        mp1 = qml.ops.MidMeasure(wires=Wires([1]), reset=True, meas_uid="test_id")
+        mp2 = qml.ops.MidMeasure(wires=Wires([0]), reset=False, meas_uid="test_id")
+        mp3 = qml.ops.MidMeasure(wires=Wires([0]), reset=True, meas_uid="foo")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
@@ -1675,7 +1675,7 @@ class TestMeasurementsEqual:
         assert (
             qml.equal(
                 mp,
-                qml.ops.MidMeasure(wires=Wires([0]), reset=True, id="test_id"),
+                qml.ops.MidMeasure(wires=Wires([0]), reset=True, meas_uid="test_id"),
             )
             is True
         )
@@ -1683,18 +1683,18 @@ class TestMeasurementsEqual:
     def test_pauli_measure(self):
         """Test the equal check of pauli measures."""
 
-        mp = PauliMeasure("XY", wires=Wires([0, 1]), id="test_id")
+        mp = PauliMeasure("XY", wires=Wires([0, 1]), meas_id="test_id")
 
-        mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), id="test_id")
-        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), id="test_id")
-        mp3 = PauliMeasure("XY", wires=Wires([0, 1]), id="foo")
-        mp4 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, id="test_id")
+        mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), meas_uid="test_id")
+        mp2 = PauliMeasure("XY", wires=Wires([1, 2]), meas_uid="test_id")
+        mp3 = PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="foo")
+        mp4 = PauliMeasure("XY", wires=Wires([0, 1]), postselect=1, meas_uid="test_id")
 
         assert qml.equal(mp, mp1) is False
         assert qml.equal(mp, mp2) is False
         assert qml.equal(mp, mp3) is False
         assert qml.equal(mp, mp4) is False
-        assert qml.equal(mp, PauliMeasure("XY", wires=Wires([0, 1]), id="test_id")) is True
+        assert qml.equal(mp, PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="test_id")) is True
 
     def test_equal_measurement_value(self):
         """Test that MeasurementValue's are equal when their measurements are the same."""
