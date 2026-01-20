@@ -241,7 +241,7 @@ class TestDecompositionRule:
             qml.CZ(wires=[wires[0], wires[1]])
             qml.RZ(theta, wires=wires[0])
 
-        with pytest.raises(TypeError, match="must be a qfunc with a resource"):
+        with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qml.add_decomps(CustomOp, custom_decomp4)
 
         _decompositions_private.pop(CustomOp)  # cleanup
