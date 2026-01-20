@@ -39,7 +39,7 @@ from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
-from pennylane.transforms import broadcast_expand, split_non_commuting
+from pennylane.transforms import broadcast_expand, split_non_commuting, decompose
 from pennylane.wires import Wires
 
 from .tracker import Tracker
@@ -658,7 +658,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if obs_on_same_wire:
-            circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
+            circuit = decompose(circuit, stopping_condition=self.stopping_condition)[0][0]
 
         elif ops_not_supported:
             circuit = _local_tape_expand(

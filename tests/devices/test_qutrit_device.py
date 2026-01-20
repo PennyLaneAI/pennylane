@@ -1166,8 +1166,7 @@ class TestShotList:
             qml.QutritUnitary(U, wires=[0, 1])
             return qml.probs(wires=0), qml.probs(wires=1)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            res = circuit(pnp.eye(9))
+        res = circuit(pnp.eye(9))
 
         if isinstance(shot_list[0], tuple):
             assert isinstance(res, tuple)
