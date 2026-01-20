@@ -6,8 +6,8 @@
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
 
-* Added a `qml.decomposition.local_decomp_context` context
-  manager that allows one to add decomposition rules to an operator that are only effective within the context.
+* Added a `qml.decomposition.add_decomps_local` context manager that allows one to add decomposition rules 
+  to an operator that are only effective within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
 
 <h3>Improvements 🛠</h3>

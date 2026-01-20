@@ -576,14 +576,11 @@ class TestHasReprProperties:
         class SomeRandomName(qml.operation.Operator):
             pass
 
-        with qml.decomposition.local_decomp_context():
+        @qml.register_resources({qml.X: 1})
+        def decomp(x, wires):
+            qml.RX(x, wires)
 
-            @qml.register_resources({qml.X: 1})
-            def decomp(x, wires):
-                qml.RX(x, wires)
-
-            qml.add_decomps(SomeRandomName, decomp)
-
+        with qml.decomposition.add_decomps_local(SomeRandomName, decomp):
             assert SomeRandomName(0.5, wires=0).has_decomposition
 
     def test_has_decomposition_graph_decomp_multiple_conditions(self):
@@ -605,9 +602,7 @@ class TestHasReprProperties:
         def decomp2(x, wires):
             qml.CRX(x, wires)
 
-        with qml.decomposition.local_decomp_context():
-            qml.add_decomps(MNBV, decomp1, decomp2)
-
+        with qml.decomposition.add_decomps_local(MNBV, decomp1, decomp2):
             assert MNBV(0.5, wires=0).has_decomposition
             assert MNBV(0.5, wires=(0, 1)).has_decomposition
             assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
@@ -1361,8 +1356,7 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qml.RZ(x, wires)
 
-        with qml.decomposition.local_decomp_context():
-            qml.add_decomps(OpWithACustomName98786, decomp1, decomp2)
+        with qml.decomposition.add_decomps_local(OpWithACustomName98786, decomp1, decomp2):
 
             [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
             qml.assert_equal(out, qml.RX(0.5, wires=0))
@@ -1371,8 +1365,8 @@ class TestDefaultRepresentations:
             with qml.queuing.AnnotatedQueue() as q:
                 op.decomposition()
 
-            assert len(q.queue) == 1
-            qml.assert_equal(q.queue[0], qml.RX(0.5, wires=0))
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.RX(0.5, wires=0))
 
     def test_graph_decomposition_fallback_conditions(self):
         """Test the graph decomposition fallback is sensitive to conditions."""
@@ -1396,8 +1390,7 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qml.CRX(x, wires)
 
-        with qml.decomposition.local_decomp_context():
-            qml.add_decomps(BVCX, decomp1, decomp2)
+        with qml.decomposition.add_decomps_local(BVCX, decomp1, decomp2):
 
             [op1] = BVCX(0.5, wires=0).decomposition()
             qml.assert_equal(op1, qml.RX(0.5, wires=0))
