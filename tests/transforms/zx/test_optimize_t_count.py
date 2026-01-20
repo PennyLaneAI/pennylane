@@ -64,8 +64,7 @@ class TestOptimizeTCount:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == []
 
@@ -82,8 +81,7 @@ class TestOptimizeTCount:
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -101,8 +99,7 @@ class TestOptimizeTCount:
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -126,8 +123,7 @@ class TestOptimizeTCount:
         qs = QuantumScript(ops=[gate])
 
         with pytest.raises(TypeError, match=r"The input circuit must be a Clifford \+ T circuit."):
-            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-                qml.transforms.zx.optimize_t_count(qs)
+            qml.transforms.zx.optimize_t_count(qs)
 
     @pytest.mark.parametrize(
         "angle, expected_ops",
@@ -148,8 +144,7 @@ class TestOptimizeTCount:
         ops = [qml.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -176,8 +171,7 @@ class TestOptimizeTCount:
         ]
         original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (transformed_tape,), _ = qml.transforms.zx.optimize_t_count(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.optimize_t_count(original_tape)
 
         expected_ops = [
             qml.Z(wires=0),
@@ -211,16 +205,14 @@ class TestOptimizeTCount:
         reduced_circ = qml.transforms.zx.optimize_t_count(original_circ)
 
         state1 = original_circ()
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            state2 = reduced_circ()
+        state2 = reduced_circ()
 
         # test that the states are equivalent up to a global phase
         check = qml.math.fidelity_statevector(state1, state2)
         assert np.isclose(check, 1)
 
         u1 = qml.matrix(original_circ, wire_order=range(num_wires))()
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))()
+        u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))()
 
         # test that the unitaries are equivalent up to a global phase
         prod = u1 @ np.conj(u2.T)

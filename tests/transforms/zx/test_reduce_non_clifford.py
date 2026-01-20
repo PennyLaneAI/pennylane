@@ -67,8 +67,7 @@ class TestReduceNonClifford:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == []
 
@@ -85,8 +84,7 @@ class TestReduceNonClifford:
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -104,8 +102,7 @@ class TestReduceNonClifford:
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -122,8 +119,7 @@ class TestReduceNonClifford:
         ops = [qml.RX(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 3
 
@@ -147,8 +143,7 @@ class TestReduceNonClifford:
         ops = [qml.RY(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 5
 
@@ -176,8 +171,7 @@ class TestReduceNonClifford:
         ops = [qml.RZ(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 1
 
@@ -205,8 +199,7 @@ class TestReduceNonClifford:
         ops = [qml.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -238,8 +231,7 @@ class TestReduceNonClifford:
         ]
         original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            (transformed_tape,), _ = qml.transforms.zx.reduce_non_clifford(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.reduce_non_clifford(original_tape)
 
         expected_ops = [
             qml.S(wires=0),
@@ -290,16 +282,14 @@ class TestReduceNonClifford:
         reduced_circ = qml.transforms.zx.reduce_non_clifford(original_circ)
 
         state1 = original_circ(*params)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            state2 = reduced_circ(*params)
+        state2 = reduced_circ(*params)
 
         # test that the states are equivalent up to a global phase
         check = qml.math.fidelity_statevector(state1, state2)
         assert np.isclose(check, 1)
 
         u1 = qml.matrix(original_circ, wire_order=range(num_wires))(*params)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))(*params)
+        u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))(*params)
 
         # test that the unitaries are equivalent up to a global phase
         prod = u1 @ np.conj(u2.T)
