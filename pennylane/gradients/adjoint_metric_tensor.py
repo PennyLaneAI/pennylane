@@ -62,6 +62,37 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
+def get_decompose_func(tape):
+    def _multipar_stopping_fn(obj):
+        try:
+            return (
+                isinstance(obj, MeasurementProcess)
+                or len(obj.data) == 0
+                or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+            )
+        except TermsUndefinedError:
+            return True
+
+    interface = (
+        tape.interface
+        if not isinstance(tape, QuantumScript)
+        else math.get_interface(*tape.get_parameters())
+    )
+    if not interface == "jax":
+        stopping_condition = _multipar_stopping_fn
+    else:
+
+        def _argnum_trainable_multipar(obj):
+            return _multipar_stopping_fn(obj) or (not math.requires_grad(obj) and obj.has_generator)
+
+        stopping_condition = _argnum_trainable_multipar
+
+    decompose_func = partial(decompose, stopping_condition=stopping_condition)
+    decompose_func.__name__ = "decompose"
+
+    return decompose_func
+
+
 # pylint: disable=too-many-statements
 def adjoint_metric_tensor(
     tape: QuantumScript, **kwargs
@@ -141,32 +172,7 @@ def adjoint_metric_tensor(
     shot simulations.
     """
 
-    def _multipar_stopping_fn(obj):
-        try:
-            return (
-                isinstance(obj, MeasurementProcess)
-                or len(obj.data) == 0
-                or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
-            )
-        except TermsUndefinedError:
-            return True
-
-    interface = (
-        tape.interface
-        if not isinstance(tape, QuantumScript)
-        else math.get_interface(*tape.get_parameters())
-    )
-    if not interface == "jax":
-        stopping_condition = _multipar_stopping_fn
-    else:
-
-        def _argnum_trainable_multipar(obj):
-            return _multipar_stopping_fn(obj) or (not math.requires_grad(obj) and obj.has_generator)
-
-        stopping_condition = _argnum_trainable_multipar
-
-    decompose_func = partial(decompose, stopping_condition=stopping_condition)
-    decompose_func.__name__ = "decompose"
+    decompose_func = get_decompose_func(tape)
 
     @partial(
         transform,
