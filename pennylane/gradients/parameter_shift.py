@@ -30,7 +30,7 @@ from pennylane.exceptions import (
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.operation import Operator
-from pennylane.ops import Prod, prod
+from pennylane.ops import Adjoint, Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
@@ -398,7 +398,8 @@ def expval_param_shift(
                     f"coefficients for expectations, not {tape[op_idx]}"
                 )
 
-        if not op.parameter_frequencies:
+        if op.name == "GlobalPhase" or (isinstance(op, Adjoint) and op.base.name == "GlobalPhase"):
+            # TODO: there has to be a better way!
             coeffs = []
             g_tapes = []
             unshifted_coeff = None
