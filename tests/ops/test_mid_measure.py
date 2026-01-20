@@ -32,7 +32,7 @@ def test_id_is_deprecated():
     with pytest.warns(
         PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
     ):
-        op = MidMeasure(0, id="blah")
+        op = MidMeasure(0, meas_uid="blah")
     assert op.meas_uid == "blah"
 
 
