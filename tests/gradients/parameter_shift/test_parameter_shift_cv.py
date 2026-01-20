@@ -31,6 +31,8 @@ from pennylane.gradients.parameter_shift_cv import (
 
 hbar = 2
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""

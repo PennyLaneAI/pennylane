@@ -30,6 +30,9 @@ thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 sqz_vals = np.linspace(0.0, 1.0, 5)
 
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
+
 # pylint: disable=too-few-public-methods
 class PolyN(qml.ops.PolyXP):
     "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
