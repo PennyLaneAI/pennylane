@@ -339,8 +339,8 @@ class TestProperties:
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
 
-        m0 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(0), id="0")], lambda v: v)
-        m1 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(1), id="1")], lambda v: v)
+        m0 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(0), meas_uid="0")], lambda v: v)
+        m1 = qml.ops.MeasurementValue([qml.ops.MidMeasure(Wires(1), meas_uid="1")], lambda v: v)
         m = ProbabilityMP(obs=[m0, m1])
         expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
         assert repr(m) == expected
