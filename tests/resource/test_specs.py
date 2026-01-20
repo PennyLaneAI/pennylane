@@ -562,9 +562,8 @@ class TestSpecsGraphModeExclusive:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        with qml.decomposition.add_decomps_local(
-            MyCustomOp, decomp_fallback, decomp_with_work_wire
-        ):
+        with qml.decomposition.local_decomp_context():
+            qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
 
             # Test with parametrized number of device wires
             dev = qml.device("default.qubit", wires=num_device_wires)
@@ -598,7 +597,8 @@ class TestSpecsGraphModeExclusive:
         def work_wire_decomp(wires):
             qml.X(wires)
 
-        with qml.decomposition.add_decomps_local(MyLimitedOp, simple_decomp, work_wire_decomp):
+        with qml.decomposition.local_decomp_context():
+            qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
 
             # Device with only 2 wires - insufficient for the 10 work wires needed
             dev = qml.device("default.qubit", wires=2)

@@ -697,7 +697,9 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
         def decomp_with_work_wire(wires):
             qml.PauliX(wires)
 
-        with qml.decomposition.add_decomps_local(MyOp, decomp_fallback, decomp_with_work_wire):
+        with qml.decomposition.local_decomp_context():
+            qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+
             tape = qml.tape.QuantumScript([MyOp(0)], [qml.expval(qml.Z(0))])
             dev = qml.device("default.tensor", wires=wires)
             program = dev.preprocess_transforms()
