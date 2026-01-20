@@ -19,11 +19,20 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
+
+
+def test_id_is_deprecated():
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
+    ):
+        op = MidMeasure(0, id="blah")
+    assert op.meas_uid == "blah"
 
 
 @pytest.mark.external
