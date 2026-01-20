@@ -16,7 +16,9 @@ Nodes for use in qcut.
 """
 
 import uuid
+import warnings
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 
 
@@ -27,7 +29,15 @@ class PrepareNode(Operation):
     grad_method = None
     num_params = 0
 
-    def __init__(self, wires=None, node_uid: str | None = None):
+    def __init__(self, wires=None, id: str | None = None, node_uid: str | None = None):
+        if id is not None:
+            warnings.warn(
+                "The 'id' kwarg has been renamed to 'node_uid'. Access through 'id' will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+            )
+            # Only override if meas_uid wasn't explicitly provided
+            if node_uid is None:
+                node_uid = id
         self._node_uid: str = node_uid or str(uuid.uuid4())
 
         super().__init__(wires=wires)
@@ -48,7 +58,15 @@ class MeasureNode(Operation):
     grad_method = None
     num_params = 0
 
-    def __init__(self, wires=None, node_uid: str | None = None):
+    def __init__(self, wires=None, id: str | None = None, node_uid: str | None = None):
+        if id is not None:
+            warnings.warn(
+                "The 'id' kwarg has been renamed to 'node_uid'. Access through 'id' will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+            )
+            # Only override if meas_uid wasn't explicitly provided
+            if node_uid is None:
+                node_uid = id
         self._node_uid: str = node_uid or str(uuid.uuid4())
 
         super().__init__(wires=wires)
