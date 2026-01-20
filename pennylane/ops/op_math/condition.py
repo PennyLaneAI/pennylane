@@ -111,7 +111,10 @@ class Conditional(SymbolicOp, Operation):
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
+
     """
+
+    has_decomposition = False
 
     def __init__(self, expr, then_op: Operation, id=None):
         # pylint: disable=super-init-not-called
