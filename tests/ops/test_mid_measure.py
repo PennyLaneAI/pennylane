@@ -66,10 +66,10 @@ class TestMeasure:
 
     def test_hash(self):
         """Test that the hash for `MidMeasure` is defined correctly."""
-        m1 = MidMeasure(Wires(0), uid="m1")
-        m2 = MidMeasure(Wires(0), uid="m2")
-        m3 = MidMeasure(Wires(1), uid="m1")
-        m4 = MidMeasure(Wires(0), uid="m1")
+        m1 = MidMeasure(Wires(0), meas_uid="m1")
+        m2 = MidMeasure(Wires(0), meas_uid="m2")
+        m3 = MidMeasure(Wires(1), meas_uid="m1")
+        m4 = MidMeasure(Wires(0), meas_uid="m1")
 
         assert m1.hash != m2.hash
         assert m1.hash != m3.hash
@@ -105,15 +105,15 @@ class TestMidMeasure:
     def test_properties(self):
         """Tests the properties of the MidMeasure class."""
 
-        op = MidMeasure(wires="a", postselect=1, reset=True, uid="blah")
+        op = MidMeasure(wires="a", postselect=1, reset=True, meas_uid="blah")
         assert op.postselect == 1
         assert op.reset is True
-        assert op.uid == "blah"
+        assert op.meas_uid == "blah"
 
 
-mp1 = MidMeasure(Wires(0), uid="m0")
-mp2 = MidMeasure(Wires(1), uid="m1")
-mp3 = MidMeasure(Wires(2), uid="m2")
+mp1 = MidMeasure(Wires(0), meas_uid="m0")
+mp2 = MidMeasure(Wires(1), meas_uid="m1")
+mp3 = MidMeasure(Wires(2), meas_uid="m2")
 
 
 class TestMeasurementValueManipulation:

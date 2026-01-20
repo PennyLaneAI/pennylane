@@ -704,7 +704,7 @@ def _equal_measurements(
 def _equal_mid_measure(op1: MidMeasure, op2: MidMeasure, **_):
     return (
         op1.wires == op2.wires
-        and op1.uid == op2.uid
+        and op1.meas_uid == op2.meas_uid
         and op1.reset == op2.reset
         and op1.postselect == op2.postselect
     )

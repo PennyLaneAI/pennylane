@@ -38,7 +38,7 @@ def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int 
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
-    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, uid=measurement_id)
+    mp = MidMeasure(wires=wires, reset=reset, postselect=postselect, meas_uid=measurement_id)
     return MeasurementValue([mp])
 
 
@@ -128,10 +128,10 @@ class MidMeasure(Operator):
         wires: Wires | None = None,
         reset: bool = False,
         postselect: int | None = None,
-        uid: str | None = None,
+        meas_uid: str | None = None,
     ):
         super().__init__(wires=Wires(wires))
-        self._hyperparameters = {"reset": reset, "postselect": postselect, "uid": uid}
+        self._hyperparameters = {"reset": reset, "postselect": postselect, "meas_uid": meas_uid}
         self._name = "MidMeasureMP"
 
     @property
@@ -145,9 +145,9 @@ class MidMeasure(Operator):
         return self.hyperparameters["postselect"]
 
     @property
-    def uid(self) -> str | None:
+    def meas_uid(self) -> str | None:
         """The custom ID associated with the measurement instance."""
-        return self.hyperparameters["uid"]
+        return self.hyperparameters["meas_uid"]
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -186,7 +186,7 @@ class MidMeasure(Operator):
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.uid))
+        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.meas_uid))
 
 
 def measure(

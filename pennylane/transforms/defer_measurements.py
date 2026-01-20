@@ -789,7 +789,7 @@ def defer_measurements(
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
-                control_wires[op.uid] = cur_wire
+                control_wires[op.meas_uid] = cur_wire
 
                 with QueuingManager.stop_recording():
                     new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
@@ -807,7 +807,7 @@ def defer_measurements(
 
                 cur_wire += 1
             else:
-                control_wires[op.uid] = op.wires[0]
+                control_wires[op.meas_uid] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
             with QueuingManager.stop_recording():
