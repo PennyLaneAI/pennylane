@@ -21,7 +21,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
-from pennylane.decomposition import gate_sets
+from pennylane.decomposition import GateSet, gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import (
     DecompositionUndefinedError,
@@ -794,7 +794,10 @@ def _expand_transform_param_shift(
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = decompose(
         tape,
-        target_gates=gate_sets.ROTATIONS_PLUS_CNOT,
+        target_gates=gate_sets.ROTATIONS_PLUS_CNOT
+        | GateSet(
+            {"BasisStateProjector", "StateVectorProjector"}
+        ),  # may come from defer_measurements
         stopping_condition=_param_shift_stopping_condition,
         skip_initial_state_prep=False,
         name="param_shift",

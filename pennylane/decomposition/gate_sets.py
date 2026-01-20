@@ -41,7 +41,7 @@ _CLIFFORD_T = _CLIFFORD_T_ORIGINAL | _ADJOINT_CLIFFORD_T
 
 _MID_MEASURE = GateSet({ops.MidMeasure})
 
-IDENTITY = GateSet({ops.Identity: 0.0, ops.GlobalPhase: 0.0}, name="Identity")
+IDENTITY = GateSet({ops.Identity: 0.0, ops.GlobalPhase: 0.0, ops.Snapshot: 0.0}, name="Identity")
 
 CLIFFORD_T = _CLIFFORD_T | IDENTITY | _MID_MEASURE
 CLIFFORD_T.name = "Clifford+T"

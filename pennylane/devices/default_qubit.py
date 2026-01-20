@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence, Set
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING
@@ -44,17 +44,12 @@ from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops import MidMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
-from pennylane.transforms import (
-    broadcast_expand,
-    convert_to_numpy_parameters,
-)
+from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
 from pennylane.transforms import decompose as transforms_decompose
-from pennylane.transforms import (
-    defer_measurements,
-    dynamic_one_shot,
-)
+from pennylane.transforms import defer_measurements, dynamic_one_shot
 from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
+from pennylane.wires import Wires
 
 from .device_api import Device
 from .execution_config import ExecutionConfig, MCMConfig
@@ -126,6 +121,7 @@ ALL_DQ_GATE_SET = (
     _BASE_DQ_GATE_SET
     | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
     | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
+    | {"BasisStateProjector", "StateVectorProjector", "Snapshot"}
 )
 
 
@@ -308,7 +304,11 @@ def _supports_adjoint(circuit, device_wires, device_name):
 
     program = CompilePipeline()
     program.add_transform(validate_device_wires, device_wires, name=device_name)
-    _add_adjoint_transforms(program, device_wires=device_wires)
+    _add_adjoint_transforms(
+        program,
+        target_gate_set=ALL_DQ_GATE_SET | {"MidMeasure"},
+        device_wires=device_wires,
+    )
 
     try:
         program((circuit,))
@@ -321,12 +321,18 @@ def _supports_adjoint(circuit, device_wires, device_name):
     return True
 
 
-def _add_adjoint_transforms(program: CompilePipeline, device_vjp=False, device_wires=None) -> None:
+def _add_adjoint_transforms(
+    program: CompilePipeline,
+    target_gate_set: Set | Mapping,
+    device_vjp: bool = False,
+    device_wires: Wires | None = None,
+) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
     Args:
         program (CompilePipeline): where we will add the adjoint differentiation transforms
+        target_gate_set (Set or Mapping): the gate set to target in decompositions
         device_vjp (bool): whether or not to use the device-provided Vector Jacobian Product (VJP).
         device_wires (Wires): the device wires, used to calculate available work wires
 
@@ -341,15 +347,12 @@ def _add_adjoint_transforms(program: CompilePipeline, device_vjp=False, device_w
         decompose,
         stopping_condition=adjoint_ops,
         device_wires=device_wires,
-        target_gates=ALL_DQ_GATE_SET,
+        target_gates=target_gate_set,
         name=name,
         skip_initial_state_prep=False,
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
-    program.add_transform(
-        validate_measurements,
-        name=name,
-    )
+    program.add_transform(validate_measurements, name=name)
     program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
     program.add_transform(broadcast_expand)
     program.add_transform(validate_adjoint_trainable_params)
@@ -608,10 +611,15 @@ class DefaultQubit(Device):
 
     def _capture_preprocess_transforms(self, config: ExecutionConfig) -> CompilePipeline:
         compile_pileline = CompilePipeline()
+        target_gate_set = ALL_DQ_GATE_SET
         if config.mcm_config.mcm_method == "deferred":
             compile_pileline.add_transform(defer_measurements, num_wires=len(self.wires))
+        else:
+            target_gate_set = target_gate_set | {"MidMeasure"}
         compile_pileline.add_transform(
-            transforms_decompose, gate_set=ALL_DQ_GATE_SET, stopping_condition=stopping_condition
+            transforms_decompose,
+            gate_set=target_gate_set,
+            stopping_condition=stopping_condition,
         )
 
         return compile_pileline
@@ -640,16 +648,18 @@ class DefaultQubit(Device):
         if config.interface == math.Interface.JAX_JIT:
             compile_pileline.add_transform(no_counts)
 
+        target_gate_set = ALL_DQ_GATE_SET
         if config.mcm_config.mcm_method == "deferred":
             compile_pileline.add_transform(defer_measurements, allow_postselect=True)
             _stopping_condition = no_mcms_stopping_condition
         else:
+            target_gate_set = target_gate_set | {"MidMeasure"}
             _stopping_condition = allow_mcms_stopping_condition
         compile_pileline.add_transform(
             decompose,
             stopping_condition=_stopping_condition,
             device_wires=self.wires,
-            target_gates=ALL_DQ_GATE_SET,
+            target_gates=target_gate_set,
             name=self.name,
         )
         _allow_resets = config.mcm_config.mcm_method != "deferred"
@@ -684,6 +694,7 @@ class DefaultQubit(Device):
                 compile_pileline,
                 device_vjp=config.use_device_jacobian_product,
                 device_wires=self.wires,
+                target_gate_set=target_gate_set,
             )
         return compile_pileline
 
