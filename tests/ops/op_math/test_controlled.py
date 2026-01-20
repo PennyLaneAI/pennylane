@@ -2246,6 +2246,7 @@ class TestTapeExpansionWithControlled:
         assert len(tape.operations) == 10
         assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
+
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
 class TestCtrlTransformDifferentiation:
     """Tests for differentiation"""

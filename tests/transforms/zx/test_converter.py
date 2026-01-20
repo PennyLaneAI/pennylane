@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError, PennyLaneDeprecationWarning
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.tape import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")

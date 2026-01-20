@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.transforms import parity_matrix, decompose
+from pennylane.transforms import decompose, parity_matrix
 
 circ1 = qml.tape.QuantumScript(
     [

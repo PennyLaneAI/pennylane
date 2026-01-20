@@ -20,7 +20,7 @@ from pennylane import math
 from pennylane.operation import Channel
 from pennylane.ops.op_math import adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import transform, decompose
+from pennylane.transforms import decompose, transform
 from pennylane.typing import PostprocessingFn
 
 
