@@ -18,7 +18,7 @@ on:
       workflow:
         description: 'The workflow to run multiple times'
         required: true
-        default: 'device-tests'
+        default: 'documentation-tests'
         type: choice
         options:
           - documentation-tests
@@ -59,11 +59,11 @@ jobs:
           echo "workflow=${{ inputs.workflow }}"
 
       - name: Set skip tests list
-        # if: ${{ inputs.workflow != 'documentation-tests' && inputs.workflow != 'docs' && inputs.workflow != 'format' && inputs.workflow != 'module-validation' && inputs.workflow != 'package-warning-as-errors' && inputs.workflow != 'test-numpy1-compat' }}
+        if: ${{ inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' || inputs.workflow != 'test-numpy1-compat' }}
         id: set-skip-tests
         run: |
-          ALL_TESTS='all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
-          WORKFLOW='device-tests' #"${{ inputs.workflow }}"
+          ALL_TESTS='torch-tests,gradient-tests,all-interfaces-tests,external-library-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
+          WORKFLOW='${{ inputs.workflow }}'
           SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
           echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
 
@@ -154,7 +154,7 @@ jobs:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
       branch: ${{ github.ref }}
-      job_name_suffix: " - rerun-${{ inputs.workflow }}"
+      job_name_suffix:  '${{ inputs.workflow }}'
       upload_to_codecov: false
       run_lightened_ci: true  
       skip_ci_test_jobs: |
