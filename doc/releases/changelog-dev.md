@@ -187,6 +187,7 @@
 * Internal calls to the `decompose` transform have been updated to provide a `target_gates` argument so that
   they are compatible with the new graph-based decomposition system.
   [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
+  [(#8953)](https://github.com/PennyLaneAI/pennylane/pull/8953)
 
 * Added a `qml.decomposition.toggle_graph_ctx` context manager to temporarily enable or disable graph-based
   decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
