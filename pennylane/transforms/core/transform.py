@@ -376,7 +376,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         For example, we can create a transform that will apply the ``cancel-inverses`` pass, like the
         in-built ``qml.transforms.cancel_inverses`` transform.
 
-        .. code-block:: python # doctest: +SKIP
+        .. code-block::
 
             my_transform = qml.transform(pass_name="cancel-inverses")
 
