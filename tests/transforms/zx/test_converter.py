@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, PennyLaneDeprecationWarning
 from pennylane.tape import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
@@ -83,7 +83,8 @@ class TestConvertersZX:
 
         matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
 
-        zx_g = qml.transforms.to_zx(qs)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            zx_g = qml.transforms.to_zx(qs)
         matrix_zx = zx_g.to_matrix()
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
@@ -131,7 +132,8 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(operations, [])
-        zx_g = qml.transforms.to_zx(qs)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
@@ -212,7 +214,8 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(operations, [])
-        zx_g = qml.transforms.to_zx(qs)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
@@ -252,7 +255,8 @@ class TestConvertersZX:
         measurements = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
         qs = QuantumScript(operations, measurements)
-        zx_g = qml.transforms.to_zx(qs, expand_measurements=True)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            zx_g = qml.transforms.to_zx(qs, expand_measurements=True)
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
         # Add rotation Hadamard because of PauliX
@@ -295,7 +299,8 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(prep + operations, [])
-        zx_g = qml.transforms.to_zx(qs)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
@@ -379,7 +384,8 @@ class TestConvertersZX:
             QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",
         ):
-            qml.transforms.to_zx(qs)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                qml.transforms.to_zx(qs)
 
     def test_same_type_nodes_simple_edge(self):
         """Test that a Green-Green nodes with simple edge has no corresponding circuit."""
@@ -558,7 +564,8 @@ class TestConvertersZX:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
-        g = circuit(params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            g = circuit(params)
 
         assert isinstance(g, pyzx.graph.graph_s.GraphS)
 
@@ -573,6 +580,7 @@ class TestConvertersZX:
             qml.PauliX(wires=1)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        g = circuit()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            g = circuit()
 
         assert isinstance(g, pyzx.graph.graph_s.GraphS)

@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.tape import QuantumScript
 
 pytest.importorskip("pyzx")
@@ -63,7 +64,8 @@ class TestPushHadamards:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.push_hadamards(qs)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            (new_qs,), _ = qml.transforms.zx.push_hadamards(qs)
 
         assert new_qs.operations == []
 
@@ -80,7 +82,8 @@ class TestPushHadamards:
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.push_hadamards(qs)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            (new_qs,), _ = qml.transforms.zx.push_hadamards(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -98,7 +101,8 @@ class TestPushHadamards:
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.push_hadamards(qs)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            (new_qs,), _ = qml.transforms.zx.push_hadamards(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -114,7 +118,8 @@ class TestPushHadamards:
             TypeError,
             match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
         ):
-            qml.transforms.zx.push_hadamards(qs)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                qml.transforms.zx.push_hadamards(qs)
 
     @pytest.mark.parametrize(
         "measurements",
@@ -140,7 +145,8 @@ class TestPushHadamards:
         ]
         original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        (transformed_tape,), _ = qml.transforms.zx.push_hadamards(original_tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            (transformed_tape,), _ = qml.transforms.zx.push_hadamards(original_tape)
 
         expected_ops = [
             qml.T(wires=0),
@@ -174,6 +180,7 @@ class TestPushHadamards:
         reduced_circ = qml.transforms.zx.push_hadamards(original_circ)
 
         state1 = original_circ()
-        state2 = reduced_circ()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            state2 = reduced_circ()
 
         assert np.allclose(state1, state2)

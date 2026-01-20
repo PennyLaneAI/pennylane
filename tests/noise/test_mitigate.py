@@ -685,10 +685,12 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 4],
         )
 
-        res = mitigated_qnode(theta)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
-        grad = jax.grad(mitigated_qnode)(theta)
-        grad_ideal = jax.grad(qnode_ideal)(theta)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            grad = jax.grad(mitigated_qnode)(theta)
+            grad_ideal = jax.grad(qnode_ideal)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
         jax.grad(qnode_noisy)(theta)
@@ -714,7 +716,8 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 4],
         )
 
-        res = mitigated_qnode(theta)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
         grad = jax.grad(mitigated_qnode)(theta)
         grad_ideal = jax.grad(qnode_ideal)(theta)
@@ -824,10 +827,12 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 6],
         )
 
-        res = qml.math.stack(mitigated_qnode(theta))
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
-        grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
         grad_ideal = jax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
@@ -854,7 +859,8 @@ class TestDifferentiableZNE:
             [np.pi / 4, np.pi / 6],
         )
 
-        res = qml.math.stack(mitigated_qnode(theta))
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
         grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
