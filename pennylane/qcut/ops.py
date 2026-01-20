@@ -43,7 +43,8 @@ class PrepareNode(Operation):
         super().__init__(wires=wires)
 
     @property
-    def id(self) -> str:
+    def node_uid(self) -> str:
+        """Custom UID for this node."""
         return self._node_uid
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -72,7 +73,8 @@ class MeasureNode(Operation):
         super().__init__(wires=wires)
 
     @property
-    def id(self) -> str:
+    def node_uid(self) -> str:
+        """Custom UID for this node."""
         return self._node_uid
 
     def label(self, decimals=None, base_label=None, cache=None):
