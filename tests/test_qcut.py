@@ -327,12 +327,12 @@ class TestMeasurePrepareNodes:
 
     def test_id(self, cls):
         """Test that nodes can be initialized with an id or recieves its own UUID."""
-        n = cls(wires=0, node_id="hi")
-        assert n.id == "hi"
-        n = cls(wires=0, node_id=None)
-        assert n.id is not None
-        n2 = cls(wires=0, node_id=None)
-        assert n.id != n2.id
+        n = cls(wires=0, node_uid="hi")
+        assert n.node_uid == "hi"
+        n = cls(wires=0, node_uid=None)
+        assert n.node_uid is not None
+        n2 = cls(wires=0, node_uid=None)
+        assert n.node_uid != n2.node_uid
 
     @pytest.mark.parametrize("decimals", [0, 1, 5])
     @pytest.mark.parametrize("base_label", [None, "CustomNode"])
