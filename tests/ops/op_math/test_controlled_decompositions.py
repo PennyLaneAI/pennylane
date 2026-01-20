@@ -24,7 +24,6 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary

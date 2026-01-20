@@ -16,7 +16,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ClassicalShadowMP,
     MeasurementProcess,
@@ -57,8 +56,7 @@ class TestSampleMeasurement:
             qml.PauliX(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            assert qml.math.allequal(circuit(), [1000, 0])
+        assert qml.math.allequal(circuit(), [1000, 0])
 
     def test_sample_measurement_without_shots(self):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
@@ -81,8 +79,7 @@ class TestSampleMeasurement:
         with pytest.raises(
             ValueError, match="Shots must be specified in the device to compute the measurement "
         ):
-            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-                circuit()
+            circuit()
 
     def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""
@@ -98,8 +95,7 @@ class TestSampleMeasurement:
         circuit.device._device.measurement_map[SampleMP] = "test_method"
         circuit.device._device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            assert qml.math.allequal(circuit(), [2, 2])
+        assert qml.math.allequal(circuit(), [2, 2])
 
 
 class TestStateMeasurement:

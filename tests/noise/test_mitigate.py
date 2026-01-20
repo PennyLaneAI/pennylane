@@ -20,7 +20,6 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.noise.insert_ops import insert
 from pennylane.noise.mitigate import (
     _polyfit,
