@@ -227,10 +227,12 @@ Utility Classes
     :toctree: api
 
     ~DecompositionError
+    ~gate_set.GateSet
 
 """
 
 from pennylane.exceptions import DecompositionError
+from .gate_set import GateSet
 from .utils import (
     enable_graph,
     disable_graph,

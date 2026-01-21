@@ -23,6 +23,7 @@ from typing import Literal
 import numpy as np
 
 from pennylane import math, ops
+from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.measurements import ProbabilityMP, expval
@@ -75,6 +76,7 @@ def _expand_transform_hadamard(
     """Expand function to be applied before hadamard gradient."""
     batch, postprocessing = decompose(
         tape,
+        target_gates=gate_sets.ROTATIONS_PLUS_CNOT,
         stopping_condition=_hadamard_stopping_condition,
         skip_initial_state_prep=False,
         name="hadamard",

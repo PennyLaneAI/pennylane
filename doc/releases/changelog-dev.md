@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
+  that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
+  [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+
 <h3>Improvements 🛠</h3>
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
@@ -9,6 +13,10 @@
 
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
+
+* A function for setting up transform inputs, including setting default values and basic validation,
+  can now be provided to `qml.transform` via `setup_inputs`.
+  [(#8732)](https://github.com/PennyLaneAI/pennylane/pull/8732)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -24,6 +32,14 @@
   [(#8790)](https://github.com/PennyLaneAI/pennylane/pull/8790)
 
 <h3>Breaking changes 💔</h3>
+
+* Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
+  [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
+  [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
+  
+* ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
+  and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
+  [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform is removed. Instead,
   the device should determine which mcm method to use, and explicitly include :func:`~pennylane.transforms.dynamic_one_shot`
@@ -114,14 +130,28 @@
     - `qml.estimator.FirstQuantization` in favor of `qml.resources.FirstQuantization`
     - `qml.estimator.DoubleFactorization` in favor of `qml.resources.DoubleFactorization`
 
-
 <h3>Deprecations 👋</h3>
 
 * Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` in reversed or standard mode has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
   [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
 
+* The ``qml.transforms.create_expand_fn`` is deprecated in PennyLane v0.45 and will be removed in v0.46.
+  Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+  [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
+
+* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
+  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
+
 <h3>Internal changes ⚙️</h3>
+
+* Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
+  to match the non-PRNG version and reduce stochastic test failures.
+  [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
+
+* Updated test helper `get_device` to correctly seed lightning devices.
+  [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
 
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
@@ -129,18 +159,32 @@
 * Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
 
+* Internal calls to the `decompose` transform have been updated to provide a `target_gates` argument so that
+  they are compatible with the new graph-based decomposition system.
+  [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug that `qml.QubitDensityMatrix` was applied in `default.mixed` device using `qml.math.partial_trace` incorrectly.
+  This would cause wrong results as described in [this issue](https://github.com/PennyLaneAI/pennylane/pull/8932).
+  [(#8933)](https://github.com/PennyLaneAI/pennylane/pull/8933)
 
 * Fixes an issue when binding a transform when the first positional arg
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
+* Fixes a bug with `qml.estimator.templates.QSVT` which allows users to instantiate the class without
+  providing wires. This is now consistent with the standard in the estimator module.
+  [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
+Yushao Chen,
 Marcus Edwards,
 Andrija Paurevic,
 Omkar Sarkar,
