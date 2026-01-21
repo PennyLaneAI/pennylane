@@ -1112,7 +1112,7 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].tape_transform == just_pauli_x_out.tape_transform
+        assert circuit.compile_pipeline[0].tape_transform == just_pauli_x_out.tape_transform
 
         assert qml.math.allclose(circuit(0.1), -1)
 
@@ -1143,8 +1143,8 @@ class TestCompilePipelineIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.transform_program[0].tape_transform == pin_result.tape_transform
-        assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
+        assert circuit.compile_pipeline[0].tape_transform == pin_result.tape_transform
+        assert circuit.compile_pipeline[0].kwargs == {"requested_result": 3.0}
 
         assert qml.math.allclose(circuit(0.1), 3.0)
 
@@ -1353,11 +1353,13 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        @qml.register_resources({qml.RY: 1})
-        def custom_decomposition(param, wires):
-            qml.RY(3 * param, wires=wires)
+        with qml.decomposition.local_decomps():
 
-        with qml.decomposition.add_decomps_local(PhaseShift, custom_decomposition):
+            @qml.register_resources({qml.RY: 1})
+            def custom_decomposition(param, wires):
+                qml.RY(3 * param, wires=wires)
+
+            qml.add_decomps(PhaseShift, custom_decomposition)
 
             @qnode(dev, diff_method="parameter-shift", max_diff=2)
             def circuit(x):

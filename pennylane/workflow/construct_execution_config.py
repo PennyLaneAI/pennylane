@@ -118,7 +118,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
                 }
             shots = qnode._get_shots(kwargs)  # pylint: disable=protected-access
             tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
-            batch, _ = qnode.transform_program((tape,))
+            batch, _ = qnode.compile_pipeline((tape,))
             config = _resolve_execution_config(config, qnode.device, batch)
 
         return config

@@ -437,7 +437,7 @@ class TestUserTransforms:
             return qml.expval(qml.Z(0))
 
         assert isinstance(circuit, qml.QNode)
-        assert qml.transforms.cancel_inverses in circuit.transform_program
+        assert qml.transforms.cancel_inverses in circuit.compile_pipeline
 
         if disable_around_qnode:
             qml.capture.enable()

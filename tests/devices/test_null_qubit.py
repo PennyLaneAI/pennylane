@@ -1392,9 +1392,9 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        with qml.decomposition.add_decomps_local(
-            MyNullQubitOp, decomp_fallback, decomp_with_work_wire
-        ):
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
+
             tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
             dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
             program = dev.preprocess_transforms()
