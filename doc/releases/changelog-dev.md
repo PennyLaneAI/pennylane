@@ -12,6 +12,9 @@
   their classical data as `TensorLike` data, which increases compatibility with Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
 
+* `qml.vjp` can now be captured into plxpr.
+  [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
+
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
 
@@ -142,7 +145,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
+* Bump the absolute tolerance in `TestSampling::test_complex_hamiltonian` from `0.001` to `0.0035`
+  to match a 3-sigma practice and reduce stochastic test failures.
+  [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
+
+* Bump the absolute tolerance in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
   to match the non-PRNG version and reduce stochastic test failures.
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
 
@@ -182,6 +189,7 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
+Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
