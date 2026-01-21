@@ -136,6 +136,10 @@
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
   [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
 
+* The ``qml.transforms.create_expand_fn`` is deprecated in PennyLane v0.45 and will be removed in v0.46.
+  Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+  [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
+
 <h3>Internal changes ⚙️</h3>
 
 * Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
