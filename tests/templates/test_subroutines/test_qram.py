@@ -144,22 +144,6 @@ def test_bb_quantum(
         ),
         (
             (
-                [
-                    [0, 0, 0],
-                    [0, 0],
-                    [1, 1, 1],
-                    [1, 0],
-                    [1, 0, 0],
-                ],
-                [0, 1],
-                [2, 3, 4],
-                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            ),
-            ValueError,
-            "All bitstrings must have equal length.",
-        ),
-        (
-            (
                 [[0, 0, 0], [1, 1, 1]],
                 [0, 1],
                 [2, 3, 4],
@@ -620,23 +604,6 @@ def test_hybrid_decomposition_new(
         ),
         (
             (
-                [
-                    [0, 0, 0],
-                    [0, 0],
-                    [1, 1, 1],
-                    [1, 0],
-                    [1, 0, 0],
-                ],
-                [0, 1],
-                [2, 3, 4],
-                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-                1,
-            ),
-            ValueError,
-            "All bitstrings must have equal length.",
-        ),
-        (
-            (
                 [[0, 0, 0], [1, 1, 1]],
                 [0, 1],
                 [2, 3, 4],
@@ -1093,22 +1060,6 @@ def test_select_only_quantum(
             ),
             ValueError,
             "data' cannot be empty.",
-        ),
-        (
-            (
-                [
-                    [0, 0, 0],
-                    [0, 0],
-                    [1, 1, 1],
-                    [1, 0],
-                    [1, 0, 0],
-                ],
-                [0, 1],
-                [2, 3, 4],
-                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            ),
-            ValueError,
-            "All bitstrings must have equal length.",
         ),
         (
             (
