@@ -21,8 +21,8 @@ import numpy as np
 
 import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
-import pennylane.ops as qops
 import pennylane.math as pl_math
+import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.operation import Operation
 from pennylane.ops.functions import simplify
