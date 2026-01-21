@@ -1585,7 +1585,7 @@ class TestHamiltonianSamples:
         # <H^2> = 2.5^2 + 6.2^2 because cross terms vanish (<X> = 0 for RX states)
         var_h_theoretical = (2.5**2 + 6.2**2) - expected**2
         std_error = np.sqrt(var_h_theoretical / shots)
-        
+
         # Use 3-sigma tolerance to prevent flaky tests
         # We use atol (absolute) because noise does not scale with the expectation value
         assert np.allclose(res, expected, atol=3 * std_error)
