@@ -138,17 +138,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Adjust the tolerance in `TestHamiltonianSamples::test_multi_wires` of `test_default_qubit` from
-  a fixed magic number to dynamically computed based on 3-sigma of the standard error given by the theoretical
-  variance and number of shots.
+* Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
-
-* Bump the absolute tolerance in `TestSampling::test_complex_hamiltonian` from `0.001` to `0.0035`
-  to match a 3-sigma practice and reduce stochastic test failures.
   [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
-
-* Bump the absolute tolerance in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
-  to match the non-PRNG version and reduce stochastic test failures.
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
 
 * Updated test helper `get_device` to correctly seed lightning devices.
