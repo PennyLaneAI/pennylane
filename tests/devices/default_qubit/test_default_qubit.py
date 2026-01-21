@@ -1580,7 +1580,10 @@ class TestHamiltonianSamples:
         sines = qml.math.sin(phase)
         expected = 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
-        assert np.allclose(res, expected, rtol=0.05)
+        # Tolerance set to ~3.5σ (σ ≈ 0.038 for this 10-wire Hamiltonian with 30k shots)
+        # rtol=0.12 gives atol_eff ≈ 0.135 for expected≈1.12
+        # See .benchmarks/test_multi_wires/statistical_analysis.py
+        assert np.allclose(res, expected, rtol=0.12)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_complex_hamiltonian(self, max_workers, seed):
