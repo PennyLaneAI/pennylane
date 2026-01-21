@@ -969,7 +969,7 @@ class TestOperationConstruction:
             num_wires = 1
             grad_method = None
 
-        op = DummyOp(1.0, wires=0, id="test")
+        op = DummyOp(1.0, wires=0)
         assert op.control_wires == qml.wires.Wires([])
 
     def test_is_hermitian(self):
@@ -1062,7 +1062,7 @@ class TestObservableConstruction:
             num_wires = 1
             grad_method = None
 
-        op = DummyObserv(1.0, wires=0, id="test")
+        op = DummyObserv(1.0, wires=0)
         assert op.id == "test"
 
     def test_raises_if_no_wire_is_given(self):
