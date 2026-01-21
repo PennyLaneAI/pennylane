@@ -576,7 +576,7 @@ class TestHasReprProperties:
         class SomeRandomName(qml.operation.Operator):
             pass
 
-        with qml.decomposition.local_decomp_context():
+        with qml.decomposition.local_decomps():
 
             @qml.register_resources({qml.X: 1})
             def decomp(x, wires):
@@ -605,7 +605,7 @@ class TestHasReprProperties:
         def decomp2(x, wires):
             qml.CRX(x, wires)
 
-        with qml.decomposition.local_decomp_context():
+        with qml.decomposition.local_decomps():
             qml.add_decomps(MNBV, decomp1, decomp2)
 
             assert MNBV(0.5, wires=0).has_decomposition
@@ -1361,7 +1361,7 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qml.RZ(x, wires)
 
-        with qml.decomposition.local_decomp_context():
+        with qml.decomposition.local_decomps():
             qml.add_decomps(OpWithACustomName98786, decomp1, decomp2)
 
             [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
@@ -1396,7 +1396,7 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qml.CRX(x, wires)
 
-        with qml.decomposition.local_decomp_context():
+        with qml.decomposition.local_decomps():
             qml.add_decomps(BVCX, decomp1, decomp2)
 
             [op1] = BVCX(0.5, wires=0).decomposition()

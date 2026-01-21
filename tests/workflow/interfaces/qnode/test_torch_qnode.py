@@ -1214,7 +1214,7 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        with qml.decomposition.local_decomp_context():
+        with qml.decomposition.local_decomps():
 
             @qml.register_resources({qml.RY: 1})
             def custom_decomposition(param, wires):

@@ -272,7 +272,7 @@ class TestDecompositionRule:
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RY(theta, wires=wires[0])
 
-        with qml.decomposition.local_decomp_context():
+        with qml.decomposition.local_decomps():
 
             qml.add_decomps(CustomOp, custom_decomp)
             qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)

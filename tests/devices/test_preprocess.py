@@ -619,7 +619,7 @@ class TestGraphModeExclusiveFeatures:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        with qml.decomposition.local_decomp_context():
+        with qml.decomposition.local_decomps():
             qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
             tape = qml.tape.QuantumScript([MyOp(0)])

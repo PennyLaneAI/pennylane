@@ -257,5 +257,5 @@ from .decomposition_rule import (
     add_decomps,
     list_decomps,
     has_decomp,
-    local_decomp_context,
+    local_decomps,
 )
