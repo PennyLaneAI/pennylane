@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
 
 

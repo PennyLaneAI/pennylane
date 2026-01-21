@@ -20,7 +20,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import layer
-from pennylane.tape import QuantumScript
 
 
 def ConstantCircuit():
