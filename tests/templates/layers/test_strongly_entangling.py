@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import ops as qml_ops
-from pennylane.capture.autograph import run_autograph
+from pennylane.capture import run_autograph
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -192,6 +192,7 @@ class TestDecomposition:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_strongly_entangling_plxpr(self):
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
         import jax

@@ -14,7 +14,7 @@
 r"""This module contains the experimental transforms building blocks (core)."""
 
 import inspect
-from .transform_dispatcher import (
+from .transform import (
     Transform,
     TransformContainer,
     TransformError,

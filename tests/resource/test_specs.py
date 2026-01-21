@@ -335,12 +335,14 @@ class TestSpecsTransform:
             ):
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
-                    qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition
+                    qml.devices.preprocess.decompose,
+                    target_gates=qml.devices.default_qubit.ALL_DQ_GATE_SET,
+                    stopping_condition=self.stopping_condition,
                 )
                 return program
 
         dev = TestDevice(wires=2)
-        matrix = qml.matrix(qml.RX(1.2, 0))
+        matrix = qml.matrix([qml.RX(1.2, 0), qml.GlobalPhase(0.5)])
 
         @qml.qnode(dev)
         def circ():
