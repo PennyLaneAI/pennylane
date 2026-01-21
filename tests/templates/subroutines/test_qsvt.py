@@ -20,10 +20,12 @@ from copy import copy
 import pytest
 from numpy.linalg import matrix_power
 from numpy.polynomial.chebyshev import Chebyshev
+from pennylane.ops import ChangeOpBasis
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -163,11 +165,7 @@ class TestQSVT:
             (
                 qml.PauliZ(wires=0),
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
-                [
-                    qml.RZ(0.1, wires=[0]),
-                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
-                    qml.RZ(0.3, wires=[1]),
-                ],
+                [qml.RZ(0.1, wires=[0]), qml.Z(0), qml.RY(0.2, wires=[0]), qml.Z(0), qml.RZ(0.3, wires=[1])]
             ),
         ],
     )
@@ -199,7 +197,9 @@ class TestQSVT:
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
                 [
                     qml.RZ(0.1, wires=[0]),
-                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
+                    qml.PauliZ(wires=[0]),
+                    qml.RY(0.2, wires=[0]),
+                    qml.PauliZ(wires=[0]),
                     qml.RZ(0.3, wires=[1]),
                 ],
             ),
@@ -220,9 +220,22 @@ class TestQSVT:
 
         tapes, func = decompose(tape)
         tape = func(tapes)
-        for expected, val1, val2 in zip(results, tape.operations, tape2.operations):
-            qml.assert_equal(expected, val1)
-            qml.assert_equal(expected, val2)
+        i = 0
+        j = 0
+        while i < len(results):
+            expected, val1, val2 = results[i], tape.operations[i], tape2.operations[j]
+            if isinstance(val2, ChangeOpBasis):
+                j = i + 1
+                change_op = tape2.operations[i]
+                for op in change_op[::-1]:
+                    qml.assert_equal(results[i], op) if not isinstance(op, AdjointOperation) else qml.assert_equal(results[i], op.base)
+                    qml.assert_equal(results[i], tape.operations[i])
+                    i += 1
+            else:
+                qml.assert_equal(expected, val1)
+                qml.assert_equal(expected, val2)
+                i += 1
+                j += 1
 
     def test_decomposition_queues_its_contents(self):
         """Test that the decomposition method queues the decomposition in the correct order."""
@@ -317,7 +330,8 @@ class TestQSVT:
                 np.array([0.1, 0.2]),
                 [
                     qml.PCPhase(0.1, dim=2, wires=[0]),
-                    qml.prod(qml.PauliX(wires=0), qml.RZ(0.1, wires=0)),
+                    qml.RZ(0.1, wires=0),
+                    qml.PauliX(wires=0),
                     qml.PCPhase(0.2, dim=2, wires=[0]),
                 ],
             ),
