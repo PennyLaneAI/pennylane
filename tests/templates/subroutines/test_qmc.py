@@ -318,7 +318,7 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        queue_after_qpe = qml.tape.QuantumScript(tape.operations[2:]).expand().operations
+        queue_after_qpe = qml.transforms.decompose(qml.tape.QuantumScript(tape.operations[2:]))[0][0].operations
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)
@@ -337,7 +337,8 @@ class TestQuantumMonteCarlo:
             qml.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
         qpe_tape = qml.tape.QuantumScript.from_queue(q_qpe_tape)
-        qpe_tape = qpe_tape.expand()
+        qpe_tapes, func = qml.transforms.decompose(qpe_tape)
+        qpe_tape = func(qpe_tapes)
 
         assert len(queue_after_qpe) == len(qpe_tape.operations)
         assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))

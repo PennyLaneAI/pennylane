@@ -282,7 +282,8 @@ class TestAdjointMetricTensorTape:
         assert qml.math.allclose(mt, expected)
 
         tape = qml.workflow.construct_tape(circuit)(*params)
-        met_tens = qml.adjoint_metric_tensor(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            met_tens = qml.adjoint_metric_tensor(tape)
         expected = qml.math.reshape(expected, qml.math.shape(met_tens))
         assert qml.math.allclose(met_tens, expected)
 
@@ -429,7 +430,8 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -555,9 +557,10 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_fn = qml.adjoint_metric_tensor(circuit)
-        argnums = list(range(len(params)))
-        mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            mt_fn = qml.adjoint_metric_tensor(circuit)
+            argnums = list(range(len(params)))
+            mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
         if isinstance(mt_jac, tuple):
             if not isinstance(expected, tuple) and len(mt_jac) == 1:
