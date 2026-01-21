@@ -33,10 +33,13 @@ from pennylane.capture.primitives import (
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.capture,
+    pytest.mark.usefixtures("disable_graph_decomposition"),
+]
 
 
-@pytest.mark.usefixtures("disable_graph_decomposition")
 class TestDecomposeInterpreter:
     """Unit tests for the DecomposeInterpreter class for decomposing plxpr."""
 
@@ -463,7 +466,6 @@ class TestDecomposeInterpreter:
         assert qfunc_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
 
-@pytest.mark.usefixtures("disable_graph_decomposition")
 class TestControlledDecompositions:
     """Unit tests for decomposing ctrl_transform primitives."""
 
@@ -580,7 +582,6 @@ class TestControlledDecompositions:
         assert branch_jaxpr.eqns[-1].primitive == qml.ops.Controlled._primitive
 
 
-@pytest.mark.usefixtures("disable_graph_decomposition")
 def test_decompose_plxpr_to_plxpr():
     """Test that transforming plxpr works."""
     gate_set = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]

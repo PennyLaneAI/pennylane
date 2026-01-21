@@ -23,14 +23,14 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as anp  # only to be used inside classical computational nodes
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
+
 alpha = 0.5  # displacement in tests
 hbar = 2
 mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 sqz_vals = np.linspace(0.0, 1.0, 5)
-
-
-pytest.mark.usefixtures("disable_graph_decomposition")
 
 
 # pylint: disable=too-few-public-methods

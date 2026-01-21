@@ -25,18 +25,12 @@ import pennylane as qml
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.wires import Wires
 
-U_thadamard_01 = np.multiply(
-    1 / np.sqrt(2),
-    np.array(
-        [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]],
-    ),
-)
-
-# TODO: Add tests for adding controls to `QutritUnitary` once `ControlledQutritUnitary` is implemented
-
 pytest.mark.usefixtures("disable_graph_decomposition")
 
+U_thadamard_01 = np.multiply(1 / np.sqrt(2), np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]))
 
+
+# TODO: Add tests for adding controls to `QutritUnitary` once `ControlledQutritUnitary` is implemented
 class TestQutritUnitary:
     """Tests for the QutritUnitary class."""
 

@@ -26,6 +26,8 @@ from pennylane import numpy as np
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.wires import Wires
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
     np.array(
@@ -36,9 +38,6 @@ U_thadamard_01 = np.multiply(
 U_x_02 = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]], dtype=np.complex128)
 
 U_z_12 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]], dtype=np.complex128)
-
-
-pytest.mark.usefixtures("disable_graph_decomposition")
 
 
 def test_analytic_deprecation():

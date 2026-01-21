@@ -29,9 +29,9 @@ from pennylane.gradients.parameter_shift_cv import (
     _transform_observable,
 )
 
-hbar = 2
-
 pytest.mark.usefixtures("disable_graph_decomposition")
+
+hbar = 2
 
 
 class TestGradAnalysis:
