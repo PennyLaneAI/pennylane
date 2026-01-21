@@ -24,6 +24,8 @@ from pennylane import numpy as qnp
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig
 from pennylane.exceptions import DeviceError
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 class TestDeviceProperties:
     """Tests for general device properties."""

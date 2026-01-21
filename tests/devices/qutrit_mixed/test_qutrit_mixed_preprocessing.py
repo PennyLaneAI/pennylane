@@ -26,6 +26,8 @@ from pennylane.devices.default_qutrit_mixed import (
 )
 from pennylane.exceptions import DeviceError
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit."""
