@@ -20,13 +20,15 @@ from itertools import chain
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.devices.qubit import apply_operation, create_initial_state
+from pennylane.exceptions import TermsUndefinedError
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.ops import StatePrep, adjoint
 from pennylane.ops.functions import generator, map_wires
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
-from pennylane.transforms.tape_expand import create_expand_trainable_multipar
 from pennylane.typing import PostprocessingFn
 
 
@@ -60,6 +62,19 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
+def _multipar_stopping_fn(obj):
+    try:
+        return len(obj.data) == 0 or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+    except TermsUndefinedError:
+        return True
+
+
+def _trainable_multipar_stopping_fn(obj):
+    if not any(math.requires_grad(d) for d in obj.data):
+        return True
+    return _multipar_stopping_fn(obj)
+
+
 def _expand_trainable_multipar(
     tape: QuantumScript,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -67,8 +82,27 @@ def _expand_trainable_multipar(
 
     interface = math.get_interface(*tape.get_parameters())
     use_tape_argnum = interface == "jax"
-    expand_fn = create_expand_trainable_multipar(tape, use_tape_argnum=use_tape_argnum)
-    return [expand_fn(tape)], lambda x: x[0]
+
+    if use_tape_argnum:
+        trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
+        trainable_ops = [info["op"] for info in trainable_par_info]
+
+        def _argnum_trainable_multipar(obj):
+            return _multipar_stopping_fn(obj) or obj not in trainable_ops
+
+        stopping_condition = _argnum_trainable_multipar
+    else:
+        stopping_condition = _trainable_multipar_stopping_fn
+
+    [new_tape], postprocessing = decompose(
+        tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        stopping_condition=stopping_condition,
+    )
+    if new_tape is not tape:
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = math.get_trainable_indices(params)
+    return [new_tape], postprocessing
 
 
 @partial(
