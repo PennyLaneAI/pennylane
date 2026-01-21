@@ -18,9 +18,14 @@ While we need to come back and develop custom handling that does not involve pat
 jax internals, this will let us build on it for the time being.
 
 We could also just develop a custom higher order primitive like all our other higher order
-primitives, but then we would need to develop our own system for caching the lowering.
-We want the same subroutine called with the same static arguments and shapes to lower to the same
-func op in mlir to reduce compilation complexity.
+primitives, but we currently want to be able to cache the jaxpr and the lowering and to
+be able to avoid promoting constants to the outer scope. Solving these would take
+time we don't have.
+
+We also can't just use the normal ``jit`` primitive, because we currently need to know
+which higher order primitive needs to have QReg's added to it's inputs and removed from
+it's outputs in ``from_plxpr``.
+
 """
 
 import copy
@@ -148,7 +153,7 @@ def subroutine(func, static_argnums=None, static_argnames=None):
 
     """
     if not has_jax:
-        raise ImportError("jax is required for use of subroutine")  # pragma: no cover
+        return func
 
     old_pjit = jax._src.pjit.jit_p  # pylint: disable=protected-access
 
