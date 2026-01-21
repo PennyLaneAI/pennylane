@@ -296,7 +296,11 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
             U = U.todense()
         U, global_phase = math.convert_to_su2(U, return_global_phase=True)
         su2_rule(U, wires=wires)
-        ops.cond(math.logical_not(math.allclose(global_phase, 0)), ops.GlobalPhase)(-global_phase)
+        if _is_jax_jit(U):
+            ops.GlobalPhase(-global_phase)
+        else:
+            non_zero_global_phase = math.logical_not(math.allclose(global_phase, 0))
+            ops.cond(non_zero_global_phase, ops.GlobalPhase)(-global_phase)
 
     return _impl
 
