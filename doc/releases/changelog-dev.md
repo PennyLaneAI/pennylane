@@ -140,6 +140,7 @@
   Please use the ``qml.transforms.decompose`` function for decomposing circuits.
   [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
 
+
 <h3>Internal changes ⚙️</h3>
 
 * Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
