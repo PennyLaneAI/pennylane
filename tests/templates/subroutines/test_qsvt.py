@@ -20,10 +20,10 @@ from copy import copy
 import pytest
 from numpy.linalg import matrix_power
 from numpy.polynomial.chebyshev import Chebyshev
-from pennylane.ops import ChangeOpBasis
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops import ChangeOpBasis
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.templates.subroutines.qsvt import (
@@ -165,7 +165,13 @@ class TestQSVT:
             (
                 qml.PauliZ(wires=0),
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
-                [qml.RZ(0.1, wires=[0]), qml.Z(0), qml.RY(0.2, wires=[0]), qml.Z(0), qml.RZ(0.3, wires=[1])]
+                [
+                    qml.RZ(0.1, wires=[0]),
+                    qml.Z(0),
+                    qml.RY(0.2, wires=[0]),
+                    qml.Z(0),
+                    qml.RZ(0.3, wires=[1]),
+                ],
             ),
         ],
     )
@@ -228,7 +234,12 @@ class TestQSVT:
                 j = i + 1
                 change_op = tape2.operations[i]
                 for op in change_op[::-1]:
-                    qml.assert_equal(results[i], op) if not isinstance(op, AdjointOperation) else qml.assert_equal(results[i], op.base)
+                    # pylint: disable=expression-not-assigned
+                    (
+                        qml.assert_equal(results[i], op)
+                        if not isinstance(op, AdjointOperation)
+                        else qml.assert_equal(results[i], op.base)
+                    )
                     qml.assert_equal(results[i], tape.operations[i])
                     i += 1
             else:
