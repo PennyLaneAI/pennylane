@@ -1062,7 +1062,7 @@ class TestObservableConstruction:
             num_wires = 1
             grad_method = None
 
-        op = DummyObserv(1.0, wires=0)
+        op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
     def test_raises_if_no_wire_is_given(self):
@@ -1319,6 +1319,7 @@ class TestOperatorIntegration:
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = qml.PauliX(0) @ "dummy"
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_label_for_operations_with_id(self):
         """Test that the label is correctly generated for an operation with an id"""
         op = qml.RX(1.344, wires=0, id="test_with_id")
