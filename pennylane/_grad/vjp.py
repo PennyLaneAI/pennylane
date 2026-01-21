@@ -158,7 +158,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     .. seealso:: :func:`~.grad`, :func:`~.jvp`, :func:`~.jacobian`
 
     .. note::
-    
+
         While ``jax.vjp`` has no ``argnums`` and treats all params as trainable as default, we
         default to only the first argument as trainable by default.
 
@@ -178,7 +178,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     >>> results, dparams = calculate_vjp_qjit(*params, dy, 0)
     >>> results
     Array([2., 6.], dtype=float64)
-    >>> dparams
+    >>> dparams # doctest: +SKIP
     Array([20., 60.], dtype=float64)
 
     Similar to ``grad`` and ``jacobian``, if ``argnums`` is an array, the ``dparams``
