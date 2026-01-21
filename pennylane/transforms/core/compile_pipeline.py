@@ -164,6 +164,7 @@ class CompilePipeline:
     1: ───────────┤  <Z>
 
     Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
+<<<<<<< HEAD
     example, the transforms can be added together with ``+``:
 
     >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
@@ -230,6 +231,8 @@ class CompilePipeline:
     1: ───────────┤  <Z>
 
     Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
+=======
+>>>>>>> parent of a5b8a06be (Daily rc sync to master (#8888))
     example, the transforms can be added toguether with ``+``:
 
     >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)

@@ -959,6 +959,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 <h4>Other improvements</h4>
 
+<<<<<<< HEAD
 * Quantum compilation passes in MLIR and xDSL can now be applied using the core PennyLane transform
   infrastructure, instead of using Catalyst-specific tools. This is made possible by a new argument in
   :func:`~pennylane.transform` and :class:`~.transforms.core.Transform` called ``pass_name``, which 
@@ -988,6 +989,9 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 * The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` has been updated to use 
   scipy constants, leading to more consistent and standardized conversion.
+=======
+* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` is updated to use scipy constants.
+>>>>>>> parent of a5b8a06be (Daily rc sync to master (#8888))
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
 
 * Transform decorator arguments can now be defined without ``@partial``, leading to a simpler 
@@ -1498,6 +1502,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 <h3>Documentation 📝</h3>
 
+<<<<<<< HEAD
 * Minor corrections in the docstring code examples for ``QAOAEmbedding`` and ``ParticleConservingU1`` were made.
   [(#8895)](https://github.com/PennyLaneAI/pennylane/pull/8895)
 
@@ -1513,6 +1518,10 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 * A note clarifying that the factors of a ``ChangeOpBasis`` are iterated in reverse order has been
   added to the documentation of ``ChangeOpBasis``.
+=======
+* A note clarifying that the factors of a ``~.ChangeOpBasis`` are iterated in reverse order has been
+  added to the documentation of ``~.ChangeOpBasis``.
+>>>>>>> parent of a5b8a06be (Daily rc sync to master (#8888))
   [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
 
 * The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the

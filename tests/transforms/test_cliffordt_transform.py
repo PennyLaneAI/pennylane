@@ -146,16 +146,6 @@ def circuit_10():
     return qml.expval(qml.Z(0))
 
 
-@pytest.mark.capture
-def test_error_with_program_capture():
-    """Test that an error is raised when program capture is enabled."""
-    import jax
-
-    jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.5)
-    with pytest.raises(NotImplementedError):
-        qml.transforms.clifford_t_decomposition.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, (), {})
-
-
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -177,13 +167,16 @@ class TestCliffordCompile:
         assert check_clifford_t(op) == res
         assert check_clifford_t(op, use_decomposition=True) == res
 
-    @pytest.mark.parametrize("circuit", [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5])
+    @pytest.mark.parametrize(
+        "circuit",
+        [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5],
+    )
     def test_decomposition(self, circuit):
         """Test decomposition for the Clifford transform."""
 
         old_tape = qml.tape.make_qscript(circuit)()
 
-        [new_tape], tape_fn = clifford_t_decomposition(old_tape, method="sk", max_depth=3)
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
@@ -270,7 +263,9 @@ class TestCliffordCompile:
             return qml.expval(qml.PauliZ(0))
 
         original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(clifford_t_decomposition(qfunc), dev)
+        transformed_qnode = qml.QNode(
+            clifford_t_decomposition(qfunc, max_depth=3, basis_length=10), dev
+        )
 
         res1, res2 = original_qnode(), transformed_qnode()
         assert qml.math.isclose(res1, res2, atol=1e-2)
@@ -304,7 +299,7 @@ class TestCliffordCompile:
 
         qnode_basic = qml.QNode(circuit, dev)
         qnode_transformed = clifford_t_decomposition(
-            qnode_basic, epsilon=epsilon, method="sk", max_depth=10, basis_set=("T", "T*", "H")
+            qnode_basic, epsilon=epsilon, max_depth=10, basis_set=("T", "T*", "H")
         )
         mat_exact = qml.matrix(qnode_basic, wire_order=[0, 1])()
         mat_approx = qml.matrix(qnode_transformed, wire_order=[0, 1])()
@@ -332,7 +327,7 @@ class TestCliffordCompile:
 
         old_tape = qml.tape.make_qscript(circuit)()
 
-        [new_tape], tape_fn = clifford_t_decomposition(old_tape, method="sk", max_depth=3)
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=3)
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
@@ -560,8 +555,7 @@ class TestCliffordCompile:
 
     # pylint: disable= import-outside-toplevel
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("method, kwargs", [("sk", {"max_depth": 3}), ("gridsynth", {})])
-    def test_clifford_decompose_interfaces(self, method, kwargs):
+    def test_clifford_decompose_interfaces(self):
         """Test that unwrap converts lists to lists and interface variables to numpy."""
 
         dev = qml.device("default.qubit")
@@ -574,7 +568,9 @@ class TestCliffordCompile:
             return qml.expval(qml.PauliZ(1))
 
         original_qnode = qml.QNode(circuit, dev)
-        transfmd_qnode = qml.QNode(clifford_t_decomposition(circuit, method=method, **kwargs), dev)
+        transfmd_qnode = qml.QNode(
+            clifford_t_decomposition(circuit, max_depth=3, basis_length=10), dev
+        )
 
         import jax
         import torch

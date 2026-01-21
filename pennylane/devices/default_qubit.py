@@ -133,7 +133,6 @@ _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
     "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
-    "IQP": lambda op: len(op.wires) < 6,
     "Snapshot": lambda _: True,
     "Allocate": lambda _: True,
     "Deallocate": lambda _: True,

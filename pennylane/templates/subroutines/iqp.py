@@ -93,8 +93,7 @@ class IQP(Operation):
     ):  # pylint: disable=too-many-arguments
         if len(pattern) != len(weights):
             raise ValueError(
-                "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
-                f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
+                f"Number of gates and number of parameters for an Instantaneous Quantum Polynomial circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
             )
 
         if num_wires == 0:

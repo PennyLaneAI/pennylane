@@ -284,9 +284,7 @@ def rs_decomposition(
 
         # If QJIT is active, use the compressed normal form.
         if not is_qjit:
-            unwrapped_angle = qml.math.unwrap(angle)
-            decomposed_gates, g_phase, phase = eval_ross_algorithm(unwrapped_angle)
-            g_phase = qml.math.array(g_phase, like=angle)
+            decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
         else:
             if not is_jax:
                 raise ImportError(
