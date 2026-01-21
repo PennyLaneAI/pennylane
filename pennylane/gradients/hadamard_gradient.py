@@ -15,6 +15,7 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
 from itertools import islice
 from typing import Literal
@@ -24,7 +25,7 @@ import numpy as np
 from pennylane import math, ops
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
 from pennylane.ops import Sum
@@ -116,7 +117,7 @@ def hadamard_grad(
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned. Note that the indices are with respect to
             the list of trainable parameters.
-        aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests.
+        aux_wire (pennylane.wires.Wires or None): Auxiliary wire to be used for the Hadamard tests.
             If ``None`` (the default) and ``mode`` is "standard" or "reversed", a suitable wire
             is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
@@ -441,6 +442,15 @@ def hadamard_grad(
 
     # Validate or get default for aux_wire
     # unless using direct or reversed-direct modes
+
+    if mode in ["standard", "reversed"] and aux_wire is None:
+        warnings.warn(
+            """
+            Providing a value of None to aux_wire in reversed or standard mode has been deprecated and will 
+            no longer be supported in v0.46. An aux_wire will no longer be automatically assigned.
+            """,
+            PennyLaneDeprecationWarning,
+        )
 
     aux_wire = (
         _get_aux_wire(aux_wire, tape, device_wires)

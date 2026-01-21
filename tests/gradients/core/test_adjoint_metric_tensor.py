@@ -557,10 +557,10 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt_fn = qml.adjoint_metric_tensor(circuit)
-            argnums = list(range(len(params)))
-            mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
+        mt_fn = qml.adjoint_metric_tensor(circuit)
+        argnums = list(range(len(params)))
+
+        mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
         if isinstance(mt_jac, tuple):
             if not isinstance(expected, tuple) and len(mt_jac) == 1:
