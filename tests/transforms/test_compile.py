@@ -624,7 +624,7 @@ class TestCompileInterfaces:
             qml.RX(2 * x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.QubitUnitary(qml.RX.compute_matrix(x), wires=1)
-            qml.QubitUnitary(qml.RZ.compute_matrix(x + 1), wires=1)
+            qml.QubitUnitary(qml.RY.compute_matrix(x + 1), wires=1)
             return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
 
         original_qnode = qml.QNode(test_qfunc, dev, diff_method=diff_method)
