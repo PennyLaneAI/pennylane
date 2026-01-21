@@ -3,7 +3,9 @@ import cvxpy as cp
 from functools import partial
 import jax.numpy as jnp
 import jax
+
 jax.config.update("jax_enable_x64", True)
+
 
 def gaussian_kernel(sigma: float, x: jnp.ndarray, y: jnp.ndarray) -> float:
     """Calculates the value for the gaussian kernel between two vectors x, y
@@ -16,11 +18,25 @@ def gaussian_kernel(sigma: float, x: jnp.ndarray, y: jnp.ndarray) -> float:
     Returns:
         float: Result value of the gaussian kernel
     """
-    return jnp.exp(-((x-y)**2).sum()/2/sigma**2)
+    return jnp.exp(-((x - y) ** 2).sum() / 2 / sigma**2)
 
-def loss_estimate_iqp(params: jnp.ndarray, iqp_circuit: IqpSimulator, ground_truth: jnp.ndarray, visible_ops: jnp.ndarray,
-                      all_ops: jnp.ndarray, n_samples: int, key: Array, init_state: list = None, init_coefs: list = None, indep_estimates: bool = False, sqrt_loss: bool = False,
-                      return_expvals: bool = False, max_batch_ops: int = None, max_batch_samples: int = None) -> float:
+
+def loss_estimate_iqp(
+    params: jnp.ndarray,
+    iqp_circuit: IqpSimulator,
+    ground_truth: jnp.ndarray,
+    visible_ops: jnp.ndarray,
+    all_ops: jnp.ndarray,
+    n_samples: int,
+    key: Array,
+    init_state: list = None,
+    init_coefs: list = None,
+    indep_estimates: bool = False,
+    sqrt_loss: bool = False,
+    return_expvals: bool = False,
+    max_batch_ops: int = None,
+    max_batch_samples: int = None,
+) -> float:
     """Estimates the MMD Loss of an IQP circuit with respect to a ground truth distribution.
 
     Args:
@@ -44,19 +60,32 @@ def loss_estimate_iqp(params: jnp.ndarray, iqp_circuit: IqpSimulator, ground_tru
     Returns:
         float: The value of the loss.
     """
-    tr_iqp_samples = iqp_circuit.op_expval(params, all_ops, n_samples, key, init_state, init_coefs, indep_estimates, return_samples=True,
-                                           max_batch_ops=max_batch_ops, max_batch_samples=max_batch_samples)
-    correction = jnp.mean(tr_iqp_samples**2, axis=-1)/n_samples
+    tr_iqp_samples = iqp_circuit.op_expval(
+        params,
+        all_ops,
+        n_samples,
+        key,
+        init_state,
+        init_coefs,
+        indep_estimates,
+        return_samples=True,
+        max_batch_ops=max_batch_ops,
+        max_batch_samples=max_batch_samples,
+    )
+    correction = jnp.mean(tr_iqp_samples**2, axis=-1) / n_samples
     tr_iqp = jnp.mean(tr_iqp_samples, axis=-1)
-    tr_train = jnp.mean(1-2*((ground_truth @ visible_ops.T) % 2), axis=0)
+    tr_train = jnp.mean(1 - 2 * ((ground_truth @ visible_ops.T) % 2), axis=0)
     m = len(ground_truth)
 
     if iqp_circuit.bitflip:
-        res = tr_iqp*tr_iqp - 2*tr_iqp*tr_train + (tr_train*tr_train*m-1)/(m-1)
+        res = tr_iqp * tr_iqp - 2 * tr_iqp * tr_train + (tr_train * tr_train * m - 1) / (m - 1)
     else:
         # add correction to make the first term unbiased
-        res = (tr_iqp*tr_iqp-correction)*n_samples/(n_samples-1) - \
-            2*tr_iqp*tr_train + (tr_train*tr_train*m-1)/(m-1)
+        res = (
+            (tr_iqp * tr_iqp - correction) * n_samples / (n_samples - 1)
+            - 2 * tr_iqp * tr_train
+            + (tr_train * tr_train * m - 1) / (m - 1)
+        )
 
     res = jnp.mean(res) if not return_expvals else res
     res = jnp.sqrt(jnp.abs(res)) if sqrt_loss else res
@@ -64,9 +93,24 @@ def loss_estimate_iqp(params: jnp.ndarray, iqp_circuit: IqpSimulator, ground_tru
     return res
 
 
-def mmd_loss_iqp(params: jnp.ndarray, iqp_circuit: IqpSimulator, ground_truth: jnp.ndarray, sigma: float or list, n_ops: int,
-                 n_samples: int, key: Array, init_state: list = None, init_coefs: list = None, wires: list = None, indep_estimates: bool = False, jit: bool = True,
-                 sqrt_loss: bool = False, return_expvals: bool = False, max_batch_ops: int = None, max_batch_samples: int = None) -> float:
+def mmd_loss_iqp(
+    params: jnp.ndarray,
+    iqp_circuit: IqpSimulator,
+    ground_truth: jnp.ndarray,
+    sigma: float or list,
+    n_ops: int,
+    n_samples: int,
+    key: Array,
+    init_state: list = None,
+    init_coefs: list = None,
+    wires: list = None,
+    indep_estimates: bool = False,
+    jit: bool = True,
+    sqrt_loss: bool = False,
+    return_expvals: bool = False,
+    max_batch_ops: int = None,
+    max_batch_samples: int = None,
+) -> float:
     """Returns an estimate of the (squared) MMD Loss of an IQP circuit with respect to a ground truth
      distribution. Requires a set of samples from the ground truth distribution. The estimate is unbiased in the sense
      that the expectation of the estimator wrt samples from the ground truth is the exact (squared) MMD loss. The kernel
@@ -115,10 +159,11 @@ def mmd_loss_iqp(params: jnp.ndarray, iqp_circuit: IqpSimulator, ground_truth: j
 
     losses = []
     for sigma in sigmas:
-        p_MMD = (1-jnp.exp(-1/2/sigma**2))/2
+        p_MMD = (1 - jnp.exp(-1 / 2 / sigma**2)) / 2
         key, subkey = jax.random.split(key, 2)
-        visible_ops = jnp.array(jax.random.binomial(
-            subkey, 1, p_MMD, shape=(n_ops, len(wires))), dtype='float64')
+        visible_ops = jnp.array(
+            jax.random.binomial(subkey, 1, p_MMD, shape=(n_ops, len(wires))), dtype="float64"
+        )
 
         all_ops = []
         i = 0
@@ -128,29 +173,66 @@ def mmd_loss_iqp(params: jnp.ndarray, iqp_circuit: IqpSimulator, ground_truth: j
                 i += 1
             else:
                 all_ops.append(jnp.zeros(n_ops))
-        all_ops = jnp.array(all_ops, dtype='float64').T
+        all_ops = jnp.array(all_ops, dtype="float64").T
 
         if iqp_circuit.sparse:
             loss = loss_estimate_iqp
         else:
             if jit:
-                loss = jax.jit(loss_estimate_iqp, static_argnames=[
-                               "iqp_circuit", "n_samples", "indep_estimates", "sqrt_loss", "return_expvals", "max_batch_ops", "max_batch_samples"])
+                loss = jax.jit(
+                    loss_estimate_iqp,
+                    static_argnames=[
+                        "iqp_circuit",
+                        "n_samples",
+                        "indep_estimates",
+                        "sqrt_loss",
+                        "return_expvals",
+                        "max_batch_ops",
+                        "max_batch_samples",
+                    ],
+                )
             else:
                 loss = loss_estimate_iqp
 
-        losses.append(loss(params, iqp_circuit, ground_truth, visible_ops, all_ops, n_samples, key, init_state, init_coefs, indep_estimates,
-                      sqrt_loss, return_expvals=return_expvals, max_batch_ops=max_batch_ops, max_batch_samples=max_batch_samples))
+        losses.append(
+            loss(
+                params,
+                iqp_circuit,
+                ground_truth,
+                visible_ops,
+                all_ops,
+                n_samples,
+                key,
+                init_state,
+                init_coefs,
+                indep_estimates,
+                sqrt_loss,
+                return_expvals=return_expvals,
+                max_batch_ops=max_batch_ops,
+                max_batch_samples=max_batch_samples,
+            )
+        )
 
     if return_expvals:
         return losses
     else:
-        return sum(losses)/len(losses)
+        return sum(losses) / len(losses)
 
 
-def exp_kgel_iqp(iqp_circuit: IqpSimulator, params: jnp.ndarray, witnesses: jnp.ndarray, sigma: float, n_ops: int,
-                 n_samples: int, key: Array, init_coefs: list = None, wires: list = None, indep_estimates=False,
-                 max_batch_ops: int = None, max_batch_samples: int = None) -> jnp.ndarray:
+def exp_kgel_iqp(
+    iqp_circuit: IqpSimulator,
+    params: jnp.ndarray,
+    witnesses: jnp.ndarray,
+    sigma: float,
+    n_ops: int,
+    n_samples: int,
+    key: Array,
+    init_coefs: list = None,
+    wires: list = None,
+    indep_estimates=False,
+    max_batch_ops: int = None,
+    max_batch_samples: int = None,
+) -> jnp.ndarray:
     """Calculates the right hand side of the kernel generalized empirical likelihood  (KGEL)
     (see equation 6 in https://arxiv.org/pdf/2306.09780).
 
@@ -176,7 +258,7 @@ def exp_kgel_iqp(iqp_circuit: IqpSimulator, params: jnp.ndarray, witnesses: jnp.
     if wires is None:
         wires = jnp.array(range(iqp_circuit.n_qubits))
 
-    p_MMD = (1-jnp.exp(-1/2/sigma**2))/2
+    p_MMD = (1 - jnp.exp(-1 / 2 / sigma**2)) / 2
 
     # Calculating the indices where we have to add 0s to the ops matrix, depending on the arg wires.
     qubs = jnp.arange(iqp_circuit.n_qubits)
@@ -184,26 +266,48 @@ def exp_kgel_iqp(iqp_circuit: IqpSimulator, params: jnp.ndarray, witnesses: jnp.
     idx = []
     z, f = -1, 0
     for q in qubs0:
-        f += q-z-1
+        f += q - z - 1
         idx.append(f)
         z = q
     idx = jnp.array(idx, dtype=int)
 
     key, subkey = jax.random.split(key)
-    rand_ops = jnp.array(jax.random.binomial(
-        subkey, 1, p_MMD, shape=(n_ops, len(wires))), dtype='float32')
+    rand_ops = jnp.array(
+        jax.random.binomial(subkey, 1, p_MMD, shape=(n_ops, len(wires))), dtype="float32"
+    )
     ops = jnp.insert(rand_ops, idx, 0, axis=1)
 
     key, subkey = jax.random.split(key)
-    tr_iqp = iqp_circuit.op_expval(params, ops, n_samples, subkey, init_coefs, indep_estimates,
-                                   max_batch_ops=max_batch_ops, max_batch_samples=max_batch_samples)[0]
+    tr_iqp = iqp_circuit.op_expval(
+        params,
+        ops,
+        n_samples,
+        subkey,
+        init_coefs,
+        indep_estimates,
+        max_batch_ops=max_batch_ops,
+        max_batch_samples=max_batch_samples,
+    )[0]
     coefs = 1 - 2 * ((witnesses @ ops.T) % 2)
     return jnp.mean(tr_iqp * coefs, axis=1)
 
 
-def kgel_opt_iqp(iqp_circuit: IqpSimulator, params: jnp.ndarray, witnesses: jnp.ndarray, ground_truth: jnp.ndarray,
-                 sigma: float, n_ops: int, n_samples: int, key: Array, init_coefs: list = None, verbose: bool = True,
-                 wires: list = None, indep_estimates=False, max_batch_ops: int = None, max_batch_samples: int = None) -> list:
+def kgel_opt_iqp(
+    iqp_circuit: IqpSimulator,
+    params: jnp.ndarray,
+    witnesses: jnp.ndarray,
+    ground_truth: jnp.ndarray,
+    sigma: float,
+    n_ops: int,
+    n_samples: int,
+    key: Array,
+    init_coefs: list = None,
+    verbose: bool = True,
+    wires: list = None,
+    indep_estimates=False,
+    max_batch_ops: int = None,
+    max_batch_samples: int = None,
+) -> list:
     """Calculates the right hand side of the kernel generalized empirical likelihood  (KGEL)
     (see equation 6 in https://arxiv.org/pdf/2306.09780). Uses cvxpy to solve the convex optimization problem.
     May require large values of n_ops and n_samples to arrive at stable estimates. Note that unlike the MMD loss,
@@ -238,18 +342,31 @@ def kgel_opt_iqp(iqp_circuit: IqpSimulator, params: jnp.ndarray, witnesses: jnp.
 
     # Construct the problem.
     pi = cp.Variable(len(ground_truth))
-    uniform = 1/len(ground_truth)*jnp.ones(shape=(len(ground_truth),))
+    uniform = 1 / len(ground_truth) * jnp.ones(shape=(len(ground_truth),))
 
     objective = cp.Minimize(cp.sum(cp.rel_entr(pi, uniform)))
 
     test_kernels = jnp.array(
-        [list(map(partial(gaussian_kernel, sigma, s), witnesses)) for s in ground_truth])
-    constraints = pi @ test_kernels - exp_kgel_iqp(iqp_circuit, params, witnesses, sigma, n_ops, n_samples, key, init_coefs,
-                                                   wires=wires, indep_estimates=indep_estimates,
-                                                   max_batch_ops=max_batch_ops, max_batch_samples=max_batch_samples)
+        [list(map(partial(gaussian_kernel, sigma, s), witnesses)) for s in ground_truth]
+    )
+    constraints = pi @ test_kernels - exp_kgel_iqp(
+        iqp_circuit,
+        params,
+        witnesses,
+        sigma,
+        n_ops,
+        n_samples,
+        key,
+        init_coefs,
+        wires=wires,
+        indep_estimates=indep_estimates,
+        max_batch_ops=max_batch_ops,
+        max_batch_samples=max_batch_samples,
+    )
 
-    prob = cp.Problem(objective, [
-                      c == 0 for c in constraints] + [cp.sum(pi) == 1] + [p >= 0 for p in pi])
+    prob = cp.Problem(
+        objective, [c == 0 for c in constraints] + [cp.sum(pi) == 1] + [p >= 0 for p in pi]
+    )
     # The optimal objective is returned by prob.solve().
     result = prob.solve(verbose=verbose)
 

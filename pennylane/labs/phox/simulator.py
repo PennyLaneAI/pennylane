@@ -2,8 +2,11 @@ import jax
 import jax.numpy as jnp
 from numpy.typing import ArrayLike
 
+
 class IqpSimulator:
-    def __init__(self, generators: ArrayLike, trainable: list[list[int]], fixed: list[list[int]] = None):
+    def __init__(
+        self, generators: ArrayLike, trainable: list[list[int]], fixed: list[list[int]] = None
+    ):
 
         self.generators = generators
         self.trainable = trainable
@@ -37,8 +40,9 @@ class IqpSimulator:
 
                 bitflips.append(generator)
 
-
-    def expval(self, params: ArrayLike, ops: list[list[str]], n_samples: int, init_state: ArrayLike = None):
+    def expval(
+        self, params: ArrayLike, ops: list[list[str]], n_samples: int, init_state: ArrayLike = None
+    ):
         """Compute expval of a batch of Pauli Z operators
 
         ops - A
@@ -67,7 +71,9 @@ class IqpSimulator:
         std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
         return jnp.mean(expvals, axis=1), std_err
 
-    def _expval_init_state(self, params: ArrayLike, ops: ArrayLike, n_samples: int, init_state: ArrayLike):
+    def _expval_init_state(
+        self, params: ArrayLike, ops: ArrayLike, n_samples: int, init_state: ArrayLike
+    ):
         """Compute expval of a batch of Pauli Z operators
 
         ops - A
@@ -89,7 +95,7 @@ class IqpSimulator:
         X, P = init_state
         P = P[:, jnp.newaxis]
 
-        F = jnp.broadcast_to(P, (P.shape[0], n_samples)) * ((-1)**(X @ samples.T))
+        F = jnp.broadcast_to(P, (P.shape[0], n_samples)) * ((-1) ** (X @ samples.T))
 
         H1 = ((-1) ** (ops @ X.T)) @ F
         col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
@@ -101,8 +107,11 @@ class IqpSimulator:
         std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
         return jnp.mean(expvals, axis=1), std_err
 
+
 class BitflipSimulator:
-    def __init__(self, generators: ArrayLike, trainable: list[list[int]], fixed: list[list[int]] = None):
+    def __init__(
+        self, generators: ArrayLike, trainable: list[list[int]], fixed: list[list[int]] = None
+    ):
 
         self.generators = generators
         self.trainable = trainable
@@ -124,6 +133,7 @@ class BitflipSimulator:
         X = probs * indicator
 
         return jnp.prod(jnp.where(X == 0, 1.0, X), axis=1), jnp.zeros(ops.shape[0])
+
 
 def _phase(pauli: str, qubit: int) -> complex:
 

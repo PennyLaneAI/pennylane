@@ -2,13 +2,14 @@ import jax
 import jax.numpy as jnp
 from jax.typing import ArrayLike
 
+
 def iqp_expval(
     generators: ArrayLike,
     params: ArrayLike,
     ops: ArrayLike,
     n_samples: int,
     key: ArrayLike,
-    init_state: tuple[ArrayLike, ArrayLike] | None = None
+    init_state: tuple[ArrayLike, ArrayLike] | None = None,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """
     Compute expectation value of a batch of Pauli Z operators for an IQP circuit.
@@ -37,10 +38,10 @@ def iqp_expval(
     # IQP Math
     # B = (-1)^(Z . G^T)
     B = (-1) ** (samples @ generators.T)
-    
+
     # C = 1 - (-1)^(A . G^T)
     C = 1 - ((-1) ** (ops @ generators.T))
-    
+
     # E = C . diag(Theta) . B^T
     E = C @ jnp.diag(params) @ B.T
 
@@ -56,22 +57,22 @@ def _iqp_expval_init_state(
     ops: ArrayLike,
     n_samples: int,
     key: ArrayLike,
-    init_state: tuple[ArrayLike, ArrayLike]
+    init_state: tuple[ArrayLike, ArrayLike],
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Helper function for IQP expval with a specific initial state."""
     n_qubits = generators.shape[1]
-    
+
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
 
     B = (-1) ** (samples @ generators.T)
     C = 1 - ((-1) ** (ops @ generators.T))
     E = C @ jnp.diag(params) @ B.T
-    
+
     X, P = init_state
     P = P[:, jnp.newaxis]
 
     # Calculate F factor based on initial state
-    F = jnp.broadcast_to(P, (P.shape[0], n_samples)) * ((-1)**(X @ samples.T))
+    F = jnp.broadcast_to(P, (P.shape[0], n_samples)) * ((-1) ** (X @ samples.T))
 
     H1 = ((-1) ** (ops @ X.T)) @ F
     col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
@@ -85,13 +86,11 @@ def _iqp_expval_init_state(
 
 
 def bitflip_expval(
-    generators: ArrayLike,
-    params: ArrayLike,
-    ops: ArrayLike
+    generators: ArrayLike, params: ArrayLike, ops: ArrayLike
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """
     Compute expectation value for the Bitflip noise model.
-    
+
     Args:
         generators (G): Binary matrix of shape (n_generators, n_qubits).
         params (Theta): Error probabilities/parameters.
@@ -101,24 +100,18 @@ def bitflip_expval(
         tuple: (Expectation values, Zero array for std_err)
     """
     probs = jnp.cos(2 * params)
-    
+
     # Indicator = (A . G^T) % 2
     indicator = (ops @ generators.T) % 2
     X = probs * indicator
 
     # Use jnp.where to replace 0s with 1.0s before product to avoid zeroing out
     result = jnp.prod(jnp.where(X == 0, 1.0, X), axis=1)
-    
+
     return result, jnp.zeros(ops.shape[0])
 
-def batched_iqp_expval(
-    generators, 
-    params, 
-    ops, 
-    n_samples, 
-    key, 
-    batch_size: int = 1000
-):
+
+def batched_iqp_expval(generators, params, ops, n_samples, key, batch_size: int = 1000):
     """
     Computes IQP expectation values in batches to save memory.
     """
@@ -128,11 +121,9 @@ def batched_iqp_expval(
 
     for i in range(0, n_ops, batch_size):
         ops_chunk = ops[i : i + batch_size]
-        
-        chunk_mean, chunk_std = iqp_expval(
-            generators, params, ops_chunk, n_samples, key
-        )
-        
+
+        chunk_mean, chunk_std = iqp_expval(generators, params, ops_chunk, n_samples, key)
+
         results_mean.append(chunk_mean)
         results_std.append(chunk_std)
 
