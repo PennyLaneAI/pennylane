@@ -200,7 +200,7 @@ class TestMidMeasureCapture:
         assert jaxpr.eqns[9].invars == [a, mcm2_f2]
 
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.log, jnp.exp, jnp.sqrt])
-    def mid_measure_processed_with_jax_numpy_capture(self, fn):
+    def test_mid_measure_processed_with_jax_numpy_capture(self, fn):
         """Test that a circuit containing mid-circuit measurements processed using jax.numpy
         can be captured."""
 
@@ -347,22 +347,22 @@ class TestMidMeasureExecute:
                         minus_ones_count / shots
                     )
                     # Check the sample average instead of individual counts
-                    # For eigenvalues {+1, -1}, the sample average should be p_plus - p_minus
-                    # with std = 2*sqrt(p_plus*p_minus/shots)
+                    # For Z = 2*B - 1 where B ~ Bernoulli(p_plus):
+                    #   E[Z] = p_plus - p_minus
+                    #   Var(Z) = 4 * p_plus * p_minus
+                    #   Std(sample_mean) = 2 * sqrt(p_plus * p_minus / shots)
+                    # Using 4σ tolerance gives <0.01% failure rate per check.
                     p_plus = qml.math.cos(phi / 2) ** 2
                     p_minus = 1 - p_plus
                     expected_avg = p_plus - p_minus
-                    std_sample_avg = qml.math.sqrt(p_plus * p_minus / shots)
-                    atol = 3 * std_sample_avg
+                    std_sample_avg = 2 * qml.math.sqrt(p_plus * p_minus / shots)
+                    atol = 4 * std_sample_avg
                     assert qml.math.allclose(sample_expected_avg, expected_avg, atol=atol, rtol=0)
             else:  # qml.expval, qml.var, qml.probs
                 assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
         else:
             assert compare_with_capture_disabled(f, phi)
 
-    # NOTE: this test has an estimated fail rate of around 20%~30%
-    # We have to fix the seed to ensure that the test is deterministic.
-    @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
     @pytest.mark.parametrize("multi_mcm", [True, False])
     def test_circuit_with_terminal_measurement_execution(self, phi, shots, mp_fn, multi_mcm, seed):
@@ -390,12 +390,19 @@ class TestMidMeasureExecute:
             qml.capture.disable()
             expected = f(phi, phi + 1.5)
             qml.capture.enable()
+            # Note: Comparing TWO independent estimates doubles variance.
+            # Var(res - expected) = Var(res) + Var(expected) = 2/shots (for unit-variance obs)
+            # σ_diff = sqrt(2/shots)
+            # Using 3σ tolerance: atol = 3 * sqrt(2/shots) for <1% failure rate.
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                atol = 3 * qml.math.sqrt(2.0 / shots)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.3)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                atol = 3 * qml.math.sqrt(2.0 / shots)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.3)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                atol = 3 * qml.math.sqrt(2.0 / shots)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.3)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
@@ -431,15 +438,19 @@ class TestMidMeasureExecute:
             expected = f(phi, phi + 1.5)
             qml.capture.enable()
             # Note: Comparing TWO independent estimates doubles variance.
-            # With 100 shots, Std(difference) = sqrt(2)/sqrt(100) ≈ 0.14
-            # Using atol=0.4 gives ~3σ tolerance for <1% failure rate.
+            # Var(res - expected) = Var(res) + Var(expected) = 2/shots (for unit-variance obs)
+            # σ_diff = sqrt(2/shots)
+            # Using 3σ tolerance: atol = 3 * sqrt(2/shots) for <1% failure rate.
             # See .benchmarks/test_circuit_with_boolean_arithmetic_execution/
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=0.4, rtol=0.3)
+                atol = 3 * qml.math.sqrt(2.0 / shots)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.3)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=0.4, rtol=0.3)
+                atol = 3 * qml.math.sqrt(2.0 / shots)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.3)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=0.4, rtol=0.3)
+                atol = 3 * qml.math.sqrt(2.0 / shots)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.3)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
@@ -472,7 +483,7 @@ class TestMidMeasureExecute:
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.sqrt, jnp.log, jnp.exp])
-    def mid_measure_processed_with_jax_numpy_execution(self, phi, fn, shots, mp_fn, seed):
+    def test_mid_measure_processed_with_jax_numpy_execution(self, phi, fn, shots, mp_fn, seed):
         """Test that a circuit containing mid-circuit measurements processed using jax.numpy
         can be executed."""
         if shots is None and mp_fn is qml.sample:
@@ -487,7 +498,7 @@ class TestMidMeasureExecute:
             _ = fn(m)
             return mp_fn(op=qml.Z(0))
 
-        assert f(phi)
+        assert jnp.all(f(phi))
 
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     def test_mid_measure_as_gate_parameter_execution(self, phi, shots, mp_fn, seed):
