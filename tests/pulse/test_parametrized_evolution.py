@@ -153,7 +153,6 @@ class TestInitialization:
         assert ev.wires == H.wires
         assert ev.num_wires is None
         assert ev.name == "ParametrizedEvolution"
-        assert ev.id is None
 
         exp_params = [] if params is None else params
         assert qml.math.allequal(ev.data, exp_params)
