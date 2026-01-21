@@ -648,3 +648,7 @@ def binary_finite_reduced_row_echelon(binary_matrix):
             icol += 1
 
     return rref_mat.astype(int)
+
+
+def ceil_log2(n: int) -> int:
+    return int(np.ceil(np.log2(n)))
