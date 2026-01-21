@@ -430,12 +430,16 @@ class TestMidMeasureExecute:
             qml.capture.disable()
             expected = f(phi, phi + 1.5)
             qml.capture.enable()
+            # Note: Comparing TWO independent estimates doubles variance.
+            # With 100 shots, Std(difference) = sqrt(2)/sqrt(100) ≈ 0.14
+            # Using atol=0.4 gives ~3σ tolerance for <1% failure rate.
+            # See .benchmarks/test_circuit_with_boolean_arithmetic_execution/
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+                assert qml.math.allclose(res, expected, atol=0.4, rtol=0.3)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+                assert qml.math.allclose(res, expected, atol=0.4, rtol=0.3)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+                assert qml.math.allclose(res, expected, atol=0.4, rtol=0.3)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
