@@ -34,6 +34,8 @@ U_thadamard_01 = np.multiply(
 
 # TODO: Add tests for adding controls to `QutritUnitary` once `ControlledQutritUnitary` is implemented
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 class TestQutritUnitary:
     """Tests for the QutritUnitary class."""

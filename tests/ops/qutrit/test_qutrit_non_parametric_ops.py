@@ -23,6 +23,7 @@ from gate_data import TADD, TCLOCK, TH, TSHIFT, TSWAP
 import pennylane as qml
 from pennylane.wires import Wires
 
+pytest.mark.usefixtures("disable_graph_decomposition")
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.TShift, TSHIFT, None),
     (qml.TClock, TCLOCK, None),

@@ -21,6 +21,7 @@ from gate_data import GELL_MANN
 
 import pennylane as qml
 
+pytest.mark.usefixtures("disable_graph_decomposition")
 # pylint: disable=protected-access, unused-argument
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.

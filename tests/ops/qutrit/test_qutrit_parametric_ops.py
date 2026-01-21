@@ -28,6 +28,8 @@ from pennylane import numpy as npp
 from pennylane.ops.qutrit import validate_subspace
 from pennylane.wires import Wires
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 PARAMETRIZED_OPERATIONS = [
     qml.TRX(0.123, wires=0, subspace=(0, 1)),
     qml.TRX(0.123, wires=0, subspace=(0, 2)),

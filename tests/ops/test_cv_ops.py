@@ -27,6 +27,8 @@ s_vals = np.linspace(-3, 3, 13)
 phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
 mags = np.linspace(0.0, 1.0, 7)
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 class TestCV:
     """Tests the continuous variable based operations."""

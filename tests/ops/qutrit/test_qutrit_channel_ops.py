@@ -25,6 +25,8 @@ from pennylane.ops.qutrit import channel
 
 QUDIT_DIM = 3
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 class TestQutritDepolarizingChannel:
     """Tests for the qutrit quantum channel QutritDepolarizingChannel"""
