@@ -6,8 +6,8 @@
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
 
-* Added a `qml.decomposition.add_decomps_local` context manager that allows one to add decomposition rules 
-  to an operator that are only effective within the context.
+* Added a `qml.decomposition.local_decomp_context` context
+  manager that allows one to add decomposition rules to an operator that are only effective within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
 
 <h3>Improvements 🛠</h3>
@@ -138,6 +138,10 @@
     - `qml.estimator.DoubleFactorization` in favor of `qml.resources.DoubleFactorization`
 
 <h3>Deprecations 👋</h3>
+
+* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
+  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
 
 <h3>Internal changes ⚙️</h3>
 
