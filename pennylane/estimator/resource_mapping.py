@@ -22,6 +22,7 @@ import numpy as np
 import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
+import pennylane.math as pl_math
 import pennylane.templates as qtemps
 from pennylane.operation import Operation
 from pennylane.ops.functions import simplify
@@ -294,7 +295,7 @@ def _(op: qtemps.BBQRAM):
     return re_temps.BBQRAM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        num_bit_flips=math.sum(bitstrings),
+        num_bit_flips=pl_math.sum(bitstrings),
         num_wires=len(op.wires),
         control_wires=wire_manager.control_wires,
         target_wires=wire_manager.target_wires,
