@@ -228,7 +228,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         if isinstance(data[0], str):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
-        m = data.shape[0]
+        m = data.shape[1]
         n_k = len(control_wires)
         if (1 << n_k) != data.shape[0]:
             raise ValueError("data.shape[0] must be 2^(len(control_wires)).")
@@ -506,7 +506,7 @@ class HybridQRAM(Operation):
         if isinstance(data[0], str):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
-        m = data.shape[0]
+        m = data.shape[1]
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -969,7 +969,7 @@ class SelectOnlyQRAM(Operation):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
         target_wires = Wires(target_wires)
-        m = data.shape[0]
+        m = data.shape[1]
         if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
