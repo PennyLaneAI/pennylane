@@ -572,9 +572,7 @@ class PauliError(Channel):
 
     num_params = 1
 
-    resource_keys = {
-        "operators",
-    }
+    resource_keys = {"operators"}
 
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -602,6 +600,10 @@ class PauliError(Channel):
             warnings.warn(
                 f"The resulting Kronecker matrices will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory for each matrix."
             )
+
+    @property
+    def resource_params(self) -> dict:
+        return {"operators": self.hyperparameters["operators"]}
 
     @classmethod
     def _unflatten(cls, data: Iterable[Any], metadata: Hashable):

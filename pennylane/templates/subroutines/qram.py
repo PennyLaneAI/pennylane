@@ -13,8 +13,8 @@
 # limitations under the License.
 """Contains three different implementations of QRAM: BBQRAM, HybridQRAM, and SelectOnlyQRAM."""
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from pennylane import math
 from pennylane.decomposition import (
@@ -383,7 +383,7 @@ class HybridQRAM(Operation):
 
     With ``HybridQRAM``, an integer :math:`k` with :math:`0 ≤ k < n` must be chosen, where
     :math:`N = 2^n` is the size of the classical data register being queried. The first :math:`k`
-    address bits are used in a procedure akin to what's involed in :class:`~.SelectOnlyQRAM`. The
+    address bits are used in a procedure akin to what's involved in :class:`~.SelectOnlyQRAM`. The
     remaining :math:`n-k` bits are used in a procedure akin to what's in :class:`~.BBQRAM`; instead
     of a full-depth tree of size :math:`N` leaves, ``HybridQRAM`` builds a smaller tree of depth
     :math:`n-k` (:math:`2^{n-k}` leaves) and reuses it :math:`2^k` times.
