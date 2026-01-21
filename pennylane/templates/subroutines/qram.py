@@ -220,11 +220,6 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     ):  # pylint: disable=too-many-arguments
         if not data:
             raise ValueError("'data' cannot be empty.")
-        m_set = {len(s) for s in data}
-        if len(m_set) != 1:
-            raise ValueError("All bitstrings must have equal length.")
-        m = next(iter(m_set))
-        data = list(data)
         control_wires = Wires(control_wires)
 
         if isinstance(data, (list, tuple)):
@@ -233,6 +228,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         if isinstance(data[0], str):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
+        m = data.shape[0]
         n_k = len(control_wires)
         if (1 << n_k) != data.shape[0]:
             raise ValueError("data.shape[0] must be 2^(len(control_wires)).")
@@ -503,17 +499,14 @@ class HybridQRAM(Operation):
 
         if not data:
             raise ValueError("'data' cannot be empty.")
-        m_set = {len(s) for s in data}
-        if len(m_set) != 1:
-            raise ValueError("All bitstrings must have equal length.")
-        m = next(iter(m_set))
-        data = list(data)
 
         if isinstance(data, (list, tuple)):
             data = math.array(data)
 
         if isinstance(data[0], str):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
+
+        m = data.shape[0]
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -968,11 +961,6 @@ class SelectOnlyQRAM(Operation):
     ):
         if not data:
             raise ValueError("'data' cannot be empty.")
-        m_set = {len(s) for s in data}
-        if len(m_set) != 1:
-            raise ValueError("All bitstrings must have equal length.")
-        m = next(iter(m_set))
-        data = list(data)
 
         if isinstance(data, (list, tuple)):
             data = math.array(data)
@@ -981,6 +969,7 @@ class SelectOnlyQRAM(Operation):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
 
         target_wires = Wires(target_wires)
+        m = data.shape[0]
         if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
