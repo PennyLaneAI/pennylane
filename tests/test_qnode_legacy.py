@@ -1327,16 +1327,24 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            UnsupportedOp(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+        with qml.decomposition.local_decomps():
 
-        x = pnp.array(0.5, requires_grad=True)
-        qml.grad(circuit)(x)
+            @qml.register_resources({qml.RX: 1})
+            def _decomp(data, wires):
+                qml.RX(3 * data, wires)
 
-        # check second derivative
-        assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
+            qml.add_decomps(UnsupportedOp, _decomp)
+
+            @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                UnsupportedOp(x, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            x = pnp.array(0.5, requires_grad=True)
+            qml.grad(circuit)(x)
+
+            # check second derivative
+            assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
