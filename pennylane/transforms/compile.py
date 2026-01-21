@@ -16,7 +16,7 @@ from collections.abc import Sequence
 from functools import partial
 
 import pennylane as qml
-from pennylane.ops import __all__ as all_ops
+from pennylane.decomposition import gate_sets
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import Transform, transform
@@ -188,7 +188,7 @@ def compile(
 
     with QueuingManager.stop_recording():
         if basis_set is None:
-            basis_set = all_ops
+            basis_set = gate_sets.ALL_OPS
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
@@ -199,6 +199,7 @@ def compile(
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
+            target_gates=basis_set,
             stopping_condition=stop_at,
             name="compile",
             error=qml.operation.DecompositionUndefinedError,

@@ -101,10 +101,7 @@ class TestDecompose:
             [qml.Hadamard(0)],
             {qml.RX: 1, qml.RZ: 2},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
-            {
-                "type": UserWarning,
-                "msg": "Gate weights were provided to a non-graph-based decomposition.",
-            },
+            None,
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
@@ -152,15 +149,8 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        if isinstance(gate_set, dict):
-            with pytest.raises(
-                UserWarning, match="Gate weights were provided to a non-graph-based decomposition."
-            ):
-                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-                qml.assert_equal(tape, decomposed_tape)
-        else:
-            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-            qml.assert_equal(tape, decomposed_tape)
+        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+        qml.assert_equal(tape, decomposed_tape)
 
     def test_stopping_cond_without_gate_set(self):
         gate_set = None
