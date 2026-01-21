@@ -355,8 +355,12 @@ class TestProperties:
         m1 = qml.measure("b")
         m2 = qml.measure(0)
         m3 = qml.measure(1)
-        m2.measurements[0]._id = m0.measurements[0].id  # pylint: disable=protected-access
-        m3.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
+        m2.measurements[0]._hyperparameters["meas_uid"] = m0.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]  # pylint: disable=protected-access
+        m3.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]  # pylint: disable=protected-access
 
         wire_map = {"a": 0, "b": 1}
 

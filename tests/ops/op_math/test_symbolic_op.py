@@ -44,15 +44,14 @@ class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-def test_intialization():
+def test_initialization():
     """Test initialization for a SymbolicOp"""
     base = Operator("a")
 
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
 
     assert op.base is base
     assert op.hyperparameters["base"] is base
-    assert op.id == "something"
     assert op.name == "Symbolic"
 
 
