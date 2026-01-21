@@ -188,8 +188,8 @@ class Subroutine:
             it cannot return terminal statistics.
         setup_inputs (Callable): An function that can run preprocessing on the inputs before hitting
             definition.  This can be used to make static arguments hashable for compatibility with program capture.
-        static_argnames (Set[str]): The name of arguments that are treated as static (trace- and compile-time constant).
-        wire_argnames (Set[str]): The name of arguments that represent wire registers.  While the users can
+        static_argnames (str | tuple[str]): The name of arguments that are treated as static (trace- and compile-time constant).
+        wire_argnames (str | tuple[str]): The name of arguments that represent wire registers.  While the users can
             be more permissive in what they provide to wire arguments, the definition should treat all wire
             arguments as 1D arrays.
 
@@ -233,7 +233,7 @@ class Subroutine:
 
         from functools import partial
 
-        @partial(Subroutine, wire_argnames={"register1", "register2"})
+        @partial(Subroutine, wire_argnames=("register1", "register2"))
         def MultiRegisterTemplate(register1, register2):
             for wire in register1:
                 qml.X(wire)
@@ -251,7 +251,7 @@ class Subroutine:
 
     .. code-block:: python
 
-        @partial(Subroutine, static_argnames={"pauli_word"})
+        @partial(Subroutine, static_argnames="pauli_word")
         def WithStaticArg(x, wires, pauli_word: str):
             qml.PauliRot(x, pauli_word, wires)
 
@@ -266,8 +266,8 @@ class Subroutine:
         def setup_inputs(x, wires, pauli_words):
             return (x, wires, tuple(pauli_words)), {}
 
-        @partial(Subroutine, static_argnames={"pauli_words"}, setup_inputs=setup_inputs)
-        def WithSetup(x, wires, pauli_words: tuple[str] | list[str]):
+        @partial(Subroutine, static_argnames="pauli_words", setup_inputs=setup_inputs)
+        def WithSetup(x, wires, pauli_words: Sequence[str]):
             for word in pauli_words:
                 qml.PauliRot(x, word, wires)
 
