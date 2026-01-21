@@ -21,7 +21,6 @@ jobs:
       branch: master
       upload_to_codecov: false
       run_lightened_ci: true
-      pytest_coverage_flags: '-v'
       skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
 
   merge-durations-files:
