@@ -14,26 +14,22 @@
 """
 Contains the abstractions for subroutines.
 """
-from collections.abc import Callable, Set
+from collections.abc import Callable
 from copy import deepcopy
 from functools import lru_cache, update_wrapper
+from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
 import numpy as np
 
-from pennylane import capture, queuing
+from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.operation import Operator
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    jax = None
-    has_jax = False
+has_jax = find_spec("jax") is not None
 
 
 def _default_setup_inputs(*args, **kwargs):
@@ -43,6 +39,8 @@ def _default_setup_inputs(*args, **kwargs):
 @lru_cache
 def _get_array_types():
     if has_jax:
+        import jax  # pylint: disable=import-outside-toplevel
+
         return (jax.numpy.ndarray, np.ndarray)
     return (np.ndarray,)
 
@@ -82,6 +80,9 @@ class SubroutineOp(Operator):
 
     _primitive = None
 
+    # TODO: determine behaviour under deepcopy
+    # Do we want to deep copy the function as well?
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         raise ValueError(
@@ -105,7 +106,14 @@ class SubroutineOp(Operator):
     @classmethod
     def _unflatten(cls, data, metadata):
         subroutine = metadata[0]
-        return subroutine.construct_op(**data[0], **dict(metadata[1]))
+        with queuing.AnnotatedQueue() as decomposition:
+            output = subroutine.definition(**data[0], **dict(metadata[1]))
+        bound_args = subroutine.signature.bind(**data[0], **dict(metadata[1]))
+        return SubroutineOp(subroutine, bound_args, decomposition.queue, output)
+
+    def __repr__(self):
+        inputs = ", ".join(f"{key}={value}" for key, value in self._bound_args.arguments.items())
+        return f"<{self.name}({inputs})>"
 
     def __init__(
         self,
@@ -130,6 +138,11 @@ class SubroutineOp(Operator):
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
         self.data = tuple(flatten(dynamic_args)[0])
+
+    @property
+    def bound_args(self) -> BoundArguments:
+        """The inputs to the Subroutine."""
+        return self._bound_args
 
     @property
     def output(self):
@@ -276,16 +289,23 @@ class Subroutine:
         self,
         definition: Callable[P, Any],
         setup_inputs: Callable[P, tuple[tuple, dict]] = _default_setup_inputs,
-        static_argnames: Set[str] = frozenset(),
-        wire_argnames: Set[str] = frozenset({"wires"}),
+        static_argnames: str | tuple[str, ...] = tuple(),
+        wire_argnames: str | tuple[str, ...] = ("wires",),
     ):
         self._definition = definition
         self._setup_inputs = setup_inputs
-        self._static_argnames = frozenset(static_argnames)
-        self._capture_subroutine = capture_subroutine(definition, static_argnames=static_argnames)
-        self._wire_argnames = frozenset(wire_argnames)
         self._signature = signature(definition)
         update_wrapper(self, definition)
+        if isinstance(static_argnames, str):
+            static_argnames = (static_argnames,)
+        if isinstance(wire_argnames, str):
+            wire_argnames = (wire_argnames,)
+        # need to use tuple for static argnames and wire argnames to preserve ordering
+        # otherwise things can get shuffled in SubroutineOp
+        self._static_argnames = tuple(static_argnames)
+        self._wire_argnames = tuple(wire_argnames)
+
+        self._capture_subroutine = capture_subroutine(definition, static_argnames=static_argnames)
 
     @property
     def name(self) -> str:
@@ -306,24 +326,24 @@ class Subroutine:
         return self._setup_inputs(*args, **kwargs)
 
     @property
-    def static_argnames(self) -> frozenset[str]:
+    def static_argnames(self) -> tuple[str, ...]:
         """The names of arguments that are compile time constant."""
         return self._static_argnames
 
     @property
-    def wire_argnames(self) -> frozenset[str]:
+    def wire_argnames(self) -> tuple[str, ...]:
         """The names for the arguments that represent a register of wires."""
         return self._wire_argnames
 
     @property
-    def dynamic_argnames(self) -> frozenset[str]:
+    def dynamic_argnames(self) -> tuple[str, ...]:
         """The names of the function arguments that are pytrees of numerical data. These are the arguments
         that are not static or wires."""
 
         def is_static(name):
             return name in self.static_argnames or name in self.wire_argnames
 
-        return frozenset(name for name in self._signature.parameters if not is_static(name))
+        return tuple(name for name in self._signature.parameters if not is_static(name))
 
     def __call__(self, *args, **kwargs):
         args, kwargs = self.setup_inputs(*args, **kwargs)
@@ -333,7 +353,11 @@ class Subroutine:
         for wire_argname in self.wire_argnames:
             register = bound_args.arguments[wire_argname]
             if capture.enabled():
-                if isinstance(register, int):
+                import jax  # pylint: disable=import-outside-toplevel
+
+                if isinstance(register, int) or (
+                    math.get_interface(register) == "jax" and register.shape == ()
+                ):
                     register = [register]
                 if len(register) > 0:
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
