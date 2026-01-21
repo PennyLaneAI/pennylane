@@ -273,14 +273,6 @@ enabled.
 Default behaviour with custom decompositions
 ********************************************
 
-.. warning::
-    The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
-    has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
-    your operators, use the :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform with the new
-    graph-based system enabled via :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`.
-    The details on how to define your decomposition rules using the graph decomposition system are described
-    in :ref:`the next section <custom_decomps_with_graph>`.
-
 For example, suppose we would like to implement the following QNode:
 
 .. code-block:: python
@@ -302,68 +294,32 @@ Now, let's swap out PennyLane's default decomposition of the ``CNOT`` gate into
 ``CZ`` and ``Hadamard``. We define the custom decompositions like so, and pass them 
 to a device:
 
-.. code-block:: python
+.. code-block:: python3
 
-    def custom_cnot(wires, **_):
-        return [
-            qml.Hadamard(wires=wires[1]),
-            qml.CZ(wires=[wires[0], wires[1]]),
-            qml.Hadamard(wires=wires[1])
-        ]
+    @qml.decomposition.register_resources({
+        qml.H: 2,
+        qml.CZ: 1
+    })
+    def _custom_cnot_decomposition(wires, **_):
+        qml.Hadamard(wires=wires[1])
+        qml.CZ(wires=[wires[0], wires[1]])
+        qml.Hadamard(wires=wires[1])
 
-    custom_decomps = {qml.CNOT: custom_cnot}
+    qml.decomposition.add_decomps(qml.CNOT, _custom_cnot_decomposition)
 
-    decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
-    decomp_qnode = qml.QNode(circuit, decomp_dev)
+    qml.decomposition.enable_graph()
 
-Note that custom decomposition functions should accept keyword arguments even when 
-it is not used.
+    decomp_dev = qml.device("default.qubit", wires=3)
+    qnode = qml.QNode(circuit, decomp_dev)
+    decomp_qnode = qml.transforms.decompose(qnode, gate_set={qml.CZ, qml.H})
 
-Now when we draw or run a QNode on this device, the gates will be expanded according 
+Now when we draw or run a QNode on this device, the gates will be expanded according
 to our specifications:
 
 >>> print(qml.draw(decomp_qnode, level="device")(weights))
 0: ──RX(0.40)────╭●──H───────╭Z──H─┤  <Z>
-1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤     
-2: ──RX(0.60)──H───────╰Z──H─╰●────┤     
-
-If the custom decomposition is only supposed to be used in a specific code context,
-a separate context manager :func:`~.pennylane.transforms.set_decomposition` can 
-be used.
-
-.. note::
-
-    Device-level custom decompositions **are not applied before other compilation 
-    passes (decorators on QNodes)**. For example, the following circuit has ``cancel_inverses`` 
-    applied to it, and the device was provided a decomposition for ``qml.CNOT``. 
-    The Hadamard gates applied around the ``qml.CNOT`` gate do not get cancelled 
-    with those introduced by the custom decomposition.
-
-    .. code-block:: python
-
-        def custom_cnot(wires, **_):
-            return [
-                qml.H(wires=wires[1]),
-                qml.CZ(wires=[wires[0], wires[1]]),
-                qml.H(wires=wires[1])
-            ]
-
-        dev = qml.device("default.qubit", custom_decomps={qml.CNOT: custom_cnot})
-
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
-        def circuit():
-            qml.H(1)
-            qml.CNOT([0, 1])
-            qml.H(1)
-            return qml.state()
-
-    >>> print(qml.draw(circuit, level="device")())
-    0: ───────╭●───────┤  State
-    1: ──H──H─╰Z──H──H─┤  State
-
-    To have better control over custom decompositions, consider using the graph 
-    decompositions system functionality outlined in the next section.
+1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤
+2: ──RX(0.60)──H───────╰Z──H─╰●────┤
 
 .. _custom_decomps_with_graph:
 

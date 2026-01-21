@@ -131,6 +131,8 @@ operations = {
     "GlobalPhase",
 }
 
+DEFAULT_MIXED_GATES = operations | {"Snapshot"} | channels
+
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by DefaultQubitMixed."""
@@ -146,8 +148,7 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
-    expected_set = operations | {"Snapshot"} | channels
-    return op.name in expected_set
+    return op.name in DEFAULT_MIXED_GATES
 
 
 @qml.transform
@@ -345,6 +346,7 @@ class DefaultMixed(Device):
         compile_pileline.add_transform(qml.defer_measurements, allow_postselect=False)
         compile_pileline.add_transform(
             decompose,
+            target_gates=DEFAULT_MIXED_GATES,
             stopping_condition=stopping_condition,
             name=self.name,
         )
