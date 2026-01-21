@@ -320,7 +320,10 @@ def _check_copy(op, skip_deepcopy):
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operaiton"
     if not skip_deepcopy:
-        assert_equal(copy.deepcopy(op), op)
+        try:
+            assert_equal(copy.deepcopy(op), op)
+        except AssertionError as e:
+            raise AssertionError("deep copied op must also be equal") from e
 
 
 # pylint: disable=import-outside-toplevel, protected-access

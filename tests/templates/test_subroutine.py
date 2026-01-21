@@ -141,10 +141,7 @@ class TestSubroutineOp:
 
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
-
-        # What do we want for the behaviour of deep copy? Do we want to copy
-        # the function as well?
-        qml.ops.functions.assert_valid(self.op1, skip_pickle=True, skip_deepcopy=True)
+        qml.ops.functions.assert_valid(self.op1, skip_pickle=True)
 
     def test_repr(self):
         """Test that SubroutineOp has a clean repr."""

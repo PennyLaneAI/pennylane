@@ -14,6 +14,7 @@
 """
 Contains the abstractions for subroutines.
 """
+import copy
 from collections.abc import Callable
 from copy import deepcopy
 from functools import lru_cache, update_wrapper
@@ -23,9 +24,9 @@ from typing import Any, ParamSpec
 
 import numpy as np
 
-from pennylane import capture, math, queuing
+from pennylane import capture, queuing
 from pennylane.capture import subroutine as capture_subroutine
-from pennylane.operation import Operator
+from pennylane.operation import Operation
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
@@ -66,7 +67,7 @@ def _setup_wires(wires):
     return (wires,)
 
 
-class SubroutineOp(Operator):
+class SubroutineOp(Operation):
     """An operator constructed from a :class:`~.Subroutine` together with its bound arguments.
     This class should not be created directly, but is the byproduct of calling a ``Subroutine``.
 
@@ -80,14 +81,18 @@ class SubroutineOp(Operator):
 
     _primitive = None
 
-    # TODO: determine behaviour under deepcopy
-    # Do we want to deep copy the function as well?
-
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         raise ValueError(
             "SubroutineOp's should never be directly captured. That should occur in Subroutine instead."
         )
+
+    def __deepcopy__(self, memo) -> "SubroutineOp":
+        bound_args = copy.deepcopy(self._bound_args, memo)
+        # create new decomp and output to keep inputs, decomp, and outputs consistent with each other
+        with queuing.AnnotatedQueue() as decomposition:
+            output = self.subroutine.definition(**bound_args.arguments)
+        return SubroutineOp(self.subroutine, bound_args, decomposition.queue, output)
 
     grad_method = None
 
@@ -119,7 +124,7 @@ class SubroutineOp(Operator):
         self,
         subroutine: "Subroutine",
         bound_args: BoundArguments,
-        decomposition: list[Operator],
+        decomposition: list[Operation],
         output: Any = None,
     ):
         self._subroutine = subroutine
@@ -129,7 +134,7 @@ class SubroutineOp(Operator):
 
         wires = []
         for wire_argname in self._subroutine.wire_argnames:
-            reg_wires = _setup_wires(self._bound_args.arguments[wire_argname])
+            reg_wires = self._bound_args.arguments[wire_argname]
             # allow same wires to exist in multiple registers
             reg_wires = [w for w in reg_wires if w not in wires]
             wires.extend(reg_wires)
@@ -351,14 +356,10 @@ class Subroutine:
         bound_args.apply_defaults()
 
         for wire_argname in self.wire_argnames:
-            register = bound_args.arguments[wire_argname]
+            register = _setup_wires(bound_args.arguments[wire_argname])
             if capture.enabled():
                 import jax  # pylint: disable=import-outside-toplevel
 
-                if isinstance(register, int) or (
-                    math.get_interface(register) == "jax" and register.shape == ()
-                ):
-                    register = [register]
                 if len(register) > 0:
                     bound_args.arguments[wire_argname] = jax.numpy.stack(register)
             else:
