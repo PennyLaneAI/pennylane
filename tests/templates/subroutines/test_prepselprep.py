@@ -276,35 +276,55 @@ class TestPrepSelPrep:
     def test_label(self, lcu):
         """Test the custom label method of PrepSelPrep."""
         op = qml.PrepSelPrep(lcu, control=0)
-        op_with_id = qml.PrepSelPrep(lcu, control=0, id="myID")
 
         # Default
         assert op.label() == "PrepSelPrep"
-        assert op_with_id.label() == 'PrepSelPrep("myID")'
 
         # decimals do not affect label
         assert op.label(decimals=3) == "PrepSelPrep"
-        assert op_with_id.label(decimals=3) == 'PrepSelPrep("myID")'
 
         # use different base label
         assert op.label(base_label="U(A)") == "U(A)"
-        assert op_with_id.label(base_label="U(A)") == 'U(A)("myID")'
 
         # use cache without matrices
         assert op.label(cache={}) == "PrepSelPrep"
-        assert op_with_id.label(cache={}) == 'PrepSelPrep("myID")'
 
         # use cache with empty matrices
         assert op.label(cache={"matrices": []}) == "PrepSelPrep(M0)"
-        assert op_with_id.label(cache={"matrices": []}) == 'PrepSelPrep(M0,"myID")'
 
         # use cache with non-empty matrices
         assert op.label(cache={"matrices": [0.1]}) == "PrepSelPrep(M1)"
-        assert op_with_id.label(cache={"matrices": [0.1, 0.6]}) == 'PrepSelPrep(M2,"myID")'
 
         # use cache with same matrix existing
         c = qml.math.array(op.coeffs)
         assert op.label(cache={"matrices": [0.1, c]}) == "PrepSelPrep(M1)"
+
+    @pytest.mark.usefixtures("ignore_id_deprecation")
+    @pytest.mark.parametrize("lcu", a_set_of_lcus)
+    def test_label_with_id(self, lcu):
+        """Test the custom label method of PrepSelPrep."""
+        op_with_id = qml.PrepSelPrep(lcu, control=0, id="myID")
+
+        # Default
+        assert op_with_id.label() == 'PrepSelPrep("myID")'
+
+        # decimals do not affect label
+        assert op_with_id.label(decimals=3) == 'PrepSelPrep("myID")'
+
+        # use different base label
+        assert op_with_id.label(base_label="U(A)") == 'U(A)("myID")'
+
+        # use cache without matrices
+        assert op_with_id.label(cache={}) == 'PrepSelPrep("myID")'
+
+        # use cache with empty matrices
+        assert op_with_id.label(cache={"matrices": []}) == 'PrepSelPrep(M0,"myID")'
+
+        # use cache with non-empty matrices
+        assert op_with_id.label(cache={"matrices": [0.1, 0.6]}) == 'PrepSelPrep(M2,"myID")'
+
+        # use cache with same matrix existing
+        c = qml.math.array(op_with_id.coeffs)
         assert op_with_id.label(cache={"matrices": [c, 0.1, 0.6]}) == 'PrepSelPrep(M0,"myID")'
 
     def test_resources(self):
