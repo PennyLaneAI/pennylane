@@ -136,6 +136,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
+  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
+
 <h3>Internal changes ⚙️</h3>
 
 * Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
