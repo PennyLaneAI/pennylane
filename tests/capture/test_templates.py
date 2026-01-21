@@ -68,7 +68,7 @@ unmodified_templates_cases = [
         {"features": jnp.array([1, 0]), "wires": [2, 3]},
         marks=pytest.mark.xfail(reason="arrays should never have been in the metadata [sc-104808]"),
     ),
-    (qml.BasisEmbedding, (6, [0, 5, 2], {})),
+    (qml.BasisEmbedding, (6, [0, 5, 2]), {}),
     (qml.BasisEmbedding, (jnp.array([1, 0, 1]),), {"wires": [0, 2, 3]}),
     (qml.IQPEmbedding, (jnp.array([2.3, 0.1]), [2, 0]), {}),
     (qml.IQPEmbedding, (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0]), {"pattern": [[2, 0], [1, 0]]}),
