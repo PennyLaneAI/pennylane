@@ -411,9 +411,7 @@ def _qcut_expand_fn(
     if max_depth > 0:
         tapes, func = decompose(tape)
         tape = func(tapes)
-        return _qcut_expand_fn(
-            tape, max_depth=max_depth - 1, auto_cutter=auto_cutter
-        )
+        return _qcut_expand_fn(tape, max_depth=max_depth - 1, auto_cutter=auto_cutter)
 
     if not (auto_cutter is True or callable(auto_cutter)):
         raise ValueError(

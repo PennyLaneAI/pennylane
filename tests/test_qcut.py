@@ -34,7 +34,6 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qcut
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.queuing import WrappedObj
 from pennylane.transforms import decompose
 from pennylane.wires import Wires

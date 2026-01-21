@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 
-
 # pylint: disable=expression-not-assigned
 
 

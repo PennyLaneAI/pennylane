@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import CircuitGraph
-from pennylane.exceptions import QuantumFunctionError, PennyLaneDeprecationWarning
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -903,7 +903,9 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tapes, func = decompose(tape, stopping_condition=lambda obj: getattr(obj, "name", None) in ["Rot"])
+        new_tapes, func = decompose(
+            tape, stopping_condition=lambda obj: getattr(obj, "name", None) in ["Rot"]
+        )
         new_tape = func(new_tapes)
         assert len(new_tape.operations) == 4
         assert "Rot" in [i.name for i in new_tape.operations]
