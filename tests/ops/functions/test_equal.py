@@ -1413,19 +1413,17 @@ class TestPauliErrorEqual:
 
     ARGS_ONE = [
         ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
-        ["XY", 0.1, (0, 1), "one"],
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1)],
+        ["XY", 0.1, (0, 1)],
     ]
     ARGS_TWO = [
         ["XY", 0.1, (0, 1)],
-        ["XY", 0.1, (0, 1), "two"],  # id is not in op.data
-        ["XYZ", 0.1, (0, 1, 2), "two"],  # different Pauli strs, number of wires
-        ["XZ", 0.1, (0, 1), "two"],  # different Pauli strs
-        ["XY", 0.1, (0, 2), "two"],  # different wire numbers
+        ["XYZ", 0.1, (0, 1, 2)],  # different Pauli strs, number of wires
+        ["XZ", 0.1, (0, 1)],  # different Pauli strs
+        ["XY", 0.1, (0, 2)],  # different wire numbers
     ]
-    EQS = [True, True, False, False, False]
+    EQS = [True, False, False, False]
 
     @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
     def test_equality(self, args1, args2, eqs):
@@ -1683,7 +1681,7 @@ class TestMeasurementsEqual:
     def test_pauli_measure(self):
         """Test the equal check of pauli measures."""
 
-        mp = PauliMeasure("XY", wires=Wires([0, 1]), meas_id="test_id")
+        mp = PauliMeasure("XY", wires=Wires([0, 1]), meas_uid="test_id")
 
         mp1 = PauliMeasure("XZ", wires=Wires([0, 1]), meas_uid="test_id")
         mp2 = PauliMeasure("XY", wires=Wires([1, 2]), meas_uid="test_id")
@@ -1701,7 +1699,10 @@ class TestMeasurementsEqual:
         mv1 = qml.measure(0)
         mv2 = qml.measure(0)
         # qml.equal of MidMeasure checks the id
-        mv2.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv2.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         assert qml.equal(mv1, mv1) is True
         assert qml.equal(mv1, mv2) is True
@@ -1718,7 +1719,10 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(0)
         # qml.equal of MidMeasure checks the id
-        mv3.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv3.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         assert qml.equal(mv1 * mv2, mv2 * mv1) is True
         assert qml.equal(mv1 + mv2, mv3 + mv2) is True
@@ -1733,7 +1737,10 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(1)
         mv4 = qml.measure(0)
-        mv4.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         mp1 = mp_fn(op=[mv1, mv2])
         mp2 = mp_fn(op=[mv4, mv2])
@@ -1763,7 +1770,10 @@ class TestMeasurementsEqual:
         mv2 = qml.measure(1)
         mv3 = qml.measure(1)
         mv4 = qml.measure(0)
-        mv4.measurements[0]._id = mv1.measurements[0].id  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
+            "meas_uid"
+        ]
 
         mp1 = mp_fn(op=mv1 * mv2)
         mp2 = mp_fn(op=mv4 * mv2)
@@ -2105,7 +2115,10 @@ class TestSymbolicOpComparison:
         m2 = qml.measure(wire2)
         if wire1 == wire2:
             # qml.equal checks id for MidMeasure, but here we only care about them acting on the same wire
-            m2.measurements[0]._id = m1.measurements[0].id  # pylint: disable=protected-access
+            # pylint: disable=protected-access
+            m2.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
+                "meas_uid"
+            ]
         base = qml.PauliX(wire2)
         op1 = Conditional(m1, base)
         op2 = Conditional(m2, base)
