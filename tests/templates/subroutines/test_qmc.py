@@ -318,7 +318,9 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        queue_after_qpe = qml.transforms.decompose(qml.tape.QuantumScript(tape.operations[2:]))[0][0].operations
+        tapes, func = qml.transforms.decompose(qml.tape.QuantumScript(tape.operations[2:]))
+        tape = func(tapes)
+        queue_after_qpe = tape.operations
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)

@@ -545,7 +545,8 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape = decompose(tape, stopping_condition=lambda op: not isinstance(op, QuantumScript))[0][0]
+    tapes, func = decompose(tape, stopping_condition=lambda op: not isinstance(op, QuantumScript))
+    tape = func(tapes)
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [

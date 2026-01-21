@@ -176,7 +176,9 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(U_A, lst_projectors)
 
-        for idx, val in enumerate(decompose(tape)[0][0].operations):
+        tapes, func = decompose(tape)
+        tape = func(tapes)
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 
@@ -216,7 +218,9 @@ class TestQSVT:
 
         tape2 = qml.tape.QuantumScript.from_queue(q)
 
-        for expected, val1, val2 in zip(results, decompose(tape)[0][0].operations, tape2.operations):
+        tapes, func = decompose(tape)
+        tape = func(tapes)
+        for expected, val1, val2 in zip(results, tape.operations, tape2.operations):
             qml.assert_equal(expected, val1)
             qml.assert_equal(expected, val2)
 
@@ -325,7 +329,9 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(quantum_function(A), phi_func(phis))
 
-        for idx, val in enumerate(decompose(tape)[0][0].operations):
+        tapes, func = decompose(tape)
+        tape = func(tapes)
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 

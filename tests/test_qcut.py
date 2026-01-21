@@ -5406,7 +5406,8 @@ class TestAutoCutCircuit:
             qml.expval(obs)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape = decompose(tape0)[0][0]
+        tape0s, func = decompose(tape0)
+        tape = func(tape0s)
         graph = qcut.tape_to_graph(tape)
         cut_graph = qcut.find_and_place_cuts(
             graph=graph,
@@ -5584,7 +5585,8 @@ class TestCutCircuitWithHamiltonians:
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
 
-        tape = decompose(tape0)[0][0]
+        tape0s, func = decompose(tape0)
+        tape = func(tape0s)
         tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 
         frag_lens = [5, 7]

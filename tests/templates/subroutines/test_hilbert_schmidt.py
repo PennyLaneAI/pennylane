@@ -358,7 +358,9 @@ class TestHilbertSchmidt:
         with qml.tape.QuantumTape() as tape:
             qml.HilbertSchmidt(V, U)
 
-        for idx, val in enumerate(decompose(tape)[0][0].operations):
+        tapes, func = decompose(tape)
+        tape = func(tapes)
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.wires == results[idx].wires
             assert qml.math.allclose(val.parameters, results[idx].parameters)

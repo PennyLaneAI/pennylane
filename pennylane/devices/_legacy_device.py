@@ -658,7 +658,8 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if obs_on_same_wire:
-            circuit = decompose(circuit, stopping_condition=self.stopping_condition)[0][0]
+            circuits, func = decompose(circuit, stopping_condition=self.stopping_condition)
+            circuit = func(circuits)
 
         elif ops_not_supported:
             circuit = _local_tape_expand(

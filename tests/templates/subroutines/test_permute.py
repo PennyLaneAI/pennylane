@@ -100,7 +100,8 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tape = decompose(tape)[0][0]
+        tapes, func = decompose(tape)
+        tape = func(tapes)
 
         assert len(tape.operations) == 0
 
@@ -154,7 +155,8 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tape = decompose(tape)[0][0]
+        tapes, func = decompose(tape)
+        tape = func(tapes)
 
         # Ensure all operations are SWAPs, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
