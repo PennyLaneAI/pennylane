@@ -143,7 +143,11 @@
   variance and number of shots.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
 
-* Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
+* Bump the absolute tolerance in `TestSampling::test_complex_hamiltonian` from `0.001` to `0.0035`
+  to match a 3-sigma practice and reduce stochastic test failures.
+  [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
+
+* Bump the absolute tolerance in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
   to match the non-PRNG version and reduce stochastic test failures.
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
 
