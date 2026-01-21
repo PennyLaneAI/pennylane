@@ -342,7 +342,12 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
-    assert_equal(op, new_op)
+    try:
+        assert_equal(op, new_op)
+    except AssertionError as e:
+        raise AssertionError(
+            "metadata and data must be able to reproduce the original operation"
+        ) from e
     try:
         import jax
     except ImportError:
