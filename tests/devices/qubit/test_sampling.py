@@ -1311,7 +1311,9 @@ class TestHamiltonianSamples:
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = simulate(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.001)
+        # Tolerance set to 3σ (σ ≈ 0.0008 for this Hamiltonian with 100k shots)
+        # See .benchmarks/test_complex_hamiltonian/statistical_analysis.py
+        assert np.allclose(res, expected, atol=0.003)
 
 
 class TestSampleProbs:
