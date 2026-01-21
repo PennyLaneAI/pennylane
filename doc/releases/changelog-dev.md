@@ -138,6 +138,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adjust the tolerance in `TestHamiltonianSamples::test_multi_wires` of `test_default_qubit` from
+  a fixed magic number to dynamically computed based on 3-sigma of the standard error given by the theoretical
+  variance and number of shots.
+  [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
+
 * Bump the absolute tolerace in `TestBroadcastingPRNG::test_nonsample_measure` from `0.01` to `0.03`
   to match the non-PRNG version and reduce stochastic test failures.
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
