@@ -19,7 +19,7 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qml
-from pennylane.capture.autograph import run_autograph
+from pennylane.capture import run_autograph
 
 
 @pytest.mark.jax
@@ -150,6 +150,7 @@ class TestQFT:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
         import jax

@@ -16,6 +16,27 @@ This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
+Custom transforms
+-----------------
+
+``qml.transform`` can be used to define custom transformations that work with PennyLane QNodes and quantum
+functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
+
+.. autosummary::
+    :toctree: api
+
+    ~transform
+
+Compile Pipeline
+----------------
+
+Multiple transforms can be chained together into a compile pipeline. See :ref:`composing_transforms` for more details.
+
+.. autosummary::
+    :toctree: api
+
+    ~CompilePipeline
+
 .. _transform_library:
 
 Transforms library
@@ -82,7 +103,6 @@ both transforms and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.set_decomposition
     ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
@@ -104,12 +124,14 @@ These transforms accept quantum circuits and decomposes them to the Clifford+T b
 
     ~clifford_t_decomposition
     ~gridsynth
-    ~transforms.reduce_t_depth
+    ~transforms.ppm_compilation
     ~transforms.to_ppr
     ~transforms.commute_ppr
     ~transforms.ppr_to_ppm
     ~transforms.merge_ppr_ppm
-    ~transforms.ppm_compilation
+    ~transforms.reduce_t_depth
+    ~transforms.decompose_arbitrary_ppr
+
 
 Other transforms
 ~~~~~~~~~~~~~~~~
@@ -172,17 +194,6 @@ that compute the desired quantity.
     ~draw
     ~draw_mpl
 
-Custom transforms
------------------
-
-qml.transform can be used to define custom transformations that work with PennyLane QNodes and quantum
-functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
-
-.. autosummary::
-    :toctree: api
-
-    ~transform
-
 Transforms developer classes
 ------------------------------
 
@@ -190,7 +201,6 @@ Transforms developer classes
 .. autosummary::
     :toctree: api
 
-    ~CompilePipeline
     ~transforms.core.BoundTransform
     ~transforms.core.Transform
 
@@ -254,6 +264,8 @@ a circuit into tapes measuring groups of commuting observables.
             qml.expval(qml.Z(0) @ qml.Z(1)),
             qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
         ]
+
+.. _composing_transforms:
 
 Composability of transforms
 ---------------------------
@@ -395,13 +407,14 @@ from .compile import compile
 
 from .decompositions import (
     clifford_t_decomposition,
-    gridsynth,
-    to_ppr,
     commute_ppr,
+    decompose_arbitrary_ppr,
+    gridsynth,
     merge_ppr_ppm,
-    ppr_to_ppm,
     ppm_compilation,
+    ppr_to_ppm,
     reduce_t_depth,
+    to_ppr,
 )
 from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
@@ -438,9 +451,7 @@ from .tape_expand import (
     expand_nonunitary_gen,
     expand_trainable_multipar,
     create_expand_fn,
-    create_decomp_expand_fn,
     create_expand_trainable_multipar,
-    set_decomposition,
 )
 from .transpile import transpile
 from .zx import (

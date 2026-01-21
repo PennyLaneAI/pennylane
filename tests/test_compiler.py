@@ -717,8 +717,7 @@ class TestCatalystGrad:
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
         assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
 
-    @pytest.mark.parametrize("argnum_name", ("argnum", "argnums"))
-    def test_jvp_argnums(self, argnum_name):
+    def test_jvp_argnums(self):
         """Test that res."""
 
         def f(x, y):
@@ -726,24 +725,17 @@ class TestCatalystGrad:
 
         @qml.qjit
         def w(x, y):
-            return qml.jvp(f, [x, y], [1.0], **{argnum_name: [1]})
+            return qml.jvp(f, [x, y], [1.0], argnums=[1])
 
         x = jnp.array(0.5)
         y = jnp.array(3.0)
 
-        if argnum_name == "argnum":
-            with pytest.warns(
-                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.jvp"
-            ):
-                res, dres = w(x, y)
-        else:
-            res, dres = w(x, y)
+        res, dres = w(x, y)
 
         assert qml.math.allclose(res, f(x, y))
         assert qml.math.allclose(dres, x**2)
 
-    @pytest.mark.parametrize("argnum_name", ("argnum", "argnums"))
-    def test_vjp_argnums(self, argnum_name):
+    def test_vjp_argnums(self):
         """Test that res."""
 
         def f(x, y):
@@ -751,18 +743,12 @@ class TestCatalystGrad:
 
         @qml.qjit
         def w(x, y):
-            return qml.vjp(f, [x, y], [1.0], **{argnum_name: [1]})
+            return qml.vjp(f, [x, y], [1.0], argnums=[1])
 
         x = jnp.array(0.5)
         y = jnp.array(3.0)
 
-        if argnum_name == "argnum":
-            with pytest.warns(
-                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.vjp"
-            ):
-                res, dres = w(x, y)
-        else:
-            res, dres = w(x, y)
+        res, dres = w(x, y)
 
         assert qml.math.allclose(res, f(x, y))
         assert qml.math.allclose(dres, x**2)
