@@ -276,13 +276,11 @@ class TestAdjointMetricTensorTape:
 
         circuit(*params)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt = qml.adjoint_metric_tensor(circuit)(*params)
+        mt = qml.adjoint_metric_tensor(circuit)(*params)
         assert qml.math.allclose(mt, expected)
 
         tape = qml.workflow.construct_tape(circuit)(*params)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            met_tens = qml.adjoint_metric_tensor(tape)
+        met_tens = qml.adjoint_metric_tensor(tape)
         expected = qml.math.reshape(expected, qml.math.shape(met_tens))
         assert qml.math.allclose(met_tens, expected)
 
@@ -335,13 +333,11 @@ class TestAdjointMetricTensorTape:
 
         circuit(*t_params)
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
+        mt = qml.adjoint_metric_tensor(circuit)(*t_params)
         assert qml.math.allclose(mt, expected)
 
         tape = qml.workflow.construct_tape(circuit)(*t_params)
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            met_tens = qml.adjoint_metric_tensor(tape)
+        met_tens = qml.adjoint_metric_tensor(tape)
         expected = qml.math.reshape(expected, qml.math.shape(met_tens))
         assert qml.math.allclose(met_tens.detach().numpy(), expected)
 
@@ -401,8 +397,7 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt = qml.adjoint_metric_tensor(circuit)(*params)
+        mt = qml.adjoint_metric_tensor(circuit)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -457,8 +452,7 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
+        mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -530,8 +524,7 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt_jac = qml.jacobian(qml.adjoint_metric_tensor(circuit))(*params)
+        mt_jac = qml.jacobian(qml.adjoint_metric_tensor(circuit))(*params)
 
         if isinstance(mt_jac, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
@@ -584,9 +577,8 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt_fn = qml.adjoint_metric_tensor(circuit)
-            mt_jac = torch.autograd.functional.jacobian(mt_fn, *t_params)
+        mt_fn = qml.adjoint_metric_tensor(circuit)
+        mt_jac = torch.autograd.functional.jacobian(mt_fn, *t_params)
 
         if isinstance(mt_jac, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
@@ -630,8 +622,7 @@ def test_error_finite_shots():
     tape = qml.tape.QuantumScript.from_queue(q, shots=1)
 
     with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            qml.adjoint_metric_tensor(tape)
+        qml.adjoint_metric_tensor(tape)
 
 
 def test_works_with_state_prep():
@@ -654,7 +645,6 @@ def test_works_with_state_prep():
         return qml.expval(qml.Z(0) @ qml.X(1))
 
     angles = np.random.uniform(size=(2,), requires_grad=True)
-    with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-        qfim = qml.adjoint_metric_tensor(circuit)(angles)
+    qfim = qml.adjoint_metric_tensor(circuit)(angles)
     autodiff_qfim = autodiff_metric_tensor(ansatz, 2)(angles)
     assert onp.allclose(qfim, autodiff_qfim)
