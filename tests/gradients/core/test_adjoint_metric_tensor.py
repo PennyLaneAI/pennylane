@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
@@ -430,8 +429,7 @@ class TestAdjointMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
-            mt = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
+        mt = qml.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
