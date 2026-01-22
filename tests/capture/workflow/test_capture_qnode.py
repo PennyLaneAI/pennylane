@@ -566,16 +566,11 @@ class TestUserTransforms:
         assert all(
             getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
         )
-        ops_and_meas = [
-            eqn
-            for eqn in device_jaxpr.eqns
-            if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
-        ]
-        assert ops_and_meas[0].primitive == qml.RZ._primitive
-        assert ops_and_meas[1].primitive == qml.RY._primitive
-        assert ops_and_meas[2].primitive == qml.RZ._primitive
-        assert ops_and_meas[3].primitive == qml.PauliZ._primitive
-        assert ops_and_meas[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert device_jaxpr.eqns[0].primitive == qml.RZ._primitive
+        assert device_jaxpr.eqns[1].primitive == qml.RY._primitive
+        assert device_jaxpr.eqns[2].primitive == qml.RZ._primitive
+        assert device_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
+        assert device_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.integration
     def test_execution(self, disable_around_qnode):
