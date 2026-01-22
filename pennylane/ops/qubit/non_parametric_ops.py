@@ -516,7 +516,7 @@ def _paulix_to_rx(wires: WiresLike, **__):
     qml.GlobalPhase(-np.pi / 2, wires=wires)
 
 
-@register_condition(lambda z, **_: math.allclose(z % 2, 0.5))
+@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda **_: {qml.SX: 1})
 def _pow_x_to_sx(wires, **_):
     qml.SX(wires=wires)
