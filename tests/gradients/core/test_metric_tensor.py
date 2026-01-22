@@ -561,7 +561,7 @@ class TestMetricTensor:
             interface_name = interface
 
         mod = importlib.import_module(interface_name)
-        type_ = getattr(mod, "Tensor")
+        type_ = type(getattr(mod, array_cls)([]))
 
         dev = qml.device("default.qubit", wires=3)
 
