@@ -16,6 +16,7 @@ Defines qml.jvp
 """
 from collections.abc import Sequence
 from functools import lru_cache
+from importlib.util import find_spec
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -23,15 +24,13 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
+has_jax = find_spec("jax") is not None
 
 
 def _get_shape(x):
-    return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
+    import jax  # pylint: disable=import-outside-toplevel
+
+    return getattr(x, "shape", jax.numpy.shape(x))
 
 
 # pylint: disable=unused-argument
@@ -39,6 +38,8 @@ def _get_shape(x):
 def _get_jvp_prim():
     if not has_jax:  # pragma: no cover
         return None
+
+    import jax  # pylint: disable=import-outside-toplevel
 
     jvp_prim = capture.QmlPrimitive("jvp")
     jvp_prim.multiple_results = True
@@ -49,7 +50,6 @@ def _get_jvp_prim():
         params = list(args[: len(jaxpr.invars)])
         dparams = list(args[len(jaxpr.invars) :])
 
-        print(params, dparams)
         for i, p in enumerate(params):
             if i not in argnums:
                 dparams.insert(i, 0 * p)
@@ -99,6 +99,7 @@ def _validate_tangents(params, dparams, argnums):
 
 # pylint: disable=too-many-arguments
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
+    import jax  # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     if not isinstance(params, Sequence):

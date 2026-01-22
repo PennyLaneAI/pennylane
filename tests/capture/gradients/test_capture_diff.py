@@ -36,11 +36,12 @@ def test_error_with_non_scalar_function():
         jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
-def diff_eqn_assertions(eqn, scalar_out, argnums=None, fn=None):
+def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
     argnums = (0,) if argnums is None else argnums
     assert eqn.primitive == jacobian_prim
     assert set(eqn.params.keys()) == {
         "argnums",
+        "n_consts",
         "jaxpr",
         "method",
         "h",
@@ -48,6 +49,7 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, fn=None):
         "scalar_out",
     }
     assert eqn.params["argnums"] == tuple(argnums)
+    assert eqn.params["n_consts"] == n_consts
     assert eqn.params["method"] == "auto"
     assert eqn.params["h"] == 1e-6
     assert eqn.params["scalar_out"] == scalar_out
