@@ -31,6 +31,8 @@ U_thadamard_01 = np.multiply(1 / np.sqrt(2), np.array([[1, 1, 0], [1, -1, 0], [0
 
 
 # TODO: Add tests for adding controls to `QutritUnitary` once `ControlledQutritUnitary` is implemented
+
+
 class TestQutritUnitary:
     """Tests for the QutritUnitary class."""
 
