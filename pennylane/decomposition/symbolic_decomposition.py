@@ -19,7 +19,7 @@ from __future__ import annotations
 import numpy as np
 
 import pennylane as qml
-from pennylane import allocation, math
+from pennylane import allocation
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
@@ -138,7 +138,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     """Make a decomposition rule for the power of an op that has a period."""
 
     def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
-        return math.shape(z) == () and z % period != z
+        return z % period != z
 
     def _resource_fn(base_class, base_params, z):
         z_mod_period = z % period

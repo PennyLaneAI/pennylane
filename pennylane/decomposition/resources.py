@@ -146,7 +146,7 @@ class CompressedResourceOp:
         return (
             isinstance(other, CompressedResourceOp)
             and self.op_type == other.op_type
-            and self._hashable_params == other._hashable_params
+            and self.params == other.params
         )
 
     def __repr__(self):
