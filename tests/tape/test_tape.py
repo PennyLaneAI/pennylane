@@ -33,7 +33,7 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
-from pennylane.transforms import decompose
+from pennylane.transforms import create_expand_trainable_multipar, decompose
 
 
 def TestOperationMonkeypatching():
@@ -833,6 +833,24 @@ class TestInverseAdjoint:
 
 class TestExpand:
     """Tests for tape expansion"""
+
+    def test_create_expand_trainable_multipar_warns(self):
+        """Tests that create_expand_trainable_multipar warns."""
+        with QuantumTape() as tape:
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        with pytest.raises(
+            PennyLaneDeprecationWarning, match="The create_expand_trainable_multipar is deprecated"
+        ):
+            create_expand_trainable_multipar(tape)
+
+    def test_expand_warns(self):
+        """Tests that expand warns."""
+        with QuantumTape() as tape:
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            _ = tape.expand()
 
     def test_decomposition(self):
         """Test expanding a tape with operations that have decompositions"""

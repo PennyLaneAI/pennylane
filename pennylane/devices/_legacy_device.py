@@ -45,60 +45,6 @@ from pennylane.wires import Wires
 from .tracker import Tracker
 
 
-def _local_tape_expand(tape, depth, stop_at):
-    """Expand all objects in a tape to a specific depth excluding measurements.
-    see `pennylane.tape.expand_tape` for examples.
-
-    Args:
-        tape (QuantumTape): The tape to expand
-        depth (int): the depth the tape should be expanded
-        stop_at (Callable): A function which accepts a queue object,
-            and returns ``True`` if this object should *not* be expanded.
-            If not provided, all objects that support expansion will be expanded.
-
-    Returns:
-        QuantumTape: The expanded version of ``tape``.
-    """
-    # This function mimics `pennylane.tape.expand_tape()`, but does not expand measurements and
-    # does not perform validation checks for non-commuting measurements on the same wires.
-    if depth == 0:
-        return tape
-
-    new_ops = []
-    new_measurements = []
-
-    for queue, new_queue in [
-        (tape.operations, new_ops),
-        (tape.measurements, new_measurements),
-    ]:
-        for obj in queue:
-            if isinstance(obj, MeasurementProcess) or stop_at(obj):
-                new_queue.append(obj)
-                continue
-
-            if isinstance(obj, Operator):
-                if obj.has_decomposition:
-                    with QueuingManager.stop_recording():
-                        obj = QuantumScript(obj.decomposition())
-                else:
-                    new_queue.append(obj)
-                    continue
-
-            # recursively expand out the newly created tape
-            expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
-
-            new_ops.extend(expanded_tape.operations)
-            new_measurements.extend(expanded_tape.measurements)
-
-    # preserves inheritance structure
-    # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots)
-
-    # Update circuit info
-    new_tape._batch_size = tape._batch_size
-    return new_tape
-
-
 class _LegacyMeta(abc.ABCMeta):
     """
     A simple meta class added to circumvent the Legacy facade when
