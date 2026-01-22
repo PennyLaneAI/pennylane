@@ -9,21 +9,14 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``qml.transforms.create_expand_fn`` is deprecated in PennyLane v0.45 and will be removed in v0.46.
-  Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
+  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
 
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* Maintenance support of NumPy<2.0 is deprecated and will be dropped in v0.45.
-  PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
-  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
-  
-  - Deprecated in v0.44
-  - Will be removed in v0.45
-
-* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
-  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+* The ``qml.transforms.create_expand_fn`` is deprecated in PennyLane v0.45 and will be removed in v0.46.
+  Please use the ``qml.transforms.decompose`` function for decomposing circuits.
 
   - Deprecated in v0.45
   - Will be removed in v0.46
