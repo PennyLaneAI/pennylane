@@ -28,7 +28,7 @@ from pennylane.transforms.decompose import _operator_decomposition_gen, decompos
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
 
-pytest.mark.usefixtures("disable_graph_decomposition")
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 
 @pytest.fixture(autouse=True)
@@ -67,6 +67,24 @@ class InfiniteOp(Operation):
 
     def decomposition(self):
         return [InfiniteOp(*self.parameters, self.wires)]
+
+
+@pytest.mark.unit
+def test_fixed_alt_decomps_not_available():
+    """Test that a TypeError is raised when graph is disabled and
+    fixed_decomps or alt_decomps is used."""
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(*_, **__):
+        raise NotImplementedError
+
+    tape = qml.tape.QuantumScript([])
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.transforms.decompose(tape, fixed_decomps={qml.CNOT: my_cnot})
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
 
 
 class TestDecompose:

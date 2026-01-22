@@ -28,7 +28,7 @@ from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.transforms.decompose import _resolve_gate_set
 
-pytest.mark.usefixtures("enable_graph_decomposition")
+pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
 
 
 @pytest.mark.unit
@@ -66,25 +66,6 @@ def test_weights_affect_graph_decomposition():
         qml.H(wires=[1]),
         qml.Toffoli(wires=[0, 1, 2]),
     ]
-
-
-@pytest.mark.unit
-@pytest.mark.usefixtures("disable_graph_decomposition")
-def test_fixed_alt_decomps_not_available():
-    """Test that a TypeError is raised when graph is disabled and
-    fixed_decomps or alt_decomps is used."""
-
-    @qml.register_resources({qml.H: 2, qml.CZ: 1})
-    def my_cnot(*_, **__):
-        raise NotImplementedError
-
-    tape = qml.tape.QuantumScript([])
-
-    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        qml.transforms.decompose(tape, fixed_decomps={qml.CNOT: my_cnot})
-
-    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
 
 
 class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
