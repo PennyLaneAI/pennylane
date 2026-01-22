@@ -114,7 +114,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: ${{ inputs.uv_version }}
-          enable-cache: true
+          enable-cache: false
           cache-dependency-glob: 'pyproject.toml'
       
       - name: Setup Python
