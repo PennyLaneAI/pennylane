@@ -902,8 +902,6 @@ class TestQubitIntegration:
         options = {}
         if diff_method == "finite-diff":
             options = {"h": 1e-6}
-        elif diff_method == "hadamard":
-            options["aux_wire"] = 1
 
         @qnode(
             dev,
@@ -923,19 +921,11 @@ class TestQubitIntegration:
         res = circuit(x)
 
         if diff_method == "hadamard":
-            jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
-            options["aux_wire"] = 2
-            jac_fn = qnode(
-                dev,
-                diff_method=diff_method,
-                grad_on_execution=grad_on_execution,
-                max_diff=2,
-                interface=interface,
-                device_vjp=device_vjp,
-                gradient_kwargs=options,
-            )(func=jac_fn)
-            g = jac_fn(x)
-            hess = jacobian(jac_fn, x)
+            # Cannot find a way to specify an aux_wire that is not already in use by the circuit!
+            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
+                jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
+                g = jac_fn(x)
+                hess = jacobian(jac_fn, x)
         else:
             jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
             g = jac_fn(x)
