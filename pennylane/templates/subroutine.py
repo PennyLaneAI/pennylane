@@ -183,6 +183,7 @@ class SubroutineOp(Operation):
 P = ParamSpec("P")
 
 
+# pylint: disable=too-many-arguments
 class Subroutine:
     """The definition of a Subroutine, compatible both with program capture and backwards
     compatible with operators.
@@ -197,6 +198,10 @@ class Subroutine:
         wire_argnames (str | tuple[str]): The name of arguments that represent wire registers.  While the users can
             be more permissive in what they provide to wire arguments, the definition should treat all wire
             arguments as 1D arrays.
+        compute_resources (None | Callable): A function for computing resources used by the function.
+            It should only calculate the resources from the static arguments, the length of the wire registers,
+            and the shape and dtype of the dynamic arguments. In the case of the specific resources
+            depending on the specifics of a dynamic argument, a worse case scenario can be used.
 
     For simple cases, a ``Subroutine`` can simply be created from a single quantum function, like:
 
@@ -293,12 +298,15 @@ class Subroutine:
     def __init__(
         self,
         definition: Callable[P, Any],
+        *,
         setup_inputs: Callable[P, tuple[tuple, dict]] = _default_setup_inputs,
         static_argnames: str | tuple[str, ...] = tuple(),
         wire_argnames: str | tuple[str, ...] = ("wires",),
+        compute_resources: None | Callable[P, dict] = None,
     ):
         self._definition = definition
         self._setup_inputs = setup_inputs
+        self._compute_resources = compute_resources
         self._signature = signature(definition)
         update_wrapper(self, definition)
         if isinstance(static_argnames, str):
@@ -321,6 +329,12 @@ class Subroutine:
     def signature(self) -> Signature:
         """ "The signature for the definition. Used to preprocess the user inputs."""
         return self._signature
+
+    def compute_resources(self, *args, **kwargs) -> dict:
+        """Calculate a condensed representation for the resources required for the Subroutine."""
+        if self._compute_resources is None:
+            raise NotImplementedError(f"{self} does not have a defined compute_resources function.")
+        return self._compute_resources(*args, **kwargs)
 
     def definition(self, *args, **kwargs):
         """The quantum function definition of the subroutine."""
