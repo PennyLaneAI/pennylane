@@ -791,6 +791,7 @@ class TestDefaultQutritIntegration:
             "supports_broadcasting": False,
             "passthru_devices": {
                 "autograd": "default.qutrit",
+                "tf": "default.qutrit",  # TODO: remove after tf get purged from source
                 "torch": "default.qutrit",
                 "jax": "default.qutrit",
             },
