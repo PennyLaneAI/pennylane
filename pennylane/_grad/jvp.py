@@ -36,34 +36,6 @@ def _get_shape(x):
 
 # pylint: disable=unused-argument
 @lru_cache
-def _get_vjp_prim():
-    if not has_jax:  # pragma: no cover
-        return None
-
-    vjp_prim = capture.QmlPrimitive("vjp")
-    vjp_prim.multiple_results = True
-    vjp_prim.prim_type = "higher_order"
-
-    @vjp_prim.def_impl
-    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
-        params = args[: len(jaxpr.invars)]
-        dy = list(args[len(jaxpr.invars) :])
-
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
-
-        res, vjp_fn = jax.vjp(func, *params)
-        dparams = vjp_fn(dy)
-        return res + [dparams[i] for i in argnums]
-
-    @vjp_prim.def_abstract_eval
-    def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
-        return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
-
-    return vjp_prim
-
-
-@lru_cache
 def _get_jvp_prim():
     if not has_jax:  # pragma: no cover
         return None
