@@ -61,7 +61,7 @@ def translate_op_alias(op_alias):
 def toggle_graph_decomposition():
     """A closure that toggles the experimental graph-based decomposition on and off."""
 
-    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=True)
+    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=False)
 
     def enable():
         """
@@ -97,7 +97,7 @@ def toggle_graph_decomposition():
 
     @contextmanager
     def toggle_ctx(new_state: bool):
-        """A context manager in which graph is enabled."""
+        """A context manager in which graph is enabled or disabled temporarily."""
 
         token = _GRAPH_DECOMPOSITION.set(new_state)
         try:
