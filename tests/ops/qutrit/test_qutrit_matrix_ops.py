@@ -34,7 +34,6 @@ U_thadamard_01 = np.multiply(
     ),
 )
 
-
 # TODO: Add tests for adding controls to `QutritUnitary` once `ControlledQutritUnitary` is implemented
 
 
