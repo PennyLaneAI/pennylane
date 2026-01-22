@@ -61,7 +61,7 @@ def translate_op_alias(op_alias):
 def toggle_graph_decomposition():
     """A closure that toggles the experimental graph-based decomposition on and off."""
 
-    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=True)
+    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=False)
 
     def enable():
         """
