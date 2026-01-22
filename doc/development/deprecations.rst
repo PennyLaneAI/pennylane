@@ -28,13 +28,6 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* Maintenance support of NumPy<2.0 is deprecated and will be dropped in v0.45.
-  PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
-  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
-  
-  - Deprecated in v0.44
-  - Will be removed in v0.45
-
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
   :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
