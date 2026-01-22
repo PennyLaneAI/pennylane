@@ -20,9 +20,6 @@ import numpy as np
 import pytest
 
 from pennylane.math import ceil_log2
-
-# import pennylane as qml
-# from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
@@ -38,6 +35,17 @@ def _is_binary(x: np.ndarray) -> bool:
     return set(x.flat).issubset({np.int64(0), np.int64(1)})
 
 
+def random_distinct_integers(high, size, rng):
+
+    if high < 2**25:
+        return rng.choice(high, size=size, replace=False)
+
+    samples = set()
+    while len(samples) < size:
+        samples.add(int(rng.integers(high)))
+    return np.array(list(samples), dtype=int)
+
+
 def _random_regular_matrix(n, random_ops, seed: int):
     """Create a random regular (=non-singular) binary matrix.
     This is done by performing random row additions on the identity matrix, preserving
@@ -46,24 +54,44 @@ def _random_regular_matrix(n, random_ops, seed: int):
     In the picture of quantum circuits, we are computing the parity matrix of a random CNOT
     circuit.
     """
-    rs = np.random.RandomState(seed)
+    rng = np.random.default_rng(seed)
     P = np.eye(n, dtype=int)
     for _ in range(random_ops):
-        i, j = rs.choice(n, size=2, replace=False)  # Random pair of rows
+        i, j = random_distinct_integers(n, 2, rng)  # Random pair of rows
         P[i] += P[j]  # Add second sampled row to first sampled row
     return P % 2  # Make into binary matrix
 
 
-def _random_distinct_bitstrings(num_bits, num_strings, seed):
+def random_distinct_bitstrings(num_bits, num_strings, seed, full_rank=False):
     """Create a numpy array of ``num_strings`` distinct bit strings of
     length ``num_bits``. The output size is ``(num_bits, num_strings)``,
-    i.e. the bit strings are stored as columns."""
-    rs = np.random.RandomState(seed)
+    i.e. the bit strings are stored as columns.
+    If ``full_rank=True`` is specified in addition, make sure that the bits span the full
+    space of ``num_bits`` bit strings.
+
+    """
+    rng = np.random.default_rng(seed)
+
+    # Sample fewer unconstrained bit strings if we want full rank. We will insert a regular random
+    # matrix to ensure the full rank.
+    num_samples = num_strings - num_bits if full_rank else num_strings
     # Sample random integers
-    ints = rs.choice(2**num_bits, size=num_strings, replace=False)
+    ints = random_distinct_integers(2**num_bits, num_samples, rng)
     # Convert integers to bitstrings
     bitstrings = ((ints[:, None] >> np.arange(num_bits - 1, -1, -1)[None, :]) % 2).T
+
+    if full_rank:
+        # If we want full rank, we sample a random regular matrix and shuffle it into the
+        # unconstrained random samples from above
+        assert num_strings >= num_bits
+        regular_part = _random_regular_matrix(num_bits, random_ops=num_bits**2, seed=seed)
+        bitstrings = np.concatenate([regular_part, bitstrings], axis=1)
+        rng.shuffle(bitstrings, axis=1)
+
     assert _columns_differ(bitstrings)  # Validate that columns are distinct
+
+    if full_rank:
+        assert _rank_over_z2(bitstrings) == num_bits
     return bitstrings
 
 
@@ -220,13 +248,13 @@ class TestHelperFunctions:
         """Test that _get_bits_basis can be used to compute a basis over
         Z_2 out of overcomplete bit strings."""
         r, D = bits.shape
-        basis, bits_other_than_last_basis_vec = _get_bits_basis(bits)
+        basis, other_bits = _get_bits_basis(bits)
         assert basis.shape == (r, r)
         assert _is_binary(basis)
         assert _rank_over_z2(basis) == r
 
-        assert bits_other_than_last_basis_vec.shape == (r, D - 1)
-        assert _is_binary(bits_other_than_last_basis_vec)
+        assert other_bits.shape == (r, D - r)
+        assert _is_binary(other_bits)
 
     @pytest.mark.parametrize(
         "r, len_N, len_M, seed",
@@ -286,11 +314,11 @@ class TestHelperFunctions:
         assert avoid_size < 2 ** (r - 1), f"{avoid_size=}, {2**(r-1)=}"
 
         basis = _random_regular_matrix(r, r**2, seed=seed)
-        set_M = _random_distinct_bitstrings(r - 1, len_M, seed=seed + 8512)
+        set_M = random_distinct_bitstrings(r - 1, len_M, seed=seed + 8512)
         # Convert random bits to basis
         set_M = (basis[:, :-1] @ set_M) % 2
 
-        set_N = _random_distinct_bitstrings(r - 1, len_N, seed=seed + 52)
+        set_N = random_distinct_bitstrings(r - 1, len_N, seed=seed + 52)
         # Convert random bits to basis and add last basis vector.
         set_N = (basis[:, :-1] @ set_N + basis[:, -1:]) % 2
 
@@ -319,25 +347,37 @@ class TestComputeSosEncoding:
         """
         assert r <= 2 * ceil_log2(D) - 1  # Test case input validation
 
-        bits = _random_distinct_bitstrings(r, D, 2519)
+        bits = random_distinct_bitstrings(r, D, 2519)
         U, b = compute_sos_encoding(bits)
         assert np.allclose(U, np.eye(r))
         assert np.allclose(b, bits)
 
-    @pytest.mark.parametrize("r, D", [(8, 16), (10, 17), (19, 20), (23, 1052), (22, 1521)])
+    @pytest.mark.parametrize(
+        "r, D",
+        [
+            (4, 4),
+            (6, 6),
+            (8, 16),
+            (10, 17),
+            (11, 17),
+            (12, 18),
+            (19, 20),
+            (53, 53),
+            (23, 1052),
+            (22, 1521),
+        ],
+    )
     def test_nontrivial_case(self, r, D):
         """Test ``compute_sos_encoding`` for cases where the number ``D`` of
         input bit strings and their length ``r`` satisfies ``r>2⌈log_2(D)⌉-1``.
         In this case, the encoding is the identity matrix.
         """
         m = 2 * ceil_log2(D) - 1
-        assert r > m  # Test case input validation
+        # Test case input validation: Want nontrivial case and need D>=r for full rank input
+        assert D >= r > m
         # The algorithm assumes that we do not use more bits than there are linearly
         # independent bitstrings. We re-sample if this is not satisfied by the random bits.
-        rk = r - 1
-        while rk != r:
-            bits = _random_distinct_bitstrings(r, D, 519)
-            rk = _rank_over_z2(bits)
+        bits = random_distinct_bitstrings(r, D, 519, full_rank=True)
 
         U, b = compute_sos_encoding(bits)
         assert U.shape == (m, r)

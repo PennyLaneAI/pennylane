@@ -122,7 +122,6 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
         # mean weight far away from 0.5
         weights = np.mean(bits, axis=1)
         ordering = np.argsort(np.abs(0.5 - weights))
-        x = np.abs(0.5 - weights)
         for i in reversed(ordering):
             # Check whether the array with row ``i`` removed still has unique columns
             _bits = np.concatenate([bits[:i], bits[i + 1 :]])
@@ -139,7 +138,7 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
 
 def _rank_over_z2(bits):
-    """
+    r"""
     # Source - https://stackoverflow.com/a
     # Posted by Mark Dickinson, modified by community. See post 'Timeline' for change history
     # Retrieved 2026-01-15, License - CC BY-SA 4.0
@@ -187,28 +186,28 @@ def _lin_indep(col, new_cols, new_cols_rank=None):
 
 
 def _get_bits_basis(bits: np.ndarray):
-    """Select bit strings from a set of bitstrings that form a basis
+    r"""Select bit strings from a set of bitstrings that form a basis
     for the column space.
 
     Args:
         bits (np.ndarray): Input bitstrings.
     """
-    r, D = bits.shape
+    r, _ = bits.shape
     basis = np.zeros((0, r), dtype=int)
     other_cols = []
     basis_rank = 0
-    for i, col in enumerate(bits.T):
+    for col in bits.T:
         if basis_rank < r and _lin_indep(col, basis, basis_rank):
             basis = np.concatenate([basis, [col]])
             basis_rank += 1
         else:
             other_cols.append(col)
 
-    if other_cols == []:
+    if not other_cols:
         other_cols = np.zeros((0, r), dtype=int)
     else:
         other_cols = np.array(other_cols)
-    return basis.T, np.concatenate([basis[:-1], other_cols]).T
+    return basis.T, other_cols.T
 
 
 def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> np.ndarray:
@@ -217,16 +216,13 @@ def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> n
 
     r = len(bits_basis)
     v_r = bits_basis[:, -1]
+    set_N_prime = set_N + v_r[:, None]
     if set_M.shape[1] == 0 or set_N.shape[1] == 0:
-        combinations = np.zeros((r, 0), dtype=int)
+        combs = np.zeros((r, 0), dtype=int)
     else:
-        combinations = np.array(
-            [m + m_prime_p_v_r + v_r for m, m_prime_p_v_r in product(set_M.T, set_N.T)]
-        ).T
+        combs = np.array([m + m_prime for m, m_prime in product(set_M.T, set_N_prime.T)]).T
     zero = np.zeros((r, 1), dtype=int)
-    all_bitstrings_to_avoid = (
-        np.concatenate([set_M, set_N + v_r[:, None], combinations, zero], axis=1) % 2
-    )
+    all_bitstrings_to_avoid = np.concatenate([set_M, set_N_prime, combs, zero], axis=1) % 2
 
     for i in range(2 ** (r - 2)):
         ell_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
@@ -236,76 +232,76 @@ def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> n
     else:
         raise ValueError()
     return ell
-    pot = 2 ** np.arange(r - 2, -1, -1)
-    ints = set(np.dot(pot, (bits_basis[:, :-1].T @ all_bitstrings_to_avoid) % 2))
-    unoccupied = next(i for i in range(1, len(ints) + 1) if i not in ints)
-    ell_bits = (unoccupied >> np.arange(r - 2, -1, -1)) % 2
-    ell = (bits_basis[:, :-1] @ ell_bits) % 2
-    return ell
+
+
+# This is a temporary debugging feature
+_DEBUGGING = False
 
 
 def _bits_not_in_space(bits, W, incl_diffs=True):
-    assert all(_lin_indep(bitstring, W.T) for bitstring in bits.T)
-    if incl_diffs:
-        assert all(
-            _lin_indep((bits0 + bits1) % 2, W.T) for bits0, bits1 in combinations(bits.T, r=2)
-        )
+    if _DEBUGGING:
+        assert all(_lin_indep(bitstring, W.T) for bitstring in bits.T)
+        if incl_diffs:
+            assert all(
+                _lin_indep((bits0 + bits1) % 2, W.T) for bits0, bits1 in combinations(bits.T, r=2)
+            )
 
 
 def _bits_in_space(bits, basis):
-    assert _rank_over_z2(np.concatenate([bits, basis], axis=1)) == _rank_over_z2(basis)
+    if _DEBUGGING:
+        assert _rank_over_z2(np.concatenate([bits, basis], axis=1)) == _rank_over_z2(basis)
 
 
-def _get_w_vectors(bits, r, t, bits_basis=None):
+# End of temporary debugging feature
+
+
+def _find_single_w(bits, r):
+    # Power of two
+    pot = 2 ** np.arange(r - 1, -1, -1)
+    # Compute the integer representation of each column and each difference of columns
+    diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(bits.T, r=2)]).T
+    ints = set(np.dot(pot, np.concatenate([bits, diffs % 2], axis=1)))
+    unoccupied = next(i for i in range(1, len(ints) + 1) if i not in ints)
+    w = (unoccupied >> np.arange(r - 1, -1, -1)) % 2
+    W = np.array([w]).T
+    _bits_not_in_space(bits, W)
+    return W
+
+
+def _find_w(bits_basis, other_bits, r, t):
     if t == 1:
-        if bits_basis is None:
-            # Power of two
-            pot = 2 ** np.arange(r - 1, -1, -1)
-            diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(bits.T, r=2)]).T
-            diffs = diffs % 2
-            # Compute the integer representation of each column and each difference of columns
-            ints = set(np.dot(pot, np.concatenate([bits, diffs], axis=1)))
-            unoccupied = next(i for i in range(1, len(ints) + 1) if i not in ints)
-            w = (unoccupied >> np.arange(r - 1, -1, -1)) % 2
+        all_bits = np.concatenate([bits_basis, other_bits], axis=1)
+        # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
+        diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T
+        all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1) % 2
 
+        for i in range(1, 2 ** (r - 1)):
+            w_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
+            w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
+            if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
+                break
         else:
-            v_r = bits_basis[:, -1]
-            diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(bits.T, r=2)]).T
-            zero = np.zeros((r, 1), dtype=int)
-            all_bitstrings_to_avoid = np.concatenate([bits, diffs, zero], axis=1) % 2
+            raise ValueError()
 
-            for i in range(1, 2 ** (r)):
-                w_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
-                w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
-                if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
-                    break
-            else:
-                raise ValueError()
-
-        W = np.array([w]).T
-        _bits_not_in_space(bits, W)
-        if bits_basis is not None:
-            _bits_in_space(W, bits_basis)
+        W = w[:, None]
+        _bits_not_in_space(all_bits, W)
+        _bits_in_space(W, bits_basis)
         return W
 
-    if bits_basis is not None:
-        # Basis known from previous iteration, and we stick to that basis choice
-        bits_without_v_r = np.array(
-            [col for col in bits.T if not np.allclose(col, bits_basis[:, -1])]
-        ).T
-    else:
-        bits_basis, bits_without_v_r = _get_bits_basis(bits)
-
     v_r = bits_basis[:, -1]
+    bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
+
     spanned_by_reduced_basis = np.array(
         [not _lin_indep(vec, bits_basis[:, :-1].T) for vec in bits_without_v_r.T]
     )
 
+    # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
     set_M = bits_without_v_r[:, np.where(spanned_by_reduced_basis)[0]]
     _bits_in_space(set_M, bits_basis[:, :-1])
 
     set_N = bits_without_v_r[:, np.where(~spanned_by_reduced_basis)[0]]
     _bits_not_in_space(set_N, bits_basis[:, :-1], incl_diffs=False)
+
     ell = _find_ell(set_M, set_N, bits_basis)
 
     w_t = (v_r + ell) % 2
@@ -317,31 +313,16 @@ def _get_w_vectors(bits, r, t, bits_basis=None):
     prev_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
     _bits_in_space(prev_bits, bits_basis[:, :-1])
 
-    W_prev = _get_w_vectors(prev_bits, r, t - 1, bits_basis[:, :-1])
+    W_prev = _find_w(bits_basis[:, :-1], prev_bits[:, bits_basis.shape[1] - 1 :], r, t - 1)
     _bits_in_space(W_prev, bits_basis[:, :-1])
-    # _bits_in_space(W_prev[:, :-1], bits_basis[:, :-2]) # TO be re-added
 
     W = np.concatenate([W_prev, w_t[:, None]], axis=1)
     _bits_in_space(W, bits_basis)
-    _bits_not_in_space(bits, W)
-    """
-    for i, v_i in enumerate(bits.T):
-        for j, v_j in enumerate(bits.T[i+1:]):
-            if not _lin_indep((v_i+v_j)%2, list(W.T)):
-                print(i, j)
-                print(f"{_lin_indep(v_i, bits_basis[:,:-1].T)=} (exp: False?)")
-                print(f"{_lin_indep(v_j, bits_basis[:,:-1].T)=} (exp: False?)")
-                print(f"{_lin_indep(w_t.flat, bits_basis[:,:-1].T)=} (exp: True)")
-                print(f"{_lin_indep(v_r, bits_basis[:,:-1].T)=} (exp: True)")
-                print(f"{_rank_over_z2(bits_basis[:, :-1])==_rank_over_z2(np.concatenate([W_prev, bits_basis[:, :-1]], axis=1))=} (exp: True)")
-    print(f"{W.shape=}")
-    print(f"{_rank_over_z2(W)=}")
-    assert _rank_over_z2(bits_basis)==_rank_over_z2(np.concatenate([W, bits_basis], axis=1)), f"{_rank_over_z2(bits_basis)=},{_rank_over_z2(np.concatenate([W, bits_basis], axis=1))=}"
-    """
+    _bits_not_in_space(bits_without_v_r, W)
     return W
 
 
-def _find_U_from_W(W, r, m):
+def _find_U_from_W(W, r):
 
     # Create augmented matrix for Gauss-Jordan elimination.
     M = np.concatenate([W.T, np.eye(r, dtype=int)], axis=0)
@@ -377,94 +358,153 @@ def _find_U_from_W(W, r, m):
 
 
 def compute_sos_encoding(bits):
-    """
+    r"""Compute the bitstrings :math:`U` and :math:`b` from Lemma 1 in
+    the Sum of Slaters paper
+    (`Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__).
+    This is the major classical coprocessing required for the state preparation.
 
     Args:
         bits (np.ndarray): Reduced bitstrings that are input into Lemma 1.
-            The i-th bitstring v_i is stored in the i-th column.
+            The i-th bitstring v_i is stored in the i-th column, so that the input shape is ``(r, D)``.
+
+    Returns:
+        tuple[np.ndarray]: Two bit arrays. The first is :math:`U`, which maps the input ``bits``
+        to ``D`` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
+        :math:`m=2\lceil \log_2(D)\rceil-1`. The second array are the bitstrings
+        :math:`\{b_i\}` themselves, stored as columns.
+
+    **Example**
+
+    to do
+
+    .. details::
+        :title: Implementation notes
+
+        In the following, we slightly rewrite the first part of the proof.
+        Then, we clarify the algorithmic structure for constructing the space :math:`\mathcal{W}`.
+
+        Our goal is to find a linear map :math:`U:\mathbb{Z}_2^{r}\to \mathbb{Z}_2^{m}`
+        from :math:`D` distinct bitstrings :math:`\{v_i\}` with length :math:`r` to :math:`D` bitstrings with length :math:`m\leq 2d-1`, where :math:`d:=\lceil\log_2(D)\rceil`, such that
+
+        .. math::
+
+            U(v_i-v_j)\neq 0 \forall i, j, \text{and} U(v_i)\neq 0 \forall i \text{unless} v_i=0.
+
+        It will be instructive to rewrite this as
+
+        .. math::
+
+            v_i-v_j\not\in \ker U \forall i, j, \text{and} v_i\not\in \ker U \forall i \text{unless} v_i=0.   (1)
+
+        We will speak of :math:`U` and its matrix representation of zeros and ones interchangeably.
+        Since :math:`k` bits can represent at most :math:`2^k` different bitstrings, we know that :math:`D` different bitstrings :math:`\{v_i\}` require at least :math:`d` bits to
+        be represented, i.e. we know that :math:`r\geq d`.
+        We will proceed in two cases from here on, differentiated by :math:`r`.
+
+        **Case 1: :math:`d\leq r\leq 2d-1`**
+
+        In this case, we do not really need to do anything; the bitstrings :math:`\{v_i\}` already have length :math:`m:=r\leq 2d-1`, so we simply set :math:`U` to be
+        the identity map.
+
+        **Case 2: :math:`2d-1 < r`**
+
+        Fix :math:`m=2d-1` and define :math:`t:=r-m` so that :math:`r=m+t`.
+        According to the rank theorem, any candidate linear map :math:`U` satisfies :math:`\dim \Im U + \dim \ker U=r`.
+        If we guarantee linear independence of the rows of :math:`U`, we know that
+        :math:`\dim \Im U` matches the dimensions of the target space, :math:`m`, and thus
+        :math:`\dim \ker U=r-m=t`.
+
+        Our strategy now will be to find :math:`t` linearly independent vectors
+        :math:`\{w_k\}` such that the space :math:`\mathcal{W}:=\span\{w_1, \dots w_t\}` spanned by them satisfies
+
+        .. math::
+
+            v_i-v_j\not\in \mathcal{W} \forall i, j, \text{and} v_i\not\in \mathcal{W} \forall i \text{unless} v_i=0.   (2)
+
+        and to construct a map :math:`U` with linearly independent rows such that :math:`U w_k=0 \forall k`,
+        i.e. :math:`\mathcal{W}\subset\ker U`. Given that we know the kernel dimension to be :math:`t` and
+        :math:`\dim\mathcal{W}=t`, this implies :math:`\mathcal{W}=\ker U`.
+        To see that this actually ensures :math:`U` to have the properties we are after, assume that :math:`U v_i=0`
+        for some :math:`i` with :math:`v_i\neq 0` (or :math:`U(v_i-v_j)` for some :math:`(i,j)`). Due to :math:`\ker U=\mathcal{W}`,
+        this would imply :math:`v_i\in\mathcal{W}` (or :math:`v_i-v_j\in\mathcal{W}`), which is false by
+        construction of the vectors :math:`\{w_k\}`, in particular due to Eq.(2)
+
+        The main work thus is to show that we can actually construct these vectors
+        :math:`\{w_k\}` with the required properties. The construction of the map :math:`U` itself will then be a simple linear algebraic task.
+        We perform the construction of the vectors iteratively, corresponding to a proof by induction on :math:`t`.
+
+        From here on, we focus on the algorithmic structure and implementation, and do not reproduce the
+        proof of correctness from the paper.
+        Given :math:`D` vectors :math:`\{v_i\}` of length :math:`r` with rank :math:`r` (there are at least :math:`r` linearly independent
+        vectors), our task is to build :math:`t=r-(2\lceil \log_2 (D)\rceil -1)` linearly independent vectors
+        :math:`\{w_k\}` from the space :math:`\span\{v_i\}` such that the resulting vector space
+        :math:`\mathcal{W}=\span\{w_k\}` does not contain the :math:`\{v_i\}` or their pairwise differences,
+        see Eq.(2). If :math:`t=1`, there is a particularly simple method: we can brute-force a search of :math:`w_1`
+        over :math:`\mathbb{Z}_2^r\setminus (\{v_i\}\cup \{v_i-v_j\})`. This is implemented in ``_find_single_w``.
+
+        If :math:`t>1`, we recursively construct the :math:`\{w_k\}`.
+        We proceed in the following steps, thinking of ordered sets whenever we speak of sets.
+
+        1.  First, we select :math:`r` of the input vectors :math:`\mathcal{V}=\{v_i\}` that are linearly independent (and thus
+            form a--likely not orthonormal--basis
+            of :math:`\mathbb{Z}_2^r`). We relabel the vectors so that this selection of vectors has
+            the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
+            This is implemented in ``_get_bits_basis``, which returns the
+            basis and the remaining columns separately.
+        2.  If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use recursion), go
+            to step 2a. Else go to step 2b.
+        2a. Brute-force search a linear combination :math:`w_1` of the basis vectors :math:`\mathcal{B}` that is not
+            contained in the set :math:`\mathcal{V}\cup(\mathcal{V}-\mathcal{V})\cup \{0\}`, where the set
+            difference is meant pairwise between elements. Return :math:`\{w_1\}`.
+        2b. We split :math:`\mathcal{V}` into three sets: First, :math:`\mathcal{M}` contains all vectors that lie
+            in the span :math:`\mathcal{K}` of all but the last basis vector, which we denote as :math:`v_l`. The second set is simply :math:`\{v_l\}`.
+            Third, :math:`\mathcal{N}` contains all vectors that require both :math:`v_l` and a linear combination of the
+            other basis vectors. We maintain the relative ordering within each set, so that the first
+            vectors in :math:`\mathcal{M}` correspond to the basis vectors (except for :math:`v_l` which is
+            not in :math:`\mathcal{M}` by definition).
+        3.  Map each vector in :math:`\mathcal{N}` to the space :math:`\mathcal{K}` by
+            adding :math:`v_l`, and call the resulting set :math:`\mathcal{N}'`.
+        4.  Brute-force search a bitstring :math:`\ell` that is not contained in the set
+            :math:`\mathcal{L}=\mathcal{M}\cup\mathcal{N}'\cup(\mathcal{M}+\mathcal{N})\cup\{0\}`,
+            where addition of sets denotes pairwise addition of elements.
+            :math:`\ell` is guaranteed to exist.
+        5.  Form a new set of vectors :math:`\mathcal{V}'=\mathcal{M}\cup(\mathcal{N}'+\ell)\cup\{\ell\}`, while preserving ordering.
+            Split off the first vectors :math:`\mathcal{B}'` that correspond to the original basis vectors
+            (except for :math:`v_l`) off this set. Set :math:`\mathcal{B}\gets\mathcal{B}'`,
+            :math:`\mathcal{V}\gets\mathcal{V}'` and :math:`t\gets t'=t-1`, and go to step 2 to compute a
+            set of :math:`t'` vectors :math:`\mathcal{W}'` that satisfy the desired properties.
+        6.  Append :math:`w_t=\ell+v_l` to :math:`\mathcal{W}'` to obtain :math:`\mathcal{W}` and return :math:`\mathcal{W}`.
 
     """
     r, D = bits.shape
     d = ceil_log2(D)
     m = 2 * d - 1
-    print(f"{r=}, {D=}, {d=}, {m=}")
     if r <= m:
-        print("Case 1")
         U = np.eye(r, dtype=int)
-        b = bits
-        return U, b
+        return U, bits
 
-    t = r - m
-    W = _get_w_vectors(bits, r, t)
+    if r == m + 1:
+        # Particularly simple brute force solution
+        W = _find_single_w(bits, r)
+    else:
+        bits_basis, other_bits = _get_bits_basis(bits)
+        W = _find_w(bits_basis, other_bits, r, t=r - m)
 
-    U = _find_U_from_W(W, r, m)
-    assert all(_lin_indep(col, W.T) for col in bits.T)
-    assert all(
-        _lin_indep((col0 + col1) % 2, W.T) for col0, col1 in combinations(bits.T, r=2)
-    ), f"Unchanged"
+    U = _find_U_from_W(W, r)
+    _bits_not_in_space(bits, W)
     assert np.allclose((U @ W) % 2, 0)
     b = (U @ bits) % 2
     return U, b
 
 
-# class SumOfSlatersStatePreparation(Operation):
+class SumOfSlatersStatePreparation(Operation):
+    """Prepare a sum of Slaters state.
+    This operation implements the state preparation as introduced by
+    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__, which
+    is tailored to sparse states.
 
+    .. seealso:: :func:`~.compute_sos_encoding` for the required classical coprocessing.
 
-r"""Rewritten proof of Lemma 1.
+    Args:
 
-_Proof._
-Our goal is to find a linear map $U:\mathbb{Z}_2^{r}\to \mathbb{Z}_2^{m}$
-from $D$ distinct bitstrings $\{v_i\}$ with length $r$ to $D$ bitstrings with length $m\leq 2d-1$, where $d:=\lceil\log_2(D)\rceil$, such that
-
-$
-U(v_i-v_j)\neq 0 \forall i, j, \text{and} U(v_i)\neq 0 \forall i \text{unless} v_i=0.
-$
-
-It will be instructive to rewrite this as
-
-$
-v_i-v_j\not\in \ker U \forall i, j, \text{and} v_i\not\in \ker U \forall i \text{unless} v_i=0.   (1)
-$
-
-We will speak of $U$ and its matrix representation of zeros and ones interchangeably.
-Since $k$ bits can represent at most $2^k$ different bitstrings, we know that $D$ different bitstrings $\{v_i\}$ require at least $d$ bits to
-be represented, i.e. we know that $r\geq d$.
-We will proceed in two cases from here on, differentiated by $r$.
-
-Case 1: $d\leq r\leq 2d-1$
-==========================
-
-In this case, we do not really need to do anything; the bitstrings $\{v_i\}$ already have length $m:=r\leq 2d-1$, so we simply set $U$ to be
-the identity map.
-
-Case 2: $2d-1 < r$
-==================
-
-Fix $m=2d-1$ and define $t:=r-m$ so that $r=m+t$.
-According to the rank theorem, any candidate linear map $U$ satisfies $\dim \Im U + \dim \ker U=r$.
-If we guarantee linear independence of the rows of $U$, we know that
-$\dim \Im U$ matches the dimensions of the target space, $m$, and thus
-$\dim \ker U=r-m=t$.
-
-Our strategy now will be to find $t$ linearly independent vectors
-$\{w_k\}$ such that the space $\mathcal{W}:=\span\{w_1, \dots w_t\}$ spanned by them satisfies
-
-$
-v_i-v_j\not\in \mathcal{W} \forall i, j, \text{and} v_i\not\in \mathcal{W} \forall i \text{unless} v_i=0.   (2)
-$
-
-and to construct a map $U$ with linearly independent rows such that $U w_k=0 \forall k$,
-i.e. $\mathcal{W}\subset\ker U$. Given that we know the kernel dimension to be $t$ and
-$\dim\mathcal{W}=t$, this implies $\mathcal{W}=\ker U$.
-To see that this actually ensures $U$ to have the properties we are after, assume that $U v_i=0$
-for some $i$ with $v_i\neq 0$ (or $U(v_i-v_j)$ for some $(i,j)$). Due to $\ker U=\mathcal{W}$,
-this would imply $v_i\in\mathcal{W}$ (or $v_i-v_j\in\mathcal{W}$), which is false by
-construction of the vectors $\{w_k\}$, in particular due to Eq.(2)
-
-The main work thus is to show that we can actually construct these vectors
-$\{w_k\}$ with the required properties. The construction of the map $U$ itself will then be a simple linear algebraic task.
-We perform the construction of the vectors iteratively, corresponding to a proof by induction on $t$.
-For the base case, we deviate from the proof in the paper and start with $t=0$.
-The claim is trivially true for $t=0$, because we can find the empty set $\{\}$ of $0$ vectors $\{w_k\}_{k=1}^{t}$ such that Eq. (2) is satisfied.
-For the induction step, let $t>0$ and assume that we are given $t-1$ vectors $\{w_1,\dots w_{t-1}\}$
-"""
+    """
