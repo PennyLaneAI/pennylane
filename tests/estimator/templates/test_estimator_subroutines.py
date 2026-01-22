@@ -40,9 +40,7 @@ class TestResourceOutOfPlaceSquare:
     @pytest.mark.parametrize("register_size", (1, 2, 3))
     def test_resource_rep(self, register_size):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.OutOfPlaceSquare, 3 * register_size, {"register_size": register_size}
-        )
+        expected = qre.OutOfPlaceSquare(register_size)
         assert qre.OutOfPlaceSquare.resource_rep(register_size=register_size) == expected
 
     @pytest.mark.parametrize("register_size", (1, 2, 3))
@@ -91,15 +89,7 @@ class TestIQP:
     )
     def test_resource_rep(self, num_wires, pattern, spin_sym):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.IQP,
-            num_wires,
-            {
-                "num_wires": num_wires,
-                "pattern": pattern,
-                "spin_sym": spin_sym,
-            },
-        )
+        expected = qre.IQP(num_wires, pattern, spin_sym)
         assert (
             qre.IQP.resource_rep(num_wires=num_wires, pattern=pattern, spin_sym=spin_sym)
             == expected
@@ -230,15 +220,11 @@ class TestBBQRAM:
     )
     def test_resource_rep(self, num_wires, num_bitstrings, size_bitstring, num_bit_flips):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.BBQRAM,
-            num_wires,
-            {
-                "num_bitstrings": num_bitstrings,
-                "size_bitstring": size_bitstring,
-                "num_bit_flips": num_bit_flips,
-                "num_wires": num_wires,
-            },
+        expected = qre.BBQRAM(
+            num_bitstrings=num_bitstrings,
+            size_bitstring=size_bitstring,
+            num_bit_flips=num_bit_flips,
+            num_wires=num_wires,
         )
         assert (
             qre.BBQRAM.resource_rep(
@@ -309,7 +295,7 @@ class TestResourcePhaseGradient:
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5))
     def test_resource_rep(self, num_wires):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.PhaseGradient, num_wires, {"num_wires": num_wires})
+        expected = qre.PhaseGradient(num_wires=num_wires)
         assert qre.PhaseGradient.resource_rep(num_wires=num_wires) == expected
 
     @pytest.mark.parametrize(
@@ -373,12 +359,7 @@ class TestResourceOutMultiplier:
     @pytest.mark.parametrize("b_register_size", (4, 5, 6))
     def test_resource_rep(self, a_register_size, b_register_size):
         """Test that the compressed representation is correct."""
-        expected_num_wires = a_register_size + 3 * b_register_size
-        expected = qre.CompressedResourceOp(
-            qre.OutMultiplier,
-            expected_num_wires,
-            {"a_num_wires": a_register_size, "b_num_wires": b_register_size},
-        )
+        expected = qre.OutMultiplier(a_num_wires=a_register_size, b_num_wires=b_register_size)
         assert qre.OutMultiplier.resource_rep(a_register_size, b_register_size) == expected
 
     def test_resources(self):
@@ -413,9 +394,7 @@ class TestResourceSemiAdder:
     @pytest.mark.parametrize("register_size", (1, 2, 3, 4))
     def test_resource_rep(self, register_size):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.SemiAdder, 2 * register_size, {"max_register_size": register_size}
-        )
+        expected = qre.SemiAdder(max_register_size=register_size)
         assert qre.SemiAdder.resource_rep(max_register_size=register_size) == expected
 
     @pytest.mark.parametrize(
@@ -576,8 +555,8 @@ class TestResourceControlledSequence:
         """Test the resource params"""
         op = qre.ControlledSequence(base_op, num_ctrl_wires)
         expected_params = {
-            "base_cmpr_op": base_op.resource_rep_from_op(),
-            "num_ctrl_wires": num_ctrl_wires,
+            "base": base_op.resource_rep_from_op(),
+            "num_control_wires": num_ctrl_wires,
         }
 
         assert op.resource_params == expected_params
@@ -599,14 +578,7 @@ class TestResourceControlledSequence:
     def test_resource_rep(self, base_op, num_ctrl_wires):
         """Test the resource rep method"""
         base_cmpr_op = base_op.resource_rep_from_op()
-        expected = qre.CompressedResourceOp(
-            qre.ControlledSequence,
-            base_cmpr_op.num_wires + num_ctrl_wires,
-            {
-                "base_cmpr_op": base_cmpr_op,
-                "num_ctrl_wires": num_ctrl_wires,
-            },
-        )
+        expected = qre.ControlledSequence(base_cmpr_op, num_ctrl_wires)
 
         assert qre.ControlledSequence.resource_rep(base_cmpr_op, num_ctrl_wires) == expected
 
@@ -790,9 +762,9 @@ class TestResourceQPE:
             adj_qft_cmpr_op = adj_qft_op.resource_rep_from_op()
 
         assert op.resource_params == {
-            "base_cmpr_op": base_cmpr_op,
+            "base": base_cmpr_op,
             "num_estimation_wires": num_est_wires,
-            "adj_qft_cmpr_op": adj_qft_cmpr_op,
+            "adj_qft_op": adj_qft_cmpr_op,
         }
 
     @pytest.mark.parametrize(
@@ -812,15 +784,7 @@ class TestResourceQPE:
         if adj_qft_cmpr_op is None:
             adj_qft_cmpr_op = qre.Adjoint.resource_rep(qre.QFT.resource_rep(num_est_wires))
 
-        expected = qre.CompressedResourceOp(
-            qre.QPE,
-            base_cmpr_op.num_wires + num_est_wires,
-            {
-                "base_cmpr_op": base_cmpr_op,
-                "num_estimation_wires": num_est_wires,
-                "adj_qft_cmpr_op": adj_qft_cmpr_op,
-            },
-        )
+        expected = qre.QPE(base_cmpr_op, num_est_wires, adj_qft_cmpr_op)
 
         assert qre.QPE.resource_rep(base_cmpr_op, num_est_wires, adj_qft_cmpr_op) == expected
 
@@ -907,7 +871,7 @@ class TestResourceIterativeQPE:
         """Test the resource_params method"""
         op = qre.IterativeQPE(base_op, num_iter)
         expected = {
-            "base_cmpr_op": base_op.resource_rep_from_op(),
+            "base": base_op.resource_rep_from_op(),
             "num_iter": num_iter,
         }
         assert op.resource_params == expected
@@ -929,11 +893,7 @@ class TestResourceIterativeQPE:
     def test_resource_rep(self, base_op, num_iter):
         """Test the resource_rep method"""
         base_cmpr_op = base_op.resource_rep_from_op()
-        expected = qre.CompressedResourceOp(
-            qre.IterativeQPE,
-            base_cmpr_op.num_wires,
-            {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter},
-        )
+        expected = qre.IterativeQPE(base_cmpr_op, num_iter)
         assert qre.IterativeQPE.resource_rep(base_cmpr_op, num_iter) == expected
 
     @pytest.mark.parametrize(
@@ -1130,7 +1090,7 @@ class TestResourceQFT:
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4))
     def test_resource_rep(self, num_wires):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.QFT, num_wires, {"num_wires": num_wires})
+        expected = qre.QFT(num_wires=num_wires)
         assert qre.QFT.resource_rep(num_wires=num_wires) == expected
 
     @pytest.mark.parametrize(
@@ -1279,9 +1239,7 @@ class TestResourceAQFT:
     )
     def test_resource_rep(self, order, num_wires):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.AQFT, num_wires, {"order": order, "num_wires": num_wires}
-        )
+        expected = qre.AQFT(order=order, num_wires=num_wires)
         assert qre.AQFT.resource_rep(order=order, num_wires=num_wires) == expected
 
     @pytest.mark.parametrize(
@@ -1404,7 +1362,7 @@ class TestResourceBasisRotation:
     @pytest.mark.parametrize("dim", (1, 2, 3))
     def test_resource_rep(self, dim):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(qre.BasisRotation, dim, {"dim": dim})
+        expected = qre.BasisRotation(dim=dim)
         assert qre.BasisRotation.resource_rep(dim=dim) == expected
 
     @pytest.mark.parametrize("dim", (1, 2, 3))
@@ -1450,9 +1408,7 @@ class TestResourceSelect:
         num_wires = 3 + 2  # 3 op wires + 2 control wires
         cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
 
-        expected = qre.CompressedResourceOp(
-            qre.Select, num_wires, {"cmpr_ops": cmpr_ops, "num_wires": num_wires}
-        )
+        expected = qre.Select(ops=cmpr_ops, num_wires=num_wires)
         print(expected)
         print(qre.Select.resource_rep(cmpr_ops, num_wires))
         assert qre.Select.resource_rep(cmpr_ops, num_wires) == expected
@@ -1510,16 +1466,12 @@ class TestResourceSelect:
         from collections import defaultdict
 
         expected = defaultdict(int)
-        expected[qre.CompressedResourceOp(qre.X, 1)] = 0
+        expected[qre.X(wires=0)] = 0
         expected[
-            qre.CompressedResourceOp(
-                qre.Controlled,
-                num_wires=1,
-                params={
-                    "base_cmpr_op": qre.CompressedResourceOp(qre.X, num_wires=1),
-                    "num_ctrl_wires": 0,
-                    "num_zero_ctrl": 0,
-                },
+            qre.Controlled(
+                base_op=qre.X(),
+                num_ctrl_wires=0,
+                num_zero_ctrl=0,
             )
         ] = 1
 
@@ -1586,17 +1538,12 @@ class TestResourceQROM:
     )
     def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, restored):
         """Test that the compressed representation is correct."""
-        expected_num_wires = size_data_points + math.ceil(math.log2(num_data_points))
-        expected = qre.CompressedResourceOp(
-            qre.QROM,
-            expected_num_wires,
-            {
-                "num_bitstrings": num_data_points,
-                "size_bitstring": size_data_points,
-                "num_bit_flips": num_bit_flips,
-                "select_swap_depth": depth,
-                "restored": restored,
-            },
+        expected = qre.QROM(
+            num_bitstrings=num_data_points,
+            size_bitstring=size_data_points,
+            num_bit_flips=num_bit_flips,
+            restored=restored,
+            select_swap_depth=depth,
         )
         assert (
             qre.QROM.resource_rep(
@@ -2125,14 +2072,10 @@ class TestResourceSelectPauliRot:
     @pytest.mark.parametrize("num_ctrl_wires", (1, 2, 3, 4, 5))
     def test_resource_rep(self, num_ctrl_wires, rot_axis, precision):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.SelectPauliRot,
-            num_ctrl_wires + 1,
-            {
-                "rot_axis": rot_axis,
-                "num_ctrl_wires": num_ctrl_wires,
-                "precision": precision,
-            },
+        expected = qre.SelectPauliRot(
+            rot_axis,
+            num_ctrl_wires,
+            precision,
         )
         assert qre.SelectPauliRot.resource_rep(num_ctrl_wires, rot_axis, precision) == expected
 
@@ -2453,9 +2396,9 @@ class TestResourceUnaryIterationQPE:
             adj_qft_cmpr = adj_qft.resource_rep_from_op()
 
         assert op.resource_params == {
-            "cmpr_walk_op": walk_operator_cmpr,
+            "walk_op": walk_operator_cmpr,
             "num_iterations": n_iter,
-            "adj_qft_cmpr_op": adj_qft_cmpr,
+            "adj_qft_op": adj_qft_cmpr,
         }
 
     @pytest.mark.parametrize(
@@ -2487,17 +2430,8 @@ class TestResourceUnaryIterationQPE:
     )
     def test_resource_rep(self, walk_operator_cmpr, n_iter, adj_qft_cmpr):
         """Test the resource_rep method"""
-        num_estimation_wires = math.ceil(math.log2(n_iter + 1))
-        expected_num_wires = walk_operator_cmpr.num_wires + num_estimation_wires
-
-        expected = qre.CompressedResourceOp(
-            qre.UnaryIterationQPE,
-            expected_num_wires,
-            {
-                "cmpr_walk_op": walk_operator_cmpr,
-                "num_iterations": n_iter,
-                "adj_qft_cmpr_op": adj_qft_cmpr,
-            },
+        expected = qre.UnaryIterationQPE(
+            walk_op=walk_operator_cmpr, num_iterations=n_iter, adj_qft_op=adj_qft_cmpr
         )
 
         assert (
@@ -2632,7 +2566,7 @@ class TestResourceReflection:
         with pytest.raises(ValueError, match="Must provide at least one of `num_wires` or `U`"):
             qre.Reflection()
 
-        with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
+        with pytest.raises(ValueError, match="Must provide at least one of `num_wires` or `U`"):
             qre.Reflection.resource_rep()
 
     def test_wire_error(self):
@@ -2693,10 +2627,8 @@ class TestResourceReflection:
     )
     def test_resource_rep(self, num_wires, cmpr_U, alpha):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.Reflection,
-            num_wires,
-            {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U},
+        expected = qre.Reflection(
+            **{"alpha": alpha, "num_wires": num_wires, "U": cmpr_U},
         )
         assert qre.Reflection.resource_rep(num_wires, alpha, cmpr_U) == expected
 
@@ -2954,10 +2886,9 @@ class TestResourceQubitization:
     )
     def test_resource_rep(self, prep_cmpr, sel_cmpr):
         """Test that the compressed representation is correct."""
-        expected = qre.CompressedResourceOp(
-            qre.Qubitization,
-            sel_cmpr.num_wires,
-            {"prep_op": prep_cmpr, "select_op": sel_cmpr},
+        expected = qre.Qubitization(
+            prep_cmpr,
+            sel_cmpr,
         )
         assert qre.Qubitization.resource_rep(prep_cmpr, sel_cmpr) == expected
 

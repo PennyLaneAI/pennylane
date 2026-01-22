@@ -22,7 +22,6 @@ import pennylane.estimator as qre
 from pennylane.estimator import Allocate, Deallocate
 from pennylane.estimator.compact_hamiltonian import PauliHamiltonian, THCHamiltonian
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -191,7 +190,7 @@ class SelectTHC(ResourceOperator):
         num_batches: int = 1,
         rotation_precision: int = 15,
         select_swap_depth: int | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -209,7 +208,7 @@ class SelectTHC(ResourceOperator):
                 ``T``-gate count.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
 
         if not isinstance(thc_ham, THCHamiltonian):
@@ -228,17 +227,7 @@ class SelectTHC(ResourceOperator):
                 f"`num_batches` must be a positive integer less than the number of orbitals ({thc_ham.num_orbitals}), but got {num_batches}."
             )
 
-        num_orb = thc_ham.num_orbitals
-        tensor_rank = thc_ham.tensor_rank
-
-        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
-        params = {
-            "thc_ham": thc_ham,
-            "num_batches": num_batches,
-            "rotation_precision": rotation_precision,
-            "select_swap_depth": select_swap_depth,
-        }
-        return CompressedResourceOp(cls, num_wires, params)
+        return cls(thc_ham, num_batches, rotation_precision, select_swap_depth)
 
     @classmethod
     def resource_decomp(
@@ -796,7 +785,7 @@ class SelectPauli(ResourceOperator):
         return {"pauli_ham": self.pauli_ham}
 
     @classmethod
-    def resource_rep(cls, pauli_ham: PauliHamiltonian) -> CompressedResourceOp:
+    def resource_rep(cls, pauli_ham: PauliHamiltonian) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -805,9 +794,6 @@ class SelectPauli(ResourceOperator):
                 expressed as a linear combination of Pauli words, over which ``Select`` is applied.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))
-        num_wires = pauli_ham.num_qubits + num_ctrl_wires
-        params = {"pauli_ham": pauli_ham}
-        return CompressedResourceOp(cls, num_wires, params)
+        return cls(pauli_ham)

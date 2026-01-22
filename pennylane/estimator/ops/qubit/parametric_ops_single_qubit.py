@@ -17,7 +17,6 @@ import math
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -99,7 +98,7 @@ class PhaseShift(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -107,10 +106,10 @@ class PhaseShift(ResourceOperator):
             precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
 
-        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -265,7 +264,7 @@ class RX(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -273,10 +272,10 @@ class RX(ResourceOperator):
             precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
 
-        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -428,7 +427,7 @@ class RY(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -436,9 +435,9 @@ class RY(ResourceOperator):
             precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -587,7 +586,7 @@ class RZ(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -595,9 +594,9 @@ class RZ(ResourceOperator):
             precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
@@ -745,7 +744,7 @@ class Rot(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
+    def resource_rep(cls, precision: float | None = None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -753,9 +752,9 @@ class Rot(ResourceOperator):
             precision (float | None): The error threshold for the Clifford + T decomposition of this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: A compressed representation of the operator.
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: A compressed representation of the operator.
         """
-        return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
+        return cls(precision=precision)
 
     @classmethod
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:

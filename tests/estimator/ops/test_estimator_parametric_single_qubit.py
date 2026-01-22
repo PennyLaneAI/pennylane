@@ -28,7 +28,7 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
     Rot,
     _rotation_resources,
 )
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane.estimator.resource_operator import GateCount
 
 # pylint: disable=too-many-arguments, no-self-use
 
@@ -38,7 +38,7 @@ params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 @pytest.mark.parametrize("precision, expected", params)
 def test_rotation_resources(precision, expected):
     """Test the hardcoded resources used for RX, RY, RZ"""
-    gate_types = [GateCount(CompressedResourceOp(T, 1, {}), expected)]
+    gate_types = [GateCount(T(), expected)]
 
     assert gate_types == _rotation_resources(precision=precision)
 
@@ -50,14 +50,14 @@ class TestPauliRotation:
     params_errors = [10e-3, 10e-4, 10e-5]
     params_ctrl_res = [
         [
-            GateCount(CompressedResourceOp(Hadamard, 1, {}), 2),
-            GateCount(CompressedResourceOp(RZ, 1, {"precision": None}), 2),
+            GateCount(Hadamard(), 2),
+            GateCount(RZ(precision=None), 2),
         ],
         [
-            GateCount(CompressedResourceOp(RY, 1, {"precision": None}), 2),
+            GateCount(RY(precision=None), 2),
         ],
         [
-            GateCount(CompressedResourceOp(RZ, 1, {"precision": None}), 2),
+            GateCount(RZ(precision=None), 2),
         ],
     ]
 
@@ -74,7 +74,7 @@ class TestPauliRotation:
     def test_resource_rep(self, resource_op_class, precision):
         """Test the compact representation"""
         op = resource_op_class(wires=0, precision=precision)
-        expected = CompressedResourceOp(resource_op_class, 1, {"precision": precision})
+        expected = resource_op_class(precision=precision)
         assert op.resource_rep(precision=precision) == expected
 
     @pytest.mark.parametrize("resource_op_class", params_classes)
@@ -86,9 +86,9 @@ class TestPauliRotation:
         expected = _rotation_resources(precision=precision)
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert (
+            type(op_compressed_rep).resource_decomp(**op_compressed_rep.resource_params) == expected
+        )
 
     @pytest.mark.parametrize("resource_op_class", params_classes)
     @pytest.mark.parametrize("precision", params_errors)
@@ -115,7 +115,7 @@ class TestPauliRotation:
             (
                 GateCount(resource_op_class(precision).resource_rep(), 1)
                 if z
-                else GateCount(CompressedResourceOp(Identity, 1, {}), 1)
+                else GateCount(Identity(), 1)
             )
         ]
         assert resource_op_class(precision).pow_resource_decomp(z, {"precision": None}) == expected
@@ -202,7 +202,7 @@ class TestRot:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = Rot(wires=0)
-        expected = CompressedResourceOp(Rot, 1, {"precision": None})
+        expected = Rot(precision=None)
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -213,9 +213,9 @@ class TestRot:
         expected = [GateCount(ry, 1), GateCount(rz, 2)]
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert (
+            type(op_compressed_rep).resource_decomp(**op_compressed_rep.resource_params) == expected
+        )
 
     def test_resource_params(self):
         """Test that the resource params are correct"""
@@ -307,7 +307,7 @@ class TestPhaseShift:
     def test_resource_rep(self):
         """Test the compressed representation"""
         op = PhaseShift(wires=0)
-        expected = CompressedResourceOp(PhaseShift, 1, {"precision": None})
+        expected = PhaseShift(precision=None)
         assert op.resource_rep() == expected
 
     def test_resources_from_rep(self):
@@ -318,9 +318,9 @@ class TestPhaseShift:
         expected = [GateCount(rz, 1), GateCount(global_phase, 1)]
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_type = op_compressed_rep.op_type
-        op_resource_params = op_compressed_rep.params
-        assert op_resource_type.resource_decomp(**op_resource_params) == expected
+        assert (
+            type(op_compressed_rep).resource_decomp(**op_compressed_rep.resource_params) == expected
+        )
 
     def test_resource_params(self):
         """Test that the resource params are correct"""

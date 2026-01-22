@@ -14,13 +14,12 @@
 r"""Resource operators for QubitUnitary operation."""
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
 from pennylane.estimator.templates import SelectPauliRot
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, Wires
 
 # pylint: disable=arguments-differ
 
@@ -72,15 +71,19 @@ class QubitUnitary(ResourceOperator):
     resource_keys = {"num_wires", "precision"}
 
     def __init__(
-        self, num_wires: int | None = None, precision: float | None = None, wires: WiresLike = None
+        self,
+        num_wires: int | None = None,
+        precision: float | None = None,
+        wires: WiresLike = None,
+        **kwargs,
     ):
         if num_wires is None:
             if wires is None:
                 raise ValueError("Must provide at least one of `num_wires` and `wires`.")
-            num_wires = len(wires)
+            num_wires = len(Wires(wires))
         self.num_wires = num_wires
         self.precision = precision
-        super().__init__(wires=wires)
+        super().__init__(wires=wires, **kwargs)
 
     @property
     def resource_params(self) -> dict:
@@ -95,7 +98,7 @@ class QubitUnitary(ResourceOperator):
         return {"num_wires": self.num_wires, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_wires, precision=None) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires, precision=None) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -105,10 +108,9 @@ class QubitUnitary(ResourceOperator):
                 qubit rotations used to synthesize the n-qubit unitary.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        params = {"num_wires": num_wires, "precision": precision}
-        return CompressedResourceOp(cls, num_wires, params)
+        return cls(num_wires=num_wires, precision=precision)
 
     @classmethod
     def resource_decomp(cls, num_wires, precision=None) -> list[GateCount]:
@@ -140,9 +142,9 @@ class QubitUnitary(ResourceOperator):
         """
         gate_lst = []
 
-        one_qubit_decomp_cost = [GateCount(resource_rep(qre.RZ, {"precision": precision}))]
+        one_qubit_decomp_cost = [GateCount(resource_rep(qre.RZ, precision=precision))]
         two_qubit_decomp_cost = [
-            GateCount(resource_rep(qre.RZ, {"precision": precision}), 4),
+            GateCount(resource_rep(qre.RZ, precision=precision), 4),
             GateCount(resource_rep(qre.CNOT), 3),
         ]
 
@@ -158,19 +160,15 @@ class QubitUnitary(ResourceOperator):
         for index in range(2, num_wires):
             multiplex_z = resource_rep(
                 SelectPauliRot,
-                {
-                    "num_ctrl_wires": index,
-                    "rot_axis": "Z",
-                    "precision": precision,
-                },
+                num_ctrl_wires=index,
+                rot_axis="Z",
+                precision=precision,
             )
             multiplex_y = resource_rep(
                 SelectPauliRot,
-                {
-                    "num_ctrl_wires": index,
-                    "rot_axis": "Y",
-                    "precision": precision,
-                },
+                num_ctrl_wires=index,
+                rot_axis="Y",
+                precision=precision,
             )
 
             gate_lst.append(GateCount(multiplex_z, 2 * 4 ** (num_wires - (1 + index))))

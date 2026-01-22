@@ -15,7 +15,6 @@ r"""Resource operators for non parametric single qubit operations."""
 
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
@@ -72,10 +71,10 @@ class Hadamard(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
+        return cls()
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
@@ -234,10 +233,10 @@ class S(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
+        return cls()
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
@@ -391,7 +390,7 @@ class SWAP(ResourceOperator):
                     0 & 1 & 0 & 0\\
                     0 & 0 & 0 & 1\\
                     0 & 0 & 1 & 0
-            \end{bmatrix}.
+                \end{bmatrix}.
 
     .. seealso:: The corresponding PennyLane operation :class:`~.pennylane.SWAP`.
 
@@ -422,10 +421,10 @@ class SWAP(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation."""
-        return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
+        return cls()
 
     @classmethod
     def resource_decomp(cls) -> list[GateCount]:
@@ -605,10 +604,10 @@ class T(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
+        return cls()
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
@@ -798,10 +797,10 @@ class X(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
+        return cls()
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
@@ -975,10 +974,10 @@ class Y(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
+        return cls()
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:
@@ -1133,10 +1132,10 @@ class Z(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> ResourceOperator:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
+        return cls()
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None) -> list[GateCount]:

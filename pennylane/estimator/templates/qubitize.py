@@ -21,7 +21,6 @@ from pennylane.estimator.ops.op_math.controlled_ops import MultiControlledX, Tof
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
 from pennylane.estimator.ops.qubit.non_parametric_ops import X
 from pennylane.estimator.resource_operator import (
-    CompressedResourceOp,
     GateCount,
     ResourceOperator,
     _dequeue,
@@ -128,18 +127,17 @@ class QubitizeTHC(ResourceOperator):
         coeff_register = int(math.ceil(math.log2(num_coeff)))
 
         if coeff_precision is None:
-            coeff_precision = prep_op.coeff_precision if prep_op else 15
+            coeff_precision = prep_op.resource_params["coeff_precision"] if prep_op else 15
         self.coeff_precision = coeff_precision
 
         if rotation_precision is None:
-            rotation_precision = select_op.rotation_precision if select_op else 15
+            rotation_precision = (
+                select_op.resource_params["rotation_precision"] if select_op else 15
+            )
         self.rotation_precision = rotation_precision
 
         if prep_op is None:
-            prep_op = PrepTHC(
-                thc_ham,
-                coeff_precision=coeff_precision,
-            )
+            prep_op = PrepTHC(thc_ham, coeff_precision=coeff_precision)
         _dequeue(prep_op)
         self.prep_op = prep_op.resource_rep_from_op()
 
@@ -175,12 +173,12 @@ class QubitizeTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                   Hamiltonian for which the walk operator is being created.
-                * prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+                * prep_op (:class:`~pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                   resource operator, corresponding to the prepare routine. If :code:`None`, the
-                  default :class:`~.pennylane.estimator.templates.PrepTHC` will be used.
-                * select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+                  default :class:`~.pennylane.estimator.templates.stateprep.PrepTHC` will be used.
+                * select_op (:class:`~pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                   resource operator, corresponding to the select routine. If :code:`None`, the
-                  default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
+                  default :class:`~.pennylane.estimator.templates.select.SelectTHC` will be used.
                 * coeff_precision (int | None): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian.
                 * rotation_precision (int | None): The number of bits used to represent the precision for loading
@@ -198,21 +196,21 @@ class QubitizeTHC(ResourceOperator):
     def resource_rep(
         cls,
         thc_ham: THCHamiltonian,
-        prep_op: CompressedResourceOp | None = None,
-        select_op: CompressedResourceOp | None = None,
+        prep_op: ResourceOperator | None = None,
+        select_op: ResourceOperator | None = None,
         coeff_precision: int | None = None,
         rotation_precision: int | None = None,
-    ) -> CompressedResourceOp:
+    ) -> ResourceOperator:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
                 Hamiltonian for which the walk operator is being created.
-            prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+            prep_op (:class:`~pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                 resource operator, corresponding to the prepare routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.tempaltes.PrepTHC` will be used.
-            select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+            select_op (:class:`~pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                 resource operator, corresponding to the select routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
             coeff_precision (int | None): The number of bits used to represent the precision for loading
@@ -221,7 +219,7 @@ class QubitizeTHC(ResourceOperator):
                 the rotation angles.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
@@ -229,39 +227,27 @@ class QubitizeTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
             )
 
-        num_orb = thc_ham.num_orbitals
-        tensor_rank = thc_ham.tensor_rank
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
-
         if coeff_precision is None:
-            coeff_precision = prep_op.params["coeff_precision"] if prep_op else 15
+            coeff_precision = prep_op.resource_params["coeff_precision"] if prep_op else 15
         if rotation_precision is None:
-            rotation_precision = select_op.params["rotation_precision"] if select_op else 15
+            rotation_precision = (
+                select_op.resource_params["rotation_precision"] if select_op else 15
+            )
 
-        num_wires = (
-            num_orb * 2
-            + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
-            + coeff_register
-            + 8
-            + coeff_precision
+        return cls(
+            thc_ham,
+            prep_op=prep_op,
+            select_op=select_op,
+            coeff_precision=coeff_precision,
+            rotation_precision=rotation_precision,
         )
-
-        params = {
-            "thc_ham": thc_ham,
-            "prep_op": prep_op,
-            "select_op": select_op,
-            "coeff_precision": coeff_precision,
-            "rotation_precision": rotation_precision,
-        }
-        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def resource_decomp(
         cls,
         thc_ham: THCHamiltonian,
-        prep_op: CompressedResourceOp | None = None,
-        select_op: CompressedResourceOp | None = None,
+        prep_op: ResourceOperator | None = None,
+        select_op: ResourceOperator | None = None,
         coeff_precision: int | None = None,
         rotation_precision: int | None = None,
     ) -> list[GateCount]:
@@ -277,10 +263,10 @@ class QubitizeTHC(ResourceOperator):
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            prep_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+            prep_op (:class:`~pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                 resource operator, corresponding to the prepare routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.PrepTHC` will be used.
-            select_op (:class:`~pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional compressed
+            select_op (:class:`~pennylane.estimator.resource_operator.ResourceOperator` | None): An optional compressed
                 resource operator, corresponding to the select routine. If :code:`None`, the
                 default :class:`~.pennylane.estimator.templates.SelectTHC` will be used.
             coeff_precision (int | None): The number of bits used to represent the precision for loading
@@ -301,8 +287,10 @@ class QubitizeTHC(ResourceOperator):
 
         select_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": select_op.params["select_swap_depth"] if select_op else None,
-            "num_batches": select_op.params["num_batches"] if select_op else 1,
+            "select_swap_depth": (
+                select_op.resource_params["select_swap_depth"] if select_op else None
+            ),
+            "num_batches": select_op.resource_params["num_batches"] if select_op else 1,
         }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
@@ -315,7 +303,7 @@ class QubitizeTHC(ResourceOperator):
 
         prep_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": prep_op.params["select_swap_depth"] if prep_op else None,
+            "select_swap_depth": prep_op.resource_params["select_swap_depth"] if prep_op else None,
         }
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
@@ -328,7 +316,7 @@ class QubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
-        coeff_precision = prep_op.params["coeff_precision"]
+        coeff_precision = prep_op.resource_params["coeff_precision"]
 
         toffoli = resource_rep(Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
@@ -382,8 +370,10 @@ class QubitizeTHC(ResourceOperator):
 
         select_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": select_op.params["select_swap_depth"] if select_op else None,
-            "num_batches": select_op.params["num_batches"] if select_op else 1,
+            "select_swap_depth": (
+                select_op.resource_params["select_swap_depth"] if select_op else None
+            ),
+            "num_batches": select_op.resource_params["num_batches"] if select_op else 1,
         }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
@@ -402,7 +392,7 @@ class QubitizeTHC(ResourceOperator):
 
         prep_kwargs = {
             "thc_ham": thc_ham,
-            "select_swap_depth": prep_op.params["select_swap_depth"] if prep_op else None,
+            "select_swap_depth": prep_op.resource_params["select_swap_depth"] if prep_op else None,
         }
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
@@ -415,7 +405,7 @@ class QubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(resource_rep(Adjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
-        coeff_precision = prep_op.params["coeff_precision"]
+        coeff_precision = prep_op.resource_params["coeff_precision"]
 
         toffoli = resource_rep(Toffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))

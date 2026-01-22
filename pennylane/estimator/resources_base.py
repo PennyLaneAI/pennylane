@@ -457,7 +457,7 @@ class Resources:
         if gate_set is None:
             all_gate_counts = defaultdict(lambda: defaultdict(int))
             for op, count in self.gate_types.items():
-                params_tuple = tuple(sorted(op.params.items())) if op.params else ()
+                params_tuple = tuple(sorted(op.resource_params.items())) if op.resource_params else ()
                 all_gate_counts[op.name][params_tuple] += count
 
             other_gates = sorted(

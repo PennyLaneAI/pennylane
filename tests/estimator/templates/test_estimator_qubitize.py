@@ -103,26 +103,23 @@ class TestQubitizeTHC:
         """Test that the compressed representation  for QubitizeTHC is correct."""
 
         if prep_op:
-            coeff_precision = prep_op.params["coeff_precision"]
+            coeff_precision = prep_op.coeff_precision
         else:
             coeff_precision = 15
 
         if select_op:
-            rotation_precision = select_op.params["rotation_precision"]
+            rotation_precision = select_op.rotation_precision
         else:
             rotation_precision = 15
 
-        expected = qre.CompressedResourceOp(
-            qre.QubitizeTHC,
-            num_wires,
-            {
-                "thc_ham": thc_ham,
-                "prep_op": prep_op,
-                "select_op": select_op,
-                "coeff_precision": coeff_precision,
-                "rotation_precision": rotation_precision,
-            },
+        expected = qre.QubitizeTHC(
+            thc_ham,
+            prep_op=prep_op,
+            select_op=select_op,
+            coeff_precision=coeff_precision,
+            rotation_precision=rotation_precision,
         )
+        assert expected.num_wires == num_wires
         assert (
             qre.QubitizeTHC.resource_rep(thc_ham, prep_op=prep_op, select_op=select_op) == expected
         )

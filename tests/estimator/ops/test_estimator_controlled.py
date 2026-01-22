@@ -32,7 +32,7 @@ from pennylane.estimator.ops.op_math.controlled_ops import (
     TemporaryAND,
     Toffoli,
 )
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane.estimator.resource_operator import GateCount
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
@@ -61,7 +61,7 @@ class TestCH:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CH, 2, {})
+        expected_rep = CH()
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -123,7 +123,7 @@ class TestCY:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CY, 2, {})
+        expected_rep = CY()
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -197,7 +197,7 @@ class TestCZ:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CZ, 2, {})
+        expected_rep = CZ()
         assert self.op.resource_rep() == expected_rep
 
     def test_resource_params(self):
@@ -269,7 +269,7 @@ class TestCSWAP:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CSWAP, 3, {})
+        expected_rep = CSWAP()
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -340,7 +340,7 @@ class TestCCZ:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CCZ, 3, {})
+        expected_rep = CCZ()
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -409,7 +409,7 @@ class TestCNOT:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected = CompressedResourceOp(CNOT, 2, {})
+        expected = CNOT()
         assert self.op.resource_rep() == expected
 
     def test_resource_params(self):
@@ -481,7 +481,7 @@ class TestTemporaryAND:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(TemporaryAND, 3, {})
+        expected_rep = TemporaryAND()
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -585,7 +585,7 @@ class TestToffoli:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(Toffoli, 3, {"elbow": None})
+        expected_rep = Toffoli(elbow=None)
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -730,12 +730,10 @@ class TestMultiControlledX:
             Deallocate(3),
         ]
 
-    @pytest.mark.parametrize("op, params", zip(res_ops, res_params))
-    def test_resource_rep(self, op, params):
+    @pytest.mark.parametrize("op", res_ops)
+    def test_resource_rep(self, op):
         """Test the resource_rep produces the correct compressed representation."""
-        op_resource_params = self._prep_params(*params)
-        num_wires = op_resource_params["num_ctrl_wires"] + 1
-        expected_rep = CompressedResourceOp(MultiControlledX, num_wires, op_resource_params)
+        expected_rep = MultiControlledX(**op.resource_params)
         assert op.resource_rep(**op.resource_params) == expected_rep
 
     @pytest.mark.parametrize("op, params", zip(res_ops, res_params))
@@ -828,7 +826,7 @@ class TestCRX:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CRX, 2, {"precision": None})
+        expected_rep = CRX(precision=None)
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -907,7 +905,7 @@ class TestCRY:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CRY, 2, {"precision": None})
+        expected_rep = CRY(precision=None)
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -980,7 +978,7 @@ class TestCRZ:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CRZ, 2, {"precision": None})
+        expected_rep = CRZ(precision=None)
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -1058,7 +1056,7 @@ class TestCRot:
 
     def test_resource_rep(self):
         """Test the resource_rep produces the correct compressed representation."""
-        expected_rep = CompressedResourceOp(CRot, 2, {"precision": None})
+        expected_rep = CRot(precision=None)
         assert self.op.resource_rep(**self.op.resource_params) == expected_rep
 
     def test_resource_params(self):
@@ -1130,8 +1128,8 @@ class TestControlledPhaseShift:
         op = ControlledPhaseShift()
 
         expected = [
-            GateCount(CompressedResourceOp(CNOT, 2, {}), 2),
-            GateCount(CompressedResourceOp(RZ, 1, {"precision": None}), 3),
+            GateCount(CNOT(), 2),
+            GateCount(RZ(precision=None), 3),
         ]
 
         assert op.resource_decomp(**op.resource_params) == expected
@@ -1148,7 +1146,7 @@ class TestControlledPhaseShift:
         """Test the compressed representation"""
 
         op = ControlledPhaseShift()
-        expected = CompressedResourceOp(ControlledPhaseShift, 2, {"precision": None})
+        expected = ControlledPhaseShift(precision=None)
 
         assert op.resource_rep() == expected
 
@@ -1164,13 +1162,13 @@ class TestControlledPhaseShift:
         op = ControlledPhaseShift()
 
         expected = [
-            GateCount(CompressedResourceOp(CNOT, 2, {}), 2),
-            GateCount(CompressedResourceOp(RZ, 1, {"precision": None}), 3),
+            GateCount(CNOT(), 2),
+            GateCount(RZ(precision=None), 3),
         ]
 
         op_compressed_rep = op.resource_rep_from_op()
-        op_resource_params = op_compressed_rep.params
-        op_compressed_rep_type = op_compressed_rep.op_type
+        op_resource_params = op_compressed_rep.resource_params
+        op_compressed_rep_type = type(op_compressed_rep)
 
         assert op_compressed_rep_type.resource_decomp(**op_resource_params) == expected
 

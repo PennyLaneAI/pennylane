@@ -15,7 +15,7 @@ r"""Resource operators for parametric multi qubit operations."""
 from collections import Counter
 
 import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
+from pennylane.estimator.resource_operator import GateCount, ResourceOperator
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.wires import Wires, WiresLike
 
@@ -139,11 +139,9 @@ class MultiRZ(ResourceOperator):
             precision (float): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        return CompressedResourceOp(
-            cls, num_wires, {"num_wires": num_wires, "precision": precision}
-        )
+        return cls(num_wires=num_wires, precision=precision)
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -389,12 +387,9 @@ class PauliRot(ResourceOperator):
             precision (float | None): error threshold for the Clifford + T decomposition of this operation
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        num_wires = len(pauli_string)
-        return CompressedResourceOp(
-            cls, num_wires, {"pauli_string": pauli_string, "precision": precision}
-        )
+        return cls(pauli_string=pauli_string, precision=precision)
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
@@ -712,10 +707,9 @@ class PCPhase(ResourceOperator):
                 decomposition of the :class:`~pennylane.estimator.ops.qubit.parametric_ops_single_qubit.PhaseShift` gates used to implement this operation.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~.pennylane.estimator.resource_operator.ResourceOperator`: the operator
         """
-        params = {"num_wires": num_wires, "dim": dim, "rotation_precision": rotation_precision}
-        return CompressedResourceOp(cls, num_wires, params)
+        return cls(num_wires=num_wires, dim=dim, rotation_precision=rotation_precision)
 
     @staticmethod
     def _ctrl_phase_shift_resource(
@@ -723,7 +717,7 @@ class PCPhase(ResourceOperator):
         n_control_wires: int,
         n_zero_control_values: int,
         rotation_precision: float | None,
-    ) -> dict[CompressedResourceOp, int]:
+    ) -> dict[ResourceOperator, int]:
         """Returns the resources for a (multi-)controlled :class:`~pennylane.estimator.ops.qubit.parametric_ops_single_qubit.PhaseShift` gate.
 
         Args:
