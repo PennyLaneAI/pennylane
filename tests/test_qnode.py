@@ -35,6 +35,20 @@ from pennylane.workflow.qnode import _make_execution_config
 from pennylane.workflow.set_shots import set_shots
 
 
+def test_transform_program_prop_is_deprecated():
+    """Tests that the deprecation warning is raised."""
+
+    @qml.qnode(qml.device("reference.qubit"))
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="The 'transform_program' property of the QNode has been renamed",
+    ):
+        _ = circuit.transform_program
+
+
 def dummyfunc():
     """dummy func."""
     return None

@@ -376,7 +376,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         For example, we can create a transform that will apply the ``cancel-inverses`` pass, like the
         in-built ``qml.transforms.cancel_inverses`` transform.
 
-        .. code-block::
+        .. code-block:: python
 
             my_transform = qml.transform(pass_name="cancel-inverses")
 
@@ -390,9 +390,9 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         We can see that the instruction to apply ``"cancel-inverses"`` is present in the initial MLIR.
 
-        >>> circuit() # doctest: +SKIP
+        >>> circuit()
         Array(1., dtype=float64)
-        >>> print(circuit.mlir[200:600]) # doctest: +SKIP
+        >>> print(circuit.mlir[200:600])
         tensor<f64>
         }
         module @module_circuit {
