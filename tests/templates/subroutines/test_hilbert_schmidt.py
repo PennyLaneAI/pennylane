@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 
@@ -357,7 +358,7 @@ class TestHilbertSchmidt:
         with qml.tape.QuantumTape() as tape:
             qml.HilbertSchmidt(V, U)
 
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name

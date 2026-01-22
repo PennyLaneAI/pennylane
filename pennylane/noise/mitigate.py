@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.operation import Channel
 from pennylane.ops.op_math import adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -545,7 +546,11 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tapes, func = decompose(tape, stopping_condition=lambda op: not isinstance(op, QuantumScript))
+    tapes, func = decompose(
+        tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        stopping_condition=lambda op: not isinstance(op, QuantumScript),
+    )
     tape = func(tapes)
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 

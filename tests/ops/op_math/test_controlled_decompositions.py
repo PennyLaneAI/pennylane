@@ -24,6 +24,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.controlled import _is_single_qubit_special_unitary
@@ -861,7 +862,9 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, func = qml.transforms.decompose(tape, max_expansion=1)
+        tapes, func = qml.transforms.decompose(
+            tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1
+        )
         tape = func(tapes)
 
         @qml.qnode(dev)

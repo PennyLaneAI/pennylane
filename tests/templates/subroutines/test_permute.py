@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 
@@ -100,7 +101,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
 
         assert len(tape.operations) == 0
@@ -155,7 +156,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
 
         # Ensure all operations are SWAPs, and that the wires are the same
@@ -206,7 +207,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
 
         # Ensure all operations are SWAPs, and that the wires are the same
@@ -265,7 +266,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
 
         # Ensure all operations are SWAPs, and that the wires are the same
@@ -328,7 +329,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
 
         # Make sure to start comparison after the set of RZs have been applied

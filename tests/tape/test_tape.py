@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import CircuitGraph
+from pennylane.decomposition import gate_sets
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ExpectationMP,
@@ -922,7 +923,9 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tapes, func = decompose(
-            tape, stopping_condition=lambda obj: getattr(obj, "name", None) in ["Rot"]
+            tape,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda obj: getattr(obj, "name", None) in ["Rot"],
         )
         new_tape = func(new_tapes)
         assert len(new_tape.operations) == 4
@@ -1194,7 +1197,7 @@ class TestExpand:
             return obj.name in ["PauliX"]
 
         qs = qml.tape.QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
-        _, _ = decompose(qs, stopping_condition=stop_at)
+        _, _ = decompose(qs, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=stop_at)
         assert len(recwarn) == 0
 
 

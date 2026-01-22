@@ -23,6 +23,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.decomposition import gate_sets
 from pennylane.ops import ChangeOpBasis
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.adjoint import AdjointOperation
@@ -180,7 +181,7 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(U_A, lst_projectors)
 
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
@@ -224,7 +225,7 @@ class TestQSVT:
 
         tape2 = qml.tape.QuantumScript.from_queue(q)
 
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
         i = 0
         j = 0
@@ -354,7 +355,7 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(quantum_function(A), phi_func(phis))
 
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name

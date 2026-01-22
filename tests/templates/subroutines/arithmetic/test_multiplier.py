@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -163,7 +164,9 @@ class TestMultiplier:
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
         tapes, func = qml.transforms.decompose(
-            qml.tape.QuantumScript([qml.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
+            qml.tape.QuantumScript([qml.Multiplier(k, x_wires, mod, work_wires)]),
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            max_expansion=2,
         )
         multiplier_decomposition = func(tapes).operations
 

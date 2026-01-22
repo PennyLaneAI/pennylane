@@ -28,6 +28,7 @@ from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
+from ..decomposition import gate_sets
 from ..transforms import decompose
 from .ops import MeasureNode, PrepareNode
 
@@ -409,7 +410,7 @@ def _qcut_expand_fn(
             return tape
 
     if max_depth > 0:
-        tapes, func = decompose(tape)
+        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tapes)
         return _qcut_expand_fn(tape, max_depth=max_depth - 1, auto_cutter=auto_cutter)
 

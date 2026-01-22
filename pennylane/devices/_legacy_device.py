@@ -41,6 +41,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
 from pennylane.wires import Wires
 
+from ..decomposition import gate_sets
 from .tracker import Tracker
 
 
@@ -592,7 +593,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         if expand_state_prep:  # expand mid-circuit StatePrepBase operations
             circuits, func = decompose(
-                circuit, stopping_condition=lambda op: not isinstance(op, StatePrepBase)
+                circuit,
+                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+                stopping_condition=lambda op: not isinstance(op, StatePrepBase),
             )
             circuit = func(circuits)
 
@@ -611,7 +614,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         elif ops_not_supported:
             circuits, func = decompose(
-                circuit, max_expansion=max_expansion, stopping_condition=self.stopping_condition
+                circuit,
+                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+                max_expansion=max_expansion,
+                stopping_condition=self.stopping_condition,
             )
             circuit = func(circuits)
 

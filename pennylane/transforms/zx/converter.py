@@ -27,6 +27,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 from pennylane.wires import Wires
 
+from ...decomposition import gate_sets
 from .helper import _needs_pyzx
 
 
@@ -371,7 +372,10 @@ def to_zx(tape, expand_measurements=False):
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
         mapped_tapes, func = qml.transforms.decompose(
-            mapped_tape, max_expansion=10, stopping_condition=stop_crit
+            mapped_tape,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            max_expansion=10,
+            stopping_condition=stop_crit,
         )
         mapped_tape = func(mapped_tapes)
 

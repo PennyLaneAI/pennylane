@@ -19,6 +19,7 @@ import pytest
 from scipy.stats import norm
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qmc import (
     QuantumMonteCarlo,
@@ -318,7 +319,9 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        tapes, func = qml.transforms.decompose(qml.tape.QuantumScript(tape.operations[2:]))
+        tapes, func = qml.transforms.decompose(
+            qml.tape.QuantumScript(tape.operations[2:]), gate_set=gate_sets.ROTATIONS_PLUS_CNOT
+        )
         tape = func(tapes)
         queue_after_qpe = tape.operations
 
@@ -339,7 +342,7 @@ class TestQuantumMonteCarlo:
             qml.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
         qpe_tape = qml.tape.QuantumScript.from_queue(q_qpe_tape)
-        qpe_tapes, func = qml.transforms.decompose(qpe_tape)
+        qpe_tapes, func = qml.transforms.decompose(qpe_tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         qpe_tape = func(qpe_tapes)
 
         assert len(queue_after_qpe) == len(qpe_tape.operations)

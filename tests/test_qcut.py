@@ -34,6 +34,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qcut
+from pennylane.decomposition import gate_sets
 from pennylane.queuing import WrappedObj
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
@@ -5405,7 +5406,7 @@ class TestAutoCutCircuit:
             qml.expval(obs)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape0s, func = decompose(tape0)
+        tape0s, func = decompose(tape0, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tape0s)
         graph = qcut.tape_to_graph(tape)
         cut_graph = qcut.find_and_place_cuts(
@@ -5584,7 +5585,7 @@ class TestCutCircuitWithHamiltonians:
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
 
-        tape0s, func = decompose(tape0)
+        tape0s, func = decompose(tape0, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tape = func(tape0s)
         tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 

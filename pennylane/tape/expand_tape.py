@@ -18,13 +18,15 @@ import warnings
 
 # pylint: disable=protected-access
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.queuing import QueuingManager
-
-from ..exceptions import PennyLaneDeprecationWarning
-from .qscript import QuantumScript
-from .tape import _validate_computational_basis_sampling, rotations_and_diagonal_measurements
+from pennylane.tape import (
+    _validate_computational_basis_sampling,
+    rotations_and_diagonal_measurements,
+)
+from pennylane.tape.qscript import QuantumScript
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
