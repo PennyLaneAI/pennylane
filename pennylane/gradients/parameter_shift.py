@@ -399,7 +399,7 @@ def expval_param_shift(
                 )
 
         if op.name in ("GlobalPhase", "Adjoint(GlobalPhase)"):
-            # TODO: there has to be a better way!
+            # TODO: there has to be a better way! [sc-109173]
             coeffs = []
             g_tapes = []
             unshifted_coeff = None
