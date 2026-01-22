@@ -338,10 +338,10 @@ class TestMeasurementReset:
 
         vars = {
             "c": Variable(
-                "MeasurementValue", MeasurementValue([PauliX(0)], mock_one), -1, 0, False
+                "MeasurementValue", MeasurementValue([MidMeasure(0)], mock_one), -1, 0, False
             ),
             "d": Variable(
-                "MeasurementValue", MeasurementValue([PauliX(0)], mock_zero), -1, 0, False
+                "MeasurementValue", MeasurementValue([MidMeasure(0)], mock_zero), -1, 0, False
             ),
         }
 

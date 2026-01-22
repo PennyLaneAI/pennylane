@@ -14,10 +14,16 @@
 """
 Defines the MeasurementValue class
 """
+from __future__ import annotations
+
 from collections.abc import Callable, Generator
+from typing import TYPE_CHECKING
 
 from pennylane import math
 from pennylane.wires import Wires
+
+if TYPE_CHECKING:
+    from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 
 
 def no_processing(results):
@@ -36,7 +42,9 @@ class MeasurementValue:
 
     name = "MeasurementValue"
 
-    def __init__(self, measurements: list, processing_fn: Callable | None = None):
+    def __init__(
+        self, measurements: list[MidMeasure | PauliMeasure], processing_fn: Callable | None = None
+    ):
         self.measurements = measurements
         self._processing_fn = processing_fn
 
@@ -191,7 +199,7 @@ class MeasurementValue:
         values = tuple(measurements[meas] for meas in self.measurements)
         return self.processing_fn(*values)
 
-    def _merge(self, other: "MeasurementValue"):
+    def _merge(self, other: MeasurementValue):
         """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
