@@ -97,7 +97,7 @@ def toggle_graph_decomposition():
 
     @contextmanager
     def toggle_ctx(new_state: bool):
-        """A context manager in which graph is enabled."""
+        """A context manager in which graph is enabled or disabled temporarily."""
 
         token = _GRAPH_DECOMPOSITION.set(new_state)
         try:
