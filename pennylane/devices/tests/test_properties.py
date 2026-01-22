@@ -22,14 +22,6 @@ from pennylane.exceptions import QuantumFunctionError
 from .conftest import get_legacy_capabilities
 
 try:
-    import tensorflow as tf
-
-    TF_SUPPORT = True
-
-except ImportError:
-    TF_SUPPORT = False
-
-try:
     import torch
 
     TORCH_SUPPORT = True
@@ -165,15 +157,6 @@ class TestCapabilities:
 
         # assert that we can do a simple gradient computation in the passthru interface
         # without raising an error
-
-        if interface == "tf":
-            if TF_SUPPORT:
-                x = tf.Variable(0.1)
-                with tf.GradientTape() as tape:
-                    res = qnode(x)
-                    tape.gradient(res, [x])
-            else:
-                pytest.skip("Cannot import tensorflow.")
 
         if interface == "autograd":
             x = pnp.array(0.1, requires_grad=True)

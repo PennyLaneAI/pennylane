@@ -684,13 +684,7 @@ class TestGradientTransformIntegration:
 
         x = qml.math.asarray(0.5, like=interface, requires_grad=True)
 
-        if interface == "tensorflow":
-            import tensorflow as tf
-
-            with tf.GradientTape():  # need to make x trainable
-                grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
-        else:
-            grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+        grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
 
         expected_z = -2 * x * qml.math.sin(x**2)
         expected_y = -2 * x * qml.math.cos(x**2)

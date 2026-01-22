@@ -1909,9 +1909,7 @@ class TestPostselection:
         """Test that the results of a qnode are nan values of the correct shape if the state
         that we are postselecting has a zero probability of occurring."""
 
-        if (isinstance(mp, qml.measurements.MutualInfoMP) and interface != "jax") or (
-            isinstance(mp, qml.measurements.VnEntropyMP) and interface == "tensorflow"
-        ):
+        if isinstance(mp, qml.measurements.MutualInfoMP) and interface != "jax":
             pytest.skip("Unsupported measurements and interfaces.")
 
         if use_jit:

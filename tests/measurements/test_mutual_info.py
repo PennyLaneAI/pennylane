@@ -110,9 +110,6 @@ class TestMutualInfoUnitTests:
             like=interface,
         )
 
-        if interface == "tensorflow":
-            dm = qml.math.cast(dm, "float64")
-
         wires = qml.wires.Wires(range(2))
 
         mutual_info = qml.mutual_info(

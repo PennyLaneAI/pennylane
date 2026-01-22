@@ -553,9 +553,7 @@ class TestMetricTensor:
     def test_argnum_metric_tensor_interfaces(self, tol, interface, array_cls):
         """Test that argnum successfully reduces the number of tapes and gives
         the desired outcome."""
-        if interface == "tf":
-            interface_name = "tensorflow"
-        elif interface == "jax":
+        if interface == "jax":
             interface_name = "jax.numpy"
         elif interface == "autograd":
             interface_name = "numpy"

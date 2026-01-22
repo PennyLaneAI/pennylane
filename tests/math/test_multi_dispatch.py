@@ -378,24 +378,14 @@ class TestSVD:
         results_svd = fn.svd(mat, compute_uv=True)
         for n in range(len(expected_results)):
             assert fn.get_interface(results_svd[n]) == expected_intrf
-        if expected_intrf == "tensorflow":
-            recovered_matrix = fn.matmul(
-                fn.matmul(
-                    results_svd[0],
-                    fn.diag(np.array(results_svd[1], dtype="complex128"), like=expected_intrf),
-                ),
-                results_svd[2],
-                like=expected_intrf,
-            )
-        else:
-            recovered_matrix = fn.matmul(
-                fn.matmul(
-                    results_svd[0],
-                    fn.diag(results_svd[1], like=expected_intrf),
-                ),
-                results_svd[2],
-                like=expected_intrf,
-            )
+        recovered_matrix = fn.matmul(
+            fn.matmul(
+                results_svd[0],
+                fn.diag(results_svd[1], like=expected_intrf),
+            ),
+            results_svd[2],
+            like=expected_intrf,
+        )
 
         assert np.allclose(mat, recovered_matrix, rtol=1e-04)
 

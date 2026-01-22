@@ -218,7 +218,7 @@ class TestVar:
         expected = qml.math.cast(expected, "float64")
         var = qml.var(qml.I(0)).process_density_matrix(dm, wires)
         var = qml.math.cast(var, "float64")
-        atol = 1.0e-7 if (interface in ("torch", "tensorflow")) else 1.0e-8
+        atol = 1.0e-7 if (interface in ("torch",)) else 1.0e-8
         assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"
 
     @pytest.mark.all_interfaces

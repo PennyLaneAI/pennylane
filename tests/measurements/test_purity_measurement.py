@@ -72,12 +72,8 @@ class TestPurityUnitTest:
     def test_process_density_matrix_pure_state(self, interface):
         """Test purity calculation for a pure single-qubit state."""
         dm = qml.math.array([[1, 0], [0, 0]], like=interface)
-        if interface == "tensorflow":
-            dm = qml.math.cast(dm, "float64")
         wires = qml.wires.Wires(range(1))
         expected = qml.math.array(1.0, like=interface)
-        if interface == "tensorflow":
-            expected = qml.math.cast(expected, "float64")
         purity = qml.purity(wires=wires).process_density_matrix(dm, wires)
         atol = 1.0e-7 if interface == "torch" else 1.0e-8
         assert qml.math.allclose(purity, expected, atol=atol), f"Expected {expected}, got {purity}"
@@ -104,10 +100,6 @@ class TestPurityUnitTest:
             [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
             like=interface,
         )
-
-        # TensorFlow requires explicit casting to float64 for consistency
-        if interface == "tensorflow":
-            dm = qml.math.cast(dm, "float64")
 
         # Define the wires (qubits) of our system
         wires = qml.wires.Wires(range(2))

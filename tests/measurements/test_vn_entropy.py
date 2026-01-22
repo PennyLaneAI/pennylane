@@ -138,9 +138,6 @@ class TestInitialization:
             like=interface,
         )
 
-        if interface == "tensorflow":
-            dm = qml.math.cast(dm, "float64")
-
         vn_entropy = qml.vn_entropy(wires=subset_wires, log_base=log_base).process_density_matrix(
             dm, subset_wires
         )

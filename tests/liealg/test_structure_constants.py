@@ -148,7 +148,7 @@ adj0 = qml.structure_constants(dla0, matrix=True)
 
 
 class TestInterfacesStructureConstants:
-    """Test interfaces jax, torch and tensorflow with structure constants"""
+    """Test interfaces jax and torch with structure constants"""
 
     @pytest.mark.jax
     def test_jax_structure_constants(self):

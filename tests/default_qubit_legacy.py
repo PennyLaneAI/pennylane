@@ -669,9 +669,6 @@ class DefaultQubitLegacy(QubitDevice):
                 )
                 c = qml.math.convert_like(coeff, product)
 
-                if interface == "tensorflow":
-                    c = qml.math.cast(c, "complex128")
-
                 res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
         else:
