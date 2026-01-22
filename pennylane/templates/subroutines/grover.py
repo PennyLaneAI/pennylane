@@ -186,29 +186,6 @@ class GroverOperator(Operation):
 
         return op_list
 
-    # pylint:disable = no-value-for-parameter
-    @staticmethod
-    def compute_qfunc_decomposition(
-        *wires, work_wires, n_wires
-    ):  # pylint: disable=arguments-differ
-        wires = math.array(wires, like="jax")
-        ctrl_values = [0] * (n_wires - 1)
-
-        @for_loop(len(wires) - 1)
-        def hadamard_loop(i):
-            Hadamard(wires[i])
-
-        hadamard_loop()
-        PauliZ(wires[-1])
-        MultiControlledX(
-            control_values=ctrl_values,
-            wires=wires,
-            work_wires=work_wires,
-        )
-        PauliZ(wires[-1])
-        hadamard_loop()
-        GlobalPhase(np.pi, wires=wires[0])
-
     @staticmethod
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis

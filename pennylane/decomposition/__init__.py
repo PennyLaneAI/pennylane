@@ -90,6 +90,7 @@ Inspecting and Managing Decomposition Rules
     ~add_decomps
     ~list_decomps
     ~has_decomp
+    ~local_decomps
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
@@ -227,10 +228,12 @@ Utility Classes
     :toctree: api
 
     ~DecompositionError
+    ~gate_set.GateSet
 
 """
 
 from pennylane.exceptions import DecompositionError
+from .gate_set import GateSet
 from .utils import (
     enable_graph,
     disable_graph,
@@ -254,4 +257,5 @@ from .decomposition_rule import (
     add_decomps,
     list_decomps,
     has_decomp,
+    local_decomps,
 )

@@ -19,7 +19,7 @@ from functools import partial, singledispatch
 import networkx as nx
 
 from pennylane import PhaseShift, adjoint, math, measure
-from pennylane.decomposition import enabled_graph, register_resources
+from pennylane.decomposition import enabled_graph, gate_sets, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
@@ -32,8 +32,6 @@ from .graph_state_preparation import make_graph_state
 from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr, parity
-
-mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
 
 
 @register_resources({RotXZX: 1})
@@ -52,7 +50,7 @@ def convert_to_mbqc_gateset(tape):
             "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
             " method. This can be toggled by calling `qml.decomposition.enable_graph()`"
         )
-    tapes, fn = decompose(tape, gate_set=mbqc_gate_set, alt_decomps={Rot: [_rot_to_xzx]})
+    tapes, fn = decompose(tape, gate_set=gate_sets.MBQC_GATES, alt_decomps={Rot: [_rot_to_xzx]})
     return tapes, fn
 
 

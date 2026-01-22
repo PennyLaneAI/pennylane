@@ -382,8 +382,8 @@ class TestQNode:
     def test_differentiable_expand(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
     ):
-        """Test that operation and nested tape expansion
-        is differentiable"""
+        """Test that operation and nested tape expansion is differentiable"""
+
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -408,39 +408,44 @@ class TestQNode:
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        a = np.array(0.1, requires_grad=False)
-        p = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        with qml.decomposition.local_decomps():
 
-        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
-        def circuit(a, p):
-            qml.RX(a, wires=0)
-            U3(p[0], p[1], p[2], wires=0)
-            return qml.expval(qml.PauliX(0))
+            @qml.register_resources({qml.Rot: 1, qml.PhaseShift: 1})
+            def _decomp(theta, phi, lam, wires):
+                qml.Rot(lam, theta, -lam, wires)
+                qml.PhaseShift(phi + lam, wires)
 
-        res = circuit(a, p)
-        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-        )
-        # assert isinstance(res, np.ndarray)
-        # assert res.shape == ()
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            qml.add_decomps(U3, _decomp)
 
-        res = qml.grad(circuit)(a, p)
+            a = np.array(0.1, requires_grad=False)
+            p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        # assert isinstance(res, np.ndarray)
-        # assert len(res) == 3
+            @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
+            def circuit(a, p):
+                qml.RX(a, wires=0)
+                U3(p[0], p[1], p[2], wires=0)
+                return qml.expval(qml.PauliX(0))
 
-        expected = np.array(
-            [
-                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                - np.sin(p[1])
-                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                np.sin(a)
-                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            res = circuit(a, p)
+            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+            )
+            assert np.allclose(res, expected, atol=tol, rtol=0)
+
+            res = qml.grad(circuit)(a, p)
+
+            expected = np.array(
+                [
+                    np.cos(p[1])
+                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                    - np.sin(p[1])
+                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                    np.sin(a)
+                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+                ]
+            )
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestShotsIntegration:
