@@ -132,7 +132,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
         ``commute_ppr``.
 
     For more information on PPRs, check out the
-    `Compilation Hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+    `Compilation Hub <https://pennylane.ai/compilation/pauli-product-rotations>`_.
 
     Args:
         fn (QNode): QNode to apply the pass to.
