@@ -34,6 +34,7 @@ By default, this system is disabled.
     ~enable_graph
     ~disable_graph
     ~enabled_graph
+    ~toggle_graph_ctx
 
 >>> qml.decomposition.enabled_graph()
 False
@@ -238,6 +239,7 @@ from .utils import (
     enable_graph,
     disable_graph,
     enabled_graph,
+    toggle_graph_ctx,
 )
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution
 from .resources import (
