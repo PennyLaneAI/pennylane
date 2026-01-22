@@ -646,7 +646,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         expand_state_prep = any(isinstance(op, StatePrepBase) for op in circuit.operations[1:])
 
         if expand_state_prep:  # expand mid-circuit StatePrepBase operations
-            circuit = expand_tape_state_prep(circuit)
+            circuits, func = decompose(
+                circuit, stopping_condition=lambda op: not isinstance(op, StatePrepBase)
+            )
+            circuit = func(circuits)
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
@@ -662,9 +665,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             circuit = func(circuits)
 
         elif ops_not_supported:
-            circuit = _local_tape_expand(
-                circuit, depth=max_expansion, stop_at=self.stopping_condition
+            circuits, func = decompose(
+                circuit, max_expansion=max_expansion, stopping_condition=self.stopping_condition
             )
+            circuit = func(circuits)
 
         return circuit
 
