@@ -183,11 +183,10 @@ class TestConfigSetup:
     def test_config_choices_for_adjoint(self):
         """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
         config = qml.devices.ExecutionConfig(
-            gradient_method="adjoint",
-            use_device_gradient=None,
-            grad_on_execution=None,
+            gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
         )
         new_config = qml.device("default.qubit").setup_execution_config(config)
+
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
 
@@ -207,8 +206,7 @@ class TestConfigSetup:
 
         dev = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(
-            gradient_method="best",
-            device_options={"max_workers": 2},
+            gradient_method="best", device_options={"max_workers": 2}
         )
         config = dev.setup_execution_config(config)
         assert config.gradient_method == "adjoint"
@@ -314,11 +312,11 @@ class TestPreprocessing:
     def test_chooses_best_gradient_method(self):
         """Test that preprocessing chooses backprop as the best gradient method."""
         dev = DefaultQubit()
+
         config = ExecutionConfig(
-            gradient_method="best",
-            use_device_gradient=None,
-            grad_on_execution=None,
+            gradient_method="best", use_device_gradient=None, grad_on_execution=None
         )
+
         new_config = dev.setup_execution_config(config)
 
         assert new_config.gradient_method == "backprop"
@@ -328,11 +326,11 @@ class TestPreprocessing:
     def test_config_choices_for_adjoint(self):
         """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
         dev = DefaultQubit()
+
         config = ExecutionConfig(
-            gradient_method="adjoint",
-            use_device_gradient=None,
-            grad_on_execution=None,
+            gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
         )
+
         new_config = dev.setup_execution_config(config)
 
         assert new_config.use_device_gradient
@@ -438,8 +436,9 @@ class TestPreprocessing:
     def test_adjoint_only_one_wire(self):
         """Tests adjoint accepts operators with no parameters or a single parameter and a generator."""
 
-        config = ExecutionConfig(gradient_method="adjoint")
-        program = qml.device("default.qubit").preprocess_transforms(config)
+        program = qml.device("default.qubit").preprocess_transforms(
+            ExecutionConfig(gradient_method="adjoint")
+        )
 
         tape1 = qml.tape.QuantumScript([MatOp(wires=0)])
         batch, _ = program((tape1,))
