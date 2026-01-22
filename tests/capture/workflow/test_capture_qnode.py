@@ -57,6 +57,15 @@ def get_qnode_output_eqns(jaxpr):
     return qnode_output_eqns
 
 
+def _extract_ops_and_meas_prims(jaxpr):
+    """Extract the primitives that are ops and meas."""
+    return [
+        eqn
+        for eqn in jaxpr.eqns
+        if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
+    ]
+
+
 def test_warning_about_execution_pipeline_unmaintained():
     """Test that a warning is raised saying the native execution is unmaintained."""
 
@@ -566,11 +575,12 @@ class TestUserTransforms:
         assert all(
             getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
         )
-        assert device_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert device_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert device_jaxpr.eqns[2].primitive == qml.RZ._primitive
-        assert device_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-        assert device_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        ops_and_meas = _extract_ops_and_meas_prims(device_jaxpr)
+        assert ops_and_meas[0].primitive == qml.RZ._primitive
+        assert ops_and_meas[1].primitive == qml.RY._primitive
+        assert ops_and_meas[2].primitive == qml.RZ._primitive
+        assert ops_and_meas[3].primitive == qml.PauliZ._primitive
+        assert ops_and_meas[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.integration
     def test_execution(self, disable_around_qnode):

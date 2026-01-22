@@ -76,6 +76,15 @@ def informative_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     return [tape], fn
 
 
+def _extract_ops_and_meas_prims(jaxpr):
+    """Extract the primitives that are ops and meas."""
+    return [
+        eqn
+        for eqn in jaxpr.eqns
+        if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
+    ]
+
+
 class TestUtilityHelpers:
     """test the private functions used in post processing."""
 
@@ -1587,9 +1596,8 @@ class TestCompilePipelineCall:
             qml.PauliZ._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        for eqn, expected_primitive in zip(
-            transformed_jaxpr.eqns, expected_primitives, strict=True
-        ):
+        ops_and_meas = _extract_ops_and_meas_prims(transformed_jaxpr)
+        for eqn, expected_primitive in zip(ops_and_meas, expected_primitives, strict=True):
             assert eqn.primitive == expected_primitive
 
     def test_call_fallback_on_qnode(self):
