@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.exceptions import WireError
 
-pytest.mark.usefixtures("disable_graph_decomposition")
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 
 def test_QutritBasisState_decomposition():

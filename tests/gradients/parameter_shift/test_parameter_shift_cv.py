@@ -29,7 +29,7 @@ from pennylane.gradients.parameter_shift_cv import (
     _transform_observable,
 )
 
-pytest.mark.usefixtures("disable_graph_decomposition")
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 hbar = 2
 

@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as anp  # only to be used inside classical computational nodes
 
-pytest.mark.usefixtures("disable_graph_decomposition")
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 
 alpha = 0.5  # displacement in tests

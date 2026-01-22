@@ -37,7 +37,7 @@ from pennylane.measurements import (
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-pytest.mark.usefixtures("disable_graph_decomposition")
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 
 @pytest.fixture(scope="function")

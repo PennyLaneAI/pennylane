@@ -26,7 +26,7 @@ from pennylane import numpy as np
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.wires import Wires
 
-pytest.mark.usefixtures("disable_graph_decomposition")
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
