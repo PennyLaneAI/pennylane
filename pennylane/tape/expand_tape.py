@@ -22,11 +22,11 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.queuing import QueuingManager
-from pennylane.tape import (
+from .tape import (
     _validate_computational_basis_sampling,
     rotations_and_diagonal_measurements,
 )
-from pennylane.tape.qscript import QuantumScript
+from .qscript import QuantumScript
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
