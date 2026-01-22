@@ -969,7 +969,6 @@ class TestPartialTrace:
             assert e.type in (
                 ValueError,
                 IndexError,
-                tf.python.framework.errors_impl.InvalidArgumentError,
             )
 
     @pytest.mark.parametrize("c_dtype", dtypes)

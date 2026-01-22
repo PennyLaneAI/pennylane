@@ -650,7 +650,6 @@ class DefaultQubitLegacy(QubitDevice):
             # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
             # representation of the Pauliword
             res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
-            interface = qml.math.get_interface(self.state)
 
             # Note: it is important that we use the Hamiltonian's data and not the coeffs
             # attribute. This is because the .data attribute may be 'unwrapped' as required by
