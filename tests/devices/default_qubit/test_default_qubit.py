@@ -300,36 +300,7 @@ class TestBasicCircuit:
         assert qml.math.allclose(g[1], -torch.sin(phi))
 
     # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_tf_results_and_backprop(self, max_workers):
-        """Tests execution and gradients of a simple circuit with tensorflow."""
-        import tensorflow as tf
 
-        phi = tf.Variable(4.873, dtype="float64")
-
-        dev = DefaultQubit(max_workers=max_workers)
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = qml.tape.QuantumScript(
-                [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
-            )
-            result = dev.execute(qs)
-
-        assert qml.math.allclose(result[0], -tf.sin(phi))
-        assert qml.math.allclose(result[1], tf.cos(phi))
-
-        if max_workers is not None:
-            return
-
-        grad0 = grad_tape.jacobian(result[0], [phi])
-        grad1 = grad_tape.jacobian(result[1], [phi])
-
-        assert qml.math.allclose(grad0[0], -tf.cos(phi))
-        assert qml.math.allclose(grad1[0], -tf.sin(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op,param", [(qml.RX, np.pi), (qml.BasisState, [1])])
     def test_qnode_returns_correct_interface(self, op, param):
         """Test that even if no interface parameters are given, result is correct."""
         dev = DefaultQubit()
@@ -781,35 +752,6 @@ class TestExecutingBatches:
         g3 = torch.tensor([temp, -temp, temp, -temp])
         assert qml.math.allclose(g1, g3)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_tf(self, max_workers):
-        """Test batches can be executed and have backprop derivatives in tf."""
-
-        import tensorflow as tf
-
-        dev = DefaultQubit(max_workers=max_workers)
-
-        x = tf.Variable(5.2281, dtype="float64")
-        with tf.GradientTape(persistent=True) as tape:
-            results = self.f(dev, x)
-
-        expected = self.expected(x)
-        self.nested_compare(results, expected)
-
-        if max_workers is not None:
-            return
-
-        g00 = tape.gradient(results[0][0], x)
-        assert qml.math.allclose(g00, -qml.math.cos(x))
-        g01 = tape.gradient(results[0][1], x)
-        assert qml.math.allclose(g01, -3 * qml.math.sin(x))
-
-        g1 = tape.jacobian(results[1], x)
-        temp = -0.5 * qml.math.cos(x / 2) * qml.math.sin(x / 2)
-        g3 = tf.Variable([temp, -temp, temp, -temp])
-        assert qml.math.allclose(g1, g3)
-
     @pytest.mark.jax
     def test_warning_if_jitting_batch(self):
         """Test that a warning is given if end-to-end jitting is enabled with a batch."""
@@ -906,27 +848,6 @@ class TestSumOfTermsDifferentiability:
         out.backward()  # pylint:disable=no-member
         expected_out.backward()
         assert qml.math.allclose(x.grad, x2.grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("style", ("sum", "hermitian"))
-    def test_tf_backprop(self, style):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
-        import tensorflow as tf
-
-        dev = DefaultQubit()
-
-        x = tf.Variable(0.5, dtype="float64")
-
-        with tf.GradientTape() as tape1:
-            out = self.f(dev, x, style=style)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(x)
-
-        assert qml.math.allclose(out, expected_out)
-        g1 = tape1.gradient(out, x)
-        g2 = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(g1, g2)
 
 
 @pytest.mark.parametrize("max_workers", max_workers_list)
@@ -1817,7 +1738,6 @@ def test_projector_dynamic_type(max_workers, n_wires):
         pytest.param("autograd", marks=pytest.mark.autograd),
         pytest.param("torch", marks=pytest.mark.torch),
         pytest.param("jax", marks=pytest.mark.jax),
-        pytest.param("tensorflow", marks=pytest.mark.tf),
     ],
 )
 @pytest.mark.parametrize("use_jit", [True, False])

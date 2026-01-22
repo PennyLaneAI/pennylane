@@ -469,34 +469,6 @@ class TestInterfaces:
 
         assert qml.math.allclose(grads, grads2)
 
-    @pytest.mark.tf
-    def test_tf(self):
-        """Tests the tf interface."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-
-        circuit_default = qml.QNode(manual_rx_circuit, dev)
-        circuit_tf = qml.QNode(select_rx_circuit, dev)
-
-        input_default = [0.5, 0.2]
-        input_tf = tf.Variable(input_default)
-
-        assert qml.math.allclose(
-            qml.matrix(circuit_default)(input_default), qml.matrix(circuit_tf)(input_tf)
-        )
-        assert qml.math.get_interface(qml.matrix(circuit_tf)(input_tf)) == "tensorflow"
-
-        with tf.GradientTape() as tape:
-            res = circuit_default(input_tf)
-        grads = tape.gradient(res, [input_tf])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit_tf(input_tf)
-        grads2 = tape2.gradient(res2, [input_tf])
-
-        assert qml.math.allclose(grads[0], grads2[0])
-
     @pytest.mark.torch
     def test_torch(self):
         """Tests the torch interface."""

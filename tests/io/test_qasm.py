@@ -652,34 +652,6 @@ class TestQNodeQasmIntegrationTests:
 
         assert res == expected
 
-    @pytest.mark.tf
-    def test_tf_interface_information_removed(self):
-        """Test that interface information from tensorflow is not included in the
-        parameter string for parametrized operators"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
-        def qnode(param):
-            qml.RX(param, wires="a")
-            return qml.expval(qml.PauliZ("a"))
-
-        res = qml.to_openqasm(qnode)(tf.Variable(1.2))
-
-        expected = dedent(
-            """\
-            OPENQASM 2.0;
-            include "qelib1.inc";
-            qreg q[1];
-            creg c[1];
-            rx(1.2) q[0];
-            measure q[0] -> c[0];
-            """
-        )
-
-        assert res == expected
-
     def test_error_reset_True(self):
         """Test an error is raised if the mcm has reset"""
         m0 = qml.measure(0, reset=True)

@@ -284,59 +284,6 @@ class TestIntegration:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base, interface):
-        """Test entropy for a QNode with tf interface."""
-        import tensorflow as tf
-
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit_entropy(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.vn_entropy(wires=wires, log_base=base)
-
-        entropy = circuit_entropy(tf.Variable(param))
-
-        expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
-
-        assert qml.math.allclose(entropy, expected_entropy)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, diff_method, interface):
-        """Test entropy for a QNode gradient with tf."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit_entropy(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.vn_entropy(wires=wires, log_base=base)
-
-        param = tf.Variable(param)
-        with tf.GradientTape() as tape:
-            entropy = circuit_entropy(param)
-
-        grad_entropy = tape.gradient(entropy, param)
-
-        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)

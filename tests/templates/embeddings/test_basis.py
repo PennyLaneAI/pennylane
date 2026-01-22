@@ -262,46 +262,6 @@ class TestInterfaces:
         res2 = circuit2(2)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        features = tf.Variable([0, 1, 0])
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(tf.Variable(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf_autograph(self, tol):
-        """Tests the tf interface with autograph"""
-
-        import tensorflow as tf
-
-        features = tf.Variable([0, 1, 0])
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(tf.Variable(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""

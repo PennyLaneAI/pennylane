@@ -936,57 +936,6 @@ class TestIntegration:
         r2 = conditional_ry_qnode_deferred(first_par)
         assert np.allclose(r1, r2)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_conditional_ops_tensorflow(self, interface):
-        """Test conditional operations with TensorFlow."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def cry_qnode(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            qml.CRY(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
-
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def conditional_ry_qnode(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.expval(qml.PauliZ(1))
-
-        dm_conditional_ry_qnode = qml.defer_measurements(conditional_ry_qnode)
-
-        x_ = -0.654
-        x1 = tf.Variable(x_, dtype=tf.float64)
-        x2 = tf.Variable(x_, dtype=tf.float64)
-        x3 = tf.Variable(x_, dtype=tf.float64)
-
-        with tf.GradientTape() as tape1:
-            r1 = cry_qnode(x1)
-
-        with tf.GradientTape() as tape2:
-            r2 = conditional_ry_qnode(x2)
-
-        with tf.GradientTape() as tape3:
-            r3 = dm_conditional_ry_qnode(x3)
-
-        assert np.allclose(r1, r2)
-        assert np.allclose(r1, r3)
-
-        grad1 = tape1.gradient(r1, x1)
-        grad2 = tape2.gradient(r2, x2)
-        grad3 = tape3.gradient(r3, x3)
-        assert np.allclose(grad1, grad2)
-        assert np.allclose(grad1, grad3)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
     def test_conditional_ops_torch(self, interface):
@@ -1158,7 +1107,6 @@ class TestIntegration:
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ),
     )
     def test_error_if_differentiate_diff_method_None(self, interface):

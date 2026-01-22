@@ -47,15 +47,6 @@ except ImportError:
     pass
 
 try:
-    import tensorflow as tf
-
-    COEFFS_PARAM_INTERFACE.append(
-        (tf.Variable([-0.05, 0.17], dtype=tf.double), tf.Variable(1.7, dtype=tf.double), "tf")
-    )
-except ImportError:
-    pass
-
-try:
     import torch
 
     COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor(1.7), "torch"))
@@ -929,12 +920,6 @@ class TestLinearCombinationCoefficients:
     def test_operands(self):
         op = qml.ops.LinearCombination([1.1, 2.2], [X(0), Z(0)])
         assert op.operands == (qml.s_prod(1.1, X(0)), qml.s_prod(2.2, Z(0)))
-
-
-@pytest.mark.tf
-class TestLinearCombinationArithmeticTF:
-    """Tests creation of LinearCombinations using arithmetic
-    operations with TensorFlow tensor coefficients."""
 
     def test_LinearCombination_equal(self):
         """Tests equality"""
@@ -1841,9 +1826,6 @@ class TestLinearCombinationDifferentiation:
         assert coeffs.grad is None
         assert np.allclose(param.grad, param2.grad)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("simplify", [True, False])
-    @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_tf(self, simplify, group):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a LinearCombination expectation"""
@@ -1884,7 +1866,6 @@ class TestLinearCombinationDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    @pytest.mark.tf
     def test_nontrainable_coeffs_tf(self):
         """Test the tf interface if the coefficients are explicitly set non-trainable"""
 

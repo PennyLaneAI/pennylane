@@ -362,57 +362,6 @@ class TestPurityIntegration:
 
         assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial, interface):
-        """Tests purity for a qnode"""
-
-        import tensorflow as tf
-
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.purity(wires=wires)
-
-        purity = circuit(tf.Variable(param))
-        expected_purity = expected_purity_ising_xx(param) if is_partial else 1
-        assert qml.math.allclose(purity, expected_purity)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("device", grad_supported_devices)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_purity_grad_tf(
-        self, device, param, wires, is_partial, diff_method, interface
-    ):
-        """Test purity for a QNode gradient with tf."""
-
-        import tensorflow as tf
-
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.purity(wires=wires)
-
-        grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
-
-        param = tf.Variable(param)
-        with tf.GradientTape() as tape:
-            purity = circuit(param)
-
-        grad_purity = tape.gradient(purity, param)
-
-        assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     def test_qnode_entropy_custom_wires(self, device, param):

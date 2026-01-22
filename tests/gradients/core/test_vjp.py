@@ -153,25 +153,6 @@ class TestComputeVJP:
 
         assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype1
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
-    def test_dtype_tf(self, dtype1, dtype2):
-        """Test that using the TensorFlow interface the dtype of the result is
-        determined by the dtype of the dy."""
-        import tensorflow as tf
-
-        dtype = dtype1
-        dtype1 = getattr(tf, dtype1)
-        dtype2 = getattr(tf, dtype2)
-
-        a = tf.ones((1), dtype=dtype1)
-        b = tf.ones((2), dtype=dtype1)
-
-        dy = tuple([a, b])
-        jac = tuple([tf.ones((1), dtype=dtype2), tf.ones((2), dtype=dtype2)])
-
-        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
-
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
     def test_dtype_jax(self, dtype1, dtype2):
@@ -420,69 +401,6 @@ class TestVJPGradients:
 
         exp = qml.jacobian(lambda x: expected(x)[0])(params_np)
         assert np.allclose(params.grad, exp, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_tf(self, tol, seed):
-        """Tests that the output of the VJP transform
-        can be differentiated using TF."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2, seed=seed)
-
-        params_np = np.array([0.543, -0.654], requires_grad=True)
-        params = tf.Variable(params_np, dtype=tf.float64)
-        dy = tf.constant([-1.0, 0.0, 0.0, 1.0], dtype=tf.float64)
-
-        with tf.GradientTape() as t:
-            with qml.queuing.AnnotatedQueue() as q:
-                ansatz(params[0], params[1])
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(dev.execute(tapes))
-
-        assert np.allclose(vjp, expected(params), atol=tol, rtol=0)
-
-        res = t.jacobian(vjp, params)
-        assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
-
-    # TODO: to be added when lighting and TF compatible with return types
-    # @pytest.mark.tf
-    # def test_tf_custom_loss(self):
-    #     """Tests that the gradient pipeline using the TensorFlow interface with
-    #     a custom TF loss and lightning.qubit with a custom dtype does not raise
-    #     any errors."""
-    #     import tensorflow as tf
-
-    #     nwires = 5
-    #     dev = qml.device("lightning.qubit", wires=nwires)
-    #     dev.C_DTYPE = vanilla_numpy.complex64
-    #     dev.R_DTYPE = vanilla_numpy.float32
-
-    #     @qml.qnode(dev, interface="tf", diff_method="adjoint")
-    #     def circuit(weights, features):
-    #         for i in range(nwires):
-    #            qml.RX(features[i], wires=i)
-    #             qml.RX(weights[i], wires=i)
-    #         return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-
-    #     vanilla_numpy.random.seed(seed)
-
-    #     ndata = 100
-    #     data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]
-    #     label = [vanilla_numpy.random.choice([1, 0]).astype("int") for _ in range(ndata)]
-
-    #     loss = tf.losses.SparseCategoricalCrossentropy()
-
-    #     params = tf.Variable(vanilla_numpy.random.randn(nwires).astype("float32"), trainable=True)
-    #     with tf.GradientTape() as tape:
-    #         probs = [circuit(params, d) for d in data]
-    #         loss_value = loss(label, probs)
-
-    #    grads = tape.gradient(loss_value, [params])
-    #    assert len(grads) == 1
 
     @pytest.mark.jax
     @pytest.mark.slow

@@ -390,25 +390,6 @@ class TestStateVector:
         assert qml.math.get_interface(grad) == "jax"
         assert np.array_equal(grad, [2.0, 0.0])
 
-    @pytest.mark.tf
-    def test_StatePrep_backprop_tf(self):
-        """Test backprop with tf"""
-        import tensorflow as tf
-
-        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
-        def circuit(state):
-            qml.StatePrep(state, wires=(0,))
-            qml.S(1)
-            return qml.expval(qml.PauliZ(0))
-
-        state = tf.Variable([1.0, 0.0])
-        with tf.GradientTape() as tape:
-            res = circuit(state)
-
-        grad = tape.jacobian(res, state)
-        assert qml.math.get_interface(grad) == "tensorflow"
-        assert np.array_equal(grad, [2.0, 0.0])
-
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [

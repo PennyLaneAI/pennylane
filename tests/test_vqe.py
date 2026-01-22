@@ -307,9 +307,6 @@ class TestVQE:
         assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
-    @pytest.mark.tf
-    @pytest.mark.slow
-    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
     def test_optimize_tf(self, shots, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
@@ -513,7 +510,6 @@ class TestVQE:
         assert np.allclose(c1, c2)
 
     # pylint: disable=protected-access
-    @pytest.mark.tf
     def test_optimize_multiple_terms_tf(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface, even when
@@ -668,43 +664,6 @@ class TestVQE:
         dc = w.grad.detach().numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_optimize_grad_tf(self):
-        """Test that the gradient of a Hamiltonian cost function is accessible
-        and correct when using observable grouping optimization and the
-        TensorFlow interface."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=4)
-        hamiltonian = big_hamiltonian
-        hamiltonian.compute_grouping()
-
-        cost = generate_cost_fn(
-            qml.templates.StronglyEntanglingLayers, hamiltonian, dev, interface="tf"
-        )
-
-        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        # TODO: This is another case of a magic number in the sense that no other number allows
-        #       this test to pass. This is likely because the expected `big_hamiltonian_grad`
-        #       was calculated using this exact seed. This test needs to be revisited.
-        _rng = np.random.default_rng(1967)
-        w = _rng.uniform(low=0, high=2 * np.pi, size=shape)
-        w = tf.Variable(w)
-
-        with tf.GradientTape() as tape:
-            res = cost(w)
-
-        dc = tape.gradient(res, w).numpy()
-
-        assert np.allclose(dc, big_hamiltonian_grad)
-
-
-# Test data
-rng = np.random.default_rng(1967)
-_shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
-PARAMS = rng.uniform(low=0, high=2 * np.pi, size=_shape)
 
 
 class TestNewVQE:
@@ -918,28 +877,6 @@ class TestNewVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
-    @pytest.mark.tf
-    def test_grad_tf(self, tol):
-        """Tests VQE gradients in the tf interface."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=4)
-        H = big_hamiltonian
-
-        @qml.qnode(dev)
-        def circuit(w):
-            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
-            return qml.expval(H)
-
-        w = tf.Variable(PARAMS, dtype=tf.double)
-
-        with tf.GradientTape() as tape:
-            res = circuit(w)
-
-        dc = tape.gradient(res, w).numpy()
-
-        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
-
     @pytest.mark.jax
     @pytest.mark.slow
     def test_grad_jax(self, tol):
@@ -1045,37 +982,6 @@ class TestInterfaces:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    def test_gradient_tf(self, tol):
-        """Tests for the TF interface"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=1)
-
-        def ansatz(params, **kwargs):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-
-        coeffs = [0.2, 0.5]
-        observables = [qml.PauliX(0), qml.PauliY(0)]
-
-        H = qml.Hamiltonian(coeffs, observables)
-        a, b = 0.54, 0.123
-        params = tf.Variable([a, b], dtype=tf.float64)
-        cost = generate_cost_fn(ansatz, H, dev, interface="tf")
-
-        with tf.GradientTape() as tape:
-            loss = cost(params)
-            res = np.array(tape.gradient(loss, params))
-
-        expected = [
-            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
-            coeffs[0] * np.cos(a) * np.cos(b),
-        ]
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""

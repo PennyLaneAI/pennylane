@@ -100,8 +100,6 @@ class TestInitializeState:
         res_dtype = create_initial_state([0, 1], prep_operation=prep_op, like="torch").dtype
         assert expected_dtype in str(res_dtype)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dtype", ["float32", "float64"])
     def test_create_initial_state_with_stateprep_casts_to_complex128_with_tf(self, dtype):
         """Test that the state gets cast to complex128 with tensorflow"""
         prep_op = self.DefaultPrep([0, 0, 0, 1], wires=[0, 1], dtype=dtype)

@@ -912,62 +912,6 @@ class TestDifferentiability:
 
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)])
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
-    def test_tensorflow(self, grouping_strategy):
-        """Tests that the output of ``split_non_commuting`` is differentiable with tensorflow"""
-
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-        circuit = circuit_to_test(dev, grouping_strategy=grouping_strategy)
-
-        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
-
-        with tf.GradientTape() as tape:
-            res = circuit(*params)
-            cost = qml.math.concatenate([res[0], qml.math.stack(res[1:])], axis=0)
-
-        grad1, grad2 = tape.jacobian(cost, params)
-
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
-
-        assert qml.math.allclose(grad1, expected_grad_1, atol=1e-7)
-        assert qml.math.allclose(grad2, expected_grad_2, atol=1e-7)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
-    def test_trainable_hamiltonian_tensorflow(self, grouping_strategy):
-        """Tests that measurements of trainable Hamiltonians are differentiable with tensorflow"""
-
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-        circuit = circuit_with_trainable_H(dev, grouping_strategy=grouping_strategy)
-
-        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
-
-        with tf.GradientTape() as tape:
-            cost = split_non_commuting(circuit, grouping_strategy=grouping_strategy)(*params)
-
-        actual = tape.jacobian(cost, params)
-
-        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)])
-
-
-# Single hamiltonian expval measurement to test shot distribution
-ham = qml.Hamiltonian(
-    coeffs=[10, 0.1, 20, 100, 0.2],
-    observables=[
-        qml.X(0) @ qml.Y(1),
-        qml.Z(0) @ qml.Z(2),
-        qml.Y(1),
-        qml.X(1) @ qml.X(2),
-        qml.Z(0) @ qml.Z(1) @ qml.Z(2),
-    ],
-)
-
 
 class TestShotDistribution:
     """

@@ -270,33 +270,6 @@ class TestMatrix:
             op(theta, wires=0, subspace=subspace).matrix(), expected, atol=tol, rtol=0
         )
 
-    @pytest.mark.tf
-    def test_matrix_tf(self, op, theta, subspace, expected, tol):
-        """Test that compute_matrix works with tensorflow variables"""
-        import tensorflow as tf
-
-        theta = tf.Variable(theta, dtype="float64")
-        expected = tf.convert_to_tensor(expected, dtype="complex128")
-        assert qml.math.allclose(
-            op.compute_matrix(theta, subspace=subspace), expected, atol=tol, rtol=0
-        )
-        assert qml.math.allclose(
-            op(theta, wires=0, subspace=subspace).matrix(), expected, atol=tol, rtol=0
-        )
-
-
-label_data = [
-    (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX\n(1)†"),
-    (qml.TRY(1.23456, wires=0), "TRY", "TRY\n(1.23)", "TRY\n(1)", "TRY\n(1)†"),
-    (qml.TRZ(1.23456, wires=0), "TRZ", "TRZ\n(1.23)", "TRZ\n(1)", "TRZ\n(1)†"),
-]
-
-label_data_broadcasted = [
-    (qml.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX†"),
-    (qml.TRY(np.array([1.23, 4.56]), wires=0), "TRY", "TRY", "TRY", "TRY†"),
-    (qml.TRZ(np.array([1.23, 4.56]), wires=0), "TRZ", "TRZ", "TRZ", "TRZ†"),
-]
-
 
 class TestLabel:
     """Test the label method on parametric ops"""
@@ -322,14 +295,6 @@ class TestLabel:
 
         op = qml.adjoint(op)
         assert op.label(decimals=0) == label4
-
-    @pytest.mark.tf
-    def test_label_tf(self):
-        """Test label methods work with tensorflow variables"""
-        import tensorflow as tf
-
-        op1 = qml.TRX(tf.Variable(0.123456), wires=0)
-        assert op1.label(decimals=2) == "TRX\n(0.12)"
 
     @pytest.mark.torch
     def test_label_torch(self):
@@ -578,56 +543,3 @@ class TestGrad:
         phi = phi_torch.detach().numpy()
 
         assert qml.math.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_differentiability_tf(self, op, obs, grad_fn, phi, diff_method, tol):
-        """Test that parametrized operations are differentiable with TensorFlow and the gradient is correct"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qutrit", wires=1)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            if op is qml.TRZ:
-                # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
-            op(phi, wires=0)
-            return qml.expval(obs)
-
-        phi_tf = tf.Variable(phi)
-
-        with tf.GradientTape() as tape:
-            result = circuit(phi_tf)
-        res = tape.gradient(result, phi_tf)
-
-        assert qml.math.isclose(res, grad_fn(phi), atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_differentiability_tf_broadcasted(self, op, obs, grad_fn, diff_method, tol):
-        """Test that differentiation of parametrized operations in TensorFlow with broadcasting works."""
-        if diff_method in ("finite-diff", "parameter-shift"):
-            pytest.xfail()
-
-        import tensorflow as tf
-
-        dev = qml.device("default.qutrit", wires=1)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            if op is qml.TRZ:
-                # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
-            op(phi, wires=0)
-            return qml.expval(obs)
-
-        phi = np.linspace(0, 2 * np.pi, 7)
-        phi_tf = tf.Variable(phi)
-        with tf.GradientTape() as tape:
-            result = circuit(phi_tf)
-        res = tape.jacobian(result, phi_tf)
-        expected = tf.Variable(np.diag(grad_fn(phi)))
-
-        assert qml.math.allclose(res, expected, atol=tol, rtol=0)

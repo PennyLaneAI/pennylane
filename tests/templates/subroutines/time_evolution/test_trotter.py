@@ -647,7 +647,6 @@ class TestError:
 
         assert qnp.isclose(computed_error.error, qml.math.array(expected_error, like=interface))
 
-    @pytest.mark.tf
     def test_tensorflow_interface(self):
         """Test that an error is raised if a TrotterProduct with
         tensorflow parameters is used to compute error."""
@@ -945,43 +944,6 @@ class TestIntegration:
         state = circ(time, c1, c2)
         assert allclose(expected_state, state)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("time", (0.5, 1, 2))
-    def test_tf_execute(self, time):
-        """Test that the gate executes correctly in the tensorflow interface."""
-        import tensorflow as tf
-
-        time = tf.Variable(time, dtype=tf.complex128)
-        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-        dev = qml.device("reference.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circ(time, coeffs):
-            h = qml.sum(
-                qml.s_prod(coeffs[0], terms[0]),
-                qml.s_prod(coeffs[1], terms[1]),
-            )
-            qml.TrotterProduct(h, time, n=2, order=2)
-
-            return qml.state()
-
-        initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
-
-        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-        expected_state = tf.linalg.matvec(
-            reduce(
-                lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-            ),
-            initial_state,
-        )
-
-        state = circ(time, coeffs)
-        assert allclose(expected_state, state)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     def test_torch_execute(self, time):
@@ -1117,49 +1079,6 @@ class TestIntegration:
         reference_time_grad = time_reference.grad
         reference_coeff_grad = coeffs_reference.grad
 
-        assert allclose(measured_time_grad, reference_time_grad)
-        assert allclose(measured_coeff_grad, reference_coeff_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-    def test_tf_gradient(self, order, n):
-        """Test that the gradient is computed correctly using tensorflow"""
-        import tensorflow as tf
-
-        time = tf.Variable(1.5, dtype=tf.complex128)
-        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circ(time, coeffs):
-            h = qml.sum(
-                qml.s_prod(coeffs[0], terms[0]),
-                qml.s_prod(coeffs[1], terms[1]),
-            )
-            qml.TrotterProduct(h, time, n=n, order=order)
-            return qml.expval(qml.Hadamard(0))
-
-        @qml.qnode(dev)
-        def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-            for op in decomp[::-1]:
-                qml.apply(op)
-
-            return qml.expval(qml.Hadamard(0))
-
-        with tf.GradientTape() as tape:
-            result = circ(time, coeffs)
-
-        measured_time_grad, measured_coeff_grad = tape.gradient(result, (time, coeffs))
-
-        with tf.GradientTape() as tape:
-            result = reference_circ(time, coeffs)
-
-        reference_time_grad, reference_coeff_grad = tape.gradient(result, (time, coeffs))
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 

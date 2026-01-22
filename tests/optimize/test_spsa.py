@@ -415,7 +415,6 @@ class TestSPSAOptimizer:
         ):
             spsa_opt.step(f, args)
 
-    @pytest.mark.tf
     def test_obj_func_not_a_scalar_function_with_tensorflow_interface(self):
         """Test that if the objective function is not a
         scalar function, an error is raised using tensorflow_interface."""

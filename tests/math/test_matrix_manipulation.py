@@ -34,7 +34,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
@@ -235,26 +234,6 @@ class TestExpandMatrix:
         jac_fn = jax.jacobian(self.func_for_autodiff)
         jac = jac_fn(base_matrix)
 
-        assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "i, base_matrix",
-        [
-            (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
-        ],
-    )
-    def test_tf(self, i, base_matrix, tol):
-        """Tests differentiation in TensorFlow by computing the Jacobian of
-        the expanded matrix with respect to the canonical matrix."""
-        import tensorflow as tf
-
-        base_matrix = tf.Variable(base_matrix)
-        with tf.GradientTape() as tape:
-            res = self.func_for_autodiff(base_matrix)
-
-        jac = tape.jacobian(res, base_matrix)
         assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
 
     def test_expand_one(self, tol):
@@ -975,25 +954,6 @@ class TestPartialTrace:
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.parametrize("c_dtype", dtypes)
-    def test_invalid_wire_selection(self, ml_framework, c_dtype):
-        """Test that an error is raised for an invalid wire selection."""
-
-        # Define a 2-qubit density matrix
-        rho = qml.math.asarray(
-            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
-        )
-
-        # Attempt to trace over an invalid wire
-        with pytest.raises(Exception) as e:
-            import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
-
-            qml.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
-            assert e.type in (
-                ValueError,
-                IndexError,
-                tf.python.framework.errors_impl.InvalidArgumentError,
-            )
-
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_single_matrix(self, ml_framework, c_dtype):
         """Test that partial_trace works on a single matrix."""

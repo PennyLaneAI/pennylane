@@ -536,18 +536,6 @@ class TestDecimals:
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_torch, decimals=2) == expected
 
-    @pytest.mark.tf
-    def test_tensorflow_parameters(self):
-        """Test tensorflow parameters display as normal numbers."""
-        import tensorflow as tf
-
-        with qml.queuing.AnnotatedQueue() as q_tape_tf:
-            qml.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
-
-        tape_tf = qml.tape.QuantumScript.from_queue(q_tape_tf)
-        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
-        assert tape_text(tape_tf, decimals=2) == expected
-
     @pytest.mark.jax
     def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""

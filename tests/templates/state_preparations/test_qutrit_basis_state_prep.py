@@ -179,34 +179,6 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, op_list):
             qml.assert_equal(op1, op2)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "basis_state,wires,target_state",
-        [
-            ([0, 1], [0, 1], [0, 1, 0]),
-            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
-            ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
-        ],
-    )
-    @pytest.mark.xfail(reason="TensorFlow comptability not yet implemented")
-    def test_state_preparation_tf_autograph(
-        self, tol, qutrit_device_3_wires, basis_state, wires, target_state
-    ):
-        """Tests that the template produces the correct expectation values."""
-        import tensorflow as tf
-
-        @tf.function
-        @qml.qnode(qutrit_device_3_wires, interface="tf")
-        def circuit(state, obs):
-            qml.QutritBasisStatePreparation(state, wires)
-
-            return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
-
-        obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        output_state = [x - 1 for x in circuit(basis_state, obs)]
-
-        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
-
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         basis_state = [0, 1, 2]

@@ -209,33 +209,6 @@ class TestReconstructEqu:
         assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "fun, num_frequency, base_f, expected_grad",
-        zip(c_funs, nums_frequency, base_frequencies, expected_grads),
-    )
-    def test_differentiability_tensorflow(self, fun, num_frequency, base_f, expected_grad):
-        """Test that the reconstruction of equidistant-frequency classical
-        functions are differentiable for TensorFlow input variables."""
-        import tensorflow as tf
-
-        # Convert fun to have integer frequencies
-        base_f = tf.constant(base_f, dtype=tf.float64)
-        _fun = lambda x: fun(x / base_f)
-        _rec = _reconstruct_equ(_fun, num_frequency, interface="tensorflow")
-
-        # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(base_f * x)
-
-        def grad(arg):
-            arg = tf.Variable(arg)
-            with tf.GradientTape() as tape:
-                out = rec(arg)
-            return tape.gradient(out, arg)
-
-        assert fun_close(fun, rec, zero=tf.Variable(0.0, dtype=tf.float64))
-        assert fun_close(expected_grad, grad, zero=tf.Variable(0.0, dtype=tf.float64))
-
     @pytest.mark.torch
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
@@ -434,29 +407,6 @@ class TestReconstructGen:
         grad = jax.grad(rec)
         assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "fun, spectrum, expected_grad",
-        zip(c_funs, spectra, expected_grads),
-    )
-    def test_differentiability_tensorflow(self, fun, spectrum, expected_grad):
-        """Test that the reconstruction of equidistant-frequency classical
-        functions are differentiable for TensorFlow input variables."""
-        import tensorflow as tf
-
-        spectrum = tf.constant(spectrum, dtype=tf.float64)
-        # Convert fun to have integer frequencies
-        rec = _reconstruct_gen(fun, spectrum, interface="tensorflow")
-
-        def grad(arg):
-            arg = tf.Variable(arg)
-            with tf.GradientTape() as tape:
-                out = rec(arg)
-            return tape.gradient(out, arg)
-
-        assert fun_close(fun, rec, zero=tf.Variable(0.0))
-        assert fun_close(expected_grad, grad, zero=tf.Variable(0.0))
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -956,85 +906,6 @@ class TestReconstruct:
                 assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
                 assert fun_close(grad, exp_grad, samples=3)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        test_cases_qnodes,
-    )
-    def test_differentiability_tensorflow(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
-    ):
-        """Tests the reconstruction and differentiability with TensorFlow."""
-        if qnode is qnode_4:
-            pytest.skip("Gradients are empty in TensorFlow for independent functions.")
-        import tensorflow as tf
-
-        qnode = qml.QNode(qnode, dev_1, interface="tf")
-        params = tuple(tf.Variable(par, dtype=tf.float64) for par in params)
-        if spectra is not None:
-            spectra = {
-                outer_key: {
-                    inner_key: tf.constant(val, dtype=tf.float64)
-                    for inner_key, val in outer_val.items()
-                }
-                for outer_key, outer_val in spectra.items()
-            }
-        if shifts is not None:
-            shifts = {
-                outer_key: {
-                    inner_key: tf.constant(val, dtype=tf.float64)
-                    for inner_key, val in outer_val.items()
-                }
-                for outer_key, outer_val in shifts.items()
-            }
-        with qml.Tracker(qnode.device) as tracker:
-            recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
-        assert tracker.totals["executions"] == exp_calls
-        arg_names = list(signature(qnode.func).parameters.keys())
-        for outer_key in recons:
-            outer_key_num = arg_names.index(outer_key)
-            for inner_key, rec in recons[outer_key].items():
-                if outer_key == "Z" and inner_key == (1, 3):
-                    # This is a constant function dependence, which can
-                    # not be properly resolved by this test.
-                    continue
-                x0 = params[outer_key_num]
-                if not len(qml.math.shape(x0)) == 0:
-                    x0 = x0[inner_key]
-                    shift_vec = qml.math.zeros_like(params[outer_key_num])
-                    shift_vec = qml.math.scatter_element_add(shift_vec, inner_key, 1.0)
-                    mask = pnp.ones(qml.math.shape(params[outer_key_num])) - shift_vec
-                else:
-                    shift_vec = 1.0
-                    mask = 0.0
-                univariate = lambda x: qnode(
-                    *params[:outer_key_num],
-                    params[outer_key_num] * mask + x * shift_vec,
-                    *params[outer_key_num + 1 :],
-                )
-                with tf.GradientTape() as tape:
-                    out = qnode(*params)
-                exp_qnode_grad = tape.gradient(out, params[outer_key_num])
-
-                def exp_grad(x):
-                    x = tf.Variable(x, dtype=tf.float64)
-                    with tf.GradientTape() as tape:
-                        out = univariate(x)
-                    return tape.gradient(out, x)
-
-                def grad(x):
-                    x = tf.Variable(x, dtype=tf.float64)
-                    with tf.GradientTape() as tape:
-                        out = rec(x)
-                    return tape.gradient(out, x)
-
-                if nums_frequency is None:
-                    # Gradient evaluation at reconstruction point not supported for
-                    # Dirichlet reconstruction
-                    assert np.isclose(grad(x0), exp_qnode_grad[inner_key])
-                assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad, 10)
 
     @pytest.mark.torch
     @pytest.mark.parametrize(

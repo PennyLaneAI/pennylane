@@ -568,34 +568,6 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
-    @pytest.mark.tf
-    def test_sum_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        rot_params = tf.Variable([0.12, 3.45, 6.78])
-
-        sum_op = Sum(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qml.RX(theta, wires=1),
-            qml.Identity(wires=0),
-        )
-        mat = sum_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
-            + qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            + qnp.eye(4)
-        )
-        true_mat = tf.Variable(true_mat)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
-    # sparse matrix tests:
-
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix(self, op1, mat1, op2, mat2):
@@ -994,22 +966,6 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        qml.assert_equal(simplified_op, result)
-
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(-1.23), tf.Variable(0.5)
-
-        op = qml.sum(
-            qml.s_prod(c1, qml.PauliX(0)),
-            qml.s_prod(c2, qml.PauliX(0)),
-            qml.s_prod(c3, qml.PauliZ(1)),
-        )
-        result = qml.s_prod(c3, qml.PauliZ(1))
-        simplified_op = op.simplify()
         qml.assert_equal(simplified_op, result)
 
     @pytest.mark.torch

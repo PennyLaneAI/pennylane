@@ -321,7 +321,6 @@ class TestParameterShiftLogic:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.param_shift_cv(circuit, dev)(weights)
 
-    @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1142,47 +1141,6 @@ class TestParamShiftInterfaces:
                 2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
                 2 * np.sinh(2 * r) * np.sin(2 * phi),
             ]
-        )
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests that the output of the parameter-shift CV transform
-        can be executed using TF"""
-        import tensorflow as tf
-
-        dev = qml.device("default.gaussian", wires=1)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-
-        with tf.GradientTape() as t:
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.Squeezing(params[0], 0, wires=0)
-                qml.Rotation(params[1], wires=0)
-                qml.var(qml.QuadX(wires=[0]))
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 2}
-            tapes, fn = param_shift_cv(tape, dev)
-            jac = fn(
-                qml.execute(
-                    tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="tf"
-                )
-            )
-            res = jac[1]
-
-        r, phi = 1.0 * params
-
-        expected = np.array(
-            [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                2 * np.sinh(2 * r) * np.sin(2 * phi),
-            ]
-        )
-        assert np.allclose(jac, expected, atol=tol, rtol=0)
-
-        grad = t.jacobian(res, params)
-        expected = np.array(
-            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 

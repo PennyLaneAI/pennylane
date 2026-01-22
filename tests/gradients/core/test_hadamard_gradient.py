@@ -1085,8 +1085,6 @@ class TestHadamardGrad:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
 
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self, mode):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1393,46 +1391,6 @@ class TestHadamardTestGradDiff:
 
         res_hadamard = qml.jacobian(cost_fn_hadamard)(params)
         res_param_shift = qml.jacobian(cost_fn_param_shift)(params)
-        assert np.allclose(res_hadamard, res_param_shift)
-
-    @pytest.mark.tf
-    def test_tf(self, mode):
-        """Tests that the output of the hadamard gradient transform
-        can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=3)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-
-        with tf.GradientTape() as t_h:
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(params[0], wires=[0])
-                qml.RY(params[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
-            jac_h = fn(dev.execute(tapes))
-            jac_h = qml.math.stack(jac_h)
-
-        with tf.GradientTape() as t_p:
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(params[0], wires=[0])
-                qml.RY(params[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.param_shift(tape)
-            jac_p = fn(dev.execute(tapes))
-            jac_p = qml.math.stack(jac_p)
-
-        res_hadamard = t_h.jacobian(jac_h, params)
-        res_param_shift = t_p.jacobian(jac_p, params)
-
         assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.torch

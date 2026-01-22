@@ -683,32 +683,6 @@ class TestValidation:
 
 
 class TestInterfaces:
-    @pytest.mark.tf
-    def test_tf(self):
-        """Test with tensorflow interface"""
-        import tensorflow as tf
-
-        @partial(qml.matrix, wire_order=[0, 1, 2])
-        def circuit(beta, theta):
-            qml.RZ(beta, wires=0)
-            qml.RZ(theta[0], wires=1)
-            qml.CRY(theta[1], wires=[1, 2])
-
-        beta = 0.1
-        # input tensorflow parameters
-        theta = tf.Variable([0.2, 0.3])
-        matrix = circuit(beta, theta)
-
-        # expected matrix
-        theta_np = theta.numpy()
-        matrix1 = np.kron(
-            qml.RZ(beta, wires=0).matrix(),
-            np.kron(qml.RZ(theta_np[0], wires=1).matrix(), I),
-        )
-        matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix())
-        expected_matrix = matrix2 @ matrix1
-
-        assert np.allclose(matrix, expected_matrix)
 
     @pytest.mark.torch
     def test_torch(self):
@@ -868,30 +842,6 @@ class TestDifferentiation:
         assert isinstance(matrix, torch.Tensor)
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
-    def test_tensorflow(self, v):
-        import tensorflow as tf
-
-        def circuit(theta):
-            qml.RX(theta, wires=0)
-            qml.PauliZ(wires=0)
-            qml.CNOT(wires=[0, 1])
-
-        def loss(theta):
-            U = qml.matrix(circuit, wire_order=[0, 1])(theta)
-            return qml.math.real(qml.math.trace(U))
-
-        x = tf.Variable(v)
-        with tf.GradientTape() as tape:
-            l = loss(x)
-        dl = tape.gradient(l, x)
-        matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
-
-        assert isinstance(matrix, tf.Tensor)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
 
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_get_unitary_matrix_autograd_differentiable(self, v):

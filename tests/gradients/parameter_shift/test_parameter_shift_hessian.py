@@ -1480,7 +1480,6 @@ class TestParameterShiftHessianQNode:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.param_shift_hessian(circuit)(weights)
 
-    @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1890,57 +1889,3 @@ class TestInterfaces:
         jax_deriv = jax.jacobian(cost_fn)(x_jax)
 
         assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), jax_deriv)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_hessian_transform_with_tensorflow(self):
-        """Test that the Hessian transform can be used with TensorFlow (1d -> 1d)"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, max_diff=2)
-        def circuit(x):
-            qml.RX(x[1], wires=0)
-            qml.RY(x[0], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0, 1])
-
-        x_np = np.array([0.1, 0.2], requires_grad=True)
-        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
-
-        expected = qml.jacobian(qml.jacobian(circuit))(x_np)
-        circuit.interface = "tf"
-        with tf.GradientTape():
-            hess = qml.gradients.param_shift_hessian(circuit)(x_tf)
-
-        assert np.allclose(qml.math.transpose(expected, (1, 2, 0)), hess)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_hessian_transform_is_differentiable_tensorflow(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
-        (1d -> 1d)"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, max_diff=3)
-        def circuit(x):
-            qml.RX(x[1], wires=0)
-            qml.RY(x[0], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0, 1])
-
-        x = np.array([0.1, 0.2], requires_grad=True)
-        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
-
-        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
-        circuit.interface = "tf"
-        with tf.GradientTape() as tf_tape:
-            hessian = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
-            hessian = qml.math.stack([qml.math.stack(row) for row in hessian])
-
-        tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
-
-        assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), tensorflow_deriv)

@@ -560,13 +560,6 @@ class TestMatrix:
 
         self.check_matrix(torch.tensor(1.2345), "torch")
 
-    @pytest.mark.tf
-    def test_matrix_tf(self):
-        """Test the matrix of an adjoint opreator with a tensorflow parameter."""
-        import tensorflow as tf
-
-        self.check_matrix(tf.Variable(1.2345), "tensorflow")
-
     def test_no_matrix_defined(self, seed):
         """Test that if the base has no matrix defined, then Adjoint.matrix also raises a MatrixUndefinedError."""
         rng = np.random.default_rng(seed=seed)
@@ -1075,24 +1068,3 @@ class TestAdjointConstructorIntegration:
 
         assert qml.math.allclose(y, torch.sin(x))
         assert qml.math.allclose(x.grad, torch.cos(x))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
-    def test_gradient_tf(self, diff_method):
-        """Test gradients through the adjoint transform with tensorflow."""
-
-        import tensorflow as tf
-
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
-        def circ(x):
-            adjoint(qml.RX)(x, wires=0)
-            return qml.expval(qml.PauliY(0))
-
-        x = tf.Variable(0.234, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            y = circ(x)
-
-        grad = tape.gradient(y, x)
-
-        assert qml.math.allclose(y, tf.sin(x))
-        assert qml.math.allclose(grad, tf.cos(x))

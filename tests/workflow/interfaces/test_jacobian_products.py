@@ -840,29 +840,3 @@ class TestTransformsDifferentiability:
         res.backward()
         assert qml.math.allclose(x.grad, -2.0 * np.cos(0.1))
         assert qml.math.allclose(dy.grad, -np.sin(0.1))
-
-    @pytest.mark.tf
-    def test_vjp_tf(self):
-        """Test that the derivatives of compute_vjp can be taken with tensorflow."""
-
-        import tensorflow as tf
-
-        jpc = param_shift_jpc
-
-        def f(x, dy):
-            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-            vjp = jpc.compute_vjp((tape,), (dy,))
-            return vjp[0]
-
-        x = tf.Variable(0.6, dtype=tf.float64)
-        dy = tf.Variable(1.5, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            res = f(x, dy)
-
-        assert qml.math.allclose(res, -1.5 * np.sin(0.6))
-
-        dx, ddy = tape.gradient(res, (x, dy))
-
-        assert qml.math.allclose(dx, -1.5 * np.cos(0.6))
-        assert qml.math.allclose(ddy, -np.sin(0.6))

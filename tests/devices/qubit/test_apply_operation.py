@@ -38,7 +38,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -893,24 +892,6 @@ class TestRXCalcGrad:
             g.detach().numpy(),
         )
 
-    @pytest.mark.tf
-    def test_rx_grad_tf(self, method):
-        """Tests the application and differentiation of an rx gate with tensorflow"""
-        import tensorflow as tf
-
-        state = tf.Variable(self.state)
-        phi = tf.Variable(0.8589 + 0j)
-
-        with tf.GradientTape() as grad_tape:
-            op = qml.RX(phi, wires=0)
-            new_state = method(op, state)
-
-        grads = grad_tape.jacobian(new_state, [phi])
-        # tf takes gradient with respect to conj(z), so we need to conj the gradient
-        phi_grad = tf.math.conj(grads[0])
-
-        self.compare_expected_result(phi, state, new_state, phi_grad)
-
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
@@ -1193,34 +1174,6 @@ class TestApplyGroverOperator:
         assert qml.math.allclose(out, expected_via_mat)
         assert qml.math.allclose(out, expected_via_kernel)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
-    def test_correctness_tf(self, op_wires, state_wires, batch_dim):
-        """Test that apply_operation is correct for GroverOperator for all dispatch branches
-        when applying it to a Tensorflow state."""
-        import tensorflow as tf
-
-        batched = batch_dim is not None
-        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
-        # Input state
-        state = np.random.random(shape) + 1j * np.random.random(shape)
-
-        wires = list(range(op_wires))
-        op = qml.GroverOperator(wires)
-        expected_via_mat = apply_operation_tensordot(op, state, batched)
-        if op_wires == state_wires:
-            expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
-        else:
-            expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
-
-        # Cast to interface and apply operation
-        state = tf.Variable(state)
-        out = apply_operation(op, state, is_state_batched=batched, debugger=None)
-
-        assert qml.math.allclose(out, expected_via_mat)
-        assert qml.math.allclose(out, expected_via_kernel)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -1334,22 +1287,6 @@ class TestMultiControlledXKernel:
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
         assert qml.math.allclose(out, exp_out)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
-    def test_with_tf(self, batch_dim):
-        """Test that the custom kernel works with Tensorflow."""
-        import tensorflow as tf
-
-        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
-        state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
-        state = np.random.random(state_shape).astype(complex)
-        tf_state = tf.Variable(state)
-        out = apply_operation(op, tf_state, is_state_batched=batch_dim is not None, debugger=None)
-        # Compute expected output
-        exp_out = state.copy()
-        exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
-        assert qml.math.allclose(out, exp_out)
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_with_autograd(self, batch_dim):
@@ -1383,66 +1320,6 @@ class TestMultiControlledXKernel:
         assert qml.math.allclose(out, exp_out)
 
 
-@pytest.mark.tf
-class TestLargeTFCornerCases:
-    """Test large corner cases for tensorflow."""
-
-    @pytest.mark.parametrize(
-        "op", (qml.PauliZ(8), qml.PhaseShift(1.0, 8), qml.S(8), qml.T(8), qml.CNOT((5, 6)))
-    )
-    def test_tf_large_state(self, op):
-        """Tests that custom kernels that use slicing fall back to a different method when
-        the state has a large number of wires."""
-        import tensorflow as tf
-
-        state = np.zeros([2] * 10, dtype=complex)
-        state = tf.Variable(state)
-        new_state = apply_operation(op, state)
-
-        # still all zeros.  Mostly just making sure error not raised
-        assert qml.math.allclose(state, new_state)
-
-    def test_cnot_large_batched_state_tf(self):
-        """Test that CNOT with large batched states works as expected."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=8)
-
-        @qml.qnode(dev, interface="tf")
-        def auxiliary_qcnn_circuit(inputs):
-            qml.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliZ(1)
-            qml.Toffoli(wires=[0, 2, 4])
-            qml.Toffoli(wires=[0, 2, 5])
-            qml.Toffoli(wires=[0, 2, 6])
-            qml.Toffoli(wires=[0, 2, 7])
-            return [qml.expval(qml.PauliZ(i)) for i in range(4, 8)]
-
-        batch_size = 3
-        params = np.random.rand(batch_size, 16)
-        result = auxiliary_qcnn_circuit(tf.Variable(params))
-        assert qml.math.shape(result) == (4, batch_size)
-
-    def test_pauliz_large_batched_state_tf(self):
-        """Test that PauliZ with large batched states works as expected."""
-        import tensorflow as tf
-
-        @qml.qnode(qml.device("default.qubit"), interface="tf")
-        def circuit(init_state):
-            qml.StatePrep(init_state, wires=range(8))
-            qml.PauliX(0)
-            qml.PauliZ(0)
-            return qml.state()
-
-        states = np.zeros((3, 256))
-        states[:, 0] = 1.0
-        results = circuit(tf.Variable(states))
-        assert qml.math.shape(results) == (3, 256)
-        assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
-
-
-# pylint: disable=too-few-public-methods
 class TestConditionalsAndMidMeasure:
     """Test dispatching for mid-circuit measurements and conditionals."""
 

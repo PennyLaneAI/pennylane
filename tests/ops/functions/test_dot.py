@@ -137,22 +137,6 @@ class TestDotSum:
         )
         qml.assert_equal(op_sum, op_sum_2)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dtype", ("float64", "complex128"))
-    def test_dot_tf(self, dtype):
-        """Test the dot function with the tensorflow interface."""
-        import tensorflow as tf
-
-        c = tf.constant([1.0, 2.0, 3.0], dtype=getattr(tf, dtype))
-        o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        op_sum = qml.dot(c, o)
-        op_sum_2 = Sum(
-            qml.PauliX(0),
-            SProd(tf.constant(2.0, dtype=getattr(tf, dtype)), qml.PauliY(1)),
-            SProd(tf.constant(3.0, dtype=getattr(tf, dtype)), qml.PauliZ(2)),
-        )
-        qml.assert_equal(op_sum, op_sum_2)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("dtype", ("float64", "complex128"))
     def test_dot_torch(self, dtype):
@@ -344,24 +328,6 @@ class TestDotPauliSentence:
                 qml.pauli.PauliWord({0: "X"}): 1.0,
                 qml.pauli.PauliWord({1: "Y"}): 2.0,
                 qml.pauli.PauliWord({2: "Z"}): 3.0,
-            }
-        )
-        assert ps == ps_2
-
-    @pytest.mark.tf
-    def test_dot_tf(self):
-        """Test the dot function with the tensorflow interface."""
-        import tensorflow as tf
-
-        c = tf.constant([1.0, 2.0, 3.0])
-        o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        ps = qml.dot(c, o, pauli=True)
-
-        ps_2 = qml.pauli.PauliSentence(
-            {
-                qml.pauli.PauliWord({0: "X"}): tf.constant(1.0),
-                qml.pauli.PauliWord({1: "Y"}): tf.constant(2.0),
-                qml.pauli.PauliWord({2: "Z"}): tf.constant(3.0),
             }
         )
         assert ps == ps_2

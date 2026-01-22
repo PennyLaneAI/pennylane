@@ -651,26 +651,3 @@ class TestDifferentiable:
         res = group(coeffs, select_group=1, select_index=0)
         res.backward()
         assert np.allclose(coeffs.grad, [0.0, 0.0, 1.0], atol=tol)
-
-    @pytest.mark.tf
-    def test_differentiation_tf(self, tol):
-        """Test that grouping is differentiable with tf tensors as coefficient"""
-        import tensorflow as tf
-
-        obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
-
-        def group(coeffs, select=None):
-            _, grouped_coeffs = group_observables(obs, coeffs)
-            return grouped_coeffs[select]
-
-        coeffs = tf.Variable([1.0, 2.0, 3.0], dtype=tf.double)
-
-        with tf.GradientTape() as tape:
-            res = group(coeffs, select=0)
-        grad = tape.jacobian(res, [coeffs])
-        assert np.allclose(grad, pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol)
-
-        with tf.GradientTape() as tape:
-            res = group(coeffs, select=1)
-        grad = tape.jacobian(res, [coeffs])
-        assert np.allclose(grad, pnp.array([[0.0, 0.0, 1.0]]), atol=tol)

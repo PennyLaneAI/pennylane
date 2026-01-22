@@ -276,31 +276,6 @@ class TestIntegration:
         assert qml.math.shape(jac) == (16,)
         assert qml.math.allclose(jac, self.exp_jac, atol=0.005)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 10000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        x = tf.Variable(self.x)
-        with tf.GradientTape() as tape:
-            res = qnode(x)
-
-        assert qml.math.shape(res) == (16,)
-        assert qml.math.allclose(res, self.exp_result, atol=0.002)
-
-        jac = tape.gradient(res, x)
-        assert qml.math.shape(jac) == (16,)
-
     def test_prod_rx_rx_compiled_circuit(self):
         """Test that a circuit can execute successfully using qml.compile and
         a CompositeOp as a base"""

@@ -220,28 +220,6 @@ class TestBasicCircuit:
         expected = expected_TRX_circ_expval_jacobians(phi.detach().numpy(), subspace)
         assert math.allclose(jacobian.detach().numpy(), expected)
 
-    @pytest.mark.tf
-    def test_tf_results_and_backprop(self, subspace):
-        """Tests execution and gradients of a simple circuit with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873)
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = self.get_TRX_quantum_script(phi, subspace)
-            result = simulate(qs)
-
-        expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
-
-        expected = expected_TRX_circ_expval_jacobians(phi, subspace)
-        assert math.all(
-            [
-                math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
-                for one_obs_result, one_obs_expected in zip(result, expected)
-            ]
-        )
-
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestBroadcasting:
@@ -495,28 +473,8 @@ class TestDebugger:
         assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
     # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    def test_debugger_tf(self, subspace):
-        """Tests debugger with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873)
-        debugger = Debugger()
-
-        qs = self.get_debugger_quantum_script(phi, subspace)
-        result = simulate(qs, debugger=debugger)
-
-        expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
-
-        assert list(debugger.snapshots.keys()) == [0, "final_state"]
-        assert qml.math.allclose(debugger.snapshots[0], self.basis_state)
-
-        expected_final_state = expected_TRX_circ_state(phi, subspace)
-        assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
 
-@flaky
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""

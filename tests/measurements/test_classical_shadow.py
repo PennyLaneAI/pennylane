@@ -905,34 +905,6 @@ class TestExpvalBackward:
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    @pytest.mark.tf
-    def test_backward_tf(self, obs=obs_strongly_entangled):
-        """Test that the gradient of the expval estimation is correct for
-        the tensorflow interface"""
-        import tensorflow as tf
-
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="tf")
-        exact_circuit = strongly_entangling_circuit_exact(3, "tf")
-
-        # make rotations close to pi / 2 to ensure gradients are not too small
-        x = tf.Variable(
-            np.random.uniform(
-                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-            )
-        )
-
-        with tf.GradientTape() as tape:
-            out = shadow_circuit(x, obs, k=10)
-
-        actual = tape.jacobian(out, x)
-
-        with tf.GradientTape() as tape2:
-            out2 = qml.math.hstack(exact_circuit(x, obs))
-
-        expected = tape2.jacobian(out2, x)
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
     @pytest.mark.torch
     def test_backward_torch(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for

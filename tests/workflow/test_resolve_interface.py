@@ -32,21 +32,6 @@ def test_auto_with_numpy():
     assert resolved_interface == Interface.NUMPY
 
 
-@pytest.mark.tf
-def test_auto_with_tf():
-    """Test that 'auto' interface resolves to 'tf' correctly."""
-    try:
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-    except ImportError:
-        pytest.skip("TensorFlow is not installed.")
-    tapes = [
-        QuantumScript([qml.RX(tf.Variable(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),
-    ]
-    resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == Interface.TF
-
-
 @pytest.mark.autograd
 def test_auto_with_autograd():
     """Test that 'auto' interface resolves to 'autograd' correctly."""
@@ -94,25 +79,6 @@ def test_auto_with_unsupported_interface():
     tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
 
     assert _resolve_interface("auto", [tape]) == Interface.NUMPY
-
-
-@pytest.mark.tf
-def test_tf_autograph():
-    """Test that 'tf' interface resolves to 'tf-autograph' in graph mode."""
-    try:
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-    except ImportError:
-        pytest.skip("TensorFlow is not installed.")
-
-    # pylint: disable=not-context-manager
-    with tf.Graph().as_default():
-        tapes = [
-            QuantumScript([qml.RX(tf.constant(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),
-        ]
-        resolved_interface = _resolve_interface("tf", tapes)
-
-    assert resolved_interface == Interface.TF_AUTOGRAPH
 
 
 @pytest.mark.jax

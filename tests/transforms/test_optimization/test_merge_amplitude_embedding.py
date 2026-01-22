@@ -149,24 +149,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 
-    @pytest.mark.tf
-    def test_merge_amplitude_embedding_tf(self):
-        """Test QNode in tensorflow interface."""
-        import tensorflow as tf
-
-        def qfunc(amplitude):
-            qml.AmplitudeEmbedding(amplitude, wires=0)
-            qml.AmplitudeEmbedding(amplitude, wires=1)
-            return qml.state()
-
-        dev = qml.device("default.qubit", wires=2)
-        optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-
-        amplitude = tf.Variable([0.0, 1.0])
-        # Check the state |11> is being generated.
-        assert optimized_qnode(amplitude)[-1] == 1
-
     @pytest.mark.jax
     def test_merge_amplitude_embedding_jax(self):
         """Test QNode in JAX interface."""

@@ -143,22 +143,6 @@ class TestQutritDepolarizingChannel:
         jac = jacobian(self.kraus_fn_real, p) + 1j * jacobian(self.kraus_fn_imag, p)
         assert math.allclose(jac, self.expected_jac_fn(p.detach().numpy()))
 
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        """Tests Jacobian of Kraus matrices using TensorFlow."""
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        with tf.GradientTape() as real_tape:
-            real_out = self.kraus_fn_real(p)
-        with tf.GradientTape() as imag_tape:
-            imag_out = self.kraus_fn_imag(p)
-
-        real_jac = math.cast(real_tape.jacobian(real_out, p), complex)
-        imag_jac = math.cast(imag_tape.jacobian(imag_out, p), complex)
-        jac = real_jac + 1j * imag_jac
-        assert math.allclose(jac, self.expected_jac_fn(0.43))
-
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
         """Tests Jacobian of Kraus matrices using JAX."""
@@ -263,20 +247,6 @@ class TestQutritAmplitudeDamping:
         for res_partial, exp_partial in zip(jac, expected):
             assert math.allclose(res_partial.detach().numpy(), exp_partial)
 
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        """Tests Jacobian of Kraus matrices using TensorFlow."""
-        import tensorflow as tf
-
-        gamma_10 = tf.Variable(0.43)
-        gamma_20 = tf.Variable(0.12)
-        gamma_21 = tf.Variable(0.35)
-
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma_10, gamma_20, gamma_21)
-        jac = tape.jacobian(out, (gamma_10, gamma_20, gamma_21))
-        assert math.allclose(jac, self.expected_jac_fn(gamma_10, gamma_20, gamma_21))
-
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
         """Tests Jacobian of Kraus matrices using JAX."""
@@ -367,19 +337,6 @@ class TestTritFlip:
         expected_jac = self.expected_jac_fn(*ps)
         for j, exp in zip(jac, expected_jac):
             assert qml.math.allclose(j.detach().numpy(), exp)
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        """Tests Jacobian of Kraus matrices using TensorFlow."""
-        import tensorflow as tf
-
-        p_01 = tf.Variable(0.14)
-        p_02 = tf.Variable(0.04)
-        p_12 = tf.Variable(0.23)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p_01, p_02, p_12)
-        jac = tape.jacobian(out, (p_01, p_02, p_12))
-        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):

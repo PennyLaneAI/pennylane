@@ -489,23 +489,6 @@ class TestCasting:
         res = circuit(inputs)
         assert np.allclose(res, expected, atol=1e-6, rtol=0)
 
-    @pytest.mark.tf
-    def test_tensorflow(self, inputs, expected):
-        """Test that MottonenStatePreparation can be correctly used with the TensorFlow interface."""
-        import tensorflow as tf
-
-        inputs = tf.Variable(inputs)
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(inputs):
-            qml.MottonenStatePreparation(inputs, wires=[0, 1])
-            return qml.probs(wires=[0, 1])
-
-        inputs = inputs / tf.linalg.norm(inputs)
-        res = circuit(inputs)
-        assert np.allclose(res, expected, atol=1e-6, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the Torch interface."""

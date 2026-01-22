@@ -240,33 +240,6 @@ class TestBasicCircuit:
         expected = self.expected_trx_circ_expval_jacobians(phi.detach().numpy(), subspace)
         assert math.allclose(jacobian.detach().numpy(), expected)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
-    def test_tf_results_and_backprop(self, subspace):
-        """Tests execution and gradients of a basic circuit using tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873, dtype="float64")
-
-        dev = DefaultQutritMixed()
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = self.get_trx_quantum_script(phi, subspace)
-            result = dev.execute(qs)
-
-        expected = self.expected_trx_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
-
-        expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
-        assert math.all(
-            [
-                math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
-                for one_obs_result, one_obs_expected in zip(result, expected)
-            ]
-        )
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op,param", [(qml.TRX, np.pi), (qml.QutritBasisState, [1])])
     def test_qnode_returns_correct_interface(self, op, param):
         """Test that even if no interface parameters are given, result's type is the correct
         interface."""
@@ -728,30 +701,6 @@ class TestExecutingBatches:
 
         assert qml.math.allclose(jacobian_1, jacobian_3)
 
-    @pytest.mark.tf
-    def test_tf(self):
-        """Test batches can be executed and have backprop derivatives using tensorflow."""
-        import tensorflow as tf
-
-        x = tf.Variable(5.2281, dtype="float64")
-        with tf.GradientTape(persistent=True) as tape:
-            results = self.f(x)
-
-        expected = self.expected(x)
-        self.nested_compare(results, expected)
-
-        jacobian_00 = tape.gradient(results[0][0], x)
-        assert qml.math.allclose(jacobian_00, -qml.math.cos(x))
-        jacobian_01 = tape.gradient(results[0][1], x)
-        assert qml.math.allclose(jacobian_01, -3 * qml.math.sin(x))
-
-        jacobian_1 = tape.jacobian(results[1], x)
-
-        x1 = 2 * -math.sin(3 / 2 * x)
-        x2 = math.sin(3 / 2 * x)
-        jacobian_3 = math.array([x1, x2, x2, x1, x2, x2, x1, x2, x2]) / 9
-        assert qml.math.allclose(jacobian_1, jacobian_3)
-
 
 class TestSumOfTermsDifferentiability:
     """Tests Hamiltonian and sum expvals are still differentiable.
@@ -889,45 +838,6 @@ class TestSumOfTermsDifferentiability:
         expected_out.backward()
         assert len(coeffs.grad) == 2
         assert qml.math.allclose(coeffs.grad, coeffs_expected.grad)
-
-    @pytest.mark.tf
-    def test_tf_backprop(self):
-        """Test that backpropagation derivatives work with tensorflow with
-        Hamiltonians using new and old math."""
-        import tensorflow as tf
-
-        x = tf.Variable(self.x, dtype="float64")
-        coeffs = [8.3, 5.7]
-
-        with tf.GradientTape() as tape1:
-            out = self.f(x, coeffs)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(x, coeffs)
-
-        assert qml.math.allclose(out, expected_out)
-        gradient = tape1.gradient(out, x)
-        expected_gradient = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(expected_gradient, gradient)
-
-    @pytest.mark.tf
-    def test_tf_backprop_coeffs(self):
-        """Test that backpropagation derivatives work with tensorflow with
-        the coefficients of Hamiltonians using new and old math."""
-        import tensorflow as tf
-
-        coeffs = tf.Variable([8.3, 5.7], dtype="float64")
-
-        with tf.GradientTape() as tape1:
-            out = self.f(self.x, coeffs)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(self.x, coeffs)
-
-        gradient = tape1.gradient(out, coeffs)
-        expected_gradient = tape2.gradient(expected_out, coeffs)
-        assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
 
 
 class TestRandomSeed:
@@ -1754,26 +1664,3 @@ class TestReadoutError:
                 np.allclose(j.detach().numpy(), expected_j)
         else:
             assert np.allclose(jac.detach().numpy(), expected)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
-    def test_differentiation_tensorflow(self, num_wires, relaxations, misclassifications, expected):
-        """Tests the differentiation of readout errors using TensorFlow"""
-        import tensorflow as tf
-
-        if misclassifications is None:
-            relaxations = tf.Variable(relaxations, dtype="float64")
-            diff_variables = [relaxations]
-        elif relaxations is None:
-            misclassifications = tf.Variable(misclassifications, dtype="float64")
-            diff_variables = [misclassifications]
-        else:
-            relaxations = tf.Variable(relaxations, dtype="float64")
-            misclassifications = tf.Variable(misclassifications, dtype="float64")
-            diff_variables = [relaxations, misclassifications]
-
-        diff_func = self.get_diff_function("tf", num_wires)
-        with tf.GradientTape() as grad_tape:
-            probs = diff_func(relaxations, misclassifications)
-        jac = grad_tape.jacobian(probs, diff_variables)
-        assert np.allclose(jac, expected)

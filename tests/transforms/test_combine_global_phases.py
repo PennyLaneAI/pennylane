@@ -154,21 +154,3 @@ def test_differentiability_torch():
     zero = torch.tensor(0.0)
     assert qml.math.isclose(grad1, zero)
     assert qml.math.isclose(grad2, zero)
-
-
-@pytest.mark.tf
-def test_differentiability_tensorflow():
-    """Test that the output of the ``combine_global_phases`` transform is differentiable with TensorFlow"""
-    import tensorflow as tf
-
-    dev = qml.device("default.qubit", wires=3)
-    original_qnode = qml.QNode(original_qfunc, device=dev)
-
-    phi1 = tf.Variable(0.25)
-    phi2 = tf.Variable(-0.6)
-    with tf.GradientTape() as tape:
-        transformed_qnode = combine_global_phases(original_qnode)(phi1, phi2)
-    grad1, grad2 = tape.jacobian(transformed_qnode, (phi1, phi2))
-
-    assert qml.math.isclose(grad1, 0.0)
-    assert qml.math.isclose(grad2, 0.0)

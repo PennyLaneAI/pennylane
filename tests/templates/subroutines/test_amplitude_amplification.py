@@ -221,28 +221,6 @@ class TestDifferentiability:
         assert qml.math.shape(jac) == (2,)
         assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        params = tf.Variable(self.params)
-        with tf.GradientTape() as tape:
-            res = qnode(params)
-
-        jac = tape.gradient(res, params)
-        assert qml.math.shape(jac) == (8,)
-        assert qml.math.allclose(res, self.exp_grad, atol=0.001)
-
 
 def test_correct_queueing():
     """Test that operations in a circuit containing AmplitudeAmplification are correctly queued"""

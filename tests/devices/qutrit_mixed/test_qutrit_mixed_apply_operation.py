@@ -30,7 +30,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 subspaces = [(0, 1), (0, 2), (1, 2)]
@@ -447,24 +446,6 @@ class TestTRXCalcGrad:
             jacobian.detach().numpy(),
         )
 
-    @pytest.mark.tf
-    def test_trx_grad_tf(self, two_qutrit_state, subspace):
-        """Tests the application and differentiation of a trx gate with tensorflow"""
-        import tensorflow as tf
-
-        state = tf.Variable(two_qutrit_state, dtype="complex128")
-        phi = tf.Variable(0.8589, trainable=True, dtype="float64")
-
-        with tf.GradientTape() as grad_tape:
-            op = qml.TRX(phi, wires=0, subspace=subspace)
-            new_state = apply_operation(op, state)
-            probs = measure(qml.probs(), new_state)
-
-        jacobians = grad_tape.jacobian(probs, [phi])
-        phi_jacobian = jacobians[0]
-
-        self.compare_expected_result(phi, state, probs, subspace, phi_jacobian)
-
 
 class TestChannelCalcGrad:
     """Tests the application and differentiation of a Channel in the different interfaces."""
@@ -550,22 +531,3 @@ class TestChannelCalcGrad:
             probs.detach().numpy(),
             jacobian.detach().numpy(),
         )
-
-    @pytest.mark.tf
-    def test_channel_grad_tf(self, two_qutrit_state):
-        """Tests the application and differentiation of a channel with tensorflow"""
-        import tensorflow as tf
-
-        state = tf.Variable(two_qutrit_state, dtype="complex128")
-        p = tf.Variable(0.8589, trainable=True, dtype="complex128")
-
-        with tf.GradientTape() as grad_tape:
-            op = CustomChannel(p, wires=1)
-            new_state = apply_operation(op, state)
-            probs = measure(qml.probs(), new_state)
-
-        jacobians = grad_tape.jacobian(probs, [p])
-        # tf takes gradient with respect to conj(z), so we need to conj the gradient
-        phi_jacobian = tf.math.conj(jacobians[0])
-
-        self.compare_expected_result(p, state, probs, phi_jacobian)

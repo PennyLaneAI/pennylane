@@ -288,65 +288,6 @@ class TestCommutationDAG:
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
-    @pytest.mark.tf
-    def test_dag_parameters_tf(self):
-        "Test a the DAG and its attributes for tensorflow parameters."
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit(x, y, z):
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=0)
-            qml.CNOT(wires=[1, 2])
-            qml.RY(y, wires=1)
-            qml.Hadamard(wires=2)
-            qml.CRZ(z, wires=[2, 0])
-            qml.RY(-y, wires=1)
-            return qml.expval(qml.PauliZ(0))
-
-        x = tf.Variable([np.pi / 4, np.pi / 3, np.pi / 2], dtype=tf.float64)
-
-        get_dag = qml.transforms.commutation_dag(circuit)
-        dag = get_dag(x[0], x[1], x[2])
-
-        nodes = [
-            qml.RX(x[0], wires=0),
-            qml.RX(x[1], wires=0),
-            qml.CNOT(wires=[1, 2]),
-            qml.RY(x[1], wires=1),
-            qml.Hadamard(wires=2),
-            qml.CRZ(x[2], wires=[2, 0]),
-            qml.RY(-x[1], wires=1),
-        ]
-
-        edges = [
-            (0, 5, {"commute": False}),
-            (1, 5, {"commute": False}),
-            (2, 3, {"commute": False}),
-            (2, 4, {"commute": False}),
-            (2, 6, {"commute": False}),
-            (4, 5, {"commute": False}),
-        ]
-
-        direct_successors = [[5], [5], [3, 4, 6], [], [5], [], []]
-        successors = [[5], [5], [3, 4, 5, 6], [], [5], [], []]
-        direct_predecessors = [[], [], [], [2], [2], [0, 1, 4], [2]]
-        predecessors = [[], [], [], [2], [2], [0, 1, 2, 4], [2]]
-
-        for i in range(0, 7):
-            assert dag.get_node(i).op.name == nodes[i].name
-            assert dag.get_node(i).op.data == nodes[i].data
-            assert dag.get_node(i).op.wires == nodes[i].wires
-            assert dag.direct_successors(i) == direct_successors[i]
-            assert dag.get_node(i).successors == successors[i] == dag.successors(i)
-            assert dag.direct_predecessors(i) == direct_predecessors[i]
-            assert dag.get_node(i).predecessors == predecessors[i] == dag.predecessors(i)
-
-        for i, edge in enumerate(dag.get_edges()):
-            assert edges[i] == edge
-
     @pytest.mark.torch
     def test_dag_parameters_torch(self):
         "Test a the DAG and its attributes for torch parameters."

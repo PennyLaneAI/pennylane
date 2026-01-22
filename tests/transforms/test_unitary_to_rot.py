@@ -164,33 +164,6 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert isinstance(ops[4], qml.CNOT)
         assert ops[4].wires == Wires(["b", "a"])
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
-    def test_unitary_to_rot_tf(self, U, expected_gates, expected_params):
-        """Test that the transform works in the Tensorflow interface."""
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
-
-        transformed_qfunc = unitary_to_rot(qfunc)
-
-        ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
-
-        assert len(ops) == 5
-
-        assert isinstance(ops[0], qml.Hadamard)
-        assert ops[0].wires == Wires("a")
-
-        for i in range(3):
-            assert isinstance(ops[1 + i], expected_gates[i])
-            assert ops[1 + i].wires == Wires("a")
-            assert qml.math.allclose(
-                qml.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
-            )
-
-        assert isinstance(ops[4], qml.CNOT)
-        assert ops[4].wires == Wires(["b", "a"])
-
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot_jax(self, U, expected_gates, expected_params):
@@ -348,53 +321,6 @@ class TestQubitUnitaryDifferentiability:
         transformed_result.backward()
 
         assert qml.math.allclose(original_input.grad, transformed_input.grad, atol=1e-7)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
-    def test_gradient_unitary_to_rot_tf(self, rot_angles, diff_method):
-        """Tests differentiability in tensorflow interface."""
-        import tensorflow as tf
-
-        def qfunc_with_qubit_unitary(angles):
-            z = tf.cast(angles[0], tf.complex128)
-            x = tf.cast(angles[1], tf.complex128)
-
-            c = tf.cos(x / 2)
-            s = tf.sin(x / 2) * 1j
-
-            Z_mat = tf.convert_to_tensor([[tf.exp(-1j * z / 2), 0.0], [0.0, tf.exp(1j * z / 2)]])
-            X_mat = tf.convert_to_tensor([[c, -s], [-s, c]])
-
-            qml.Hadamard(wires="a")
-            qml.QubitUnitary(Z_mat, wires="a")
-            qml.QubitUnitary(X_mat, wires="b")
-            qml.CNOT(wires=["b", "a"])
-            return qml.expval(qml.PauliX(wires="a"))
-
-        dev = qml.device("default.qubit", wires=["a", "b"])
-
-        original_qnode = qml.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
-        original_input = tf.Variable(rot_angles, dtype=tf.float64)
-        original_result = original_qnode(original_input)
-
-        transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
-        transformed_input = tf.Variable(rot_angles, dtype=tf.float64)
-        transformed_result = transformed_qnode(transformed_input)
-
-        assert qml.math.allclose(original_result, transformed_result)
-
-        with tf.GradientTape() as tape:
-            loss = original_qnode(original_input)
-        original_grad = tape.gradient(loss, original_input)
-
-        with tf.GradientTape() as tape:
-            loss = transformed_qnode(transformed_input)
-
-        transformed_grad = tape.gradient(loss, transformed_input)
-
-        # For 64bit values, need to slightly increase the tolerance threshold
-        assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
@@ -621,58 +547,6 @@ class TestTwoQubitUnitaryDifferentiability:
         transformed_result.backward()
 
         assert qml.math.allclose(x.grad, transformed_x.grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_gradient_unitary_to_rot_tf_two_qubits(self, diff_method):
-        """Tests differentiability in tensorflow interface."""
-        import tensorflow as tf
-
-        # We have to mark these as constant, otherwise it will try to
-        # differentiate with respect to them.
-        U0 = tf.constant(test_two_qubit_unitaries[0], dtype=tf.complex128)
-        U1 = tf.constant(test_two_qubit_unitaries[1], dtype=tf.complex128)
-
-        def two_qubit_decomp_qnode(x):
-            qml.RX(x, wires=0)
-            qml.QubitUnitary(U0, wires=[0, 1])
-            qml.QubitUnitary(U1, wires=[1, 2])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
-
-        x = tf.Variable(0.1, dtype=tf.float64)
-
-        transformed_x = tf.Variable(0.1, dtype=tf.float64)
-
-        dev = qml.device("default.qubit", wires=3)
-
-        original_qnode = qml.QNode(
-            two_qubit_decomp_qnode, dev, interface="tf", diff_method=diff_method
-        )
-
-        original_result = original_qnode(x)
-
-        transformed_qfunc = unitary_to_rot(two_qubit_decomp_qnode)
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="tf", diff_method=diff_method
-        )
-
-        transformed_result = transformed_qnode(transformed_x)
-
-        assert qml.math.allclose(original_result, transformed_result)
-
-        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_x)
-        assert len(tape.operations) == 15
-
-        with tf.GradientTape() as tape:
-            loss = original_qnode(x)
-        original_grad = tape.gradient(loss, x)
-
-        with tf.GradientTape() as tape:
-            loss = transformed_qnode(transformed_x)
-        transformed_grad = tape.gradient(loss, transformed_x)
-
-        # For 64bit values, need to slightly increase the tolerance threshold
-        assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])

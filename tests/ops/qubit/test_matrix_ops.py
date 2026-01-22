@@ -355,49 +355,6 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
-    )
-    def test_qubit_unitary_tf(self, U, num_wires):
-        """Test that the unitary operator produces the correct output and
-        catches incorrect input with tensorflow."""
-
-        import tensorflow as tf
-
-        U = tf.Variable(U)
-        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
-
-        # verify output type
-        assert isinstance(out, tf.Variable)
-
-        # verify equivalent to input state
-        assert qml.math.allclose(out, U)
-
-        # test non-square matrix
-        with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
-
-        # test non-unitary matrix
-        U3 = tf.Variable(U + 0.5)
-        with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires), unitary_check=True).matrix()
-
-        # test an error is thrown when constructed with incorrect number of wires
-        with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
-
-    @pytest.mark.tf
-    def test_qubit_unitary_int_pow_tf(self):
-        """Test that QubitUnitary.pow works with tf and int z values."""
-
-        import tensorflow as tf
-
-        mat = tf.Variable([[1, 0], [0, tf.exp(1j)]])
-        expected = tf.Variable([[1, 0], [0, tf.exp(3j)]])
-        [op] = qml.QubitUnitary(mat, wires=[0]).pow(3)
-        assert qml.math.allclose(op.matrix(), expected)
-
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
@@ -1062,41 +1019,6 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         expected = jnp.diag(-jnp.sin(x))
         assert np.allclose(jac, expected)
 
-    @pytest.mark.tf
-    @pytest.mark.slow  # test takes 12 seconds due to tf.function
-    def test_tf_function(self):
-        """Test that the diagonal matrix unitary operation works
-        within a QNode that uses TensorFlow autograph"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @tf.function
-        @qml.qnode(dev)
-        def circuit(x):
-            x = tf.cast(x, tf.complex128)
-            diag = tf.math.exp(1j * x * tf.constant([1.0 + 0j, -1.0 + 0j]) / 2)
-            qml.Hadamard(wires=0)
-            qml.DiagonalQubitUnitary(diag, wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        x = tf.Variable(0.452)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(x)
-
-        grad = tape.gradient(loss, x)
-        expected = -tf.math.sin(x)  # pylint: disable=invalid-unary-operand-type
-        assert np.allclose(grad, expected)
-
-
-labels = [X, X, [1, 1]]
-ops = [
-    qml.QubitUnitary(X, wires=0),
-    qml.ControlledQubitUnitary(X, wires=[0, 1]),
-    qml.DiagonalQubitUnitary([1, 1], wires=0),
-]
-
 
 class TestUnitaryLabels:
     """Test the label of matrix operations."""
@@ -1294,39 +1216,6 @@ class TestBlockEncode:
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        ("input_matrix", "wires", "output_matrix"),
-        [
-            (1.0, 0, [[1, 0], [0, -1]]),
-            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
-            (
-                [[0.1, 0.2], [0.3, 0.4]],
-                range(2),
-                [
-                    [0.1, 0.2, 0.97283788, -0.05988708],
-                    [0.3, 0.4, -0.05988708, 0.86395228],
-                    [0.94561648, -0.07621992, -0.1, -0.3],
-                    [-0.07621992, 0.89117368, -0.2, -0.4],
-                ],
-            ),
-            (
-                0.1,
-                range(2),
-                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-            ),
-        ],
-    )
-    def test_blockencode_tf(self, input_matrix, wires, output_matrix):
-        """Test that the BlockEncode operator matrix is correct for tf."""
-        import tensorflow as tf
-
-        input_matrix = tf.Variable(input_matrix)
-
-        op = qml.BlockEncode(input_matrix, wires)
-        assert np.allclose(qml.matrix(op), output_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
-
     @pytest.mark.torch
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_matrix"),
@@ -1453,33 +1342,6 @@ class TestBlockEncode:
         grad = jax.grad(circuit, argnums=0)(input_matrix)
         assert np.allclose(grad, expected_result)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        ("wires", "input_matrix", "expected_result"),  # expected_results calculated manually
-        [
-            (range(1), pnp.array(0.3), 4 * 0.3),
-            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
-        ],
-    )
-    def test_blockencode_grad_tf(self, wires, input_matrix, expected_result):
-        """Test that block encode is differentiable when using tensorflow."""
-        import tensorflow as tf
-
-        input_matrix = tf.Variable(input_matrix)
-
-        dev = qml.device("default.qubit", wires=wires)
-
-        @qml.qnode(dev)
-        def circuit(input_matrix):
-            qml.BlockEncode(input_matrix, wires=wires)
-            return qml.expval(qml.PauliZ(wires=0))
-
-        with tf.GradientTape() as tape:
-            result = circuit(input_matrix)
-
-        computed_grad = tape.gradient(result, input_matrix)
-        assert np.allclose(computed_grad, expected_result)
-
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
         [
@@ -1603,16 +1465,6 @@ class TestInterfaceMatricesLabel:
         import torch
 
         mat = torch.tensor([[1, 0], [0, -1]])
-        self.check_interface(mat)
-
-    @pytest.mark.tf
-    def test_labelling_tf_variable(self):
-        """Test matrix cache labelling with tf interface."""
-
-        import tensorflow as tf
-
-        mat = tf.Variable([[1, 0], [0, -1]])
-
         self.check_interface(mat)
 
     @pytest.mark.jax

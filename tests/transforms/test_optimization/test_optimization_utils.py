@@ -128,17 +128,6 @@ class TestRotGateFusion:
         angles_1, angles_2 = qml.numpy.array(angles_1), qml.numpy.array(angles_1)
         self.run_interface_test(angles_1, angles_2)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
-    def test_full_rot_fusion_tensorflow(self, angles_1, angles_2):
-        """Test that the fusion of two Rot gates has the same effect as
-        applying the Rots sequentially, in Tensorflow."""
-        import tensorflow as tf
-
-        angles_1 = tf.Variable(angles_1, dtype=tf.float64)
-        angles_2 = tf.Variable(angles_2, dtype=tf.float64)
-        self.run_interface_test(angles_1, angles_2)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
     def test_full_rot_fusion_torch(self, angles_1, angles_2):
@@ -306,37 +295,4 @@ class TestRotGateFusion:
             imag_jac_fn = qml.jacobian(imag_fn)
             return lambda *args: real_jac_fn(*args) + 1j * imag_jac_fn(*args)
 
-        self.run_jacobian_test(all_angles, jacobian, is_batched=False)
-
-    @pytest.mark.skip
-    @pytest.mark.slow
-    @pytest.mark.tf
-    def test_jacobian_tf(self):
-        """Test the Jacobian of the rotation angle fusion with TensorFlow.
-        For known sources of singularities, the Jacobian is checked to indeed return NaN.
-        These sources are related to the absolute value of the upper left entry of the matrix
-        product:
-         - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
-         - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
-        """
-        import tensorflow as tf
-
-        # Testing fewer points than with batching to limit test runtimes
-        special_points = np.array([0, 1]) * np.pi
-        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        random_angles = np.random.random((3, 2, 3))
-        all_angles = np.concatenate([special_angles, random_angles])
-
-        def jacobian(fn):
-
-            def jac_fn(arg):
-                arg = tf.Variable(arg)
-                with tf.GradientTape() as t:
-                    out = fn(arg)
-                return t.jacobian(out, arg)
-
-            return jac_fn
-
-        # Need holomorphic derivatives and complex inputs because the output matrices are complex
-        all_angles = tf.Variable(all_angles)
         self.run_jacobian_test(all_angles, jacobian, is_batched=False)

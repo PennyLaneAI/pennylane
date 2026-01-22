@@ -1355,30 +1355,6 @@ class TestDifferentiation:
 
         assert pnp.allclose(res, expected)
 
-    @pytest.mark.tf
-    def test_tf(self, diff_method):
-        """Test differentiation using TF"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            Controlled(qml.RY(b, wires=1), control_wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        b = tf.Variable(0.123, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(b)
-
-        res = tape.gradient(loss, b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
-
 
 class TestControlledSupportsBroadcasting:
     """Test that the Controlled version of qubit operations with the ``supports_broadcasting`` attribute
@@ -2305,30 +2281,6 @@ class TestCtrlTransformDifferentiation:
 
         b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
-
-    @pytest.mark.tf
-    def test_tf(self, diff_method):
-        """Test differentiation using TF"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qml.StatePrep(init_state, wires=0)
-            qml.ctrl(qml.RY, control=0)(b, wires=[1])
-            return qml.expval(qml.PauliX(0))
-
-        b = tf.Variable(0.123, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(b)
-
-        res = tape.gradient(loss, b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)

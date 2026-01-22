@@ -105,19 +105,6 @@ class TestStateMP:
         assert qml.math.allclose(result, np.array([0.48j, -0.64j, 0.48, 0.36]))
         assert isinstance(result, jax.Array)
 
-    @pytest.mark.tf
-    def test_state_tf_function(self):
-        """Test that re-ordering works with tf.function."""
-        import tensorflow as tf
-
-        @tf.function
-        def get_state(ket):
-            return StateMP(wires=[1, 0]).process_state(ket, wire_order=Wires([0, 1]))
-
-        result = get_state(tf.Variable([0.48j, 0.48, -0.64j, 0.36]))
-        assert qml.math.allclose(result, np.array([0.48j, -0.64j, 0.48, 0.36]))
-        assert isinstance(result, tf.Tensor)
-
     def test_wire_ordering_error(self):
         """Test that a wire order error is raised when unknown wires are given."""
         with pytest.raises(
@@ -301,27 +288,6 @@ class TestState:
         expected_state, _ = qml.devices.qubit.get_final_state(scripts[0])
         assert np.allclose(state_val, expected_state.flatten())
 
-    @pytest.mark.tf
-    def test_interface_tf(self):
-        """Test that the state correctly outputs in the tensorflow interface"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev, interface="tf")
-        def func():
-            for i in range(4):
-                qml.Hadamard(i)
-            return state()
-
-        state_expected = 0.25 * tf.ones(16)
-        state_val = func()
-
-        assert isinstance(state_val, tf.Tensor)
-        assert state_val.dtype == tf.complex128
-        assert np.allclose(state_expected, state_val.numpy())
-        assert state_val.shape == (16,)
-
     @pytest.mark.torch
     def test_interface_torch(self):
         """Test that the state correctly outputs in the torch interface"""
@@ -412,8 +378,6 @@ class TestState:
 
         assert np.allclose(state_val, state_expected)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
     def test_default_qubit_tf(self, diff_method):
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""
@@ -449,28 +413,6 @@ class TestState:
         state_expected = 0.25 * np.ones(16)
 
         assert np.allclose(state_val, state_expected)
-
-    @pytest.mark.tf
-    def test_gradient_with_passthru_tf(self):
-        """Test that the gradient of the state is accessible when using default.qubit with the
-        tf interface and backprop diff_method."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
-        def func(x):
-            qml.RY(x, wires=0)
-            return state()
-
-        x = tf.Variable(0.1, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            result = func(x)
-
-        grad = tape.jacobian(result, x)
-        expected = tf.stack([-0.5 * tf.sin(x / 2), 0.5 * tf.cos(x / 2)])
-        assert np.allclose(grad, expected)
 
     @pytest.mark.autograd
     def test_gradient_with_passthru_autograd(self):
@@ -609,8 +551,6 @@ class TestDensityMatrix:
 
         assert np.allclose(expected, density_mat)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_tf_default_mixed(self, diff_method):
         """Test that the correct density matrix is returned using the TensorFlow interface."""
         dev = qml.device("default.mixed", wires=2)
@@ -625,8 +565,6 @@ class TestDensityMatrix:
 
         assert np.allclose(expected, density_mat)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_tf_default_qubit(self, diff_method):
         """Test that the correct density matrix is returned using the TensorFlow interface."""
         dev = qml.device("default.qubit", wires=2)

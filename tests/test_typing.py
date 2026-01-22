@@ -53,17 +53,6 @@ class TestTensorLike:
         tensor = torch.Tensor(1)
         assert isinstance(tensor, TensorLike)
 
-    @pytest.mark.tf
-    def test_isinstance_tf_tensor_is_tensor_like(self):
-        """Tests that a tensorflow Tensor is a Tensor"""
-        import tensorflow as tf
-
-        tensor = tf.constant([1, 2, 3])
-        assert isinstance(tensor, tf.Tensor)
-        assert isinstance(tensor, TensorLike)
-        var = tf.Variable(9)
-        assert isinstance(var, TensorLike)
-
     def test_subclass_unknown_type(self):
         """Test that an unknown type returns False."""
 
@@ -94,11 +83,3 @@ class TestTensorLike:
         import torch
 
         assert issubclass(torch.Tensor, TensorLike)
-
-    @pytest.mark.tf
-    def test_subclass_tf_tensor_is_tensor_like(self):
-        """Tests that a tensorflow Tensor is a Tensor"""
-        import tensorflow as tf
-
-        assert issubclass(tf.Tensor, TensorLike)
-        assert issubclass(tf.Variable, TensorLike)

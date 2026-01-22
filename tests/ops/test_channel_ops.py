@@ -80,7 +80,6 @@ class TestChannels:
         [
             None,
             pytest.param("autograd", marks=pytest.mark.autograd),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
         ],
@@ -150,16 +149,6 @@ class TestAmplitudeDamping:
         gamma = torch.tensor(0.43, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.kraus_fn, gamma)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(gamma.detach().numpy()))
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        gamma = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma)
-        jac = tape.jacobian(out, gamma)
-        assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -256,17 +245,6 @@ class TestGeneralizedAmplitudeDamping:
         for j, exp_j in zip(jac, exp_jac):
             assert qml.math.allclose(j.detach().numpy(), exp_j)
 
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        gamma = tf.Variable(0.43)
-        p = tf.Variable(0.3)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma, p)
-        jac = tape.jacobian(out, (gamma, p))
-        assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
-
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
         import jax
@@ -323,16 +301,6 @@ class TestPhaseDamping:
         gamma = torch.tensor(0.43, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.kraus_fn, gamma)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(gamma.detach().numpy()))
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        gamma = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma)
-        jac = tape.jacobian(out, gamma)
-        assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -404,16 +372,6 @@ class TestBitFlip:
         jac = torch.autograd.functional.jacobian(self.kraus_fn, p)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(p.detach().numpy()))
 
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p)
-        jac = tape.jacobian(out, p)
-        assert qml.math.allclose(jac, self.expected_jac_fn(p))
-
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
         import jax
@@ -484,16 +442,6 @@ class TestPhaseFlip:
         p = torch.tensor(0.43, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.kraus_fn, p)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(p.detach().numpy()))
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p)
-        jac = tape.jacobian(out, p)
-        assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -581,16 +529,6 @@ class TestDepolarizingChannel:
         jacobian = torch.autograd.functional.jacobian
         jac = jacobian(self.kraus_fn_real, p) + 1j * jacobian(self.kraus_fn_imag, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p.detach().numpy()))
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p)
-        jac = tape.jacobian(out, p)
-        assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -714,17 +652,6 @@ class TestResetError:
         assert len(jac) == len(exp_jac) == 2
         for j, exp_j in zip(jac, exp_jac):
             assert qml.math.allclose(j.detach().numpy(), exp_j)
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p0 = tf.Variable(0.43)
-        p1 = tf.Variable(0.12)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p0, p1)
-        jac = tape.jacobian(out, (p0, p1))
-        assert qml.math.allclose(jac, self.expected_jac_fn(p0, p1))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -903,18 +830,6 @@ class TestPauliError:
         assert qml.math.allclose(
             jac_real + 1j * jac_imag, self.expected_jac_fn[ops](p.detach().numpy())
         )
-
-    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self, ops):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        wires = list(range(len(ops)))
-        with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.PauliError(ops, p, wires=wires).kraus_matrices())
-        jac = tape.jacobian(out, p)
-        assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
     @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.jax

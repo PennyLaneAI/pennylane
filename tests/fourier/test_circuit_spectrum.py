@@ -162,24 +162,6 @@ class TestInterfaces:
             assert k1 == k2
             assert v1 == v2
 
-    @pytest.mark.tf
-    def test_integration_tf(self):
-        """Test that the spectra of a circuit is calculated correctly
-        in the tf interface."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev)
-
-        x = tf.Variable([1.0, 2.0, 3.0])
-        w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
-        res = circuit_spectrum(qnode)(x, w)
-
-        assert res
-        for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
-            assert k1 == k2
-            assert v1 == v2
-
     @pytest.mark.jax
     def test_integration_jax(self):
         """Test that the spectra of a circuit is calculated correctly

@@ -179,44 +179,6 @@ class TestQutritUnitary:
         expected = torch.tensor(U_adjoint)
         assert qml.math.allclose(mat, expected)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
-    def test_qutrit_unitary_tf(self, U, num_wires):
-        """Test that the unitary operator produces the correct output and
-        catches incorrect input with tensorflow."""
-        import tensorflow as tf
-
-        U_adjoint = (
-            np.conj(np.transpose(U)) if len(np.shape(U)) == 2 else np.conj(np.swapaxes(U, -2, -1))
-        )
-        U = tf.Variable(U)
-        out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
-
-        # verify output type
-        assert isinstance(out, tf.Variable)
-
-        # verify equivalent to input state
-        assert qml.math.allclose(out, U)
-
-        # test non-square matrix
-        with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
-
-        # test non-unitary matrix
-        U3 = tf.Variable(U + 0.5)
-        with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QutritUnitary(U3, wires=range(num_wires)).matrix()
-
-        # test an error is thrown when constructed with incorrect number of wires
-        with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
-
-        # verify adjoint behaves correctly
-        op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
-        mat = op.matrix()
-        expected = tf.Variable(U_adjoint)
-        assert qml.math.allclose(mat, expected)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
     def test_qutrit_unitary_jax(self, U, num_wires):
@@ -687,16 +649,6 @@ class TestInterfaceMatricesLabel:
         import torch
 
         mat = torch.tensor([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
-        self.check_interface(mat)
-
-    @pytest.mark.tf
-    def test_labelling_tf_variable(self):
-        """Test matrix cache labelling with tf interface."""
-
-        import tensorflow as tf
-
-        mat = tf.Variable([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
-
         self.check_interface(mat)
 
     @pytest.mark.jax

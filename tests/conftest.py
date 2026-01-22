@@ -30,7 +30,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 # defaults
 TOL = 1e-3
-TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
@@ -52,12 +51,6 @@ def tol():
 def tol_stochastic():
     """Numerical tolerance for equality tests of stochastic values."""
     return TOL_STOCHASTIC
-
-
-@pytest.fixture(scope="session")
-def tf_tol():
-    """Numerical tolerance for equality tests."""
-    return float(os.environ.get("TF_TOL", TF_TOL))
 
 
 @pytest.fixture(scope="session", params=[1, 2])

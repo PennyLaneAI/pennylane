@@ -245,30 +245,6 @@ class TestKernelMatrix:
         )
         assert qml.math.allclose(dK3, self.expected_dK3)
 
-    @pytest.mark.tf
-    def test_tf(self):
-        """Test differentiability of the kernel matrix methods with Tensorflow."""
-        import tensorflow as tf
-
-        X1 = tf.Variable(self.X1)
-        X2 = tf.Variable(self.X2)
-        with tf.GradientTape(persistent=True) as tape:
-            K1 = kern.square_kernel_matrix(X1, _diffable_kernel, False)
-            K2 = kern.kernel_matrix(X1, X2, _diffable_kernel)
-            K3 = kern.square_kernel_matrix(X1, _diffable_kernel, True)
-
-        assert qml.math.allclose(K1, self.expected_K1)
-        assert qml.math.allclose(K2, self.expected_K2)
-        assert qml.math.allclose(K3, self.expected_K3)
-
-        dK1 = tape.jacobian(K1, X1)
-        assert qml.math.allclose(dK1, self.expected_dK1)
-        dK2 = tape.jacobian(K2, (X1, X2))
-        assert qml.math.allclose(dK2[0], self.expected_dK2[0])
-        assert qml.math.allclose(dK2[1], self.expected_dK2[1])
-        dK3 = tape.jacobian(K3, X1)
-        assert qml.math.allclose(dK3, self.expected_dK3)
-
 
 class TestKernelPolarity:
     """Tests kernel methods to compute polarity."""

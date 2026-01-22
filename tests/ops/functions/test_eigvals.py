@@ -476,31 +476,6 @@ class TestDifferentiation:
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
-    def test_tensorflow(self, v):
-        """Test that differentiation works correctly when using TF"""
-        import tensorflow as tf
-
-        def circuit(theta):
-            qml.RX(theta, wires=0)
-            qml.PauliZ(wires=0)
-            qml.CNOT(wires=[0, 1])
-
-        def loss(theta):
-            U = qml.eigvals(circuit)(theta)
-            return qml.math.sum(qml.math.real(U))
-
-        x = tf.Variable(v)
-        with tf.GradientTape() as tape:
-            with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-                l = loss(x)
-        dl = tape.gradient(l, x)
-
-        assert isinstance(l, tf.Tensor)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
-
     @pytest.mark.autograd
     @pytest.mark.xfail(reason="np.linalg.eigvals not differentiable using Autograd")
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))

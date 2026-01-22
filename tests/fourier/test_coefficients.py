@@ -351,19 +351,6 @@ class TestInterfaces:
         ]
     )
 
-    @pytest.mark.tf
-    def test_coefficients_tf_interface(self):
-        """Test that coefficients are correctly computed when using the Tensorflow interface."""
-        import tensorflow as tf
-
-        qnode = qml.QNode(self.circuit, self.dev)
-
-        weights = tf.Variable([0.5, 0.2])
-
-        obtained_result = coefficients(partial(qnode, weights), 2, 1)
-
-        assert np.allclose(obtained_result, self.expected_result)
-
     @pytest.mark.torch
     def test_coefficients_torch_interface(self):
         """Test that coefficients are correctly computed when using the PyTorch interface."""

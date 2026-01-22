@@ -327,34 +327,6 @@ class TestInterfaces:
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
-    def test_tf(self, tol, features):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        features = tf.Variable(features)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(features)
-        grads = tape.jacobian(res, [features])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(features)
-        grads2 = tape2.jacobian(res2, [features])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_torch(self, tol, features):

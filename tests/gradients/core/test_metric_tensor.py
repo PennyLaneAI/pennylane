@@ -547,7 +547,6 @@ class TestMetricTensor:
         [
             pytest.param("jax", "array", marks=pytest.mark.jax),
             pytest.param("autograd", "array", marks=pytest.mark.autograd),
-            pytest.param("tf", "Variable", marks=pytest.mark.tf),
             pytest.param("torch", "Tensor", marks=pytest.mark.torch),
         ],
     )
@@ -705,9 +704,6 @@ class TestMetricTensor:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.metric_tensor(circuit)(weights)
 
-    @pytest.mark.tf
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
-    @pytest.mark.parametrize("interface", ["auto"])
     def test_no_trainable_params_qnode_tf(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1112,33 +1108,6 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    @pytest.mark.parametrize("interface", ["auto"])
-    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
-    def test_correct_output_tf(self, dev_name, ansatz, params, interface):
-        import tensorflow as tf
-
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qml.device(dev_name, wires=self.num_wires + 1)
-
-        params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires[:-1])
-            return qml.expval(qml.PauliZ(0))
-
-        with tf.GradientTape():
-            qml.metric_tensor(circuit, approx="block-diag")(*params)
-            mt = qml.metric_tensor(circuit, approx=None)(*params)
-
-        if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qml.math.allclose(mt, expected)
-
 
 def diffability_ansatz_0(weights, wires=None):
     # pylint: disable=unused-argument
@@ -1278,23 +1247,6 @@ class TestDifferentiabilityDiag:
         jac = jax.jacobian(cost_diag)(jnp.array(*weights))
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
-        """Test metric tensor differentiability in the TF interface"""
-        import tensorflow as tf
-
-        circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-
-        weights_t = tuple(tf.Variable(w) for w in weights)
-        with tf.GradientTape() as tape:
-            loss_diag = tf.linalg.diag_part(
-                qml.metric_tensor(qnode, approx="block-diag")(*weights_t)
-            )
-        jac = tape.jacobian(loss_diag, weights_t)
-        assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     def test_torch_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
@@ -1398,24 +1350,6 @@ class TestDifferentiability:
         assert qml.math.allclose(v1, v2, atol=tol, rtol=0)
         jac = jax.jacobian(cost_full)(*weights_jax)
         expected_full = qml.jacobian(_cost_full_autograd)(*weights)
-        assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf(self, diff_method, tol, ansatz, weights, interface):
-        """Test metric tensor differentiability in the TF interface"""
-        import tensorflow as tf
-
-        circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-
-        weights_t = tuple(tf.Variable(w) for w in weights)
-        with tf.GradientTape() as tape:
-            loss_full = qml.metric_tensor(qnode, approx=None)(*weights_t)
-        jac = tape.jacobian(loss_full, weights_t)
-        _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
-        assert qml.math.allclose(_cost_full(*weights), loss_full, atol=tol, rtol=0)
-        expected_full = qml.jacobian(_cost_full)(*weights)
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.torch

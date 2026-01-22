@@ -788,35 +788,6 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
-    @pytest.mark.tf
-    def test_prod_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        rot_params = tf.Variable([0.12, 3.45, 6.78])
-
-        prod_op = Prod(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qml.RX(theta, wires=1),
-            qml.Identity(wires=0),
-        )
-        mat = prod_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
-            @ qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            @ qnp.eye(4)
-        )
-        true_mat = tf.Variable(true_mat)
-        true_mat = tf.Variable(true_mat, dtype=tf.complex128)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
-    # sparse matrix tests:
-
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix(self, op1, mat1, op2, mat2):
@@ -901,22 +872,6 @@ class TestProperties:
         """Test is_verified_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
         assert prod_op.is_verified_hermitian == hermitian_status
-
-    @pytest.mark.tf
-    def test_is_hermitian_tf(self):
-        """Test that is_hermitian works when a tf type scalar is provided."""
-        # pylint:disable=invalid-unary-operand-type
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        prod_ops = (
-            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
-            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
-        )
-        true_hermitian_states = (True, False)
-
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
-            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
@@ -1304,22 +1259,6 @@ class TestSimplify:
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
         simplified_op = op.simplify()
 
-        qml.assert_equal(simplified_op, result)
-
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = (
-            tf.Variable(1.23, dtype=tf.complex128),
-            tf.Variable(2.0, dtype=tf.complex128),
-            tf.Variable(2.46j, dtype=tf.complex128),
-        )
-
-        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
-        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
-        simplified_op = op.simplify()
         qml.assert_equal(simplified_op, result)
 
     @pytest.mark.torch

@@ -173,15 +173,3 @@ class TestInterfacesStructureConstants:
 
         assert qml.math.allclose(adj_torch, adj0)
         assert qml.math.get_interface(adj_torch) == "torch"
-
-    @pytest.mark.tf
-    def test_tf_structure_constants(self):
-        """Test tf interface for structure constants"""
-
-        import tensorflow as tf
-
-        dla_tf = tf.constant(dla0)
-        adj_tf = qml.structure_constants(dla_tf, matrix=True)
-
-        assert qml.math.allclose(adj_tf, adj0)
-        assert qml.math.get_interface(adj_tf) == "tensorflow"

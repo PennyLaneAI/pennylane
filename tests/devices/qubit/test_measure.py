@@ -495,23 +495,3 @@ class TestSumOfTermsDifferentiability:
         out.backward()
         expected_out.backward()
         assert qml.math.allclose(x.grad, x2.grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_tf_backprop(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
-        import tensorflow as tf
-
-        x = tf.Variable(0.5, dtype="float64")
-        coeffs = [8.3, 5.7]
-
-        with tf.GradientTape() as tape1:
-            out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(x, coeffs)
-
-        assert qml.math.allclose(out, expected_out)
-        g1 = tape1.gradient(out, x)
-        g2 = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(g1, g2)

@@ -722,38 +722,12 @@ class TestComputations:
         assert np.allclose(op.compute_matrix(*params), expected_matrix, atol=tol, rtol=0)
         assert np.allclose(op(*params, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op, params, expected_matrix", EXPECTED_MATRICES)
-    def test_matrix_tf(self, tol, op, params, expected_matrix):
-        """Tests that the correct matrix is returned when using TensorFlow"""
-
-        import tensorflow as tf
-
-        variables = [tf.Variable(param) for param in params]
-
-        assert np.allclose(op.compute_matrix(*variables), expected_matrix, atol=tol, rtol=0)
-        assert np.allclose(op(*variables, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
-
     @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
     def test_eigvals(self, tol, op, params, expected_eigvals):
         """Tests that the correct eigenvalues are returned"""
 
         assert np.allclose(op.compute_eigvals(*params), expected_eigvals, atol=tol, rtol=0)
         assert np.allclose(op(*params, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
-    def test_eigvals_tf(self, tol, op, params, expected_eigvals):
-        """Tests that the correct eigenvalues are returned when using TensorFlow"""
-
-        import tensorflow as tf
-
-        variables = [tf.Variable(param) for param in params]
-
-        assert np.allclose(op.compute_eigvals(*variables), expected_eigvals, atol=tol, rtol=0)
-        assert np.allclose(
-            op(*variables, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0
-        )
 
 
 def test_simplify_crot():

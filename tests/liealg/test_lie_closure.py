@@ -462,22 +462,6 @@ class TestLieClosureInterfaces:
         res_list = qml.lie_closure(gens_list, matrix=True)
         assert qml.math.allclose(res_list, su2)
 
-    @pytest.mark.tf
-    def test_tf_lie_closure_matrix(self):
-        """Test lie_closure can handle tf inputs in matrix mode"""
-        import tensorflow as tf
-
-        su2 = qml.math.stack([X0, Y0, -Z0], like="tensorflow")
-        gens_list = [tf.constant(X0), tf.constant(Y0)]
-
-        gens = qml.math.stack([tf.constant(X0), tf.constant(Y0)])
-
-        res = qml.lie_closure(gens, matrix=True)
-        assert qml.math.allclose(res, su2)
-
-        res_list = qml.lie_closure(gens_list, matrix=True)
-        assert qml.math.allclose(res_list, su2)
-
     @pytest.mark.autograd
     def test_autograd_lie_closure_matrix(self):
         """Test lie_closure can handle autograd inputs in matrix mode"""

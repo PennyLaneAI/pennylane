@@ -478,36 +478,6 @@ class TestTorch:
                 qnode_spectrum(qnode)(*args)
 
 
-@pytest.mark.tf
-class TestTensorflow:
-    def test_integration_tf(self):
-        """Test that the spectra of a circuit is calculated correctly
-        in the tf interface."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit9, dev)
-
-        x = tf.Variable([1.0, 2.0, 3.0])
-        w = tf.constant([[-1, -2, -3], [-4, -5, -6]], dtype=float)
-        res = qnode_spectrum(qnode, argnum=[0])(x, w)
-
-        assert res
-        assert res == expected_result
-
-    @pytest.mark.parametrize("circuit, args", zip(circuits_nonlinear, all_args_nonlinear))
-    def test_nonlinear_error(self, circuit, args):
-        """Test that an error is raised if non-linear
-        preprocessing happens in a circuit."""
-        import tensorflow as tf
-
-        args = tuple(tf.Variable(arg, dtype=np.float64) for arg in args)
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
-        with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
-            qnode_spectrum(qnode)(*args)
-
-
 @pytest.mark.jax
 class TestJax:
     def test_integration_jax(self):

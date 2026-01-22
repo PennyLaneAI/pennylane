@@ -156,17 +156,6 @@ class TestQubitUnitaryZYZDecomposition:
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_zyz)
-    def test_zyz_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
-        _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_params", test_cases_zyz)
     def test_zyz_decomposition_jax(self, U, expected_params):
@@ -234,17 +223,6 @@ class TestQubitUnitaryXYXDecomposition:
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_xyx)
-    def test_xyx_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
-        _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_params", test_cases_xyx)
     def test_xyx_decomposition_jax(self, U, expected_params):
@@ -307,17 +285,6 @@ class TestQubitUnitaryXZXDecomposition:
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
-        _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_xzx)
-    def test_xzx_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
 
     @pytest.mark.jax
@@ -398,17 +365,6 @@ class TestQubitUnitaryZXZDecomposition:
         U = torch.tensor(U, dtype=torch.complex128)
         _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_zxz)
-    def test_zxz_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
-        _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_params", test_cases_zxz)
     def test_zxz_decomposition_jax(self, U, expected_params):
@@ -463,17 +419,6 @@ class TestOneQubitRotDecomposition:
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
-        _test_decomposition(U, "rot", expected_gates, expected_params)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_gates,expected_params", test_cases_rot)
-    def test_rot_decomposition_tf(self, U, expected_gates, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "rot", expected_gates, expected_params)
 
     @pytest.mark.jax
@@ -1125,44 +1070,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
-    def test_two_qubit_decomposition_tf(self, U, wires):
-        """Test that a two-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
-
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-
-        tape = qml.tape.QuantumScript(obtained_decomposition)
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U_pair", samples_su2_su2)
-    def test_two_qubit_decomposition_tensor_products_tf(self, U_pair, wires):
-        """Test that a two-qubit tensor product in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U1 = tf.Variable(U_pair[0], dtype=tf.complex128)
-        U2 = tf.Variable(U_pair[1], dtype=tf.complex128)
-        U = qml.math.kron(U1, U2)
-
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-
-        tape = qml.tape.QuantumScript(obtained_decomposition)
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
@@ -1356,34 +1263,6 @@ class TestTwoQubitDecompositionWarnings:
             RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
         ):
             qnode(torch.tensor(1.0, dtype=torch.complex128, requires_grad=True))
-
-    @pytest.mark.tf
-    def test_warning_parameterized_tf(self):
-        """Test warning is raised for parameterized matrix with TensorFlow"""
-        try:
-            # pylint: disable=import-outside-toplevel
-            import tensorflow as tf
-        except ImportError:
-            pytest.skip("TensorFlow not installed")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        def my_qfunc(params):
-            params = tf.cast(params, tf.complex128)
-            U = tf.eye(4, dtype=tf.complex128) * params  # Create tensor without Variable
-            with tf.GradientTape() as tape:
-                tape.watch(U)  # Explicitly watch U
-                ops = qml.ops.two_qubit_decomposition(U, wires=[0, 1])
-            for op in ops:
-                qml.apply(op)
-            return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(my_qfunc, dev, interface="tf")
-
-        with pytest.warns(
-            RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
-        ):
-            qnode(tf.constant(1.0))
 
     @pytest.mark.jax
     def test_warning_parameterized_jax(self):

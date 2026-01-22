@@ -287,17 +287,6 @@ def test_partial_evaluation_jax(diff_method):
 
     assert np.allclose(grad, indiv_grad)
 
-
-@pytest.mark.tf
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
-def test_partial_evaluation_tf(diff_method):
-    """Test gradient of partial evaluation matches gradients of
-    individual full evaluations using TF"""
-    import tensorflow as tf
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)
@@ -509,17 +498,6 @@ def test_lambda_evaluation_jax(diff_method):
 
     assert np.allclose(grad, indiv_grad)
 
-
-@pytest.mark.tf
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
-def test_lambda_evaluation_tf(diff_method):
-    """Test gradient of lambda argument replacement matches
-    gradients of individual full evaluations using TF"""
-    import tensorflow as tf
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)

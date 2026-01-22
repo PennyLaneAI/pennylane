@@ -413,29 +413,6 @@ class TestQSVT:
 
         assert np.allclose(matrix, matrix_with_identity)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        ("input_matrix", "poly", "wires"),
-        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0, 0.2], [0, 1])],
-    )
-    def test_QSVT_tensorflow(self, input_matrix, poly, wires):
-        """Test that the qsvt function matrix is correct for tensorflow."""
-        import tensorflow as tf
-
-        angles = qml.poly_to_angles(poly, "QSVT")
-        default_matrix = qml.matrix(qml.qsvt(input_matrix, poly, wires, "embedding"))
-
-        input_matrix = tf.Variable(input_matrix)
-        angles = tf.Variable(angles)
-
-        op = qml.QSVT(
-            qml.BlockEncode(input_matrix, wires),
-            [qml.PCPhase(phi, 2, wires) for phi in angles],
-        )
-
-        assert np.allclose(qml.matrix(op), default_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
-
     @pytest.mark.parametrize(
         ("A", "phis"),
         [
@@ -688,23 +665,6 @@ class Testqsvt:
 
         assert qml.math.allclose(default_matrix, jax_matrix, atol=1e-6)
         assert qml.math.get_interface(jax_matrix) == "jax"
-
-    @pytest.mark.tf
-    def test_qsvt_tensorflow(self):
-        """Test that the qsvt function generates the correct matrix with tensorflow."""
-        import tensorflow as tf
-
-        poly = [-0.1, 0, 0.2, 0, 0.5]
-        A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
-
-        default_op = qml.qsvt(A, poly, [0, 1, 2], "embedding")
-        default_matrix = qml.matrix(default_op)
-
-        tf_op = qml.qsvt(tf.Variable(A), poly, [0, 1, 2], "embedding")
-        tf_matrix = qml.matrix(tf_op)
-
-        assert qml.math.allclose(default_matrix, tf_matrix, atol=1e-6)
-        assert qml.math.get_interface(tf_matrix) == "tensorflow"
 
     @pytest.mark.jax
     def test_qsvt_grad(self):
@@ -1123,17 +1083,3 @@ class TestIterativeSolver:
         angles_torch = qml.poly_to_angles(poly_torch, "QSVT")
 
         assert qml.math.allclose(angles, angles_torch)
-
-    @pytest.mark.tf
-    def test_interface_tf(self):
-        """Test `poly_to_angles` works with tensorflow"""
-
-        import tensorflow as tf
-
-        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
-        angles = qml.poly_to_angles(poly, "QSVT")
-
-        poly_tf = tf.Variable(poly)
-        angles_tf = qml.poly_to_angles(poly_tf, "QSVT")
-
-        assert qml.math.allclose(angles, angles_tf)

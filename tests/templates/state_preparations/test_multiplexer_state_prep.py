@@ -192,42 +192,6 @@ class TestMultiplexerStatePreparation:
 
         assert qml.math.allclose(output, output_torch)
 
-    @pytest.mark.tf
-    def test_interface_tf(self):
-        """Test MultiplexerStatePreparation works with tensorflow"""
-
-        import tensorflow as tf
-
-        state = tf.Variable([1 / 2, -1 / 2, 1 / 2, -1 / 2])
-
-        wires = range(2)
-        dev = qml.device("default.qubit", wires=6)
-
-        qs = qml.tape.QuantumScript(
-            [qml.MultiplexerStatePreparation(tf.Variable(state), wires=wires)],
-            [qml.state()],
-        )
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output_tf = dev.execute(tape[0])[0]
-
-        qs = qml.tape.QuantumScript(
-            [
-                qml.MultiplexerStatePreparation(
-                    state,
-                    wires=wires,
-                )
-            ],
-            [qml.state()],
-        )
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
-        assert qml.math.allclose(output, output_tf)
-
     @pytest.mark.jax
     def test_jit(self):
         """Tests the template correctly compiles with JAX JIT."""

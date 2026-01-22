@@ -330,35 +330,6 @@ class TestBroadcastExpand:
         else:
             assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac))
 
-    @pytest.mark.slow
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params", parameters)
-    @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_tf(self, params, obs, exp_fn, seed):
-        """Test that the expansion works with TensorFlow and is differentiable."""
-        import tensorflow as tf
-
-        params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-
-        @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(seed=seed), interface="tensorflow")
-        def cost(*params):
-            make_ops(*params)
-            return tuple(qml.expval(ob) for ob in obs)
-
-        with tf.GradientTape(persistent=True) as t:
-            out = tf.stack(cost(*params))
-            exp = exp_fn(*params)
-
-        jac = t.jacobian(out, params)
-        exp_jac = t.jacobian(exp, params)
-
-        for _jac, e_jac in zip(jac, exp_jac):
-            if e_jac is None:
-                assert qml.math.allclose(_jac, 0.0)
-            else:
-                assert qml.math.allclose(_jac, e_jac)
-
     @pytest.mark.torch
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params", parameters)

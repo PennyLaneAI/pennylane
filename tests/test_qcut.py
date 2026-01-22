@@ -2118,35 +2118,6 @@ class TestMCPostprocessing:
         assert np.allclose(postprocessed[0], expected_postprocessed[0])
         assert isinstance(convert_fixed_samples[0], type(postprocessed[0]))
 
-    @pytest.mark.tf
-    def test_sample_postprocess_tf(self):
-        """
-        Tests that the postprocessing for the generic sampling case gives the
-        correct result
-        """
-        import tensorflow as tf
-
-        communication_graph = MultiDiGraph(frag_edge_data)
-        shots = 3
-
-        fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
-        ]
-        convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
-
-        postprocessed = qcut.qcut_processing_fn_sample(
-            convert_fixed_samples, communication_graph, shots
-        )
-        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
-
-        assert np.allclose(postprocessed[0], expected_postprocessed[0])
-        assert isinstance(convert_fixed_samples[0], type(postprocessed[0]))
-
     @pytest.mark.torch
     def test_sample_postprocess_torch(self):
         """
@@ -2229,66 +2200,6 @@ class TestMCPostprocessing:
         convert_fixed_samples = [
             qml.math.convert_like(fs, autograd.numpy.ones(1)) for fs in fixed_samples
         ]
-
-        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
-
-        spy_prod = mocker.spy(np, "prod")
-        spy_hstack = mocker.spy(np, "hstack")
-
-        postprocessed = qcut.qcut_processing_fn_mc(
-            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
-        )
-
-        expected = -85.33333333333333
-
-        prod_args = [
-            np.array([1.0, 1.0, -1.0, 1.0]),
-            [0.5, -0.5, 0.5, -0.5],
-            np.array([1.0, -1.0, -1.0, -1.0]),
-            [-0.5, -0.5, 0.5, 0.5],
-            np.array([1.0, -1.0, 1.0, 1.0]),
-            [0.5, 0.5, -0.5, 0.5],
-        ]
-
-        hstack_args = [
-            [np.array([1.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
-            [np.array([0.0, 0.0]), np.array([0.0])],
-            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
-            [np.array([0.0, 1.0]), np.array([1.0])],
-            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
-        ]
-
-        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
-            assert np.allclose(arg[0][0], expected_arg)
-
-        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
-            for arg, expected_arg in zip(args[0][0], expected_args):
-                assert np.allclose(arg, expected_arg)
-
-        assert np.isclose(postprocessed, expected)
-        assert isinstance(convert_fixed_samples[0], type(postprocessed))
-
-    @pytest.mark.tf
-    def test_mc_sample_postprocess_tf(self, mocker):
-        """
-        Tests that the postprocessing for the generic sampling case gives the
-        correct result
-        """
-        import tensorflow as tf
-
-        communication_graph = MultiDiGraph(frag_edge_data)
-        shots = 3
-
-        fixed_samples = [
-            np.array([[1.0], [0.0], [1.0], [1.0]]),
-            np.array([[0.0], [0.0], [1.0], [-1.0]]),
-            np.array([[0.0], [1.0], [1.0], [-1.0]]),
-            np.array([[0.0], [-1.0], [1.0]]),
-            np.array([[0.0], [-1.0], [-1.0]]),
-            np.array([[1.0], [1.0], [1.0]]),
-        ]
-        convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
 
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
@@ -2833,41 +2744,6 @@ class TestCutCircuitMCTransform:
         assert res.shape == (shots, 2)
         assert isinstance(res, type(convert_input))
 
-    @pytest.mark.tf
-    def test_samples_tf(self, dev_fn):
-        """
-        Tests that `cut_circuit_mc` returns the correct type of sample
-        output value in tf
-        """
-        import tensorflow as tf
-
-        shots = 10
-        dev = dev_fn(wires=2)
-
-        @qml.cut_circuit_mc
-        @qml.qnode(dev, shots=shots)
-        def cut_circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
-
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-
-            qml.RX(x, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 2])
-
-        v = 0.319
-        convert_input = qml.math.convert_like(v, tf.ones(1))
-
-        res = cut_circuit(convert_input)
-
-        assert res.shape == (shots, 2)
-        assert isinstance(res, type(convert_input))
-
     @pytest.mark.torch
     def test_samples_torch(self, dev_fn):
         """
@@ -2967,39 +2843,6 @@ class TestCutCircuitMCTransform:
 
         v = 0.319
         convert_input = qml.math.convert_like(v, autograd.numpy.ones(1))
-        res = cut_circuit(convert_input)
-
-        assert isinstance(res, type(convert_input))
-
-    @pytest.mark.tf
-    def test_mc_tf(self, dev_fn):
-        """
-        Tests that `cut_circuit_mc` returns the correct type of expectation
-        value output in tf
-        """
-        import tensorflow as tf
-
-        shots = 10
-        dev = dev_fn(wires=2)
-
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
-        @qml.qnode(dev, shots=shots)
-        def cut_circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
-
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-
-            qml.RX(x, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 2])
-
-        v = 0.319
-        convert_input = qml.math.convert_like(v, tf.ones(1))
         res = cut_circuit(convert_input)
 
         assert isinstance(res, type(convert_input))
@@ -3294,27 +3137,6 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("use_opt_einsum", [True, False])
-    def test_basic_grad_tf(self, use_opt_einsum):
-        """Test if the basic contraction is differentiable using the tf interface"""
-        if use_opt_einsum:
-            pytest.importorskip("opt_einsum")
-
-        import tensorflow as tf
-
-        params = tf.Variable(self.params)
-
-        with tf.GradientTape() as tape:
-            t1 = tf.stack([tf.sin(params[0]) ** i for i in range(4)])
-            t2 = tf.stack([tf.cos(params[1]) ** i for i in range(4)])
-            t = [t1, t2]
-            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
-
-        grad = tape.gradient(r, params)
-
-        assert np.allclose(grad, self.expected_grad)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_jax(self, use_opt_einsum):
@@ -3505,55 +3327,6 @@ class TestQCutProcessingFn:
         tensor = qcut._process_tensor(results, n, n)
         assert np.allclose(tensor, target_tensor)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("n", [1, 2])
-    def test_process_tensor_tf(self, n):
-        """Test if the tensor returned by _process_tensor is equal to the expected value"""
-        import tensorflow as tf
-
-        U = unitary_group.rvs(2**n, random_state=1967)
-
-        # First, create target process tensor
-        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
-        prod_inp = itertools.product(range(4), repeat=n)
-        prod_out = itertools.product(range(4), repeat=n)
-
-        results = []
-
-        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
-        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
-        for inp, out in itertools.product(prod_inp, prod_out):
-            input = kron(*[basis[i] for i in inp])
-            output = kron(*[basis[i] for i in out])
-            results.append(np.trace(output @ U @ input @ U.conj().T))
-
-        target_tensor = np.array(results).reshape((4,) * (2 * n))
-
-        # Now, create the input results vector found from executing over the product of |0>, |1>,
-        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
-        dev = qml.device("default.qubit", wires=n)
-
-        @qml.qnode(dev)
-        def f(state, measurement):
-            qml.StatePrep(state, wires=range(n))
-            qml.QubitUnitary(U, wires=range(n))
-            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
-
-        prod_inp = itertools.product(range(4), repeat=n)
-        prod_out = qml.pauli.partition_pauli_group(n)
-
-        results = []
-
-        for inp, out in itertools.product(prod_inp, prod_out):
-            input = kron(*[states_pure[i] for i in inp])
-            results.append(f(input, out))
-
-        results = qml.math.cast_like(np.concatenate(results), tf.ones(1))
-
-        # Now apply _process_tensor
-        tensor = qcut._process_tensor(results, n, n)
-        assert np.allclose(tensor, target_tensor)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("n", [1, 2])
     def test_process_tensor_torch(self, n):
@@ -3736,46 +3509,6 @@ class TestQCutProcessingFn:
 
         assert np.allclose(grad, expected_grad)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("use_opt_einsum", [True, False])
-    def test_qcut_processing_fn_tf(self, use_opt_einsum):
-        """Test if qcut_processing_fn handles the gradient as expected in the TF interface
-        using a simple example"""
-        if use_opt_einsum:
-            pytest.importorskip("opt_einsum")
-
-        import tensorflow as tf
-
-        x = tf.Variable(0.9, dtype=tf.float64)
-
-        def f(x):
-            x = tf.cast(x, dtype=tf.float64)  # pylint:disable=unexpected-keyword-arg
-            t1 = x * tf.range(4, dtype=tf.float64)
-            t2 = x**2 * tf.range(16, dtype=tf.float64)
-            t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
-
-            res = [t1, t2, t3]
-            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
-            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
-
-            edges = [
-                (0, 1, 0, {"pair": (WrappedObj(m[0][0]), WrappedObj(p[1][0]))}),
-                (1, 2, 0, {"pair": (WrappedObj(m[1][0]), WrappedObj(p[2][0]))}),
-            ]
-            g = MultiDiGraph(edges)
-
-            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
-
-        with tf.GradientTape() as tape:
-            res = f(x)
-
-        grad = tape.gradient(res, x)
-        expected_grad = (
-            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
-        ) * f(1)
-
-        assert np.allclose(grad, expected_grad)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_torch(self, use_opt_einsum):
@@ -3933,45 +3666,6 @@ class TestCutCircuitTransform:
 
         assert np.isclose(grad, grad_expected)
 
-    @pytest.mark.tf
-    def test_simple_cut_circuit_tf(self, use_opt_einsum):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
-        """
-        if use_opt_einsum:
-            pytest.importorskip("opt_einsum")
-
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
-
-        x = tf.Variable(0.531)
-        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
-
-        with tf.GradientTape() as tape:
-            res = cut_circuit(x)
-
-        grad = tape.gradient(res, x)
-
-        with tf.GradientTape() as tape:
-            res_expected = circuit(x)
-
-        grad_expected = tape.gradient(res_expected, x)
-
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
-
     @pytest.mark.jax
     def test_simple_cut_circuit_jax(self, use_opt_einsum):
         """
@@ -4108,82 +3802,6 @@ class TestCutCircuitTransform:
             assert np.isclose(grad, grad_expected)
 
         spy.assert_not_called()
-
-    @pytest.mark.skipif(networkx_version[0] >= "3", reason="networkx version 3 breaks this test.")
-    @pytest.mark.tf
-    def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
-        using JIT.
-        """
-        if use_opt_einsum:
-            pytest.importorskip("opt_einsum")
-
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
-
-        x = tf.Variable(0.531)
-        cut_circuit_jit = tf.function(
-            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum),
-            jit_compile=True,
-            input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),),
-        )
-
-        # Run once with original value
-        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
-
-        # Note we call the function twice but assert qcut_processing_fn is called once. We expect
-        # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
-        # cut_circuit_jit using the compiled code.
-        cut_circuit_jit(x)
-
-        with tf.GradientTape() as tape:
-            res = cut_circuit_jit(x)
-
-        grad = tape.gradient(res, x)
-
-        spy.assert_called_once()
-
-        with tf.GradientTape() as tape:
-            res_expected = circuit(x)
-
-        grad_expected = tape.gradient(res_expected, x)
-
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
-
-        # Run more times over a range of values
-        for x in np.linspace(-1, 1, 10):
-            x = tf.Variable(x, dtype=tf.float32)
-
-            cut_circuit_jit(x)
-
-            with tf.GradientTape() as tape:
-                res = cut_circuit_jit(x)
-
-            grad = tape.gradient(res, x)
-
-            with tf.GradientTape() as tape:
-                res_expected = circuit(x)
-
-            grad_expected = tape.gradient(res_expected, x)
-
-            assert np.isclose(res, res_expected)
-            assert np.isclose(grad, grad_expected)
-
-        spy.assert_called_once()
 
     @pytest.mark.jax
     def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):

@@ -266,38 +266,6 @@ class TestSingleQubitFusionInterfaces:
         tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
         compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
-    @pytest.mark.tf
-    def test_single_qubit_fusion_tf(self):
-        """Test QNode and gradient in tensorflow interface."""
-        import tensorflow as tf
-
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
-
-        original_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
-        transformed_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
-
-        original_result = original_qnode(original_input)
-        transformed_result = transformed_qnode(transformed_input)
-
-        # Check that the numerical output is the same
-        assert qml.math.allclose(original_result, transformed_result)
-
-        # Check that the gradient is the same
-        with tf.GradientTape() as tape:
-            loss = original_qnode(original_input)
-        original_grad = tape.gradient(loss, original_input)
-
-        with tf.GradientTape() as tape:
-            loss = transformed_qnode(transformed_input)
-        transformed_grad = tape.gradient(loss, transformed_input)
-
-        assert qml.math.allclose(original_grad, transformed_grad)
-
-        # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
-        compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
-
     @pytest.mark.jax
     def test_single_qubit_fusion_jax(self):
         """Test QNode and gradient in JAX interface."""

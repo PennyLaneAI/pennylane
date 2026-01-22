@@ -40,7 +40,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -235,27 +234,6 @@ class TestBasicCircuit:
         assert qml.math.allclose(g[1], -torch.sin(phi))
 
     # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    def test_tf_results_and_backprop(self):
-        """Tests execution and gradients of a simple circuit with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873, dtype="float64")
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = qml.tape.QuantumScript(
-                [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
-            )
-            result = simulate(qs)
-
-        assert qml.math.allclose(result[0], -tf.sin(phi))
-        assert qml.math.allclose(result[1], tf.cos(phi))
-
-        grad0 = grad_tape.jacobian(result[0], [phi])
-        grad1 = grad_tape.jacobian(result[1], [phi])
-
-        assert qml.math.allclose(grad0[0], -tf.cos(phi))
-        assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [qml.RX(np.pi, 0), qml.BasisState([1], 0)])
@@ -595,26 +573,6 @@ class TestDebugger:
         )
 
     # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    def test_debugger_tf(self):
-        """Tests debugger with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873, dtype="float64")
-        debugger = Debugger()
-
-        ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
-        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
-        result = simulate(qs, debugger=debugger)
-
-        assert qml.math.allclose(result[0], -tf.sin(phi))
-        assert qml.math.allclose(result[1], tf.cos(phi))
-
-        assert list(debugger.snapshots.keys()) == [0, "final_state"]
-        assert qml.math.allclose(debugger.snapshots[0], [1, 0])
-        assert qml.math.allclose(
-            debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
-        )
 
 
 class TestSampleMeasurements:
@@ -972,41 +930,6 @@ class TestOperatorArithmetic:
         assert qml.math.allclose(g[0], -torch.cos(phi))
         assert qml.math.allclose(g[1], -3 * torch.sin(phi))
 
-    @pytest.mark.tf
-    def test_tensorflow_op_arithmetic(self):
-        """Test operator arithmetic circuit with non-integer wires works with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(0.4203)
-
-        def f(x):
-            ops = [
-                qml.PauliX("a"),
-                qml.PauliX("b"),
-                qml.ctrl(qml.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
-            ]
-
-            qs = qml.tape.QuantumScript(
-                ops,
-                [
-                    qml.expval(qml.sum(qml.PauliY("target"), qml.PauliZ("b"))),
-                    qml.expval(qml.s_prod(3, qml.PauliZ("target"))),
-                ],
-            )
-
-            return simulate(qs)
-
-        with tf.GradientTape(persistent=True) as tape:
-            results = f(phi)
-
-        assert qml.math.allclose(results[0], -np.sin(phi) - 1)
-        assert qml.math.allclose(results[1], 3 * np.cos(phi))
-
-        g0 = tape.gradient(results[0], phi)
-        assert qml.math.allclose(g0, -np.cos(phi))
-        g1 = tape.gradient(results[1], phi)
-        assert qml.math.allclose(g1, -3 * np.sin(phi))
-
 
 class TestQInfoMeasurements:
     measurements = [
@@ -1202,47 +1125,6 @@ class TestQInfoMeasurements:
         assert qml.math.allclose(grads[4], expected_grads[4])
         # mutual info
         assert qml.math.allclose(grads[5], expected_grads[5])
-
-    @pytest.mark.tf
-    def test_qinfo_tf(self):
-        """Test qinfo measurements with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(0.9276)
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = qml.tape.QuantumScript([qml.IsingXX(phi, wires=(0, 1))], self.measurements)
-            results = simulate(qs)
-
-            result2_real = tf.math.real(results[2])
-            result2_imag = tf.math.imag(results[2])
-
-        expected = self.expected_results(phi)
-        for val1, val2 in zip(results, expected):
-            assert qml.math.allclose(val1, val2)
-
-        expected_grads = self.expected_grad(phi)
-
-        grad0 = grad_tape.jacobian(results[0], phi)
-        assert qml.math.allclose(grad0, expected_grads[0])
-
-        grad1 = grad_tape.jacobian(results[1], phi)
-        assert qml.math.allclose(grad1, expected_grads[1])
-
-        grad2_real = grad_tape.jacobian(result2_real, phi)
-        grad2_imag = grad_tape.jacobian(result2_imag, phi)
-        assert qml.math.allclose(
-            np.array(grad2_real) + 1j * np.array(grad2_imag), expected_grads[2]
-        )
-
-        grad3 = grad_tape.jacobian(results[3], phi)
-        assert qml.math.allclose(grad3, expected_grads[3])
-
-        grad4 = grad_tape.jacobian(results[4], phi)
-        assert qml.math.allclose(grad4, expected_grads[4])
-
-        grad5 = grad_tape.jacobian(results[5], phi)
-        assert qml.math.allclose(grad5, expected_grads[5])
 
 
 @pytest.mark.unit

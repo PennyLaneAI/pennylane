@@ -277,33 +277,6 @@ class TestStateBackward:
 
             assert qml.math.allclose(act, expected, atol=1e-1)
 
-    @pytest.mark.tf
-    def test_backward_tf(self):
-        """Test the gradient of the state for the tensorflow interface"""
-        import tensorflow as tf
-
-        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
-
-        sub_wires = [[0, 1], [1, 2]]
-        shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
-
-        x = tf.Variable(self.x, dtype="float64")
-
-        with tf.GradientTape() as tape:
-            out = qml.math.stack(shadow_circuit(x))
-
-        actual = tape.jacobian(out, x)
-
-        for act, w in zip(qml.math.unstack(actual), sub_wires):
-            exact_circuit = basic_entangler_circuit_exact_state(3, w, "tf")
-
-            with tf.GradientTape() as tape2:
-                out2 = exact_circuit(x)
-
-            expected = tape2.jacobian(out2, x)
-
-            assert qml.math.allclose(act, expected, atol=1e-1)
-
     @pytest.mark.torch
     @pytest.mark.xfail(reason="see pytorch/pytorch/issues/94397")
     def test_backward_torch(self):

@@ -392,42 +392,6 @@ class TestIntegration:
         actual = jax.jit(jax.grad(circuit))(param)
         assert np.allclose(actual, expected, atol=tol)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_qnode_grad_tf(self, param, diff_method, interface):
-        """Test that the gradient of mutual information works for QNodes
-        with the tensorflow interface"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=2)
-
-        param = tf.Variable(param)
-
-        @qml.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit(param):
-            qml.RY(param, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
-
-        if param == 0:
-            # we don't allow gradients to flow through the discontinuity at 0
-            expected = 0
-        else:
-            expected = np.sin(param) * (
-                np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
-            )
-
-        with tf.GradientTape() as tape:
-            out = circuit(param)
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        actual = tape.gradient(out, param)
-        assert np.allclose(actual, expected, atol=tol)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)

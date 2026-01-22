@@ -59,15 +59,6 @@ class TestIsRealObjOrClose:
         x = pnp.array(data, dtype=dtype)
         assert qml.math.is_real_obj_or_close(x) is exp_output
 
-    @pytest.mark.tf
-    def test_tf(self, data, dtype, exp_output):
-        """Test with TensorFlow."""
-        import tensorflow as tf
-
-        dtype = tf.float64 if dtype == "float" else tf.complex128
-        x = tf.Variable(data, dtype=dtype)
-        assert qml.math.is_real_obj_or_close(x) is exp_output
-
     @pytest.mark.torch
     def test_torch(self, data, dtype, exp_output):
         """Test with Torch."""

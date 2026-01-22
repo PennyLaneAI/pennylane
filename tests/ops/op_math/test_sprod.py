@@ -417,20 +417,6 @@ class TestMatrix:
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
 
-    @pytest.mark.tf
-    def test_batching_tf(self):
-        """Test that SProd matrix has batching support with the tensorflow interface."""
-        import tensorflow as tf
-
-        x = tf.constant([-1.0, -2.0, -3.0])
-        y = tf.constant([1.0, 2.0, 3.0])
-        op = qml.s_prod(y, qml.RX(x, 0))
-        mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
-        assert qml.math.allclose(mat, true_mat)
-        assert mat.shape == (3, 2, 2)
-        assert isinstance(mat, tf.Tensor)
-
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op, mat", param_ops + non_param_ops)
     def test_various_ops(self, scalar, op, mat):
@@ -578,51 +564,6 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
-    @pytest.mark.tf
-    def test_sprod_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        coeff = tf.Variable(1.23, dtype=tf.complex128)
-        raw_rot_params = [0.12, 3.45, 6.78]
-        rot_params = tf.Variable(raw_rot_params)
-
-        sprod_op = SProd(coeff, qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
-        mat = sprod_op.matrix()
-
-        true_mat = 1.23 * gd.Rot3(raw_rot_params[0], raw_rot_params[1], raw_rot_params[2])
-        true_mat = tf.Variable(true_mat, dtype=tf.complex128)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
-    @pytest.mark.tf
-    def test_tf_matrix_type_casting(self):
-        """Test that types for the matrix are always converted to complex128 and parameters aren't truncated."""
-        import tensorflow as tf
-
-        coeff = tf.Variable(0.1)
-        op = qml.PauliX(0)
-
-        sprod_op = SProd(coeff, op)
-        mat = sprod_op.matrix()
-
-        assert mat.dtype == tf.complex128
-        expected = np.array([[0, 0.1], [0.1, 0.0]], dtype="complex128")
-        assert qml.math.allclose(mat, expected)
-        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
-
-        op = qml.PauliY(0)
-
-        sprod_op = SProd(coeff, op)
-        mat = sprod_op.matrix()
-
-        assert mat.dtype == tf.complex128
-        expected = np.array([[0, -0.1j], [0.1j, 0.0]], dtype="complex128")
-        assert qml.math.allclose(mat, expected)
-        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
-
 
 class TestSparseMatrix:
     sparse_ops = (
@@ -708,26 +649,6 @@ class TestSparseMatrix:
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("scalar", scalars)
-    @pytest.mark.parametrize("op", sparse_ops)
-    def test_sparse_matrix_tf_scalar(self, scalar, op):
-        """Test the sparse_matrix representation of scaled ops when scalar is a tf Variable."""
-        import tensorflow as tf
-
-        scalar = tf.Variable(scalar)
-        sprod_op = SProd(scalar, op)
-        sparse_matrix = sprod_op.sparse_matrix()
-        sparse_matrix.sort_indices()
-
-        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
-        expected_sparse_matrix.sort_indices()
-        expected_sparse_matrix.eliminate_zeros()
-
-        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
-        assert all(sparse_matrix.data == expected_sparse_matrix.data)
-        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
-
     def test_sparse_matrix_sparse_hamiltonian(self):
         """Test the sparse_matrix representation of scaled ops."""
         scalar = 1.23
@@ -773,25 +694,6 @@ class TestProperties:
         """Test that scalar product ops are correctly classified as hermitian or not."""
         sprod_op = s_prod(scalar, op)
         assert sprod_op.is_verified_hermitian == hermitian_status
-
-    @pytest.mark.tf
-    def test_is_verified_hermitian_tf(self):
-        """Test that is_verified_hermitian works when a tf type scalar is provided."""
-        import tensorflow as tf
-
-        coeffs = (tf.Variable(1.23), tf.Variable(1.23 + 1.2j))
-        true_hermitian_states = (True, False)
-
-        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
-            op = s_prod(scalar, qml.PauliX(wires=0))
-            assert op.is_verified_hermitian == hermitian_state
-
-    @pytest.mark.tf
-    def test_no_dtype_promotion(self):
-        import tensorflow as tf
-
-        op = qml.s_prod(tf.constant(0.5), qml.X(0))
-        assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
 
     @pytest.mark.jax
     def test_is_verified_hermitian_jax(self):
@@ -947,18 +849,6 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        qml.assert_equal(simplified_op, result)
-
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46)
-
-        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
-        result = s_prod(c3, qml.PauliX(0))
-        simplified_op = op.simplify()
         qml.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
@@ -1158,21 +1048,6 @@ class TestIntegration:
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
         res = circuit(jnp.array(2))
-
-        assert qml.math.allclose(res, 2)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
-    def test_tensorflow_qnode(self, diff_method):
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit(s):
-            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
-
-        res = circuit(tf.Variable(2, dtype=tf.float64))
 
         assert qml.math.allclose(res, 2)
 

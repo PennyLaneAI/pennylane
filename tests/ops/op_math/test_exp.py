@@ -231,20 +231,6 @@ class TestMatrix:
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
 
-    @pytest.mark.tf
-    def test_batching_tf(self):
-        """Test that Exp matrix has batching support with the tensorflow interface."""
-        import tensorflow as tf
-
-        x = tf.constant([-1.0, -2.0, -3.0])
-        y = tf.constant([1.0, 2.0, 3.0])
-        op = Exp(qml.RX(x, 0), y)
-        mat = op.matrix()
-        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
-        assert qml.math.allclose(mat, true_mat)
-        assert mat.shape == (3, 2, 2)
-        assert isinstance(mat, tf.Tensor)
-
     def test_tensor_base_isingxx(self):
         """Test that isingxx can be created with a tensor base."""
         phi = -0.46
@@ -319,18 +305,6 @@ class TestMatrix:
         op = Exp(base, -0.5j * phi)
         compare = qml.RX(phi, 0)
 
-        assert qml.math.allclose(op.matrix(), compare.matrix())
-
-    @pytest.mark.tf
-    def test_tf_matrix_rx(self):
-        """Test the matrix with tensorflow."""
-
-        import tensorflow as tf
-
-        phi = tf.Variable(0.4, dtype=tf.complex128)
-        base = qml.PauliX(0)
-        op = Exp(base, -0.5j * phi)
-        compare = qml.RX(phi, wires=0)
         assert qml.math.allclose(op.matrix(), compare.matrix())
 
     @pytest.mark.jax
@@ -724,30 +698,6 @@ class TestIntegration:
         grad = jax.grad(func)(phi)
         assert qml.math.allclose(grad, -jnp.sin(phi))
 
-    @pytest.mark.tf
-    def test_tensorflow_qnode(self):
-        """test the execution of a tensorflow qnode."""
-        import tensorflow as tf
-
-        phi = tf.Variable(1.2, dtype=tf.complex128)
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circ(phi):
-            Exp(qml.PauliX(0), -0.5j * phi)
-            return qml.expval(qml.PauliZ(0))
-
-        with tf.GradientTape() as tape:
-            res = circ(phi)
-
-        phi_grad = tape.gradient(res, phi)
-        phi_real = qml.math.cast(phi, tf.float64)
-
-        assert qml.math.allclose(res, tf.cos(phi_real))
-        # pylint: disable=invalid-unary-operand-type
-        assert qml.math.allclose(phi_grad, -tf.sin(phi))
-
     @pytest.mark.torch
     def test_torch_qnode(self):
         """Test execution with torch."""
@@ -867,29 +817,6 @@ class TestIntegration:
         grad = jax.grad(circuit)(x)
         expected_grad = 0.5 * (jnp.exp(x) - jnp.exp(-x))
         assert qml.math.allclose(grad, expected_grad)
-
-    @pytest.mark.tf
-    def test_tf_measurement(self):
-        """Test Exp in a measurement with gradient and tensorflow."""
-        # pylint:disable=invalid-unary-operand-type
-        import tensorflow as tf
-
-        x = tf.Variable(2.0, dtype=tf.float64)
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit(x):
-            qml.Hadamard(0)
-            return qml.expval(Exp(qml.PauliZ(0), x))
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-
-        expected = 0.5 * (tf.exp(x) + tf.exp(-x))
-        assert qml.math.allclose(res, expected)
-
-        x_grad = tape.gradient(res, x)
-        expected_grad = 0.5 * (tf.exp(x) - tf.exp(-x))
-        assert qml.math.allclose(x_grad, expected_grad)
 
     def test_draw_integration(self):
         """Test that Exp integrates with drawing."""

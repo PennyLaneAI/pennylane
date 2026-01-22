@@ -357,75 +357,6 @@ class TestInterfacesClassicalFisher:
         assert np.allclose(cfim[1].detach().numpy(), 2.0 / 3.0 * np.ones((10, 10)))
         assert np.allclose(cfim[2].detach().numpy(), np.zeros((1, 1)))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("n_wires", np.arange(1, 5))
-    def test_cfim_allnonzero_tf(self, n_wires):
-        """Integration test of classical_fisher() with tf for examples where all probabilities are all nonzero"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circ(params):
-            for i in range(n_wires):
-                qml.RX(params[0], wires=i)
-            for i in range(n_wires):
-                qml.RY(params[1], wires=i)
-            return qml.probs(wires=range(n_wires))
-
-        params = tf.Variable([np.pi / 4, np.pi / 4])
-        cfim = classical_fisher(circ)(params)
-        assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("n_wires", np.arange(2, 5))
-    def test_cfim_contains_zeros_tf(self, n_wires):
-        """Integration test of classical_fisher() with tf for examples that have 0s in the probabilities and non-zero gradient"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circ(params):
-            qml.RZ(params[0], wires=0)
-            qml.RX(params[1], wires=1)
-            qml.RX(params[0], wires=1)
-            return qml.probs(wires=range(n_wires))
-
-        params = tf.Variable([np.pi / 4, np.pi / 4])
-        cfim = classical_fisher(circ)(params)
-        assert np.allclose(cfim, np.ones((2, 2)))
-
-    @pytest.mark.tf
-    def test_cfim_multiple_args_tf(self):
-        """Testing multiple args to be differentiated using tf"""
-        import tensorflow as tf
-
-        n_wires = 3
-
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circ(x, y, z):
-            for xi in tf.unstack(x):
-                qml.RX(xi, wires=0)
-                qml.RX(xi, wires=1)
-            for yi in tf.unstack(y):
-                qml.RY(yi, wires=0)
-                qml.RY(yi, wires=1)
-            for zi in tf.unstack(z):
-                qml.RZ(zi, wires=0)
-                qml.RZ(zi, wires=1)
-            return qml.probs(wires=range(n_wires))
-
-        x = tf.Variable(np.pi / 8 * np.ones(2), trainable=True)
-        y = tf.Variable(np.pi / 8 * np.ones(10), trainable=True)
-        z = tf.Variable([1.0], trainable=True)
-        cfim = classical_fisher(circ)(x, y, z)
-        assert np.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
-        assert np.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
-        assert np.allclose(cfim[2], np.zeros((1, 1)))
-
 
 class TestDiffCFIM:
     """Testing differentiability of classical fisher info matrix (CFIM)"""
@@ -471,31 +402,6 @@ class TestDiffCFIM:
 
         result = np.zeros((1, 1, 1), dtype="float64")
         result_calc = jax.jacobian(classical_fisher(circ))(params)
-
-        assert np.allclose(result, result_calc, atol=1e-6)
-
-    @pytest.mark.tf
-    def test_diffability_tf(self):
-        """Testing diffability with an analytic example for tf. The CFIM of this single
-        qubit is constant, so the gradient should be zero."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circ(params):
-            qml.RY(params, wires=0)
-            return qml.probs(wires=range(1))
-
-        params = tf.Variable(np.pi / 4)
-
-        assert np.allclose(classical_fisher(circ)(params), 1)
-
-        result = np.zeros((1, 1, 1), dtype="float64")
-        with tf.GradientTape() as tape:
-            loss = classical_fisher(circ)(params)
-
-        result_calc = tape.jacobian(loss, params)
 
         assert np.allclose(result, result_calc, atol=1e-6)
 

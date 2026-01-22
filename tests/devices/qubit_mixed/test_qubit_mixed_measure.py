@@ -35,7 +35,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 BATCH_SIZE = 2
 
@@ -694,47 +693,7 @@ class TestSumOfTermsDifferentiability:
         assert len(coeffs.grad) == 2
         assert qml.math.allclose(coeffs.grad, coeffs_expected.grad)
 
-    @pytest.mark.tf
-    def test_tf_backprop(self):
-        """Test that backpropagation derivatives work with tensorflow with
-        Hamiltonians using new and old math."""
-        import tensorflow as tf
 
-        x = tf.Variable(self.x, dtype="float64")
-        coeffs = [8.3, 5.7]
-
-        with tf.GradientTape() as tape1:
-            out = self.f(x, coeffs)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(x, coeffs)
-
-        assert qml.math.allclose(out, expected_out)
-        gradient = tape1.gradient(out, x)
-        expected_gradient = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(expected_gradient, gradient)
-
-    @pytest.mark.tf
-    def test_tf_backprop_coeffs(self):
-        """Test that backpropagation derivatives work with tensorflow with
-        the coefficients of Hamiltonians using new and old math."""
-        import tensorflow as tf
-
-        coeffs = tf.Variable([8.3, 5.7], dtype="float64")
-
-        with tf.GradientTape() as tape1:
-            out = self.f(self.x, coeffs)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(self.x, coeffs)
-
-        gradient = tape1.gradient(out, coeffs)
-        expected_gradient = tape2.gradient(expected_out, coeffs)
-        assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
-
-
-# pylint: disable=too-few-public-methods
 class TestReadoutErrors:
     """Test that readout errors are correctly applied to measurements."""
 
