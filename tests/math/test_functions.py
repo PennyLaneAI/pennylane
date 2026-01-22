@@ -2476,7 +2476,7 @@ class TestSize:
     )
     @pytest.mark.parametrize(("array", "size"), array_and_size)
     def test_size_torch_and_tf(self, array, size, interface):
-        """Test size function with the torch and tf interfaces."""
+        """Test size function with the torch interfaces."""
         r = fn.size(fn.asarray(array, like=interface))
         assert r == size
 

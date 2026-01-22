@@ -311,7 +311,7 @@ def pytest_runtest_setup(item):
     ]
 
     # load the marker specifying what the interface is
-    all_interfaces = {"tf", "torch", "jax", "all_interfaces"}
+    all_interfaces = {"torch", "jax", "all_interfaces"}
     marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
 
     for b in marks:

@@ -340,7 +340,7 @@ class TestAdjointMetricTensorTape:
         expected = qml.math.reshape(expected, qml.math.shape(met_tens))
         assert qml.math.allclose(met_tens.detach().numpy(), expected)
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["auto"]
 
 
 class TestAdjointMetricTensorQNode:
@@ -428,7 +428,7 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["auto"]
 
 
 diff_fubini_ansatze = [
