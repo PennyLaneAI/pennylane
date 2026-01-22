@@ -1,9 +1,11 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 from jax.typing import ArrayLike
 
+from tests.io.test_qualtran_io import qubits
 
-def iqp_expval(
+def _iqp_expval_core(
     generators: ArrayLike,
     params: ArrayLike,
     ops: ArrayLike,
@@ -110,20 +112,70 @@ def bitflip_expval(
 
     return result, jnp.zeros(ops.shape[0])
 
+def _parse_iqp_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
+    """
+    Converts dictionary circuit definition into JAX-ready matrices.
+    """
+    flat_gates = []
+    param_indices = []
 
-def batched_iqp_expval(generators, params, ops, n_samples, key, batch_size: int = 1000):
+    for param_idx in sorted(circuit_def.keys()):
+        gates_for_this_param = circuit_def[param_idx]
+        for gate in gates_for_this_param:
+            flat_gates.append(gate)
+            param_indices.append(param_idx)
+
+    n_gates = len(flat_gates)
+    generators = np.zeros((n_gates, n_qubits), dtype=int)
+    
+    for i, qubits in enumerate(flat_gates):
+        generators[i, qubits] = 1
+    param_map = jnp.array(param_indices)
+    return jnp.array(generators), param_map
+
+
+def iqp_expval(
+    gates: dict[int, list[list[int]]],
+    params: ArrayLike,
+    ops: ArrayLike,
+    n_samples: int,
+    n_qubits: int,
+    key: ArrayLike,
+    batch_size: int = 1000
+):
     """
-    Computes IQP expectation values in batches to save memory.
+    Computes IQP expectation values from a high-level circuit definition.
+    Handles preprocessing and memory batching automatically.
+    
+    Args:
+        gates: Dictionary {param_idx: [[q0, q1], [q2]]}.
+        params: Array of parameters matching the keys in 'gates'.
+        ops: Binary matrix of Pauli Z operators.
+        n_samples: Number of shots per operator.
+        n_qubits: Total number of qubits (needed to build matrices).
+        key: JAX PRNGKey.
+        batch_size: Number of operators to process at once on the GPU.
     """
+    generators, param_map = _parse_iqp_dict(gates, n_qubits)
+    
+    params = jnp.asarray(params)
+    expanded_params = params[param_map]
+
     n_ops = ops.shape[0]
     results_mean = []
     results_std = []
 
     for i in range(0, n_ops, batch_size):
         ops_chunk = ops[i : i + batch_size]
-
-        chunk_mean, chunk_std = iqp_expval(generators, params, ops_chunk, n_samples, key)
-
+        
+        chunk_mean, chunk_std = _iqp_expval_core(
+            generators, 
+            expanded_params, 
+            ops_chunk, 
+            n_samples, 
+            key
+        )
+        
         results_mean.append(chunk_mean)
         results_std.append(chunk_std)
 
