@@ -38,7 +38,7 @@ from pennylane.measurements import (
 from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, expand_tape_state_prep
+from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
 from pennylane.wires import Wires
 
