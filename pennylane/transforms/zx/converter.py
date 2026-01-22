@@ -376,7 +376,9 @@ def to_zx(tape, expand_measurements=False):
         mapped_tape = func(mapped_tapes)
 
         if expand_measurements:
-            expanded_tapes, func = qml.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)
+            expanded_tapes, func = qml.transforms.diagonalize_measurements(
+                mapped_tape, to_eigvals=True
+            )
             mapped_tape = func(expanded_tapes)
 
         expanded_operations = []
