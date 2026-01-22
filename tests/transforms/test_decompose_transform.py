@@ -28,6 +28,8 @@ from pennylane.transforms.decompose import _operator_decomposition_gen, decompos
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
 
+pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 @pytest.fixture(autouse=True)
 def warnings_as_errors():

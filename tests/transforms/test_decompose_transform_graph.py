@@ -28,6 +28,8 @@ from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.transforms.decompose import _resolve_gate_set
 
+pytest.mark.usefixtures("enable_graph_decomposition")
+
 
 @pytest.mark.unit
 def test_weighted_graph_handles_negative_weight():
@@ -41,7 +43,6 @@ def test_weighted_graph_handles_negative_weight():
 
 
 @pytest.mark.unit
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_weights_affect_graph_decomposition():
     tape = qml.tape.QuantumScript([qml.CRX(0.1, wires=[0, 1]), qml.Toffoli(wires=[0, 1, 2])])
 
@@ -68,6 +69,7 @@ def test_weights_affect_graph_decomposition():
 
 
 @pytest.mark.unit
+@pytest.mark.usefixtures("disable_graph_decomposition")
 def test_fixed_alt_decomps_not_available():
     """Test that a TypeError is raised when graph is disabled and
     fixed_decomps or alt_decomps is used."""
@@ -143,7 +145,6 @@ def _decomp2_without_work_wire(wires, **__):
     qml.Toffoli(wires=[wires[2], wires[1], wires[0]])
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDecomposeGraphEnabled:
     """Tests the decompose transform with graph enabled."""
 
@@ -627,7 +628,6 @@ class TestDecomposeGraphEnabled:
 
 @pytest.mark.capture
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_decompose_qnode():
     """Tests that the decompose transform works with a QNode."""
 
@@ -642,7 +642,6 @@ def test_decompose_qnode():
 
 
 @pytest.mark.unit
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_stopping_condition_graph_enabled():
     """Tests that the stopping condition is resolved correctly when the graph is disabled."""
 
@@ -658,7 +657,6 @@ def test_stopping_condition_graph_enabled():
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_stopping_condition():
     """Tests that the stopping condition is respected."""
 
