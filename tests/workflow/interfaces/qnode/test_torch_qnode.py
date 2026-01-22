@@ -523,40 +523,55 @@ class TestQNode:
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        a = np.array(0.1)
-        p_val = [0.1, 0.2, 0.3]
-        p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
+        with qml.decomposition.local_decomps():
 
-        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
-        def circuit(a, p):
-            qml.RX(a, wires=0)
-            U3(p[0], p[1], p[2], wires=0)
-            return qml.expval(qml.PauliX(0))
+            @qml.register_resources({qml.Rot: 1, qml.PhaseShift: 1})
+            def _decomp(theta, phi, lam, wires):
+                qml.Rot(lam, theta, -lam, wires)
+                qml.PhaseShift(phi + lam, wires)
 
-        res = circuit(a, p)
+            qml.add_decomps(U3, _decomp)
 
-        expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
-            np.cos(p_val[2]) * np.sin(p_val[1])
-            + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
-        )
-        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+            a = np.array(0.1)
+            p_val = [0.1, 0.2, 0.3]
+            p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
 
-        res.backward()
-        expected = np.array(
-            [
-                np.cos(p_val[1])
-                * (np.cos(a) * np.cos(p_val[0]) - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])),
-                np.cos(p_val[1]) * np.cos(p_val[2]) * np.sin(a)
-                - np.sin(p_val[1])
-                * (np.cos(a) * np.sin(p_val[0]) + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])),
-                np.sin(a)
-                * (
-                    np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
-                    - np.sin(p_val[1]) * np.sin(p_val[2])
-                ),
-            ]
-        )
-        assert np.allclose(p.grad, expected, atol=tol, rtol=0)
+            @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
+            def circuit(a, p):
+                qml.RX(a, wires=0)
+                U3(p[0], p[1], p[2], wires=0)
+                return qml.expval(qml.PauliX(0))
+
+            res = circuit(a, p)
+
+            expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
+                np.cos(p_val[2]) * np.sin(p_val[1])
+                + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
+            )
+            assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
+
+            res.backward()
+            expected = np.array(
+                [
+                    np.cos(p_val[1])
+                    * (
+                        np.cos(a) * np.cos(p_val[0])
+                        - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])
+                    ),
+                    np.cos(p_val[1]) * np.cos(p_val[2]) * np.sin(a)
+                    - np.sin(p_val[1])
+                    * (
+                        np.cos(a) * np.sin(p_val[0])
+                        + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])
+                    ),
+                    np.sin(a)
+                    * (
+                        np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
+                        - np.sin(p_val[1]) * np.sin(p_val[2])
+                    ),
+                ]
+            )
+            assert np.allclose(p.grad, expected, atol=tol, rtol=0)
 
 
 class TestShotsIntegration:
@@ -1266,37 +1281,45 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        gradient_kwargs = {}
-        if diff_method == "hadamard":
-            gradient_kwargs["aux_wire"] = 1
+        with qml.decomposition.local_decomps():
 
-        @qnode(
-            dev,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            max_diff=2,
-            device_vjp=device_vjp,
-            interface="torch",
-            gradient_kwargs=gradient_kwargs,
-        )
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
-            return qml.expval(qml.PauliX(0))
+            @qml.register_resources({qml.RY: 1})
+            def custom_decomposition(param, wires):
+                qml.RY(3 * param, wires=wires)
 
-        x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
+            qml.add_decomps(PhaseShift, custom_decomposition)
 
-        loss = circuit(x)
+            gradient_kwargs = {}
+            if diff_method == "hadamard":
+                gradient_kwargs["aux_wire"] = 1
 
-        loss.backward()
-        res = x.grad
+            @qnode(
+                dev,
+                diff_method=diff_method,
+                grad_on_execution=grad_on_execution,
+                max_diff=2,
+                device_vjp=device_vjp,
+                interface="torch",
+                gradient_kwargs=gradient_kwargs,
+            )
+            def circuit(x):
+                qml.Hadamard(wires=0)
+                PhaseShift(x, wires=0)
+                return qml.expval(qml.PauliX(0))
 
-        assert torch.allclose(res, -3 * torch.sin(3 * x))
+            x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
-        if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
-            # test second order derivatives
-            res = torch.autograd.functional.hessian(circuit, x)
-            assert torch.allclose(res, -9 * torch.cos(3 * x))
+            loss = circuit(x)
+
+            loss.backward()
+            res = x.grad
+
+            assert torch.allclose(res, -3 * torch.sin(3 * x))
+
+            if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
+                # test second order derivatives
+                res = torch.autograd.functional.hessian(circuit, x)
+                assert torch.allclose(res, -9 * torch.cos(3 * x))
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(

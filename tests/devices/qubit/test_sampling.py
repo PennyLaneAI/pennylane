@@ -1311,7 +1311,9 @@ class TestHamiltonianSamples:
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = simulate(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.001)
+        # [sc=107860]
+        # Tolerance set to 3σ (σ ≈ 0.00116 for this Hamiltonian with
+        assert np.allclose(res, expected, atol=0.0035)
 
 
 class TestSampleProbs:
