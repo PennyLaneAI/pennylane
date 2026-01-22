@@ -34,6 +34,57 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(op)
 
 
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:  # pylint: disable=too-few-public-methods
+    """Tests the correctness of a circuit which contains the template."""
+
+    @pytest.mark.parametrize(
+        "weights, n_wires, target",
+        [
+            ([[np.pi]], 1, [-1]),
+            ([[np.pi] * 2], 2, [-1, 1]),
+            ([[np.pi] * 3], 3, [1, 1, -1]),
+            ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
+        ],
+    )
+    def test_simple_target_outputs(self, weights, n_wires, target, tol):
+        """Tests the result of the template for simple cases."""
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.BasicEntanglerLayers(weights, wires=range(n_wires))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        expectations = circuit(weights)
+        np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
+
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        weights = np.random.random(size=(1, 3))
+
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasicEntanglerLayers(weights, wires=range(3))
+            return qml.expval(qml.Identity(0)), qml.state()
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
+            return qml.expval(qml.Identity("z")), qml.state()
+
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -72,53 +123,6 @@ class TestDecomposition:
         queue = op.decomposition()
 
         assert rotation in [type(gate) for gate in queue]
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    @pytest.mark.parametrize(
-        "weights, n_wires, target",
-        [
-            ([[np.pi]], 1, [-1]),
-            ([[np.pi] * 2], 2, [-1, 1]),
-            ([[np.pi] * 3], 3, [1, 1, -1]),
-            ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
-        ],
-    )
-    def test_simple_target_outputs(self, weights, n_wires, target, tol):
-        """Tests the result of the template for simple cases."""
-
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            qml.BasicEntanglerLayers(weights, wires=range(n_wires))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
-
-        expectations = circuit(weights)
-        np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 3))
-
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.BasicEntanglerLayers(weights, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
-
-        @qml.qnode(dev2)
-        def circuit2():
-            qml.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
         ([[np.pi]], range(1), qml.RX),
