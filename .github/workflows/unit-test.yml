@@ -197,6 +197,18 @@ jobs:
         run: |
           echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_XML_ARGS" >> $GITHUB_OUTPUT
 
+      - name: Debug - List Test Directory
+        shell: bash
+        run: |
+          echo "Current working directory: $(pwd)"
+          echo "Listing files in ${{ inputs.pytest_test_directory }}:"
+          ls -R ${{ inputs.pytest_test_directory }}
+
+      - name: Debug - PyTest Collection Check
+        env:
+          PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
+        run: python -m pytest --collect-only ${{ inputs.pytest_test_directory }} ${{ env.PYTEST_MARKER }}          
+
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
