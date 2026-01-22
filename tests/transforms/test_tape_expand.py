@@ -23,6 +23,8 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 def crit_0(op: qml.operation.Operator):
     return not any(qml.math.requires_grad(d) for d in op.data) or (
