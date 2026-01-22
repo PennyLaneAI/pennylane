@@ -1431,7 +1431,7 @@ class TestModifiedTemplates:
         assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
         assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
         assert gqps_eqn.invars[2].val == 0  # Control wire
-        assert gqps_eqn["n_wires"] == 1
+        assert gqps_eqn.params["n_wires"] == 1
         assert len(gqps_eqn.outvars) == 1
         assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
 
