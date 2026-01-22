@@ -198,10 +198,14 @@ class MeasurementValue:
         merged_measurements = list(set(self.measurements).union(set(other.measurements)))
         merged_measurements.sort(key=lambda m: m.id)
 
+        # precalculate and feed as closure
+        idx1 = [merged_measurements.index(m) for m in self.measurements]
+        idx2 = [merged_measurements.index(m) for m in other.measurements]
+
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
-            sub_args_1 = (x[i] for i in [merged_measurements.index(m) for m in self.measurements])
-            sub_args_2 = (x[i] for i in [merged_measurements.index(m) for m in other.measurements])
+            sub_args_1 = (x[i] for i in idx1)
+            sub_args_2 = (x[i] for i in idx2)
 
             out_1 = self.processing_fn(*sub_args_1)
             out_2 = other.processing_fn(*sub_args_2)
