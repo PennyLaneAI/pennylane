@@ -557,6 +557,7 @@ class DefaultQubit(Device):
         max_workers=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
+        # Change for testing
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         if math.get_interface(seed) == "jax":
