@@ -396,11 +396,11 @@ class TestMidMeasureExecute:
             # Using 3σ tolerance: atol = 3 * sqrt(2/shots) for <1% failure rate.
             atol = 3 * qml.math.sqrt(2.0 / shots)
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.1)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.1)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.1)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
@@ -442,11 +442,11 @@ class TestMidMeasureExecute:
             # See .benchmarks/test_circuit_with_boolean_arithmetic_execution/
             atol = 3 * qml.math.sqrt(2.0 / shots)
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.2)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.2)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.2)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0.2)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
