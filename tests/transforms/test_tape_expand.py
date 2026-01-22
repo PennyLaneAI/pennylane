@@ -45,7 +45,6 @@ class PreprocessDevice(qml.devices.Device):
         return self.target_dev.execute(circuits, execution_config)
 
 
-@pytest.mark.usefixtures("disable_graph_decomposition")
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
 
@@ -288,7 +287,6 @@ class TestExpandNonunitaryGen:
             assert op.name in unitarily_generated or op.num_params == 0
 
 
-@pytest.mark.usefixtures("disable_graph_decomposition")
 class TestExpandInvalidTrainable:
     """Tests for the gradient expand function"""
 
