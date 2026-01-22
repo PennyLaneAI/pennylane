@@ -6,6 +6,10 @@
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
 
+* Added a `qml.decomposition.local_decomps` context
+  manager that allows one to add decomposition rules to an operator, only taking effect within the context.
+  [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
+
 <h3>Improvements 🛠</h3>
 
 * `qml.vjp` can now be captured into plxpr.
@@ -20,6 +24,9 @@
 * A function for setting up transform inputs, including setting default values and basic validation,
   can now be provided to `qml.transform` via `setup_inputs`.
   [(#8732)](https://github.com/PennyLaneAI/pennylane/pull/8732)
+
+* Circuits containing `GlobalPhase` are now trainable without removing the `GlobalPhase`.
+  [(#8950)](https://github.com/PennyLaneAI/pennylane/pull/8950)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
