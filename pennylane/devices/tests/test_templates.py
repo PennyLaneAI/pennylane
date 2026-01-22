@@ -29,7 +29,10 @@ import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import DeviceError
 
-pytestmark = pytest.mark.skip_unsupported
+pytestmark = [
+    pytest.mark.skip_unsupported,
+    pytest.mark.usefixtures("enable_and_disable_graph_decomp"),
+]
 
 
 def check_op_supported(op, dev):
@@ -46,7 +49,6 @@ def check_op_supported(op, dev):
             pytest.skip("operation not supported on the device")
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestTemplates:  # pylint:disable=too-many-public-methods
     """Test various templates."""
 
@@ -876,7 +878,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         assert all(np.isclose(val, probs[i], atol=tol) for i, val in zip(order, res))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestMoleculeTemplates:
     """Test templates using the H2 molecule."""
 
