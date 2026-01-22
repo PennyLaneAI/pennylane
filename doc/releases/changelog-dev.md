@@ -138,6 +138,7 @@
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
   [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
+  [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
 
