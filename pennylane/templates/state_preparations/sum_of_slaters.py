@@ -38,6 +38,7 @@ def _columns_differ(bits: np.ndarray) -> bool:
 
     Consider three differing columns of length 2:
 
+    >>> from pennylane.templates.state_preparations.sum_of_slaters import _columns_differ
     >>> differing_bits = np.array([[1, 0, 1], [0, 1, 1]])
     >>> print(differing_bits)
     [[1 0 1]
@@ -84,33 +85,34 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     Let's generate a random bit array of ``D=8`` differing columns of length ``n=6``, by first
     sampling unique integers from the range ``(0, 2**n)`` and converting them to bitstrings.
 
-    >>> np.random.seed(355)
+    >>> np.random.seed(31)
     >>> D = 8
     >>> n = 6
     >>> ids = np.random.choice(2**n, size=D, replace=False)
     >>> bitstrings = ((ids[:, None] >> np.arange(n-1, -1, -1)[None, :]) % 2).T
-    >>> bitstrings
-    [[0 1 1 0 1 0 0 0]
-     [0 0 0 0 0 0 1 1]
-     [1 0 1 0 0 1 1 1]
-     [1 1 0 0 0 0 1 0]
+    >>> print(bitstrings)
+    [[0 0 0 1 0 0 1 0]
+     [0 0 0 1 0 1 1 1]
      [0 0 0 0 0 1 0 0]
-     [0 0 0 1 0 1 0 1]]
+     [0 1 1 1 1 1 1 1]
+     [1 0 0 1 1 1 0 0]
+     [0 0 1 1 1 0 1 1]]
 
     Then let's select rows that maintain the uniqueness of the rows:
 
+    >>> from pennylane.templates.state_preparations.sum_of_slaters import _select_rows
     >>> selectors, new_bits = _select_rows(bitstrings)
     >>> selectors
-    [1, 2, 3, 5]
+    [0, 1, 4, 5]
 
     Indeed, selecting the indicated rows of ``bitstrings``, we still find
     unique columns:
 
-    >>> new_bits
-    [[0 0 0 0 0 0 1 1]
-     [1 0 1 0 0 1 1 1]
-     [1 1 0 0 0 0 1 0]
-     [0 0 0 1 0 1 0 1]]
+    >>> print(new_bits)
+    [[0 0 0 1 0 0 1 0]
+     [0 0 0 1 0 1 1 1]
+     [1 0 0 1 1 1 0 0]
+     [0 0 1 1 1 0 1 1]]
 
     In general, the number of rows :math:`r` selected by the method will satisfy
     :math:`\log_2(n_{\text{col}})\leq r\leq \min(n_{\text{row}}, n_{\text{col}})` if
@@ -141,9 +143,9 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
 def _rank_over_z2(bits):
     r"""
-    # Source - https://stackoverflow.com/a
-    # Posted by Mark Dickinson, modified by community. See post 'Timeline' for change history
-    # Retrieved 2026-01-15, License - CC BY-SA 4.0
+    Source - https://stackoverflow.com/a
+    Posted by Mark Dickinson, modified by community. See post 'Timeline' for change history
+    Retrieved 2026-01-15, License - CC BY-SA 4.0
 
     Find rank of a matrix over Z_2.
 
