@@ -321,22 +321,6 @@ class TestParameterShiftLogic:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.param_shift_cv(circuit, dev)(weights)
 
-    def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-
-        dev = qml.device("default.gaussian", wires=2)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(weights):
-            qml.Displacement(weights[0], 0.0, wires=[0])
-            qml.Rotation(weights[1], wires=[0])
-            return qml.expval(qml.QuadX(0))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit, dev)(weights)
-
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable

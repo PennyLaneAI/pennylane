@@ -1659,7 +1659,7 @@ class TestPassthruIntegrationJax:
         assert all(jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
 
-# TENSORFLOW integration tests
+# TORCH integration tests
 
 
 @pytest.mark.torch

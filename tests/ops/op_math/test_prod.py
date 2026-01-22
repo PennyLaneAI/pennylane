@@ -788,6 +788,8 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
+    # sparse matrix tests:
+
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix(self, op1, mat1, op2, mat2):

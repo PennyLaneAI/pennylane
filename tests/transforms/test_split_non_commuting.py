@@ -913,6 +913,19 @@ class TestDifferentiability:
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)])
 
 
+# Single hamiltonian expval measurement to test shot distribution
+ham = qml.Hamiltonian(
+    coeffs=[10, 0.1, 20, 100, 0.2],
+    observables=[
+        qml.X(0) @ qml.Y(1),
+        qml.Z(0) @ qml.Z(2),
+        qml.Y(1),
+        qml.X(1) @ qml.X(2),
+        qml.Z(0) @ qml.Z(1) @ qml.Z(2),
+    ],
+)
+
+
 class TestShotDistribution:
     """
     Test shot distribution for the `split_non_commuting` transform.

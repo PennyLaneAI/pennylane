@@ -647,17 +647,6 @@ class TestError:
 
         assert qnp.isclose(computed_error.error, qml.math.array(expected_error, like=interface))
 
-    def test_tensorflow_interface(self):
-        """Test that an error is raised if a TrotterProduct with
-        tensorflow parameters is used to compute error."""
-
-        coeffs = qml.math.array([1.0, 0.5], like="tensorflow")
-        hamiltonian = qml.dot(coeffs, [qml.X(0), qml.Y(0)])
-
-        op = qml.TrotterProduct(hamiltonian, 1.23, order=2, n=5)
-        with pytest.raises(TypeError, match="Calculating error bound for Tensorflow objects"):
-            _ = op.error()
-
 
 class TestResources:
     """Test the resources method of the TrotterProduct class"""

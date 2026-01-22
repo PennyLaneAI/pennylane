@@ -240,20 +240,6 @@ class TestBasicCircuit:
         expected = self.expected_trx_circ_expval_jacobians(phi.detach().numpy(), subspace)
         assert math.allclose(jacobian.detach().numpy(), expected)
 
-    def test_qnode_returns_correct_interface(self, op, param):
-        """Test that even if no interface parameters are given, result's type is the correct
-        interface."""
-        dev = DefaultQutritMixed()
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(p):
-            op(p, wires=[0])
-            return qml.expval(qml.GellMann(0, 3))
-
-        res = circuit(param)
-        assert qml.math.get_interface(res) == "tensorflow"
-        assert qml.math.allclose(res, -1)
-
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a
         non-standard order."""

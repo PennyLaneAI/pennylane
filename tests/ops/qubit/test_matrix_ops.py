@@ -1020,6 +1020,14 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert np.allclose(jac, expected)
 
 
+labels = [X, X, [1, 1]]
+ops = [
+    qml.QubitUnitary(X, wires=0),
+    qml.ControlledQubitUnitary(X, wires=[0, 1]),
+    qml.DiagonalQubitUnitary([1, 1], wires=0),
+]
+
+
 class TestUnitaryLabels:
     """Test the label of matrix operations."""
 

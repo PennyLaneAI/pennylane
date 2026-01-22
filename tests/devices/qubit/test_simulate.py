@@ -233,8 +233,6 @@ class TestBasicCircuit:
         assert qml.math.allclose(g[0], -torch.cos(phi))
         assert qml.math.allclose(g[1], -torch.sin(phi))
 
-    # pylint: disable=invalid-unary-operand-type
-
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [qml.RX(np.pi, 0), qml.BasisState([1], 0)])
     def test_result_has_correct_interface(self, op):
@@ -571,8 +569,6 @@ class TestDebugger:
             debugger.snapshots["final_state"],
             torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),
         )
-
-    # pylint: disable=invalid-unary-operand-type
 
 
 class TestSampleMeasurements:

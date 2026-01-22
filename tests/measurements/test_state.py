@@ -378,23 +378,6 @@ class TestState:
 
         assert np.allclose(state_val, state_expected)
 
-    def test_default_qubit_tf(self, diff_method):
-        """Test that the returned state is equal to the expected returned state for all of
-        PennyLane's built in statevector devices"""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
-        def func():
-            for i in range(4):
-                qml.Hadamard(i)
-            return state()
-
-        state_val = func()
-        state_expected = 0.25 * np.ones(16)
-
-        assert np.allclose(state_val, state_expected)
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
     def test_default_qubit_autograd(self, diff_method):
@@ -550,39 +533,6 @@ class TestDensityMatrix:
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
 
         assert np.allclose(expected, density_mat)
-
-    def test_correct_density_matrix_tf_default_mixed(self, diff_method):
-        """Test that the correct density matrix is returned using the TensorFlow interface."""
-        dev = qml.device("default.mixed", wires=2)
-
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
-        def func():
-            qml.Hadamard(wires=0)
-            return qml.density_matrix(wires=0)
-
-        density_mat = func()
-        expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-
-        assert np.allclose(expected, density_mat)
-
-    def test_correct_density_matrix_tf_default_qubit(self, diff_method):
-        """Test that the correct density matrix is returned using the TensorFlow interface."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
-        def func():
-            qml.Hadamard(wires=0)
-            return qml.density_matrix(wires=0), state()
-
-        density_mat, dev_state = func()
-        expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-
-        assert np.allclose(expected, density_mat)
-
-        assert np.allclose(
-            expected,
-            qml.density_matrix(wires=0).process_state(state=dev_state, wire_order=dev.wires),
-        )
 
     def test_correct_density_matrix_product_state_first_default_mixed(self):
         """Test that the correct density matrix is returned when

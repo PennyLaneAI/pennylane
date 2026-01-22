@@ -307,49 +307,6 @@ class TestVQE:
         assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
-    def test_optimize_tf(self, shots, seed):
-        """Test that a Hamiltonian cost function is the same with and without
-        grouping optimization when using the TensorFlow interface."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        hamiltonian1 = copy.copy(big_hamiltonian)
-        hamiltonian2 = copy.copy(big_hamiltonian)
-        hamiltonian1.compute_grouping()
-
-        cost = generate_cost_fn(
-            qml.templates.StronglyEntanglingLayers,
-            hamiltonian1,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-        cost2 = generate_cost_fn(
-            qml.templates.StronglyEntanglingLayers,
-            hamiltonian2,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-
-        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        _rng = np.random.default_rng(seed)
-        w = _rng.random(shape)
-
-        with qml.Tracker(dev) as tracker:
-            c1 = cost(w)
-        exec_opt = tracker.totals["executions"]
-
-        with tracker:
-            c2 = cost2(w)
-        exec_no_opt = tracker.totals["executions"]
-
-        assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8  # Number of wire-based groups
-
-        assert np.allclose(c1, c2, atol=1e-1)
-
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -510,61 +467,6 @@ class TestVQE:
         assert np.allclose(c1, c2)
 
     # pylint: disable=protected-access
-    def test_optimize_multiple_terms_tf(self, seed):
-        """Test that a Hamiltonian cost function is the same with and without
-        grouping optimization when using the TensorFlow interface, even when
-        there are non-unique Hamiltonian terms."""
-
-        dev = qml.device("default.qubit", wires=5)
-        obs = [
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
-            qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
-            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
-            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
-        ]
-
-        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qml.Hamiltonian(coeffs, obs)
-        hamiltonian2 = qml.Hamiltonian(coeffs, obs)
-        hamiltonian1.compute_grouping()
-
-        cost = generate_cost_fn(
-            qml.templates.StronglyEntanglingLayers,
-            hamiltonian1,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-        cost2 = generate_cost_fn(
-            qml.templates.StronglyEntanglingLayers,
-            hamiltonian2,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-
-        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        _rng = np.random.default_rng(seed)
-        w = _rng.random(shape)
-
-        with qml.Tracker(dev) as tracker:
-            c1 = cost(w)
-        exec_opt = tracker.totals["executions"]
-
-        with tracker:
-            c2 = cost2(w)
-        exec_no_opt = tracker.totals["executions"]
-
-        assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 4
-
-        assert np.allclose(c1, c2)
-
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of a Hamiltonian cost function is accessible
@@ -664,6 +566,12 @@ class TestVQE:
         dc = w.grad.detach().numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad)
+
+
+# Test data
+rng = np.random.default_rng(1967)
+_shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
+PARAMS = rng.uniform(low=0, high=2 * np.pi, size=_shape)
 
 
 class TestNewVQE:
@@ -982,6 +890,7 @@ class TestInterfaces:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""

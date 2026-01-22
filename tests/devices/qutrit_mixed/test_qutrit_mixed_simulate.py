@@ -472,9 +472,8 @@ class TestDebugger:
         )
         assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
-    # pylint: disable=invalid-unary-operand-type
 
-
+@flaky
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""

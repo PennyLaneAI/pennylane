@@ -447,25 +447,6 @@ class TestDoubleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
-    def test_tf(self, excitation):
-        """Tests that operations are computed correctly using the
-        tensorflow interface"""
-
-        dev = qml.device("default.qubit")
-        state = np.array(
-            [0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0]
-        )
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            excitation(phi, wires=[0, 1, 2, 3])
-
-            return qml.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus]
@@ -688,42 +669,6 @@ class TestOrbitalRotation:
         )
 
         @qml.qnode(dev, interface="autograd")
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-
-            return qml.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
-    def test_tf(self):
-        """Tests that operations are computed correctly using the
-        tensorflow interface"""
-
-        dev = qml.device("default.qubit")
-        state = np.array(
-            [
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-            ]
-        )
-
-        @qml.qnode(dev, interface="tf")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)

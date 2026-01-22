@@ -1320,6 +1320,7 @@ class TestMultiControlledXKernel:
         assert qml.math.allclose(out, exp_out)
 
 
+# pylint: disable=too-few-public-methods
 class TestConditionalsAndMidMeasure:
     """Test dispatching for mid-circuit measurements and conditionals."""
 

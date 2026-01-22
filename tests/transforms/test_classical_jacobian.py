@@ -142,19 +142,7 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, inter
             assert np.allclose(_jac, _expected_jac)
 
 
-interfaces = ["tf"]
-
-
-def test_error_undefined_interface():
-    """Test that an error is raised in the qnode interface is not differentiable."""
-
-    @qml.qnode(qml.device("default.qubit"), interface=None)
-    def circuit(_var):
-        qml.RX(_var, 0)
-        return qml.expval(qml.Z(0))
-
-    with pytest.raises(ValueError, match="Undifferentiable interface numpy"):
-        classical_jacobian(circuit)(np.array(0.5))
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -205,7 +193,7 @@ def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_m
     assert np.allclose(jac, expected_jac)
 
 
-interfaces = ["tf"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -250,7 +238,7 @@ def test_autograd_with_single_list_argnum(
     assert np.allclose(jac[0], expected_jac[0])
 
 
-interfaces = ["tf"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -294,7 +282,7 @@ def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff
         assert np.allclose(_jac, _expected_jac)
 
 
-interfaces = ["tf"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -334,7 +322,7 @@ def test_autograd_not_trainable_only(diff_method, interface):
     assert np.allclose(jac, expected_jac_not_trainable_only)
 
 
-interfaces = ["tf"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch

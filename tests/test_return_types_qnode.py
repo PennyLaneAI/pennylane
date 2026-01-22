@@ -1159,9 +1159,6 @@ class TestIntegrationMultipleReturns:
 devices = ["default.mixed"]
 
 
-devices = ["default.mixed"]
-
-
 @pytest.mark.torch
 class TestIntegrationMultipleReturnsTorch:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single

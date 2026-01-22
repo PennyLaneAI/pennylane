@@ -1681,7 +1681,7 @@ class TestEigvals:
         )
         assert np.allclose(op.eigvals(), expected)
 
-    @pytest.mark.parametrize()
+    @pytest.mark.parametrize("interface", ("numpy",))
     @pytest.mark.parametrize("n_wires", [0, 1, 2])
     def test_global_phase_eigvals(self, n_wires, interface):
         """Test GlobalPhase eigenvalues are correct"""

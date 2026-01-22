@@ -715,7 +715,6 @@ class TestJVPGradients:
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
     # Include batch_dim!=None cases once #4462 is resolved
-
     @pytest.mark.jax
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
     def test_jax(self, tol, batch_dim):

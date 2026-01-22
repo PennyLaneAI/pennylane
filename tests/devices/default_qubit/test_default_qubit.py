@@ -299,21 +299,6 @@ class TestBasicCircuit:
         assert qml.math.allclose(g[0], -torch.cos(phi))
         assert qml.math.allclose(g[1], -torch.sin(phi))
 
-    # pylint: disable=invalid-unary-operand-type
-
-    def test_qnode_returns_correct_interface(self, op, param):
-        """Test that even if no interface parameters are given, result is correct."""
-        dev = DefaultQubit()
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(p):
-            op(p, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        res = circuit(param)
-        assert qml.math.get_interface(res) == "tensorflow"
-        assert qml.math.allclose(res, -1)
-
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
 

@@ -100,12 +100,6 @@ class TestInitializeState:
         res_dtype = create_initial_state([0, 1], prep_operation=prep_op, like="torch").dtype
         assert expected_dtype in str(res_dtype)
 
-    def test_create_initial_state_with_stateprep_casts_to_complex128_with_tf(self, dtype):
-        """Test that the state gets cast to complex128 with tensorflow"""
-        prep_op = self.DefaultPrep([0, 0, 0, 1], wires=[0, 1], dtype=dtype)
-        res_dtype = create_initial_state([0, 1], prep_operation=prep_op, like="tensorflow").dtype
-        assert "complex128" in str(res_dtype)
-
     def test_create_initial_state_defaults_to_numpy(self):
         """Tests that the default interface is vanilla numpy."""
         state = qml.devices.qubit.create_initial_state((0, 1))

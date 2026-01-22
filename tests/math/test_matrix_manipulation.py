@@ -954,6 +954,24 @@ class TestPartialTrace:
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.parametrize("c_dtype", dtypes)
+    def test_invalid_wire_selection(self, ml_framework, c_dtype):
+        """Test that an error is raised for an invalid wire selection."""
+
+        # Define a 2-qubit density matrix
+        rho = qml.math.asarray(
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+        )
+
+        # Attempt to trace over an invalid wire
+        with pytest.raises(Exception) as e:
+
+            qml.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
+            assert e.type in (
+                ValueError,
+                IndexError,
+                tf.python.framework.errors_impl.InvalidArgumentError,
+            )
+
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_single_matrix(self, ml_framework, c_dtype):
         """Test that partial_trace works on a single matrix."""

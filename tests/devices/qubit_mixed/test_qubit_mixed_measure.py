@@ -694,6 +694,7 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(coeffs.grad, coeffs_expected.grad)
 
 
+# pylint: disable=too-few-public-methods
 class TestReadoutErrors:
     """Test that readout errors are correctly applied to measurements."""
 
