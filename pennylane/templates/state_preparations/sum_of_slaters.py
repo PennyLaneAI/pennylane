@@ -81,10 +81,12 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
     **Example**
 
-    Let's generate a random bit array of ``D=8`` differing columns of length ``n``, by first
+    Let's generate a random bit array of ``D=8`` differing columns of length ``n=6``, by first
     sampling unique integers from the range ``(0, 2**n)`` and converting them to bitstrings.
 
     >>> np.random.seed(355)
+    >>> D = 8
+    >>> n = 6
     >>> ids = np.random.choice(2**n, size=D, replace=False)
     >>> bitstrings = ((ids[:, None] >> np.arange(n-1, -1, -1)[None, :]) % 2).T
     >>> bitstrings
@@ -98,7 +100,7 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     Then let's select rows that maintain the uniqueness of the rows:
 
     >>> selectors, new_bits = _select_rows(bitstrings)
-    >>> seletors
+    >>> selectors
     [1, 2, 3, 5]
 
     Indeed, selecting the indicated rows of ``bitstrings``, we still find

@@ -651,4 +651,12 @@ def binary_finite_reduced_row_echelon(binary_matrix):
 
 
 def ceil_log2(n: int) -> int:
+    """Compute the ceiling of the base-2 logarithm of an integer.
+
+    Args:
+        n (int): Integer to compute the rounded-up base-2 logarithm of.
+
+    Returns:
+        int: Rounded-up base-2 logarithm of ``n``.
+    """
     return int(np.ceil(np.log2(n)))
