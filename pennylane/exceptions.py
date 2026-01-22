@@ -197,10 +197,6 @@ class CaptureWarning(Warning):
     """Warnings related to the capture of the program into a condensed PLxPR format."""
 
 
-class DecompositionWarning(UserWarning):
-    """Warning raised when the decomposition graph is unable to find a solution."""
-
-
 # =============================================================================
 # Autograph and Compilation Errors
 # =============================================================================
