@@ -33,7 +33,11 @@ from pennylane.capture.primitives import (
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter, decompose_plxpr_to_plxpr
 
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.capture,
+    pytest.mark.usefixtures("disable_graph_decomposition"),
+]
 
 
 class TestDecomposeInterpreter:
