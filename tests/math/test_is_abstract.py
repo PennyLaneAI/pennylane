@@ -19,6 +19,8 @@ import functools
 import numpy as np
 import pytest
 
+import pennylane as qml
+
 
 @pytest.mark.jax
 class TestJAX:
