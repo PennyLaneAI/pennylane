@@ -1587,12 +1587,9 @@ class TestCompilePipelineCall:
             qml.PauliZ._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        ops_and_meas = [
-            eqn
-            for eqn in transformed_jaxpr.eqns
-            if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
-        ]
-        for eqn, expected_primitive in zip(ops_and_meas, expected_primitives, strict=True):
+        for eqn, expected_primitive in zip(
+            transformed_jaxpr.eqns, expected_primitives, strict=True
+        ):
             assert eqn.primitive == expected_primitive
 
     def test_call_fallback_on_qnode(self):
