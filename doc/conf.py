@@ -50,6 +50,7 @@ extensions = [
     "sphinx_automodapi.automodapi",
     "sphinx_copybutton",
     "sphinxext.opengraph",
+    "sphinx_sitemap",
     "m2r2",
     "sphinx_automodapi.smart_resolver",
 ]
@@ -65,7 +66,7 @@ ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
 # The base URL with a proper language and version.
-html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "https://docs.pennylane.ai/")
 
 # Tell Jinja2 templates the build is running on Read the Docs
 if os.environ.get("READTHEDOCS", "") == "True":
@@ -270,6 +271,10 @@ html_theme_options = {
 
 edit_on_github_project = "PennyLaneAI/pennylane"
 edit_on_github_branch = "master/doc"
+
+# -- Sitemap settings -----------------------------------------------------
+sitemap_url_scheme = "{link}"
+sitemap_excludes = []  # Explicitly set to empty to avoid accidental excludes
 
 # -- Options for LaTeX output ---------------------------------------------
 

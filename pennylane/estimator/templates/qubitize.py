@@ -24,6 +24,7 @@ from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    _dequeue,
     resource_rep,
 )
 from pennylane.estimator.templates.select import SelectTHC
@@ -72,17 +73,17 @@ class QubitizeTHC(ResourceOperator):
     >>> print(res)
     --- Resources: ---
      Total wires: 400
-        algorithmic wires: 102
-        allocated wires: 298
-             zero state: 298
-             any state: 0
-     Total gates : 8.072E+4
-      'Toffoli': 3.250E+3,
-      'CNOT': 6.787E+4,
-      'X': 1.351E+3,
-      'Z': 41,
-      'S': 80,
-      'Hadamard': 8.133E+3
+       algorithmic wires: 102
+       allocated wires: 298
+         zero state: 298
+         any state: 0
+     Total gates : 5.617E+4
+       'Toffoli': 3.501E+3,
+       'CNOT': 4.031E+4,
+       'X': 2.231E+3,
+       'Z': 41,
+       'S': 80,
+       'Hadamard': 1.001E+4
 
     .. details::
         :title: Usage Details
@@ -118,8 +119,6 @@ class QubitizeTHC(ResourceOperator):
             )
 
         self.thc_ham = thc_ham
-        self.prep_op = prep_op.resource_rep_from_op() if prep_op else None
-        self.select_op = select_op.resource_rep_from_op() if select_op else None
         self.coeff_precision = coeff_precision
         self.rotation_precision = rotation_precision
 
@@ -135,6 +134,22 @@ class QubitizeTHC(ResourceOperator):
         if rotation_precision is None:
             rotation_precision = select_op.rotation_precision if select_op else 15
         self.rotation_precision = rotation_precision
+
+        if prep_op is None:
+            prep_op = PrepTHC(
+                thc_ham,
+                coeff_precision=coeff_precision,
+            )
+        _dequeue(prep_op)
+        self.prep_op = prep_op.resource_rep_from_op()
+
+        if select_op is None:
+            select_op = SelectTHC(
+                thc_ham,
+                rotation_precision=rotation_precision,
+            )
+        _dequeue(select_op)
+        self.select_op = select_op.resource_rep_from_op()
 
         # Algorithmic wires for the walk operator, based on section III D in arXiv:2011.03494.
         # The auxiliary wires are excluded and accounted for by the included templates: QROM, SemiAdder, SelectTHC.
@@ -284,16 +299,24 @@ class QubitizeTHC(ResourceOperator):
         tensor_rank = thc_ham.tensor_rank
         m_register = int(np.ceil(np.log2(tensor_rank)))
 
-        select_kwargs = {"thc_ham": thc_ham}
+        select_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": select_op.params["select_swap_depth"] if select_op else None,
+            "num_batches": select_op.params["num_batches"] if select_op else 1,
+        }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
 
         if rotation_precision or select_op is None:
             # Select cost from Figure 5 in arXiv:2011.03494
             select_op = resource_rep(SelectTHC, select_kwargs)
+
         gate_list.append(GateCount(select_op))
 
-        prep_kwargs = {"thc_ham": thc_ham}
+        prep_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": prep_op.params["select_swap_depth"] if prep_op else None,
+        }
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
 
@@ -357,7 +380,11 @@ class QubitizeTHC(ResourceOperator):
             gate_list.append(Allocate(1))
             gate_list.append(GateCount(mcx, 2))
 
-        select_kwargs = {"thc_ham": thc_ham}
+        select_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": select_op.params["select_swap_depth"] if select_op else None,
+            "num_batches": select_op.params["num_batches"] if select_op else 1,
+        }
         if rotation_precision:
             select_kwargs["rotation_precision"] = rotation_precision
 
@@ -373,7 +400,10 @@ class QubitizeTHC(ResourceOperator):
             )
         )
 
-        prep_kwargs = {"thc_ham": thc_ham}
+        prep_kwargs = {
+            "thc_ham": thc_ham,
+            "select_swap_depth": prep_op.params["select_swap_depth"] if prep_op else None,
+        }
         if coeff_precision:
             prep_kwargs["coeff_precision"] = coeff_precision
 

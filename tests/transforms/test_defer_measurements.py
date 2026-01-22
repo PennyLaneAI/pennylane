@@ -127,7 +127,7 @@ def test_postselect_mode(postselect_mode, mocker):
     shots = 100
     postselect_value = 1
     dev = qml.device("default.qubit")
-    spy = mocker.spy(qml.defer_measurements, "_transform")
+    spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
     @qml.set_shots(shots)
     @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method="deferred")
@@ -269,7 +269,7 @@ class TestQNode:
             qml.RX(phi, 0)
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
         # Outputs should match
         assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
@@ -288,7 +288,7 @@ class TestQNode:
         """Test that a new wire is added for every measurement after which
         the wire is reused."""
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
         @qml.defer_measurements
         @qml.qnode(dev)
@@ -1584,7 +1584,7 @@ class TestQubitReuseAndReset:
             qml.cond(m1 | m2, qml.RY)(y, 2)
             return qml.expval(qml.PauliZ(2))
 
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
         _ = qnode(0.123, 0.456, 0.789)
         assert spy.call_count == 1
 

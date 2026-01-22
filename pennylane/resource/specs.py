@@ -36,6 +36,8 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     Returns:
         CircuitSpecs: result object that contains QNode specifications
     """
+    if level is None:
+        level = "gradient"
 
     if compute_depth is None:
         compute_depth = True
@@ -186,7 +188,7 @@ def _specs_qjit_intermediate_passes(
     from catalyst.python_interface.inspection import mlir_specs
 
     # Note that this only gets transforms manually applied by the user
-    trans_prog = original_qnode.transform_program
+    trans_prog = original_qnode.compile_pipeline
 
     single_level = isinstance(level, (int, str)) and not level in ("all", "all-mlir")
 
@@ -194,7 +196,7 @@ def _specs_qjit_intermediate_passes(
     marker_to_level = {
         trans.kwargs["level"]: i + 1
         for i, trans in enumerate(trans_prog)
-        if trans.transform == qml.marker.transform
+        if trans.tape_transform == qml.marker.tape_transform
     }
     level_to_marker = {v: k for k, v in marker_to_level.items()}
 
@@ -306,6 +308,9 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
     from catalyst.passes.pass_api import PassPipelineWrapper
 
+    if level is None:
+        level = "device"
+
     # Unwrap the original QNode if any passes have been applied
     pass_pipeline_wrapped = False
     if isinstance(qjit.original_function, PassPipelineWrapper):
@@ -354,7 +359,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
 def specs(
     qnode,
-    level: str | int | slice = "gradient",
+    level: str | int | slice | None = None,
     compute_depth: bool | None = None,
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides the specifications of a quantum circuit.
@@ -368,7 +373,7 @@ def specs(
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_transform_program` for more details
-            on the available levels. Default is ``"gradient"``.
+            on the available levels. Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
             depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
@@ -496,7 +501,7 @@ def specs(
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
         desired transforms, the specs output's resources field is instead returned as a list with a
-        :class:`~.resource.CircuitSpecs` for each resulting tape:
+        :class:`~.resource.SpecsResources` for each resulting tape:
 
         .. code-block:: python
 

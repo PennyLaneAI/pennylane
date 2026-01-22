@@ -14,13 +14,12 @@
 """
 Defines qml.jvp
 """
-import warnings
 from collections.abc import Sequence
 from functools import lru_cache
 
 from pennylane import capture
 from pennylane.compiler import compiler
-from pennylane.exceptions import CompileError, PennyLaneDeprecationWarning
+from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
@@ -164,7 +163,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
-def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
+def jvp(f, params, tangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
 
     This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
@@ -182,11 +181,6 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
-
-    .. warning::
-
-        ``argnum`` has been renamed to ``argnums`` to match catalyst and jax.
-        ``argnum`` will be removed in v0.45.
 
     Args:
         f (Callable): Function-like object to calculate JVP for
@@ -249,14 +243,6 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
     >>> workflow(params, dy)
     (Array(0.78766064, dtype=float64), Array(-0.70114352, dtype=float64))
     """
-
-    argnums = argnums if argnums is not None else argnum
-    if argnum is not None:
-        warnings.warn(
-            "argnum in qml.jvp has been renamed to argnums to match jax and catalyst.",
-            PennyLaneDeprecationWarning,
-        )
-
     if capture.enabled():
         return _capture_jvp(f, params, tangents, method=method, h=h, argnums=argnums)
 
