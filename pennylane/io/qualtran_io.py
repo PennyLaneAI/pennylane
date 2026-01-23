@@ -117,7 +117,7 @@ def _(op: qtemps.subroutines.TrotterizedQfunc):
         with AnnotatedQueue() as q:
             qfunc_args = op.parameters
             qfunc_kwargs = {
-                k: v for k, v in op.hyperparameters.items() if not k in base_hyper_params
+                k: v for k, v in op.hyperparameters.items() if k not in base_hyper_params
             }
 
             qfunc = op.hyperparameters["qfunc"]
@@ -1018,12 +1018,12 @@ class FromBloq(Operation):
                     in_quregs = {}
                     for succ in succ_cxns:
                         soq = succ.left
-                        if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
+                        if soq.reg.side == qt.Side.RIGHT and soq.reg.name not in in_quregs:
                             soq_to_wires_len -= np.prod(soq.reg.shape) * soq.reg.bitsize
 
                     for succ in succ_cxns:
                         soq = succ.left
-                        if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
+                        if soq.reg.side == qt.Side.RIGHT and soq.reg.name not in in_quregs:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
                                 soq_to_wires_len,
