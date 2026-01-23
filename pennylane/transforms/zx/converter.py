@@ -378,12 +378,10 @@ def to_zx(tape, expand_measurements=False):
             q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
-        stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
         [mapped_tape], _ = qml.transforms.decompose(
             mapped_tape,
             gate_set=gate_sets.PYZX,
             max_expansion=10,
-            stopping_condition=stop_crit,
         )
 
         if expand_measurements:
