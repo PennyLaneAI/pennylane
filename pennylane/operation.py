@@ -1065,12 +1065,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         **Example:**
 
+        >>> from pennylane.drawer.utils import mark
         >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
         'RX'
         >>> op.label(base_label="my_label")
         'my_label'
-        >>> op = qml.RX(1.23456, wires=0, id="test_data")
+        >>> op = mark(qml.RX(1.23456, wires=0), label="test_data")
         >>> op.label()
         'RX\n("test_data")'
         >>> op.label(decimals=2)

@@ -353,14 +353,16 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
         .. code-block:: python
 
+            from pennylane.drawer.utils import mark
+
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
             def circuit(x, y, z):
-                qml.RX(0.5*x**2, wires=0, id="x")
-                qml.RY(2.3*y, wires=1, id="y0")
+                mark(qml.RX(0.5*x**2, wires=0), label="x")
+                mark(qml.RY(2.3*y, wires=1), label="y0")
                 qml.CNOT(wires=[1,0])
-                qml.RY(z, wires=0, id="y1")
+                mark(qml.RY(z, wires=0), label="y1")
                 return qml.expval(qml.Z(0))
 
         First, note that we assigned ``id`` labels to the gates for which we will use
@@ -387,7 +389,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         Note that the values of the output are dictionaries instead of the spectrum lists, that
         they include the prefactors introduced by classical preprocessing, and
         that we would not be able to compute the advanced spectrum for ``x`` because it is
-        preprocessed non-linearly in the gate ``qml.RX(0.5*x**2, wires=0, id="x")``.
+        preprocessed non-linearly in the gate ``mark(qml.RX(0.5*x**2, wires=0), label="x")``.
 
     """
     # pylint: disable=too-many-branches

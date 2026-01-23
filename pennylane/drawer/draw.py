@@ -74,11 +74,13 @@ def draw(
 
     .. code-block:: python
 
+        from pennylane.drawer.utils import mark
+
         @qml.qnode(qml.device('lightning.qubit', wires=2))
         def circuit(a, w):
             qml.Hadamard(0)
             qml.CRX(a, wires=[0, 1])
-            qml.Rot(*w, wires=[1], id="arbitrary")
+            mark(qml.Rot(*w, wires=[1]), label="arbitrary")
             qml.CRX(-a, wires=[0, 1])
             return qml.expval(qml.Z(0) @ qml.Z(1))
 

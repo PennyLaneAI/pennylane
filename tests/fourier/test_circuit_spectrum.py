@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.drawer.utils import mark
 from pennylane.fourier.circuit_spectrum import circuit_spectrum
 
 
@@ -36,7 +37,7 @@ class TestCircuits:
         def _circuit(x):
             for _ in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x, wires=i, id="x")
+                    mark(qml.RX(x, wires=i), label="x")
                     qml.RY(0.4, wires=i)
             return qml.expval(qml.PauliZ(wires=0))
 
@@ -52,8 +53,8 @@ class TestCircuits:
 
         @qml.qnode(dev)
         def _circuit(x):
-            qml.RX(x, wires=0, id="x")
-            qml.RY(0.4, wires=0, id="other")
+            mark(qml.RX(x, wires=0), label="x")
+            mark(qml.RY(0.4, wires=0), label="other")
             return qml.expval(qml.PauliZ(wires=0))
 
         res = circuit_spectrum(_circuit, encoding_gates=["x"])(0.1)
@@ -76,10 +77,10 @@ class TestCircuits:
 
         @qml.qnode(dev)
         def _circuit(last_gate):
-            qml.RX(0.1, wires=0, id="x")
-            qml.RX(0.2, wires=1, id="x")
+            mark(qml.RX(0.1, wires=0), label="x")
+            mark(qml.RX(0.2, wires=1), label="x")
             if last_gate:
-                qml.RX(0.3, wires=2, id="x")
+                mark(qml.RX(0.3, wires=2), label="x")
             return qml.expval(qml.PauliZ(wires=0))
 
         res_true = circuit_spectrum(_circuit)(True)
@@ -96,8 +97,8 @@ class TestCircuits:
 
         @qml.qnode(dev)
         def _circuit():
-            qml.RX(0.1, wires=0, id="x")
-            qml.Rot(0.2, 0.3, 0.4, wires=1, id="x")
+            mark(qml.RX(0.1, wires=0), label="x")
+            mark(qml.Rot(0.2, 0.3, 0.4, wires=1), label="x")
             return qml.expval(qml.PauliZ(wires=0))
 
         with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
@@ -108,11 +109,11 @@ def circuit(x, w):
     """Test circuit"""
     for l in range(2):
         for i in range(3):
-            qml.RX(x[i], wires=0, id="x" + str(i))
+            mark(qml.RX(x[i], wires=0), label="x" + str(i))
             qml.RY(w[l][i], wires=0)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-    qml.RZ(x[0], wires=0, id="x0")
+    mark(qml.RZ(x[0], wires=0), label="x0")
     return qml.expval(qml.PauliZ(wires=0))
 
 
