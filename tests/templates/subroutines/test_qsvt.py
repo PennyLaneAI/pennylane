@@ -181,7 +181,7 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(U_A, lst_projectors)
 
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "Z"})
         tape = func(tapes)
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
@@ -225,7 +225,7 @@ class TestQSVT:
 
         tape2 = qml.tape.QuantumScript.from_queue(q)
 
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set={"Z", "RY", "RZ", "X", "PCPhase"})
         tape = func(tapes)
         i = 0
         j = 0
@@ -355,7 +355,7 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(quantum_function(A), phi_func(phis))
 
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set={"PCPhase", "X", "RX", "RZ"})
         tape = func(tapes)
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name

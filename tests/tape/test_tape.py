@@ -924,7 +924,7 @@ class TestExpand:
 
         new_tapes, func = decompose(
             tape,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            gate_set={"Rot", "RZ"},
             stopping_condition=lambda obj: getattr(obj, "name", None) in ["Rot"],
         )
         new_tape = func(new_tapes)

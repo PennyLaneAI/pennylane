@@ -156,7 +156,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set={"SWAP"})
         tape = func(tapes)
 
         # Ensure all operations are SWAPs, and that the wires are the same
@@ -207,7 +207,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set={"SWAP"})
         tape = func(tapes)
 
         # Ensure all operations are SWAPs, and that the wires are the same
@@ -266,7 +266,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set={"SWAP"})
         tape = func(tapes)
 
         # Ensure all operations are SWAPs, and that the wires are the same
@@ -329,7 +329,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set={"SWAP", "RZ"})
         tape = func(tapes)
 
         # Make sure to start comparison after the set of RZs have been applied
