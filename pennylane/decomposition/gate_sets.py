@@ -49,6 +49,41 @@ CLIFFORD_T.name = "Clifford+T"
 CLIFFORDD_T_PLUS_RZ = CLIFFORD_T | GateSet({ops.RZ: 100})
 CLIFFORDD_T_PLUS_RZ.name = "Clifford+T+RZ"
 
+# All the PennyLane gates that are supported by PyZX. Note that PyZX also supports many more gates,
+# detailed here: https://pyzx.readthedocs.io/en/latest/notebooks/gates.html
+PYZX_SUPPORTED = (
+    GateSet(
+        {
+            ops.Z,
+            ops.X,
+            ops.Y,
+            ops.H,
+            ops.RX,
+            ops.RY,
+            ops.RZ,
+            ops.U2,
+            ops.U3,
+            ops.S,
+            ops.T,
+            ops.SX,
+            ops.SWAP,
+            ops.CNOT,
+            ops.CY,
+            ops.CZ,
+            ops.CRX,
+            ops.CRY,
+            ops.CRZ,
+            f"Adjoint({ops.S})",
+            f"Adjoint({ops.T})",
+            ops.CPhase,
+            ops.CSWAP,
+            ops.Toffoli,
+            ops.CCZ,
+        }
+    )
+    | IDENTITY
+)
+
 ROTATIONS_PLUS_CNOT = GateSet({ops.RX, ops.RY, ops.RZ, ops.CNOT}) | IDENTITY | _MID_MEASURE
 ROTATIONS_PLUS_CNOT.name = "Rotations+CNOT"
 

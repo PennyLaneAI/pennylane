@@ -324,6 +324,9 @@ def to_zx(tape, expand_measurements=False):
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     gate_types = {
+        "PauliX": pyzx.circuit.gates.NOT,
+        "PauliY": pyzx.circuit.gates.Y,
+        "PauliZ": pyzx.circuit.gates.Z,
         "X": pyzx.circuit.gates.NOT,
         "Y": pyzx.circuit.gates.Y,
         "Z": pyzx.circuit.gates.Z,
@@ -373,7 +376,7 @@ def to_zx(tape, expand_measurements=False):
         stop_crit = qml.BooleanFn(lambda obj: isinstance(obj, Operator) and obj.name in gate_types)
         mapped_tapes, func = qml.transforms.decompose(
             mapped_tape,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            gate_set=gate_sets.PYZX_SUPPORTED,
             max_expansion=10,
             stopping_condition=stop_crit,
         )
