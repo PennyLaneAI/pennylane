@@ -172,6 +172,11 @@
   they are compatible with the new graph-based decomposition system.
   [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
 
+* Added a `qml.decomposition.toggle_graph_ctx` context manager to temporarily enable or disable graph-based
+  decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
+  and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
+  [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
