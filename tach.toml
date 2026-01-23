@@ -363,3 +363,19 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 path = "pennylane.workflow"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
+[[interfaces]]
+expose = [
+    "construct_batch",
+    "get_transform_program",
+    "marker",
+    "construct_execution_config",
+    "construct_tape",
+    "execute",
+    "run",
+    "qnode",
+    "QNode",
+    "set_shots",
+    "get_best_diff_method",
+]
+from = ["pennylane.workflow"]
+

@@ -29,7 +29,7 @@ from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 from pennylane.transforms.core.transform import _create_transform_primitive
-from pennylane.workflow._capture_qnode import qnode_prim
+from pennylane.workflow._capture_qnode import qnode_prim  # tach-ignore
 
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
