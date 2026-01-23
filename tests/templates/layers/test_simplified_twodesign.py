@@ -103,6 +103,7 @@ class TestDecomposition:
                 res_param = o.parameters[0]
                 assert res_param == exp_param
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "initial_layer_weights, weights, n_wires, target",
         [
@@ -127,6 +128,7 @@ class TestDecomposition:
         for exp, target_exp in zip(expectations, target):
             assert np.allclose(exp, target_exp, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         weights = np.random.random(size=(1, 2, 2))

@@ -25,7 +25,6 @@ from pennylane.devices.preprocess import (
     device_resolve_dynamic_wires,
     measurements_from_counts,
     measurements_from_samples,
-    mid_circuit_measurements,
     no_analytic,
     no_sampling,
     null_postprocessing,
@@ -35,7 +34,7 @@ from pennylane.devices.preprocess import (
     validate_multiprocessing_workers,
     validate_observables,
 )
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
@@ -620,83 +619,23 @@ class TestGraphModeExclusiveFeatures:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-        tape = qml.tape.QuantumScript([MyOp(0)])
-        device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
-        target_gates = {"Hadamard", "PauliX"}
+            tape = qml.tape.QuantumScript([MyOp(0)])
+            device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+            target_gates = {"Hadamard", "PauliX"}
 
-        (out_tape,), _ = decompose(
-            tape,
-            lambda obj: obj.name in target_gates,
-            device_wires=device_wires,
-            target_gates=target_gates,
-        )
+            (out_tape,), _ = decompose(
+                tape,
+                lambda obj: obj.name in target_gates,
+                device_wires=device_wires,
+                target_gates=target_gates,
+            )
 
         # Should use fallback decomposition (2 Hadamards)
         assert len(out_tape.operations) == 2
         assert all(op.name == "Hadamard" for op in out_tape.operations)
-
-
-@pytest.fixture()
-def check_deprecated():
-    with pytest.warns(
-        PennyLaneDeprecationWarning,
-        match="The mid_circuit_measurements transform is deprecated",
-    ):
-        yield
-
-
-@pytest.mark.usefixtures("check_deprecated")
-class TestMidCircuitMeasurements:
-    """Unit tests for the mid_circuit_measurements preprocessing transform"""
-
-    @pytest.mark.parametrize(
-        "mcm_method, shots, expected_transform",
-        [
-            ("deferred", 10, qml.defer_measurements),
-            ("deferred", None, qml.defer_measurements),
-            (None, None, qml.defer_measurements),
-            (None, 10, qml.dynamic_one_shot),
-            ("one-shot", 10, qml.dynamic_one_shot),
-        ],
-    )
-    def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
-        """Test that the preprocessing transform adheres to the specified transform"""
-        dev = qml.device("default.qubit")
-        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
-        spy = mocker.spy(expected_transform, "_tape_transform")
-
-        _, _ = mid_circuit_measurements(tape, dev, mcm_config)
-        spy.assert_called_once()
-
-    @pytest.mark.parametrize("mcm_method", ["device", "tree-traversal"])
-    @pytest.mark.parametrize("shots", [10, None])
-    def test_device_mcm_method(self, mcm_method, shots):
-        """Test that no transform is applied by mid_circuit_measurements when the
-        mcm method is handled by the device"""
-        dev = qml.device("default.qubit")
-        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
-
-        (new_tape,), post_processing_fn = mid_circuit_measurements(tape, dev, mcm_config)
-
-        assert qml.equal(tape, new_tape)
-        assert post_processing_fn == null_postprocessing
-
-    def test_error_incompatible_mcm_method(self):
-        """Test that an error is raised if requesting the one-shot transform without shots"""
-        dev = qml.device("default.qubit")
-        shots = None
-        mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
-
-        with pytest.raises(
-            QuantumFunctionError,
-            match="dynamic_one_shot is only supported with finite shots.",
-        ):
-            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 
 
 class TestMeasurementsFromCountsOrSamples:

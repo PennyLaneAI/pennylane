@@ -600,17 +600,17 @@ class QNode:
 
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = shots != "unset"
-        self._transform_program = CompilePipeline()
+        self._compile_pipeline = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
         copied_qnode = QNode.__new__(QNode)
         for attr, value in vars(self).items():
-            if attr not in {"execute_kwargs", "_transform_program", "gradient_kwargs"}:
+            if attr not in {"execute_kwargs", "_compile_pipeline", "gradient_kwargs"}:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
-        copied_qnode._transform_program = CompilePipeline(self.transform_program)
+        copied_qnode._compile_pipeline = CompilePipeline(self.compile_pipeline)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
@@ -654,8 +654,25 @@ class QNode:
 
     @property
     def transform_program(self) -> CompilePipeline:
-        """The transform program used by the QNode."""
-        return self._transform_program
+        """The transform program used by the QNode.
+
+        .. warning::
+
+            The ``transform_program`` property of the QNode has been renamed to ``compile_pipeline``.
+            Access through ``transform_program`` will be removed in PennyLane v0.46.
+
+        """
+        warnings.warn(
+            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
+            "Access through 'transform_program' will be removed in PennyLane v0.46.",
+            PennyLaneDeprecationWarning,
+        )
+        return self.compile_pipeline
+
+    @property
+    def compile_pipeline(self) -> CompilePipeline:
+        """The compile pipeline used by the QNode."""
+        return self._compile_pipeline
 
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
@@ -742,7 +759,7 @@ class QNode:
             updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
-        updated_qn._transform_program = CompilePipeline(self.transform_program)
+        updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
@@ -831,14 +848,14 @@ class QNode:
         tape = self.construct(args, kwargs)
 
         # Calculate the classical jacobians if necessary
-        self._transform_program.set_classical_component(self, args, kwargs)
+        self._compile_pipeline.set_classical_component(self, args, kwargs)
 
         res = execute(
             (tape,),
             device=self.device,
             diff_method=self.diff_method,
             interface=self.interface,
-            transform_program=self._transform_program,
+            transform_program=self._compile_pipeline,
             gradient_kwargs=self.gradient_kwargs,
             **self.execute_kwargs,
         )
@@ -848,7 +865,7 @@ class QNode:
 
         if (
             len(tape.get_parameters(trainable_only=False)) == 0
-            and not self._transform_program.is_informative
+            and not self._compile_pipeline.is_informative
             and self.interface != "auto"
         ):
             res = _convert_to_interface(res, math.Interface(self.interface))
@@ -876,8 +893,9 @@ qnode.__signature__ = inspect.signature(QNode)
 @Transform.generic_register
 def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
+    targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
     new_qnode = copy.copy(obj)
-    new_qnode._transform_program = transform(new_qnode.transform_program, *targs, **tkwargs)
+    new_qnode._compile_pipeline = transform(new_qnode.compile_pipeline, *targs, **tkwargs)
     return new_qnode

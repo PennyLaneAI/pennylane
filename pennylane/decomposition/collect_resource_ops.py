@@ -39,6 +39,9 @@ class CollectResourceOps(FlattenedInterpreter):
         self.state["ops"].add(resource_rep(type(op), **op.resource_params))
         return op
 
+    def interpret_measurement_eqn(self, eqn):
+        pass
+
 
 @CollectResourceOps.register_primitive(measure_prim)
 def _mid_measure_prim(self, wires, reset, postselect):  # pylint: disable=unused-argument
