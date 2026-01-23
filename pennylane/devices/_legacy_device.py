@@ -611,13 +611,12 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             [circuit], _ = decompose(circuit, stopping_condition=self.stopping_condition)
 
         elif ops_not_supported:
-            circuits, func = decompose(
+            [circuit], _ = decompose(
                 circuit,
                 gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
                 max_expansion=max_expansion,
                 stopping_condition=self.stopping_condition,
             )
-            circuit = func(circuits)
 
         return circuit
 
