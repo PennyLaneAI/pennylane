@@ -15,27 +15,24 @@
 Tests for capturing a qnode into jaxpr.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,wrong-import-position,ungrouped-imports
+
 import pytest
 
 import pennylane as qml
 from pennylane.exceptions import CaptureError, QuantumFunctionError
+from tests.capture.utils import extract_ops_and_meas_prims
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-from pennylane.capture.autograph import run_autograph  # pylint: disable=wrong-import-position
+from pennylane.capture.autograph import run_autograph
 
 # must be below jax importorskip
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    qnode_prim,
-    transform_prim,
-)
-from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
-    CollectOpsandMeas,
-)
+from pennylane.capture.primitives import qnode_prim, transform_prim
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 def get_qnode_output_eqns(jaxpr):
@@ -55,15 +52,6 @@ def get_qnode_output_eqns(jaxpr):
             qnode_output_eqns.append(eqn)
 
     return qnode_output_eqns
-
-
-def _extract_ops_and_meas_prims(jaxpr):
-    """Extract the primitives that are ops and meas."""
-    return [
-        eqn
-        for eqn in jaxpr.eqns
-        if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
-    ]
 
 
 def test_warning_about_execution_pipeline_unmaintained():
@@ -575,7 +563,7 @@ class TestUserTransforms:
         assert all(
             getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
         )
-        ops_and_meas = _extract_ops_and_meas_prims(device_jaxpr)
+        ops_and_meas = extract_ops_and_meas_prims(device_jaxpr)
         assert ops_and_meas[0].primitive == qml.RZ._primitive
         assert ops_and_meas[1].primitive == qml.RY._primitive
         assert ops_and_meas[2].primitive == qml.RZ._primitive

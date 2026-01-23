@@ -35,6 +35,7 @@ from pennylane.transforms.core.compile_pipeline import (
     null_postprocessing,
 )
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
+from tests.capture.utils import extract_ops_and_meas_prims
 
 
 def first_valid_transform(
@@ -74,15 +75,6 @@ def informative_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
         return len(results[0].operations)
 
     return [tape], fn
-
-
-def _extract_ops_and_meas_prims(jaxpr):
-    """Extract the primitives that are ops and meas."""
-    return [
-        eqn
-        for eqn in jaxpr.eqns
-        if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
-    ]
 
 
 class TestUtilityHelpers:
@@ -1596,7 +1588,7 @@ class TestCompilePipelineCall:
             qml.PauliZ._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        ops_and_meas = _extract_ops_and_meas_prims(transformed_jaxpr)
+        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
         for eqn, expected_primitive in zip(ops_and_meas, expected_primitives, strict=True):
             assert eqn.primitive == expected_primitive
 

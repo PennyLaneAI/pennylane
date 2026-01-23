@@ -25,6 +25,7 @@ jax = pytest.importorskip("jax")
 from pennylane.capture import expand_plxpr_transforms
 from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
 from pennylane.capture.primitives import transform_prim
+from tests.capture.utils import extract_ops_and_meas_prims
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -41,15 +42,6 @@ def _dummy_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):  # pylint: dis
         return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
 
     return jax.make_jaxpr(wrapper)(*args)
-
-
-def _extract_ops_and_meas_prims(jaxpr):
-    """Extract the primitives that are ops and meas."""
-    return [
-        eqn
-        for eqn in jaxpr.eqns
-        if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
-    ]
 
 
 @partial(qml.transform, plxpr_transform=_dummy_plxpr_transform)
@@ -206,7 +198,7 @@ class TestExpandPlxprTransforms:
 
         transformed_f = expand_plxpr_transforms(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
-        ops_and_meas = _extract_ops_and_meas_prims(transformed_jaxpr)
+        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
         assert len(ops_and_meas) == 8
         assert ops_and_meas[0].primitive == qml.RX._primitive
         assert ops_and_meas[1].primitive == qml.PauliZ._primitive
@@ -262,7 +254,7 @@ class TestExpandPlxprTransforms:
 
         transformed_f = expand_plxpr_transforms(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
-        ops_and_meas = _extract_ops_and_meas_prims(transformed_jaxpr)
+        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
         assert len(ops_and_meas) == 7
         assert ops_and_meas[0].primitive == qml.RX._primitive
         assert ops_and_meas[1].primitive == qml.PauliZ._primitive
