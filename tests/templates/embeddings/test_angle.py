@@ -53,6 +53,69 @@ def test_flatten_unflatten():
     assert op is not new_op
 
 
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:
+    """Tests the correctness of the template."""
+
+    def test_state(self):
+        """Checks the state produced using the rotation='X' strategy."""
+
+        features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
+            qml.PauliX(wires=0)
+            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
+            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
+
+        res = circuit(x=features)
+        target = [1, -1, 0, 1]
+
+        assert np.allclose(res, target)
+
+    def test_fewer_features(self):
+        """Tests fewer features than rotation gates."""
+
+        features = [np.pi / 2, np.pi / 2, 0, np.pi / 2]
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.AngleEmbedding(features=x, wires=range(5))
+            return [qml.expval(qml.PauliZ(i)) for i in range(5)]
+
+        res = circuit(x=features)
+        target = [0, 0, 1, 0, 1]
+        assert np.allclose(res, target)
+
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        features = np.random.random(size=(3,))
+
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.AngleEmbedding(features, wires=range(3))
+            return qml.expval(qml.Identity(0)), qml.state()
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.AngleEmbedding(features, wires=["z", "a", "k"])
+            return qml.expval(qml.Identity("z")), qml.state()
+
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -92,66 +155,6 @@ class TestDecomposition:
 
         for gate in tape.operations:
             assert gate.name == "R" + rotation
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_state(self):
-        """Checks the state produced using the rotation='X' strategy."""
-
-        features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
-        dev = qml.device("default.qubit", wires=4)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
-            qml.PauliX(wires=0)
-            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
-            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
-
-        res = circuit(x=features)
-        target = [1, -1, 0, 1]
-
-        assert np.allclose(res, target)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_fewer_features(self):
-        """Tests fewer features than rotation gates."""
-
-        features = [np.pi / 2, np.pi / 2, 0, np.pi / 2]
-
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.AngleEmbedding(features=x, wires=range(5))
-            return [qml.expval(qml.PauliZ(i)) for i in range(5)]
-
-        res = circuit(x=features)
-        target = [0, 0, 1, 0, 1]
-        assert np.allclose(res, target)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        features = np.random.random(size=(3,))
-
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.AngleEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
-
-        @qml.qnode(dev2)
-        def circuit2():
-            qml.AngleEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
         ([1.2, 1.3, 0, 0, 1.4], range(5), "Z"),
