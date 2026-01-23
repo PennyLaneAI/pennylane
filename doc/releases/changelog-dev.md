@@ -150,8 +150,8 @@
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
   [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
 
-* The ``qml.transforms.create_expand_fn`` is deprecated in PennyLane v0.45 and will be removed in v0.46.
-  Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
 
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
@@ -179,6 +179,11 @@
   they are compatible with the new graph-based decomposition system.
   [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
 
+* Added a `qml.decomposition.toggle_graph_ctx` context manager to temporarily enable or disable graph-based
+  decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
+  and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
+  [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -194,6 +199,9 @@
 * Fixes a bug with `qml.estimator.templates.QSVT` which allows users to instantiate the class without
   providing wires. This is now consistent with the standard in the estimator module.
   [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
+
+* Fixes a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
+  [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
 
 <h3>Contributors ✍️</h3>
 
