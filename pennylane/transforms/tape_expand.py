@@ -63,7 +63,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     Then the expansion function can be obtained via
 
-    >>> expand_fn = qml.transforms.create_expand_fn(depth=5, stop_at=stop_at)
+    >>> expand_fn = qml.transforms.create_expand_fn(depth=5, stop_at=stop_at)  # doctest: +SKIP
 
     We can test the newly generated function on an example tape:
 

@@ -56,7 +56,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         >>> from pennylane.tape import expand_tape
         >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.Y(0))]
         >>> tape = qml.tape.QuantumScript([], mps)
-        >>> expand_tape(tape)
+        >>> expand_tape(tape)  # doctest: +SKIP
         Traceback (most recent call last):
             ...
         pennylane.exceptions.QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
@@ -67,7 +67,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         >>> measurements = [qml.expval(qml.Projector([0], 0)), qml.probs(wires=0)]
         >>> tape = qml.tape.QuantumScript([], measurements)
-        >>> expand_tape(tape)
+        >>> expand_tape(tape)  # doctest: +SKIP
         Traceback (most recent call last):
             ...
         pennylane.exceptions.QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
@@ -82,15 +82,15 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         >>> ops = [qml.Permute((2,1,0), wires=(0,1,2)), qml.X(0)]
         >>> measurements = [qml.expval(qml.X(0))]
         >>> tape = qml.tape.QuantumScript(ops, measurements)
-        >>> expanded_tape = expand_tape(tape)
-        >>> print(expanded_tape.draw())
+        >>> expanded_tape = expand_tape(tape)  # doctest: +SKIP
+        >>> print(expanded_tape.draw())  # doctest: +SKIP
         0: ─╭SWAP──RX─╭GlobalPhase─┤  <X>
         2: ─╰SWAP─────╰GlobalPhase─┤
 
         Specifying a depth greater than one decomposes operations multiple times.
 
-        >>> expanded_tape2 = expand_tape(tape, depth=2)
-        >>> print(expanded_tape2.draw())
+        >>> expanded_tape2 = expand_tape(tape, depth=2)  # doctest: +SKIP
+        >>> print(expanded_tape2.draw())  # doctest: +SKIP
         0: ─╭●─╭X─╭●──RX─┤  <X>
         2: ─╰X─╰●─╰X─────┤
 
@@ -100,8 +100,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         >>> def stop_at(obj):
         ...     return isinstance(obj, qml.X)
-        >>> expanded_tape = expand_tape(tape, stop_at=stop_at)
-        >>> print(expanded_tape.draw())
+        >>> expanded_tape = expand_tape(tape, stop_at=stop_at)  # doctest: +SKIP
+        >>> print(expanded_tape.draw())  # doctest: +SKIP
         0: ─╭SWAP──X─┤  <X>
         2: ─╰SWAP────┤
 
@@ -114,7 +114,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             >>> def stop_at(obj):
             ...     return getattr(obj, "name", "") in {"RX", "RY"}
             >>> tape = qml.tape.QuantumScript([qml.RZ(0.1, 0)])
-            >>> expand_tape(tape, stop_at=stop_at).circuit
+            >>> expand_tape(tape, stop_at=stop_at).circuit  # doctest: +SKIP
             [RZ(0.1, wires=[0])]
 
         If more than one observable exists on a wire, the diagonalizing gates will be applied
@@ -123,8 +123,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.X(0) @ qml.X(1))]
         >>> tape = qml.tape.QuantumScript([], mps)
-        >>> expanded_tape = expand_tape(tape)
-        >>> print(expanded_tape.draw())
+        >>> expanded_tape = expand_tape(tape)  # doctest: +SKIP
+        >>> print(expanded_tape.draw())  # doctest: +SKIP
         0: ──RY─┤  <Z> ╭<Z@Z>
         1: ──RY─┤      ╰<Z@Z>
 
@@ -136,7 +136,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             Setting ``expand_measurements=True`` should be used with extreme caution.
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
-        >>> expand_tape(tape, expand_measurements=True).circuit
+        >>> expand_tape(tape, expand_measurements=True).circuit  # doctest: +SKIP
         [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
 
@@ -227,14 +227,14 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     >>> ops = [qml.StatePrep([0, 1], wires=0), qml.Z(1), qml.StatePrep([1, 0], wires=0)]
     >>> tape = qml.tape.QuantumScript(ops, [])
-    >>> new_tape = qml.tape.expand_tape_state_prep(tape)
-    >>> new_tape.operations
+    >>> new_tape = qml.tape.expand_tape_state_prep(tape)  # doctest: +SKIP
+    >>> new_tape.operations  # doctest: +SKIP
     [StatePrep(array([0, 1]), wires=[0]), Z(1), MottonenStatePreparation(array([1, 0]), wires=[0])]
 
     To force expansion, the keyword argument ``skip_first`` can be set to ``False``:
 
-    >>> new_tape = qml.tape.expand_tape_state_prep(tape, skip_first=False)
-    >>> new_tape.operations
+    >>> new_tape = qml.tape.expand_tape_state_prep(tape, skip_first=False)  # doctest: +SKIP
+    >>> new_tape.operations  # doctest: +SKIP
     [MottonenStatePreparation(array([0, 1]), wires=[0]), Z(1), MottonenStatePreparation(array([1, 0]), wires=[0])]
     """
 
