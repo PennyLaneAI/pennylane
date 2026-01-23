@@ -21,13 +21,13 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 from pennylane.wires import Wires
 
-from pennylane.decomposition import gate_sets
 from .helper import _needs_pyzx
 
 
@@ -387,9 +387,7 @@ def to_zx(tape, expand_measurements=False):
         )
 
         if expand_measurements:
-            [mapped_tape], _ = qml.transforms.diagonalize_measurements(
-                mapped_tape, to_eigvals=True
-            )
+            [mapped_tape], _ = qml.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)
 
         expanded_operations = []
         for op in mapped_tape.operations:
