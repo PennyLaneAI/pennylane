@@ -2,8 +2,35 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
+import math
 
-from tests.io.test_qualtran_io import qubits
+
+def _phase(pauli: str, qubit: int) -> complex:
+    """For a Pauli P return the phase applied by HPH
+
+    HXH = Z
+    HYH = -Y
+    HZH = X
+
+    """
+
+    if pauli in ("I", "Z"):
+        return 1
+
+    if pauli == "Y":
+        if qubit == 0:
+            return -1j
+
+        return 1j
+
+    if pauli == "X":
+        if qubit == 0:
+            return 1
+
+        return -1
+
+    raise ValueError(f"Expected Pauli I, X, Y, or Z, got {pauli}.")
+
 
 def _iqp_expval_core(
     generators: ArrayLike,
@@ -32,22 +59,25 @@ def _iqp_expval_core(
     if init_state is not None:
         return _iqp_expval_init_state(generators, params, ops, n_samples, key, init_state)
 
-    # Generate samples
-    # Note: We do not split the key inside the function to maintain purity.
-    # The user should manage key splitting externally.
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
 
-    # IQP Math
-    # B = (-1)^(Z . G^T)
+    bitflips = jnp.array([[1 if gate in {"Z", "Y"} else 0 for gate in op] for op in ops])
+    phases = jnp.array(
+        [
+            [
+                math.prod([_phase(gate, qubit) for gate, qubit in zip(op, sample)])
+                for sample in samples
+            ]
+            for op in ops
+        ]
+    )
+
     B = (-1) ** (samples @ generators.T)
-
-    # C = 1 - (-1)^(A . G^T)
-    C = 1 - ((-1) ** (ops @ generators.T))
-
-    # E = C . diag(Theta) . B^T
+    C = 1 - ((-1) ** (bitflips @ generators.T))
     E = C @ jnp.diag(params) @ B.T
+    M = phases * jnp.exp(-1j * E)
 
-    expvals = jnp.cos(E)
+    expvals = jnp.real(M)
 
     std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
     return jnp.mean(expvals, axis=1), std_err
@@ -66,22 +96,31 @@ def _iqp_expval_init_state(
 
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
 
-    B = (-1) ** (samples @ generators.T)
-    C = 1 - ((-1) ** (ops @ generators.T))
-    E = C @ jnp.diag(params) @ B.T
+    bitflips = jnp.array([[1 if gate in {"Z", "Y"} else 0 for gate in op] for op in ops])
+    phases = jnp.array(
+        [
+            [
+                math.prod([_phase(gate, qubit) for gate, qubit in zip(op, sample)])
+                for sample in samples
+            ]
+            for op in ops
+        ]
+    )
 
+    B = (-1) ** (samples @ generators.T)
+    C = 1 - ((-1) ** (bitflips @ generators.T))
+    E = C @ jnp.diag(params) @ B.T
+    M = phases * jnp.exp(-1j * E)
     X, P = init_state
     P = P[:, jnp.newaxis]
 
-    # Calculate F factor based on initial state
-    F = jnp.broadcast_to(P, (P.shape[0], n_samples)) * ((-1) ** (X @ samples.T))
+    F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
 
-    H1 = ((-1) ** (ops @ X.T)) @ F
+    H1 = ((-1) ** (bitflips @ X.T)) @ F
     col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
-    H2 = jnp.broadcast_to(col_sums, (ops.shape[0], n_samples))
+    H2 = jnp.broadcast_to(col_sums, (bitflips.shape[0], samples.shape[0]))
     H = H1 * H2
-
-    expvals = jnp.cos(E) * jnp.real(H) - jnp.sin(E) * jnp.imag(H)
+    expvals = jnp.real(M * H)
 
     std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
     return jnp.mean(expvals, axis=1), std_err
@@ -112,6 +151,7 @@ def bitflip_expval(
 
     return result, jnp.zeros(ops.shape[0])
 
+
 def _parse_iqp_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
     """
     Converts dictionary circuit definition into JAX-ready matrices.
@@ -127,7 +167,7 @@ def _parse_iqp_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
 
     n_gates = len(flat_gates)
     generators = np.zeros((n_gates, n_qubits), dtype=int)
-    
+
     for i, qubits in enumerate(flat_gates):
         generators[i, qubits] = 1
     param_map = jnp.array(param_indices)
@@ -141,12 +181,12 @@ def iqp_expval(
     n_samples: int,
     n_qubits: int,
     key: ArrayLike,
-    batch_size: int = 1000
+    batch_size: int = 1000,
 ):
     """
     Computes IQP expectation values from a high-level circuit definition.
     Handles preprocessing and memory batching automatically.
-    
+
     Args:
         gates: Dictionary {param_idx: [[q0, q1], [q2]]}.
         params: Array of parameters matching the keys in 'gates'.
@@ -157,7 +197,7 @@ def iqp_expval(
         batch_size: Number of operators to process at once on the GPU.
     """
     generators, param_map = _parse_iqp_dict(gates, n_qubits)
-    
+
     params = jnp.asarray(params)
     expanded_params = params[param_map]
 
@@ -167,15 +207,11 @@ def iqp_expval(
 
     for i in range(0, n_ops, batch_size):
         ops_chunk = ops[i : i + batch_size]
-        
+
         chunk_mean, chunk_std = _iqp_expval_core(
-            generators, 
-            expanded_params, 
-            ops_chunk, 
-            n_samples, 
-            key
+            generators, expanded_params, ops_chunk, n_samples, key
         )
-        
+
         results_mean.append(chunk_mean)
         results_std.append(chunk_std)
 
