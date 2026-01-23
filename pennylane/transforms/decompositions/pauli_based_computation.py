@@ -94,10 +94,11 @@ def to_ppr_setup_inputs():
     <BLANKLINE>
     Resource specifications:
         Total wire allocations: 2
-        Total gates: 8
+        Total gates: 11
         Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
+        GlobalPhase: 3
         PPR-pi/4: 6
         PPM: 1
         PPR-pi/8: 1
@@ -525,10 +526,11 @@ def ppm_compilation_setup_inputs(
     <BLANKLINE>
     Resource specifications:
     Total wire allocations: 8
-    Total gates: 22
+    Total gates: 25
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
+        GlobalPhase: 3
         qec.fabricate: 1
         PPM: 14
         PPR-pi/2: 7
