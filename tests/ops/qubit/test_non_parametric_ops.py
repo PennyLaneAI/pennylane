@@ -760,7 +760,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], func = decompose(tape, max_expansion=2, gate_set={"CNOT"})
+        [tape], _ = decompose(tape, max_expansion=2, gate_set={"CNOT"})
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)

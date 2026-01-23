@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 

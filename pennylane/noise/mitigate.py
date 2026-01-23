@@ -17,11 +17,10 @@ from collections.abc import Sequence
 from typing import Any
 
 from pennylane import math
-from pennylane.decomposition import gate_sets
 from pennylane.operation import Channel
 from pennylane.ops.op_math import adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import decompose, transform
+from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 

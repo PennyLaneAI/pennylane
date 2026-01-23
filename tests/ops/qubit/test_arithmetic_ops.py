@@ -83,7 +83,7 @@ class TestQubitCarry:
             ([3, 2, 0, 1], "1010", "0110", False),
         ],
     )
-    def test_output(self, wires, input_string, output_string, expand, mocker):
+    def test_output(self, wires, input_string, output_string, expand):
         """Test if ``QubitCarry`` produces the right output and is expandable."""
         dev = qml.device("default.qubit", wires=4)
 
