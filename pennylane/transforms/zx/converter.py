@@ -27,7 +27,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 from pennylane.wires import Wires
 
-from ...decomposition import gate_sets
+from pennylane.decomposition import gate_sets
 from .helper import _needs_pyzx
 
 
