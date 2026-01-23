@@ -41,7 +41,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
 from pennylane.wires import Wires
 
-from ..decomposition import gate_sets
+from pennylane.decomposition import gate_sets
 from .tracker import Tracker
 
 
