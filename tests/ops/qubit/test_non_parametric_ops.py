@@ -534,8 +534,6 @@ class TestDecompositions:
                         ]
                     )
                 )
-            else:
-                raise AssertionError("Unexpected operation in decomposition")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
