@@ -2214,10 +2214,10 @@ class QROM(ResourceOperator):
     def _t_optimized_select_swap_width(num_bitstrings, size_bitstring):
         opt_width_continuous = math.sqrt((2 / 3) * (num_bitstrings / size_bitstring))
         w1 = 2 ** math.floor(math.log2(opt_width_continuous))
-        w2 = 2 ** ceil_log2(opt_width_continuous)
+        w2 = 2 ** math.ceil(math.log2(opt_width_continuous))
 
-        w1 = 1 if w1 < 1 else w1
-        w2 = 1 if w2 < 1 else w2  # The continuous solution could be non-physical
+        w1 = max(1, w1)
+        w2 = max(1, w2)  # The continuous solution could be non-physical
 
         def t_cost_func(w):
             return 4 * (math.ceil(num_bitstrings / w) - 2) + 6 * (w - 1) * size_bitstring

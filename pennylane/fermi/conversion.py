@@ -502,7 +502,7 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
     coeffs = {"+": -0.5j, "-": 0.5j}
     qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
 
-    bin_range = 2 ** math.ceil_log2(n)
+    bin_range = int(2 ** np.ceil(np.log2(n)))
 
     for (_, wire), sign in fermi_operator.items():
         if wire >= n:
