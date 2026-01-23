@@ -597,13 +597,89 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
+def binary_finite_reduced_row_echelon(binary_matrix):
+    r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
+
+    Args:
+        binary_matrix (array[int]): binary matrix representation of a Hamiltonian
+    Returns:
+        array[int]: reduced row-echelon form of the given `binary_matrix`
+
+    **Example**
+
+    >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
+    ...                           [1, 0, 1, 0, 0, 0, 1, 0],
+    ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
+    >>> qml.math.binary_finite_reduced_row_echelon(binary_matrix)
+    array([[1, 0, 0, 0, 0, 1, 0, 0],
+           [0, 0, 1, 0, 0, 1, 1, 0],
+           [0, 0, 0, 1, 1, 0, 0, 1]])
+    """
+    rref_mat = binary_matrix.copy()
+    shape = rref_mat.shape
+    icol = 0
+
+    for irow in range(shape[0]):
+        while icol < shape[1] and not rref_mat[irow][icol]:
+            # get the nonzero indices in the remainder of column icol
+            non_zero_idx = rref_mat[irow:, icol].nonzero()[0]
+
+            if len(non_zero_idx) == 0:  # if remainder of column icol is all zero
+                icol += 1
+            else:
+                # find value and index of largest element in remainder of column icol
+                krow = irow + non_zero_idx[0]
+
+                # swap rows krow and irow
+                rref_mat[irow, icol:], rref_mat[krow, icol:] = (
+                    rref_mat[krow, icol:].copy(),
+                    rref_mat[irow, icol:].copy(),
+                )
+        if icol < shape[1] and rref_mat[irow][icol]:
+            # store remainder right hand side columns of the pivot row irow
+            rpvt_cols = rref_mat[irow, icol:].copy()
+
+            # get the column icol and set its irow element to 0 to avoid XORing pivot row with itself
+            currcol = rref_mat[:, icol].copy()
+            currcol[irow] = 0
+
+            # XOR the right hand side of the pivot row irow with all of the other rows
+            rref_mat[:, icol:] ^= np.outer(currcol, rpvt_cols)
+            icol += 1
+
+    return rref_mat.astype(int)
+
+
 def ceil_log2(n: int) -> int:
-    """Compute the ceiling of the base-2 logarithm of an integer.
+    """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
 
     Args:
         n (int): Integer to compute the rounded-up base-2 logarithm of.
 
     Returns:
         int: Rounded-up base-2 logarithm of ``n``.
+
+
+    **Example**
+
+    On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
+    an ``int``:
+
+    >>> qml.math.ceil_log2(8)
+    3
+
+    On other numbers, the rounding of the logarithm becomes visible:
+
+    >>> qml.math.log2(14)
+    3.807354922057604
+    >>> qml.math.ceil_log2(14)
+    4
+
+    Note that we always round up:
+
+    >>> qml.math.round(qml.math.log2(9))
+    3.0
+    >>> qml.math.ceil_log2(9)
+    4
     """
     return int(np.ceil(np.log2(n)))
