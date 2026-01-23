@@ -375,7 +375,7 @@ class QSVT(Operation):
     >>> print(qml.draw(example_circuit)())
     0: ──QSVT─┤  <Z>
 
-    To see the implementation details, we can expand the circuit:
+    To see the implementation details, we can expand the circuit via :func:`qml.transforms.decompose <.transforms.decompose>`:
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
     >>> q_scripts, func = qml.transforms.decompose(q_script, gate_set={"H", "Adjoint(H)", "RZ"})
