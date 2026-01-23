@@ -323,6 +323,8 @@ def to_zx(tape, expand_measurements=False):
     from pyzx.graph import Graph
 
     # Dictionary of gates (PennyLane to PyZX circuit)
+    # Please keep in mind to keep this in sync with the pennylane.decomposition.gate_sets.PYZX,
+    # and to update both if the PyZX gate spec changes.
     gate_types = {
         "PauliX": pyzx.circuit.gates.NOT,
         "PauliY": pyzx.circuit.gates.Y,

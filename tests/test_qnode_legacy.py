@@ -1457,7 +1457,6 @@ class TestTapeExpansion:
         assert qml.math.allclose(res, [0.54, 0.54], atol=0.05)
         assert res[0] == res[1]
 
-    @pytest.mark.xfail
     def test_expansion_multiple_qwc_observables(self, mocker):
         """Test that the QNode correctly expands tapes that return
         multiple measurements of commuting observables"""
