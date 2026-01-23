@@ -101,5 +101,5 @@ def binary_rank(binary_matrix: np.ndarray) -> int:
             # Find least significant bit that is set to 1 in the pivot
             least_sig_bit = np.where(pivot)[0][-1]
             # XOR all rows with the pivot that have the bit in the position least_sig_bit set to 1
-            binary_matrix[np.where(binary_matrix[:, least_significant_bit])] ^= pivot
+            binary_matrix[np.where(binary_matrix[:, least_sig_bit])] ^= pivot
     return rank

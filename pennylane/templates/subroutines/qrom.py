@@ -66,7 +66,7 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
 
 
 def _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings):
-    n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
+    n_control_select_wires = math.ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
     if control_select_wires:
@@ -79,7 +79,7 @@ def _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings):
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
-    n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
+    n_control_select_wires = math.ceil_log2(2 ** len(control_wires) / depth)
     control_swap_wires = control_wires[n_control_select_wires:]
     for i in range(len(control_swap_wires) - 1, -1, -1):
         for j in range(2**i - 1, -1, -1):
@@ -212,8 +212,8 @@ class QROM(Operation):
         if 2 ** len(control_wires) < len(bitstrings):
             raise ValueError(
                 f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                + f"bitstrings ({len(bitstrings)}). At least {int(math.ceil(math.log2(len(bitstrings))))} control "
-                + "wires are required."
+                f"bitstrings ({len(bitstrings)}). At least {math.ceil_log2(len(bitstrings))} "
+                "control wires are required."
             )
 
         if len(bitstrings[0]) != len(target_wires):
@@ -311,7 +311,7 @@ class QROM(Operation):
                 new_ops.append(qml_ops.prod(*column_ops))
 
             # Select block
-            n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
+            n_control_select_wires = math.ceil_log2(2 ** len(control_wires) / depth)
             control_select_wires = control_wires[:n_control_select_wires]
 
             select_ops = []
@@ -423,7 +423,7 @@ def _qrom_decomposition_resources(
             new_ops[resource_rep(qml_ops.op_math.Prod, resources=dict(column_ops))] += 1
 
     # Select block
-    num_control_select_wires = int(math.ceil(math.log2(2**num_control_wires / depth)))
+    num_control_select_wires = math.ceil_log2(2**num_control_wires / depth)
 
     new_ops_reps = reduce(
         lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()]

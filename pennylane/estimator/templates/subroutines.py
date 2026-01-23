@@ -27,6 +27,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
@@ -1204,7 +1205,7 @@ class UnaryIterationQPE(ResourceOperator):
         self.adj_qft_cmpr_op = adj_qft_cmpr_op
         self.num_iterations = num_iterations
 
-        self.num_wires = int(math.ceil(math.log2(num_iterations + 1))) + walk_op.num_wires
+        self.num_wires = ceil_log2(num_iterations + 1) + walk_op.num_wires
 
         wires = Wires([]) if wires is None else Wires(wires)
         walk_wires = Wires([]) if walk_op.wires is None else walk_op.wires
@@ -1273,7 +1274,7 @@ class UnaryIterationQPE(ResourceOperator):
             "num_iterations": num_iterations,
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
-        num_wires = int(math.ceil(math.log2(num_iterations + 1))) + cmpr_walk_op.num_wires
+        num_wires = ceil_log2(num_iterations + 1) + cmpr_walk_op.num_wires
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
@@ -1304,7 +1305,7 @@ class UnaryIterationQPE(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        num_wires = int(math.ceil(math.log2(num_iterations + 1)))
+        num_wires = ceil_log2(num_iterations + 1)
 
         # extract prep and select from walk operator:
         prep_op = cmpr_walk_op.params["prep_op"]
@@ -1997,7 +1998,7 @@ class Select(ResourceOperator):
         _dequeue(op_to_remove=ops)
         self.queue()
         num_select_ops = len(ops)
-        num_ctrl_wires = math.ceil(math.log2(num_select_ops))
+        num_ctrl_wires = ceil_log2(num_select_ops)
 
         try:
             cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -2053,7 +2054,7 @@ class Select(ResourceOperator):
         r_elbow = resource_rep(qre.Adjoint, {"base_cmpr_op": l_elbow})
 
         num_ops = len(cmpr_ops)
-        work_qubits = math.ceil(math.log2(num_ops)) - 1
+        work_qubits = ceil_log2(num_ops) - 1
 
         gate_types.append(Allocate(work_qubits))
         for cmp_rep in cmpr_ops:
@@ -2094,7 +2095,7 @@ class Select(ResourceOperator):
         x = qre.X.resource_rep()
 
         num_ops = len(cmpr_ops)
-        num_ctrl_wires = int(qnp.ceil(qnp.log2(num_ops)))
+        num_ctrl_wires = ceil_log2(num_ops)
         num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
 
         num_zero_controls = num_total_ctrl_possibilities // 2
@@ -2139,7 +2140,7 @@ class Select(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        num_ctrl_wires = math.ceil(math.log2(len(cmpr_ops)))
+        num_ctrl_wires = ceil_log2(len(cmpr_ops))
         fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
 
         num_wires = num_wires or fewest_unique_wires + num_ctrl_wires
@@ -2213,7 +2214,7 @@ class QROM(ResourceOperator):
     def _t_optimized_select_swap_width(num_bitstrings, size_bitstring):
         opt_width_continuous = math.sqrt((2 / 3) * (num_bitstrings / size_bitstring))
         w1 = 2 ** math.floor(math.log2(opt_width_continuous))
-        w2 = 2 ** math.ceil(math.log2(opt_width_continuous))
+        w2 = 2 ** ceil_log2(opt_width_continuous)
 
         w1 = 1 if w1 < 1 else w1
         w2 = 1 if w2 < 1 else w2  # The continuous solution could be non-physical
@@ -2239,7 +2240,7 @@ class QROM(ResourceOperator):
         self.size_bitstring = size_bitstring
         self.num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring // 2)
 
-        self.num_control_wires = math.ceil(math.log2(num_bitstrings))
+        self.num_control_wires = ceil_log2(num_bitstrings)
         self.num_wires = size_bitstring + self.num_control_wires
 
         if select_swap_depth is not None:
@@ -2305,14 +2306,14 @@ class QROM(ResourceOperator):
         """
 
         if select_swap_depth:
-            max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
+            max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
         W_opt = select_swap_depth or cls._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
         L_opt = math.ceil(num_bitstrings / W_opt)
-        l = math.ceil(math.log2(L_opt))
+        l = ceil_log2(L_opt)
 
         gate_cost = []
         num_alloc_wires = (W_opt - 1) * size_bitstring  # Swap registers
@@ -2383,14 +2384,14 @@ class QROM(ResourceOperator):
     ):
         r"""The resource decomposition for QROM controlled on a single wire."""
         if select_swap_depth:
-            max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
+            max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
         W_opt = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
         L_opt = math.ceil(num_bitstrings / W_opt)
-        l = math.ceil(math.log2(L_opt))
+        l = ceil_log2(L_opt)
 
         gate_cost = []
         num_alloc_wires = (W_opt - 1) * size_bitstring  # Swap registers
@@ -2439,7 +2440,7 @@ class QROM(ResourceOperator):
 
         # SWAP cost:
         if W_opt > 1:
-            w = math.ceil(math.log2(W_opt))
+            w = ceil_log2(W_opt)
             ctrl_swap = qre.CSWAP.resource_rep()
             gate_cost.append(Allocate(1))  # need one temporary qubit for l/r-elbow to control SWAP
 
@@ -2655,16 +2656,16 @@ class QROM(ResourceOperator):
 
         # Compute the width (output + swap registers) and length (unary iter entries) of the QROM
         if select_swap_depth:
-            max_depth = 2 ** math.ceil(math.log2(num_bitstrings))
+            max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
-        num_qubits_l = math.ceil(math.log2(k))  # number of qubits in |l> register
+        num_qubits_l = ceil_log2(k)  # number of qubits in |l> register
 
         num_cols = math.ceil(num_bitstrings / k)  # number of columns of data
-        num_qubits_h = math.ceil(math.log2(num_cols))  # number of qubits in |h> register
+        num_qubits_h = ceil_log2(num_cols)  # number of qubits in |h> register
 
         ## Measure output register, reset qubits and construct fixup table
         gate_lst.append(qre.GateCount(had, size_bitstring))  # Figure 5.
@@ -2762,7 +2763,7 @@ class QROM(ResourceOperator):
             "select_swap_depth": select_swap_depth,
             "restored": restored,
         }
-        num_wires = size_bitstring + math.ceil(math.log2(num_bitstrings))
+        num_wires = size_bitstring + ceil_log2(num_bitstrings)
         return CompressedResourceOp(cls, num_wires, params)
 
 
@@ -2929,7 +2930,7 @@ class SelectPauliRot(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        num_prec_wires = math.ceil(math.log2(math.pi / precision)) + 1
+        num_prec_wires = ceil_log2(math.pi / precision) + 1
         gate_lst = []
 
         qrom = resource_rep(
