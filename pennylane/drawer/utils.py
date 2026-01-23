@@ -18,6 +18,7 @@ This module contains some useful utility functions for circuit drawing.
 import numpy as np
 
 from pennylane.measurements import MeasurementProcess
+from pennylane.operation import Operator
 from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
 
 
@@ -297,3 +298,25 @@ def transform_deferred_measurements_tape(tape):
         return new_tape
 
     return tape
+
+
+def mark(op: Operator, label: str) -> Operator:
+    """Marks an operator instance with a custom label.
+
+    Args:
+        op (Operator): PennyLane operator instance.
+        label (str): Label to tag the operator instance with.
+
+    **Example**
+
+    >>> op = qml.RX(3.14, wires=0)
+    >>> print(op.label())
+    RX
+    >>> op_tagged = mark(op, label="custom_rx")
+    >>> print(op_tagged.label())
+    RX
+    ("custom_rx")
+
+    """
+    op.tag = label
+    return op

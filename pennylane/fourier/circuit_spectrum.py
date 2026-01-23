@@ -102,6 +102,7 @@ def circuit_spectrum(
     .. code-block:: python
 
         import pennylane as qml
+        from pennylane.drawer.utils import mark
         import numpy as np
 
         n_layers = 2
@@ -112,9 +113,9 @@ def circuit_spectrum(
         def circuit(x, w):
             for l in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x[i], wires=i, id="x"+str(i))
+                    mark(qml.RX(x[i], wires=i), label="x"+str(i))
                     qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
-            qml.RZ(x[0], wires=0, id="x0")
+            mark(qml.RZ(x[0], wires=0), label="x0")
             return qml.expval(qml.Z(0))
 
         x = np.array([1, 2, 3])
@@ -148,9 +149,9 @@ def circuit_spectrum(
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[0], wires=0, id="x0")
-            qml.RX(x[1], wires=0, id="x1")
+            mark(qml.RX(x[0], wires=0), label="x0")
+            mark(qml.PhaseShift(x[0], wires=0), label="x0")
+            mark(qml.RX(x[1], wires=0), label="x1")
             return qml.expval(qml.Z(0))
 
         x = np.array([1, 2])
@@ -173,8 +174,8 @@ def circuit_spectrum(
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[1], wires=0, id="x1")
+            mark(qml.RX(x[0], wires=0), label="x0")
+            mark(qml.PhaseShift(x[1], wires=0), label="x1")
             return qml.expval(qml.Z(0))
 
         x = torch.tensor([1, 2])

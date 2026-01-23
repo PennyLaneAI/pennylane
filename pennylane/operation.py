@@ -1016,6 +1016,16 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return self._name
 
     @property
+    def tag(self):
+        """Custom tag for the operator instance."""
+        return getattr(self, "_tag", None)
+
+    @tag.setter
+    def tag(self, value):
+        """Setter for custom tag."""
+        self._tag = value
+
+    @property
     def id(self) -> str:
         """Custom string to label a specific operator instance.
 
@@ -1096,7 +1106,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         op_label = base_label or self.__class__.__name__
 
         if self.num_params == 0:
-            return op_label if self.id is None else f'{op_label}("{self.id}")'
+            return op_label if self.tag is None else f'{op_label}("{self.tag}")'
 
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
@@ -1126,12 +1136,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         # Format each parameter individually, excluding those that lead to empty strings
         param_strings = [out for p in self.parameters if (out := _format(p)) != ""]
         inner_string = ",\n".join(param_strings)
-        # Include operation's id in string
-        if self.id is not None:
+        # Include operation's tag in string
+        if self.tag is not None:
             if inner_string == "":
-                inner_string = f'"{self.id}"'
+                inner_string = f'"{self.tag}"'
             else:
-                inner_string = f'{inner_string},"{self.id}"'
+                inner_string = f'{inner_string},"{self.tag}"'
         if inner_string == "":
             return f"{op_label}"
         return f"{op_label}\n({inner_string})"
