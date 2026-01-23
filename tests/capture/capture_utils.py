@@ -22,4 +22,5 @@ def extract_ops_and_meas_prims(jaxpr):
         eqn
         for eqn in jaxpr.eqns
         if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
+        or getattr(eqn.primitive, "name", "") == "measure"
     ]
