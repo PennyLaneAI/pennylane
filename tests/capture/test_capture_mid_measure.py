@@ -385,22 +385,30 @@ class TestMidMeasureExecute:
             return mp_fn(op=[m1, m2] if multi_mcm else m1)
 
         if shots:
-            # results are probabilistic and difficult to compare
             res = f(phi, phi + 1.5)
             qml.capture.disable()
             expected = f(phi, phi + 1.5)
             qml.capture.enable()
-            # Note: Comparing TWO independent estimates doubles variance.
-            # Var(res - expected) = Var(res) + Var(expected) = 2/shots (for unit-variance obs)
-            # σ_diff = sqrt(2/shots)
-            # Using 3σ tolerance: atol = 3 * sqrt(2/shots) for <1% failure rate.
-            atol = 3 * qml.math.sqrt(2.0 / shots)
+
+            # Comparing TWO independent estimates of MCM bits {0, 1}:
+            # Max variance for a bit: Var(M) = 0.25 (Bernoulli at p=0.5)
+            # Variance of difference: Var(res - expected) = Var(res) + Var(expected)
+            #                       = max_var/shots + max_var/shots = 2 * max_var / shots
+            # Standard deviation of difference:
+            max_var_bit = 0.25
+            var_diff = 2 * max_var_bit / shots
+            std_diff = qml.math.sqrt(var_diff)
+            # Use 3σ tolerance for <1% failure rate:
+            atol = 3 * std_diff
+
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0.1)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0.1)
+                # Var(M) = <M> - <M>^2. Max slope vs <M> is 1. Error scales similarly.
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0.1)
+                # Probs are values in [0, 1] with max variance 0.25 per bin.
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
@@ -430,23 +438,34 @@ class TestMidMeasureExecute:
             return mp_fn(op=qml.Z(0))
 
         if shots:
-            # results are probabilistic and difficult to compare
             res = f(phi, phi + 1.5)
             qml.capture.disable()
             expected = f(phi, phi + 1.5)
             qml.capture.enable()
-            # Note: Comparing TWO independent estimates doubles variance.
-            # Var(res - expected) = Var(res) + Var(expected) = 2/shots (for unit-variance obs)
-            # σ_diff = sqrt(2/shots)
-            # Using 3σ tolerance: atol = 3 * sqrt(2/shots) for <1% failure rate.
-            # See .benchmarks/test_circuit_with_boolean_arithmetic_execution/
-            atol = 3 * qml.math.sqrt(2.0 / shots)
+
+            # Comparing TWO independent estimates of Pauli Z eigenvalues {-1, 1}:
+            # Max variance for Z: Var(Z) = 1.0 (at <Z>=0)
+            # Variance of difference: Var(res - expected) = Var(res) + Var(expected)
+            # = max_var/shots + max_var/shots = 2 * max_var / shots
+            # Standard deviation of difference:
+            max_var_z = 1.0
+            var_diff = 2 * max_var_z / shots
+            std_diff = qml.math.sqrt(var_diff)
+            # Use 3σ tolerance for <1% failure rate:
+            atol = 3 * std_diff
+
             if mp_fn is qml.expval:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0.2)
+                assert qml.math.allclose(res, expected, atol=atol, rtol=0)
             elif mp_fn is qml.var:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0.2)
+                # Var(Z) = 1 - <Z>^2. Max slope vs <Z> is 2. Error is ~2x expval error.
+                assert qml.math.allclose(res, expected, atol=2 * atol, rtol=0)
             elif mp_fn is qml.probs:
-                assert qml.math.allclose(res, expected, atol=atol, rtol=0.2)
+                # Probs are [0,1] bins -> back to bit statistics (max var 0.25).
+                max_var_bit = 0.25
+                var_diff_probs = 2 * max_var_bit / shots
+                std_diff_probs = qml.math.sqrt(var_diff_probs)
+                atol_probs = 3 * std_diff_probs
+                assert qml.math.allclose(res, expected, atol=atol_probs, rtol=0)
             else:
                 # mp_fn is qml.sample
                 assert not (jnp.all(res == 1) or jnp.all(res == -1))
