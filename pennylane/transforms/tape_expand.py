@@ -14,9 +14,11 @@
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
 # pylint: disable=unused-argument
+import warnings
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 
 
@@ -83,6 +85,15 @@ def create_expand_fn(depth, stop_at=None, device=None, gate_set=None, docstring=
     1: ──RX(-2.4)──RZ(-3.1)───────────RY(0.7)──RZ(1.4)─┤
 
     """
+
+    warnings.warn(
+        """
+        The create_expand_fn is deprecated in PennyLane v0.45 and will be removed in v0.46.
+        Please use the qml.transforms.decompose function for decomposing circuits.
+        """,
+        PennyLaneDeprecationWarning,
+    )
+
     # pylint: disable=unused-argument
     if device is not None:
         if stop_at is None:

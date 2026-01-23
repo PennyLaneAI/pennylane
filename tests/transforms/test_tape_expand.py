@@ -22,6 +22,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
@@ -58,16 +59,26 @@ class TestCreateExpandFn:
 
     def test_create_expand_fn(self):
         """Test creation of expand_fn."""
-        expand_fn = qml.transforms.create_expand_fn(
-            depth=10,
-            stop_at=crit_0,
-            docstring=self.doc_0,
-        )
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expand_fn = qml.transforms.create_expand_fn(
+                depth=10,
+                stop_at=crit_0,
+                docstring=self.doc_0,
+            )
         assert expand_fn.__doc__ == "Test docstring."
+
+    def test_create_expand_fn_deprecated(self):
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            _ = qml.transforms.create_expand_fn(
+                depth=10,
+                stop_at=crit_0,
+                docstring=self.doc_0,
+            )
 
     def test_create_expand_fn_expansion(self):
         """Test expansion with created expand_fn."""
-        expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=crit_0)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expand_fn = qml.transforms.create_expand_fn(depth=10, stop_at=crit_0)
         new_tape = expand_fn(self.tape)
         assert new_tape.operations[0] == self.tape.operations[0]
         assert new_tape.operations[1] == self.tape.operations[1]
@@ -77,7 +88,8 @@ class TestCreateExpandFn:
 
     def test_create_expand_fn_dont_expand(self):
         """Test expansion is skipped with depth=0."""
-        expand_fn = qml.transforms.create_expand_fn(depth=0, stop_at=crit_0)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expand_fn = qml.transforms.create_expand_fn(depth=0, stop_at=crit_0)
 
         new_tape = expand_fn(self.tape)
         assert new_tape.operations == self.tape.operations
@@ -87,7 +99,8 @@ class TestCreateExpandFn:
         that all operations are expanded to match the devices default gate
         set"""
         dev = DefaultQubitLegacy(wires=1)
-        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=crit_0)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=crit_0)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.U1(0.2, wires=0)
@@ -103,7 +116,8 @@ class TestCreateExpandFn:
         """Test that passing a device ensures that all operations are expanded
         to match the devices default gate set"""
         dev = DefaultQubitLegacy(wires=1)
-        expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.U1(0.2, wires=0)

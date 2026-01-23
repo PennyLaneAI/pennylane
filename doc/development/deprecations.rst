@@ -15,6 +15,12 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
+* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
   :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
