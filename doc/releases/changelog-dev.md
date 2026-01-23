@@ -149,6 +149,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removed unused TensorFlow backend tests from the test suite.
+  [(#8968)](https://github.com/PennyLaneAI/pennylane/pull/8968)
+
 * Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
   [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
