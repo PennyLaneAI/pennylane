@@ -277,7 +277,7 @@ class Subroutine:
             return (x, wires, tuple(pauli_words)), {}
 
         @partial(Subroutine, static_argnames="pauli_words", setup_inputs=setup_inputs)
-        def WithSetup(x, wires, pauli_words: Sequence[str]):
+        def WithSetup(x, wires, pauli_words: list[str] | tuple[str,...]):
             for word in pauli_words:
                 qml.PauliRot(x, word, wires)
 
@@ -286,6 +286,29 @@ class Subroutine:
     0: ─╭WithSetup─┤
     1: ─╰WithSetup─┤
 
+    While not currently integrated, a function to compute the resources can also be provided.
+    The calculation of resources should only depend on the static arguments, the number of wires
+    in each register, and the shape and ``dtype`` of the dynamic arguments. This will allow
+    the calculation of the resources to performed in an abstract way.
+
+    .. code-block::
+
+        def RXLayerResources(params, wires):
+            return {qml.RX: qml.math.shape(params)[0]}
+
+        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        def RXLayer(params, wires):
+            for i in range(params.shape[0]):
+                qml.RX(params[i], wires[i])
+
+    For example, we should be able to calculate the resources using JAX's ``jax.core.ShapedArray``
+    instead of concrete array with real values.
+
+    >>> import jax
+    >>> abstract_params = jax.core.ShapedArray((10,), float)
+    >>> abstract_wires = jax.core.ShapedArray((10,), int)
+    >>> RXLayer.compute_resources(abstract_params, abstract_wires)
+    {pennylane.ops.qubit.parametric_ops_single_qubit.RX: 10}
 
     """
 
