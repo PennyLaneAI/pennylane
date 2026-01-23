@@ -1402,7 +1402,9 @@ class TestExecution:
         def stop_fn(op):
             return isinstance(op, qml.measurements.MeasurementProcess) or stopping_condition(op)
 
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=stop_fn)
+        tapes, func = decompose(
+            tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=stop_fn
+        )
         tape = func(tapes)
         res = dev.execute(tape)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
