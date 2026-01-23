@@ -153,7 +153,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         available.
 
     .. seealso::
-        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
+        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_ and
         :func:`catalyst.passes.ppm_compilation` for compiling these circuits with Catalyst.
 
     Args:
