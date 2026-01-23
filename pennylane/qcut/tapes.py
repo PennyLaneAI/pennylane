@@ -28,8 +28,8 @@ from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from ..decomposition import gate_sets
-from ..transforms import decompose
+from pennylane.decomposition import gate_sets
+from pennylane.transforms import decompose
 from .ops import MeasureNode, PrepareNode
 
 
