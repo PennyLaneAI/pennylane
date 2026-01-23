@@ -481,7 +481,10 @@ class DefaultClifford(Device):
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
             compile_pileline.add_transform(
-                decompose, stopping_condition=operation_stopping_condition, name=self.name
+                decompose,
+                target_gates=set(_OPERATIONS_MAP.keys()),
+                stopping_condition=operation_stopping_condition,
+                name=self.name,
             )
             compile_pileline.add_transform(_validate_channels, name=self.name)
         compile_pileline.add_transform(

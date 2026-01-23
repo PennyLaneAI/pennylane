@@ -28,6 +28,8 @@ from pennylane.transforms.decompose import _operator_decomposition_gen, decompos
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
 
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 @pytest.fixture(autouse=True)
 def warnings_as_errors():
@@ -67,6 +69,24 @@ class InfiniteOp(Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
+@pytest.mark.unit
+def test_fixed_alt_decomps_not_available():
+    """Test that a TypeError is raised when graph is disabled and
+    fixed_decomps or alt_decomps is used."""
+
+    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    def my_cnot(*_, **__):
+        raise NotImplementedError
+
+    tape = qml.tape.QuantumScript([])
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.transforms.decompose(tape, fixed_decomps={qml.CNOT: my_cnot})
+
+    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
+        qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
+
+
 class TestDecompose:
     """Unit tests for decompose function"""
 
@@ -101,10 +121,7 @@ class TestDecompose:
             [qml.Hadamard(0)],
             {qml.RX: 1, qml.RZ: 2},
             [qml.RZ(qnp.pi / 2, 0), qml.RX(qnp.pi / 2, 0), qml.RZ(qnp.pi / 2, 0)],
-            {
-                "type": UserWarning,
-                "msg": "Gate weights were provided to a non-graph-based decomposition.",
-            },
+            None,
         ),
         (
             [qml.Toffoli([0, 1, 2]), qml.ops.MidMeasure(0)],
@@ -152,15 +169,8 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        if isinstance(gate_set, dict):
-            with pytest.raises(
-                UserWarning, match="Gate weights were provided to a non-graph-based decomposition."
-            ):
-                (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-                qml.assert_equal(tape, decomposed_tape)
-        else:
-            (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-            qml.assert_equal(tape, decomposed_tape)
+        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+        qml.assert_equal(tape, decomposed_tape)
 
     def test_stopping_cond_without_gate_set(self):
         gate_set = None

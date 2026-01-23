@@ -256,15 +256,6 @@ class StronglyEntanglingLayers(Operation):
 
         return n_layers, n_wires, 3
 
-    # pylint:disable = no-value-for-parameter
-    @staticmethod
-    def compute_qfunc_decomposition(
-        weights, *wires, ranges, imprimitive
-    ):  # pylint: disable=arguments-differ
-        wires = math.array(wires, like="jax")
-        ranges = math.array(ranges, like="jax")
-        _strongly_entangling_decomposition(weights, wires, ranges, imprimitive)
-
 
 def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
     resources = {}
