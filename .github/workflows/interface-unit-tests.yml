@@ -235,7 +235,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).torch-tests
@@ -273,7 +273,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).autograd-tests
@@ -307,7 +307,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
@@ -346,7 +346,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).capture-jax-tests
@@ -387,7 +387,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).core-tests
@@ -425,7 +425,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).all-interfaces-tests
@@ -464,7 +464,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
@@ -508,7 +508,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
@@ -548,7 +548,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qchem-tests
@@ -585,7 +585,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradients-tests
@@ -626,7 +626,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).data-tests
@@ -663,7 +663,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).device-tests
