@@ -1096,7 +1096,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         op_label = base_label or self.__class__.__name__
 
         if self.num_params == 0:
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
+            return op_label if self.id is None else f'{op_label}("{self.id}")'
 
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
@@ -1127,11 +1127,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         param_strings = [out for p in self.parameters if (out := _format(p)) != ""]
         inner_string = ",\n".join(param_strings)
         # Include operation's id in string
-        if self._id is not None:
+        if self.id is not None:
             if inner_string == "":
-                inner_string = f'"{self._id}"'
+                inner_string = f'"{self.id}"'
             else:
-                inner_string = f'{inner_string},"{self._id}"'
+                inner_string = f'{inner_string},"{self.id}"'
         if inner_string == "":
             return f"{op_label}"
         return f"{op_label}\n({inner_string})"
