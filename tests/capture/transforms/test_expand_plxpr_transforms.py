@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 from pennylane.capture import expand_plxpr_transforms
 from pennylane.capture.expand_transforms import ExpandTransformsInterpreter
 from pennylane.capture.primitives import transform_prim
-from tests.capture.utils import extract_ops_and_meas_prims
+from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

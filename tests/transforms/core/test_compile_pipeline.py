@@ -35,7 +35,7 @@ from pennylane.transforms.core.compile_pipeline import (
     null_postprocessing,
 )
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
-from tests.capture.utils import extract_ops_and_meas_prims
+from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 
 def first_valid_transform(

@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.exceptions import CaptureError, QuantumFunctionError
-from tests.capture.utils import extract_ops_and_meas_prims
+from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
