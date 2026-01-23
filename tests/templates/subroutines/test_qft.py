@@ -146,11 +146,11 @@ class TestQFT:
 
 @pytest.mark.jax
 @pytest.mark.capture
-@pytest.mark.usefixtures("enable_graph_decomposition")
 # pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
         import jax
@@ -236,6 +236,7 @@ class TestDynamicDecomposition:
 
         assert qml.math.allclose(*result, result_comparison)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("wires", [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3]])
     def test_qft_new_decomposition(self, wires):
         """Test that QFT gives the correct decomposition in the graph-based system."""
