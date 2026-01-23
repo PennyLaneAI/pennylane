@@ -4,12 +4,6 @@
 name: Update Durations
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: The branch to run the tests against
-        required: false
-        type: string
-        default: master  
   # Scheduled trigger every Saturday at 2:47am UTC
   schedule:
   - cron: '47 2 * * 6'
@@ -24,7 +18,7 @@ jobs:
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
-      branch: ${{ inputs.branch }}
+      branch: master
       upload_to_codecov: false
       run_lightened_ci: true
       skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
