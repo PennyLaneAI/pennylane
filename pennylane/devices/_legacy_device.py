@@ -592,12 +592,11 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         expand_state_prep = any(isinstance(op, StatePrepBase) for op in circuit.operations[1:])
 
         if expand_state_prep:  # expand mid-circuit StatePrepBase operations
-            circuits, func = decompose(
+            [circuit], _ = decompose(
                 circuit,
                 gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
                 stopping_condition=lambda op: not isinstance(op, StatePrepBase),
             )
-            circuit = func(circuits)
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
@@ -609,8 +608,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if obs_on_same_wire:
-            circuits, func = decompose(circuit, stopping_condition=self.stopping_condition)
-            circuit = func(circuits)
+            [circuit], _ = decompose(circuit, stopping_condition=self.stopping_condition)
 
         elif ops_not_supported:
             circuits, func = decompose(

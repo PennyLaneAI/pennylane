@@ -136,12 +136,11 @@ class TestBarrier:
             return qml.state()
 
         tape = qml.workflow.construct_tape(circuit)()
-        tapes, func = decompose(
+        [tape], _ = decompose(
             tape,
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             stopping_condition=lambda op: op.name in ["Barrier", "PauliX", "CNOT"],
         )
-        tape = func(tapes)
 
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"

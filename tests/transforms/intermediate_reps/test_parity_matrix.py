@@ -47,8 +47,7 @@ class TestParityMatrix:
     def test_parity_matrix(self, circ, P_true):
         """Test parity matrix computation"""
 
-        circs, func = decompose(circ, gate_set={"CNOT"})
-        circ = func(circs)
+        [circ], _ = decompose(circ, gate_set={"CNOT"})
 
         P = parity_matrix(circ, wire_order=range(len(circ.wires)))
 

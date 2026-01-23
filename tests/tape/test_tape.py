@@ -922,12 +922,11 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tapes, func = decompose(
+        [new_tape], _ = decompose(
             tape,
             gate_set={"Rot", "RZ"},
             stopping_condition=lambda obj: getattr(obj, "name", None) in ["Rot"],
         )
-        new_tape = func(new_tapes)
         assert len(new_tape.operations) == 4
         assert "Rot" in [i.name for i in new_tape.operations]
         assert "U3" not in [i.name for i in new_tape.operations]
@@ -1402,10 +1401,9 @@ class TestExecution:
         def stop_fn(op):
             return isinstance(op, qml.measurements.MeasurementProcess) or stopping_condition(op)
 
-        tapes, func = decompose(
+        [tape], _ = decompose(
             tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=stop_fn
         )
-        tape = func(tapes)
         res = dev.execute(tape)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
 

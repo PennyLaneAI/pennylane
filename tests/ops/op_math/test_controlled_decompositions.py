@@ -862,10 +862,9 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, func = qml.transforms.decompose(
+        [tape], _ = qml.transforms.decompose(
             tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1
         )
-        tape = func(tapes)
 
         @qml.qnode(dev)
         def f(bitstring):

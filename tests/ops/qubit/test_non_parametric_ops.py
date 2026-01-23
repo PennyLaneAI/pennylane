@@ -728,8 +728,7 @@ class TestMultiControlledX:
                 control_values=control_values,
             )
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, func = decompose(tape, max_expansion=1, gate_set={"CNOT", "X"})
-        tape = func(tapes)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT", "X"})
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -761,8 +760,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, func = decompose(tape, max_expansion=2, gate_set={"CNOT"})
-        tape = func(tapes)
+        [tape], func = decompose(tape, max_expansion=2, gate_set={"CNOT"})
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -795,8 +793,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, func = decompose(tape, max_expansion=1, gate_set={"CNOT"})
-        tape = func(tapes)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT"})
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
