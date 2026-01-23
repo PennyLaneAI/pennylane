@@ -17,11 +17,6 @@ import pytest
 
 from pennylane import math as fn
 
-# pytestmark = pytest.mark.all_interfaces
-# torch = pytest.importorskip("torch")
-# jax = pytest.importorskip("jax")
-# jnp = pytest.importorskip("jax.numpy")
-
 
 @pytest.mark.parametrize(
     ("binary_matrix", "result"),
@@ -163,5 +158,5 @@ class TestBinaryRank:
         rk_direct = fn.binary_rank(binary_matrix)
 
         rref = fn.binary_finite_reduced_row_echelon(binary_matrix)
-        rk_from_rref = len(rref) - np.sum(np.all(rref == 0, axis=1))
+        rk_from_rref = np.sum(np.any(rref, axis=1))
         assert rk_direct == rk_from_rref
