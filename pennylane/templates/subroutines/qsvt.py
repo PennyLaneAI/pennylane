@@ -1077,11 +1077,9 @@ def _compute_qsp_angles_inlfft(poly):
 
     #Weiss Algorithm first
     coef=poly
-    print(coef)
     eta=.5
     coef=-1*coef
     parity=int(len(coef)%2) #parity of polynomial
-    print(parity)
     if parity == 0:    
         coef[0] = coef[0]*2  
 
@@ -1109,13 +1107,11 @@ def _compute_qsp_angles_inlfft(poly):
         AN = np.fft.fft(np.conjugate(np.exp(G)))/N
         thd = np.square(np.linalg.norm(AN[int(np.floor(N/4))-1:int(np.ceil(N*3/4))]))/np.square(np.linalg.norm(AN))
         N = N * 3
-    print(AN)
     #inverse nonlinear fast fourier transform call
     ac = np.real(AN[0:d+1])# % coefficient of a^*(z)
     F2, xi1, eta1 = _inlft(ac,bc[::-1]);
     phi = np.atan(F2[::-1])
     qsp_phase=np.concatenate((phi[1::2][::-1],phi[1::2]))+np.concatenate((np.zeros(len(phi)-1),[np.pi/2]))
-    print(qsp_phase[:5])
     return qsp_phase
 
 def _gqsp_u3_gate(theta, phi, lambd):
