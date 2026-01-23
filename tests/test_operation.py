@@ -1327,7 +1327,7 @@ class TestOperatorIntegration:
     @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_label_for_operations_with_id(self):
         """Test that the label is correctly generated for an operation that has been marked"""
-        op = mark(qml.RX(1.344, wires=0), label="test_with_mark")
+        op = mark(qml.RX(1.344, wires=0), tag="test_with_mark")
         assert '"test_with_mark"' in op.label()
         assert '"test_with_mark"' in op.label(decimals=2)
 

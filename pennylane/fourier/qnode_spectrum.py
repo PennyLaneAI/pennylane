@@ -359,10 +359,10 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
             @qml.qnode(dev)
             def circuit(x, y, z):
-                mark(qml.RX(0.5*x**2, wires=0), label="x")
-                mark(qml.RY(2.3*y, wires=1), label="y0")
+                mark(qml.RX(0.5*x**2, wires=0), tag="x")
+                mark(qml.RY(2.3*y, wires=1), tag="y0")
                 qml.CNOT(wires=[1,0])
-                mark(qml.RY(z, wires=0), label="y1")
+                mark(qml.RY(z, wires=0), tag="y1")
                 return qml.expval(qml.Z(0))
 
         First, note that we assigned ``id`` labels to the gates for which we will use
@@ -389,7 +389,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         Note that the values of the output are dictionaries instead of the spectrum lists, that
         they include the prefactors introduced by classical preprocessing, and
         that we would not be able to compute the advanced spectrum for ``x`` because it is
-        preprocessed non-linearly in the gate ``mark(qml.RX(0.5*x**2, wires=0), label="x")``.
+        preprocessed non-linearly in the gate ``mark(qml.RX(0.5*x**2, wires=0), tag="x")``.
 
     """
     # pylint: disable=too-many-branches

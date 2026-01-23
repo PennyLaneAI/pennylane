@@ -80,7 +80,7 @@ def draw(
         def circuit(a, w):
             qml.Hadamard(0)
             qml.CRX(a, wires=[0, 1])
-            mark(qml.Rot(*w, wires=[1]), label="arbitrary")
+            mark(qml.Rot(*w, wires=[1]), tag="arbitrary")
             qml.CRX(-a, wires=[0, 1])
             return qml.expval(qml.Z(0) @ qml.Z(1))
 

@@ -1071,7 +1071,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         'RX'
         >>> op.label(base_label="my_label")
         'my_label'
-        >>> op = mark(qml.RX(1.23456, wires=0), label="test_data")
+        >>> op = mark(qml.RX(1.23456, wires=0), tag="test_data")
         >>> op.label()
         'RX\n("test_data")'
         >>> op.label(decimals=2)
