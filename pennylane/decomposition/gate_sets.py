@@ -51,7 +51,7 @@ CLIFFORDD_T_PLUS_RZ.name = "Clifford+T+RZ"
 
 # All the PennyLane gates that are supported by PyZX. Note that PyZX also supports many more gates,
 # detailed here: https://pyzx.readthedocs.io/en/latest/notebooks/gates.html
-PYZX_SUPPORTED = GateSet(
+PYZX = GateSet(
     {
         ops.Z,
         ops.X,
