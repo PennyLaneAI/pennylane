@@ -24,6 +24,7 @@ from functools import lru_cache
 import numpy as np
 
 from pennylane.boolean_fn import BooleanFn
+from pennylane.decomposition import gate_sets
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
     ExpectationMP,
@@ -41,7 +42,6 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
 from pennylane.wires import Wires
 
-from pennylane.decomposition import gate_sets
 from .tracker import Tracker
 
 

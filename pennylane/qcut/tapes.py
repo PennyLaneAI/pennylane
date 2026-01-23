@@ -20,16 +20,16 @@ from collections.abc import Callable, Sequence
 from itertools import product
 
 from pennylane import ops
+from pennylane.decomposition import gate_sets
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
 from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
 from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.tape import QuantumScript
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
-from pennylane.decomposition import gate_sets
-from pennylane.transforms import decompose
 from .ops import MeasureNode, PrepareNode
 
 
