@@ -18,6 +18,22 @@ import pytest
 from pennylane import math as fn
 
 
+def _make_random_regular_matrix(n, random_ops, seed):
+    """Create a random regular (=non-singular) binary matrix.
+    This is done by performing random row additions on the identity matrix, preserving
+    the regularity of the identity matrix itself.
+
+    In the picture of quantum circuits, we are computing the parity matrix of a random CNOT
+    circuit.
+    """
+    rng = np.random.default_rng(seed)
+    P = np.eye(n, dtype=int)
+    for _ in range(random_ops):
+        i, j = rng.choice(n, size=2, replace=False)  # Random pair of rows
+        P[i] += P[j]  # Add second sampled row to first sampled row
+    return P % 2  # Make into binary matrix
+
+
 @pytest.mark.parametrize(
     ("binary_matrix", "result"),
     [
@@ -105,6 +121,8 @@ def test_reduced_row_echelon(binary_matrix, result):
     # get reduced row echelon form from the implemented function
     rref_bin_mat = fn.binary_finite_reduced_row_echelon(binary_matrix)
 
+    assert rref_bin_mat.shape == binary_matrix.shape
+    assert set(rref_bin_mat.flat).issubset({0, 1})
     assert (rref_bin_mat == row_echelon_matrix).all()
     assert (rref_bin_mat == result).all()
 
@@ -160,3 +178,74 @@ class TestBinaryRank:
         rref = fn.binary_finite_reduced_row_echelon(binary_matrix)
         rk_from_rref = np.sum(np.any(rref, axis=1))
         assert rk_direct == rk_from_rref
+
+
+class TestSolveBinaryLinearSystem:
+    """Tests for the helper method ``solve_binary_linear_system``."""
+
+    @pytest.mark.parametrize(
+        "A, b, expected",
+        [
+            (np.eye(2, dtype=int), np.array([0, 0]), np.array([0, 0])),
+            (np.eye(4, dtype=int), np.array([0, 1, 1, 0]), np.array([0, 1, 1, 0])),
+            (np.array([[0, 1, 1], [1, 0, 1], [0, 1, 0]]), np.array([0, 0, 1]), np.array([1, 1, 1])),
+            (np.array([[1, 1, 1], [0, 0, 1], [0, 1, 0]]), np.array([1, 1, 1]), np.array([1, 1, 1])),
+            (np.array([[1, 1, 1], [0, 0, 1], [0, 1, 0]]), np.array([0, 1, 0]), np.array([1, 0, 1])),
+            (
+                np.array([[1, 1, 1, 1], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 1, 1]]),
+                np.array([1, 0, 0, 0]),
+                np.array([1, 0, 0, 0]),
+            ),
+            (
+                np.array([[1, 1, 1, 1], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 1, 1]]),
+                np.array([1, 0, 1, 1]),
+                np.array([0, 1, 0, 0]),
+            ),
+            (
+                np.array([[1, 1, 1, 1], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 1, 1]]),
+                np.array([1, 1, 1, 1]),
+                np.array([0, 0, 1, 0]),
+            ),
+            (
+                np.array([[1, 1, 1, 1], [0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 1, 1]]),
+                np.array([1, 1, 0, 1]),
+                np.array([0, 1, 1, 1]),
+            ),
+        ],
+    )
+    def test_with_regular_matrix(self, A, b, expected):
+        """Test that the system is solved for a regular matrix and coefficient vector b."""
+        # Input validation
+        assert fn.binary_rank(A) == len(A)  # Regular matrix
+        assert np.allclose((A @ expected) % 2, b)  # expected is a solution
+
+        x_sol = fn.solve_binary_linear_system(A, b)
+        assert x_sol.shape == b.shape and x_sol.dtype == np.int64
+        assert set(x_sol).issubset({0, 1})
+        assert np.allclose(x_sol, expected)  # Solution unique due to regularity, x_sol must match
+
+    @pytest.mark.parametrize(
+        "A, b",
+        [
+            (np.array([[1, 0], [0, 0]]), np.array([0, 1])),
+            (np.array([[1, 0], [1, 0]]), np.array([1, 0])),
+        ],
+    )
+    def test_with_singular_matrix_error(self, A, b):
+        """Test that an error is raised if a linear system has a singular matrix."""
+        with pytest.raises(np.linalg.LinAlgError, match="Singular binary matrix"):
+            _ = fn.solve_binary_linear_system(A, b)
+
+    @pytest.mark.parametrize("n", [1, 4, 5, 10, 13, 28, 102])
+    def test_with_random_regular_matrix(self, n, seed):
+        """Test that the system is solved correctly for a random regular matrix
+        of given dimension and reverse-engineered coefficient vector b."""
+        random_ops = n**2 if n > 1 else 0  # Can't do row operations in 1D.
+        A = _make_random_regular_matrix(n, random_ops, seed)
+        x = np.random.default_rng(seed + 1).integers(0, 2, size=(n,))
+        b = (A @ x) % 2
+        x_sol = fn.solve_binary_linear_system(A, b)
+        assert x_sol.shape == (n,) and x_sol.dtype == np.int64
+        assert set(x_sol).issubset({0, 1})
+        assert np.allclose((A @ x_sol) % 2, b)
+        assert np.allclose(x_sol, x)

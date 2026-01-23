@@ -20,7 +20,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-import pennylane as qml
+from pennylane.math import solve_binary_linear_system
+from pennylane.ops import CNOT
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -209,78 +210,6 @@ def _update(P: TensorLike, cnots: list[tuple[int]], control: int, target: int):
     return P, cnots
 
 
-def _solve_regular_linear_system_z2(A: np.ndarray, b: np.ndarray) -> np.ndarray:
-    r"""Solve the linear system of equations A.x=b over the Booleans/:math:`\mathbb{Z}_2`,
-    where A is assumed to be regular, i.e., non-singular.
-    This is a simple implementation based on the pseudocode
-    on Wikipedia https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
-    with simplifications based on the regularity of A (we always find a next pivot and have
-    static runtime) and on the Boolean number field we work over (this simplifies the logic
-    behind what a scalar multiple of a row can look like to Boolean program logic).
-
-    Args:
-        A (np.ndarray): Square matrix with coefficients (0 or 1).
-        b (np.ndarray): Coefficient vector with same length as ``A`` and entries 0 or 1.
-
-    Returns:
-        np.ndarray: Solution vector with same length as ``A`` and ``b`` and entries 0 or 1.
-
-    **Example**
-
-    Consider a simple regular Boolean matrix ``A`` and a coefficient vector ``b``:
-
-    >>> A = np.array([[1, 0, 0], [0, 1, 1], [1, 0, 1]])
-    >>> b = np.array([1, 1, 1])
-
-    Then we can solve the system ``A@x=b`` for ``x`` over :math:`\mathbb{Z}_2` with the
-    Gauss-Jordan elimination of the extended matrix ``A | b``. This is done by
-    ``_solve_regular_linear_system_z2``:
-
-    >>> from pennylane.transforms.intermediate_reps.rowcol import _solve_regular_linear_system_z2
-    >>> x = _solve_regular_linear_system_z2(A, b)
-    >>> print(x)
-    [1 1 0]
-
-    Indeed, we can verify that ``A@x=b`` (over :math:`\mathbb{Z}_2`):
-
-    >>> print(np.allclose((A @ x)%2, b))
-    True
-
-    Note that the solution is unique due to the assumption that ``A`` is regular. The regularity
-    is used in the algorithm to simplify its logic.
-    """
-    n = len(A)
-    # Create augmented matrix for Gauss-Jordan elimination.
-    # This also creates a copy so that the input ``A`` is not modified in place
-    A = np.hstack([A, b.reshape((n, 1))])
-    for k in range(n):
-        # Find next row with non-zero entry in ``k``th column
-        i_max = next(iter(i for i in range(k, n) if A[i, k] == 1), None)
-        # This only happens for underdetermined systems, whereas we assume A to be regular
-        if i_max is None:
-            raise ValueError(
-                "Did not find next pivot in Gauss-Jordan elimination, indicating a singular "
-                "matrix. Only regular matrices are supported by _solve_regular_linear_system_z2 "
-                f"in RowCol. Extended matrix at time of error:\n{A}"
-            )
-
-        # Swap rows
-        A[[k, i_max]] = A[[i_max, k]]
-
-        # Iterate through rows and add current row with index ``k`` to them if they
-        # have a 1 in the current column with index ``k``
-        for i in range(n):
-            if i == k:  # Exclude the ``k``th row itself
-                continue
-            if A[i, k] == 0:  # No need to do anything if the target entry already is zero
-                continue
-            # We use addition of rows modulo 2, which is implementable with bitwise xor, or ``^``.
-            A[i, k:] ^= A[k, k:]
-
-    # Solution is written into the last column of the (augmented) matrix
-    return A[:, -1]
-
-
 def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     # Find S (S') either by simply extracting a column or by solving a linear system for the row
     if mode == "column":
@@ -288,7 +217,7 @@ def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     else:
         e_i = np.zeros(len(P), dtype=int)
         e_i[idx] = 1
-        b = _solve_regular_linear_system_z2(P.T, e_i)
+        b = solve_binary_linear_system(P.T, e_i)
     S = set(np.where(b)[0])
     # Add the node ``idx`` itself
     S.add(idx)
@@ -438,7 +367,7 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
 
     cnots = _rowcol_parity_matrix(P, connectivity)
     circ = QuantumScript(
-        [qml.CNOT((wire_order[i], wire_order[j])) for (i, j) in cnots], tape.measurements
+        [CNOT((wire_order[i], wire_order[j])) for (i, j) in cnots], tape.measurements
     )
 
     def null_postprocessing(results):
