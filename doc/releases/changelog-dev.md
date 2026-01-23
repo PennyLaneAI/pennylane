@@ -144,6 +144,7 @@
 
 * Deprecate `id` argument to `qml.Operator`. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+  [(#8974)](https://github.com/PennyLaneAI/pennylane/pull/8974)
   
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
