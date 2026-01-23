@@ -204,10 +204,10 @@ jobs:
           echo "Listing files in ${{ inputs.pytest_test_directory }}:"
           ls -R ${{ inputs.pytest_test_directory }}
 
-      - name: Debug - PyTest Collection Check
-        env:
-          PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
-        run: python -m pytest --collect-only ${{ inputs.pytest_test_directory }} ${{ env.PYTEST_MARKER }}          
+      # - name: Debug - PyTest Collection Check
+      #   env:
+      #     PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
+      #   run: python -m pytest --collect-only ${{ inputs.pytest_test_directory }} ${{ env.PYTEST_MARKER }}          
 
       - name: Run PennyLane Unit Tests
         env:
