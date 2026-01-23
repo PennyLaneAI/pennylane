@@ -52,6 +52,97 @@ def test_flatten_unflatten():
     qml.assert_equal(op, new_op)
 
 
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:
+    """Tests the correctness of the template in a qnode."""
+
+    def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
+        """Checks the state is correct if the weights are zero."""
+
+        features = [np.pi, np.pi / 2, np.pi / 4, 0]
+        if n_subsystems == 1:
+            shp = (1, 1)
+        elif n_subsystems == 2:
+            shp = (1, 3)
+        else:
+            shp = (1, 2 * n_subsystems)
+
+        weights = np.zeros(shape=shp)
+
+        @qml.qnode(qubit_device)
+        def circuit(x=None):
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        target = [1, -1, 0, 1, 1]
+        assert np.allclose(res, target[:n_subsystems], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "weights, target",
+        [([[np.pi, 0, 0]], [1, 1]), ([[np.pi / 2, 0, 0]], [0, 0]), ([[0, 0, 0]], [-1, -1])],
+    )
+    def test_output_zz(self, weights, target, tol):
+        """Checks the output if the features and entangler weights are nonzero,
+        which makes the circuit only depend on the ZZ gate."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(2))
+            return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+        res = circuit(x=[np.pi / 2, np.pi / 2])
+
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "n_wires, features, weights, target",
+        [
+            (2, [0], [[0, 0, np.pi / 2]], [1, 0]),
+            (3, [0, 0], [[0, 0, 0, 0, 0, np.pi / 2]], [1, 1, 0]),
+        ],
+    )
+    def test_state_more_qubits_than_features(self, n_wires, features, weights, target, tol):
+        """Checks the state is correct if there are more qubits than features."""
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="Z")
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        res = circuit(x=features)
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        weights = np.random.random(size=(1, 6))
+        features = np.random.random(size=(3,))
+
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QAOAEmbedding(features, weights, wires=range(3))
+            return qml.expval(qml.Identity(0)), qml.state()
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.QAOAEmbedding(features, weights, wires=["z", "a", "k"])
+            return qml.expval(qml.Identity("z")), qml.state()
+
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -142,110 +233,6 @@ class TestDecomposition:
         assert gate_names[3] == get_name[local_field]
         assert gate_names[4] == get_name[local_field]
 
-    def test_exception_wrongrot(self):
-        """Verifies exception raised if the
-        rotation strategy is unknown."""
-
-        n_wires = 1
-        weights = np.zeros(shape=(1, 1))
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="A")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="did not recognize"):
-            circuit(x=[1])
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_state_zero_weights(self, qubit_device, n_subsystems, tol):
-        """Checks the state is correct if the weights are zero."""
-
-        features = [np.pi, np.pi / 2, np.pi / 4, 0]
-        if n_subsystems == 1:
-            shp = (1, 1)
-        elif n_subsystems == 2:
-            shp = (1, 3)
-        else:
-            shp = (1, 2 * n_subsystems)
-
-        weights = np.zeros(shape=shp)
-
-        @qml.qnode(qubit_device)
-        def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
-
-        res = circuit(x=features[:n_subsystems])
-        target = [1, -1, 0, 1, 1]
-        assert np.allclose(res, target[:n_subsystems], atol=tol, rtol=0)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    @pytest.mark.parametrize(
-        "weights, target",
-        [([[np.pi, 0, 0]], [1, 1]), ([[np.pi / 2, 0, 0]], [0, 0]), ([[0, 0, 0]], [-1, -1])],
-    )
-    def test_output_zz(self, weights, target, tol):
-        """Checks the output if the features and entangler weights are nonzero,
-        which makes the circuit only depend on the ZZ gate."""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(2))
-            return [qml.expval(qml.PauliZ(i)) for i in range(2)]
-
-        res = circuit(x=[np.pi / 2, np.pi / 2])
-
-        assert np.allclose(res, target, atol=tol, rtol=0)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    @pytest.mark.parametrize(
-        "n_wires, features, weights, target",
-        [
-            (2, [0], [[0, 0, np.pi / 2]], [1, 0]),
-            (3, [0, 0], [[0, 0, 0, 0, 0, np.pi / 2]], [1, 1, 0]),
-        ],
-    )
-    def test_state_more_qubits_than_features(self, n_wires, features, weights, target, tol):
-        """Checks the state is correct if there are more qubits than features."""
-
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="Z")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
-
-        res = circuit(x=features)
-        assert np.allclose(res, target, atol=tol, rtol=0)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 6))
-        features = np.random.random(size=(3,))
-
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.QAOAEmbedding(features, weights, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
-
-        @qml.qnode(dev2)
-        def circuit2():
-            qml.QAOAEmbedding(features, weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     DECOMP_PARAMS = [
         ([0], [[0, 0, np.pi / 2]], range(2), "X"),
         ([[0, 0]], [[[0, 0, 0, 0, 0, np.pi / 2]]], range(3), "X"),
@@ -285,9 +272,22 @@ class TestInputs:
 
         assert op.hyperparameters["local_field"] == expected
 
-    def test_exception_fewer_qubits_than_features(
-        self,
-    ):
+    def test_exception_wrongrot(self):
+        """Verifies exception raised if the rotation strategy is unknown."""
+
+        n_wires = 1
+        weights = np.zeros(shape=(1, 1))
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="A")
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="did not recognize"):
+            circuit(x=[1])
+
+    def test_exception_fewer_qubits_than_features(self):
         """Verifies that exception raised if there are fewer
         wires than features."""
 

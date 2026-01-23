@@ -13,14 +13,13 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
+# pylint: disable=unused-argument
 import warnings
 
 import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
-
-# pylint: disable=unused-argument
 
 
 def _update_trainable_params(tape):
