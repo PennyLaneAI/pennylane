@@ -410,7 +410,7 @@ def _qcut_expand_fn(
             return tape
 
     if max_depth > 0:
-        tapes, func = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        tapes, func = decompose(tape, gate_set=gate_sets.ALL_OPS)
         tape = func(tapes)
         return _qcut_expand_fn(tape, max_depth=max_depth - 1, auto_cutter=auto_cutter)
 
