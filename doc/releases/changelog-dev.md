@@ -145,7 +145,11 @@
 * Deprecate `id` argument to `qml.Operator`. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
   [(#8974)](https://github.com/PennyLaneAI/pennylane/pull/8974)
-  
+
+* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
+
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
   [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
@@ -186,6 +190,9 @@
 * Fixes a bug with `qml.estimator.templates.QSVT` which allows users to instantiate the class without
   providing wires. This is now consistent with the standard in the estimator module.
   [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
+
+* Fixes a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
+  [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
 
 <h3>Contributors ✍️</h3>
 
