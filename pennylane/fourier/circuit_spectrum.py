@@ -193,15 +193,15 @@ def circuit_spectrum(
         tape = tapes[0]
         freqs = {}
         for op in tape.operations:
-            id = op.id
+            tag = op.tag
 
-            # if the operator has no specific ID, move to the next
-            if id is None:
+            # if the operator has no specific tag, move to the next
+            if tag is None:
                 continue
 
             # if user has not specified encoding_gate id's,
-            # consider any id
-            is_encoding_gate = encoding_gates is None or id in encoding_gates
+            # consider any tag
+            is_encoding_gate = encoding_gates is None or tag in encoding_gates
 
             if is_encoding_gate:
                 if len(op.parameters) != 1:
@@ -212,21 +212,21 @@ def circuit_spectrum(
 
                 spec = get_spectrum(op, decimals=decimals)
 
-                # if id has been seen before, join this spectrum to another one
-                if id in freqs:
-                    spec = join_spectra(freqs[id], spec)
+                # if tag has been seen before, join this spectrum to another one
+                if tag in freqs:
+                    spec = join_spectra(freqs[tag], spec)
 
-                freqs[id] = spec
+                freqs[tag] = spec
 
         # Turn spectra into sorted lists and include negative frequencies
-        for id, spec in freqs.items():
+        for tag, spec in freqs.items():
             spec = sorted(spec)
-            freqs[id] = [-f for f in spec[:0:-1]] + spec
+            freqs[tag] = [-f for f in spec[:0:-1]] + spec
 
         # Add trivial spectrum for requested gate ids that are not in the circuit
         if encoding_gates is not None:
-            for id in set(encoding_gates).difference(freqs):
-                freqs[id] = []
+            for tag in set(encoding_gates).difference(freqs):
+                freqs[tag] = []
 
         return freqs
 
