@@ -31,7 +31,7 @@ def to_ppr_setup_inputs():
     Non-Clifford gates are defined as :math:`\exp(-{iP\tfrac{\pi}{8}})`.
 
     For more information on Pauli product measurements and Pauli product rotations, check out the
-    `compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`__.
+    `compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`__.
 
     The full list of supported gates and operations are
     ``qml.H``,
@@ -94,10 +94,11 @@ def to_ppr_setup_inputs():
     <BLANKLINE>
     Resource specifications:
         Total wire allocations: 2
-        Total gates: 8
+        Total gates: 11
         Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
+        GlobalPhase: 3
         PPR-pi/4: 6
         PPM: 1
         PPR-pi/8: 1
@@ -132,7 +133,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
         ``commute_ppr``.
 
     For more information on PPRs, check out the
-    `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
+    `Compilation Hub <https://pennylane.ai/compilation/pauli-product-rotations>`_.
 
     Args:
         fn (QNode): QNode to apply the pass to.
@@ -244,7 +245,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
         ``merge_ppr_ppm``.
 
     For more information on PPRs and PPMs, check out
-    the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
+    the `Compilation Hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
 
     Args:
         fn (QNode): QNode to apply the pass to
@@ -340,7 +341,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     (:math:`\theta = \tfrac{\pi}{4}`) are decomposed.
 
     For more information on PPRs and PPMs, check out
-    the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
+    the `Compilation Hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
 
     Args:
         qnode (QNode): QNode to apply the pass to.
@@ -464,7 +465,7 @@ def ppm_compilation_setup_inputs(
     :func:`~.transforms.commute_ppr` and :func:`~.transforms.merge_ppr_ppm` passes.
 
     For more information on PPRs and PPMs, check out
-    the `Compilation Hub <https://pennylane.ai/compilation/pauli-product-measurement>`_.
+    the `Compilation Hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
 
     Args:
         qnode (QNode, optional): QNode to apply the pass to. If ``None``, returns a decorator.
@@ -525,10 +526,11 @@ def ppm_compilation_setup_inputs(
     <BLANKLINE>
     Resource specifications:
     Total wire allocations: 8
-    Total gates: 22
+    Total gates: 25
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
+        GlobalPhase: 3
         qec.fabricate: 1
         PPM: 14
         PPR-pi/2: 7
