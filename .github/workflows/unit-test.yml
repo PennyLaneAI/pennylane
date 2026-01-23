@@ -108,7 +108,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
-          repository: PennyLaneAI/pennylane
+          repository: runora95/pennylane
       
       - name: Install uv
         uses: astral-sh/setup-uv@v5
