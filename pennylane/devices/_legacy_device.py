@@ -605,18 +605,12 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         obs_on_same_wire &= not any(
             isinstance(o, LinearCombination) for o in circuit.obs_sharing_wires
         )
-        ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
-
-        if obs_on_same_wire:
-            [circuit], _ = decompose(circuit, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=self.stopping_condition)
-
-        elif ops_not_supported:
-            [circuit], _ = decompose(
-                circuit,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-                max_expansion=max_expansion,
-                stopping_condition=self.stopping_condition,
-            )
+        [circuit], _ = decompose(
+            circuit,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            max_expansion=max_expansion,
+            stopping_condition=self.stopping_condition,
+        )
 
         return circuit
 
