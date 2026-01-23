@@ -368,14 +368,14 @@ expose = [
     "construct_batch",
     "get_transform_program",
     "marker",
-    "construct_execution_config",
     "construct_tape",
+    "construct_execution_config",
     "execute",
-    "run",
-    "qnode",
-    "QNode",
-    "set_shots",
     "get_best_diff_method",
+    "QNode",
+    "qnode",
+    "set_shots",
+    "run",
 ]
 from = ["pennylane.workflow"]
 
