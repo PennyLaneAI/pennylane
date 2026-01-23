@@ -160,6 +160,7 @@
   [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
   [(#8908)](https://github.com/PennyLaneAI/pennylane/pull/8908)
+  [(#8963)](https://github.com/PennyLaneAI/pennylane/pull/8963)
 
 * Updated test helper `get_device` to correctly seed lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
