@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
+  logarithm of its input and casts the result to an ``int``. It is equivalent to 
+  ``int(np.ceil(np.log2(n)))``.
+  [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
+
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
