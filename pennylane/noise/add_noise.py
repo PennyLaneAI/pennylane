@@ -270,13 +270,19 @@ def _check_queue_op(operation, noise_func, metadata):
 # pylint:disable = protected-access
 @add_noise.custom_qnode_transform
 def custom_qnode_wrapper(self, qnode, targs, tkwargs):
-    """QNode execution wrapper for supporting ``add_noise`` with levels"""
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
 
-    compile_pipeline = get_transform_program(qnode, level=level)
+    pipeline = list(get_transform_program(qnode, level=level))
 
-    cqnode._compile_pipeline = compile_pipeline
-    cqnode.compile_pipeline.append(BoundTransform(self, targs, {**tkwargs}))
+    if level == "device":
+        device_pipeline = list(get_transform_program(qnode, level="device"))
+        user_pipeline = list(get_transform_program(qnode, level="user"))
+        pipeline = user_pipeline + device_pipeline[len(user_pipeline):]
 
+    pipeline.append(BoundTransform(self, targs, {**tkwargs}))
+
+    cqnode._compile_pipeline = pipeline
     return cqnode
+
+
