@@ -25,6 +25,17 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 
+@pytest.mark.parametrize(
+    "n, exp", [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 2), (17, 5), (1023, 10)]
+)
+def test_ceil_log2(n, exp):
+    """Test ``ceil_log2``, which computes the ceiling of log2, cast to a builtin integer."""
+    out = fn.ceil_log2(n)
+    assert isinstance(out, int)
+    assert out == exp
+    assert fn.ceil_log2(2**out) == out
+
+
 class TestFrobeniusInnerProduct:
     """Test the frobenius_inner_product method."""
 
