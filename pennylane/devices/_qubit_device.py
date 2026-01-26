@@ -1126,7 +1126,7 @@ class QubitDevice(Device):
         Returns:
             float: expectation value estimate.
         """
-        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel
             ClassicalShadow,
         )
 

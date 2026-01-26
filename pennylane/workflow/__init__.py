@@ -60,3 +60,17 @@ from .set_shots import set_shots
 from ._cache_transform import _cache_transform
 from ._setup_transform_program import _setup_transform_program
 from .run import run
+
+__all__ = [
+    "construct_batch",
+    "get_transform_program",
+    "marker",
+    "construct_tape",
+    "construct_execution_config",
+    "execute",
+    "get_best_diff_method",
+    "QNode",
+    "qnode",
+    "set_shots",
+    "run",
+]
