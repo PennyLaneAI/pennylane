@@ -159,6 +159,7 @@ def expand_multipar(*args, **kwargs):
         docstring=_expand_multipar_doc,
     )(*args, **kwargs)
 
+
 _expand_trainable_multipar_doc = """Expand out a tape so that all its trainable
 operations have a single parameter.
 
@@ -240,6 +241,7 @@ def expand_nonunitary_gen(*args, **kwargs):
         stop_at=_expand_nonunitary_gen_stop_at,
         docstring=_expand_nonunitary_gen_doc,
     )(*args, **kwargs)
+
 
 _expand_invalid_trainable_doc = """Expand out a tape so that it supports differentiation
 of requested operations.
