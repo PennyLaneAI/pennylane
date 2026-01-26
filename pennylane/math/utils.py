@@ -648,3 +648,38 @@ def binary_finite_reduced_row_echelon(binary_matrix):
             icol += 1
 
     return rref_mat.astype(int)
+
+
+def ceil_log2(n: int) -> int:
+    """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
+
+    Args:
+        n (int): Integer to compute the rounded-up base-2 logarithm of.
+
+    Returns:
+        int: Rounded-up base-2 logarithm of ``n``.
+
+
+    **Example**
+
+    On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
+    an ``int``:
+
+    >>> qml.math.ceil_log2(8)
+    3
+
+    On other numbers, the rounding of the logarithm becomes visible:
+
+    >>> qml.math.log2(14)
+    3.807354922057604
+    >>> qml.math.ceil_log2(14)
+    4
+
+    Note that we always round up:
+
+    >>> qml.math.round(qml.math.log2(9))
+    3.0
+    >>> qml.math.ceil_log2(9)
+    4
+    """
+    return int(np.ceil(np.log2(n)))
