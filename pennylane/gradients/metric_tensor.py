@@ -106,16 +106,19 @@ def _expand_metric_tensor(
     # pylint: disable=unused-argument,too-many-arguments
 
     if not allow_nonunitary and approx is None:
-        [tape], postprocessing = decompose(
+        [new_tape], postprocessing = decompose(
             tape,
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             stopping_condition=_expand_nonunitary_gen_stop_at,
         )
-        return [tape], postprocessing
-    [tape], postprocessing = decompose(
-        tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_multipar_stopping_fn
-    )
-    return [tape], postprocessing
+    else:
+        [new_tape], postprocessing = decompose(
+            tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_multipar_stopping_fn
+        )
+    if new_tape is not tape:
+        params = new_tape.get_parameters(trainable_only=False)
+        new_tape.trainable_params = math.get_trainable_indices(params)
+    return [new_tape], postprocessing
 
 
 @partial(
