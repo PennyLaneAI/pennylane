@@ -166,8 +166,8 @@ def _multipar_stopping_fn(obj):
             or len(obj.data) == 0
             or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
         )
-    except TermsUndefinedError:
-        return True
+    except TermsUndefinedError:  # pragma: no cover
+        return True  # pragma: no cover
 
 
 # pylint: disable=too-many-statements
