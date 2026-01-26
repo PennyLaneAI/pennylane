@@ -20,13 +20,13 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import gate_sets
+from pennylane.measurements import MeasurementProcess
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
-from pennylane.decomposition import gate_sets
-from pennylane.measurements import MeasurementProcess
-from pennylane.transforms import decompose
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .general_shift_rules import generate_multishifted_tapes
 from .gradient_transform import (
