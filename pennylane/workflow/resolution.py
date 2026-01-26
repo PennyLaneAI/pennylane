@@ -294,6 +294,7 @@ def _resolve_execution_config(
         execution_config.gradient_method
     ):
         updated_values["grad_on_execution"] = False
+
     execution_config = _resolve_diff_method(
         execution_config, device, tape=tapes[0] if tapes else None
     )
