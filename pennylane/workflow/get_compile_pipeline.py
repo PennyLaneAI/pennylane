@@ -83,7 +83,7 @@ def get_compile_pipeline(
 
     if not isinstance(level, (int, slice, str)):
         raise ValueError(
-            f"'level={level}' is not recognized. Please provide an integer, slice or a string as input."
+            f"'level={level}' of type '{type(level)}' is not supported. Please provide an integer, slice or a string as input."
         )
 
     @wraps(qnode)
