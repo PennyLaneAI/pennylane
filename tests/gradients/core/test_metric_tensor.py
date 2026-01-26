@@ -1545,18 +1545,18 @@ def test_expand_metric_tensor():
     allow_nonunitary = [True, False]
     res = []
 
-    for i, allow in enumerate(allow_nonunitary):
-        dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))
+    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))
 
-        x = np.array(0.5, requires_grad=True)
-        z = np.array(0.1, requires_grad=True)
+    x = np.array(0.5, requires_grad=True)
+    z = np.array(0.1, requires_grad=True)
 
-        @qml.qnode(dev)
-        def circuit(x, z):
-            qml.RX(x, wires="wire1")
-            qml.RZ(z, wires="wire1")
-            return qml.expval(qml.PauliZ("wire2"))
+    @qml.qnode(dev)
+    def circuit(x, z):
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire1")
+        return qml.expval(qml.PauliZ("wire2"))
 
+    for allow in enumerate(allow_nonunitary):
         res.append(qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow)(x, z))
 
     assert qml.numpy.allclose(res[0], res[1])

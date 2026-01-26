@@ -154,7 +154,8 @@ class TestExpandTrainableMultipar:
             _CRX(1.5, wires=[0, 2])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_trainable_multipar(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_trainable_multipar(tape)
         new_ops = new_tape.operations
 
         assert [op.name for op in new_ops] == ["RX", "Rot", "RZ", "RY", "RZ", "_CRX"]
