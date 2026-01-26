@@ -16,6 +16,7 @@ circuit including classical preprocessing within the QNode."""
 
 from __future__ import annotations
 
+from functools import partial
 from inspect import signature
 from itertools import product
 from types import EllipsisType
@@ -27,6 +28,10 @@ from pennylane import gradients, math, measurements, transforms, workflow
 from pennylane.capture.autograph import wraps
 
 from .utils import get_spectrum, join_spectra
+from ..decomposition import gate_sets
+from ..exceptions import TermsUndefinedError
+from ..measurements import MeasurementProcess
+from ..transforms import decompose
 
 if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
@@ -152,6 +157,17 @@ def _process_ids(
         argnum = [arg_names.index(name) for name in encoding_args]
 
     return encoding_args, argnum
+
+
+def _multipar_stopping_fn(obj):
+    try:
+        return (
+            isinstance(obj, MeasurementProcess)
+            or len(obj.data) == 0
+            or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+        )
+    except TermsUndefinedError:
+        return True
 
 
 def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validation_kwargs=None):
@@ -412,8 +428,12 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
             qnode.interface = new_interface
 
+        def expand_fn(*args, **kwargs):
+            [tape], _ = partial(decompose, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_multipar_stopping_fn)(*args, **kwargs)
+            return tape
+
         jac_fn = gradients.classical_jacobian(
-            qnode, argnum=argnum, expand_fn=transforms.expand_multipar
+            qnode, argnum=argnum, expand_fn=expand_fn
         )
         # Compute classical Jacobian and assert preprocessing is linear
         if not math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
@@ -432,7 +452,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
         cjacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = transforms.expand_multipar(tape)
+        [tape], _ = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_multipar_stopping_fn)
         par_info = tape.par_info
 
         # Iterate over jacobians per argument
