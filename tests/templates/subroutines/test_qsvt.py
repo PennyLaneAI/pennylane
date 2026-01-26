@@ -202,9 +202,7 @@ class TestQSVT:
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
                 [
                     qml.RZ(0.1, wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.RY(0.2, wires=[0]),
-                    qml.PauliZ(wires=[0]),
+                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
                     qml.RZ(0.3, wires=[1]),
                 ],
             ),
@@ -223,28 +221,11 @@ class TestQSVT:
 
         tape2 = qml.tape.QuantumScript.from_queue(q)
 
-        [tape], _ = decompose(tape, gate_set={"Z", "RY", "RZ", "X", "PCPhase"})
-        i = 0
-        j = 0
-        while i < len(results):
-            expected, val1, val2 = results[i], tape.operations[i], tape2.operations[j]
-            if isinstance(val2, ChangeOpBasis):
-                j = i + 1
-                change_op = tape2.operations[i]
-                for op in change_op[::-1]:
-                    # pylint: disable=expression-not-assigned
-                    (
-                        qml.assert_equal(results[i], op)
-                        if not isinstance(op, AdjointOperation)
-                        else qml.assert_equal(results[i], op.base)
-                    )
-                    qml.assert_equal(results[i], tape.operations[i])
-                    i += 1
-            else:
-                qml.assert_equal(expected, val1)
-                qml.assert_equal(expected, val2)
-                i += 1
-                j += 1
+        [tape], _ = decompose(tape, gate_set={"Z", "RY", "RZ", "X", "PCPhase"}, max_expansion=1)
+
+        for expected, val1, val2 in zip(results, tape.operations, tape2.operations):
+            qml.assert_equal(expected, val1)
+            qml.assert_equal(expected, val2)
 
     def test_decomposition_queues_its_contents(self):
         """Test that the decomposition method queues the decomposition in the correct order."""
