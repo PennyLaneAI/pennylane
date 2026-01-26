@@ -21,22 +21,31 @@ from typing import TYPE_CHECKING, Literal, ParamSpec, TypeAlias
 
 from pennylane.transforms.core import CompilePipeline
 from pennylane.workflow import construct_execution_config
+from pennylane.workflow._setup_transform_program import _setup_transform_program
 
 if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
     from pennylane.workflow import QNode
 
 P = ParamSpec("P")
-PipelineLevel: TypeAlias = Literal["top", "user", "device", "gradient"] | int | slice
+PipelineLevel: TypeAlias = Literal["top", "user", "gradient", "device"] | int | slice
 
 
-def resolve_level(qnode: QNode, level: PipelineLevel) -> slice:
+def _resolve_level(qnode: QNode, config: ExecutionConfig, level: PipelineLevel) -> slice:
     """Resolve level to a slice."""
     num_user = len(qnode.compile_pipeline)
 
-    if level == "device":
-        level = slice(0, None)
-    elif level == "top":
+    has_paired_expansion = (
+        num_user > 1
+        and getattr(qnode.compile_pipeline[-1], "expand_transform", None)
+        == qnode.compile_pipeline[-2]
+    )
+    if has_paired_expansion:
+        num_user -= 2
+    elif qnode.compile_pipeline.has_final_transform:
+        num_user -= 1
+
+    if level == "top":
         level = slice(0, 0)
     elif level == "user":
         level = slice(0, num_user)
@@ -45,7 +54,10 @@ def resolve_level(qnode: QNode, level: PipelineLevel) -> slice:
             raise ValueError(
                 "Cannot retrieve compile pipeline if 'level=gradient' is requested and a final transform is being used."
             )
-        raise NotImplementedError
+        level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
+    elif level == "device":
+        # Captures everything: user + gradient + device + final
+        level = slice(0, None)
     elif isinstance(level, str):
         raise NotImplementedError
     elif isinstance(level, int):
@@ -74,8 +86,24 @@ def get_compile_pipeline(
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
         config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-        level_slice: slice = resolve_level(qnode, level)
-        full_compile_pipeline = qnode.compile_pipeline + qnode.device.preprocess_transforms(config)
-        return full_compile_pipeline[level_slice]
+        outer, inner = _setup_transform_program(qnode.device, config)
+        level_slice: slice = _resolve_level(qnode, config, level)
+        full_compile_pipeline = qnode.compile_pipeline + outer + inner
+        resolved_pipeline = full_compile_pipeline[level_slice]
+
+        # Add back final transforms to resolved pipeline
+        if qnode.compile_pipeline.has_final_transform and level in {"user", "gradient"}:
+            final_transform_start = -1
+            has_paired_expansion = (
+                len(qnode.compile_pipeline) > 1
+                and getattr(qnode.compile_pipeline[-1], "expand_transform", None)
+                == qnode.compile_pipeline[-2]
+            )
+            if has_paired_expansion:
+                final_transform_start = -2
+
+            resolved_pipeline += qnode.compile_pipeline[final_transform_start:]
+
+        return resolved_pipeline
 
     return wrapper
