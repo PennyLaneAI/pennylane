@@ -72,7 +72,6 @@ class TestIQPExpval:
         generators_pl = [[0], [1], [0, 1, 2]]
         params = [0.37454012, 0.95071431, 0.73199394]
         obs_strings = ["X", "Z", "Y"]
-        n_qubits = len(obs_strings)
 
         state = [1] + [0] * 7
 
