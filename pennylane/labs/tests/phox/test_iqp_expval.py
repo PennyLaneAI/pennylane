@@ -54,7 +54,7 @@ def iqp_circuit_pl(generators, params, obs, init_state):
             qml.Hadamard(i)
 
         for param, gen in zip(params, generators):
-            qml.MultiRZ(2 * param, wires=gen)
+            qml.MultiRZ(2 * -param, wires=gen)
 
         for i in range(n_qubits):
             qml.Hadamard(i)

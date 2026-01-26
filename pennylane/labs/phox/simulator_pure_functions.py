@@ -75,7 +75,7 @@ def _iqp_expval_core(
     B = (-1) ** (samples @ generators.T)
     C = 1 - ((-1) ** (bitflips @ generators.T))
     E = C @ jnp.diag(params) @ B.T
-    M = phases * jnp.exp(-1j * E)
+    M = phases * jnp.exp(1j * E)
 
     expvals = jnp.real(M)
 
@@ -110,7 +110,7 @@ def _iqp_expval_init_state(
     B = (-1) ** (samples @ generators.T)
     C = 1 - ((-1) ** (bitflips @ generators.T))
     E = C @ jnp.diag(params) @ B.T
-    M = phases * jnp.exp(-1j * E)
+    M = phases * jnp.exp(1j * E)
     X, P = init_state
     P = P[:, jnp.newaxis]
 
