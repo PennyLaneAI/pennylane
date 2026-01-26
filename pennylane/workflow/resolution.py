@@ -294,7 +294,9 @@ def _resolve_execution_config(
         execution_config.gradient_method
     ):
         updated_values["grad_on_execution"] = False
-    execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
+    execution_config = _resolve_diff_method(
+        execution_config, device, tape=tapes[0] if tapes else None
+    )
 
     if execution_config.use_device_jacobian_product and not device.supports_vjp(
         execution_config, tapes[0]
@@ -320,5 +322,5 @@ def _resolve_execution_config(
     updated_values["interface"] = interface
     updated_values["mcm_config"] = mcm_config
     execution_config = replace(execution_config, **updated_values)
-    execution_config = device.setup_execution_config(execution_config, tapes[0])
+    execution_config = device.setup_execution_config(execution_config, tapes[0] if tapes else None)
     return execution_config
