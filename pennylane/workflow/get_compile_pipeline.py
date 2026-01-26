@@ -46,6 +46,8 @@ def resolve_level(qnode: QNode, level: PipelineLevel) -> slice:
                 "Cannot retrieve compile pipeline if 'level=gradient' is requested and a final transform is being used."
             )
         raise NotImplementedError
+    elif isinstance(level, str):
+        raise NotImplementedError
     elif isinstance(level, int):
         level = slice(0, level)
 
@@ -73,7 +75,6 @@ def get_compile_pipeline(
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
         config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         level_slice: slice = resolve_level(qnode, level)
-
         full_compile_pipeline = qnode.compile_pipeline + qnode.device.preprocess_transforms(config)
         return full_compile_pipeline[level_slice]
 
