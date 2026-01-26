@@ -23,9 +23,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops import ChangeOpBasis
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math.adjoint import AdjointOperation
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
