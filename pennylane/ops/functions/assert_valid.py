@@ -529,6 +529,7 @@ def assert_valid(
 
     assert isinstance(op.data, tuple), "op.data must be a tuple"
     assert isinstance(op.parameters, list), "op.parameters must be a list"
+    assert len(op.data) == op.num_params, "num_params must match the length of the data"
     for d, p in zip(op.data, op.parameters):
         assert isinstance(d, qml.typing.TensorLike), "each data element must be tensorlike"
         assert qml.math.allclose(d, p), "data and parameters must match."

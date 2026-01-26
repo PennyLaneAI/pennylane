@@ -49,6 +49,11 @@ class TestInitialization:
         assert len(q.queue) == 1
         qml.assert_equal(q.queue[0], qml.RX(0.5, 0))
 
+        with pytest.raises(
+            NotImplementedError, match="does not have a defined compute_resources function."
+        ):
+            S.compute_resources(0.5, wires=0)
+
     def test_wire_argnames(self):
         """Test that wire argnames can be specified."""
 
@@ -93,6 +98,25 @@ class TestInitialization:
 
         assert S.wire_argnames == ("register",)
         assert S.static_argnames == ("metadata",)
+
+    def test_providing_compute_resources(self):
+        """Test that compute_resources can be set."""
+
+        def compute_resources(x, wires, metadata):
+            assert metadata == 2  # test filled in with default values.
+            assert isinstance(wires, qml.wires.Wires)
+            return {qml.RX: len(wires)}
+
+        @partial(Subroutine, compute_resources=compute_resources)
+        def HasResources(x, wires, metadata=2):
+            for w in wires:
+                qml.RX(x, w)
+
+        out = HasResources.compute_resources(0.5, [0, 1, 2])
+        assert out == {qml.RX: 3}
+        # test wires setup properly
+        out2 = HasResources.compute_resources(0.5, 0)
+        assert out2 == {qml.RX: 1}
 
 
 def Example1(x, y, reg1, reg2, pauli_words):
@@ -228,6 +252,29 @@ class TestSubroutineCall:
         def f(wires, metadata="default_value"):
             pass
 
+        op = f(0)
+        assert op.bound_args.arguments["metadata"] == "default_value"
+
+    def test_mcm_outputs(self):
+        """Test that a subroutine can return mcms."""
+
+        @Subroutine
+        def mcm_output(wires):
+            return [qml.measure(w) for w in wires]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            out = mcm_output((0, 1))
+
+        assert len(out) == 2
+        assert isinstance(out, list)
+        assert isinstance(out[0], qml.ops.MeasurementValue)
+        assert isinstance(out[1], qml.ops.MeasurementValue)
+
+        assert len(q.queue) == 1
+        op = q.queue[0]
+        assert op.output is out
+        assert op.subroutine == mcm_output
+
 
 @pytest.mark.capture
 class TestSubroutineCapture:
@@ -285,3 +332,120 @@ class TestSubroutineCapture:
 
             assert jaxpr.eqns[-1].invars[0].aval.shape == (1,)
             assert "int" in jaxpr.eqns[-1].invars[0].aval.dtype.name
+
+    def test_mcm_return(self):
+        """Test that a Subroutine can return classical values."""
+
+        import jax
+
+        @qml.templates.Subroutine
+        def f(wires):
+            return [qml.measure(w) for w in wires]
+
+        def w(wires):
+            out = f(wires)
+            assert isinstance(out, list)
+            assert len(out) == 3
+            for m in out:
+                # scalar output
+                assert m.shape == ()
+            return out
+
+        jaxpr = jax.make_jaxpr(w)((0, 1, 2))
+
+        eqn = jaxpr.eqns[-1]  # setup has some slicing and dicing
+        assert len(eqn.outvars) == 3  # the three measurement values
+        assert eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
+
+
+@pytest.mark.integration
+class TestTapePLIntegration:
+
+    def test_basic_execution_integration(self):
+        """Test that a basic subroutine can be executed by restrictive devices."""
+
+        @Subroutine
+        def Tester(x, y, wires):
+            qml.RX(x, wires[0])
+            qml.RY(y, wires[1])
+
+        @qml.qnode(qml.device("reference.qubit", wires=2))
+        def c(x, y):
+            Tester(x, y, wires=(0, 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        x = 0.5
+        y = 1.2
+        res1, res2 = c(x, y)
+        assert qml.math.allclose(res1, qml.math.cos(x))
+        assert qml.math.allclose(res2, qml.math.cos(y))
+
+    def test_subroutine_gradient(self):
+        """Test that SubroutineOp can be handled by gradients (namely parameter shift.)"""
+
+        @Subroutine
+        def Tester(x, y, wires):
+            qml.RX(x, wires[0])
+            qml.RY(y, wires[1])
+
+        @qml.qnode(qml.device("reference.qubit", wires=2))
+        def c(x, y):
+            Tester(x, y, wires=(0, 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        g0 = qml.grad(lambda x, y: c(x, y)[0])(qml.numpy.array(0.5), 1.2)
+        assert qml.math.allclose(g0, -qml.math.sin(0.5))
+
+    def test_mcm_integration(self):
+        """Test that subroutines can return the results of mid circuit measurements."""
+
+        @qml.templates.Subroutine
+        def MCMTester(wires):
+            return [qml.measure(wires=w, reset=True) for w in wires]
+
+        @qml.qnode(qml.device("default.qubit", wires=2), mcm_method="tree-traversal")
+        def c(x):
+            qml.X(0)
+            m1, m2 = MCMTester((0, 1))
+            qml.cond(m1, qml.RX)(x, 0)
+            qml.cond(m2, qml.RX)(x, 1)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        r1, r2 = c(0.5)
+        assert qml.math.allclose(r1, qml.math.cos(0.5))
+        assert qml.math.allclose(r2, 1)
+
+    def test_drawing(self):
+        """Test that subroutines can be drawn."""
+
+        @qml.templates.Subroutine
+        def Tester(x, y, wires):
+            qml.RX(x, wires[0])
+            qml.RY(y, wires[1])
+
+        @qml.qnode(qml.device("reference.qubit", wires=2))
+        def c(x, y):
+            Tester(x, y, wires=(0, 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        out = qml.draw(c)(0.5, 1.2)
+        assert out == "0: ─╭Tester(0.50,1.20)─┤  <Z>\n1: ─╰Tester(0.50,1.20)─┤  <Z>"
+
+        out2 = qml.draw(c, decimals=None)(0.5, 1.2)
+        assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
+
+    def test_specs(self):
+        """Test that subroutines show up as gate types in specs."""
+
+        @qml.templates.Subroutine
+        def Tester(x, y, wires):
+            qml.RX(x, wires[0])
+            qml.RY(y, wires[1])
+
+        @qml.qnode(qml.device("reference.qubit", wires=2))
+        def c(x, y):
+            Tester(x, y, wires=(0, 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        specs = qml.specs(c, level="top")(0.5, 1.2)
+        assert specs.resources.gate_types["Tester"] == 1

@@ -138,11 +138,11 @@ class SubroutineOp(Operation):
             # allow same wires to exist in multiple registers
             reg_wires = [w for w in reg_wires if w not in wires]
             wires.extend(reg_wires)
-        super().__init__(wires=wires)
-        self.name = subroutine.name
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
-        self.data = tuple(flatten(dynamic_args)[0])
+        data = tuple(flatten(dynamic_args)[0])
+        super().__init__(*data, wires=wires)
+        self.name = subroutine.name
 
     @property
     def bound_args(self) -> BoundArguments:
@@ -357,7 +357,8 @@ class Subroutine:
         """Calculate a condensed representation for the resources required for the Subroutine."""
         if self._compute_resources is None:
             raise NotImplementedError(f"{self} does not have a defined compute_resources function.")
-        return self._compute_resources(*args, **kwargs)
+        bound_args = self._full_setup_inputs(*args, **kwargs)
+        return self._compute_resources(*bound_args.args, **bound_args.kwargs)
 
     def definition(self, *args, **kwargs):
         """The quantum function definition of the subroutine."""
@@ -366,6 +367,22 @@ class Subroutine:
     def setup_inputs(self, *args, **kwargs) -> tuple[tuple, dict]:
         """Perform and initial setup of the arguments."""
         return self._setup_inputs(*args, **kwargs)
+
+    def _full_setup_inputs(self, *args, **kwargs) -> BoundArguments:
+        args, kwargs = self.setup_inputs(*args, **kwargs)
+        bound_args = self._signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        for wire_argname in self.wire_argnames:
+            register = _setup_wires(bound_args.arguments[wire_argname])
+            if capture.enabled():
+                import jax  # pylint: disable=import-outside-toplevel
+
+                if len(register) > 0:
+                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
+            else:
+                bound_args.arguments[wire_argname] = Wires(register)
+        return bound_args
 
     @property
     def static_argnames(self) -> tuple[str, ...]:
@@ -388,19 +405,7 @@ class Subroutine:
         return tuple(name for name in self._signature.parameters if not is_static(name))
 
     def __call__(self, *args, **kwargs):
-        args, kwargs = self.setup_inputs(*args, **kwargs)
-        bound_args = self._signature.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-
-        for wire_argname in self.wire_argnames:
-            register = _setup_wires(bound_args.arguments[wire_argname])
-            if capture.enabled():
-                import jax  # pylint: disable=import-outside-toplevel
-
-                if len(register) > 0:
-                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
-            else:
-                bound_args.arguments[wire_argname] = Wires(register)
+        bound_args = self._full_setup_inputs(*args, **kwargs)
 
         if capture.enabled():
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
