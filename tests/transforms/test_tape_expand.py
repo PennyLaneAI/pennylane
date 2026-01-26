@@ -131,6 +131,35 @@ class TestCreateExpandFn:
         assert new_tape.operations[1].name == "Rot"
 
 
+class TestExpandTrainableMultipar:
+    """Test the expansion of trainable multi-parameter gates."""
+
+    def test_expand_trainable_multipar(self):
+        """Test that a trainable multi-parameter gate is decomposed correctly.
+        And that non-trainable multi-parameter gates, single-parameter gates are not decomposed."""
+
+        theta = qml.numpy.array(1.0, requires_grad=True)
+
+        class _CRX(qml.CRX):
+            name = "_CRX"
+
+            @staticmethod
+            def decomposition(theta, wires):
+                raise NotImplementedError()
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(1.5, wires=0)
+            qml.Rot(-2.1, 1.0, -0.418, wires=1)
+            qml.Rot(-2.1, theta, -0.418, wires=1)
+            _CRX(1.5, wires=[0, 2])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        new_tape = qml.transforms.expand_trainable_multipar(tape)
+        new_ops = new_tape.operations
+
+        assert [op.name for op in new_ops] == ["RX", "Rot", "RZ", "RY", "RZ", "_CRX"]
+
+
 class TestExpandMultipar:
     """Test the expansion of multi-parameter gates."""
 
