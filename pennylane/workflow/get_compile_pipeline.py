@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Literal, ParamSpec, TypeAlias
+from typing import TYPE_CHECKING, ParamSpec
 
 from pennylane.workflow import construct_execution_config
 from pennylane.workflow._setup_transform_program import _setup_transform_program
@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from pennylane.workflow import QNode
 
 P = ParamSpec("P")
-PipelineLevel: TypeAlias = Literal["top", "user", "gradient", "device"] | int | slice
 
 
 def _has_terminal_expansion_pair(compile_pipeline: CompilePipeline) -> bool:
@@ -39,7 +38,7 @@ def _has_terminal_expansion_pair(compile_pipeline: CompilePipeline) -> bool:
     )
 
 
-def _resolve_level(qnode: QNode, config: ExecutionConfig, level: PipelineLevel) -> slice:
+def _resolve_level(qnode: QNode, config: ExecutionConfig, level: str | int | slice) -> slice:
     """Resolve level to a slice."""
     num_user = len(qnode.compile_pipeline)
 
@@ -71,7 +70,7 @@ def _resolve_level(qnode: QNode, config: ExecutionConfig, level: PipelineLevel) 
 
 def get_compile_pipeline(
     qnode: QNode,
-    level: PipelineLevel = "device",
+    level: str | int | slice = "device",
 ) -> Callable[P, CompilePipeline]:
     """Extract a compile pipeline at a designated level.
 
