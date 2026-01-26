@@ -159,6 +159,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Enforced public interfaces for internal modules (e.g., `transforms.core`) using `tach`. 
+  This decouples internal file structures from inter-module imports, making refactoring safer and easier.
+  [(#8940)](https://github.com/PennyLaneAI/pennylane/pull/8940)
+  
 * Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
   [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
