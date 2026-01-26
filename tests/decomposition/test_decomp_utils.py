@@ -47,14 +47,20 @@ def test_toggle_graph_decomposition():
     assert not qml.decomposition.enabled_graph()
 
 
+pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 def test_graph_ctx():
     """Tests the context manager for toggling graph."""
+    original_status = qml.decomposition.status()
 
     with qml.decomposition.toggle_graph_ctx(True):
         assert qml.decomposition.enabled_graph()
 
+    assert qml.decomposition.status() = original_status
+
     with qml.decomposition.toggle_graph_ctx(False):
         assert not qml.decomposition.enabled_graph()
+
+    assert qml.decomposition.status() = original_status
 
 
 @pytest.mark.unit
