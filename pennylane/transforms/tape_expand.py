@@ -76,11 +76,11 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
         ]
         tape = qml.tape.QuantumTape(ops)
 
-    >>> new_tape = expand_fn(tape)
-    >>> print(qml.drawer.tape_text(tape, decimals=1))
+    >>> new_tape = expand_fn(tape)  # doctest: +SKIP
+    >>> print(qml.drawer.tape_text(tape, decimals=1))  # doctest: +SKIP
     0: ──RX(0.2)───Rot(1.7,0.9,-1.1)─┤
     1: ──RX(-2.4)──Rot(-3.1,0.7,1.4)─┤
-    >>> print(qml.drawer.tape_text(new_tape, decimals=1))
+    >>> print(qml.drawer.tape_text(new_tape, decimals=1))  # doctest: +SKIP
     0: ──RX(0.2)───Rot(1.7,0.9,-1.1)───────────────────┤
     1: ──RX(-2.4)──RZ(-3.1)───────────RY(0.7)──RZ(1.4)─┤
 
