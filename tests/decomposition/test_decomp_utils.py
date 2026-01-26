@@ -56,7 +56,7 @@ def test_graph_ctx():
     with qml.decomposition.toggle_graph_ctx(True):
         assert qml.decomposition.enabled_graph()
 
-    assert qml.decomposition.status() == original_status
+    assert qml.decomposition.enabled_graph() == original_status
 
     with qml.decomposition.toggle_graph_ctx(False):
         assert not qml.decomposition.enabled_graph()
