@@ -160,9 +160,12 @@
 <h3>Internal changes ⚙️</h3>
 
 * Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
+  Bumped `rng_salt` to `v0.45.0`.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
   [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
   [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
+  [(#8908)](https://github.com/PennyLaneAI/pennylane/pull/8908)
+  [(#8963)](https://github.com/PennyLaneAI/pennylane/pull/8963)
 
 * Updated test helper `get_device` to correctly seed lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
