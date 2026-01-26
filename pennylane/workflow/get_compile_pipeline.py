@@ -85,10 +85,13 @@ def get_compile_pipeline(
 
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
+        # Get full compile pipeline
         config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         outer, inner = _setup_transform_program(qnode.device, config)
-        level_slice: slice = _resolve_level(qnode, config, level)
         full_compile_pipeline = qnode.compile_pipeline + outer + inner
+
+        # Slice out relevant section
+        level_slice: slice = _resolve_level(qnode, config, level)
         resolved_pipeline = full_compile_pipeline[level_slice]
 
         # Add back final transforms to resolved pipeline
