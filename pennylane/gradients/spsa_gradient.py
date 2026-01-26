@@ -35,6 +35,11 @@ from .gradient_transform import (
     contract_qjac_with_cjac,
     find_and_validate_gradient_methods,
 )
+from ..decomposition import gate_sets
+from ..devices.default_qutrit_mixed import stopping_condition
+from ..measurements import MeasurementProcess
+from ..transforms import decompose
+
 
 # pylint: disable=too-many-arguments,unused-argument
 
@@ -61,6 +66,14 @@ def _rademacher_sampler(indices, num_params, *args, rng):
     return direction
 
 
+def _stop_at_expand_invalid_trainable(obj):
+    return (
+        isinstance(obj, MeasurementProcess)
+        or not any(math.requires_grad(d) for d in obj.data)
+        or obj.grad_method is not None
+    )
+
+
 # pylint: disable=too-many-positional-arguments
 def _expand_transform_spsa(
     tape: QuantumScript,
@@ -76,7 +89,7 @@ def _expand_transform_spsa(
     sampler_rng=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
-    expanded_tape = expand_invalid_trainable(tape)
+    [expanded_tape], _ = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_stop_at_expand_invalid_trainable)
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
