@@ -142,6 +142,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``tape.expand()`` and related functions, methods have been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
 
 * The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
   Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.

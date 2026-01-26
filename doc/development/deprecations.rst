@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``tape.expand()`` and related functions, methods have been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
 
