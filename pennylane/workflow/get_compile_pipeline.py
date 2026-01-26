@@ -19,31 +19,33 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Literal, ParamSpec, TypeAlias
 
-from pennylane.transforms.core import CompilePipeline
 from pennylane.workflow import construct_execution_config
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
 if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
+    from pennylane.transforms.core import CompilePipeline
     from pennylane.workflow import QNode
 
 P = ParamSpec("P")
 PipelineLevel: TypeAlias = Literal["top", "user", "gradient", "device"] | int | slice
 
 
+def _has_final_paired_expansion(compile_pipeline: CompilePipeline) -> bool:
+    return (
+        len(compile_pipeline) > 1
+        and getattr(compile_pipeline[-1], "expand_transform", None) == compile_pipeline[-2]
+    )
+
+
 def _resolve_level(qnode: QNode, config: ExecutionConfig, level: PipelineLevel) -> slice:
     """Resolve level to a slice."""
     num_user = len(qnode.compile_pipeline)
 
-    has_paired_expansion = (
-        num_user > 1
-        and getattr(qnode.compile_pipeline[-1], "expand_transform", None)
-        == qnode.compile_pipeline[-2]
-    )
-    if has_paired_expansion:
-        num_user -= 2
-    elif qnode.compile_pipeline.has_final_transform:
-        num_user -= 1
+    # Ignore final transforms for now, will be re-added later if needed
+    if qnode.compile_pipeline.has_final_transform:
+        # Remove pair if expansion + transform exists
+        num_user -= 2 if _has_final_paired_expansion(qnode.compile_pipeline) else 1
 
     if level == "top":
         level = slice(0, 0)
@@ -96,15 +98,9 @@ def get_compile_pipeline(
 
         # Add back final transforms to resolved pipeline
         if qnode.compile_pipeline.has_final_transform and level in {"user", "gradient"}:
-            final_transform_start = -1
-            has_paired_expansion = (
-                len(qnode.compile_pipeline) > 1
-                and getattr(qnode.compile_pipeline[-1], "expand_transform", None)
-                == qnode.compile_pipeline[-2]
+            final_transform_start = (
+                -2 if _has_final_paired_expansion(qnode.compile_pipeline) else -1
             )
-            if has_paired_expansion:
-                final_transform_start = -2
-
             resolved_pipeline += qnode.compile_pipeline[final_transform_start:]
 
         return resolved_pipeline
