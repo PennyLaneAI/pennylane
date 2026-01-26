@@ -18,6 +18,7 @@ import re
 import pytest
 
 import pennylane as qml
+from pennylane.transforms.core.compile_pipeline import CompilePipeline
 from pennylane.workflow import get_compile_pipeline
 
 
@@ -51,6 +52,54 @@ class TestValidation:
 
 class TestUserLevel:
     """Tests 'user' level transforms."""
+
+    def test_user_level_pipeline(self):
+        """Tests the contents of a user level pipeline."""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.transforms.merge_rotations(atol=1e-5)
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="user")()
+        assert len(cp) == 2
+        assert cp[0].tape_transform == qml.transforms.cancel_inverses.tape_transform
+        assert cp[1].tape_transform == qml.transforms.merge_rotations.tape_transform
+
+    def test_user_level_with_final_transform(self):
+        """Tests that a final transform is correctly re-appended."""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.gradients.metric_tensor
+        @qml.transforms.merge_rotations(atol=1e-5)
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="user")()
+
+        assert len(cp) == 4
+        assert cp[0].tape_transform == qml.transforms.cancel_inverses.tape_transform
+        assert cp[1].tape_transform == qml.transforms.merge_rotations.tape_transform
+        assert cp[2].tape_transform == qml.gradients.metric_tensor.expand_transform
+        assert cp[3].tape_transform == qml.gradients.metric_tensor.tape_transform
+
+    def test_no_user_levels(self):
+        """Ensures an empty compile pipeline if no user transforms."""
+        dev = qml.device("reference.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="user")()
+
+        assert cp == CompilePipeline()
 
 
 class TestGradientLevel:
