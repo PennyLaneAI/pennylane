@@ -31,7 +31,8 @@ P = ParamSpec("P")
 PipelineLevel: TypeAlias = Literal["top", "user", "gradient", "device"] | int | slice
 
 
-def _has_final_paired_expansion(compile_pipeline: CompilePipeline) -> bool:
+def _has_terminal_expansion_pair(compile_pipeline: CompilePipeline) -> bool:
+    """Checks if the compile pipeline ends with a expansion + transform pair."""
     return (
         len(compile_pipeline) > 1
         and getattr(compile_pipeline[-1], "expand_transform", None) == compile_pipeline[-2]
@@ -45,7 +46,7 @@ def _resolve_level(qnode: QNode, config: ExecutionConfig, level: PipelineLevel) 
     # Ignore final transforms for now, will be re-added later if needed
     if qnode.compile_pipeline.has_final_transform:
         # Remove pair if expansion + transform exists
-        num_user -= 2 if _has_final_paired_expansion(qnode.compile_pipeline) else 1
+        num_user -= 2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else 1
 
     if level == "top":
         level = slice(0, 0)
@@ -99,7 +100,7 @@ def get_compile_pipeline(
         # Add back final transforms to resolved pipeline
         if qnode.compile_pipeline.has_final_transform and level in {"user", "gradient"}:
             final_transform_start = (
-                -2 if _has_final_paired_expansion(qnode.compile_pipeline) else -1
+                -2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else -1
             )
             resolved_pipeline += qnode.compile_pipeline[final_transform_start:]
 
