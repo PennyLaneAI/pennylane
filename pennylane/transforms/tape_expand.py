@@ -152,6 +152,7 @@ def _multipar_stopping_fn(obj):
         return True
 
 
+# pylint: disable=missing-function-docstring
 def expand_multipar(*args, **kwargs):
     return create_expand_fn(
         depth=None,
@@ -182,6 +183,7 @@ def _trainable_multipar_stopping_fn(obj):
     return _multipar_stopping_fn(obj) or not any(math.requires_grad(d) for d in obj.data)
 
 
+# pylint: disable=missing-function-docstring
 def expand_trainable_multipar(*args, **kwargs):
     return create_expand_fn(
         depth=None,
@@ -236,6 +238,7 @@ def _expand_nonunitary_gen_stop_at(obj):
 
 
 def expand_nonunitary_gen(*args, **kwargs):
+    """Expands until all ops have unitary generators."""
     return create_expand_fn(
         depth=None,
         stop_at=_expand_nonunitary_gen_stop_at,
@@ -270,6 +273,7 @@ def _stop_at_expand_invalid_trainable(obj):
 
 
 def expand_invalid_trainable(*args, **kwargs):
+    """Expands until all ops are trainable."""
     return create_expand_fn(
         depth=None,
         stop_at=_stop_at_expand_invalid_trainable,

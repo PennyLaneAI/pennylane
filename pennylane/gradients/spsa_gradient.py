@@ -22,9 +22,11 @@ import numpy as np
 from pennylane import math
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
 
+from ..decomposition import gate_sets
+from ..measurements import MeasurementProcess
+from ..transforms import decompose
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .general_shift_rules import generate_multishifted_tapes
 from .gradient_transform import (
@@ -35,11 +37,6 @@ from .gradient_transform import (
     contract_qjac_with_cjac,
     find_and_validate_gradient_methods,
 )
-from ..decomposition import gate_sets
-from ..devices.default_qutrit_mixed import stopping_condition
-from ..measurements import MeasurementProcess
-from ..transforms import decompose
-
 
 # pylint: disable=too-many-arguments,unused-argument
 
@@ -89,7 +86,11 @@ def _expand_transform_spsa(
     sampler_rng=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
-    [expanded_tape], _ = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_stop_at_expand_invalid_trainable)
+    [expanded_tape], _ = decompose(
+        tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        stopping_condition=_stop_at_expand_invalid_trainable,
+    )
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results

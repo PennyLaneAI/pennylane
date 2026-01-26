@@ -22,6 +22,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -32,13 +33,10 @@ from pennylane.measurements import (
 )
 from pennylane.ops.cv import PolyXP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
 
-from ..decomposition import gate_sets
-from ..devices.default_qutrit_mixed import stopping_condition
-from ..transforms import decompose
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
 from .gradient_transform import (

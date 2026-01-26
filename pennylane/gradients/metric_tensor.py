@@ -31,7 +31,7 @@ from pennylane.ops.functions import generator, matrix
 from pennylane.ops.qubit.attributes import has_unitary_generator
 from pennylane.queuing import WrappedObj
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import decompose, expand_multipar, expand_nonunitary_gen
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
