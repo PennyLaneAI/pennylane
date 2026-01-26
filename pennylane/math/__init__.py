@@ -96,13 +96,14 @@ from .fidelity import fidelity, fidelity_statevector
 from .utils import (
     allclose,
     allequal,
+    binary_finite_reduced_row_echelon,
     cast,
     cast_like,
+    ceil_log2,
     convert_like,
     in_backprop,
-    requires_grad,
     is_abstract,
-    binary_finite_reduced_row_echelon,
+    requires_grad,
 )
 from .interface_utils import (
     SUPPORTED_INTERFACE_NAMES,
@@ -203,6 +204,7 @@ __all__ = [
     "block_diag",
     "cast",
     "cast_like",
+    "ceil_log2",
     "concatenate",
     "convert_like",
     "convert_to_su2",
