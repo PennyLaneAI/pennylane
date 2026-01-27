@@ -31,14 +31,6 @@ if TYPE_CHECKING:
 P = ParamSpec("P")
 
 
-def _has_terminal_expansion_pair(compile_pipeline: CompilePipeline) -> bool:
-    """Checks if the compile pipeline ends with a expansion + transform pair."""
-    return (
-        len(compile_pipeline) > 1
-        and getattr(compile_pipeline[-1], "expand_transform", None) == compile_pipeline[-2]
-    )
-
-
 def _find_level(program: CompilePipeline, level: str) -> int:
     """Retrieve the numerical level associated to a marker."""
     found_levels = []
@@ -201,11 +193,12 @@ def get_compile_pipeline(
         # Get full compile pipeline
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
-        full_compile_pipeline = qnode.compile_pipeline + outer_pipeline + inner_pipeline
-
-        num_user = len(qnode.compile_pipeline)
+        full_compile_pipeline: CompilePipeline = (
+            qnode.compile_pipeline + outer_pipeline + inner_pipeline
+        )
 
         # Slice out relevant section
+        num_user = len(qnode.compile_pipeline)
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
         resolved_pipeline = full_compile_pipeline[level_slice]
 
