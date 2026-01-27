@@ -265,3 +265,26 @@ def test_level_is_top():
 
     cp = get_compile_pipeline(circuit, level="top")()
     assert cp == CompilePipeline()
+
+
+@pytest.mark.parametrize("level", [0, 1, 2])
+def test_level_is_integer(level):
+    """Tests that levels can be integers corresponding to their position
+    in the compile pipeline."""
+
+    dev = qml.device("reference.qubit")
+
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses
+    @qml.qnode(dev)
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    cp = get_compile_pipeline(circuit, level=level)()
+
+    if level == 0:
+        assert cp == CompilePipeline()
+    elif level == 1:
+        assert cp == CompilePipeline(qml.transforms.cancel_inverses)
+    elif level == 2:
+        assert cp == CompilePipeline(qml.transforms.cancel_inverses, qml.transforms.merge_rotations)
