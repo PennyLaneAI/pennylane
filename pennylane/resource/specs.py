@@ -119,16 +119,10 @@ def _specs_qjit_device_level_tracking(
         with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
-        # TODO: Once measurements are tracked for runtime specs, include that data here
-        warnings.warn(
-            "Measurement resource tracking is not yet supported for qjit'd QNodes. "
-            "The returned SpecsResources will have an empty measurements field.",
-            UserWarning,
-        )
         return SpecsResources(
             gate_types=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
-            measurements={},  # Not tracked at the moment
+            measurements=resource_data["measurements"],
             num_allocs=resource_data["num_wires"],
             depth=resource_data["depth"],
         )
@@ -579,10 +573,6 @@ def specs(
         <BLANKLINE>
           Measurements:
             No measurements.
-
-        .. warning::
-            Measurement data is not currently supported with runtime resource tracking, so measurement
-            data may show as missing.
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
