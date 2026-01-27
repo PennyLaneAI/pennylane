@@ -201,3 +201,32 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
     basis_rank = min(basis.shape)
     rk = binary_rank(np.concatenate([basis, vector[:, None]], axis=1))
     return rk > basis_rank
+
+
+def binary_select_basis(bitstrings: np.ndarray):
+    r"""Select bitstrings from an array of bitstrings that form a basis
+    for the column space of the array. Also returns the bitstrings that were not selected.
+
+    Args:
+        bitstrings (np.ndarray): Input bitstrings. The columns of the array span the space for
+            which we select a basis.
+
+    Returns:
+        tuple[np.ndarray]: Two binary array. The first contains a selection of columns from
+        ``bitstrings`` that form a basis for the column space of ``bitstrings`` over
+        :math:`\mathbb{Z}_2`. The second contains all other columns.
+    """
+    r, _ = bitstrings.shape
+    basis = np.zeros((r, 0), dtype=int)
+    other_cols = []
+    for col in bitstrings.T:
+        if basis.shape[1] < r and binary_is_independent(col, basis):
+            basis = np.concatenate([basis, col[:, None]], axis=1)
+        else:
+            other_cols.append(col)
+
+    if not other_cols:
+        other_cols = np.zeros((r, 0), dtype=int)
+    else:
+        other_cols = np.array(other_cols).T
+    return basis, other_cols

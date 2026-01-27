@@ -38,6 +38,7 @@ from .binary_linalg import (
     binary_finite_reduced_row_echelon,
     binary_is_independent,
     binary_rank,
+    binary_select_basis,
     binary_solve_linear_system,
 )
 from .is_independent import is_independent
@@ -259,6 +260,7 @@ __all__ = [
     "binary_finite_reduced_row_echelon",
     "binary_is_independent",
     "binary_rank",
+    "binary_select_basis",
     "binary_solve_linear_system",
     "relative_entropy",
     "requires_grad",
