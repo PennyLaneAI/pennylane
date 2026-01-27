@@ -23,7 +23,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 try:
-    from pennylane.labs.phox.simulator_pure_functions import _iqp_expval_core, _parse_iqp_dict
+    from pennylane.labs.phox.simulator_pure_functions import _iqp_expval_core, _parse_iqp_dict, iqp_expval
 except ImportError:
     pytest.skip("pennylane.labs.phox not found", allow_module_level=True)
 
@@ -40,6 +40,8 @@ def iqp_circuit_pl(generators, params, obs, init_state):
             expval_ops.append(qml.Y(i))
         elif op == "Z":
             expval_ops.append(qml.Z(i))
+        elif op == "I":
+            expval_ops.append(qml.Identity(i))
 
     expval_op = qml.prod(*expval_ops)
 
@@ -67,26 +69,77 @@ def iqp_circuit_pl(generators, params, obs, init_state):
 class TestIQPExpval:
     """Tests for IQP expectation value calculation."""
 
-    def test_iqp_expval_vs_pennylane(self):
-        """Test that _iqp_expval_core matches PennyLane default.qubit."""
-        generators_pl = [[0], [1], [0, 1, 2]]
-        params = [0.37454012, 0.95071431, 0.73199394]
-        obs_strings = ["X", "Z", "Y"]
+    @pytest.mark.parametrize("n_samples", [1000, 10000])
+    @pytest.mark.parametrize(
+        "obs_strings, generators_pl, params",
+        [
+            (["X", "Z", "Y"], [[0], [1], [0, 1, 2]], [0.37, 0.95, 0.73]),
+            (["X"], [[0]], [0.1]),
+            (["Y", "Y"], [[0], [1], [0, 1]], [0.2, 0.3, 0.4]),
+            (["Z", "Z", "Z"], [[0, 1], [1, 2]], [0.1, 0.2]),
+            (
+                ["X", "Y", "Z", "I"],
+                [[0, 1], [2, 3], [0, 2, 3]],
+                [0.1, 0.2, 0.3],
+            ),
+            (["I", "I", "I", "I"], [[0, 1], [2, 3]], [0.5, 0.6]),
+        ],
+    )
+    def test_iqp_expval_core_vs_pennylane(
+        self, n_samples, obs_strings, generators_pl, params
+    ):
+        """Test that _iqp_expval_core matches PennyLane default.qubit with parametrization."""
+        n_qubits = len(obs_strings)
 
-        state = [1] + [0] * 7
+        state = np.zeros(2**n_qubits)
+        state[0] = 1.0
 
         circuit = iqp_circuit_pl(generators_pl, params, obs_strings, state)
         exact_val = circuit()
 
-        generators = jnp.array([[1, 0, 0], [0, 1, 0], [1, 1, 1]])
+        generators_matrix = np.zeros((len(generators_pl), n_qubits), dtype=int)
+        for i, wires in enumerate(generators_pl):
+            generators_matrix[i, wires] = 1
+        generators = jnp.array(generators_matrix)
+
         params_jax = jnp.array(params)
         obs_jax = [obs_strings]
+        key = jax.random.PRNGKey(42)  # Fixed key for reproducibility
+        atol = 3.5 / np.sqrt(n_samples)
+
+        approx_val, _ = _iqp_expval_core(
+            generators, params_jax, obs_jax, n_samples, key
+        )
+
+        assert np.allclose(exact_val, approx_val, atol=atol)
+
+    @pytest.mark.parametrize(
+        "n_qubits, gates, params, obs_strings",
+        [
+            (3, {0: [[0], [1]], 1: [[0, 1], [1, 2]]}, [0.1, 0.2], ["X", "Z", "Y"]),
+        ],
+    )
+    def test_iqp_expval_vs_pennylane(self, n_qubits, gates, params, obs_strings):
+        """Test that iqp_expval matches PennyLane default.qubit."""
+        generators_binary, param_map = _parse_iqp_dict(gates, n_qubits)
+        generators_pl = [list(np.where(row)[0]) for row in generators_binary] # generators in list form for PL
+        params_pl = np.array(params)[param_map] # one entry per gate
+
+        state = np.zeros(2**n_qubits)
+        state[0] = 1.0
+
+        circuit = iqp_circuit_pl(generators_pl, params_pl, obs_strings, state)
+        exact_val = circuit()
+
+        obs_jax = np.array([obs_strings])
         key = jax.random.PRNGKey(42)
         n_samples = 100000
+        atol = 3 * 1/np.sqrt(n_samples)
 
-        approx_val, _ = _iqp_expval_core(generators, params_jax, obs_jax, n_samples, key)
+        approx_val, _ = iqp_expval(gates, params, obs_jax, n_samples, n_qubits, key)
 
-        assert np.allclose(exact_val, approx_val, atol=0.02)
+        assert np.allclose(exact_val, approx_val, atol=atol)
+
 
 @pytest.mark.parametrize(
     "circuit_def,n_qubits,expected_generators,expected_param_map",
