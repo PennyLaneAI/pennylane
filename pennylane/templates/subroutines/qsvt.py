@@ -378,10 +378,10 @@ class QSVT(Operation):
     To see the implementation details, we can expand the circuit via :func:`qml.transforms.decompose <.transforms.decompose>`:
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
-    >>> q_scripts, func = qml.transforms.decompose(q_script, gate_set={"H", "Adjoint(H)", "RZ"})
+    >>> q_scripts, func = qml.transforms.decompose(q_script, gate_set=qml.decomposition.gate_sets.ALL_QUBIT_OPS)
     >>> q_script = func(q_scripts)
     >>> print(q_script.draw(decimals=2))
-    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
+    0: ──RZ(-2.46)──H──RZ(1.00)──H──RZ(-8.00)─┤
 
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
