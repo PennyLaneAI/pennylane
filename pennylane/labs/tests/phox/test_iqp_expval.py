@@ -23,7 +23,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 try:
-    from pennylane.labs.phox.simulator_pure_functions import _iqp_expval_core
+    from pennylane.labs.phox.simulator_pure_functions import _iqp_expval_core, _parse_iqp_dict
 except ImportError:
     pytest.skip("pennylane.labs.phox not found", allow_module_level=True)
 
@@ -87,3 +87,57 @@ class TestIQPExpval:
         approx_val, _ = _iqp_expval_core(generators, params_jax, obs_jax, n_samples, key)
 
         assert np.allclose(exact_val, approx_val, atol=0.02)
+
+@pytest.mark.parametrize(
+    "circuit_def,n_qubits,expected_generators,expected_param_map",
+    [
+        (
+            {0: [[0, 1]]},
+            3,
+            [[1, 1, 0]],
+            [0]
+        ),
+        (
+            {0: [[0]], 1: [[1, 2], [0, 2]]},
+            3,
+            [[1, 0, 0], [0, 1, 1], [1, 0, 1]],
+            [0, 1, 1]
+        ),
+        (
+            {},
+            2,
+            np.zeros((0, 2), dtype=int),
+            []
+        ),
+        (
+            {10: [[0]], 2: [[1]]},
+            2,
+            [[0, 1], [1, 0]],
+            [2, 10]
+        ),
+    ]
+)
+def test_parse_iqp_dict(circuit_def, n_qubits, expected_generators, expected_param_map):
+    """Test that _parse_iqp_dict correctly converts dictionary circuit definition into JAX arrays."""
+    generators, param_map = _parse_iqp_dict(circuit_def, n_qubits)
+
+    assert isinstance(generators, jnp.ndarray)
+    assert isinstance(param_map, jnp.ndarray)
+
+    expected_generators = np.array(expected_generators)
+    expected_param_map = np.array(expected_param_map)
+
+    assert generators.shape == expected_generators.shape
+    assert param_map.shape == expected_param_map.shape
+
+    assert np.allclose(generators, expected_generators)
+    assert np.allclose(param_map, expected_param_map)
+
+
+def test_parse_iqp_dict_index_error():
+    """Test that _parse_iqp_dict raises IndexError if qubits indices are out of bounds."""
+    circuit_def = {0: [[5]]}
+    n_qubits = 2  # 5 is out of bounds for 2 qubits
+
+    with pytest.raises(IndexError):
+        _parse_iqp_dict(circuit_def, n_qubits)
