@@ -16,18 +16,12 @@ This module contains the template for performing basis transformation defined by
 """
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.wires import Wires, WiresLike
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 def _adjust_determinant(matrix):
@@ -404,33 +398,29 @@ def _basis_rotation_decomp_resources(dim, is_real):
 
 # Not exact because PhaseShift(s) might be skipped
 @register_resources(_basis_rotation_decomp_resources, exact=False)
-def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
+def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
 
     if isinstance(wires, Wires):
         wires = wires.labels
 
-    if has_jax and capture.enabled():
-        unitary_matrix, wires = jnp.array(unitary_matrix), jnp.array(wires)
+    if capture.enabled():
+        matrix, wires = math.array(matrix, like="jax"), math.array(wires, like="jax")
 
     def real_unitary(unitary, wires):
+
         angle, unitary = _adjust_determinant(unitary)
 
-        if has_jax and capture.enabled():
-
-            def shift(a):
-                PhaseShift(a, wires=wires[0])
-
-            cond(jnp.logical_not(jnp.allclose(angle, 0.0)), shift)(angle)
+        if _is_jax_jit(angle):
+            PhaseShift(angle, wires[0])
         else:
-            if not math.is_abstract(angle) and not math.allclose(angle, 0.0):
-                PhaseShift(angle, wires=wires[0])
+            cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
 
         _, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
-        if has_jax and capture.enabled():
-            givens_ids = jnp.array(givens_ids)
-            givens_matrices = jnp.array(givens_matrices)
+        if capture.enabled():
+            givens_ids = math.array(givens_ids, like="jax")
+            givens_matrices = math.array(givens_matrices, like="jax")
 
         @for_loop(len(givens_list))
         def givens_loop(idx):
@@ -445,10 +435,10 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
-        if has_jax and capture.enabled():
-            phase_list = jnp.array(phase_list)
-            givens_ids = jnp.array(givens_ids)
-            givens_matrices = jnp.array(givens_matrices)
+        if capture.enabled():
+            phase_list = math.array(phase_list, like="jax")
+            givens_ids = math.array(givens_ids, like="jax")
+            givens_matrices = math.array(givens_matrices, like="jax")
 
         @for_loop(len(phase_list))
         def phase_loop(idx):
@@ -464,16 +454,15 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
             theta = math.arccos(math.real(grot_mat[1, 1]))
             phi = math.angle(grot_mat[0, 0])
             SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-            if has_jax and capture.enabled():
-                cond(jnp.logical_not(math.allclose(phi, 0.0)), PhaseShift)(phi, wires[i])
+            if _is_jax_jit(phi):
+                PhaseShift(phi, wires[i])
             else:
-                cond(not math.allclose(phi, 0.0), PhaseShift)(phi, wires[i])
+                cond(math.logical_not(math.allclose(phi, 0.0)), PhaseShift)(phi, wires[i])
 
         givens_loop()  # pylint: disable=no-value-for-parameter
 
-    is_real = math.is_real_obj_or_close(unitary_matrix)
-
-    cond(is_real, real_unitary, complex_unitary)(unitary=unitary_matrix, wires=wires)
+    is_real = math.is_real_obj_or_close(matrix)
+    cond(is_real, real_unitary, complex_unitary)(unitary=matrix, wires=wires)
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)
@@ -492,3 +481,7 @@ if BasisRotation._primitive is not None:  # pylint: disable=protected-access
         if len(args) != 2:
             args = (args[:-1], args[-1])
         return type.__call__(BasisRotation, *args, **kwargs)
+
+
+def _is_jax_jit(U):
+    return math.is_abstract(U) and not compiler.active() and not capture.enabled()

@@ -253,6 +253,7 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
         [
@@ -480,6 +481,7 @@ def circuit_decomposed(weights):
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestInterfaces:
     """Test that the template is compatible with all interfaces, including the computation
     of gradients."""
