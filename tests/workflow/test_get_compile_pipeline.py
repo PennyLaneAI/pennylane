@@ -250,3 +250,18 @@ def test_marker_level():
     cp = get_compile_pipeline(circuit, level="blah")()
     assert len(cp) == 1
     assert cp[0].tape_transform == qml.transforms.cancel_inverses.tape_transform
+
+
+def test_level_is_top():
+    """Tests that level is top returns an empty pipeline."""
+
+    dev = qml.device("reference.qubit")
+
+    @qml.transforms.merge_rotations(atol=1e-5)
+    @qml.transforms.cancel_inverses
+    @qml.qnode(dev)
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    cp = get_compile_pipeline(circuit, level="top")()
+    assert cp == CompilePipeline()
