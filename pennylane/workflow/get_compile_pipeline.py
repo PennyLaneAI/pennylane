@@ -44,6 +44,10 @@ def _resolve_level(qnode: QNode, config: ExecutionConfig, level: str | int | sli
 
     # Ignore final transforms for now, will be re-added later if needed
     if qnode.compile_pipeline.has_final_transform:
+        if level in {"gradient", "device"}:
+            raise ValueError(
+                f"Cannot retrieve compile pipeline if 'level={level}' is requested and a final transform is being used."
+            )
         # Remove pair if expansion + transform exists
         num_user -= 2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else 1
 
@@ -52,10 +56,6 @@ def _resolve_level(qnode: QNode, config: ExecutionConfig, level: str | int | sli
     elif level == "user":
         level = slice(0, num_user)
     elif level == "gradient":
-        if qnode.compile_pipeline.has_final_transform:
-            raise ValueError(
-                "Cannot retrieve compile pipeline if 'level=gradient' is requested and a final transform is being used."
-            )
         level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
     elif level == "device":
         # Captures everything: user + gradient + device + final
