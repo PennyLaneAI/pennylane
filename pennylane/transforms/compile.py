@@ -35,8 +35,8 @@ default_pipeline = (commute_controlled, cancel_inverses, merge_rotations, remove
 def compile(
     tape: QuantumScript,
     pipeline: Sequence[Transform] = default_pipeline,
-    basis_set=None,
-    num_passes=1,
+    basis_set: Sequence[str | type] | None = None,
+    num_passes: int = 1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
@@ -59,13 +59,14 @@ def compile(
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         pipeline (Sequence[transform]): A list of
             tape and/or quantum function transforms to apply.
-        basis_set (list[str]): A list of basis gates. When expanding the tape,
-            expansion will continue until gates in the specific set are
-            reached. If no basis set is specified, a default of
-            ``pennylane.ops.__all__`` will be used. This decomposes templates and
-            operator arithmetic. If an empty basis set (e.g. ``[]``, ``()``, or
-            ``{}``) is provided, all operations that can be decomposed will be
-            decomposed.
+        basis_set (Sequence[str, type]): A list of basis gates, specified either as
+            strings (e.g., ``"RX"``) or as :class:`~.Operator` subclasses
+            (e.g., ``qml.RX``). When expanding the tape, expansion will continue
+            until gates in the specific set are reached. If no basis set is
+            specified, a default of ``pennylane.ops.__all__`` will be used. This
+            decomposes templates and operator arithmetic. If an empty basis set
+            (e.g. ``[]``, ``()``, or ``{}``) is provided, all operations that can
+            be decomposed will be decomposed.
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
@@ -190,12 +191,35 @@ def compile(
         if basis_set is None:
             basis_set = gate_sets.ALL_OPS
 
+        # Separate basis_set into operator types and string names
+        basis_set_types = tuple(
+            op for op in basis_set if isinstance(op, type) and issubclass(op, qml.operation.Operator)
+        )
+        basis_set_names = {op for op in basis_set if isinstance(op, str)}
+
+        # Validate that all elements are either strings or Operator subclasses
+        for op in basis_set:
+            if not isinstance(op, str) and not (
+                isinstance(op, type) and issubclass(op, qml.operation.Operator)
+            ):
+                if isinstance(op, type):
+                    raise ValueError(
+                        f"Elements of basis_set must be strings or Operator subclasses, "
+                        f"got class {op.__name__} which is not an Operator subclass"
+                    )
+                raise ValueError(
+                    f"Elements of basis_set must be strings or Operator subclasses, "
+                    f"got {type(op).__name__}"
+                )
+
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
                 return True
             if not obj.has_decomposition:
                 return True
-            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+            if getattr(obj, "only_visual", False):
+                return False
+            return obj.name in basis_set_names or isinstance(obj, basis_set_types)
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
