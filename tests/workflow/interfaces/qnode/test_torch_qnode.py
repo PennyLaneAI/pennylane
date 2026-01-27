@@ -1268,6 +1268,10 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
             has_generator = False
@@ -1282,10 +1286,6 @@ class TestTapeExpansion:
                 qml.RY(3 * param, wires=wires)
 
             qml.add_decomps(PhaseShift, custom_decomposition)
-
-            gradient_kwargs = {}
-            if diff_method == "hadamard":
-                gradient_kwargs["aux_wire"] = 1
 
             @qnode(
                 dev,
@@ -1337,7 +1337,7 @@ class TestTapeExpansion:
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
-            gradient_kwargs["aux_wire"] = 1
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(
             dev,
