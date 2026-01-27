@@ -135,6 +135,11 @@ def hadamard_grad(
         Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a
         nested tuple depending upon the nesting structure of measurements in the original circuit.
 
+    .. warning::
+        Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`
+        or `mode="standard"` has been deprecated and will no longer be supported in 0.46. An ``aux_wire`` will
+        no longer be automatically assigned.
+
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with :math:`N` parameters
     :math:`\mathbf{p}`, consider the expectation value of an observable :math:`O`:
 
