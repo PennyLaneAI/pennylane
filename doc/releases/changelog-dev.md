@@ -11,6 +11,9 @@
   - :func:`~.math.binary_rank` computes the rank over :math:`\mathbb{Z}_2` of a binary matrix.
   - :func:`~.math.binary_solve_linear_system` solves a linear system of the form :math:`A\cdot x=b`
     with binary matrix :math:`A` and binary coefficient vector :math:`b` over :math:`\mathbb{Z}_2`.
+  - :func:`~.math.binary_select_basis` selects linearly independent columns out of a collection
+    of binary column vectors. The result forms a basis for the columnspace of the input. The
+    columns that are not selected are returned as well.
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent to 

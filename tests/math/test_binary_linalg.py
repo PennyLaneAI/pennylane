@@ -34,6 +34,11 @@ def _make_random_regular_matrix(n, random_ops, seed):
     return P % 2  # Make into binary matrix
 
 
+def _is_binary(x: np.ndarray) -> bool:
+    """Return whether all entries of a numpy array are binary."""
+    return set(x.flat).issubset({0, 1})
+
+
 @pytest.mark.parametrize(
     ("binary_matrix", "result"),
     [
@@ -285,3 +290,66 @@ class TestBinaryIsIndependent:
 
         is_indep = fn.binary_is_independent(vector, basis)
         assert is_indep is expected
+
+
+class TestBinarySelectBasis:
+
+    @pytest.mark.parametrize(
+        "bits",
+        [
+            np.array([[0, 1, 0], [1, 0, 1]]),
+            np.array([[0, 1, 1], [1, 0, 1]]),
+            np.array([[1, 1, 1], [1, 0, 1]]),
+            np.concatenate(
+                [
+                    _make_random_regular_matrix(15, 615, seed=9185),
+                    np.random.default_rng(852).choice(2, size=(15, 85)),
+                ],
+                axis=1,
+            ),
+            np.concatenate(
+                [
+                    np.random.default_rng(52).choice(2, size=(32, 64)),
+                    _make_random_regular_matrix(32, 5615, seed=985),
+                ],
+                axis=1,
+            ),
+        ],
+    )
+    def test_binary_select_basis_from_overcomplete(self, bits):
+        """Test that ``binary_select_basis`` can be used to compute a basis over
+        Z_2 out of overcomplete bit strings."""
+        r, D = bits.shape
+        basis, other_bits = fn.binary_select_basis(bits)
+        assert basis.shape == (r, r)
+        assert _is_binary(basis)
+        assert fn.binary_rank(basis) == r
+
+        assert other_bits.shape == (r, D - r)
+        assert _is_binary(other_bits)
+
+    @pytest.mark.parametrize(
+        "bits",
+        [
+            # Incomplete matrices
+            np.array([[0], [1]]),
+            np.eye(15, dtype=int)[:, :14],
+            np.array([[0, 1, 1], [1, 1, 0], [0, 1, 0], [1, 1, 0]]),
+            # Complete matrices
+            np.eye(1, dtype=int),
+            np.eye(2, dtype=int),
+            _make_random_regular_matrix(4, 14, seed=5214),
+            _make_random_regular_matrix(15, 174, seed=514),
+            _make_random_regular_matrix(55, 1074, seed=14),
+        ],
+    )
+    def test_binary_select_basis_from_incomplete(self, bits):
+        """Test that ``binary_select_basis`` can be used to compute a basis over
+        Z_2 out of incomplete (or exactly complete) bit strings (to span the entire space)."""
+        r, D = bits.shape
+        basis, other_bits = fn.binary_select_basis(bits)
+        assert basis.shape == (r, D)
+        assert _is_binary(basis)
+        assert fn.binary_rank(basis) == D
+
+        assert other_bits.shape == (r, 0)
