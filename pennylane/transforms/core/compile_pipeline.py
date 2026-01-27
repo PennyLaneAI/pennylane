@@ -324,7 +324,6 @@ class CompilePipeline:
         return bool(self._compile_pipeline)
 
     def __add__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
-
         # Convert dispatcher to container if needed
         if isinstance(other, Transform):
             other = BoundTransform(other)
@@ -436,6 +435,21 @@ class CompilePipeline:
         return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
     __rmul__ = __mul__
+
+    def __str__(self):
+        """Returns a user friendly representation of the compile pipeline class."""
+        if not self:
+            return "CompilePipeline()"
+
+        lines = []
+        for i, t in enumerate(self):
+            name = t.tape_transform.__name__ if t.tape_transform else t.pass_name
+            if name == "marker":
+                name += f'("{t.args[0]}")'
+            lines.append(f"  [{i}] {name}")
+
+        contents = ",\n".join(lines)
+        return f"CompilePipeline(\n{contents}\n)"
 
     def __repr__(self):
         """The string representation of the compile pipeline class."""

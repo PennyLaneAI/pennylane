@@ -201,9 +201,6 @@ def get_compile_pipeline(
         # Get full compile pipeline
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
-
-        # FIX: Cannot simply add the compile pipeline as final transforms are incorrectly appended at the end
-        # which do not represent their true execution pathway
         full_compile_pipeline = qnode.compile_pipeline + outer_pipeline + inner_pipeline
 
         num_user = len(qnode.compile_pipeline)
