@@ -99,7 +99,7 @@ def _use_tensorflow_autograph() -> bool:  # pragma: no cover
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
