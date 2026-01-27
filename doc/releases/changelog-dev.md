@@ -2,9 +2,10 @@
 
 <h3>New features since last release</h3>
 
-* Added new state preparation template :class:`~.SumOfSlatersStatePrep`.
+* Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
-  reversible bit encodings.
+  reversible bit encodings. For now, only classical preprocessing required to implement the
+  template is added.
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
 
 * Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
