@@ -111,6 +111,11 @@ def hadamard_grad(
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
 
+    .. warning::
+        Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`
+        or `mode="standard"` has been deprecated and will no longer be supported in 0.46. An ``aux_wire`` will
+        no longer be automatically assigned.
+
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
@@ -134,11 +139,6 @@ def hadamard_grad(
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
         Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a
         nested tuple depending upon the nesting structure of measurements in the original circuit.
-
-    .. warning::
-        Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`
-        or `mode="standard"` has been deprecated and will no longer be supported in 0.46. An ``aux_wire`` will
-        no longer be automatically assigned.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with :math:`N` parameters
     :math:`\mathbf{p}`, consider the expectation value of an observable :math:`O`:
