@@ -287,15 +287,12 @@ def _specs_qjit_intermediate_passes(
             gate_types = {}
 
             for res_name, sizes in res.operations.items():
-                match res_name:
-                    case "PPM":
-                        for size, count in sizes.items():
-                            gate_types[f"PPM-w{size}"] = count
-                    case "PPR-pi/2" | "PPR-pi/4" | "PPR-pi/8":
-                        for size, count in sizes.items():
-                            gate_types[f"{res_name}-w{size}"] = count
-                    case _:
-                        gate_types[res_name] = sum(sizes.values())
+                if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8"):
+                    # Separate out PPMs and PPRs by weight
+                    for size, count in sizes.items():
+                        gate_types[f"{res_name}-w{size}"] = count
+                else:
+                    gate_types[res_name] = sum(sizes.values())
 
             res_resources = SpecsResources(
                 gate_types=gate_types,
