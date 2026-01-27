@@ -65,7 +65,7 @@ dev = [
     "pytest-split",
     "tomlkit~=0.13",
     "rich>=13.7.1",
-    "tach~=0.33",
+    "tach==0.32.2",
     "build",
     "pylint~=4.0.0",
     "isort~=7.0.0",
