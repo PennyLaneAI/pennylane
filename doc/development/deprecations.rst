@@ -9,8 +9,9 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* ``tape.expand()`` and related functions, methods have been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+* ``tape.expand()`` and related functions ``expand_tape``, ``expand_tape_state_prep``, ``create_expand_trainable_multipar``
+  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>`
+  function for decomposing circuits.
 
   - Deprecated in v0.45
   - Will be removed in v0.46

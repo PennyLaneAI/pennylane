@@ -147,8 +147,9 @@
 
 <h3>Deprecations 👋</h3>
 
-* ``tape.expand()`` and related functions, methods have been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+* ``tape.expand()`` and related functions ``expand_tape``, ``expand_tape_state_prep``, ``create_expand_trainable_multipar`` 
+  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` 
+  function for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
 
 * Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` in reversed or standard mode has been
