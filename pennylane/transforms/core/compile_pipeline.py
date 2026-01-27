@@ -442,20 +442,30 @@ class CompilePipeline:
             return "CompilePipeline()"
 
         lines = []
-        for i, t in enumerate(self):
-            name = t.tape_transform.__name__ if t.tape_transform else t.pass_name
+        for i, transform in enumerate(self):
+            name = (
+                transform.tape_transform.__name__
+                if transform.tape_transform
+                else transform.pass_name
+            )
             if name == "marker":
-                name += f'("{t.args[0]}")'
+                name += f'("{transform.args[0]}")'
             lines.append(f"  [{i}] {name}")
 
         contents = ",\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
 
     def __repr__(self):
-        """The string representation of the compile pipeline class."""
-        gen = (f"{t.tape_transform.__name__ if t.tape_transform else t.pass_name}" for t in self)
-        contents = ", ".join(gen)
-        return f"CompilePipeline({contents})"
+        """The detailed string representation of the compile pipeline class."""
+        if not self:
+            return "CompilePipeline()"
+
+        lines = []
+        for i, transform in enumerate(self):
+            lines.append(f"  [{i}] {repr(transform)}")
+
+        contents = ",\n".join(lines)
+        return f"CompilePipeline(\n{contents}\n)"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CompilePipeline):
