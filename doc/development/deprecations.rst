@@ -10,7 +10,7 @@ Pending deprecations
 --------------------
 
 
-* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"` or `mode="standard"` has been
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
   deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
 
   - Deprecated in v0.45
