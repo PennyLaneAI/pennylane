@@ -19,12 +19,11 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pennylane.math import ceil_log2
+from pennylane.math import binary_rank, ceil_log2
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
     _get_bits_basis,
-    _rank_over_z2,
     _select_rows,
     compute_sos_encoding,
 )
@@ -91,7 +90,7 @@ def random_distinct_bitstrings(num_bits, num_strings, seed, full_rank=False):
     assert _columns_differ(bitstrings)  # Validate that columns are distinct
 
     if full_rank:
-        assert _rank_over_z2(bitstrings) == num_bits
+        assert binary_rank(bitstrings) == num_bits
     return bitstrings
 
 
@@ -194,32 +193,6 @@ class TestHelperFunctions:
         assert np.allclose(new_bits, bits[np.array(selectors)])
 
     @pytest.mark.parametrize(
-        "bits, expected",
-        [
-            (np.eye(2, dtype=int), 2),
-            (np.eye(3, dtype=int), 3),
-            (np.eye(17, dtype=int), 17),
-            (np.array([[0, 1], [1, 1]]), 2),
-            (np.array([[0, 1], [0, 1]]), 1),
-            (np.array([[0, 0], [1, 1]]), 1),
-            (np.array([[0, 0, 1], [0, 1, 1], [0, 1, 0]]), 2),
-            (np.array([[0, 0, 0], [0, 1, 1], [0, 1, 0]]), 2),
-            (np.eye(100, dtype=int)[:63], 63),
-            (np.eye(100, dtype=int)[:, :63], 63),
-        ],
-    )
-    def test_rank(self, bits, expected):
-        """Test that the _rank helper function correctly computes the rank over Z_2."""
-        rk = _rank_over_z2(bits)
-        assert rk == expected
-
-    def test_rank_over_z2_error(self):
-        """Test that an error is raised if more than 64 bits are required to represent the bit
-        strings in the input to _rank_over_z2."""
-        with pytest.raises(NotImplementedError, match="smaller than or equal to 64"):
-            _ = _rank_over_z2(np.eye(65, dtype=int))
-
-    @pytest.mark.parametrize(
         "bits",
         [
             np.array([[0, 1, 0], [1, 0, 1]]),
@@ -251,7 +224,7 @@ class TestHelperFunctions:
         basis, other_bits = _get_bits_basis(bits)
         assert basis.shape == (r, r)
         assert _is_binary(basis)
-        assert _rank_over_z2(basis) == r
+        assert binary_rank(basis) == r
 
         assert other_bits.shape == (r, D - r)
         assert _is_binary(other_bits)
