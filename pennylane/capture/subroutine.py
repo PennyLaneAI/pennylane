@@ -172,6 +172,8 @@ def subroutine(func, static_argnums=None, static_argnames=None):
     def wrapper(*args, **kwargs):
         if not enabled():
             return func(*args, **kwargs)
+        # we want jit_p to be turned into quantum_subroutine_p just for the capturing of this particular
+        # function as a higher order primitive
         with Patcher(
             (
                 jax._src.pjit,  # pylint: disable=protected-access
