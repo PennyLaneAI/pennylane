@@ -91,6 +91,104 @@ def get_compile_pipeline(
         qnode (QNode): The QNode to get the compile pipeline for.
         level (str, int, slice): An indication of what transforms to use from the full compile pipeline.
 
+            - ``"device"``: Uses the entire transformation pipeline.
+            - ``"top"``: Ignores transformations and returns the original tape as defined.
+            - ``"user"``: Includes transformations that are manually applied by the user.
+            - ``"gradient"``: Extracts the gradient-level tape.
+            - ``str``: Can also accept a string corresponding to the name of a marker that was manually added to the compile pipeline.
+            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
+            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
+
+    Raises:
+        ValueError: If a final transform is applied to the qnode with a level that goes deeper than the gradient level of the compile pipeline.
+
+    **Example:**
+
+    Consider this simple circuit,
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit")
+
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.RX(1, wires=0)
+            qml.RX(1, wires=0)
+            qml.H(0)
+            return qml.expval(qml.Z(0))
+
+    We can retrieve the compile pipeline used during execution with,
+
+    >>> get_compile_pipeline(circuit)() # or level="device"
+    CompilePipeline(cancel_inverses, merge_rotations, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, no_sampling)
+
+    or use the ``level`` argument to inspect specific stages of the pipeline.
+
+    >>> get_compile_pipeline(circuit, level="user")()
+    CompilePipeline(cancel_inverses, merge_rotations)
+
+    .. details::
+        :title: Usage Details
+
+        Consider the circuit below which has user applied transforms, a checkpoint marker and uses the parameter-shift gradient method,
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.transforms.merge_rotations
+            @qml.marker("checkpoint")
+            @qml.transforms.cancel_inverses
+            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
+            def circuit(x):
+                qml.RX(x, wires=0)
+                return qml.expval(qml.Z(0))
+
+        By default, without specifying a ``level`` we will get the full compile pipeline that is used during execution on this device.
+        Note that this can also be retrieved by manually specifying ``level="device"``,
+
+        >>> get_compile_pipeline(circuit)(3.14)
+        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
+
+        As can be seen above, this not only includes the two transforms we manually applied, but also a set of transforms used by the device in order to execute the circuit.
+        The ``"user"`` level will retrieve the portion of the compile pipeline that was manually applied by the user to the qnode,
+
+        >>> get_compile_pipeline(circuit, level="user")(3.14)
+        CompilePipeline(cancel_inverses, marker, merge_rotations)
+
+        The ``"gradient"`` level builds on top of this to then add any relevant gradient transforms,
+
+        >>> get_compile_pipeline(circuit, level="gradient")(3.14)
+        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_transform_param_shift)
+
+        which in this case is ``_expand_transform_param_shift``, a transform that expands all trainable operations
+        to a state where the parameter shift transform can operate on them.
+
+        We can use ``qml.marker`` to further subdivide our compile pipeline into stages,
+
+        >>> get_compile_pipeline(circuit, level="checkpoint")(3.14)
+        CompilePipeline(cancel_inverses)
+
+        If ``"top"`` or ``0`` are specified, an empty compile pipeline will be returned,
+
+        >>> get_compile_pipeline(circuit, level=0)(3.14)
+        CompilePipeline()
+        >>> get_compile_pipeline(circuit, level="top")(3.14)
+        CompilePipeline()
+
+        Integer levels correspond to the number of transforms to retrieve from the compile pipeline,
+
+        >>> get_compile_pipeline(circuit, level=3)(3.14)
+        CompilePipeline(cancel_inverses, marker, merge_rotations)
+
+        Slice levels enable you to extract a specific range of transformations in the compile pipeline. For example, we can retrieve the second to fourth transform by using a slice,
+
+        >>> get_compile_pipeline(circuit, level=slice(1,4))(3.14)
+        CompilePipeline(marker, merge_rotations, _expand_transform_param_shift)
+
     """
 
     if not isinstance(level, (int, slice, str)):
