@@ -1552,11 +1552,12 @@ def test_expand_metric_tensor():
 
     @qml.qnode(dev)
     def circuit(x, z):
+        qml.H("wire2")
         qml.RX(x, wires="wire1")
         qml.RZ(z, wires="wire1")
-        return qml.expval(qml.PauliZ("wire2"))
+        return qml.expval(qml.PauliZ("wire1"))
 
-    for allow in enumerate(allow_nonunitary):
+    for allow in allow_nonunitary:
         res.append(qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow)(x, z))
 
     assert qml.numpy.allclose(res[0], res[1])
