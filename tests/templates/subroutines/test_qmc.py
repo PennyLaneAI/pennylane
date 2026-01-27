@@ -482,6 +482,7 @@ class TestQuantumMonteCarlo:
         exact = 0.432332358381693654
         assert np.allclose(mu_estimated, exact, rtol=1e-3)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         xs = np.linspace(-np.pi, np.pi, 2**5)

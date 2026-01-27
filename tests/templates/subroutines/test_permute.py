@@ -415,6 +415,7 @@ class TestInputs:
 
         qml.tape.QuantumScript.from_queue(q)
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.Permute([0, 1, 2], wires=[0, 1, 2], id="a")

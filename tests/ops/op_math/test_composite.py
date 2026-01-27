@@ -334,7 +334,6 @@ class TestMscMethods:
         op = ValidOp(*ops_lst)
         copied_op = copy(op)
 
-        assert op.id == copied_op.id
         assert op.data == copied_op.data
         assert op.wires == copied_op.wires
 
