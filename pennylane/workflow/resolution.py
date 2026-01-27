@@ -195,7 +195,7 @@ def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> Execut
     ):
         raise ValueError(
             "Higher order derivatives with hadamard gradients in standard and reversed modes are not possible. "
-            "Please use direct or reversed-direct mode to perform a higher order derivative with a hadamard gradient."
+            "Instead please use direct or reversed-direct mode to perform a higher order derivative with a hadamard gradient."
         )
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
