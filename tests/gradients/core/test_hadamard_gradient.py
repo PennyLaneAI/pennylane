@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane import qnode
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.gradients import hadamard_gradient
 
@@ -1373,6 +1374,37 @@ class TestHadamardGradEdgeCases:
         assert isinstance(result, np.ndarray)
         assert result.shape == (4, 3)
         assert np.allclose(result, 0)
+
+    @pytest.mark.parametrize(
+        "kwargs", [{"aux_wire": 1}, {"mode": "reversed"}, {"mode": "standard"}]
+    )
+    @pytest.mark.jax
+    def test_higher_order_derivative_with_aux_wire_raises(self, kwargs):
+        import jax
+
+        @qnode(
+            qml.device("default.qubit", wires=2),
+            diff_method="hadamard",
+            interface="auto",
+            grad_on_execution=False,
+            max_diff=2,
+            device_vjp=False,
+            gradient_kwargs=kwargs,
+        )
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.probs(wires=0)
+
+        a = jax.numpy.array(1.0)
+        b = jax.numpy.array(2.0)
+
+        with pytest.raises(ValueError, match="Higher order derivatives"):
+            res = circuit(a, b)
+
+            jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
+            g = jac_fn(a, b)
+            hess = jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
 
 
 @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
