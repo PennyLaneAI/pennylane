@@ -23,7 +23,7 @@ dependencies = [
     "typing_extensions",
     "packaging",
     "diastatic-malt",
-    "numpy"
+    "numpy>=2.0"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -65,7 +65,7 @@ dev = [
     "pytest-split",
     "tomlkit~=0.13",
     "rich>=13.7.1",
-    "tach~=0.33",
+    "tach==0.32.2",
     "build",
     "pylint~=4.0.0",
     "isort~=7.0.0",
@@ -120,6 +120,7 @@ docs = [
     "pennylane-sphinx-theme",
     "tomli~=2.0.0",
     "sphinxext-opengraph==0.9.0",
+    "sphinx-sitemap",
     "matplotlib==3.10.0",
     "galois",
     "requests==2.32.4"

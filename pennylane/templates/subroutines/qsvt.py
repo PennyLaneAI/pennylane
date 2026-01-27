@@ -122,7 +122,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
 
         # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
 
-        fable_norm = int(np.ceil(np.log2(max_dimension)))
+        fable_norm = math.ceil_log2(max_dimension)
         encoding = FABLE(2**fable_norm * A, wires=encoding_wires)
 
         projectors = [ops.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
@@ -390,8 +390,8 @@ class QSVT(Operation):
     ... def example_circuit():
     ...     qml.QSVT(block_encoding, phase_shifts)
     ...     return qml.expval(qml.Z(0))
-    ... 
-    
+    ...
+
     >>> example_circuit()
     np.float64(0.5403...)
 

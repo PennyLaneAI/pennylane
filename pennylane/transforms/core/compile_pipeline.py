@@ -28,7 +28,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
-from .transform_dispatcher import BoundTransform, Transform
+from .transform import BoundTransform, Transform
 
 if TYPE_CHECKING:
     import jax
@@ -732,6 +732,7 @@ class CompilePipeline:
 
 @Transform.generic_register
 def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
+    targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     program = copy(obj)
     program.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
     return program
