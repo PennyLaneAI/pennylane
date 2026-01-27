@@ -160,6 +160,10 @@
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
   [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
 
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
+
 * The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
   Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
@@ -170,6 +174,9 @@
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
+  [(#xxxx)](https://github.com/PennyLaneAI/pennylane/pull/xxxx)
 
 * Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
   Bumped `rng_salt` to `v0.45.0`.
