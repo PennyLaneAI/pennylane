@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from pennylane.math import solve_binary_linear_system
+from pennylane.math import binary_solve_linear_system
 from pennylane.ops import CNOT
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -217,7 +217,7 @@ def _get_S(P: TensorLike, idx: int, node_set: Iterable[int], mode: str):
     else:
         e_i = np.zeros(len(P), dtype=int)
         e_i[idx] = 1
-        b = solve_binary_linear_system(P.T, e_i)
+        b = binary_solve_linear_system(P.T, e_i)
     S = set(np.where(b)[0])
     # Add the node ``idx`` itself
     S.add(idx)
