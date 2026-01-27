@@ -17,6 +17,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.specs` now includes PPR and PPM weights in its output.
+  [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
+
 * `qml.vjp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
 
