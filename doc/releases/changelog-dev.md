@@ -147,6 +147,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
+
 
 * The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
   Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
@@ -206,6 +210,15 @@
 
 * Fixes a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
   [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
+
+* Fixes a bug where the `DecomposeInterpreter` cannot be applied on a `QNode` with the new graph-based decomposition system enabled.
+  [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
+
+* Fixes a bug where `qml.equal` raises an error for `SProd` with abstract scalar parameters and `Exp` with abstract coefficients.
+  [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
+
+* Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
+  [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
 <h3>Contributors ✍️</h3>
 
