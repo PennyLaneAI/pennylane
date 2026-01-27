@@ -17,7 +17,7 @@ from itertools import combinations, product
 
 import numpy as np
 
-from pennylane.math import binary_is_independent, binary_rank, ceil_log2
+from pennylane.math import binary_is_independent, binary_rank, binary_select_basis, ceil_log2
 from pennylane.operation import Operation
 
 
@@ -147,29 +147,6 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
             break
 
     return selectors, bits
-
-
-def _get_bits_basis(bits: np.ndarray):
-    r"""Select bit strings from a set of bitstrings that form a basis
-    for the column space.
-
-    Args:
-        bits (np.ndarray): Input bitstrings.
-    """
-    r, _ = bits.shape
-    basis = np.zeros((r, 0), dtype=int)
-    other_cols = []
-    for col in bits.T:
-        if basis.shape[1] < r and binary_is_independent(col, basis):
-            basis = np.concatenate([basis, col[:, None]], axis=1)
-        else:
-            other_cols.append(col)
-
-    if not other_cols:
-        other_cols = np.zeros((r, 0), dtype=int)
-    else:
-        other_cols = np.array(other_cols).T
-    return basis, other_cols
 
 
 def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> np.ndarray:
@@ -412,7 +389,7 @@ def compute_sos_encoding(bits):
             form a--likely not orthonormal--basis
             of :math:`\mathbb{Z}_2^r`). We relabel the vectors so that this selection of vectors has
             the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
-            This is implemented in ``_get_bits_basis``, which returns the
+            This is implemented in ``qml.math.binary_select_basis``, which returns the
             basis and the remaining columns separately.
         2.  If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use recursion), go
             to step 2a. Else go to step 2b.
@@ -450,7 +427,7 @@ def compute_sos_encoding(bits):
         # Particularly simple brute force solution
         W = _find_single_w(bits, r)
     else:
-        bits_basis, other_bits = _get_bits_basis(bits)
+        bits_basis, other_bits = binary_select_basis(bits)
         W = _find_w(bits_basis, other_bits, r, t=r - m)
 
     U = _find_U_from_W(W, r)
