@@ -217,6 +217,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 def expand_tape_state_prep(tape, skip_first=True):
     """Expand all instances of StatePrepBase operations in the tape.
 
+    .. warning::
+        The ``expand_tape_state_prep`` function is deprecated in PennyLane v0.45 and will be removed in v0.46.
+        Please use the ``qml.transforms.decompose`` function for decomposing circuits.
+
     Args:
         tape (QuantumScript): The tape to expand.
         skip_first (bool): If ``True``, will not expand a ``StatePrepBase`` operation if
