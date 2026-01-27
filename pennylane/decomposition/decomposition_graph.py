@@ -34,9 +34,8 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
-from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DecompositionError
+from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
@@ -59,7 +58,7 @@ from .symbolic_decomposition import (
 )
 from .utils import translate_op_alias
 
-IGNORED_UNSOLVED_OPS = {Allocate, Deallocate}
+IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier"}
 
 
 @dataclass(frozen=True)
@@ -532,15 +531,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {
-                _to_name(op) for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS
-            }
+            unsolved_op_names = {_to_name(op) for op in unsolved_ops} - IGNORED_UNSOLVED_OPS
             # If unsolved operators are left after filtering for those to be ignored, warn
-            if op_names:
+            if unsolved_op_names:
                 warnings.warn(
                     f"The graph-based decomposition system is unable to find a decomposition for "
-                    f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
-                    UserWarning,
+                    f"{unsolved_op_names} to the target gate set {set(self._gate_set_weights)}.",
+                    DecompositionWarning,
                 )
         return DecompGraphSolution(
             visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
