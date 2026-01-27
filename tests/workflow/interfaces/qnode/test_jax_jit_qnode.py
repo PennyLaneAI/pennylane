@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DeviceError
 
 
 def get_device(device_name, wires, seed):
