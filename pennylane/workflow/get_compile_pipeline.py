@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec
 
@@ -23,6 +22,8 @@ from pennylane.workflow import construct_execution_config, marker
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from pennylane.devices.execution_config import ExecutionConfig
     from pennylane.transforms.core import CompilePipeline
     from pennylane.workflow import QNode
