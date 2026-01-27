@@ -492,7 +492,7 @@ class TestQNode:
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
-        class U3(qml.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qml.U3):  # pylint:disable=too-few-public-methods
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
@@ -508,7 +508,7 @@ class TestQNode:
                 qml.Rot(lam, theta, -lam, wires)
                 qml.PhaseShift(phi + lam, wires)
 
-            qml.add_decomps(U3, _decomp)
+            qml.add_decomps(MyU3, _decomp)
 
             a = np.array(0.1)
             p_val = [0.1, 0.2, 0.3]
@@ -517,7 +517,7 @@ class TestQNode:
             @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
             def circuit(a, p):
                 qml.RX(a, wires=0)
-                U3(p[0], p[1], p[2], wires=0)
+                MyU3(p[0], p[1], p[2], wires=0)
                 return qml.expval(qml.PauliX(0))
 
             res = circuit(a, p)
