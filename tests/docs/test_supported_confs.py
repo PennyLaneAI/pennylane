@@ -47,8 +47,8 @@ shots_list = [None, 100]
 #   3. The wire to measure in a single-qubit measurement process
 #   4. The wires(s) to measure in a multi-qubit measurement process
 wire_specs_list = [
-    (1, [0], 0, 0),
-    (2, [0, 1], 0, [0, 1]),
+    (2, [0, 1], 0, 0),
+    (3, [0, 1, 2], 0, [0, 1]),
     # (["a"], ["a"], "a", "a"),
     # (["a", "b"], ["a", "b"], "a", ["a", "b"]),
 ]
@@ -88,7 +88,7 @@ grad_return_cases = [
 ]
 
 
-def get_qnode(interface, diff_method, return_type, shots, wire_specs):
+def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_kwargs=None):
     """Return a QNode with the given attributes.
 
     This function includes a general QNode definition that is used to create a
@@ -96,8 +96,9 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
 
     * input interface,
     * differentiation method,
-    * return type and
-    * the number of shots for the device.
+    * return type,
+    * the number of shots for the device
+    * and any parameters for the diff method.
     * the wire specifications, see the comment above
     """
     device_wires, wire_labels, single_meas_wire, multi_meas_wire = wire_specs
@@ -106,9 +107,9 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
 
     # pylint: disable=too-many-return-statements
     @qml.set_shots(shots)
-    @qml.qnode(dev, interface=interface, diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
     def circuit(x):
-        for i, wire_label in enumerate(wire_labels):
+        for i, wire_label in enumerate(wire_labels[:-1]):
             qml.Hadamard(wires=wire_label)
             qml.RX(x[i], wires=wire_label)
 
@@ -508,8 +509,8 @@ class TestSupportedConfs:
         compute_gradient(x, interface, circuit, "StateVector", complex=True)
 
     wire_specs_list = [
-        (2, [0], 0, 0),
-        (3, [0, 1], 0, [0, 1]),
+        (2, [0, 1], 0, 0),
+        (3, [0, 1, 2], 0, [0, 1]),
     ]
 
     @pytest.mark.parametrize("interface", diff_interfaces)
@@ -534,7 +535,9 @@ class TestSupportedConfs:
         """Test diff_method "hadamard" works for all interfaces and
         return_types except State, DensityMatrix and Var"""
         # correctness is already tested in other test files
-        circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
+        circuit = get_qnode(
+            interface, diff_method, return_type, shots, wire_specs, {"aux_wire": wire_specs[1][-1]}
+        )
         x = get_variable(interface, wire_specs)
         if return_type in ("VnEntropy", "MutualInfo"):
             if shots and interface != "jax":

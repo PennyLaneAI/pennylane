@@ -15,27 +15,24 @@
 Tests for capturing a qnode into jaxpr.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,wrong-import-position,ungrouped-imports
+
 import pytest
 
 import pennylane as qml
 from pennylane.exceptions import CaptureError, QuantumFunctionError
+from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-from pennylane.capture.autograph import run_autograph  # pylint: disable=wrong-import-position
+from pennylane.capture.autograph import run_autograph
 
 # must be below jax importorskip
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    qnode_prim,
-    transform_prim,
-)
-from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
-    CollectOpsandMeas,
-)
+from pennylane.capture.primitives import qnode_prim, transform_prim
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 def get_qnode_output_eqns(jaxpr):
@@ -566,11 +563,12 @@ class TestUserTransforms:
         assert all(
             getattr(eqn.primitive, "prim_type", "") != "transform" for eqn in device_jaxpr.eqns
         )
-        assert device_jaxpr.eqns[0].primitive == qml.RZ._primitive
-        assert device_jaxpr.eqns[1].primitive == qml.RY._primitive
-        assert device_jaxpr.eqns[2].primitive == qml.RZ._primitive
-        assert device_jaxpr.eqns[3].primitive == qml.PauliZ._primitive
-        assert device_jaxpr.eqns[4].primitive == qml.measurements.ExpectationMP._obs_primitive
+        ops_and_meas = extract_ops_and_meas_prims(device_jaxpr)
+        assert ops_and_meas[0].primitive == qml.RZ._primitive
+        assert ops_and_meas[1].primitive == qml.RY._primitive
+        assert ops_and_meas[2].primitive == qml.RZ._primitive
+        assert ops_and_meas[3].primitive == qml.PauliZ._primitive
+        assert ops_and_meas[4].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     @pytest.mark.integration
     def test_execution(self, disable_around_qnode):
