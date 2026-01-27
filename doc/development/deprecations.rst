@@ -9,12 +9,24 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Maintenance support of NumPy<2.0 is deprecated and will be dropped in v0.45.
-  PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
-  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
-  
-  - Deprecated in v0.44
-  - Will be removed in v0.45
+
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
+* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
+  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
+* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
 
 * Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
   please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
@@ -75,6 +87,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Maintenance support of NumPy<2.0 has been removed. PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
+  We recommend upgrading your version of NumPy to benefit from enhanced support and features.
+  
+  - Deprecated in v0.44
+  - Removed in v0.45
 
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used to enable capture instead.

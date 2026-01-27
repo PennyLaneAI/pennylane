@@ -388,7 +388,7 @@ def merge_rotations(
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
-        if not current_gate in composable_rotations:
+        if current_gate not in composable_rotations:
             new_operations.append(current_gate)
             list_copy.pop(0)
             continue

@@ -33,7 +33,11 @@ from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.resolve_dynamic_wires import resolve_dynamic_wires
 
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.capture,
+    pytest.mark.usefixtures("enable_graph_decomposition"),
+]
 
 
 class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
@@ -94,7 +98,6 @@ def _decomp2_without_work_wire(wires, **__):
     qml.Toffoli(wires=[wires[2], wires[1], wires[0]])
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDecomposeInterpreterGraphEnabled:
     """Tests the DecomposeInterpreter with the new graph-based decomposition system enabled."""
 

@@ -186,6 +186,17 @@ def _resolve_mcm_config(
 
 def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> ExecutionConfig:
     diff_method = initial_config.gradient_method
+    if initial_config.derivative_order > 1 and (
+        "aux_wire" in initial_config.gradient_keyword_arguments
+        or (
+            "mode" in initial_config.gradient_keyword_arguments
+            and initial_config.gradient_keyword_arguments["mode"] in ("standard", "reversed")
+        )
+    ):
+        raise ValueError(
+            "Higher order derivatives with hadamard gradients in standard and reversed modes are not possible. "
+            "Instead please use direct or reversed-direct mode to perform a higher order derivative with a hadamard gradient."
+        )
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
         raise ValueError(

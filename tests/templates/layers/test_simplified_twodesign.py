@@ -38,6 +38,60 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(op)
 
 
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:  # pylint: disable=too-few-public-methods
+    """Tests the correctness of the template in a qnode."""
+
+    @pytest.mark.parametrize(
+        "initial_layer_weights, weights, n_wires, target",
+        [
+            ([np.pi], [], 1, [-1]),
+            ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
+            ([np.pi] * 3, [[[np.pi] * 2] * 2], 3, [1, -1, 1]),
+            ([np.pi] * 4, [[[np.pi] * 2] * 3], 4, [1, -1, -1, 1]),
+        ],
+    )
+    def test_correct_target_output(self, initial_layer_weights, weights, n_wires, target, tol):
+        """Tests the result of the template for simple cases."""
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(initial_layer, weights):
+            qml.SimplifiedTwoDesign(
+                initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires)
+            )
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        expectations = circuit(np.array(initial_layer_weights), np.array(weights))
+        for exp, target_exp in zip(expectations, target):
+            assert np.allclose(exp, target_exp, atol=tol, rtol=0)
+
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        weights = np.random.random(size=(1, 2, 2))
+        initial_layer = np.random.randn(3)
+
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
+            return qml.expval(qml.Identity(0)), qml.state()
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
+            return qml.expval(qml.Identity("z")), qml.state()
+
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
+
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -102,56 +156,6 @@ class TestDecomposition:
             for o, exp_param in zip(ops, exp_params):
                 res_param = o.parameters[0]
                 assert res_param == exp_param
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    @pytest.mark.parametrize(
-        "initial_layer_weights, weights, n_wires, target",
-        [
-            ([np.pi], [], 1, [-1]),
-            ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
-            ([np.pi] * 3, [[[np.pi] * 2] * 2], 3, [1, -1, 1]),
-            ([np.pi] * 4, [[[np.pi] * 2] * 3], 4, [1, -1, -1, 1]),
-        ],
-    )
-    def test_correct_target_output(self, initial_layer_weights, weights, n_wires, target, tol):
-        """Tests the result of the template for simple cases."""
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(initial_layer, weights):
-            qml.SimplifiedTwoDesign(
-                initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires)
-            )
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        expectations = circuit(np.array(initial_layer_weights), np.array(weights))
-        for exp, target_exp in zip(expectations, target):
-            assert np.allclose(exp, target_exp, atol=tol, rtol=0)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 2, 2))
-        initial_layer = np.random.randn(3)
-
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
-
-        @qml.qnode(dev2)
-        def circuit2():
-            qml.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
         ([np.pi], [], range(1)),
