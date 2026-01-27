@@ -34,8 +34,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
     .. warning::
-        The expand_tape function is deprecated in PennyLane v0.45 and will be removed in v0.46.
-        Please use the qml.transforms.decompose function for decomposing circuits.
+        The ``expand_tape`` function is deprecated in PennyLane v0.45 and will be removed in v0.46.
+        Please use the ``qml.transforms.decompose`` function for decomposing circuits.
 
     Args:
         tape (QuantumTape): The tape to expand
