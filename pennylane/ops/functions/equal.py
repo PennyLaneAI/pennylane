@@ -577,7 +577,11 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                     f"{params1} trainability is {params1_trainability} and {params2} trainability is {params2_trainability}"
                 )
 
-    if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
+    if qml.math.is_abstract(op1.coeff) or qml.math.is_abstract(op2.coeff):
+        if op1.coeff is not op2.coeff:
+            return "Abstract scalars cannot be compared for equality."
+
+    elif not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
         return f"op1 and op2 have different coefficients. Got {op1.coeff} and {op2.coeff}"
 
     equal_check = _equal(op1.base, op2.base, **kwargs)
