@@ -20,13 +20,11 @@ def _phase(pauli: str, qubit: int) -> complex:
     if pauli == "Y":
         if qubit == 0:
             return -1j
-
         return 1j
 
     if pauli == "X":
         if qubit == 0:
             return 1
-
         return -1
 
     raise ValueError(f"Expected Pauli I, X, Y, or Z, got {pauli}.")
