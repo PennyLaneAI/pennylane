@@ -692,7 +692,7 @@ class TrotterizedQfunc(Operation):
         qfunc_args = self.parameters[1:]
 
         base_hyper_params = ("n", "order", "qfunc", "reverse")
-        qfunc_kwargs = {k: v for k, v in self.hyperparameters.items() if not k in base_hyper_params}
+        qfunc_kwargs = {k: v for k, v in self.hyperparameters.items() if k not in base_hyper_params}
 
         decomp = (
             _recursive_qfunc(

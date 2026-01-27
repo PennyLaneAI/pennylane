@@ -204,6 +204,7 @@ __all__ = [
     "block_diag",
     "cast",
     "cast_like",
+    "ceil_log2",
     "concatenate",
     "convert_like",
     "convert_to_su2",

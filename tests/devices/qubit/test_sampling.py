@@ -978,10 +978,6 @@ class TestBroadcastingPRNG:
         # third batch of samples can be any of |00>, |01>, |10>, or |11>
         assert np.all(np.logical_or(res[2] == 0, res[2] == 1))
 
-    # NOTE: The accuracy checking of this test is necessary,
-    # but the definition of `atol` is too arbitrary. Further
-    # investigation is needed to establish a more systematic
-    # approach to test the final sampling distribution. [sc-91887]
     @pytest.mark.parametrize(
         "measurement, expected",
         [
@@ -1019,7 +1015,7 @@ class TestBroadcastingPRNG:
         )
 
         spy.assert_called()
-        assert np.allclose(res, expected, atol=0.01)
+        assert np.allclose(res, expected, atol=0.03)
 
     @pytest.mark.parametrize(
         "shots",
@@ -1315,7 +1311,9 @@ class TestHamiltonianSamples:
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = simulate(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.001)
+        # [sc=107860]
+        # Tolerance set to 3σ (σ ≈ 0.00116 for this Hamiltonian with
+        assert np.allclose(res, expected, atol=0.0035)
 
 
 class TestSampleProbs:
