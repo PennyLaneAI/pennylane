@@ -68,14 +68,12 @@ def _resolve_level(
     elif level == "user":
         level = slice(0, num_user)
     elif level == "gradient":
-        gradient_level = num_user + int(hasattr(config.gradient_method, "expand_transform"))
-        level = slice(0, gradient_level)
+        level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
     elif level == "device":
         # Captures everything: user + gradient + device + final
         level = slice(0, None)
     elif isinstance(level, str):
-        marker_level = _find_level(full_pipeline, level)
-        level = slice(0, marker_level)
+        level = slice(0, _find_level(full_pipeline, level))
     elif isinstance(level, int):
         level = slice(0, level)
 
@@ -119,8 +117,8 @@ def get_compile_pipeline(
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
         resolved_pipeline = full_compile_pipeline[level_slice]
 
-        # Add back final transforms to resolved pipeline
-        if qnode.compile_pipeline.has_final_transform and level in {"user", "gradient"}:
+        # Add back final transforms to resolved pipeline if required
+        if qnode.compile_pipeline.has_final_transform and level == "user":
             final_transform_start = (
                 -2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else -1
             )
