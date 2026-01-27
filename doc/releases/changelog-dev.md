@@ -159,6 +159,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
+  [(#xxxx)](https://github.com/PennyLaneAI/pennylane/pull/xxxx)
+
 * Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
   Bumped `rng_salt` to `v0.45.0`.
   [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
