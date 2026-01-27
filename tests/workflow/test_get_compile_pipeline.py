@@ -64,34 +64,6 @@ class TestValidation:
         ):
             _ = get_compile_pipeline(circuit, level="my_marker")()
 
-    def test_gradient_level_with_final_transform(self):
-        """Tests that a final transform causes an exception to be raised"""
-
-        dev = qml.device("reference.qubit")
-
-        @qml.gradients.metric_tensor
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            return qml.expval(qml.Z(0))
-
-        with pytest.raises(ValueError, match="Cannot retrieve compile pipeline"):
-            _ = get_compile_pipeline(circuit, level="gradient")()
-
-    def test_device_level_with_final_transform(self):
-        """Tests that a final transform is correctly re-appended."""
-
-        dev = qml.device("reference.qubit")
-
-        @qml.gradients.metric_tensor
-        @qml.transforms.merge_rotations(atol=1e-5)
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
-        def circuit():
-            return qml.expval(qml.Z(0))
-
-        with pytest.raises(ValueError, match="Cannot retrieve compile pipeline"):
-            _ = get_compile_pipeline(circuit, level="device")()
-
 
 class TestUserLevel:
     """Tests 'user' level transforms."""
@@ -164,6 +136,22 @@ class TestGradientLevel:
             qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
+    def test_gradient_level_with_final_transform(self):
+        """Tests that a final transform is before the gradient transform."""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.gradients.metric_tensor
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="gradient")()
+
+        assert cp[0].tape_transform == qml.gradients.metric_tensor.expand_transform
+        assert cp[1].tape_transform == qml.gradients.metric_tensor.tape_transform
+        assert cp[2] == BoundTransform(qml.transform(qml.gradients.param_shift.expand_transform))
+
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_no_gradient_levels(self, diff_method):
         """Ensures an empty compile pipeline if no gradient transforms."""
@@ -233,6 +221,22 @@ class TestDeviceLevel:
         expected_cp += dev.preprocess_transforms(resolved_config)
 
         assert cp == expected_cp
+
+    def test_device_level_with_final_transform(self):
+        """Tests that a final transform works with level=device."""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.gradients.metric_tensor
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="device")()
+        assert len(cp) > 3
+        assert cp[0].tape_transform == qml.gradients.metric_tensor.expand_transform
+        assert cp[1].tape_transform == qml.gradients.metric_tensor.tape_transform
+        assert cp[2] == BoundTransform(qml.transform(qml.gradients.param_shift.expand_transform))
 
 
 def test_marker_level():
