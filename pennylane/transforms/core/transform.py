@@ -24,7 +24,7 @@ from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
 
 from pennylane import capture, math
 from pennylane.capture import autograph
-from pennylane.exceptions import TransformError
+from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.pytrees import flatten
@@ -974,7 +974,12 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     @property
     def transform(self) -> Callable | None:
         """The raw tape transform definition of the transform."""
-        # TODO: deprecate this in the next version
+        warnings.warn(
+            "`BoundTransform.transform` is deprecated and will be removed in a future release. "
+            "Please use `BoundTransform.tape_transform` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.tape_transform
 
     @property
