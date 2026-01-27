@@ -159,6 +159,8 @@ def subroutine(func, static_argnums=None, static_argnames=None):
 
     @wraps(func)
     def inside(*args, **kwargs):
+        # Inside our "quantum subroutine", we want to be able to do normal jit on classical subroutines 
+        # with the normal jit pipeline. Hence why it's patched back to the original function in inside
         with Patcher(
             (
                 jax._src.pjit,  # pylint: disable=protected-access
