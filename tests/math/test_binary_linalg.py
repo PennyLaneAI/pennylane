@@ -181,7 +181,7 @@ class TestBinaryRank:
 
 
 class TestSolveBinaryLinearSystem:
-    """Tests for the helper method ``solve_binary_linear_system``."""
+    """Tests for the helper method ``binary_solve_linear_system``."""
 
     @pytest.mark.parametrize(
         "A, b, expected",
@@ -219,7 +219,7 @@ class TestSolveBinaryLinearSystem:
         assert fn.binary_rank(A) == len(A)  # Regular matrix
         assert np.allclose((A @ expected) % 2, b)  # expected is a solution
 
-        x_sol = fn.solve_binary_linear_system(A, b)
+        x_sol = fn.binary_solve_linear_system(A, b)
         assert x_sol.shape == b.shape and x_sol.dtype == np.int64
         assert set(x_sol).issubset({0, 1})
         assert np.allclose(x_sol, expected)  # Solution unique due to regularity, x_sol must match
@@ -234,7 +234,7 @@ class TestSolveBinaryLinearSystem:
     def test_with_singular_matrix_error(self, A, b):
         """Test that an error is raised if a linear system has a singular matrix."""
         with pytest.raises(np.linalg.LinAlgError, match="Singular binary matrix"):
-            _ = fn.solve_binary_linear_system(A, b)
+            _ = fn.binary_solve_linear_system(A, b)
 
     @pytest.mark.parametrize("n", [1, 4, 5, 10, 13, 28, 102])
     def test_with_random_regular_matrix(self, n, seed):
@@ -244,8 +244,44 @@ class TestSolveBinaryLinearSystem:
         A = _make_random_regular_matrix(n, random_ops, seed)
         x = np.random.default_rng(seed + 1).integers(0, 2, size=(n,))
         b = (A @ x) % 2
-        x_sol = fn.solve_binary_linear_system(A, b)
+        x_sol = fn.binary_solve_linear_system(A, b)
         assert x_sol.shape == (n,) and x_sol.dtype == np.int64
         assert set(x_sol).issubset({0, 1})
         assert np.allclose((A @ x_sol) % 2, b)
         assert np.allclose(x_sol, x)
+
+
+class TestBinaryIsIndependent:
+
+    def test_error_shape_mismatch(self):
+        """Test that for mismatched shapes there is an error raised."""
+        vector = np.array([1, 0])
+        basis = np.eye(3, dtype=int)
+        with pytest.raises(ValueError, match="columns of `basis` should have the same length"):
+            fn.binary_is_independent(vector, basis)
+
+    @pytest.mark.parametrize(
+        "vector, basis, expected",
+        [
+            (np.array([0, 1]), np.array([[1], [0]]), True),
+            (np.array([1, 0]), np.array([[1], [0]]), False),
+            (np.array([1, 0]), np.eye(2, dtype=int), False),
+            (np.array([0, 0, 1]), np.array([[1, 0], [0, 1], [1, 0]]), True),
+            (np.array([0, 0, 1]), np.array([[1, 1], [0, 0], [1, 0]]), False),
+            (np.array([0, 0, 1]), np.array([[1, 0, 0], [0, 1, 1], [1, 0, 1]]), False),
+            (np.array([0, 0, 1, 0]), np.array([[1, 0, 1], [0, 1, 1], [1, 0, 0], [0, 1, 0]]), True),
+            (np.array([0, 0, 1, 1]), np.array([[1, 0, 1], [0, 1, 1], [1, 0, 0], [0, 1, 0]]), False),
+            (
+                np.array([0, 0, 1, 0]),
+                np.array([[1, 0, 1, 0], [0, 1, 1, 0], [1, 0, 0, 0], [0, 1, 0, 1]]),
+                False,
+            ),
+        ],
+    )
+    def test_independence(self, vector, basis, expected):
+        """Test that linear independence and dependence are recognized correctly."""
+        # input validation. This equality is an assumption of ``binary_is_independent``.
+        assert fn.binary_rank(basis) == min(basis.shape)
+
+        is_indep = fn.binary_is_independent(vector, basis)
+        assert is_indep is expected

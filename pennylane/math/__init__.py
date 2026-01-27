@@ -36,8 +36,9 @@ import autoray as ar
 
 from .binary_linalg import (
     binary_finite_reduced_row_echelon,
+    binary_is_independent,
     binary_rank,
-    solve_binary_linear_system,
+    binary_solve_linear_system,
 )
 from .is_independent import is_independent
 from .matrix_manipulation import (
@@ -256,13 +257,14 @@ __all__ = [
     "reduce_matrices",
     "reduce_statevector",
     "binary_finite_reduced_row_echelon",
+    "binary_is_independent",
     "binary_rank",
+    "binary_solve_linear_system",
     "relative_entropy",
     "requires_grad",
     "scatter",
     "scatter_element_add",
     "set_index",
-    "solve_binary_linear_system",
     "sqrt_matrix",
     "stack",
     "svd",

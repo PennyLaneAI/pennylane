@@ -78,7 +78,7 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
 
 def binary_rank(binary_matrix: np.ndarray) -> int:
     r"""
-    Find rank of a matrix over Z_2.
+    Find rank of a matrix over :math:`\mathbb{Z}_2`.
 
     Args:
         binary_matrix (np.ndarray): Matrix of binary entries.
@@ -86,11 +86,28 @@ def binary_rank(binary_matrix: np.ndarray) -> int:
     Returns:
         int: Rank of ``binary_matrix`` over the finite field :math:`\mathbb{Z}_2`.
 
-    Note that the ranks of a matrix over :math:`\mathbb{Z}_2` and over :math:`\mathbb{Z}`
-    may differ.
+    Note that the ranks of a matrix over :math:`\mathbb{Z}_2` and over :math:`\mathbb{Z}` (or
+    :math:`\mathbb{R}`) may differ.
+
     This function does not modify the input.
 
     **Example**
+
+    Consider the following binary matrix of shape ``(4, 4)``:
+
+    >>> binary_matrix = np.array([[0, 1, 1, 0], [0, 1, 0, 1], [1, 0, 1, 1], [1, 0, 0, 0]])
+    >>> print(binary_matrix.shape)
+    (4, 4)
+
+    We may compute its rank over :math:`\mathbb{Z}_2` and find that it does not have full rank:
+
+    >>> print(qml.math.binary_rank(binary_matrix))
+    3
+
+    Note that it would have full rank over the real numbers :math:`\mathbb{R}`:
+
+    >>> print(qml.math.linalg.matrix_rank(binary_matrix))
+    4
 
     """
     binary_matrix = binary_matrix.copy()
@@ -108,7 +125,7 @@ def binary_rank(binary_matrix: np.ndarray) -> int:
     return rank
 
 
-def solve_binary_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
+def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     r"""Solve the linear system of equations A.x=b over the Booleans/:math:`\mathbb{Z}_2`,
     where A is assumed to be regular, i.e., non-singular.
     The implementation is based on Gaussian elimination to bring the augmented matrix :math:`(A|b)`
@@ -133,7 +150,7 @@ def solve_binary_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     Then we can solve the system ``A@x=b`` for ``x`` over :math:`\mathbb{Z}_2` with the
     Gauss-Jordan elimination of the extended matrix ``A | b``.
 
-    >>> x = qml.math.solve_binary_linear_system(A, b)
+    >>> x = qml.math.binary_solve_linear_system(A, b)
     >>> print(x)
     [1 1 0]
 
@@ -158,3 +175,29 @@ def solve_binary_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
 
     # Potential solution is written in the last column of the (augmented) matrix after obtained RREF
     return rref[:, -1]
+
+
+def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
+    r"""Check whether a binary vector, i.e., a bit string, is
+    linearly independent (over :math:`\mathbb{Z}_2`) of a basis of binary vectors, given as column
+    vectors of a matrix.
+
+    Args:
+        vector (np.ndarray): Binary vector to check.
+        basis (np.ndarray): Basis of binary vectors against which ``vector`` is checked. If
+            ``vector`` has shape ``(r,)``, ``basis`` should have shape ``(r, m)`` and rank
+            ``min(r, m)``, i.e., the columns of ``basis`` all need to be linearly independent.
+
+    Returns:
+        bool: Whether ``vector`` is linearly independent of ``basis`` over :math:`\mathbb{Z}_2`.
+    """
+    # We assume ``basis`` to have full rank.
+    r = vector.shape[0]
+    if basis.shape[0] != r:
+        raise ValueError(
+            "The columns of `basis` should have the same length as `vector`. "
+            f"Got {vector.shape=} and {basis.shape=}"
+        )
+    basis_rank = min(basis.shape)
+    rk = binary_rank(np.concatenate([basis, vector[:, None]], axis=1))
+    return rk > basis_rank
