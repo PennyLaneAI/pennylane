@@ -103,7 +103,7 @@ class TestIQPExpval:
         generators = jnp.array(generators_matrix)
 
         params_jax = jnp.array(params)
-        obs_jax = [obs_strings]
+        obs_jax = np.array([obs_strings])
         key = jax.random.PRNGKey(42)  # Fixed key for reproducibility
         atol = 3.5 / np.sqrt(n_samples)
 
@@ -193,7 +193,7 @@ def test_parse_iqp_dict(circuit_def, n_qubits, expected_generators, expected_par
 def test_parse_iqp_dict_index_error():
     """Test that _parse_iqp_dict raises IndexError if qubits indices are out of bounds."""
     circuit_def = {0: [[5]]}
-    n_qubits = 2  # 5 is out of bounds for 2 qubits
+    n_qubits = 2
 
     with pytest.raises(IndexError):
         _parse_iqp_dict(circuit_def, n_qubits)
