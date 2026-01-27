@@ -50,6 +50,19 @@ class TestValidation:
         ):
             _ = get_compile_pipeline(circuit, level=unsupported_level)()
 
+    def test_missing_marker_label(self):
+        """Tests that a string that doesn't have a marker raises an exception."""
+
+        @qml.qnode(qml.device("null.qubit", wires=2))
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape("level my_marker not found in compile pipeline. "),
+        ):
+            _ = get_compile_pipeline(circuit, level="my_marker")()
+
     def test_gradient_level_with_final_transform(self):
         """Tests that a final transform causes an exception to be raised"""
 
@@ -221,3 +234,20 @@ class TestDeviceLevel:
         expected_cp += device_cp
 
         assert cp == expected_cp
+
+
+def test_marker_level():
+    """Tests that a string corresponding to a marker level can be used."""
+
+    dev = qml.device("reference.qubit")
+
+    @qml.transforms.merge_rotations
+    @qml.marker("blah")
+    @qml.transforms.cancel_inverses
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    cp = get_compile_pipeline(circuit, level="blah")()
+    assert len(cp) == 1
+    assert cp[0].tape_transform == qml.transforms.cancel_inverses.tape_transform

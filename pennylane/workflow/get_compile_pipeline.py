@@ -49,7 +49,7 @@ def _find_level(program: CompilePipeline, level: str) -> int:
             if found_level == level:
                 return idx
     raise ValueError(
-        f"level {level} not found in transform program. "
+        f"level {level} not found in compile pipeline. "
         "Builtin options are 'top', 'user', 'device', and 'gradient'."
         f" Custom levels are {found_levels}."
     )
