@@ -25,7 +25,6 @@ from pennylane.transforms.core import (
     BoundTransform,
     CompilePipeline,
     TransformError,
-    compile_pipeline,
     transform,
 )
 from pennylane.transforms.core.compile_pipeline import (
