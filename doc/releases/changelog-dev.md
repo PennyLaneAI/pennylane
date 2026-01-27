@@ -147,7 +147,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* ``tape.expand()`` and related functions ``expand_tape``, ``expand_tape_state_prep``, ``create_expand_trainable_multipar`` 
+* :func:`~pennylane.tape.qscript.expand` and related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, :func:`~pennylane.tape.create_expand_trainable_multipar` 
   have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` 
   function for decomposing circuits.
   [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
