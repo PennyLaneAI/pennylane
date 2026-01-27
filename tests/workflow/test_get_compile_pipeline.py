@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.transforms.core.compile_pipeline import CompilePipeline
+from pennylane.transforms.core.transform import BoundTransform
 from pennylane.workflow import get_compile_pipeline
 
 
@@ -48,6 +49,34 @@ class TestValidation:
             ),
         ):
             _ = get_compile_pipeline(circuit, level=unsupported_level)()
+
+    def test_gradient_level_with_final_transform(self):
+        """Tests that a final transform causes an exception to be raised"""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.gradients.metric_tensor
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(ValueError, match="Cannot retrieve compile pipeline"):
+            _ = get_compile_pipeline(circuit, level="gradient")()
+
+    def test_device_level_with_final_transform(self):
+        """Tests that a final transform is correctly re-appended."""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.gradients.metric_tensor
+        @qml.transforms.merge_rotations(atol=1e-5)
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(ValueError, match="Cannot retrieve compile pipeline"):
+            _ = get_compile_pipeline(circuit, level="device")()
 
 
 class TestUserLevel:
@@ -105,6 +134,90 @@ class TestUserLevel:
 class TestGradientLevel:
     """Tests 'device' level transforms."""
 
+    def test_gradient_level_pipeline(self):
+        """Tests the contents of a gradient level pipeline."""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="gradient")()
+
+        assert len(cp) == 1
+        assert cp[0] == BoundTransform(
+            qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
+        )
+
+    def test_no_gradient_levels(self):
+        """Ensures an empty compile pipeline if no gradient transforms."""
+        dev = qml.device("reference.qubit")
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="gradient")()
+
+        assert cp == CompilePipeline()
+
 
 class TestDeviceLevel:
     """Tests 'device' level transforms."""
+
+    def test_reference_qubit(self):
+        """Tests the contents of a device level pipeline."""
+
+        dev = qml.device("reference.qubit")
+
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="device")()
+
+        expected_cp = CompilePipeline()
+
+        # User transforms
+        expected_cp.add_transform(qml.transforms.cancel_inverses)
+        expected_cp.add_transform(qml.transforms.merge_rotations)
+
+        # Gradient expansion
+        expected_cp.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+
+        # Device transforms
+        device_cp, _ = dev.preprocess()
+        expected_cp += device_cp
+
+        assert cp == expected_cp
+
+    def test_default_qubit(self):
+        """Tests the contents of a device level pipeline."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        cp = get_compile_pipeline(circuit, level="device")()
+
+        expected_cp = CompilePipeline()
+
+        # User transforms
+        expected_cp.add_transform(qml.transforms.cancel_inverses)
+        expected_cp.add_transform(qml.transforms.merge_rotations)
+
+        # Gradient expansion
+        expected_cp.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+
+        # Device transforms
+        device_cp, _ = dev.preprocess()
+        expected_cp += device_cp
+
+        assert cp == expected_cp
