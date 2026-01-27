@@ -21,7 +21,6 @@ import numpy as np
 
 from pennylane import math
 from pennylane.decomposition import gate_sets
-from pennylane.measurements import MeasurementProcess
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
@@ -64,10 +63,7 @@ def _rademacher_sampler(indices, num_params, *args, rng):
 
 
 def _stop_at_expand_invalid_trainable(obj):
-    return (
-        not any(math.requires_grad(d) for d in obj.data)
-        or obj.grad_method is not None
-    )
+    return not any(math.requires_grad(d) for d in obj.data) or obj.grad_method is not None
 
 
 # pylint: disable=too-many-positional-arguments

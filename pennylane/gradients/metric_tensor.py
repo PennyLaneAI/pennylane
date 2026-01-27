@@ -26,7 +26,7 @@ from pennylane import math
 from pennylane.circuit_graph import LayerData
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import TermsUndefinedError, WireError
-from pennylane.measurements import MeasurementProcess, expval, probs
+from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.ops.qubit.attributes import has_unitary_generator
 from pennylane.queuing import WrappedObj
@@ -76,19 +76,13 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
 
 def _multipar_stopping_fn(obj):
     try:
-        return (
-            len(obj.data) == 0
-            or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
-        )
+        return len(obj.data) == 0 or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
     except TermsUndefinedError:
         return True
 
 
 def _expand_nonunitary_gen_stop_at(obj):
-    return (
-        len(obj.data) == 0
-        or (obj.has_generator and obj in has_unitary_generator)
-    )
+    return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
 
 
 # pylint: disable=too-many-positional-arguments

@@ -28,7 +28,6 @@ from pennylane import gradients, math, measurements, workflow
 from pennylane.capture.autograph import wraps
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import TermsUndefinedError
-from pennylane.measurements import MeasurementProcess
 from pennylane.transforms import decompose
 
 from .utils import get_spectrum, join_spectra
@@ -161,10 +160,7 @@ def _process_ids(
 
 def _multipar_stopping_fn(obj):
     try:
-        return (
-            len(obj.data) == 0
-            or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
-        )
+        return len(obj.data) == 0 or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
     except TermsUndefinedError:  # pragma: no cover
         return True  # pragma: no cover
 
