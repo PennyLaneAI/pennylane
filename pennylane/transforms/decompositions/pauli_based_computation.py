@@ -99,9 +99,10 @@ def to_ppr_setup_inputs():
     <BLANKLINE>
     Gate types:
         GlobalPhase: 3
-        PPR-pi/4: 6
-        PPM: 1
-        PPR-pi/8: 1
+        PPR-pi/4-w1: 5
+        PPR-pi/4-w2: 1
+        PPM-w1: 1
+        PPR-pi/8-w1: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -202,8 +203,9 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPR-pi/8: 1
-        PPR-pi/4: 6
+        PPR-pi/8-w1: 1
+        PPR-pi/4-w1: 5
+        PPR-pi/4-w2: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -305,7 +307,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
         Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPM: 1
+        PPM-w2: 1
     <BLANKLINE>
     Measurements:
         No measurements.
@@ -421,8 +423,11 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        PPM: 16
-        PPR-pi/2: 7
+        PPM-w2: 7
+        PPM-w1: 8
+        PPM-w3: 1
+        PPR-pi/2-w1: 6
+        PPR-pi/2-w2: 1
         qec.fabricate: 1
     <BLANKLINE>
     Measurements:
@@ -532,8 +537,11 @@ def ppm_compilation_setup_inputs(
     Gate types:
         GlobalPhase: 3
         qec.fabricate: 1
-        PPM: 14
-        PPR-pi/2: 7
+        PPM-w2: 6
+        PPM-w1: 7
+        PPM-w3: 1
+        PPR-pi/2-w1: 6
+        PPR-pi/2-w2: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
@@ -725,8 +733,10 @@ def decompose_arbitrary_ppr_setup_inputs():
     <BLANKLINE>
     Gate types:
         qec.prepare: 1
-        PPM: 2
-        PPR-pi/2: 2
+        PPM-w3: 1
+        PPM-w1: 1
+        PPR-pi/2-w1: 1
+        PPR-pi/2-w2: 1
         PPR-Phi: 1
     <BLANKLINE>
     Measurements:
