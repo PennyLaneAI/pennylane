@@ -38,7 +38,8 @@ def _has_terminal_expansion_pair(compile_pipeline: CompilePipeline) -> bool:
     )
 
 
-def _find_level(program, level):
+def _find_level(program: CompilePipeline, level: str) -> int:
+    """Retrieve the numerical level associated to a marker."""
     found_levels = []
     for idx, t in enumerate(program):
         if t.tape_transform == marker.tape_transform:
@@ -67,12 +68,14 @@ def _resolve_level(
     elif level == "user":
         level = slice(0, num_user)
     elif level == "gradient":
-        level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
+        gradient_level = num_user + int(hasattr(config.gradient_method, "expand_transform"))
+        level = slice(0, gradient_level)
     elif level == "device":
         # Captures everything: user + gradient + device + final
         level = slice(0, None)
     elif isinstance(level, str):
-        level = slice(0, _find_level(full_pipeline, level))
+        marker_level = _find_level(full_pipeline, level)
+        level = slice(0, marker_level)
     elif isinstance(level, int):
         level = slice(0, level)
 
