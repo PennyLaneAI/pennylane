@@ -17,7 +17,7 @@ from itertools import combinations, product
 
 import numpy as np
 
-from pennylane.math import ceil_log2
+from pennylane.math import binary_is_independent, binary_rank, ceil_log2
 from pennylane.operation import Operation
 
 
@@ -55,6 +55,14 @@ def _columns_differ(bits: np.ndarray) -> bool:
     >>> _columns_differ(redundant_bits)
     False
     """
+    # In order to be representable faithfully with 64-bit integers, the strings can't be too large
+    # Note that we do not care about the range of the integers, just about them being unique.
+    if bits.shape[0] > 64:
+        raise ValueError(
+            "Column comparison uses 64-bit integers internally. Can't compare bitstrings longer "
+            "than 64 bits."
+        )
+
     # Powers of two to compute integer representations of columns
     pot = 2 ** np.arange(bits.shape[0])
     # Compute the integer representation of each column
@@ -141,54 +149,6 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     return selectors, bits
 
 
-def _rank_over_z2(bits):
-    r"""
-    Source - https://stackoverflow.com/a
-    Posted by Mark Dickinson, modified by community. See post 'Timeline' for change history
-    Retrieved 2026-01-15, License - CC BY-SA 4.0
-
-    Find rank of a matrix over Z_2.
-
-    The rows of the matrix are given as nonnegative integers, thought
-    of as bit-strings.
-
-    This function modifies the input list. Use _rank_over_z2(rows.copy())
-    instead of _rank_over_z2(rows) to avoid modifying rows.
-    """
-    assert isinstance(bits, np.ndarray) and bits.ndim == 2
-    num_rows, num_bits = bits.shape
-    if num_bits > 64:
-        if num_rows <= 64:
-            return _rank_over_z2(bits.T)
-        raise NotImplementedError(
-            "Rank computation requires one of the axes of the input bits to be smaller "
-            f"than or equal to 64. Got input shape {bits.shape}"
-        )
-
-    ints = list(np.array(bits) @ 2 ** np.arange(len(bits[0]) - 1, -1, -1))
-    rank = 0
-    while ints:
-        pivot_row = ints.pop()
-        if pivot_row:
-            rank += 1
-            lsb = pivot_row & -pivot_row
-            for index, row in enumerate(ints):
-                if row & lsb:
-                    ints[index] = row ^ pivot_row
-    return rank
-
-
-def _lin_indep(col, new_cols, new_cols_rank=None):
-    assert isinstance(col, np.ndarray) and col.ndim == 1, f"{col.ndim=}"
-    r = col.shape[0]
-    assert isinstance(new_cols, np.ndarray) and new_cols.ndim == 2, f"{new_cols.shape=}"
-    assert new_cols.shape[1] == r, f"{new_cols.shape=}, {r=}"
-    if new_cols_rank is None:
-        new_cols_rank = _rank_over_z2(new_cols)
-    rk = _rank_over_z2(np.concatenate([new_cols, [col]]))
-    return rk > new_cols_rank
-
-
 def _get_bits_basis(bits: np.ndarray):
     r"""Select bit strings from a set of bitstrings that form a basis
     for the column space.
@@ -197,21 +157,19 @@ def _get_bits_basis(bits: np.ndarray):
         bits (np.ndarray): Input bitstrings.
     """
     r, _ = bits.shape
-    basis = np.zeros((0, r), dtype=int)
+    basis = np.zeros((r, 0), dtype=int)
     other_cols = []
-    basis_rank = 0
     for col in bits.T:
-        if basis_rank < r and _lin_indep(col, basis, basis_rank):
-            basis = np.concatenate([basis, [col]])
-            basis_rank += 1
+        if basis.shape[1] < r and binary_is_independent(col, basis):
+            basis = np.concatenate([basis, col[:, None]], axis=1)
         else:
             other_cols.append(col)
 
     if not other_cols:
-        other_cols = np.zeros((0, r), dtype=int)
+        other_cols = np.zeros((r, 0), dtype=int)
     else:
-        other_cols = np.array(other_cols)
-    return basis.T, other_cols.T
+        other_cols = np.array(other_cols).T
+    return basis, other_cols
 
 
 def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> np.ndarray:
@@ -244,16 +202,17 @@ _DEBUGGING = False
 
 def _bits_not_in_space(bits, W, incl_diffs=True):
     if _DEBUGGING:
-        assert all(_lin_indep(bitstring, W.T) for bitstring in bits.T)
+        assert all(binary_is_independent(bitstring, W) for bitstring in bits.T)
         if incl_diffs:
             assert all(
-                _lin_indep((bits0 + bits1) % 2, W.T) for bits0, bits1 in combinations(bits.T, r=2)
+                binary_is_independent((bits0 + bits1) % 2, W)
+                for bits0, bits1 in combinations(bits.T, r=2)
             )
 
 
 def _bits_in_space(bits, basis):
     if _DEBUGGING:
-        assert _rank_over_z2(np.concatenate([bits, basis], axis=1)) == _rank_over_z2(basis)
+        assert binary_rank(np.concatenate([bits, basis], axis=1)) == binary_rank(basis)
 
 
 # End of temporary debugging feature
@@ -295,15 +254,15 @@ def _find_w(bits_basis, other_bits, r, t):
     v_r = bits_basis[:, -1]
     bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
 
-    spanned_by_reduced_basis = np.array(
-        [not _lin_indep(vec, bits_basis[:, :-1].T) for vec in bits_without_v_r.T]
+    indep_of_reduced_basis = np.array(
+        [binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
     )
 
     # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
-    set_M = bits_without_v_r[:, np.where(spanned_by_reduced_basis)[0]]
+    set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
     _bits_in_space(set_M, bits_basis[:, :-1])
 
-    set_N = bits_without_v_r[:, np.where(~spanned_by_reduced_basis)[0]]
+    set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
     _bits_not_in_space(set_N, bits_basis[:, :-1], incl_diffs=False)
 
     ell = _find_ell(set_M, set_N, bits_basis)
