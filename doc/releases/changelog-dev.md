@@ -149,6 +149,7 @@
 
 * Deprecate `id` argument to `qml.Operator`. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+  [(#8974)](https://github.com/PennyLaneAI/pennylane/pull/8974)
 
 * The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
   Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
