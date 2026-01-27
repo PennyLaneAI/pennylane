@@ -70,7 +70,7 @@ def execute(
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (Device): Device to use to execute the batch of tapes.
+        device (pennylane.devices.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         diff_method (Optional[str | Transform]): The gradient transform function to use
