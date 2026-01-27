@@ -917,6 +917,10 @@ class TestQubitIntegration:
         options = {}
         if diff_method == "finite-diff":
             options = {"h": 1e-6}
+        elif diff_method == "hadamard":
+            pytest.skip(
+                "Higher order derivatives not supported with hadamard gradient in standard mode."
+            )
 
         @qnode(
             dev,
@@ -935,16 +939,9 @@ class TestQubitIntegration:
         x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit(x)
 
-        if diff_method == "hadamard":
-            # Cannot find a way to specify an aux_wire that is not already in use by the circuit!
-            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
-                jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
-                g = jac_fn(x)
-                hess = jacobian(jac_fn, x)
-        else:
-            jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
-            g = jac_fn(x)
-            hess = jacobian(jac_fn, x)
+        jac_fn = lambda x: jacobian(circuit, x, create_graph=True)
+        g = jac_fn(x)
+        hess = jacobian(jac_fn, x)
 
         a, b = x.detach().numpy()
 
@@ -986,6 +983,10 @@ class TestQubitIntegration:
         options = {}
         if diff_method == "finite-diff":
             options = {"h": 1e-6}
+        elif diff_method == "hadamard":
+            pytest.skip(
+                "Higher order derivatives not supported with hadamard gradient in standard mode."
+            )
 
         @qnode(
             dev,
@@ -1009,16 +1010,9 @@ class TestQubitIntegration:
         x = torch.tensor([1.0, 2.0], requires_grad=True, dtype=torch.float64)
         res = circuit_stack(x)
 
-        if diff_method == "hadamard":
-            # Cannot find a way to specify an aux_wire that is not already in use by the circuit!
-            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
-                jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
-                g = jac_fn(x)
-                hess = jacobian(jac_fn, x)
-        else:
-            jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
-            g = jac_fn(x)
-            hess = jacobian(jac_fn, x)
+        jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
+        g = jac_fn(x)
+        hess = jacobian(jac_fn, x)
 
         a, b = x.detach().numpy()
 
@@ -1274,6 +1268,10 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
             grad_method = None
             has_generator = False
@@ -1288,10 +1286,6 @@ class TestTapeExpansion:
                 qml.RY(3 * param, wires=wires)
 
             qml.add_decomps(PhaseShift, custom_decomposition)
-
-            gradient_kwargs = {}
-            if diff_method == "hadamard":
-                gradient_kwargs["aux_wire"] = 1
 
             @qnode(
                 dev,
@@ -1343,7 +1337,7 @@ class TestTapeExpansion:
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
-            gradient_kwargs["aux_wire"] = 1
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(
             dev,
@@ -1891,6 +1885,10 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             dev,
@@ -1898,6 +1896,7 @@ class TestReturn:
             diff_method=diff_method,
             device_vjp=device_vjp,
             grad_on_execution=grad_on_execution,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -1906,12 +1905,7 @@ class TestReturn:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        if diff_method == "hadamard":
-            # Cannot find a way to use an aux_wire that is not already in use by the circuit!
-            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
-                jac = jacobian(circuit, a)
-        else:
-            jac = jacobian(circuit, a)
+        jac = jacobian(circuit, a)
 
         assert isinstance(jac, torch.Tensor)
         assert jac.shape == (4, 2)

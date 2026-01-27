@@ -1132,6 +1132,10 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip(
+                "Higher order derivatives not supported with hadamard gradient in standard mode."
+            )
 
         @qnode(
             get_device(dev_name, wires=0, seed=seed),
@@ -1157,28 +1161,15 @@ class TestQubitIntegrationHigherOrder:
 
         jac_fn = jax.jacobian(circuit)
 
-        if diff_method == "hadamard":
-            # Cannot find a way to specify an aux_wire that is not in use!
-            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
-                g = jac_fn(x)
+        g = jac_fn(x)
 
-                expected_g = [
-                    [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                    [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-                ]
-                assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = [
+            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+        ]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-                hess = jax.jacobian(jac_fn)(x)
-        else:
-            g = jac_fn(x)
-
-            expected_g = [
-                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-            ]
-            assert np.allclose(g, expected_g, atol=tol, rtol=0)
-
-            hess = jax.jacobian(jac_fn)(x)
+        hess = jax.jacobian(jac_fn)(x)
 
         expected_hess = [
             [
@@ -1277,6 +1268,10 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip(
+                "Higher order derivatives not supported with hadamard gradient in standard mode."
+            )
 
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -1301,32 +1296,17 @@ class TestQubitIntegrationHigherOrder:
 
         jac_fn = jax.jacobian(circuit, argnums=[0, 1])
 
-        if diff_method == "hadamard":
-            # Cannot find a way to specify an aux wire that is not in use!
-            with pytest.warns(PennyLaneDeprecationWarning, match="aux_wire"):
-                g = jac_fn(a, b)
+        g = jac_fn(a, b)
 
-                expected_g = np.array(
-                    [
-                        [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                        [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-                    ]
-                )
-                assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
+        expected_g = np.array(
+            [
+                [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
+                [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
+            ]
+        )
+        assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
 
-                hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
-        else:
-            g = jac_fn(a, b)
-
-            expected_g = np.array(
-                [
-                    [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-                    [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-                ]
-            )
-            assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
-
-            hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
+        hess = jax.jacobian(jac_fn, argnums=[0, 1])(a, b)
 
         expected_hess = np.array(
             [
