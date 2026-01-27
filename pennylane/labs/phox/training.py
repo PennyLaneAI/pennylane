@@ -20,15 +20,15 @@ class TrainingOptions:
         unroll_steps (int): How many optimization steps to run on the GPU before yielding
             control back to Python. Higher = Faster. Lower = More interactive/granular logging.
             Defaults to 1 (slow, good for debugging).
-        val_kwargs (dict): Arguments for the loss function to be used during validation.
-        convergence_interval (int): Number of steps over which to check for convergence.
+        val_kwargs (dict[str, Any] | None): Arguments for the loss function to be used during validation.
+        convergence_interval (int | None): Number of steps over which to check for convergence.
         random_state (int): Seed for PRNGKey.
-        opt_jit (bool): Whether to JIT the optimizer creation (usually False is fine).
+        opt_jit (bool): Whether to JIT the optimizer creation. Default is False.
     """
 
     unroll_steps: int = 1
-    val_kwargs: Optional[Dict[str, Any]] = None
-    convergence_interval: Optional[int] = None
+    val_kwargs: dict[str, Any] | None = None
+    convergence_interval: int | None = None
     random_state: int = 666
     opt_jit: bool = False
 
@@ -57,6 +57,12 @@ def _prepare_loss_function(loss: Callable) -> Callable:
     """
     Wraps the loss function to ensure it accepts a 'key' argument.
     If the original function doesn't accept 'key', we consume and ignore it.
+
+    Args:
+        loss (Callable): The original loss function.
+
+    Returns:
+        Callable: A wrapped loss function that accepts a ``key`` argument, regardless of whether the original did.
     """
     if "key" in signature(loss).parameters:
         return loss
@@ -65,7 +71,21 @@ def _prepare_loss_function(loss: Callable) -> Callable:
 
 
 def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bool):
-    """Create the JAX optimizer instance."""
+    """
+    Create the JAX optimizer instance.
+
+    Args:
+        name (str): The name of the optimizer to create ('GradientDescent', 'Adam', 'BFGS').
+        loss_fn (Callable): The loss function to minimize.
+        stepsize (float): The step size (learning rate) for the optimizer.
+        opt_jit (bool): Whether to JIT compile the optimizer update.
+
+    Returns:
+        jaxopt.Optimizer: An instance of the requested optimizer.
+
+    Raises:
+        ValueError: If the optimizer name is not recognized.
+    """
     if name == "GradientDescent":
         return jaxopt.GradientDescent(loss_fn, stepsize=stepsize, verbose=False, jit=opt_jit)
     elif name == "Adam":
@@ -81,6 +101,13 @@ def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bo
 def _check_convergence(losses: jnp.ndarray, convergence_interval: int) -> bool:
     """
     Check for convergence based on loss history.
+
+    Args:
+        losses (jnp.ndarray): Array of recorded loss values.
+        convergence_interval (int): number of steps to look back when comparing means.
+
+    Returns:
+        bool: True if converged, False otherwise.
     """
     recent = losses[-convergence_interval:]
     previous = losses[-2 * convergence_interval : -convergence_interval]
@@ -96,9 +123,24 @@ def _check_convergence(losses: jnp.ndarray, convergence_interval: int) -> bool:
     return cond1 or cond2
 
 
-def _update_step_scan(carry, x, opt, loss_fn, loss_kwargs, val_kwargs, validation, optimizer_name):
+def _update_step_scan(carry, _, opt, loss_fn, loss_kwargs, val_kwargs, validation, optimizer_name):
     """
     Single step update logic to be scanned.
+
+    Args:
+        carry (list): List of carried state [params, state, key, key_val].
+        _ (Any): Unused variable to accommodate `jax.lax.scan`
+        opt (jaxopt.Optimizer): The optimizer instance.
+        loss_fn (Callable): The loss function.
+        loss_kwargs (dict[str, Any]): Arguments for the loss function.
+        val_kwargs (dict[str, Any]): Arguments for the validation function.
+        validation (bool): Whether validation is enabled.
+        optimizer_name (str): Name of the optimizer.
+
+    Returns:
+        tuple[list, list]: Tuple containing:
+            - The new carry state [params, state, key2, key2_val].
+            - The stacked list [training_loss, validation_loss].
     """
     params, state, key, key_val = carry
     key1, key2 = jax.random.split(key, 2)
@@ -120,11 +162,21 @@ def training_iterator(
     optimizer: str,
     loss: Callable,
     stepsize: float,
-    loss_kwargs: Dict[str, Any],
-    options: Optional[TrainingOptions] = None,
+    loss_kwargs: dict[str, Any],
+    options: TrainingOptions | None = None,
 ) -> Iterator[BatchResult]:
     """
     Generator that yields training results in batches of size 'unroll_steps'.
+
+    Args:
+        optimizer (str): Name of the optimizer to use.
+        loss (Callable): The loss function.
+        stepsize (float): The learning rate.
+        loss_kwargs (dict[str, Any]): Arguments to pass to the loss function.
+        options (TrainingOptions | None): Configuration options for training.
+
+    Yields:
+        Iterator[BatchResult]: An iterator over batch results.
     """
     options = options or TrainingOptions()
     unroll_steps = max(1, options.unroll_steps)
@@ -185,12 +237,23 @@ def train(
     loss: Callable,
     stepsize: float,
     n_iters: int,
-    loss_kwargs: Dict[str, Any],
-    options: Optional[TrainingOptions] = None,
+    loss_kwargs: dict[str, Any],
+    options: TrainingOptions | None = None,
 ) -> TrainingResult:
     """
     Main training function.
     Manages the loop, accumulation of history, and convergence checks.
+
+    Args:
+        optimizer (str): Name of the optimizer to use.
+        loss (Callable): The loss function.
+        stepsize (float): The learning rate.
+        n_iters (int): Total number of training iterations.
+        loss_kwargs (dict[str, Any]): Arguments to pass to the loss function.
+        options (TrainingOptions | None): Configuration options for training.
+
+    Returns:
+        TrainingResult: The results of the training process, including final parameters and loss history.
     """
     options = options or TrainingOptions()
 
