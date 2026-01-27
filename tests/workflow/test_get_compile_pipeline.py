@@ -18,6 +18,7 @@ import re
 import pytest
 
 import pennylane as qml
+from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.transforms.core.compile_pipeline import CompilePipeline
 from pennylane.transforms.core.transform import BoundTransform
 from pennylane.workflow import get_compile_pipeline
@@ -163,11 +164,12 @@ class TestGradientLevel:
             qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
-    def test_no_gradient_levels(self):
+    @pytest.mark.parametrize("diff_method", [None, "backprop"])
+    def test_no_gradient_levels(self, diff_method):
         """Ensures an empty compile pipeline if no gradient transforms."""
-        dev = qml.device("reference.qubit")
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=None)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit():
             return qml.expval(qml.Z(0))
 
@@ -179,10 +181,11 @@ class TestGradientLevel:
 class TestDeviceLevel:
     """Tests 'device' level transforms."""
 
-    def test_reference_qubit(self):
+    @pytest.mark.parametrize("device", ["reference.qubit", "default.qubit"])
+    def test_reference_qubit(self, device):
         """Tests the contents of a device level pipeline."""
 
-        dev = qml.device("reference.qubit")
+        dev = qml.device(device)
 
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
@@ -207,31 +210,27 @@ class TestDeviceLevel:
 
         assert cp == expected_cp
 
-    def test_default_qubit(self):
-        """Tests the contents of a device level pipeline."""
+    def test_device_derivative(self):
+        """Tests the compile pipeline if a device derivative exists."""
 
         dev = qml.device("default.qubit")
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            return qml.expval(qml.Z(0))
+        @qml.transforms.split_non_commuting
+        @qml.qnode(dev, diff_method="adjoint", device_vjp=False)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.PauliZ(0))
 
-        cp = get_compile_pipeline(circuit, level="device")()
+        cp = get_compile_pipeline(circuit, level="device")(1.0)
 
         expected_cp = CompilePipeline()
-
         # User transforms
-        expected_cp.add_transform(qml.transforms.cancel_inverses)
-        expected_cp.add_transform(qml.transforms.merge_rotations)
-
-        # Gradient expansion
-        expected_cp.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+        expected_cp.add_transform(qml.transforms.split_non_commuting)
 
         # Device transforms
-        device_cp, _ = dev.preprocess()
-        expected_cp += device_cp
+        basic_config = ExecutionConfig(gradient_method="adjoint", use_device_jacobian_product=False)
+        resolved_config = dev.setup_execution_config(basic_config)
+        expected_cp += dev.preprocess_transforms(resolved_config)
 
         assert cp == expected_cp
 
