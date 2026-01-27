@@ -106,12 +106,17 @@ def get_compile_pipeline(
 
         num_user = len(qnode.compile_pipeline)
         if qnode.compile_pipeline.has_final_transform:
-            if level in {"gradient", "device"}:
-                raise ValueError(
-                    f"Cannot retrieve compile pipeline if 'level={level}' is requested and a final transform is being used."
-                )
             # Ignore final transforms for now, will be re-added later if needed
             num_user -= 2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else 1
+            if (
+                level in {"gradient", "device"}
+                or isinstance(level, int)
+                and level
+                >= num_user + int(hasattr(resolved_config.gradient_method, "expand_transform"))
+            ):
+                raise ValueError(
+                    f"Cannot retrieve compile pipeline at requested level '{level}' due to final transforms being present."
+                )
 
         # Slice out relevant section
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
