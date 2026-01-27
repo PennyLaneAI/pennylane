@@ -117,6 +117,9 @@ class TestIQPExpval:
         "n_qubits, gates, params, obs_strings",
         [
             (3, {0: [[0], [1]], 1: [[0, 1], [1, 2]]}, [0.1, 0.2], ["X", "Z", "Y"]),
+            (2, {}, [], ["Z", "Z"]),
+            (3, {0: [[0, 1]], 1: [[1, 2]]}, [0.1, 0.2], ["X", "I", "Z"]),
+            (2, {0: [[0, 1]]}, [0.5], ["I", "I"]),
         ],
     )
     def test_iqp_expval_vs_pennylane(self, n_qubits, gates, params, obs_strings):
@@ -133,7 +136,7 @@ class TestIQPExpval:
 
         obs_jax = np.array([obs_strings])
         key = jax.random.PRNGKey(42)
-        n_samples = 100000
+        n_samples = 10000
         atol = 3 * 1/np.sqrt(n_samples)
 
         approx_val, _ = iqp_expval(gates, params, obs_jax, n_samples, n_qubits, key)

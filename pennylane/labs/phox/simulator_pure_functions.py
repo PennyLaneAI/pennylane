@@ -170,7 +170,7 @@ def _parse_iqp_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
 
     for i, qubits in enumerate(flat_gates):
         generators[i, qubits] = 1
-    param_map = jnp.array(param_indices)
+    param_map = jnp.array(param_indices, dtype=int)
     return jnp.array(generators), param_map
 
 
