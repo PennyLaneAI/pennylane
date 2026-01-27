@@ -19,7 +19,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec
 
-from pennylane.workflow import construct_execution_config
+from pennylane.workflow import construct_execution_config, marker
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
 if TYPE_CHECKING:
@@ -38,18 +38,29 @@ def _has_terminal_expansion_pair(compile_pipeline: CompilePipeline) -> bool:
     )
 
 
-def _resolve_level(qnode: QNode, config: ExecutionConfig, level: str | int | slice) -> slice:
-    """Resolve level to a slice."""
-    num_user = len(qnode.compile_pipeline)
+def _find_level(program, level):
+    found_levels = []
+    for idx, t in enumerate(program):
+        if t.tape_transform == marker.tape_transform:
+            found_level = t.args[0] if t.args else t.kwargs["level"]
+            found_levels.append(found_level)
 
-    # Ignore final transforms for now, will be re-added later if needed
-    if qnode.compile_pipeline.has_final_transform:
-        if level in {"gradient", "device"}:
-            raise ValueError(
-                f"Cannot retrieve compile pipeline if 'level={level}' is requested and a final transform is being used."
-            )
-        # Remove pair if expansion + transform exists
-        num_user -= 2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else 1
+            if found_level == level:
+                return idx
+    raise ValueError(
+        f"level {level} not found in transform program. "
+        "Builtin options are 'top', 'user', 'device', and 'gradient'."
+        f" Custom levels are {found_levels}."
+    )
+
+
+def _resolve_level(
+    level: str | int | slice,
+    full_pipeline: CompilePipeline,
+    num_user: int,
+    config: ExecutionConfig,
+) -> slice:
+    """Resolve level to a slice."""
 
     if level == "top":
         level = slice(0, 0)
@@ -61,7 +72,7 @@ def _resolve_level(qnode: QNode, config: ExecutionConfig, level: str | int | sli
         # Captures everything: user + gradient + device + final
         level = slice(0, None)
     elif isinstance(level, str):
-        raise NotImplementedError
+        level = slice(0, _find_level(full_pipeline, level))
     elif isinstance(level, int):
         level = slice(0, level)
 
@@ -88,12 +99,21 @@ def get_compile_pipeline(
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
         # Get full compile pipeline
-        config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-        outer, inner = _setup_transform_program(qnode.device, config)
-        full_compile_pipeline = qnode.compile_pipeline + outer + inner
+        resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
+        outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
+        full_compile_pipeline = qnode.compile_pipeline + outer_pipeline + inner_pipeline
+
+        num_user = len(qnode.compile_pipeline)
+        if qnode.compile_pipeline.has_final_transform:
+            if level in {"gradient", "device"}:
+                raise ValueError(
+                    f"Cannot retrieve compile pipeline if 'level={level}' is requested and a final transform is being used."
+                )
+            # Ignore final transforms for now, will be re-added later if needed
+            num_user -= 2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else 1
 
         # Slice out relevant section
-        level_slice: slice = _resolve_level(qnode, config, level)
+        level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
         resolved_pipeline = full_compile_pipeline[level_slice]
 
         # Add back final transforms to resolved pipeline
