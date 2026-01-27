@@ -14,7 +14,6 @@
 """Unit and integration tests for the compile pipeline."""
 # pylint: disable=no-member
 
-
 import pytest
 import rustworkx as rx
 
@@ -26,6 +25,7 @@ from pennylane.transforms.core import (
     BoundTransform,
     CompilePipeline,
     TransformError,
+    compile_pipeline,
     transform,
 )
 from pennylane.transforms.core.compile_pipeline import (
@@ -48,7 +48,8 @@ def first_valid_transform(
 
 
 def expand_transform(
-    tape: QuantumScript, index: int  # pylint:disable=unused-argument
+    tape: QuantumScript,
+    index: int,  # pylint:disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
@@ -785,15 +786,25 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
-        str_pipeline = repr(compile_pipeline)
-        assert (
-            str_pipeline
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
-        )
+        pipeline_repr = repr(compile_pipeline)
+        expected_repr = f"CompilePipeline(\n  [0] {repr(transform1)},\n  [1] {repr(transform2)}\n)"
+        assert pipeline_repr == expected_repr
+
+    def test_str_pipeline(self):
+        """Tests the string representation of a pipeline."""
+
+        compile_pipeline = CompilePipeline()
+        transform1 = BoundTransform(qml.transform(first_valid_transform))
+        marker = qml.marker("blah")
+        transform2 = BoundTransform(qml.transform(second_valid_transform))
+
+        compile_pipeline.append(transform1)
+        compile_pipeline.append(marker)
+        compile_pipeline.append(transform2)
+
+        pipeline_str = str(compile_pipeline)
+        expected_repr = 'CompilePipeline(\n  [0] first_valid_transform,\n  [1] marker("blah"),\n  [2] second_valid_transform\n)'
+        assert pipeline_str == expected_repr
 
     def test_equality(self):
         """Tests that we can compare CompilePipeline objects with the '==' and '!=' operators."""
