@@ -507,8 +507,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
 def _stop_at_expand_invalid_trainable(obj):
     return (
-        isinstance(obj, MeasurementProcess)
-        or not any(math.requires_grad(d) for d in obj.data)
+        not any(math.requires_grad(d) for d in obj.data)
         or obj.grad_method is not None
     )
 

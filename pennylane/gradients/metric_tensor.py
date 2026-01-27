@@ -77,8 +77,7 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
 def _multipar_stopping_fn(obj):
     try:
         return (
-            isinstance(obj, MeasurementProcess)
-            or len(obj.data) == 0
+            len(obj.data) == 0
             or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
         )
     except TermsUndefinedError:
@@ -87,8 +86,7 @@ def _multipar_stopping_fn(obj):
 
 def _expand_nonunitary_gen_stop_at(obj):
     return (
-        isinstance(obj, MeasurementProcess)
-        or len(obj.data) == 0
+        len(obj.data) == 0
         or (obj.has_generator and obj in has_unitary_generator)
     )
 

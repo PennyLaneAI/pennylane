@@ -162,8 +162,7 @@ def _process_ids(
 def _multipar_stopping_fn(obj):
     try:
         return (
-            isinstance(obj, MeasurementProcess)
-            or len(obj.data) == 0
+            len(obj.data) == 0
             or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
         )
     except TermsUndefinedError:  # pragma: no cover
