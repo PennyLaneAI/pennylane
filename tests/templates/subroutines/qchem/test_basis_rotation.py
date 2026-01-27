@@ -525,21 +525,34 @@ class TestInterfaces:
 
         assert np.allclose(grads, np.zeros_like(unitary_matrix, dtype=complex), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "unitary",
+        [
+            np.array(
+                [
+                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                    [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+                ]
+            ),  # complex unitary
+            np.array(
+                [
+                    [-0.22081075, -0.29306608, -0.93024453],
+                    [-0.67705210, -0.64047179, 0.36248634],
+                    [-0.70202783, 0.70986489, -0.05699795],
+                ]
+            ),  # real unitary
+        ],
+    )
     @pytest.mark.parametrize("device_name", ("default.qubit", "reference.qubit"))
     @pytest.mark.jax
-    def test_jax_jit(self, device_name, tol):
+    def test_jax_jit(self, unitary, device_name, tol):
         """Test the jax interface."""
 
         import jax
         import jax.numpy as jnp
 
-        unitary_matrix = jnp.array(
-            [
-                [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
-                [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
-                [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
-            ]
-        )
+        unitary_matrix = jnp.array(unitary)
 
         dev = qml.device(device_name, wires=3)
 
