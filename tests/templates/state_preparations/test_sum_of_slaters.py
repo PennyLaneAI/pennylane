@@ -23,7 +23,6 @@ from pennylane.math import binary_rank, ceil_log2
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
-    _get_bits_basis,
     _select_rows,
     compute_sos_encoding,
 )
@@ -191,43 +190,6 @@ class TestHelperFunctions:
         selectors, new_bits = _select_rows(bits)
         assert set(selectors) == set(range(len(bits))) - set(skip_rows)
         assert np.allclose(new_bits, bits[np.array(selectors)])
-
-    @pytest.mark.parametrize(
-        "bits",
-        [
-            np.array([[0, 1, 0], [1, 0, 1]]),
-            np.array([[0, 1, 1], [1, 0, 1]]),
-            np.array([[1, 1, 1], [1, 0, 1]]),
-            _random_regular_matrix(4, 14, seed=5214),
-            _random_regular_matrix(15, 174, seed=514),
-            _random_regular_matrix(55, 1074, seed=14),
-            np.concatenate(
-                [
-                    _random_regular_matrix(15, 615, seed=9185),
-                    np.random.default_rng(852).choice(2, size=(15, 85)),
-                ],
-                axis=1,
-            ),
-            np.concatenate(
-                [
-                    np.random.default_rng(52).choice(2, size=(32, 64)),
-                    _random_regular_matrix(32, 5615, seed=985),
-                ],
-                axis=1,
-            ),
-        ],
-    )
-    def test_get_bits_basis(self, bits):
-        """Test that _get_bits_basis can be used to compute a basis over
-        Z_2 out of overcomplete bit strings."""
-        r, D = bits.shape
-        basis, other_bits = _get_bits_basis(bits)
-        assert basis.shape == (r, r)
-        assert _is_binary(basis)
-        assert binary_rank(basis) == r
-
-        assert other_bits.shape == (r, D - r)
-        assert _is_binary(other_bits)
 
     @pytest.mark.parametrize(
         "r, len_N, len_M, seed",
