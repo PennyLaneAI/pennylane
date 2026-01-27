@@ -21,14 +21,15 @@ class TrainingOptions:
             control back to Python. Higher = Faster. Lower = More interactive/granular logging.
             Defaults to 1 (slow, good for debugging).
         val_kwargs (dict[str, Any] | None): Arguments for the loss function to be used during validation.
-        convergence_interval (int | None): Number of steps over which to check for convergence.
+        convergence_interval (int): Number of steps over which to check for convergence.
+            Defaults to 100.
         random_state (int): Seed for PRNGKey.
-        opt_jit (bool): Whether to JIT the optimizer creation. Default is False.
+        opt_jit (bool): Whether to JIT the optimizer creation (usually False is fine).
     """
 
     unroll_steps: int = 1
     val_kwargs: dict[str, Any] | None = None
-    convergence_interval: int | None = None
+    convergence_interval: int = 100
     random_state: int = 666
     opt_jit: bool = False
 
@@ -173,10 +174,10 @@ def training_iterator(
         loss (Callable): The loss function.
         stepsize (float): The learning rate.
         loss_kwargs (dict[str, Any]): Arguments to pass to the loss function.
-        options (TrainingOptions | None): Configuration options for training.
+        options (TrainingOptions | None): Configuration options for training. See :class:`TrainingOptions` for further details.
 
     Yields:
-        Iterator[BatchResult]: An iterator over batch results.
+        Iterator[BatchResult]: An iterator over batch results. See :class:`BatchResult` for further details.
     """
     options = options or TrainingOptions()
     unroll_steps = max(1, options.unroll_steps)
@@ -250,10 +251,11 @@ def train(
         stepsize (float): The learning rate.
         n_iters (int): Total number of training iterations.
         loss_kwargs (dict[str, Any]): Arguments to pass to the loss function.
-        options (TrainingOptions | None): Configuration options for training.
+        options (TrainingOptions | None): Configuration options for training. See :class:`TrainingOptions` for further details.
 
     Returns:
         TrainingResult: The results of the training process, including final parameters and loss history.
+            See :class:`TrainingResult` for further details.
     """
     options = options or TrainingOptions()
 
@@ -288,25 +290,23 @@ def train(
             )
             pbar.update(unroll_steps)
 
-            # Check Convergence
-            if options.convergence_interval is not None:
-                current_step = (i + 1) * unroll_steps
+            current_step = (i + 1) * unroll_steps
 
-                # Check based on validation loss if available, else training loss
-                metric_acc = val_loss_acc if options.val_kwargs else loss_acc
+            # Check based on validation loss if available, else training loss
+            metric_acc = val_loss_acc if options.val_kwargs else loss_acc
 
-                history_needed = 2 * options.convergence_interval
+            history_needed = 2 * options.convergence_interval
 
-                if current_step > history_needed:
-                    recent_history = jnp.concatenate(
-                        metric_acc[-10:]
-                    )  # Grab last 10 chunks (heuristic)
+            if current_step > history_needed:
+                recent_history = jnp.concatenate(
+                    metric_acc[-10:]
+                )  # Grab last 10 chunks (heuristic)
 
-                    if len(recent_history) >= history_needed:
-                        if _check_convergence(recent_history, options.convergence_interval):
-                            print(f"Training converged after {current_step} steps")
-                            converged = True
-                            break
+                if len(recent_history) >= history_needed:
+                    if _check_convergence(recent_history, options.convergence_interval):
+                        print(f"Training converged after {current_step} steps")
+                        converged = True
+                        break
 
     if not converged:
         print(f"Training has not converged after {n_iters} steps")
