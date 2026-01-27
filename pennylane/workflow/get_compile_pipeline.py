@@ -91,10 +91,10 @@ def get_compile_pipeline(
         qnode (QNode): The QNode to get the compile pipeline for.
         level (str, int, slice): An indication of what transforms to use from the full compile pipeline.
 
-            - ``"device"``: Retrieves the entire compile pipeline used for device execution.
             - ``"top"``: Returns an empty compile pipeline.
             - ``"user"``: Retrieves a compile pipeline containing manually applied user transformations.
             - ``"gradient"``: Retrieves a compile pipeline that includes user transformations and any relevant gradient transformations.
+            - ``"device"``: Retrieves the entire compile pipeline (user + gradient + device) that is used for execution.
             - ``str``: Can also accept a string corresponding to the name of a marker that was manually added to the compile pipeline.
             - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
             - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the compile pipeline.
