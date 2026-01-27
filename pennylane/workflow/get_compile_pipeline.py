@@ -99,6 +99,9 @@ def get_compile_pipeline(
             - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
             - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the compile pipeline.
 
+    Returns:
+        CompilePipeline: the compile pipeline corresponding to the requested level.
+
     Raises:
         ValueError: If a final transform is applied to the qnode with a level that goes deeper than the gradient level of the compile pipeline.
 
