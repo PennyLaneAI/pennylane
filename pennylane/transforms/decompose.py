@@ -20,15 +20,13 @@ from __future__ import annotations
 import warnings
 from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
-from functools import lru_cache, partial, singledispatch
-from types import NoneType
+from functools import lru_cache, partial
 
 from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.decomposition import DecompositionGraph, enabled_graph
+from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
-from pennylane.decomposition.utils import translate_op_alias
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.transforms.core import transform
@@ -179,20 +177,14 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if self.stopping_condition(op):
                 return self.interpret_operation(op)
 
-            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
+            rule = self._decomp_graph_solution.decomposition(
                 op, num_work_wires=self._num_work_wires
-            ):
-                rule = self._decomp_graph_solution.decomposition(
-                    op, num_work_wires=self._num_work_wires
-                )
-                num_wires = len(op.wires)
+            )
+            num_wires = len(op.wires)
 
-                def compute_qfunc_decomposition(*_args, **_kwargs):
-                    wires = math.array(_args[-num_wires:], like="jax")
-                    rule(*_args[:-num_wires], wires=wires, **_kwargs)
-
-            else:
-                compute_qfunc_decomposition = op.compute_qfunc_decomposition
+            def compute_qfunc_decomposition(*_args, **_kwargs):
+                wires = math.array(_args[-num_wires:], like="jax")
+                rule(*_args[:-num_wires], wires=wires, **_kwargs)
 
             args = (*op.parameters, *op.wires)
 
@@ -303,13 +295,11 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
 
-            # _evaluate_jaxpr_decomposition should be used when the operator defines a
-            # compute_qfunc_decomposition, or if graph-based decomposition is enabled and
-            # a solution is found for this operator in the graph.
-            if (
-                op.has_qfunc_decomposition
-                or self._decomp_graph_solution
-                and self._decomp_graph_solution.is_solved_for(op, self._num_work_wires)
+            # _evaluate_jaxpr_decomposition should be used when graph-based
+            # decomposition is enabled and a solution is found for this
+            # operator in the graph.
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
+                op, self._num_work_wires
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
@@ -378,7 +368,7 @@ def decompose(
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_set (Iterable[str or type], Dict[type or str, float] or Callable, optional): The
+        gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
@@ -725,6 +715,17 @@ def decompose(
         {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
         >>> qml.decomposition.disable_graph()
 
+        **Degenerate Graph Solutions**
+
+        There could be cases that arise where the decomposition graph solution is non-deterministic
+        if there are intermediate gate decompositions that have the same overall costs. This is not
+        normally an issue, except for in cases where graph decompositions are being used with
+        ``qjit`` and intermediate gates include operations that are non-executable by Catalyst.
+        An example of such a gate is the ``PauliRot`` operation. If an intermediate decomposition is
+        chosen that includes a ``qml.PauliRot`` instance, Catalyst cannot execute the program. If
+        this behaviour is encountered, this can be counteracted by adding a prohibitively large
+        penalty to the graph solution should it encounter a ``qml.PauliRot`` instance (e.g.,
+        ``qml.transforms.decomopose(..., gate_set={..., qml.PauliRot: 100_000})``).
     """
 
     if not enabled_graph() and (fixed_decomps or alt_decomps):
@@ -893,103 +894,27 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         )
 
 
-@singledispatch
-def _process_gate_set(gate_set):
-    return gate_set
+def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=unused-argument
+    """Return a GateSet and a callable that returns True iff an operator is in the gate set."""
 
-
-@_process_gate_set.register
-def _(gate_set: str | type):
-    # Less common, but this is used when a single gate is provided as the gate_set
-    return {gate_set}
-
-
-@_process_gate_set.register
-def _(gate_set: dict):
-    # The gate set could be specified with a dictionary mapping target gates to their costs.
-    # Only the decomposition graph is able to take those costs into account
-    if any(v < 0 for v in gate_set.values()):
-        raise ValueError("Negative weights are not supported in the gate_set.")
-    # For compatibility reasons, we don't raise an error when graph mode is not enabled.
-    # We simply disregard the weights and treat the dictionary as just a set of gates.
-    if not enabled_graph():
-        gate_set = set(gate_set.keys())
-        warnings.warn(
-            "Gate weights were provided to a non-graph-based decomposition. These will be ignored."
-        )
-    return gate_set
-
-
-@_process_gate_set.register
-def _(gate_set: Iterable):
-    return set(gate_set)
-
-
-@singledispatch
-def _process_gate_set_contains(gate_set):  # pylint: disable=unused-argument
-    raise TypeError("Invalid gate_set type. Must be an iterable, dictionary, or function.")
-
-
-@_process_gate_set_contains.register
-def _(gate_set: Iterable):
-    # The gate_set could be a mix of operator names and operator types. We need to wrap this
-    # in a gate_set_contains function that checks if either the name of the operator is within
-    # the names in the gate set, or if the type of the operator is within the types.
-    gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
-    gate_names = {translate_op_alias(gate) for gate in gate_set if isinstance(gate, str)}
-
-    def gate_set_contains(op: Operator) -> bool:
-        return (op.name in gate_names) or isinstance(op, gate_types)
-
-    return gate_set, gate_set_contains
-
-
-@_process_gate_set_contains.register
-def _(gate_set: NoneType):  # pylint: disable=unused-argument
-    # At the beginning of the function we already handled the special case for when neither
-    # gate_set nor stopping_condition is provided. Here we handle the case when gate_set
-    # is not provided but stopping_condition is. This would only be valid with graph disabled.
-    gate_set = set()
-
-    # pylint: disable=unused-argument
-    def gate_set_contains(op: Operator) -> bool:
-        return False
-
-    if enabled_graph():
+    if gate_set is None and enabled_graph():
         raise TypeError(
             "The gate_set argument is required when the graph-based decomposition system "
             "is enabled via qml.decomposition.enable_graph()"
         )
 
-    return gate_set, gate_set_contains
+    gate_set = gate_set or {}
+    if isinstance(gate_set, Iterable):
+        gate_set = GateSet(gate_set)
+        return gate_set, lambda op: op in gate_set
 
-
-@_process_gate_set_contains.register
-def _(gate_set: Callable):
-    # This branch exists for backwards compatibility reasons.
-    gate_set_contains = gate_set
-    gate_set = set()
-
-    warnings.warn(
-        "Passing a function to the gate_set argument is deprecated. The gate_set "
-        "expects a static iterable of operator types and/or operator names, and the "
-        "function should be passed to the stopping_condition argument instead.",
-        PennyLaneDeprecationWarning,
-    )
-
-    if enabled_graph():
-        raise TypeError(
-            "Specifying gate_set as a function is not supported with the new "
-            "graph-based decomposition system enabled."
-        )
-
-    return gate_set, gate_set_contains
+    raise TypeError("Invalid gate_set type. Must be an iterable, dictionary, or function.")
 
 
 def _resolve_gate_set(
-    gate_set: Iterable[type | str] | dict[type | str, float] | Callable | None = None,
+    gate_set: Iterable[type | str] | dict[type | str, float] | None = None,
     stopping_condition: Callable[[Operator], bool] | None = None,
-) -> tuple[set[type | str] | dict[type | str, float], Callable[[Operator], bool]]:
+) -> tuple[GateSet, Callable[[Operator], bool]]:
     """Resolve the gate set and the stopping condition from arguments.
 
     The ``gate_set`` can be provided in various forms, and the ``stopping_condition`` may or
@@ -997,8 +922,7 @@ def _resolve_gate_set(
     to the following standardized form:
 
     - The ``gate_set`` is set of operator **types** and/or names, a dictionary mapping operator
-      types and/or names to their respective costs, or a Callable that returns True in place of a successful
-      check for membership in an Iterable gate_set. This is only used by the DecompositionGraph
+      types and/or names to their respective costs. This is only used by the DecompositionGraph.
     - The ``stopping_condition`` is a function that takes an operator **instances** and returns
       ``True`` if the operator does not need to be decomposed. This is used during decomposition.
 
@@ -1008,11 +932,14 @@ def _resolve_gate_set(
     # a stopping condition. In this case, we assume all PennyLane operations are supported,
     # i.e., we only decompose templates and custom gates defined by the user.
     if gate_set is None and stopping_condition is None:
-        gate_set = set(ops.__all__)
+        gate_set = gate_sets.ALL_OPS
         return gate_set, lambda op: op.name in gate_set
 
-    gate_set = _process_gate_set(gate_set)
-    gate_set, gate_set_contains = _process_gate_set_contains(gate_set)
+    if isinstance(gate_set, (type, str)):
+        # when a single gate is provided as the gate set
+        gate_set = {gate_set}
+
+    gate_set, gate_set_contains = _process_gate_set(gate_set)
 
     if stopping_condition:
         # Even when the user provides a stopping condition, we still need to check

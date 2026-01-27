@@ -293,45 +293,6 @@ class TestPreprocessTransforms:
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
-        "create_temporary_toml_file, mcm_method, expected_transform",
-        [
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "one-shot", qml.transforms.dynamic_one_shot),
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "deferred", qml.transforms.defer_measurements),
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "device", None),
-        ],
-        indirect=("create_temporary_toml_file",),
-    )
-    def test_mcm_transform_in_program(self, mcm_method, expected_transform, request):
-        """Tests that the correct MCM transform is included in the program."""
-
-        mcm_transforms = {
-            qml.transforms.dynamic_one_shot,
-            qml.transforms.defer_measurements,
-            qml.devices.preprocess.mid_circuit_measurements,
-        }
-
-        class CustomDevice(Device):
-            """A device with capabilities config file defined."""
-
-            config_filepath = request.node.toml_file
-
-            def execute(
-                self,
-                circuits: QuantumScriptOrBatch,
-                execution_config: ExecutionConfig = None,
-            ) -> Result | ResultBatch:
-                return (0,)
-
-        dev = CustomDevice()
-        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method=mcm_method))
-        compile_pipeline = dev.preprocess_transforms(config)
-        if expected_transform:
-            assert expected_transform in compile_pipeline
-        for other_transform in mcm_transforms - {expected_transform}:
-            assert other_transform not in compile_pipeline
-
-    @pytest.mark.usefixtures("create_temporary_toml_file")
-    @pytest.mark.parametrize(
         "create_temporary_toml_file",
         [EXAMPLE_TOML_FILE_ALL_SUPPORT],
         indirect=True,
@@ -532,14 +493,14 @@ class TestPreprocessTransforms:
             assert qml.transforms.split_non_commuting in program
             assert qml.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform_dispatcher is qml.transforms.split_non_commuting:
+                if transform_container._transform is qml.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "wires"
         elif not non_commuting_obs:
             assert qml.transforms.split_non_commuting in program
             assert qml.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform_dispatcher is qml.transforms.split_non_commuting:
+                if transform_container._transform is qml.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "qwc"
         elif not sum_support:
@@ -594,10 +555,7 @@ class TestPreprocessTransforms:
         else:
             assert qml.transforms.diagonalize_measurements in program
             for transform_container in program:
-                if (
-                    transform_container._transform_dispatcher
-                    is qml.transforms.diagonalize_measurements
-                ):
+                if transform_container._transform is qml.transforms.diagonalize_measurements:
                     assert transform_container._kwargs["supported_base_obs"] == {
                         qml.Z,
                         qml.X,

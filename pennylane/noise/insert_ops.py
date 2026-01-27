@@ -18,6 +18,7 @@ from collections.abc import Callable, Sequence
 from types import FunctionType
 
 from pennylane import templates
+from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.operation import DecompositionUndefinedError, Operation, Operator
 from pennylane.ops.op_math import Adjoint
@@ -221,7 +222,11 @@ def insert(
         return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
     [tape], _ = decompose(
-        tape, stopping_condition=stop_at, name="insert", error=DecompositionUndefinedError
+        tape,
+        target_gates=gate_sets.ALL_OPS,
+        stopping_condition=stop_at,
+        name="insert",
+        error=DecompositionUndefinedError,
     )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
@@ -275,7 +280,7 @@ def insert(
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

@@ -97,7 +97,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
 
         # FABLE encodes A / 2^n, need to rescale to obtain desired block-encoding
 
-        fable_norm = int(np.ceil(np.log2(max_dimension)))
+        fable_norm = math.ceil_log2(max_dimension)
         encoding = FABLE(2**fable_norm * A, wires=encoding_wires)
 
         projectors = [ops.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
@@ -365,8 +365,8 @@ class QSVT(Operation):
     ... def example_circuit():
     ...     qml.QSVT(block_encoding, phase_shifts)
     ...     return qml.expval(qml.Z(0))
-    ... 
-    
+    ...
+
     >>> example_circuit()
     np.float64(0.5403...)
 
@@ -1257,7 +1257,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
         raise AssertionError("The polynomial must have at least degree 1.")
 
     for x in [-1, 0, 1]:
-        if math.abs(math.sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
+        if math.abs(sum(coeff * x**i for i, coeff in enumerate(poly))) > 1:
             # Check that |P(x)| ≤ 1. Only points -1, 0, 1 will be checked.
             raise AssertionError("The polynomial must satisfy that |P(x)| ≤ 1 for all x in [-1, 1]")
 
