@@ -621,14 +621,12 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 
-    all_pauli_rep_values = list(op1.pauli_rep.values()) + list(op2.pauli_rep.values())
-    if not any(qml.math.is_abstract(v) for v in all_pauli_rep_values):
-        if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
-            return True
-
     if qml.math.is_abstract(op1.scalar) or qml.math.is_abstract(op2.scalar):
         if op1.scalar is not op2.scalar:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
+
+    elif op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
+        return True
 
     # allclose only works if op1.scalar and op2.scalar are not abstract
     elif not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
