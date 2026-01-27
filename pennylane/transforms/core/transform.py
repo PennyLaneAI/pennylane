@@ -977,7 +977,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         warnings.warn(
             "`BoundTransform.transform` is deprecated and will be removed in a future release. "
             "Please use `BoundTransform.tape_transform` instead.",
-            DeprecationWarning,
+            PennyLaneDeprecationWarning,
             stacklevel=2,
         )
         return self.tape_transform
