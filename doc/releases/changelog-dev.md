@@ -192,6 +192,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Improves the error messages when the inputs and outputs to a `qml.for_loop` function do not match.
+
 * Fixes a bug that `qml.QubitDensityMatrix` was applied in `default.mixed` device using `qml.math.partial_trace` incorrectly.
   This would cause wrong results as described in [this issue](https://github.com/PennyLaneAI/pennylane/pull/8932).
   [(#8933)](https://github.com/PennyLaneAI/pennylane/pull/8933)
