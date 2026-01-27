@@ -117,10 +117,10 @@ def get_compile_pipeline(
         @qml.transforms.cancel_inverses
         @qml.qnode(dev)
         def circuit():
-            qml.H(0)
-            qml.RX(1, wires=0)
             qml.RX(1, wires=0)
             qml.H(0)
+            qml.H(0)
+            qml.RX(1, wires=0)
             return qml.expval(qml.Z(0))
 
     We can retrieve the compile pipeline used during execution with,
@@ -147,6 +147,9 @@ def get_compile_pipeline(
             @qml.transforms.cancel_inverses
             @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit(x):
+                qml.RX(x, wires=0)
+                qml.H(0)
+                qml.H(0)
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
