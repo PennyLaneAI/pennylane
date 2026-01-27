@@ -18,6 +18,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec
 
+from pennylane.transforms.core import CompilePipeline
 from pennylane.workflow import construct_execution_config, marker
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
@@ -25,7 +26,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from pennylane.devices.execution_config import ExecutionConfig
-    from pennylane.transforms.core import CompilePipeline
     from pennylane.workflow import QNode
 
 P = ParamSpec("P")
@@ -201,32 +201,16 @@ def get_compile_pipeline(
         # Get full compile pipeline
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
+
+        # FIX: Cannot simply add the compile pipeline as final transforms are incorrectly appended at the end
+        # which do not represent their true execution pathway
         full_compile_pipeline = qnode.compile_pipeline + outer_pipeline + inner_pipeline
 
         num_user = len(qnode.compile_pipeline)
-        if qnode.compile_pipeline.has_final_transform:
-            # Ignore final transforms for now, will be re-added later if needed
-            num_user -= 2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else 1
-            if (
-                level in {"gradient", "device"}
-                or isinstance(level, int)
-                and level
-                >= num_user + int(hasattr(resolved_config.gradient_method, "expand_transform"))
-            ):
-                raise ValueError(
-                    f"Cannot retrieve compile pipeline at requested level '{level}' due to final transforms being present."
-                )
 
         # Slice out relevant section
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
         resolved_pipeline = full_compile_pipeline[level_slice]
-
-        # Add back final transforms to resolved pipeline if required
-        if qnode.compile_pipeline.has_final_transform and level == "user":
-            final_transform_start = (
-                -2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else -1
-            )
-            resolved_pipeline += qnode.compile_pipeline[final_transform_start:]
 
         return resolved_pipeline
 

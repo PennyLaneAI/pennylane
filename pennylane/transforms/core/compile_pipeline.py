@@ -18,7 +18,6 @@ This module contains the ``CompilePipeline`` class.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from contextlib import contextmanager
 from copy import copy
 from functools import partial
 from typing import TYPE_CHECKING, overload
@@ -263,12 +262,14 @@ class CompilePipeline:
         *,
         cotransform_cache: CotransformCache | None = None,
     ): ...
+
     @overload
     def __init__(
         self,
         *transforms: CompilePipeline | BoundTransform | Transform,
         cotransform_cache: CotransformCache | None = None,
     ): ...
+
     def __init__(
         self,
         *transforms: CompilePipeline
@@ -308,8 +309,10 @@ class CompilePipeline:
 
     @overload
     def __getitem__(self, idx: int) -> BoundTransform: ...
+
     @overload
     def __getitem__(self, idx: slice) -> CompilePipeline: ...
+
     def __getitem__(self, idx):
         """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         compile pipeline"""
@@ -339,8 +342,7 @@ class CompilePipeline:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
             transforms = self._compile_pipeline[:]
-            with _exclude_terminal_transform(transforms):
-                transforms.extend(other._compile_pipeline)
+            transforms.extend(other._compile_pipeline)
 
             cotransform_cache = None
             if self.cotransform_cache:
@@ -400,8 +402,7 @@ class CompilePipeline:
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
-            with _exclude_terminal_transform(self._compile_pipeline):
-                self._compile_pipeline.extend(other._compile_pipeline)
+            self._compile_pipeline.extend(other._compile_pipeline)
 
             if other.cotransform_cache:
                 if self.cotransform_cache:
@@ -497,10 +498,9 @@ class CompilePipeline:
         if self.has_final_transform and transform.is_final_transform:
             raise TransformError("The compile pipeline already has a terminal transform.")
 
-        with _exclude_terminal_transform(self._compile_pipeline):
-            if expand_transform := transform.expand_transform:
-                self._compile_pipeline.append(expand_transform)
-            self._compile_pipeline.append(transform)
+        if expand_transform := transform.expand_transform:
+            self._compile_pipeline.append(expand_transform)
+        self._compile_pipeline.append(transform)
 
     def extend(self, transforms: CompilePipeline | Sequence[BoundTransform | Transform]):
         """Extend the pipeline by appending transforms from an iterable.
@@ -709,12 +709,15 @@ class CompilePipeline:
     def __call__(
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr: ...
+
     @overload
     def __call__(self, qnode: qml.QNode, *args, **kwargs) -> qml.QNode: ...
+
     @overload
     def __call__(
         self, tape: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
+
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)
@@ -736,17 +739,6 @@ def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
     program = copy(obj)
     program.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
     return program
-
-
-@contextmanager
-def _exclude_terminal_transform(transforms: list[BoundTransform]):
-    terminal_transforms = []
-    if transforms and transforms[-1].is_final_transform:
-        terminal_transforms.append(transforms.pop())
-        if transforms and terminal_transforms[0].expand_transform == transforms[-1]:
-            terminal_transforms.insert(0, transforms.pop())
-    yield
-    transforms.extend(terminal_transforms)
 
 
 TransformProgram = CompilePipeline
