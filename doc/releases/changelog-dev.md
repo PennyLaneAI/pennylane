@@ -17,6 +17,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `CompilePipeline` object now has an improved `__str__` and `__repr__` allowing improved inspectibility.
+  [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
+
 * `qml.vjp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
 
