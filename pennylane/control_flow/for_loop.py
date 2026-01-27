@@ -425,7 +425,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             return self._call_capture_disabled(*init_state)
 
         # don't fallback with this error, as will get similar error
-        if (ni := len(jaxpr_body_fn.out_avals)) != ((no := len(jaxpr_body_fn.in_avals)) - 1):
+        if (ni := len(jaxpr_body_fn.in_avals)) != ((no := len(jaxpr_body_fn.out_avals)) + 1):
             raise ValueError(
                 "The number of inputs must be one greater than the number of"
                 " outputs for the for_loop function. The additional input "
