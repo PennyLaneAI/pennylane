@@ -1400,11 +1400,11 @@ class TestHadamardGradEdgeCases:
         b = jax.numpy.array(2.0)
 
         with pytest.raises(ValueError, match="Higher order derivatives"):
-            res = circuit(a, b)
+            circuit(a, b)
 
             jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
-            g = jac_fn(a, b)
-            hess = jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
+            jac_fn(a, b)
+            jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
 
 
 @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])

@@ -22,7 +22,7 @@ from param_shift_dev import ParamShiftDerivativesDevice
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
+from pennylane.exceptions import DeviceError
 
 pytestmark = pytest.mark.torch
 
