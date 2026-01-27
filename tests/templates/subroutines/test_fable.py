@@ -21,6 +21,11 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
+# The Fable was written in a way that the resource function depends on its parameters,
+# which the graph does not actually support if the parameters are abstract. This will
+# not be an issue when it is converted to a Subroutine [sc-105835]
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 class TestFable:
     """Tests for the FABLE template."""
