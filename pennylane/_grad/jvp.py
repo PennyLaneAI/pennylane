@@ -58,7 +58,6 @@ def _get_jvp_prim():
             return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
 
         results, dresults = jax.jvp(func, params, dparams)
-        print(results, dresults)
         return (*results, *dresults)
 
     @jvp_prim.def_abstract_eval
