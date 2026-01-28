@@ -741,7 +741,7 @@ def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
 @contextmanager
 def _exclude_terminal_transform(transforms: list[BoundTransform]):
     terminal_transforms = []
-    if transforms and transforms[-1].is_final_transform:
+    if transforms and transforms[-1].is_informative:
         terminal_transforms.append(transforms.pop())
         if transforms and terminal_transforms[0].expand_transform == transforms[-1]:
             terminal_transforms.insert(0, transforms.pop())
