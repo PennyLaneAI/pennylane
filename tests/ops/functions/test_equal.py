@@ -21,6 +21,7 @@ import re
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
+from functools import partial
 
 import numpy as np
 import pytest
@@ -3121,3 +3122,88 @@ def test_select():
     op2 = qml.Select((qml.X(0),), control=2)
     qml.assert_equal(op1, op2)
     assert qml.equal(op1, op2) is True
+
+
+# pylint: disable=unused-argument
+class TestCompareSubroutines:
+
+    def test_different_subroutine_defs(self):
+        """Test SubroutineOp are not equal if their Subroutines are not equal."""
+
+        @qml.templates.Subroutine
+        def Subroutine1(wires):
+            qml.X(wires)
+
+        @qml.templates.Subroutine
+        def Subroutine2(wires):
+            qml.Y(wires)
+
+        op1 = Subroutine1(0)
+        op2 = Subroutine2(0)
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op1 is <Subroutine: Subroutine1>"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_static_args(self):
+        """Test they are different if they have different static args."""
+
+        @partial(qml.templates.Subroutine, static_argnames=("a",))
+        def f(a, wires):
+            pass
+
+        op1 = f("val1", 0)
+        op2 = f("val2", 0)
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op2 has value val2 for input a"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_wires(self):
+        """Test they are different if their wires are different."""
+
+        @partial(qml.templates.Subroutine, wire_argnames=("reg1", "reg2"))
+        def f(reg1, reg2):
+            pass
+
+        op1 = f((0,), (1,))
+        op2 = f((1,), (0,))
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match=r"has value Wires\(\[1\]\) for register reg1"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_pytree_inputs(self):
+        """Test that if the pytrees for an input are different, the ops are different."""
+
+        @qml.templates.Subroutine
+        def f(x, wires):
+            pass
+
+        op1 = f((0.5,), 0)
+        op2 = f((0.5, 0.6), 0)
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="have different pytree structures"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_data(self):
+        """Test that if there is different data, they are different operators."""
+
+        @qml.templates.Subroutine
+        def f(x, wires):
+            pass
+
+        op1 = f(np.array(0.5), 0)
+        op2 = f(np.array(0.5 + 1e-5), 0)
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, rtol=1e-4)
+        assert qml.equal(op1, op2, atol=1e-4)
+
+        op3 = f(qml.numpy.array(0.5, requires_grad=False), 0)
+        assert not qml.equal(op1, op3)
+        assert qml.equal(op1, op3, check_interface=False)
+
+        op4 = f(qml.numpy.array(0.5), 0)
+        assert not qml.equal(op3, op4)
+        assert qml.equal(op3, op4, check_trainability=False)
