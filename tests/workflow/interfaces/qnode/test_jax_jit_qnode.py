@@ -229,6 +229,9 @@ class TestQNode:
             gradient_kwargs["mode"] = "reversed-direct"
 
         class MyU3(qml.U3):
+
+            name = "MyU3"
+
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires

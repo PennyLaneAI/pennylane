@@ -515,6 +515,9 @@ class TestQNode:
             gradient_kwargs["mode"] = "direct"
 
         class MyU3(qml.U3):  # pylint:disable=too-few-public-methods
+
+            name = "MyU3"
+
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
