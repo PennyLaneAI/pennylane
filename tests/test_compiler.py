@@ -788,7 +788,7 @@ class TestCatalystGrad:
         res = vjp(x, dy)
         assert len(res) == 2
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1][0], jnp.array([-0.43750208, 0.07000001]))
+        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
 
 class TestCatalystSample:
