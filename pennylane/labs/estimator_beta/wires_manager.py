@@ -36,8 +36,8 @@ class _WireAction:
         self.state = state
         self.restored = restored
 
-    def __eq__(self, other: "_WireAction") -> bool:
-        return isinstance(other, self.__class__) and self.num_wires == other.num_wires
+    # def __eq__(self, other: "_WireAction") -> bool:
+    #     return isinstance(other, self.__class__) and self.num_wires == other.num_wires
 
     def __mul__(self, other):
         if isinstance(other, int):
@@ -164,7 +164,7 @@ def _estimate_auxiliary_wires(
         elif isinstance(action, Deallocate):
             if action.state == AllocateState.ANY and action.restored == True:
                 try:
-                    associated_alloc = any_state_aux_allocation[action.allocated_register]
+                    associated_alloc = any_state_aux_allocation.pop(action.allocated_register)
                     total -= associated_alloc
                     num_available_any_state_aux += action.num_wires - associated_alloc
                 
@@ -227,8 +227,8 @@ def _process_circuit_lst(circuit_as_lst):
         
         elif isinstance(op, MarkQubits):
             marked_wires = op.wires
-            if len(circuit_wires.intersection(marked_wires)) > 0:
-                raise ValueError(f"Can't mark wires {marked_wires} that aren't used in the circuit yet {circuit_wires}.")
+            # if (len(circuit_wires.intersection(marked_wires)) == 0) and (len(marked_wires) > 0):
+            #     raise ValueError(f"Can't mark wires {marked_wires} that aren't used in the circuit yet {circuit_wires}.")
 
             processed_circ.append((op, marked_wires))
 
@@ -271,7 +271,7 @@ def estimate_wires_from_circuit(
                 num_clean_logical_auxs = len(available_logical_auxiliaries) - num_dirty_logical_auxs
 
                 sub_max_alloc, sub_max_dealloc, sub_total = _estimate_auxiliary_wires(
-                    GateCount(circuit_element),
+                    [GateCount(circuit_element)],
                     gate_set=gate_set,
                     config=config,
                     num_available_any_state_aux=num_dirty_logical_auxs,

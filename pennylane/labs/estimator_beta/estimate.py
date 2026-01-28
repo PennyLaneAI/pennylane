@@ -354,6 +354,9 @@ def _resources_from_pl_ops(
 def _resources_from_qfunc(
     workflow: Callable,
     gate_set: set[str] | None = None,
+    zeroed: int = 0,
+    any_state: int = 0,
+    tight_budget: bool = False,
     config: ResourceConfig | None = None,
 ) -> Callable[..., Resources]:
     """Estimate resources for a quantum function which queues operators"""
@@ -387,59 +390,41 @@ def _resources_from_qfunc(
     return wrapper
 
 
-def _estimate_wires(
-    list_actions: Iterable[GateCount, Allocate, Deallocate],
-    scalar: int = 1,
+def _update_counts_from_compressed_res_op(
+    comp_res_op: CompressedResourceOp,
+    gate_counts_dict: dict,
     gate_set: set[str] | None = None,
+    scalar: int = 1,
     config: ResourceConfig | None = None,
-) -> Iterable:
-    if scalar == 0: return 0, 0, 0
-    if config is None: config = ResourceConfig()
-    if gate_set is None: gate_set = DefaultGateSet
+) -> None:
+    """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
-    total = 0
-    max_alloc = 0
-    max_dealloc = 0
+    Args:
+        comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
+        gate_counts_dict (dict): base dictionary to modify with the resource counts
+        gate_set (set[str]): the set of operators to track resources with respect to
+        scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
+        config (dict | None): additional parameters to specify the resources from an operator. Defaults to :class:`pennylane.estimator.resource_config.ResourceConfig`.
+    """
+    if gate_set is None:
+        gate_set = DefaultGateSet
 
-    for action in list_actions:
+    if config is None:
+        config = ResourceConfig()
+
+    ## Early return if compressed resource operator is already in our defined gate set
+    if comp_res_op.name in gate_set:
+        gate_counts_dict[comp_res_op] += scalar
+        return
+
+    resource_decomp = _get_resource_decomposition(comp_res_op, config)
+
+    for action in resource_decomp:
         if isinstance(action, GateCount):
-            if action.gate.name in gate_set:
-                continue
-
-            resource_decomp = _get_resource_decomposition(action.gate, config)
-            sub_max_alloc, sub_max_dealloc, sub_total = _estimate_wires(
-                resource_decomp, action.count, gate_set, config
+            _update_counts_from_compressed_res_op(
+                action.gate,
+                gate_counts_dict,
+                scalar=scalar * action.count,
+                gate_set=gate_set,
+                config=config,
             )
-
-            if sub_max_dealloc < 0:
-                total += sub_max_dealloc  # sub_max_dealloc < 0
-                if total < max_dealloc: max_dealloc = total
-            total -= sub_max_dealloc  # reset
-
-            if sub_max_alloc > 0:
-                total += sub_max_alloc
-                if total > max_alloc: max_alloc = total
-            total -= sub_max_alloc  # reset
-
-            total += sub_total
-            continue
-
-        elif isinstance(action, Allocate):
-            total += action.num_wires
-
-        elif isinstance(action, Deallocate):
-            total -= action.num_wires
-        
-        if total > max_alloc: max_alloc = total
-        if total < max_dealloc: max_dealloc = total
-
-    if scalar == 1:
-        return max_alloc, max_dealloc, total
-    
-    if total > 0: max_alloc += (scalar - 1) * total
-    if total < 0: max_dealloc += (scalar - 1) * total
-    total *= scalar
-    
-    return max_alloc, max_dealloc, total
-
-

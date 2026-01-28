@@ -23,26 +23,13 @@ resource estimation.
 .. currentmodule:: pennylane.labs.estimator_beta
 
 """
-import pennylane as qml
-# from pennylane.estimator.estimate import estimate
-from .estimate import estimate as estimate_new
-
-
-# class _EnableExpQRE:
-#     default_estimate = estimate
-#     new_estimate = estimate_new
-
-#     def __init__(self):
-#         return
-
-
-# def enable_experimental_qre():
-#     # cls = _EnableExpQRE()
-#     default_estimate = estimate
-#     qml.estimator.estimate = estimate_new
-#     return default_estimate
-
-
-# def disable_experimental_qre(default_estimate):
-#     # cls = _EnableExpQRE()
-#     qml.estimator.estimate = default_estimate
+# import pennylane as qml
+from .estimate import estimate
+from .subroutines import QROM
+from .wires_manager import (
+    Allocate,
+    Deallocate,
+    MarkAuxiliary,
+    MarkClean,
+    MarkLogical,
+)
