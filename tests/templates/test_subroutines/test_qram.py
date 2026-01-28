@@ -27,6 +27,13 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
 
+
+try:
+    from jax import numpy as jnp
+except ImportError:
+    pass
+
+
 dev = device("default.qubit")
 
 
@@ -43,6 +50,7 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
     return probs(wires=target_wires)
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     (
         "data",
@@ -65,7 +73,7 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
             ],
             [0, 1],
             [2, 3, 4],
-            5,
+            [5],
             [6, 7, 8],
             [9, 10, 11],
             [12, 13, 14],
@@ -73,34 +81,34 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
         (
-            [
+            np.array([
                 [0, 1, 0],
                 [1, 1, 1],
                 [1, 1, 0],
                 [0, 0, 0],
-            ],
-            [0, 1],
-            [2, 3, 4],
-            5,
-            [11, 10, 9],
-            [6, 7, 8],
-            [12, 13, 14],
+            ]),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5]),
+            np.array([11, 10, 9]),
+            np.array([6, 7, 8]),
+            np.array([12, 13, 14]),
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
         (
-            [
+            jnp.array([
                 [0, 1, 0],
                 [1, 1, 1],
                 [1, 1, 0],
                 [0, 0, 0],
-            ],
-            [0, 1],
-            [2, 3, 4],
-            5,
-            [6, 7, 8],
-            [12, 13, 14],
-            [9, 10, 11],
+            ]),
+            jnp.array([0, 1]),
+            jnp.array([2, 3, 4]),
+            jnp.array([5]),
+            jnp.array([6, 7, 8]),
+            jnp.array([12, 13, 14]),
+            jnp.array([9, 10, 11]),
             0,
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
@@ -123,7 +131,7 @@ def test_bb_quantum(
             data,
             control_wires,
             target_wires,
-            [bus] + dir_wires + portL_wires + portR_wires,
+            bus + dir_wires + portL_wires + portR_wires,
             address,
         ),
     )
