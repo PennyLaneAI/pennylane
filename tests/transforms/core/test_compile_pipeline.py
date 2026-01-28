@@ -779,6 +779,8 @@ class TestCompilePipelineDunders:
         """Test the string representation of a pipeline."""
         compile_pipeline = CompilePipeline()
 
+        assert repr(compile_pipeline) == "CompilePipeline()"
+
         transform1 = BoundTransform(qml.transform(first_valid_transform))
         transform2 = BoundTransform(qml.transform(second_valid_transform))
 
