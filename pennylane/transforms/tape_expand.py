@@ -27,7 +27,7 @@ def _update_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-def create_expand_fn(depth, stop_at=None, device=None, gate_set=None, docstring=None):
+def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     """
     .. warning::
         Please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
@@ -108,7 +108,7 @@ def create_expand_fn(depth, stop_at=None, device=None, gate_set=None, docstring=
         with qml.QueuingManager.stop_recording():
             if not all(stop_at(op) for op in tape.operations):
                 (tape,), _ = qml.transforms.decompose(
-                    tape, gate_set=gate_set, max_expansion=depth, stopping_condition=stop_at
+                    tape, max_expansion=depth, stopping_condition=stop_at
                 )
             else:
                 return tape
@@ -206,7 +206,6 @@ def create_expand_trainable_multipar(tape, use_tape_argnum=False):
 
     return create_expand_fn(
         depth=None,
-        gate_set={"X", "Y", "Z", "RX", "RY", "RZ", "CNOT", "H"},
         stop_at=_argnum_trainable_multipar,
         docstring=_expand_trainable_multipar_doc,
     )
