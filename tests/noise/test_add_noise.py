@@ -464,5 +464,5 @@ class TestAddNoiseLevels:
         transform_level2 = qml.workflow.get_transform_program(noisy_qnode)
 
         assert len(transform_level1) == len(transform_level2) - 1
-        assert transform_level2[3].tape_transform == add_noise.tape_transform
-        assert transform_level2[-1].tape_transform == qml.metric_tensor.tape_transform
+        assert transform_level2[5].tape_transform == add_noise.tape_transform
+        assert transform_level2[4].tape_transform == qml.metric_tensor.tape_transform

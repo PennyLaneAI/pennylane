@@ -18,6 +18,7 @@
 * Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
   compile pipeline of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  [(#8987)](https://github.com/PennyLaneAI/pennylane/pull/8987)
 
 <h3>Improvements 🛠</h3>
 
