@@ -17,8 +17,12 @@ from itertools import combinations, product
 
 import numpy as np
 
-from pennylane.math import binary_is_independent, binary_rank, binary_select_basis, ceil_log2
-from pennylane.operation import Operation
+from pennylane.math import (
+    binary_finite_reduced_row_echelon,
+    binary_is_independent,
+    binary_select_basis,
+    ceil_log2,
+)
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -153,14 +157,25 @@ def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> n
     r"""Find replacement vector :math:`\ell` to construct lower-rank set of bit strings during
     recursive computation of kernel space :math:`\mathcal{W}` in ``_get_w_vectors``."""
 
+    # Number of bits
     r = len(bits_basis)
+    # Fector to be replaced
     v_r = bits_basis[:, -1]
+    # Map the set N to N', containing the components that are spanned by
+    # all basis vectors except for v_r
     set_N_prime = set_N + v_r[:, None]
+    # Compute all differences (=sums, over ℤ_2) of vectors in M and N'
     if set_M.shape[1] == 0 or set_N.shape[1] == 0:
         combs = np.zeros((r, 0), dtype=int)
     else:
         combs = np.array([m + m_prime for m, m_prime in product(set_M.T, set_N_prime.T)]).T
     zero = np.zeros((r, 1), dtype=int)
+    # Collect all bitstrings that ell may not be equal to. Note that we have
+    # ``set_M.shape[1] + set_N.shape[1] + 1 = D``, where D is the number of total bitstrings in
+    # the algorithm. Thus, the size of ``all_bitstrings_to_avoid`` is bounded from above by
+    # D + max_{0≤n≤D-1} (n * (D-1-n)) = (D+1)^2/4.
+    # Further, we only call ``_find_ell`` in ``_find_w`` for ``t>1``, i.e.
+    # we know that r≥m+2=2d+1. Thus, 2^(r-2)≥D^2/2>(D+1)^2/4 for D>2.
     all_bitstrings_to_avoid = np.concatenate([set_M, set_N_prime, combs, zero], axis=1) % 2
 
     for i in range(2 ** (r - 2)):
@@ -169,30 +184,8 @@ def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> n
         if not np.any(np.all(ell[:, None] == all_bitstrings_to_avoid, axis=0)):
             break
     else:
-        raise ValueError()
+        raise ValueError("ell should always be guaranteed to exist.")  # pragma: no cover
     return ell
-
-
-# This is a temporary debugging feature
-_DEBUGGING = False
-
-
-def _bits_not_in_space(bits, W, incl_diffs=True):
-    if _DEBUGGING:
-        assert all(binary_is_independent(bitstring, W) for bitstring in bits.T)
-        if incl_diffs:
-            assert all(
-                binary_is_independent((bits0 + bits1) % 2, W)
-                for bits0, bits1 in combinations(bits.T, r=2)
-            )
-
-
-def _bits_in_space(bits, basis):
-    if _DEBUGGING:
-        assert binary_rank(np.concatenate([bits, basis], axis=1)) == binary_rank(basis)
-
-
-# End of temporary debugging feature
 
 
 def _find_single_w(bits, r):
@@ -204,7 +197,6 @@ def _find_single_w(bits, r):
     unoccupied = next(i for i in range(1, len(ints) + 1) if i not in ints)
     w = (unoccupied >> np.arange(r - 1, -1, -1)) % 2
     W = np.array([w]).T
-    _bits_not_in_space(bits, W)
     return W
 
 
@@ -215,17 +207,16 @@ def _find_w(bits_basis, other_bits, r, t):
         diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T
         all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1) % 2
 
+        # Note that the set ``all_bitstrings_to_avoid`` has size at most D+(D^2-D)/2=(D^2+D)/2
+        # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1, and thus
+        # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1).
         for i in range(1, 2 ** (r - 1)):
             w_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
             w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
             if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
                 break
-        else:
-            raise ValueError()
 
         W = w[:, None]
-        _bits_not_in_space(all_bits, W)
-        _bits_in_space(W, bits_basis)
         return W
 
     v_r = bits_basis[:, -1]
@@ -237,63 +228,31 @@ def _find_w(bits_basis, other_bits, r, t):
 
     # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
     set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
-    _bits_in_space(set_M, bits_basis[:, :-1])
 
     set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
-    _bits_not_in_space(set_N, bits_basis[:, :-1], incl_diffs=False)
 
     ell = _find_ell(set_M, set_N, bits_basis)
 
     w_t = (v_r + ell) % 2
-    _bits_not_in_space(np.array([w_t]).T, bits_basis[:, :-1], incl_diffs=False)
 
     _set_N = (set_N + w_t[:, None]) % 2
-    _bits_in_space(_set_N, bits_basis[:, :-1])
 
     prev_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
-    _bits_in_space(prev_bits, bits_basis[:, :-1])
 
     W_prev = _find_w(bits_basis[:, :-1], prev_bits[:, bits_basis.shape[1] - 1 :], r, t - 1)
-    _bits_in_space(W_prev, bits_basis[:, :-1])
 
     W = np.concatenate([W_prev, w_t[:, None]], axis=1)
-    _bits_in_space(W, bits_basis)
-    _bits_not_in_space(bits_without_v_r, W)
     return W
 
 
 def _find_U_from_W(W, r):
-
-    # Create augmented matrix for Gauss-Jordan elimination.
-    M = np.concatenate([W.T, np.eye(r, dtype=int)], axis=0)
-
+    """Compute a set of vectors ``{u_i}_i`` that satisfy the equations
+    ``u_i @ W = 0``, i.e. that are in the kernel of W.T."""
     t = W.shape[1]
-    for k in range(t):
-        # Find next column with non-zero entry in ``k``th row
-        i_max = next(iter(i for i in range(k, r) if M[k, i] == 1), None)
-        # This only happens for underdetermined systems, whereas we assume M to be regular
-        if i_max is None:
-            raise ValueError(
-                "Did not find next pivot in Gauss-Jordan elimination, indicating a singular "
-                "matrix. Only regular matrices are supported by _solve_regular_linear_system_z2 "
-                f"in RowCol. Extended matrix at time of error:\n{M}"
-            )
-
-        # Swap columns
-        M[:, [k, i_max]] = M[:, [i_max, k]]
-
-        # Iterate through columns and add current column with index ``k`` to them if they
-        # have a 1 in the current row with index ``k``
-        for i in range(r):
-            if i == k:  # Exclude the ``k``th column itself
-                continue
-            if M[k, i] == 0:  # No need to do anything if the target entry already is zero
-                continue
-            # We use addition of rows modulo 2, which is implementable with bitwise xor, or ``^``.
-            M[k:, i] ^= M[k:, k]
-
-    # Solution is written into the last column of the (augmented) matrix
-    U = M[t:, t:].T
+    # Create augmented matrix for Gauss-Jordan elimination.
+    M = np.concatenate([W, np.eye(r, dtype=int)], axis=1)
+    M = binary_finite_reduced_row_echelon(M, inplace=True)
+    U = M[t:, t:]
     return U
 
 
@@ -431,20 +390,6 @@ def compute_sos_encoding(bits):
         W = _find_w(bits_basis, other_bits, r, t=r - m)
 
     U = _find_U_from_W(W, r)
-    _bits_not_in_space(bits, W)
     assert np.allclose((U @ W) % 2, 0)
     b = (U @ bits) % 2
     return U, b
-
-
-class SumOfSlatersStatePreparation(Operation):
-    """Prepare a sum of Slaters state.
-    This operation implements the state preparation as introduced by
-    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__, which
-    is tailored to sparse states.
-
-    .. seealso:: :func:`~.compute_sos_encoding` for the required classical coprocessing.
-
-    Args:
-
-    """

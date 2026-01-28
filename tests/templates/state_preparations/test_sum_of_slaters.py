@@ -103,11 +103,20 @@ class TestHelperFunctions:
             (np.array([[0, 1], [0, 1]]), True),
             (np.array([[0, 0], [1, 1]]), False),
             (np.array([[0, 0, 0], [0, 0, 1], [0, 1, 1]]), True),
+            (np.eye(64, dtype=int), True),
         ],
     )
     def test_columns_differ(self, bits, expected):
         """Test the _columns_differ helper function."""
         assert _columns_differ(bits) is expected
+
+    @pytest.mark.parametrize("size", [65, 100])
+    def test_columns_differ_error(self, size):
+        """Test that an error is raised for bitstrings that are too large."""
+        bits = np.ones((size, 4), dtype=int)
+        bits[:4, :] = np.eye(4, dtype=int)
+        with pytest.raises(ValueError, match="Column comparison uses 64-bit integers internally."):
+            _columns_differ(bits)
 
     @pytest.mark.parametrize(
         "bits ",
@@ -273,6 +282,7 @@ class TestHelperFunctions:
 
 
 class TestComputeSosEncoding:
+    """Tests for ``compute_sos_encoding``."""
 
     @pytest.mark.parametrize("r, D", [(3, 3), (4, 5), (9, 17), (8, 32)])
     def test_trivial_case(self, r, D):
