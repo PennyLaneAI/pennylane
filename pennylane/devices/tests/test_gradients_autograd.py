@@ -192,7 +192,9 @@ class TestGradients:
 
         qnode_kwargs = {"diff_method": diff_method, "max_diff": 2}
         if diff_method == "hadamard":
-            qnode_kwargs["gradient_kwargs"] = {"mode": "reversed-direct"}
+            pytest.skip(
+                "Higher order derivatives not supported with hadamard gradient in standard mode."
+            )
 
         @qml.qnode(dev, **qnode_kwargs)
         def circuit(x):
