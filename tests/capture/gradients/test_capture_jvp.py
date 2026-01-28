@@ -72,6 +72,16 @@ class TestErrors:
         with pytest.raises(ValueError, match="params and tangent shapes"):
             qml.jvp(lambda x: x**2, (jnp.array(0.5),), (jnp.array([1.0, 1.0]),))
 
+    def test_error_non_sequence_params(self):
+        """Test that an error is raised if the params are not a sequence."""
+        with pytest.raises(ValueError, match="params must be a Sequence"):
+            qml.jvp(lambda x: x**2, 2, (1.0,))
+
+    def test_error_non_sequence_tangents(self):
+        """Test that an error is raised if the tangents are not a sequence."""
+        with pytest.raises(ValueError, match="tangents must be a Sequence"):
+            qml.jvp(lambda x: x**2, (1.0,), 1.0)
+
 
 class TestCapturingJVP:
 
