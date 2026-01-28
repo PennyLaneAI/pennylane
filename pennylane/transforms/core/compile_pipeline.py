@@ -174,6 +174,7 @@ class CompilePipeline:
     )
 
     Or multiplied by a scalar via ``*``:
+
     >>> pipeline += 2 * qml.transforms.commute_controlled
     >>> print(pipeline)
     CompilePipeline(
@@ -219,68 +220,6 @@ class CompilePipeline:
       [1] cancel_inverses,
       [2] merge_rotations,
       [3] cancel_inverses
-    )
-
-    You can specify a transform program (``pipeline``) by passing these transforms to the ``CompilePipeline``
-    class. By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit will
-    be transformed with each pass within the pipeline sequentially:
-
-    .. code-block:: python
-
-        pipeline = qml.CompilePipeline(
-            qml.transforms.commute_controlled,
-            qml.transforms.cancel_inverses(recursive=True),
-            qml.transforms.merge_rotations,
-        )
-
-        @pipeline
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit(x, y):
-            qml.CNOT([1, 0])
-            qml.X(0)
-            qml.CNOT([1, 0])
-            qml.H(0)
-            qml.H(0)
-            qml.X(0)
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=0)
-            return qml.expval(qml.Z(1))
-
-    >>> print(qml.draw(circuit)(0.1, 0.2))
-    0: ──RX(0.30)─┤
-    1: ───────────┤  <Z>
-
-    Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
-    example, the transforms can be added toguether with ``+``:
-
-    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
-    >>> print(pipeline)
-    CompilePipeline(
-      [0] merge_rotations,
-      [1] cancel_inverses
-    )
-
-    Or multiplied by a scalar via ``*``:
-    >>> pipeline += 2 * qml.transforms.commute_controlled
-    >>> print(pipeline)
-    CompilePipeline(
-      [0] merge_rotations,
-      [1] cancel_inverses,
-      [2] commute_controlled,
-      [3] commute_controlled
-    )
-
-    A compilation pipeline can also be easily modified using operations similar to Python lists, including
-    ``insert``, ``append``, ``extend`` and ``pop``:
-
-    >>> pipeline.insert(0, qml.transforms.remove_barrier)
-    >>> print(pipeline)
-    CompilePipeline(
-      [0] remove_barrier,
-      [1] merge_rotations,
-      [2] cancel_inverses,
-      [3] commute_controlled,
-      [4] commute_controlled
     )
 
     Additionally, multiple compilation pipelines can be concatenated:
