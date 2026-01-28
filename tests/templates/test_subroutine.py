@@ -357,6 +357,44 @@ class TestSubroutineCapture:
         assert len(eqn.outvars) == 3  # the three measurement values
         assert eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
 
+    def test_autograph_not_propagated_through(self):
+        """Test that autograph would propagate through a Subroutine."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        @Subroutine
+        def f(x, wires):
+            if x > 0:
+                qml.X(wires)
+            else:
+                qml.Y(wires)
+
+        @qml.capture.run_autograph
+        def w(x):
+            f(x, 0)
+
+        with pytest.raises(jax.errors.TracerBoolConversionError):
+            jax.make_jaxpr(w)(0.5)
+
+    def test_manual_autograph_use(self):
+        """Test that autograph can be manually applied to a Subroutine."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        @Subroutine
+        @qml.capture.run_autograph
+        def f(x, wires):
+            if x > 0:
+                qml.X(0)
+
+        jaxpr = jax.make_jaxpr(f)(0.5, 0)
+
+        subroutine_eqn = jaxpr.eqns[-1]
+        assert subroutine_eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
+
+        inner_xpr = subroutine_eqn.params["jaxpr"]
+        assert inner_xpr.eqns[-1].primitive == qml.capture.primitives.cond_prim
+
 
 @pytest.mark.integration
 class TestTapePLIntegration:

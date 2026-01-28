@@ -310,6 +310,57 @@ class Subroutine:
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {pennylane.ops.qubit.parametric_ops_single_qubit.RX: 10}
 
+    **Use of Autograph:**
+
+    Autograph converts Python control flow (``if``, ``for``, ``while``, etc.) into PennyLane's
+    control flow (:func:`~.for_loop`, :func:`~.cond`, :func:`~.while_loop`) that is compatible
+    with traced arguments. The user's choice of applying autograph on their workflow in :func:`~.qjit`
+    does not effect the capture of a ``Subroutine``. Autograph should instead be applied manually
+    with :func:`~.run_autograph` to the quantum function as needed.
+
+    For example, is we have the template and ``qjit`` workflow:
+
+    .. code-block:: python
+
+        @qml.templates.Subroutine
+        def f(x, wires):
+            if x < 0:
+                qml.X(wires)
+            else:
+                qml.Y(wires)
+
+        @qml.qjit(autograph=True)
+        @qml.qnode(qml.device('lightning.qubit', wires=1))
+        def c(x):
+            f(x, 0)
+            return qml.expval(qml.Z(0))
+
+    >>> c(0.5)
+    Traceback (most recent call last):
+        ...
+    CaptureError: Autograph must be used when Python control flow is dependent on a dynamic variable
+    (a function input). Please ensure that autograph is being correctly enabled with
+    `qml.capture.run_autograph` or disabled with `qml.capture.disable_autograph` or
+    consider using PennyLane native control flow functions like `qml.for_loop`, `qml.while_loop`,
+    or `qml.cond`.
+
+    In order to support a conditional on a dynamic value, we should either ``run_autograph`` to the
+    quantum function definition itself or use ``qml.cond`` manually:
+
+    .. code-block:: python
+
+        @qml.templates.Subroutine
+        @qml.capture.run_autograph
+        def UsingAutograph(x, wires):
+            if x < 0:
+                qml.X(wires)
+            else:
+                qml.Y(wires)
+
+        @qml.templates.Subroutine
+        def UsingCond(x, wires):
+            qml.cond(x  > 0, qml.X, qml.Y)(wires)
+
     """
 
     def __repr__(self):
