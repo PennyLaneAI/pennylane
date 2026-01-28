@@ -3047,6 +3047,14 @@ def test_ops_with_abstract_parameters_not_equal():
     with pytest.raises(AssertionError, match="Data contains a tracer"):
         jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
 
+    assert not jax.jit(qml.equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+
+    assert not jax.jit(qml.equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
+
 
 @pytest.mark.parametrize(
     "op, other_op",

@@ -577,7 +577,11 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                     f"{params1} trainability is {params1_trainability} and {params2} trainability is {params2_trainability}"
                 )
 
-    if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
+    if qml.math.is_abstract(op1.coeff) or qml.math.is_abstract(op2.coeff):
+        if op1.coeff is not op2.coeff:
+            return "Data contains a tracer. Abstract tracers are assumed to be unique."
+
+    elif not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
         return f"op1 and op2 have different coefficients. Got {op1.coeff} and {op2.coeff}"
 
     equal_check = _equal(op1.base, op2.base, **kwargs)
@@ -617,10 +621,15 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 
-    if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
+    if qml.math.is_abstract(op1.scalar) or qml.math.is_abstract(op2.scalar):
+        if op1.scalar is not op2.scalar:
+            return "Data contains a tracer. Abstract tracers are assumed to be unique."
+
+    elif op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
 
-    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
+    # allclose only works if op1.scalar and op2.scalar are not abstract
+    elif not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
         return f"op1 and op2 have different scalars. Got {op1.scalar} and {op2.scalar}"
 
     equal_check = _equal(op1.base, op2.base, **kwargs)
