@@ -107,10 +107,11 @@ def to_ppr_setup_inputs():
     Measurements:
         expval(PauliZ): 1
 
-    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
-    ``theta`` is the PPR angle (:math:`\theta`). Note that the mid-circuit measurement
-    (:func:`pennylane.measure`) in the circuit has been converted to a Pauli product measurement
-    (PPM), as well.
+    In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
+    qubits it acts on, or the length of the Pauli word). ``PPM-w<int>`` follows the same convention.
+    Note that the mid-circuit measurement (:func:`pennylane.measure`) in the circuit has been
+    converted to a Pauli product measurement (PPM), as well.
     """
     return (), {}
 
@@ -212,9 +213,10 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
 
     In the example above, the Clifford PPRs (:class:`~.PauliRot` instances with an angle of rotation
     of :math:`\tfrac{\pi}{2}`) will be commuted past the non-Clifford PPR (:class:`~.PauliRot`
-    instances with an angle of rotation of :math:`\tfrac{\pi}{4}`). In the output above,
-    ``PPR-theta`` denotes the type of PPR present in the circuit, where ``theta`` is the PPR
-    angle (:math:`\theta`).
+    instances with an angle of rotation of :math:`\tfrac{\pi}{4}`). In the above output,
+    ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where ``theta`` is the PPR
+    angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of qubits it acts on,
+    or the length of the Pauli word).
 
     Note that if a commutation resulted in a PPR acting on more than ``max_pauli_size`` qubits
     (here, ``max_pauli_size = 2``), that commutation would be skipped.
@@ -313,7 +315,8 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
         No measurements.
 
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
-    operation would be skipped.
+    operation would be skipped. In the above output, ``PPM-w<int>`` denotes the PPM weight (the
+    number of qubits it acts on, or the length of the Pauli word).
     """
     if not isinstance(max_pauli_size, int) or max_pauli_size < 0:
         raise ValueError(f"max_pauli_size must be an int and >= 0. Got {max_pauli_size}")
@@ -433,10 +436,13 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     Measurements:
         expval(PauliZ): 1
 
-    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
-    ``theta`` is the PPR angle (:math:`\theta`). Note that :math:`\theta = \tfrac{\pi}{2}` PPRs
-    correspond to Pauli operators (:math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`). Pauli
-    operators can be commuted to the end of the circuit and absorbed into terminal measurements.
+    In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
+    qubits it acts on, or the length of the Pauli word). ``PPM-w<int>`` follows the same convention.
+
+    Note that :math:`\theta = \tfrac{\pi}{2}` PPRs correspond to Pauli operators
+    (:math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`). Pauli operators can be commuted to
+    the end of the circuit and absorbed into terminal measurements.
     """
     return (), {"decompose_method": decompose_method, "avoid_y_measure": avoid_y_measure}
 
@@ -546,12 +552,15 @@ def ppm_compilation_setup_inputs(
     Measurements:
         expval(PauliZ): 1
 
-    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
-    ``theta`` is the PPR angle (:math:`\theta`). Note that :math:`\theta = \tfrac{\pi}{2}` PPRs
-    correspond to Pauli operators (:math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`). Pauli
-    operators can be commuted to the end of the circuit and absorbed into terminal measurements.
+    In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
+    qubits it acts on, or the length of the Pauli word). ``PPM-w<int>`` follows the same convention.
 
-    Note that if a commutation or merge resulted in a PPR or PPM acting on more than
+    Note that :math:`\theta = \tfrac{\pi}{2}` PPRs correspond to Pauli operators
+    (:math:`P(\tfrac{\pi}{2}) = \exp(-iP\tfrac{\pi}{2}) = P`). Pauli operators can be commuted to
+    the end of the circuit and absorbed into terminal measurements.
+
+    Lastly, if a commutation or merge resulted in a PPR or PPM acting on more than
     ``max_pauli_size`` qubits (here, ``max_pauli_size = 2``), that commutation or merge would be
     skipped.
     """
@@ -742,9 +751,11 @@ def decompose_arbitrary_ppr_setup_inputs():
     Measurements:
         expval(PauliZ): 1
 
-    In the above output, ``PPR-theta`` denotes the type of PPR present in the circuit, where
-    ``theta`` is the PPR angle (:math:`\theta`). ``PPR-Phi`` corresponds to a PPR whose angle of
-    rotation is not :math:`\tfrac{\pi}{2}`, :math:`\tfrac{\pi}{4}`, or :math:`\tfrac{\pi}{8}`.
+    In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
+    ``theta`` is the PPR angle (:math:`\theta`) and ``w<int>`` denotes the PPR weight (the number of
+    qubits it acts on, or the length of the Pauli word). ``PPM-w<int>`` follows the same convention.
+    ``PPR-Phi-w<int>`` corresponds to a PPR whose angle of rotation is not :math:`\tfrac{\pi}{2}`,
+    :math:`\tfrac{\pi}{4}`, or :math:`\tfrac{\pi}{8}`.
     """
     return (), {}
 
