@@ -1104,14 +1104,14 @@ class TestCompilePipeline:
         t_normal = BoundTransform(qml.transform(second_valid_transform))
         compile_pipeline.append(t_normal)
         assert len(compile_pipeline) == 2
-        assert compile_pipeline[0] is t_normal
-        assert compile_pipeline[1] is transform1
+        assert compile_pipeline[0] is transform1
+        assert compile_pipeline[1] is t_normal
 
         t_normal2 = BoundTransform(qml.transform(first_valid_transform))
         compile_pipeline.append(t_normal2)
-        assert compile_pipeline[0] is t_normal
-        assert compile_pipeline[1] is t_normal2
-        assert compile_pipeline[2] is transform1
+        assert compile_pipeline[0] is transform1
+        assert compile_pipeline[1] is t_normal
+        assert compile_pipeline[2] is t_normal2
 
         with pytest.raises(
             TransformError, match="The compile pipeline already has a terminal transform."
