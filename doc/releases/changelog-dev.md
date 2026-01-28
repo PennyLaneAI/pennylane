@@ -147,6 +147,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+  [(#8985)](https://github.com/PennyLaneAI/pennylane/pull/8985)
+
 * :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar` 
   have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` 
   function for decomposing circuits.
