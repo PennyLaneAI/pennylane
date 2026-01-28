@@ -2,7 +2,7 @@
      width="200px"
      align="left" />
 
-Help us shape the future of PennyLane. We’d really appreciate a few minutes of your time to share feedback through our quantum programming survey. [Take the survey!](https://bit.ly/pl-survey-2026-g) (Survey closes Feb. 12, 2026)
+Help us shape the future of PennyLane. We’d really appreciate a few minutes of your time to share feedback through our quantum programming survey. [Take the survey!](https://bit.ly/pl-survey-2026-g) (Survey closes Feb. 19, 2026)
 
 <br clear=left>
 <br>

@@ -20,7 +20,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.transforms import decompose
 
 
 @pytest.mark.jax
@@ -99,7 +101,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tape = tape.expand()
+        [tape], _ = decompose(tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
 
         assert len(tape.operations) == 0
 
@@ -153,7 +155,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tape = tape.expand()
+        [tape], _ = decompose(tape, gate_set={"SWAP"})
 
         # Ensure all operations are SWAPs, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
@@ -203,7 +205,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tape = tape.expand()
+        [tape], _ = decompose(tape, gate_set={"SWAP"})
 
         # Ensure all operations are SWAPs, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
@@ -261,7 +263,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tape = tape.expand()
+        [tape], _ = decompose(tape, gate_set={"SWAP"})
 
         # Ensure all operations are SWAPs, and that the wires are the same
         assert all(op.name == "SWAP" for op in tape.operations)
@@ -323,7 +325,7 @@ class TestDecomposition:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
-        tape = tape.expand()
+        [tape], _ = decompose(tape, gate_set={"SWAP", "RZ"})
 
         # Make sure to start comparison after the set of RZs have been applied
         assert all(op.name == "SWAP" for op in tape.operations[len(wire_labels) :])
