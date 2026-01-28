@@ -75,7 +75,7 @@ def _columns_differ(bits: np.ndarray) -> bool:
     return len(set(ints)) == len(ints)
 
 
-def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
+def select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     r"""Select rows of a bit array of differing columns such that the stacked array of the
     selected rows still contains differing columns. Also memorizes the row indices of the input
     array that were selected.
@@ -112,8 +112,8 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
     Then let's select rows that maintain the uniqueness of the rows:
 
-    >>> from pennylane.templates.state_preparations.sum_of_slaters import _select_rows
-    >>> selectors, new_bits = _select_rows(bitstrings)
+    >>> from pennylane.templates.state_preparations.sum_of_slaters import select_rows
+    >>> selectors, new_bits = select_rows(bitstrings)
     >>> selectors
     [0, 1, 4, 5]
 
@@ -200,7 +200,8 @@ def _find_single_w(bits, r):
     return W
 
 
-def _find_w(bits_basis, other_bits, r, t):
+def _find_w(bits_basis, other_bits, t):
+    r = bits_basis.shape[0]
     if t == 1:
         all_bits = np.concatenate([bits_basis, other_bits], axis=1)
         # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
@@ -209,7 +210,8 @@ def _find_w(bits_basis, other_bits, r, t):
 
         # Note that the set ``all_bitstrings_to_avoid`` has size at most D+(D^2-D)/2=(D^2+D)/2
         # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1, and thus
-        # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1).
+        # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1), so that 2^(r-1) candidates are enough to find a new
+        # vector.
         for i in range(1, 2 ** (r - 1)):
             w_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
             w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
@@ -239,20 +241,27 @@ def _find_w(bits_basis, other_bits, r, t):
 
     prev_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
 
-    W_prev = _find_w(bits_basis[:, :-1], prev_bits[:, bits_basis.shape[1] - 1 :], r, t - 1)
+    W_prev = _find_w(bits_basis[:, :-1], prev_bits[:, bits_basis.shape[1] - 1 :], t - 1)
 
     W = np.concatenate([W_prev, w_t[:, None]], axis=1)
     return W
 
 
-def _find_U_from_W(W, r):
-    """Compute a set of vectors ``{u_i}_i`` that satisfy the equations
-    ``u_i @ W = 0``, i.e. that are in the kernel of W.T."""
-    t = W.shape[1]
+def _find_U_from_W(W):
+    """Compute a linearly independent set of vectors ``{u_i}_i`` that satisfy the equations
+    ``u_i @ W = 0`` for a "tall" rectangular matrix ``W`` with maximal rank.
+
+    That is, we compute a basis for the kernel of ``W``, which has the shape ``(r, t)`` with
+    ``r>=t`` and has rank ``t``. For this, we construct the augmented matrix ``A = (W | 1_r)``,
+    where ``1_r`` is the identity matrix in ``r`` dimensions. Then, we compute the (reduced)
+    row echelon form of ``A`` and read out the last ``r-t`` rows of the appended part in ``A``,
+    i.e. the last ``r-t`` rows of the last ``r`` columns.
+    """
+    r, t = W.shape
     # Create augmented matrix for Gauss-Jordan elimination.
-    M = np.concatenate([W, np.eye(r, dtype=int)], axis=1)
-    M = binary_finite_reduced_row_echelon(M, inplace=True)
-    U = M[t:, t:]
+    A = np.concatenate([W, np.eye(r, dtype=int)], axis=1)
+    A = binary_finite_reduced_row_echelon(A, inplace=True)
+    U = A[t:, t:]
     return U
 
 
@@ -387,9 +396,8 @@ def compute_sos_encoding(bits):
         W = _find_single_w(bits, r)
     else:
         bits_basis, other_bits = binary_select_basis(bits)
-        W = _find_w(bits_basis, other_bits, r, t=r - m)
+        W = _find_w(bits_basis, other_bits, t=r - m)
 
-    U = _find_U_from_W(W, r)
-    assert np.allclose((U @ W) % 2, 0)
+    U = _find_U_from_W(W)
     b = (U @ bits) % 2
     return U, b
