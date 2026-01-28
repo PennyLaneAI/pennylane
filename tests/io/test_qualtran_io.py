@@ -75,7 +75,7 @@ class TestFromBloq:
 
         from qualtran.bloqs.basic_gates import XGate
 
-        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(XGate, wires=Wires([1]))"
+        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(X, wires=Wires([1]))"
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.FromBloq("123", 1)
 

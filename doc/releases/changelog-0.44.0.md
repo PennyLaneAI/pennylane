@@ -312,7 +312,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 (PPMs), which are the building blocks for the PBC framework.
 
 * Writing circuits in terms of 
-  `Pauli product measurements <https://pennylane.ai/compilation/pauli-product-measurement>`_ (PPMs) 
+  `Pauli product measurements <https://pennylane.ai/compilation/pauli-based-computation>`_ (PPMs) 
   in PennyLane is now possible with the new :func:`~.pauli_measure` function. Using this function in 
   tandem with :class:`~.PauliRot` to represent PPRs unlocks surface-code FTQC research spurred from 
   `A Game of Surface Codes <http://arxiv.org/abs/1808.02892>`_.

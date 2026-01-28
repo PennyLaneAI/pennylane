@@ -388,10 +388,10 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestDecomposeTransformations:
     """Tests for the behavior of the `decompose` helper."""
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("shots", [None, 100])
     def test_decompose_expand_unsupported_op(self, shots):
         """Test that decompose expands the tape when unsupported operators are present"""
@@ -408,7 +408,6 @@ class TestDecomposeTransformations:
 
         assert tape.shots == expanded_tape.shots
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_no_expansion(self):
         """Test that expand_fn does nothing to a fully supported quantum script."""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
@@ -420,7 +419,6 @@ class TestDecomposeTransformations:
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
             qml.assert_equal(op, exp)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
     def test_valdiate_measurements_non_commuting_measurements(self, validation_transform):
         """Test that validate_measurements and validate_observables works when non commuting measurements exist in the circuit."""
@@ -431,7 +429,6 @@ class TestDecomposeTransformations:
         new_qs = new_qs[0]
         assert new_qs.measurements == qs.measurements
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "prep_op",
         (
@@ -471,7 +468,6 @@ class TestDecomposeTransformations:
 
         assert expanded_tape.circuit == expected + measurements
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "prep_op",
         (
@@ -489,7 +485,6 @@ class TestDecomposeTransformations:
 
         assert new_tape[0] != prep_op
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_with_device_wires_and_target_gates(self):
         """Test that decompose works correctly with device_wires and target_gates parameters."""
         # Mock a simple target gate set
@@ -520,7 +515,6 @@ class TestDecomposeTransformations:
         assert len(legacy_tape.operations) > len(tape.operations)
         assert all(op.name in target_gates for op in legacy_tape.operations)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         "device_wires_list,tape_wires_list,expected_work_wires",
         [
@@ -585,18 +579,9 @@ class TestDecomposeTransformations:
             ), f"Expected num_work_wires={expected_work_wires} not found in calls"
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphModeExclusiveFeatures:
-    """Tests that only work when graph mode is enabled.
-
-    NOTE: All tests in this suite will auto-enable graph mode via fixture.
-    """
-
-    @pytest.fixture(autouse=True)
-    def enable_graph_mode_only(self):
-        """Auto-enable graph mode for all tests in this class."""
-        qml.decomposition.enable_graph()
-        yield
-        qml.decomposition.disable_graph()
+    """Tests that only work when graph mode is enabled."""
 
     def test_work_wire_unavailability_causes_fallback(self):
         """Test that decompositions requiring more work wires than available are discarded.
@@ -619,18 +604,19 @@ class TestGraphModeExclusiveFeatures:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-        tape = qml.tape.QuantumScript([MyOp(0)])
-        device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
-        target_gates = {"Hadamard", "PauliX"}
+            tape = qml.tape.QuantumScript([MyOp(0)])
+            device_wires = qml.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+            target_gates = {"Hadamard", "PauliX"}
 
-        (out_tape,), _ = decompose(
-            tape,
-            lambda obj: obj.name in target_gates,
-            device_wires=device_wires,
-            target_gates=target_gates,
-        )
+            (out_tape,), _ = decompose(
+                tape,
+                lambda obj: obj.name in target_gates,
+                device_wires=device_wires,
+                target_gates=target_gates,
+            )
 
         # Should use fallback decomposition (2 Hadamards)
         assert len(out_tape.operations) == 2
