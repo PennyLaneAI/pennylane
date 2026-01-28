@@ -617,6 +617,9 @@ class TestJaxExecuteIntegration:
         is differentiable"""
 
         class MyU3(qml.U3):
+
+            name = "MyU3"
+
             def expand(self):
                 theta, phi, lam = self.data
                 wires = self.wires

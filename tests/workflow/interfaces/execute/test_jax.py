@@ -485,6 +485,8 @@ class TestJaxExecuteIntegration:
         class MyU3(qml.U3):
             """Dummy operator."""
 
+            name = "MyU3"
+
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
