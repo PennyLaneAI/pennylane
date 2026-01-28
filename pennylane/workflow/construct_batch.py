@@ -273,43 +273,84 @@ def get_transform_program(
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
-        >>> qml.workflow.get_transform_program(circuit)
-        CompilePipeline(cancel_inverses, merge_rotations, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.workflow.get_transform_program(circuit))
+        CompilePipeline(
+          [0] cancel_inverses,
+          [1] merge_rotations,
+          [2] _expand_transform_param_shift,
+          [3] defer_measurements,
+          [4] decompose,
+          [5] device_resolve_dynamic_wires,
+          [6] validate_device_wires,
+          [7] validate_measurements,
+          [8] _conditional_broadcast_expand,
+          [9] _expand_metric_tensor,
+          [10] metric_tensor
+        )
 
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
-        >>> qml.workflow.get_transform_program(circuit, level="user")
-        CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.workflow.get_transform_program(circuit, level="user"))
+        CompilePipeline(
+          [0] cancel_inverses,
+          [1] merge_rotations,
+          [2] _expand_metric_tensor,
+          [3] metric_tensor
+        )
 
         The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
         This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
         it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
         present at the very end of resulting program.
 
-        >>> qml.workflow.get_transform_program(circuit, level="gradient")
-        CompilePipeline(cancel_inverses, merge_rotations, _expand_transform_param_shift, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.workflow.get_transform_program(circuit, level="gradient"))
+        CompilePipeline(
+          [0] cancel_inverses,
+          [1] merge_rotations,
+          [2] _expand_transform_param_shift,
+          [3] _expand_metric_tensor,
+          [4] metric_tensor
+        )
 
         ``"top"`` and ``0`` both return empty transform programs.
 
-        >>> qml.workflow.get_transform_program(circuit, level="top")
+        >>> print(qml.workflow.get_transform_program(circuit, level="top"))
         CompilePipeline()
-        >>> qml.workflow.get_transform_program(circuit, level=0)
+        >>> print(qml.workflow.get_transform_program(circuit, level=0))
         CompilePipeline()
 
         The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
-        >>> qml.workflow.get_transform_program(circuit, level=2)
-        CompilePipeline(cancel_inverses, merge_rotations)
+        >>> print(qml.workflow.get_transform_program(circuit, level=2))
+        CompilePipeline(
+          [0] cancel_inverses,
+          [1] merge_rotations
+        )
 
         ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
         transform program.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
-        >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
-        CompilePipeline(merge_rotations, _expand_transform_param_shift)
-        >>> qml.workflow.get_transform_program(circuit, level=slice(None, None, -1))
-        CompilePipeline(metric_tensor, _expand_metric_tensor, _conditional_broadcast_expand, validate_measurements, validate_device_wires, device_resolve_dynamic_wires, decompose, defer_measurements, _expand_transform_param_shift, merge_rotations, cancel_inverses)
+        >>> print(qml.workflow.get_transform_program(circuit, level=slice(1,3)))
+        CompilePipeline(
+          [0] merge_rotations,
+          [1] _expand_transform_param_shift
+        )
+        >>> print(qml.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
+        CompilePipeline(
+          [0] metric_tensor,
+          [1] _expand_metric_tensor,
+          [2] _conditional_broadcast_expand,
+          [3] validate_measurements,
+          [4] validate_device_wires,
+          [5] device_resolve_dynamic_wires,
+          [6] decompose,
+          [7] defer_measurements,
+          [8] _expand_transform_param_shift,
+          [9] merge_rotations,
+          [10] cancel_inverses
+        )
 
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
@@ -317,10 +358,19 @@ def get_transform_program(
         >>> user_prog = qml.workflow.get_transform_program(circuit, level="user")
         >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
         >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
-        >>> grad_prog[len(user_prog) - 1 : -1]
-        CompilePipeline(_expand_metric_tensor)
-        >>> dev_prog[len(grad_prog) - 1 : -1]
-        CompilePipeline(decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, _expand_metric_tensor)
+        >>> print(grad_prog[len(user_prog) - 1 : -1])
+        CompilePipeline(
+          [0] _expand_metric_tensor
+        )
+        >>> print(dev_prog[len(grad_prog) - 1 : -1])
+        CompilePipeline(
+          [0] decompose,
+          [1] device_resolve_dynamic_wires,
+          [2] validate_device_wires,
+          [3] validate_measurements,
+          [4] _conditional_broadcast_expand,
+          [5] _expand_metric_tensor
+        )
 
     """
     _validate_level(level)

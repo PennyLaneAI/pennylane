@@ -14,7 +14,6 @@
 """Unit and integration tests for the compile pipeline."""
 # pylint: disable=no-member
 
-
 import pytest
 import rustworkx as rx
 
@@ -48,7 +47,8 @@ def first_valid_transform(
 
 
 def expand_transform(
-    tape: QuantumScript, index: int  # pylint:disable=unused-argument
+    tape: QuantumScript,
+    index: int,  # pylint:disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
@@ -779,21 +779,36 @@ class TestCompilePipelineDunders:
         """Test the string representation of a pipeline."""
         compile_pipeline = CompilePipeline()
 
+        assert repr(compile_pipeline) == "CompilePipeline()"
+
         transform1 = BoundTransform(qml.transform(first_valid_transform))
         transform2 = BoundTransform(qml.transform(second_valid_transform))
 
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
-        str_pipeline = repr(compile_pipeline)
-        assert (
-            str_pipeline
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
-        )
+        pipeline_repr = repr(compile_pipeline)
+        expected_repr = f"CompilePipeline(\n  [0] {repr(transform1)},\n  [1] {repr(transform2)}\n)"
+        assert pipeline_repr == expected_repr
+
+    def test_str_pipeline(self):
+        """Tests the string representation of a pipeline."""
+
+        compile_pipeline = CompilePipeline()
+
+        assert str(compile_pipeline) == "CompilePipeline()"
+
+        transform1 = BoundTransform(qml.transform(first_valid_transform))
+        marker = qml.marker("blah")
+        transform2 = BoundTransform(qml.transform(second_valid_transform))
+
+        compile_pipeline.append(transform1)
+        compile_pipeline.append(marker)
+        compile_pipeline.append(transform2)
+
+        pipeline_str = str(compile_pipeline)
+        expected_repr = 'CompilePipeline(\n  [0] first_valid_transform,\n  [1] marker("blah"),\n  [2] second_valid_transform\n)'
+        assert pipeline_str == expected_repr
 
     def test_equality(self):
         """Tests that we can compare CompilePipeline objects with the '==' and '!=' operators."""
@@ -1823,14 +1838,9 @@ class TestCompilePipelineIntegration:
         new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(first_valid_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform, args=(0,)),
+            BoundTransform(dispatched_transform, args=(0,)),
         )
 
         assert pipeline
@@ -1856,16 +1866,9 @@ class TestCompilePipelineIntegration:
             return qml.expval(qml.PauliZ(wires=0))
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
-
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(informative_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform_1, args=(0,)), dispatched_transform_2
         )
 
         assert pipeline
@@ -1896,16 +1899,10 @@ class TestCompilePipelineIntegration:
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform_1, args=(0,)),
+            BoundTransform(dispatched_transform_2, args=(0,)),
         )
-
         assert pipeline
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
