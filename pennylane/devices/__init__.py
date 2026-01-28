@@ -72,7 +72,6 @@ method for devices.
 
     decompose
     device_resolve_dynamic_wires
-    mid_circuit_measurements
     measurements_from_counts
     measurements_from_samples
     validate_adjoint_trainable_params
