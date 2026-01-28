@@ -222,19 +222,6 @@ class CompilePipeline:
       [3] cancel_inverses
     )
 
-    Additionally, multiple compilation pipelines can be concatenated:
-
-    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
-    >>> print(another_pipeline + pipeline)
-    CompilePipeline(
-      [0] decompose,
-      [1] combine_global_phases,
-      [2] remove_barrier,
-      [3] merge_rotations,
-      [4] cancel_inverses,
-      [5] commute_controlled,
-      [6] commute_controlled
-    )
     """
 
     @overload
