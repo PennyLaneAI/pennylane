@@ -282,7 +282,7 @@ class TestBoundTransform:
 
         with pytest.warns(
             qml.exceptions.PennyLaneDeprecationWarning,
-            match=r"`BoundTransform.transform` is deprecated",
+            match=r"'BoundTransform.transform' is deprecated",
         ):
             result = container.transform
 
