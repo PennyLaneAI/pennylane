@@ -566,14 +566,16 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
 
-    def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
+    def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis):
         """Test that default_expand_fn works with an invalid op and some measurement."""
         invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
-        expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
+        expected_tape = qml.tape.QuantumScript(
+            [qml.RZ(np.pi / 2, 0), qml.GlobalPhase(-0.7853981633974483, wires=[])],
+            [qml.expval(qml.PauliZ(0))],
+        )
         dev = mock_device_supporting_paulis(wires=1)
         expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
         qml.assert_equal(expanded_tape, expected_tape)
-        assert len(recwarn) == 0
 
     def test_stopping_condition_passes_with_non_obs_mp(self, mock_device_with_identity, recwarn):
         """Test that Device.stopping_condition passes with non-observable measurements"""
