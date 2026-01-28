@@ -334,6 +334,7 @@ class TestHilbertSchmidt:
         copy_V = copy_op.hyperparameters["V"]
         assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V))
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("U", "V", "results"),
         [
@@ -358,7 +359,7 @@ class TestHilbertSchmidt:
         with qml.tape.QuantumTape() as tape:
             qml.HilbertSchmidt(V, U)
 
-        [tape], _ = decompose(tape, gate_set=gate_sets.ALL_QUBIT_OPS)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ALL_QUBIT_OPS)
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.wires == results[idx].wires
