@@ -545,7 +545,6 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape = tape.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [
