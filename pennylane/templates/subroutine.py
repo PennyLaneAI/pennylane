@@ -327,7 +327,7 @@ class Subroutine:
         wire_argnames: str | tuple[str, ...] = ("wires",),
         compute_resources: None | Callable[P, dict] = None,
     ):
-        self._definition = definition
+        self._definition = capture.disable_autograph(definition)
         self._setup_inputs = setup_inputs
         self._compute_resources = compute_resources
         self._signature = signature(definition)
