@@ -28,9 +28,12 @@ OP_NAME_ALIASES = {
     "H": "Hadamard",
     "measure": "MidMeasureMP",
     "MidMeasure": "MidMeasureMP",
+    "MidCircuitMeasure": "MidMeasureMP",
     "ppm": "PauliMeasure",
     "pauli_measure": "PauliMeasure",
     "Elbow": "TemporaryAND",
+    "BasisStateProjector": "Projector",
+    "StateVectorProjector": "Projector",
 }
 
 
