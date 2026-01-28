@@ -17,8 +17,44 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.specs` now includes PPR and PPM weights in its output.
+* `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
+  
+  ```python
+  
+  @qml.qjit(target="mlir")
+  @qml.transforms.to_ppr
+  @qml.qnode(qml.device("null.qubit", wires=2))
+  def circuit():
+      qml.H(0)
+      qml.CNOT([0, 1])
+      m = qml.measure(0)
+      qml.T(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=2)())
+  Device: null.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Level: 2
+
+  Resource specifications:
+      Total wire allocations: 2
+      Total gates: 11
+      Circuit depth: Not computed
+
+  Gate types:
+      GlobalPhase: 3
+      PPR-pi/4-w1: 5
+      PPR-pi/4-w2: 1
+      PPM-w1: 1
+      PPR-pi/8-w1: 1
+
+  Measurements:
+      expval(PauliZ): 1
+  ```
 
 * `qml.vjp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
