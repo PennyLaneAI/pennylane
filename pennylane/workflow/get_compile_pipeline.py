@@ -193,9 +193,12 @@ def get_compile_pipeline(
         # Get full compile pipeline
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
-        full_compile_pipeline: CompilePipeline = (
-            qnode.compile_pipeline + outer_pipeline + inner_pipeline
-        )
+
+        full_compile_pipeline = CompilePipeline()
+        full_compile_pipeline += qnode.compile_pipeline
+        # Informative user pipelines bypass gradient and device transforms
+        if not qnode.compile_pipeline.is_informative:
+            full_compile_pipeline += outer_pipeline + inner_pipeline
 
         # Slice out relevant section
         num_user = len(qnode.compile_pipeline)

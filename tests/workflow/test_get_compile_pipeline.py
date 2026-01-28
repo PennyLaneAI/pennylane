@@ -292,3 +292,35 @@ def test_level_is_integer(level):
         assert cp == CompilePipeline(qml.transforms.cancel_inverses)
     elif level == 2:
         assert cp == CompilePipeline(qml.transforms.cancel_inverses, qml.transforms.merge_rotations)
+
+
+def test_informative_transforms():
+    """Tests that informative transforms are handled correctly."""
+
+    dev = qml.device("reference.qubit")
+
+    # Some random normalized state, no particular relevance
+    init_state = qml.numpy.array([0.16769259, 0.71277864, 0.54562903, 0.4075718])
+
+    def ansatz(angles, wires):
+        qml.StatePrep(init_state, wires=wires)
+        qml.Hadamard(wires[0])
+        qml.RX(angles[0], wires=wires[0])
+        qml.S(wires[1])
+        qml.RY(angles[1], wires=wires[1])
+
+    @qml.adjoint_metric_tensor  # INFORMATIVE!
+    @qml.transforms.merge_rotations
+    @qml.qnode(dev)
+    def circuit(angles):
+        ansatz(angles, wires=[0, 1])
+        return qml.expval(qml.Z(0) @ qml.X(1))
+
+    angles = qml.numpy.random.uniform(size=(2,), requires_grad=True)
+
+    pipeline = get_compile_pipeline(circuit)(angles)
+    # Informative transforms by pass the gradient and device transforms
+    assert len(pipeline) == 3
+    assert pipeline[0].tape_transform == qml.transforms.merge_rotations.tape_transform
+    assert pipeline[1].tape_transform == qml.gradients.adjoint_metric_tensor.expand_transform
+    assert pipeline[2].tape_transform == qml.gradients.adjoint_metric_tensor.tape_transform
