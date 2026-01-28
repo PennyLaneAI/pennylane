@@ -23,10 +23,13 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
 
     Args:
         binary_matrix (array[int]): binary matrix
+        inplace (bool): Whether to perform the modification of ``binary_matrix`` in place. Defaults
+            to ``False``, making a copy before running the calculation.
 
     Returns:
         array[int]: reduced row-echelon form of the given ``binary_matrix``. The output has the
-        same shape as the input.
+        same shape as the input. If ``inplace=True``, the returned array is the same object as
+        the input ``binary_matrix``, which then has been modified in place.
 
     **Example**
 
@@ -38,10 +41,8 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
      [0, 0, 1, 0, 0, 1, 1, 0],
      [0, 0, 0, 1, 1, 0, 0, 1]]
     """
-    if inplace:
-        rref_mat = binary_matrix
-    else:
-        rref_mat = binary_matrix.copy()
+
+    rref_mat = binary_matrix if inplace else binary_matrix.copy()
     shape = rref_mat.shape
     icol = 0
 

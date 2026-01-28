@@ -39,97 +39,113 @@ def _is_binary(x: np.ndarray) -> bool:
     return set(x.flat).issubset({0, 1})
 
 
-@pytest.mark.parametrize(
-    ("binary_matrix", "result"),
-    [
-        (
-            np.array(
-                [
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0, 0, 0],
-                    [1, 1, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 1, 1, 1, 1],
-                    [1, 1, 0, 0, 1, 1, 1, 1],
-                    [0, 0, 1, 1, 1, 1, 1, 1],
-                    [0, 1, 1, 0, 1, 1, 1, 1],
-                    [1, 0, 1, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 1, 1, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 1, 1, 0, 0, 0, 0],
-                ]
+class TestBinaryFiniteReducedRowEchelon:
+    """Tests for ``binary_finite_reduced_row_echelon``."""
+
+    def test_input_not_modified_by_default(self):
+        """Test that the input is not modified if ``inplace`` is not specified explicitly."""
+        binary_matrix = _make_random_regular_matrix(5, 30, 9251)
+        copy = binary_matrix.copy()
+        rref_bin_mat = fn.binary_finite_reduced_row_echelon(binary_matrix)
+        assert not np.allclose(rref_bin_mat, binary_matrix)
+        assert np.allclose(copy, binary_matrix)
+
+    @pytest.mark.parametrize("inplace", [False, True])
+    @pytest.mark.parametrize(
+        ("binary_matrix", "result"),
+        [
+            (
+                np.array(
+                    [
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 1, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 1, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1, 0, 0, 0, 0],
+                        [1, 1, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 1, 1, 1, 1, 1],
+                        [1, 1, 0, 0, 1, 1, 1, 1],
+                        [0, 0, 1, 1, 1, 1, 1, 1],
+                        [0, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 0, 1, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 1, 1, 0, 0, 0, 0, 0],
+                        [0, 1, 0, 1, 0, 0, 0, 0],
+                        [0, 0, 1, 1, 0, 0, 0, 0],
+                    ]
+                ),
+                np.array(
+                    [
+                        [1, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 1, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 1, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 1, 1, 1, 1],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 0],
+                    ]
+                ),
             ),
-            np.array(
-                [
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 1, 1, 1, 1],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                ]
-            ),
-        ),
-    ],
-)
-def test_reduced_row_echelon(binary_matrix, result):
-    r"""Test that _reduced_row_echelon returns the correct result."""
+        ],
+    )
+    def test_reduced_row_echelon(self, binary_matrix, result, inplace):
+        r"""Test that _reduced_row_echelon returns the correct result."""
 
-    # build row echelon form of the matrix
-    shape = binary_matrix.shape
-    for irow in range(shape[0]):
-        pivot_index = 0
-        if np.count_nonzero(binary_matrix[irow, :]):
-            pivot_index = np.nonzero(binary_matrix[irow, :])[0][0]
+        # build row echelon form of the matrix
+        shape = binary_matrix.shape
+        for irow in range(shape[0]):
+            pivot_index = 0
+            if np.count_nonzero(binary_matrix[irow, :]):
+                pivot_index = np.nonzero(binary_matrix[irow, :])[0][0]
 
-        for jrow in range(shape[0]):
-            if jrow != irow and binary_matrix[jrow, pivot_index]:
-                binary_matrix[jrow, :] = (binary_matrix[jrow, :] + binary_matrix[irow, :]) % 2
+            for jrow in range(shape[0]):
+                if jrow != irow and binary_matrix[jrow, pivot_index]:
+                    binary_matrix[jrow, :] = (binary_matrix[jrow, :] + binary_matrix[irow, :]) % 2
 
-    indices = [
-        irow
-        for irow in range(shape[0] - 1)
-        if np.array_equal(binary_matrix[irow, :], np.zeros(shape[1]))
-    ]
+        indices = [
+            irow
+            for irow in range(shape[0] - 1)
+            if np.array_equal(binary_matrix[irow, :], np.zeros(shape[1]))
+        ]
 
-    temp_row_echelon_matrix = binary_matrix.copy()
-    for row in indices[::-1]:
-        temp_row_echelon_matrix = np.delete(temp_row_echelon_matrix, row, axis=0)
+        temp_row_echelon_matrix = binary_matrix.copy()
+        for row in indices[::-1]:
+            temp_row_echelon_matrix = np.delete(temp_row_echelon_matrix, row, axis=0)
 
-    row_echelon_matrix = np.zeros(shape, dtype=int)
-    row_echelon_matrix[: shape[0] - len(indices), :] = temp_row_echelon_matrix
+        row_echelon_matrix = np.zeros(shape, dtype=int)
+        row_echelon_matrix[: shape[0] - len(indices), :] = temp_row_echelon_matrix
 
-    # build reduced row echelon form of the matrix from row echelon form
-    for idx in range(len(row_echelon_matrix))[:0:-1]:
-        nonzeros = np.nonzero(row_echelon_matrix[idx])[0]
-        if len(nonzeros) > 0:
-            redrow = (row_echelon_matrix[idx, :] % 2).reshape(1, -1)
-            coeffs = (
-                (-row_echelon_matrix[:idx, nonzeros[0]] / row_echelon_matrix[idx, nonzeros[0]]) % 2
-            ).reshape(1, -1)
-            row_echelon_matrix[:idx, :] = (
-                row_echelon_matrix[:idx, :] + (coeffs.T * redrow) % 2
-            ) % 2
+        # build reduced row echelon form of the matrix from row echelon form
+        for idx in range(len(row_echelon_matrix))[:0:-1]:
+            nonzeros = np.nonzero(row_echelon_matrix[idx])[0]
+            if len(nonzeros) > 0:
+                redrow = (row_echelon_matrix[idx, :] % 2).reshape(1, -1)
+                coeffs = (
+                    (-row_echelon_matrix[:idx, nonzeros[0]] / row_echelon_matrix[idx, nonzeros[0]])
+                    % 2
+                ).reshape(1, -1)
+                row_echelon_matrix[:idx, :] = (
+                    row_echelon_matrix[:idx, :] + (coeffs.T * redrow) % 2
+                ) % 2
 
-    # get reduced row echelon form from the implemented function
-    rref_bin_mat = fn.binary_finite_reduced_row_echelon(binary_matrix)
+        # get reduced row echelon form from the implemented function
+        input_copy = binary_matrix.copy()
+        rref_bin_mat = fn.binary_finite_reduced_row_echelon(binary_matrix, inplace=inplace)
 
-    assert rref_bin_mat.shape == binary_matrix.shape
-    assert set(rref_bin_mat.flat).issubset({0, 1})
-    assert (rref_bin_mat == row_echelon_matrix).all()
-    assert (rref_bin_mat == result).all()
+        assert rref_bin_mat.shape == binary_matrix.shape
+        assert set(rref_bin_mat.flat).issubset({0, 1})
+        assert (rref_bin_mat == row_echelon_matrix).all()
+        assert (rref_bin_mat == result).all()
+        assert np.allclose(rref_bin_mat, binary_matrix) is inplace
+        assert np.allclose(input_copy, binary_matrix) is not inplace
 
 
 class TestBinaryRank:
