@@ -9,8 +9,27 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
+  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>`
+  function for decomposing circuits.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
+* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
 
   - Deprecated in v0.45
   - Will be removed in v0.46

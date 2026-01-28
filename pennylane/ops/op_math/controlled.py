@@ -1078,6 +1078,8 @@ class ControlledOp(Controlled, Operation):
 
     @property
     def parameter_frequencies(self):
+        if isinstance(self.base, qml.GlobalPhase):
+            return [(1,)]
         if self.base.num_params == 1:
             try:
                 base_gen = qml.generator(self.base, format="observable")

@@ -19,7 +19,7 @@ import re
 import numpy as np
 import pytest
 
-from pennylane import device, qnode, queuing
+from pennylane import device, qnode, workflow
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import probs
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
@@ -33,7 +33,6 @@ dev = device("default.qubit")
 @qnode(dev)
 def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
     BasisEmbedding(address, wires=control_wires)
-
     BBQRAM(
         bitstrings,
         control_wires=control_wires,
@@ -43,6 +42,7 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
     return probs(wires=target_wires)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -239,7 +239,6 @@ def hybrid_quantum(
     bitstrings, control_wires, target_wires, work_wires, k, address
 ):  # pylint: disable=too-many-arguments
     BasisEmbedding(address, wires=control_wires)
-
     HybridQRAM(
         bitstrings,
         control_wires=control_wires,
@@ -250,6 +249,7 @@ def hybrid_quantum(
     return probs(wires=target_wires)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -279,6 +279,7 @@ def hybrid_quantum(
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
             [
+                BasisEmbedding([1, 0], wires=[0, 1]),
                 X(5),
                 CSWAP(wires=[5, 0, 6]),
                 CSWAP(wires=[5, 6, 7]),
@@ -388,6 +389,7 @@ def hybrid_quantum(
             0,  # addressed from the left
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
             [
+                BasisEmbedding([0, 0], wires=[0, 1]),
                 MultiControlledX(wires=[0, 5], control_values=[False]),
                 CSWAP(wires=[5, 1, 6]),
                 CSWAP(wires=[5, 6, 7]),
@@ -472,17 +474,24 @@ def test_hybrid_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
-    with queuing.AnnotatedQueue() as q:
-        real_probs = hybrid_quantum(
-            bitstrings,
-            control_wires,
-            target_wires,
-            [signal] + [bus] + dir_wires + portL_wires + portR_wires,
-            k,
-            address,
-        )
+    real_probs = hybrid_quantum(
+        bitstrings,
+        control_wires,
+        target_wires,
+        [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        k,
+        address,
+    )
     assert np.allclose(probabilities, real_probs)
-    assert q.queue == expected_circuit
+    tape = workflow.construct_tape(hybrid_quantum, level="device")(
+        bitstrings,
+        control_wires,
+        target_wires,
+        [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        k,
+        address,
+    )
+    assert tape.operations == expected_circuit
 
 
 @pytest.mark.parametrize(
@@ -612,7 +621,6 @@ def select_only_quantum(
     bitstrings, control_wires, target_wires, select_wires, select_value, address
 ):  # pylint: disable=too-many-arguments
     BasisEmbedding(address, wires=control_wires)
-
     SelectOnlyQRAM(
         bitstrings,
         control_wires=control_wires,
@@ -623,6 +631,7 @@ def select_only_quantum(
     return probs(wires=target_wires)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -661,7 +670,7 @@ def select_only_quantum(
             3,  # addressed from the left
             [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |000>
             [
-                BasisEmbedding([0, 0], wires=[5, 6]),
+                BasisEmbedding([1, 1], wires=[0, 1]),
                 X(5),
                 X(6),
                 X(0),
@@ -720,7 +729,7 @@ def select_only_quantum(
             2,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
             [
-                BasisEmbedding([0, 0], wires=[5, 6]),
+                BasisEmbedding([1, 0], wires=[0, 1]),
                 X(5),
                 X(6),
                 X(0),
@@ -779,6 +788,7 @@ def select_only_quantum(
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
             [
+                BasisEmbedding([0, 1], wires=[0, 1]),
                 X(5),
                 X(6),
                 X(0),
@@ -883,6 +893,7 @@ def select_only_quantum(
             0,
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
             [
+                BasisEmbedding([0, 0], wires=[0, 1]),
                 X(0),
                 X(1),
                 Toffoli(wires=[0, 1, 3]),
@@ -911,17 +922,24 @@ def test_select_only_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
-    with queuing.AnnotatedQueue() as q:
-        real_probs = select_only_quantum(
-            bitstrings,
-            control_wires,
-            target_wires,
-            select_wires,
-            select_value,
-            address,
-        )
+    real_probs = select_only_quantum(
+        bitstrings,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+        address,
+    )
     assert np.allclose(probabilities, real_probs)
-    assert q.queue == expected_circuit
+    tape = workflow.construct_tape(select_only_quantum, level="device")(
+        bitstrings,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+        address,
+    )
+    assert tape.operations == expected_circuit
 
 
 @pytest.mark.parametrize(
