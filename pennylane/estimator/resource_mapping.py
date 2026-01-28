@@ -16,13 +16,14 @@ from __future__ import annotations
 
 from functools import singledispatch
 
+import math
 import numpy as np
 
 import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-from pennylane import math
+from pennylane import math as pl_math
 from pennylane.operation import Operation
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
@@ -294,7 +295,7 @@ def _(op: qtemps.BBQRAM):
     return re_temps.BBQRAM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        num_bit_flips=math.sum(bitstrings),
+        num_bit_flips=pl_math.sum(bitstrings),
         num_wires=len(op.wires),
         control_wires=wire_manager.control_wires,
         target_wires=wire_manager.target_wires,
