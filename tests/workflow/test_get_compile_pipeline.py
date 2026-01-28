@@ -228,15 +228,28 @@ class TestDeviceLevel:
         dev = qml.device("reference.qubit")
 
         @qml.gradients.metric_tensor
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.expval(qml.Z(0))
 
         cp = get_compile_pipeline(circuit, level="device")()
-        assert len(cp) > 3
+
+        expected_cp = CompilePipeline()
+
+        # User transforms
+        expected_cp.add_transform(qml.transform(qml.gradients.metric_tensor.expand_transform))
+        expected_cp.add_transform(qml.transform(qml.gradients.metric_tensor.tape_transform))
+
+        # Gradient expansion
+        expected_cp.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+
+        # Device transforms
+        device_cp, _ = dev.preprocess()
+        expected_cp += device_cp
+
         assert cp[0].tape_transform == qml.gradients.metric_tensor.expand_transform
         assert cp[1].tape_transform == qml.gradients.metric_tensor.tape_transform
-        assert cp[2] == BoundTransform(qml.transform(qml.gradients.param_shift.expand_transform))
+        assert cp[2:] == expected_cp[2:]
 
 
 def test_marker_level():
