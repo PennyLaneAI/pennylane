@@ -13,10 +13,13 @@
 # limitations under the License.
 r"""Contains the SumOfSlatersStatePreparation template."""
 
+from collections import defaultdict
 from itertools import combinations, product
 
 import numpy as np
 
+from pennylane import allocate
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.math import binary_is_independent, binary_rank, binary_select_basis, ceil_log2
 from pennylane.operation import Operation
 
@@ -438,7 +441,7 @@ def compute_sos_encoding(bits):
 
 
 class SumOfSlatersStatePreparation(Operation):
-    """Prepare a sum of Slaters state.
+    """Prepare a sum-of-Slaters state.
     This operation implements the state preparation as introduced by
     `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__, which
     is tailored to sparse states.
@@ -448,3 +451,143 @@ class SumOfSlatersStatePreparation(Operation):
     Args:
 
     """
+
+    resource_keys = {"D", "num_wires"}
+
+    @property
+    def resource_params(self):
+        D = len(self.data[0]) # assuming the right representation of state
+        return {"D": D, "num_wires": len(self.wires)}
+
+    def __init__(self, state, wires, precomputed_bits=None):
+        super().__init__(state, wires)
+        self.hyperparameters["precomputed_bits"] = precomputed_bits
+
+
+def _sos_state_prep_resources(D, num_wires):
+    d = ceil_log2(D)
+    resources = defaultdict(int)
+
+    # Step 1
+    resources[resource_rep(qml.StatePrep, {"num_wires": d})] += 1
+
+    # Step 2
+    qrom_params = {
+        "num_bitstrings": D,
+        "num_control_wires": d,
+        "num_target_wires": num_wires,
+        "num_work_wires": d-1,
+        "clean": True,
+    }
+    resources[resource_rep(qml.QROM, qrom_params)] += 1
+
+    ## Step 3 & 4:
+    resources[resource_rep(qml.CNOT)] += (2*d - 1) * num_wires  # size {u_k} * bits in u_k
+
+    ## Step 5:
+    mcx_params = {
+        "num_control_wires": 2 * d - 1,
+        "num_zero_control_values": 2 * d - 1,
+        "num_work_wires": 2 * d - 1,
+        "work_wire_type": "zeroed",
+    }
+    # We use two MultiControlledX operators per bitstring
+    resources[resource_rep(qml.MultiControlledX, mcx_params)] += 2 * D
+    # We use up to d CNOTs for any given bitstring, leading to d*D CNOTs naively.
+    # However, as we actually count up from 0 to D, we know that overall we will have to flip each
+    # bit at most half of the time, so that we have an upper bound of d*D/2
+    resources[resource_rep(qml.CNOT)] += d * D // 2
+
+    ## Step 6:
+    resources[resource_rep(qml.CNOT)] += (2*d - 1) * num_wires  # size {u_k} * bits in u_k
+
+    return resources
+
+@register_resources(_sos_state_prep_resources)
+def _sos_state_prep(*_, state, wires, precomputed_bits, **__):
+    """Compute the decomposition of the sum-of-Slaters state preparation technique."""
+    coefficients = from state
+    v_bits = from state # Shape (n, D)
+    D = len(coefficients)
+    n = len(wires)
+    assert isinstance(v_bits, np.ndarray) and v_bits.shape == (n, D)
+
+    # Preprocessing: Compute u_bits and b_bits via the algorithm described in Lemma 1,
+    # if not passed to instantiation already
+    if precomputed_bits is None:
+        # if selector_ids has length r, vtilde_bits has shape (r, D)
+        selector_ids, vtilde_bits = _select_rows(v_bits)
+        # u_bits has shape (2d-1, r), b_bits has shape (2d-1, D)
+        u_bits, b_bits = compute_sos_encoding(vtilde_bits) # u_bits has shape
+    else:
+        selector_ids, u_bits, b_bits = precomputed_bits
+
+    r = len(selector_ids)
+    d = ceil_log2(D)
+    assert u_bits.shape == (2*d-1, r)
+    assert b_bits.shape == (2*d-1, D)
+    wires_enumeration = allocate(d, state="zero")
+    wires_identification = allocate(d, state="zero")
+    work_wires_qrom = allocate(d - 1, state="zero")
+    work_wires_mcx = allocate(2 * d - 1, state="zero")
+
+    # Step 1: Dense state preparation in enumeration register
+    # Need to add work wires and correct decomposition
+    # qml.MottonenStatePreparation(coefficients, wires=wires_enumeration)
+    qml.StatePrep(coefficients, wires=wires_enumeration, pad_with=0.)
+
+    # Step 2: QROM to load v_bits into system register
+    qml.QROM(
+        v_bits,
+        control_wires=wires_enumeration,
+        target_wires=wires,
+        work_wires=work_wires_qrom,
+    )
+
+    # Step 3-4): Encode the b_bits from Lemma 1 in the identification register
+    @qml.for_loop(2 * d - 1)
+    def encoding(i, u_bits):
+        u = u_bits[i]
+
+        @qml.for_loop(r)
+        def inner_loop(j, u):
+            qml.cond(u[j], qml.CNOT([wires[selector_ids[j]], wires_identification[i]]))
+            return u
+
+        inner_loop(u)
+
+        return u_bits
+
+    encoding(u_bits)
+
+    # Step 5): Use the identification register to uncompute the enumeration register
+    @qml.for_loop(D)
+    def uncompute_enumeration(k, b_bits):
+        bits = list(map(int, b_bits[:, k]))
+        qml.MultiControlledX(
+            wires=wires_identification + work_wires_mcx[0],
+            control_values=bits,
+            work_wires=work_wires_mcx[1:],
+        )
+
+        @qml.for_loop(d)
+        def inner_loop(j):
+            bit_is_set = (k>>d-j) & 1
+            qml.cond(bit_is_set, qml.CNOT([work_wires_mcx[0], wires_enumeration[j]]))
+
+        inner_loop()
+
+        qml.MultiControlledX(
+            wires=wires_identification + work_wires_mcx[0],
+            control_values=bits,
+            work_wires=work_wires_mcx[1:],
+        )
+        return b_bits
+
+    uncompute_enumeration(b_bits)
+
+    # Step 6): Uncompute the b_i in the identification register
+    encoding(u_bits)
+
+
+add_decomps(SumOfSlatersStatePreparation, _sos_state_prep)
