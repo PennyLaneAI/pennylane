@@ -254,7 +254,7 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
     s = 0
     powers = 2 ** np.arange(n)
     for p in powers:  # p = 2**(n-1-i)
-        if not ((s ^ k) & p):
+        if not (s ^ k) & p:
             # Equal bit, move on
             factor = 0
         else:
