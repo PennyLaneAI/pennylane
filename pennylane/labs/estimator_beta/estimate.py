@@ -30,7 +30,7 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
-# from .wires_manager import Allocate, Deallocate
+from .wires_manager import estimate_wires_from_circuit
 
 # pylint: disable=too-many-arguments
 
@@ -374,42 +374,13 @@ def _resources_from_qfunc(
                 cmp_rep_op, gate_counts, gate_set=gate_set, config=config
             )
 
-        un_named_algo_qubits = 0
-        circuit_wires = []
-        for op in q.queue:
-            if isinstance(op, (ResourceOperator, Operator, MeasurementProcess)):
-                if hasattr(op, "wires") and op.wires:
-                    circuit_wires.append(op.wires)
-                elif hasattr(op, "num_wires") and op.num_wires:
-                    un_named_algo_qubits = max(un_named_algo_qubits, op.num_wires)
-            else:
-                raise ValueError(
-                    f"Queued object '{op}' is not a ResourceOperator or Operator, and cannot be processed."
-                )
-
-        all_named_wires = Wires.all_wires(circuit_wires).tolist()
-        for _ in range(un_named_algo_qubits):
-            all_named_wires.append(str(uuid.uuid4()))
-        total_num_algo_qubits += len(all_named_wires)
-
-        wire_manager = WireResourceManager(zeroed=0)
-        wire_manager.algo_wires = total_num_algo_qubits
-
-        max_alloc, max_dealloc, total = _estimate_wires(
-            [GateCount(op) for op in compressed_res_ops_list],
-            gate_set=gate_set,
-            config=config,
+        algo_qubits, any_state, zeroed = estimate_wires_from_circuit(
+            q.queue, gate_set, config,
         )
-
-        if total < 0 or max_dealloc < 0: 
-            raise ValueError("Deallocated more qubits than available to allocate.")
-
-        any_state = total
-        zeroed = max_alloc - total
         return Resources(
             zeroed_wires=zeroed,
             any_state_wires=any_state,
-            algo_wires=total_num_algo_qubits,
+            algo_wires=algo_qubits,
             gate_types=gate_counts,
         )
 
