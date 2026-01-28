@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
-import pennylane.math as math
+from pennylane import math
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.operation import Operation
