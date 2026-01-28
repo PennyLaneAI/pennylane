@@ -167,6 +167,7 @@
 * The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
   Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
+  [(#8977)](https://github.com/PennyLaneAI/pennylane/pull/8977)
 
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
