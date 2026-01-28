@@ -21,6 +21,11 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
+try:
+    from jax import numpy as jnp
+except ImportError:
+    pass
+
 
 @pytest.mark.jax
 def test_assert_valid_qrom():
@@ -55,19 +60,22 @@ def test_falsy_zero_as_work_wire():
 class TestQROM:
     """Test the qml.QROM template."""
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("data", "target_wires", "control_wires", "work_wires", "clean"),
         [
             (
-                [
-                    [1, 1, 1],
-                    [1, 0, 1],
-                    [1, 0, 0],
-                    [1, 1, 0],
-                ],
-                [0, 1, 2],
-                [3, 4],
+                np.array(
+                    [
+                        [1, 1, 1],
+                        [1, 0, 1],
+                        [1, 0, 0],
+                        [1, 1, 0],
+                    ]
+                ),
+                np.array([0, 1, 2]),
+                np.array([3, 4]),
                 None,
                 False,
             ),
@@ -84,10 +92,10 @@ class TestQROM:
                 True,
             ),
             (
-                [[1, 1], [0, 1], [0, 0], [1, 0]],
-                [0, 1],
-                [2, 3],
-                [4, 5],
+                jnp.array([[1, 1], [0, 1], [0, 0], [1, 0]]),
+                jnp.array([0, 1]),
+                jnp.array([2, 3]),
+                jnp.array([4, 5]),
                 True,
             ),
             (

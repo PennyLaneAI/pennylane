@@ -27,7 +27,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
 
-
 try:
     from jax import numpy as jnp
 except ImportError:
@@ -56,10 +55,7 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
         "data",
         "control_wires",
         "target_wires",
-        "bus",
-        "dir_wires",
-        "portL_wires",
-        "portR_wires",
+        "work_wires",
         "address",
         "probabilities",
     ),
@@ -73,42 +69,37 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
             ],
             [0, 1],
             [2, 3, 4],
-            [5],
-            [6, 7, 8],
-            [9, 10, 11],
-            [12, 13, 14],
+            [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
         (
-            np.array([
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-            ]),
+            np.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
             np.array([0, 1]),
             np.array([2, 3, 4]),
-            np.array([5]),
-            np.array([11, 10, 9]),
-            np.array([6, 7, 8]),
-            np.array([12, 13, 14]),
+            np.array([5, 11, 10, 9, 6, 7, 8, 12, 13, 14]),
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
         (
-            jnp.array([
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-            ]),
+            jnp.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
             jnp.array([0, 1]),
             jnp.array([2, 3, 4]),
-            jnp.array([5]),
-            jnp.array([6, 7, 8]),
-            jnp.array([12, 13, 14]),
-            jnp.array([9, 10, 11]),
+            jnp.array([5, 6, 7, 8, 12, 13, 14, 9, 10, 11]),
             0,
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
@@ -118,10 +109,7 @@ def test_bb_quantum(
     data,
     control_wires,
     target_wires,
-    bus,
-    dir_wires,
-    portL_wires,
-    portR_wires,
+    work_wires,
     address,
     probabilities,
 ):  # pylint: disable=too-many-arguments
@@ -131,7 +119,7 @@ def test_bb_quantum(
             data,
             control_wires,
             target_wires,
-            bus + dir_wires + portL_wires + portR_wires,
+            work_wires,
             address,
         ),
     )
@@ -287,17 +275,14 @@ def hybrid_quantum(
     return probs(wires=target_wires)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "data",
         "control_wires",
         "target_wires",
-        "signal",
-        "bus",
-        "dir_wires",
-        "portL_wires",
-        "portR_wires",
+        "work_wires",
         "k",
         "address",
         "probabilities",
@@ -305,19 +290,17 @@ def hybrid_quantum(
     ),
     [
         (
-            [
-                "010",
-                "111",
-                "110",
-                "000",
-            ],
-            [0, 1],
-            [2, 3, 4],
-            5,
-            6,
-            [7, 8, 9],
-            [10, 11, 12],
-            [13, 14, 15],
+            np.array(
+                [
+                    "010",
+                    "111",
+                    "110",
+                    "000",
+                ]
+            ),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
             0,
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
@@ -420,19 +403,17 @@ def hybrid_quantum(
             ],
         ),
         (
-            [
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-            ],
-            [0, 1],
-            [2, 3, 4],
-            5,
-            6,
-            [7],
-            [10],
-            [13],
+            jnp.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
+            jnp.array([0, 1]),
+            jnp.array([2, 3, 4]),
+            jnp.array([5, 6, 7, 10, 13]),
             1,
             0,  # addressed from the left
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
@@ -512,11 +493,7 @@ def test_hybrid_quantum(
     data,
     control_wires,
     target_wires,
-    signal,
-    bus,
-    dir_wires,
-    portL_wires,
-    portR_wires,
+    work_wires,
     k,
     address,
     probabilities,
@@ -526,7 +503,7 @@ def test_hybrid_quantum(
         data,
         control_wires,
         target_wires,
-        [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        work_wires,
         k,
         address,
     )
@@ -535,7 +512,7 @@ def test_hybrid_quantum(
         data,
         control_wires,
         target_wires,
-        [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        work_wires,
         k,
         address,
     )
@@ -716,6 +693,7 @@ def select_only_quantum(
     return probs(wires=target_wires)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
@@ -789,27 +767,29 @@ def select_only_quantum(
             ],
         ),
         (
-            [
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-            ],
-            [0, 1],
-            [2, 3, 4],
-            [5, 6],
+            np.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5, 6]),
             0,  # Note: if this were set to 1, the test would not pass... due to the select.
             2,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
@@ -848,27 +828,29 @@ def select_only_quantum(
             ],
         ),
         (
-            [
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-                [0, 1, 0],
-                [1, 1, 1],
-                [1, 1, 0],
-                [0, 0, 0],
-            ],
-            [0, 1],
-            [2, 3, 4],
-            [5, 6],
+            jnp.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
+            jnp.array([0, 1]),
+            jnp.array([2, 3, 4]),
+            jnp.array([5, 6]),
             None,
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>

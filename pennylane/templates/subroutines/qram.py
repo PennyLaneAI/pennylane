@@ -218,12 +218,13 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         work_wires: WiresLike,
         id: str | None = None,
     ):  # pylint: disable=too-many-arguments
-        if not data:
-            raise ValueError("'data' cannot be empty.")
         control_wires = Wires(control_wires)
 
         if isinstance(data, (list, tuple)):
             data = math.array(data)
+
+        if data.shape[0] == 0:
+            raise ValueError("'data' cannot be empty.")
 
         if isinstance(data[0], str):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
@@ -497,11 +498,11 @@ class HybridQRAM(Operation):
         id: str | None = None,
     ):  # pylint: disable=too-many-arguments
 
-        if not data:
-            raise ValueError("'data' cannot be empty.")
-
         if isinstance(data, (list, tuple)):
             data = math.array(data)
+
+        if data.shape[0] == 0:
+            raise ValueError("'data' cannot be empty.")
 
         if isinstance(data[0], str):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
@@ -959,11 +960,12 @@ class SelectOnlyQRAM(Operation):
         select_value: int | None = None,
         id: str | None = None,
     ):
-        if not data:
-            raise ValueError("'data' cannot be empty.")
 
         if isinstance(data, (list, tuple)):
             data = math.array(data)
+
+        if data.shape[0] == 0:
+            raise ValueError("'data' cannot be empty.")
 
         if isinstance(data[0], str):
             data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
