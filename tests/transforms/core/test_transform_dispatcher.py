@@ -26,6 +26,7 @@ from pennylane.transforms.core import (
     Transform,
     TransformError,
 )
+from pennylane.transforms.core.compile_pipeline import CompilePipeline
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
@@ -1104,7 +1105,7 @@ class TestPassName:
         assert repr(expected_container) == "<my_pass_name()>"
         assert expected_container.tape_transform is None
         assert c.compile_pipeline[-1] == expected_container
-        assert repr(c.compile_pipeline) == "CompilePipeline(my_pass_name)"
+        assert c.compile_pipeline == CompilePipeline(t)
 
         with pytest.raises(NotImplementedError, match="has no defined tape transform"):
             c.compile_pipeline((tape,))

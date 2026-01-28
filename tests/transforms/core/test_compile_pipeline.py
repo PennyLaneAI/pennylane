@@ -1833,14 +1833,9 @@ class TestCompilePipelineIntegration:
         new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(first_valid_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform, args=(0,)),
+            BoundTransform(dispatched_transform, args=(0,)),
         )
 
         assert pipeline
@@ -1866,16 +1861,9 @@ class TestCompilePipelineIntegration:
             return qml.expval(qml.PauliZ(wires=0))
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
-
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(informative_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform_1, args=(0,)), dispatched_transform_2
         )
 
         assert pipeline
@@ -1906,16 +1894,10 @@ class TestCompilePipelineIntegration:
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform_1, args=(0,)),
+            BoundTransform(dispatched_transform_2, args=(0,)),
         )
-
         assert pipeline
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
