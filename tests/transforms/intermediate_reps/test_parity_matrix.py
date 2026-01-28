@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.transforms import parity_matrix
+from pennylane.transforms import decompose, parity_matrix
 
 circ1 = qml.tape.QuantumScript(
     [
@@ -36,9 +36,7 @@ wire_order_abcd = ["a", "b", "c", "d"]
 
 P1 = np.array([[1, 0, 0, 1], [1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
 
-circ2 = qml.tape.QuantumScript(
-    [qml.SWAP((0, 1)), qml.SWAP((1, 2)), qml.SWAP((2, 3))], []
-).expand()  # expand into CNOTs
+circ2 = qml.tape.QuantumScript([qml.SWAP((0, 1)), qml.SWAP((1, 2)), qml.SWAP((2, 3))], [])
 P2 = np.array([[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0]])
 
 
@@ -48,6 +46,9 @@ class TestParityMatrix:
     @pytest.mark.parametrize("circ, P_true", ((circ1, P1), (circ2, P2)))
     def test_parity_matrix(self, circ, P_true):
         """Test parity matrix computation"""
+
+        [circ], _ = decompose(circ, gate_set={"CNOT"})
+
         P = parity_matrix(circ, wire_order=range(len(circ.wires)))
 
         assert np.allclose(P, P_true)
