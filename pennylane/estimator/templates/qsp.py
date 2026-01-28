@@ -607,7 +607,7 @@ class QSVT(ResourceOperator):
         if wires is None and block_encoding.wires is not None:
             wires = block_encoding.wires
 
-        if len(wires) != self.num_wires:
+        if wires is not None and len(wires) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(wires)}.")
         super().__init__(wires=wires)
 
@@ -808,7 +808,7 @@ class QSP(ResourceOperator):
         if block_encoding.num_wires > 1:
             raise ValueError("The block encoding operator should act on a single qubit!")
 
-        if not (convention in {"Z", "X"}):
+        if convention not in {"Z", "X"}:
             raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
 
         self.block_encoding = block_encoding.resource_rep_from_op()
@@ -867,7 +867,7 @@ class QSP(ResourceOperator):
         if block_encoding.num_wires > 1:
             raise ValueError("The block encoding operator should act on a single qubit!")
 
-        if not (convention in {"Z", "X"}):
+        if convention not in {"Z", "X"}:
             raise ValueError(f"The valid conventions are 'Z' or 'X'. Got {convention}")
 
         params = {

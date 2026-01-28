@@ -880,7 +880,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
     gate_name, num_wires = gate_info
 
-    if not num_wires in initial_resources.gate_sizes:
+    if num_wires not in initial_resources.gate_sizes:
         raise ValueError(f"initial_resources does not contain a gate acting on {num_wires} wires.")
 
     gate_count = initial_resources.gate_types.get(gate_name, 0)

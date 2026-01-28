@@ -28,10 +28,12 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache
-from .transform_dispatcher import BoundTransform, Transform
+from .transform import BoundTransform, Transform
 
 if TYPE_CHECKING:
     import jax
+
+    import pennylane as qml
 
 
 def _batch_postprocessing(
@@ -110,65 +112,153 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 
 class CompilePipeline:
-    """Class that contains a compile pipeline and the methods to interact with it.
-
-    The order of execution is the order in the list containing the containers.
+    """A sequence of transforms to be applied to a quantum function or a :class:`~pennylane.QNode`.
 
     Args:
-        initial_program (Optional[Sequence[BoundTransform]]): A sequence of transforms with
-            which to initialize the program.
+        *transforms (Optional[Sequence[Transform | BoundTransform]]): A sequence of
+            transforms with which to initialize the program.
         cotransform_cache (Optional[CotransformCache]): A named tuple containing the ``qnode``,
             ``args``, and ``kwargs`` required to compute classical cotransforms.
 
-    The main case where one would have to interact directly with a compile pipeline is when developing a
-    :class:`Device <pennylane.devices.Device>`. In this case, the pre-processing method of a device
-    returns a compile pipeline. You should directly refer to the device API documentation for more details.
+    **Example:**
 
-    .. warning::
+    The ``CompilePipeline`` class allows you to chain together multiple quantum function transforms
+    to create custom circuit optimization pipelines.
 
-        This class is developer-facing and should not be used directly. Instead, use
-        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
-        transform.
+    For example, consider if you wanted to apply the following optimizations to a quantum circuit:
 
-    .. seealso:: :func:`~.pennylane.transform`
+    - pushing all commuting single-qubit gates as far right as possible
+      (:func:`~pennylane.transforms.commute_controlled`)
+    - cancellation of adjacent inverse gates
+      (:func:`~pennylane.transforms.cancel_inverses`)
+    - merging adjacent rotations of the same type
+      (:func:`~pennylane.transforms.merge_rotations`)
 
-    **Implemented Dunder methods**
+    You can specify a transform program (``pipeline``) by passing these transforms to the ``CompilePipeline``
+    class. By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit will
+    be transformed with each pass within the pipeline sequentially:
 
-    Programs have several implemented dunder methods for easy manipulation.
+    .. code-block:: python
 
-    >>> from pennylane import CompilePipeline
-    >>> from copy import copy
-    >>> program = CompilePipeline()
-    >>> program.add_transform(qml.compile)
-    >>> program.add_transform(qml.transforms.cancel_inverses)
-    >>> [t for t in program]  # Iteration
-    [<compile((), {})>, <cancel_inverses((), {})>]
-    >>> program[0]
-    <compile((), {})>
-    >>> program[::-1]
-    CompilePipeline(cancel_inverses, compile)
-    >>> len(program)
-    2
-    >>> True if program else False
-    True
-    >>> True if CompilePipeline() else False
-    False
-    >>> program2 = copy(program)
-    >>> program2 == program
-    True
-    >>> qml.compile in program
-    True
-    >>> qml.transforms.split_non_commuting in program
-    False
-    >>> program + program
-    CompilePipeline(compile, cancel_inverses, compile, cancel_inverses)
+        pipeline = qml.CompilePipeline(
+            qml.transforms.commute_controlled,
+            qml.transforms.cancel_inverses(recursive=True),
+            qml.transforms.merge_rotations,
+        )
 
+        @pipeline
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x, y):
+            qml.CNOT([1, 0])
+            qml.X(0)
+            qml.CNOT([1, 0])
+            qml.H(0)
+            qml.H(0)
+            qml.X(0)
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            return qml.expval(qml.Z(1))
+
+    >>> print(qml.draw(circuit)(0.1, 0.2))
+    0: ──RX(0.30)─┤
+    1: ───────────┤  <Z>
+
+    Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
+    example, the transforms can be added together with ``+``:
+
+    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+    >>> pipeline
+    CompilePipeline(merge_rotations, cancel_inverses)
+
+    Or multiplied by a scalar via ``*``:
+    >>> pipeline += 2 * qml.transforms.commute_controlled
+    >>> pipeline
+    CompilePipeline(merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+
+    A compilation pipeline can also be easily modified using operations similar to Python lists, including
+    ``insert``, ``append``, ``extend`` and ``pop``:
+
+    >>> pipeline.insert(0, qml.transforms.remove_barrier)
+    >>> pipeline
+    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+
+    Additionally, multiple compilation pipelines can be concatenated:
+
+    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+    >>> another_pipeline + pipeline
+    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+
+    We can create a new pipeline that will do multiple passes of the original with multiplication:
+
+    >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+    >>> 2 * original
+    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
+
+    We can create a new pipeline that will do multiple passes of the original with multiplication:
+
+    >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+    >>> 2 * original
+    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
+
+    You can specify a transform program (``pipeline``) by passing these transforms to the ``CompilePipeline``
+    class. By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit will
+    be transformed with each pass within the pipeline sequentially:
+
+    .. code-block:: python
+
+        pipeline = qml.CompilePipeline(
+            qml.transforms.commute_controlled,
+            qml.transforms.cancel_inverses(recursive=True),
+            qml.transforms.merge_rotations,
+        )
+
+        @pipeline
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x, y):
+            qml.CNOT([1, 0])
+            qml.X(0)
+            qml.CNOT([1, 0])
+            qml.H(0)
+            qml.H(0)
+            qml.X(0)
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            return qml.expval(qml.Z(1))
+
+    >>> print(qml.draw(circuit)(0.1, 0.2))
+    0: ──RX(0.30)─┤
+    1: ───────────┤  <Z>
+
+    Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
+    example, the transforms can be added toguether with ``+``:
+
+    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+    >>> pipeline
+    CompilePipeline(merge_rotations, cancel_inverses)
+
+    Or multiplied by a scalar via ``*``:
+    >>> pipeline += 2 * qml.transforms.commute_controlled
+    >>> pipeline
+    CompilePipeline(merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+
+    A compilation pipeline can also be easily modified using operations similar to Python lists, including
+    ``insert``, ``append``, ``extend`` and ``pop``:
+
+    >>> pipeline.insert(0, qml.transforms.remove_barrier)
+    >>> pipeline
+    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+
+    Additionally, multiple compilation pipelines can be concatenated:
+
+    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+    >>> another_pipeline + pipeline
+    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
     """
 
     @overload
     def __init__(
         self,
-        transforms: Sequence[BoundTransform],
+        transforms: Sequence[Transform | BoundTransform],
         /,
         *,
         cotransform_cache: CotransformCache | None = None,
@@ -181,13 +271,19 @@ class CompilePipeline:
     ): ...
     def __init__(
         self,
-        *transforms: CompilePipeline | BoundTransform | Transform | Sequence[BoundTransform],
+        *transforms: CompilePipeline
+        | BoundTransform
+        | Transform
+        | Sequence[Transform | BoundTransform],
         cotransform_cache: CotransformCache | None = None,
     ):
         if len(transforms) == 1 and isinstance(transforms[0], Sequence):
-            self._compile_pipeline = list(transforms[0])
-            self.cotransform_cache = cotransform_cache
-            return
+            transforms = list(transforms[0])
+            # If all elements are BoundTransform, store directly (already expanded)
+            if all(isinstance(t, BoundTransform) for t in transforms):
+                self._compile_pipeline = transforms
+                self.cotransform_cache = cotransform_cache
+                return
 
         self._compile_pipeline = []
         self.cotransform_cache = cotransform_cache
@@ -388,6 +484,12 @@ class CompilePipeline:
             transform (Transform or BoundTransform): A transform represented by its container.
 
         """
+        if isinstance(transform, (list, tuple, CompilePipeline)):
+            raise TypeError(
+                "append() expects a single transform, not a sequence. "
+                "Use extend() to add multiple transforms at once."
+            )
+
         if not isinstance(transform, BoundTransform):
             transform = BoundTransform(transform)
 
@@ -399,6 +501,23 @@ class CompilePipeline:
             if expand_transform := transform.expand_transform:
                 self._compile_pipeline.append(expand_transform)
             self._compile_pipeline.append(transform)
+
+    def extend(self, transforms: CompilePipeline | Sequence[BoundTransform | Transform]):
+        """Extend the pipeline by appending transforms from an iterable.
+
+        Args:
+            transforms (CompilePipeline, or Sequence[BoundTransform | Transform]): A
+                CompilePipeline or an iterable of transforms to append.
+
+        """
+        # Handle CompilePipeline by using __iadd__ which already handles this case
+        if isinstance(transforms, CompilePipeline):
+            self += transforms
+            return
+
+        # Handle iterables (list, tuple, etc.)
+        for t in transforms:
+            self += t
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
@@ -591,11 +710,10 @@ class CompilePipeline:
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr: ...
     @overload
-    def __call__(self, tape: QuantumScript) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
-
+    def __call__(self, qnode: qml.QNode, *args, **kwargs) -> qml.QNode: ...
     @overload
     def __call__(
-        self, tapes: QuantumScriptBatch
+        self, tape: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
@@ -614,6 +732,7 @@ class CompilePipeline:
 
 @Transform.generic_register
 def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
+    targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     program = copy(obj)
     program.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
     return program

@@ -56,13 +56,19 @@ jobs:
 
       - name: Install Catalyst and Lightning (dev)
         run: |
-          uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ --index-strategy first-index --pre --no-deps pennylane-catalyst pennylane-lightning
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
 
-      - name: Install dependencies
+      - name: Install dependencies of Catalyst and Lightning
         run: |
-          # uv pip install --upgrade --extra-index-url https://test.pypi.org/simple/ --index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
-          uv pip install -e .
-          uv pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx                  
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+
+      - name: Install PennyLane (editable)
+        run: |
+          pip install -e .
+
+      - name: Install external packages
+        run: |
+          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
 
       - name: Print Dependencies
         run: |

@@ -555,8 +555,8 @@ class TestTransformDispatch:
     def test_qnode(self):
         """Test the transform on a qnode directly."""
         transformed_qnode = commute_controlled(qnode_circuit)
-        assert transformed_qnode.transform_program
-        assert len(transformed_qnode.transform_program) == 1
+        assert transformed_qnode.compile_pipeline
+        assert len(transformed_qnode.compile_pipeline) == 1
         res = transformed_qnode()
         expected = qnode_circuit()
         assert np.allclose(res, expected)

@@ -34,44 +34,10 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(op)
 
 
-class TestDecomposition:
-    """Tests that the template defines the correct decomposition."""
-
-    QUEUES = [
-        (1, (1, 1), ["RX"], [[0]]),
-        (2, (1, 2), ["RX", "RX", "CNOT"], [[0], [1], [0, 1]]),
-        (2, (2, 2), ["RX", "RX", "CNOT", "RX", "RX", "CNOT"], [[0], [1], [0, 1], [0], [1], [0, 1]]),
-        (
-            3,
-            (1, 3),
-            ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"],
-            [[0], [1], [2], [0, 1], [1, 2], [2, 0]],
-        ),
-    ]
-
-    @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
-    def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires):
-        """Checks the queue for the default settings."""
-
-        weights = np.random.random(size=weight_shape)
-
-        op = qml.BasicEntanglerLayers(weights, wires=range(n_wires))
-        tape = qml.tape.QuantumScript(op.decomposition())
-
-        for i, gate in enumerate(tape.operations):
-            assert gate.name == expected_names[i]
-            assert gate.wires.labels == tuple(expected_wires[i])
-
-    @pytest.mark.parametrize("rotation", [qml.RY, qml.RZ])
-    def test_rotation(self, rotation):
-        """Checks that custom rotation gate is used."""
-
-        weights = np.zeros(shape=(1, 2))
-
-        op = qml.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
-        queue = op.decomposition()
-
-        assert rotation in [type(gate) for gate in queue]
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:  # pylint: disable=too-few-public-methods
+    """Tests the correctness of a circuit which contains the template."""
 
     @pytest.mark.parametrize(
         "weights, n_wires, target",
@@ -118,11 +84,52 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+
+class TestDecomposition:
+    """Tests that the template defines the correct decomposition."""
+
+    QUEUES = [
+        (1, (1, 1), ["RX"], [[0]]),
+        (2, (1, 2), ["RX", "RX", "CNOT"], [[0], [1], [0, 1]]),
+        (2, (2, 2), ["RX", "RX", "CNOT", "RX", "RX", "CNOT"], [[0], [1], [0, 1], [0], [1], [0, 1]]),
+        (
+            3,
+            (1, 3),
+            ["RX", "RX", "RX", "CNOT", "CNOT", "CNOT"],
+            [[0], [1], [2], [0, 1], [1, 2], [2, 0]],
+        ),
+    ]
+
+    @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
+    def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires):
+        """Checks the queue for the default settings."""
+
+        weights = np.random.random(size=weight_shape)
+
+        op = qml.BasicEntanglerLayers(weights, wires=range(n_wires))
+        tape = qml.tape.QuantumScript(op.decomposition())
+
+        for i, gate in enumerate(tape.operations):
+            assert gate.name == expected_names[i]
+            assert gate.wires.labels == tuple(expected_wires[i])
+
+    @pytest.mark.parametrize("rotation", [qml.RY, qml.RZ])
+    def test_rotation(self, rotation):
+        """Checks that custom rotation gate is used."""
+
+        weights = np.zeros(shape=(1, 2))
+
+        op = qml.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
+        queue = op.decomposition()
+
+        assert rotation in [type(gate) for gate in queue]
+
     DECOMP_PARAMS = [
         ([[np.pi]], range(1), qml.RX),
         ([[np.pi] * 2], range(2), qml.RY),
         ([[np.pi] * 3], range(3), qml.RZ),
         ([[np.pi] * 4], range(4), qml.RX),
+        ([[[np.pi, 1, 2, 1]] * 4], range(4), qml.RX),
     ]
 
     @pytest.mark.capture

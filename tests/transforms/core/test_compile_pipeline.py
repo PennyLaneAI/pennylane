@@ -19,6 +19,7 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import (
@@ -34,6 +35,7 @@ from pennylane.transforms.core.compile_pipeline import (
     null_postprocessing,
 )
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
+from tests.capture.capture_utils import extract_ops_and_meas_prims
 
 
 def first_valid_transform(
@@ -841,6 +843,18 @@ class TestCompilePipelineConstruction:
         )
         assert len(pipeline) == 3
 
+    def test_list_of_transforms_arbitrary(self):
+        """Tests constructing a CompilePipeline with a list of transforms."""
+
+        pipeline = CompilePipeline(
+            [
+                qml.transforms.compile,
+                BoundTransform(qml.transforms.decompose),
+                CompilePipeline(qml.transforms.cancel_inverses),
+            ]
+        )
+        assert len(pipeline) == 3
+
     def test_variable_length_arguments(self):
         """Tests constructing a CompilePipeline with a mixed series of things."""
 
@@ -903,6 +917,99 @@ class TestCompilePipeline:
 
         with pytest.raises(TransformError, match="does not appear to be a valid Python function"):
             compile_pipeline.append(10.0)
+
+    def test_append_with_list_raises_helpful_error(self):
+        """Test that append with a list raises an error pointing to extend."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        with pytest.raises(TypeError, match="Use extend\\(\\) to add multiple transforms"):
+            pipeline.append([t1, t2])
+
+        with pytest.raises(TypeError, match="Use extend\\(\\) to add multiple transforms"):
+            pipeline.append((t1, t2))
+
+    def test_extend_list(self):
+        """Test extending a pipeline with a list of transforms."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        # Extend with a list of transforms
+        pipeline.extend([t1, t2])
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+
+    def test_extend_list_with_bound_transforms(self):
+        """Test extending with a list containing both Transform and BoundTransform."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2_bound = BoundTransform(transform(second_valid_transform))
+
+        pipeline.extend([t1, t2_bound])
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+
+    def test_extend_multiplied_transform(self):
+        """Test extending with a multiplied transform (which returns a CompilePipeline)."""
+        pipeline = CompilePipeline()
+        t1 = BoundTransform(transform(first_valid_transform))
+
+        # Multiplying a BoundTransform returns a CompilePipeline
+        multiplied = 2 * t1
+        assert isinstance(multiplied, CompilePipeline)
+
+        pipeline.extend(multiplied)
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is first_valid_transform
+
+    def test_extend_compile_pipeline(self):
+        """Test extending a CompilePipeline with another CompilePipeline."""
+        pipeline1 = CompilePipeline()
+        pipeline1.append(BoundTransform(transform(first_valid_transform)))
+
+        pipeline2 = CompilePipeline()
+        pipeline2.append(BoundTransform(transform(second_valid_transform)))
+
+        pipeline1.extend(pipeline2)
+
+        assert len(pipeline1) == 2
+        assert pipeline1[0].tape_transform is first_valid_transform
+        assert pipeline1[1].tape_transform is second_valid_transform
+
+    def test_extend_tuple(self):
+        """Test extending a pipeline with a tuple of transforms."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        # Extend with a tuple of transforms
+        pipeline.extend((t1, t2))
+
+        assert len(pipeline) == 2
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+
+    def test_extend_list_with_multiplied_transform(self):
+        """Test extending with a list containing a multiplied transform (CompilePipeline)."""
+        pipeline = CompilePipeline()
+        t1 = transform(first_valid_transform)
+        t2 = transform(second_valid_transform)
+
+        # t2 * 2 creates a CompilePipeline, which should be flattened when inside a list
+        pipeline.extend([t1, t2 * 2])
+
+        assert len(pipeline) == 3
+        assert pipeline[0].tape_transform is first_valid_transform
+        assert pipeline[1].tape_transform is second_valid_transform
+        assert pipeline[2].tape_transform is second_valid_transform
 
     def test_add_transform(self):
         """Test to add multiple transforms into a pipeline and also the different methods of a pipeline."""
@@ -1162,11 +1269,11 @@ class TestClassicalCotransfroms:
             return qml.expval(qml.Z(0))
 
         circuit = qml.gradients.param_shift(circuit, hybrid=True)
-        circuit.transform_program.set_classical_component(circuit, (arg,), {})
+        circuit.compile_pipeline.set_classical_component(circuit, (arg,), {})
 
         tape = qml.tape.QuantumScript([], [])
         with pytest.raises(QuantumFunctionError, match="No trainable parameters"):
-            circuit.transform_program((tape,))
+            circuit.compile_pipeline((tape,))
 
 
 class TestCompilePipelineCall:
@@ -1458,6 +1565,7 @@ class TestCompilePipelineCall:
         pipeline.add_transform(qml.transforms.defer_measurements, num_wires=3)
         pipeline.add_transform(
             qml.transforms.decompose,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             stopping_condition=lambda op: op.name != "IsingXX",
         )
 
@@ -1480,9 +1588,8 @@ class TestCompilePipelineCall:
             qml.PauliZ._primitive,
             qml.measurements.ExpectationMP._obs_primitive,
         ]
-        for eqn, expected_primitive in zip(
-            transformed_jaxpr.eqns, expected_primitives, strict=True
-        ):
+        ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
+        for eqn, expected_primitive in zip(ops_and_meas, expected_primitives, strict=True):
             assert eqn.primitive == expected_primitive
 
     def test_call_fallback_on_qnode(self):
@@ -1507,12 +1614,12 @@ class TestCompilePipelineCall:
 
         assert isinstance(new_qnode, qml.QNode)
         # The QNode should have the transforms from the program
-        assert len(new_qnode.transform_program) == 2
+        assert len(new_qnode.compile_pipeline) == 2
         assert (
-            new_qnode.transform_program[0].tape_transform
+            new_qnode.compile_pipeline[0].tape_transform
             is qml.transforms.cancel_inverses.tape_transform
         )
-        assert new_qnode.transform_program[1].tape_transform is first_valid_transform
+        assert new_qnode.compile_pipeline[1].tape_transform is first_valid_transform
 
     def test_call_fallback_on_qnode_already_transformed(self):
         """Test that a CompilePipeline can be applied to a QNode that already has transforms."""
@@ -1536,12 +1643,12 @@ class TestCompilePipelineCall:
 
         assert isinstance(new_qnode, qml.QNode)
         # The QNode should have the transforms from the program
-        assert len(new_qnode.transform_program) == 2
+        assert len(new_qnode.compile_pipeline) == 2
         assert (
-            new_qnode.transform_program[0].tape_transform
+            new_qnode.compile_pipeline[0].tape_transform
             is qml.transforms.cancel_inverses.tape_transform
         )
-        assert new_qnode.transform_program[1].tape_transform is first_valid_transform
+        assert new_qnode.compile_pipeline[1].tape_transform is first_valid_transform
 
     def test_call_fallback_on_qnode_empty_program(self):
         """Test that an empty program returns the original QNode."""
@@ -1604,10 +1711,10 @@ class TestCompilePipelineCall:
         # Apply the program - transforms should be in the QNode's transform_program
         new_qnode = program(circuit)
 
-        assert len(new_qnode.transform_program) == 2
+        assert len(new_qnode.compile_pipeline) == 2
         # First transform in program should be first in QNode's transform_program
-        assert new_qnode.transform_program[0].tape_transform is tracking_transform_1
-        assert new_qnode.transform_program[1].tape_transform is tracking_transform_2
+        assert new_qnode.compile_pipeline[0].tape_transform is tracking_transform_1
+        assert new_qnode.compile_pipeline[1].tape_transform is tracking_transform_2
 
     def test_call_on_qnode_execution(self):
         """Test that a CompilePipeline applied to a QNode actually transforms execution."""
@@ -1715,7 +1822,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1750,7 +1857,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
@@ -1788,7 +1895,7 @@ class TestCompilePipelineIntegration:
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
-        pipeline = new_qnode.transform_program
+        pipeline = new_qnode.compile_pipeline
         transformed_qnode_rep = repr(pipeline)
         assert (
             transformed_qnode_rep
