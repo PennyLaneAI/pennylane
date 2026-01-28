@@ -1872,7 +1872,9 @@ class TestEigvals:
         assert np.allclose(op.eigvals(), expected)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
+
     device_methods = [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],

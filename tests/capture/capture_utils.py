@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines methods for calculation different forms of derivatives.
+Utility functions for capture-related tests.
 """
 
 
-from .grad import grad, jacobian
-from .jvp import jvp
-from .vjp import vjp
-
-__all__ = ["grad", "jacobian", "jvp", "vjp"]
+def extract_ops_and_meas_prims(jaxpr):
+    """Extract the primitives that are operators and measurements."""
+    return [
+        eqn
+        for eqn in jaxpr.eqns
+        if getattr(eqn.primitive, "prim_type", "") in ("operator", "measurement")
+        or getattr(eqn.primitive, "name", "") == "measure"
+    ]

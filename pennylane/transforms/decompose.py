@@ -543,7 +543,7 @@ def decompose(
                 qml.CRX(0.5, wires=[0, 1])
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+            [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
         >>> from pprint import pprint
         >>> pprint(new_tape.operations)

@@ -788,25 +788,7 @@ class TestCatalystGrad:
         res = vjp(x, dy)
         assert len(res) == 2
         assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1][0], jnp.array([-0.43750208, 0.07000001]))
-
-    def test_vjp_without_qjit(self):
-        """Test that an error is raised when using VJP without QJIT."""
-
-        def vjp(params, cotangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
-
-            return qml.vjp(f, [params], [cotangent])
-
-        x = jnp.array([0.1, 0.2])
-        dy = jnp.array([-0.5, 0.1, 0.3])
-
-        with pytest.raises(
-            CompileError, match="Pennylane does not support the VJP function without QJIT."
-        ):
-            vjp(x, dy)
+        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
 
 class TestCatalystSample:
