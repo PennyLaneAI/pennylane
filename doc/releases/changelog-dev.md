@@ -209,6 +209,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
+  [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
+
 * Improves the error messages when the inputs and outputs to a `qml.for_loop` function do not match.
   [(#8984)](https://github.com/PennyLaneAI/pennylane/pull/8984)
 
