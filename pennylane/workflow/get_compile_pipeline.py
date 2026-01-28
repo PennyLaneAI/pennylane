@@ -83,13 +83,16 @@ def get_compile_pipeline(
         qnode (QNode): The QNode to get the compile pipeline for.
         level (str, int, slice): An indication of what transforms to use from the full compile pipeline.
 
-            - ``"device"``: Retrieves the entire compile pipeline used for device execution.
             - ``"top"``: Returns an empty compile pipeline.
             - ``"user"``: Retrieves a compile pipeline containing manually applied user transformations.
             - ``"gradient"``: Retrieves a compile pipeline that includes user transformations and any relevant gradient transformations.
+            - ``"device"``: Retrieves the entire compile pipeline (user + gradient + device) that is used for execution.
             - ``str``: Can also accept a string corresponding to the name of a marker that was manually added to the compile pipeline.
             - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
             - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the compile pipeline.
+
+    Returns:
+        CompilePipeline: the compile pipeline corresponding to the requested level.
 
     Raises:
         ValueError: If a final transform is applied to the qnode with a level that goes deeper than the gradient level of the compile pipeline.
@@ -106,10 +109,10 @@ def get_compile_pipeline(
         @qml.transforms.cancel_inverses
         @qml.qnode(dev)
         def circuit():
-            qml.H(0)
-            qml.RX(1, wires=0)
             qml.RX(1, wires=0)
             qml.H(0)
+            qml.H(0)
+            qml.RX(1, wires=0)
             return qml.expval(qml.Z(0))
 
     We can retrieve the compile pipeline used during execution with,
@@ -136,6 +139,9 @@ def get_compile_pipeline(
             @qml.transforms.cancel_inverses
             @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit(x):
+                qml.RX(x, wires=0)
+                qml.H(0)
+                qml.H(0)
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
