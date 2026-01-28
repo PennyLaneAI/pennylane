@@ -45,6 +45,24 @@ jobs:
           || false
          }}
 
+  update-lock-files:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update lock files
+        run: |
+          uv lock
+
+      - name: Upload frozen requirements # upload uv lock
+        # if: github.event_name == 'schedule'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-uv-lock
+          path: uv.lock
+
   upload-stable-deps:
     needs: tests
     uses: ./.github/workflows/check_in_artifact.yml

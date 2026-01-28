@@ -80,17 +80,17 @@ jobs:
             && pip3 install aiohttp fsspec h5py
           build-command: "sphinx-build -b html . _build -W --keep-going"
 
-      - name: Freeze dependencies
+      - name: Freeze dependencies # replace with uv lock
         shell: bash
         run: |
           pip freeze | grep -v 'file:///' > doc.txt
           cat doc.txt
 
-      - name: Upload frozen requirements
+      - name: Upload frozen requirements  # upload uv lock
         uses: actions/upload-artifact@v4
         with:
-          name: frozen-doc
-          path: doc.txt
+          name: frozen-uv-lock
+          path: uv.lock
 
   upload-stable-deps:
     if: github.event_name == 'schedule'
