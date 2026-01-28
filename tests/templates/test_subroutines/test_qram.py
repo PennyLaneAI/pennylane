@@ -27,10 +27,11 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
 
+has_jax = True
 try:
     from jax import numpy as jnp
 except ImportError:
-    pass
+    has_jax = False
 
 
 dev = device("default.qubit")
@@ -89,17 +90,15 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
         (
-            jnp.array(
-                [
-                    [0, 1, 0],
-                    [1, 1, 1],
-                    [1, 1, 0],
-                    [0, 0, 0],
-                ]
-            ),
-            jnp.array([0, 1]),
-            jnp.array([2, 3, 4]),
-            jnp.array([5, 6, 7, 8, 12, 13, 14, 9, 10, 11]),
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [5, 6, 7, 8, 12, 13, 14, 9, 10, 11],
             0,
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
@@ -113,6 +112,15 @@ def test_bb_quantum(
     address,
     probabilities,
 ):  # pylint: disable=too-many-arguments
+
+    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
+        data, control_wires, target_wires, work_wires = (
+            jnp.array(data),
+            jnp.array(control_wires),
+            jnp.array(target_wires),
+            jnp.array(work_wires),
+        )
+
     assert np.allclose(
         probabilities,
         bb_quantum(
@@ -403,17 +411,15 @@ def hybrid_quantum(
             ],
         ),
         (
-            jnp.array(
-                [
-                    [0, 1, 0],
-                    [1, 1, 1],
-                    [1, 1, 0],
-                    [0, 0, 0],
-                ]
-            ),
-            jnp.array([0, 1]),
-            jnp.array([2, 3, 4]),
-            jnp.array([5, 6, 7, 10, 13]),
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
+            [0, 1],
+            [2, 3, 4],
+            [5, 6, 7, 10, 13],
             1,
             0,  # addressed from the left
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
@@ -499,6 +505,15 @@ def test_hybrid_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
+
+    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
+        data, control_wires, target_wires, work_wires = (
+            jnp.array(data),
+            jnp.array(control_wires),
+            jnp.array(target_wires),
+            jnp.array(work_wires),
+        )
+
     real_probs = hybrid_quantum(
         data,
         control_wires,
@@ -828,7 +843,7 @@ def select_only_quantum(
             ],
         ),
         (
-            jnp.array(
+            np.array(
                 [
                     [0, 1, 0],
                     [1, 1, 1],
@@ -848,9 +863,9 @@ def select_only_quantum(
                     [0, 0, 0],
                 ]
             ),
-            jnp.array([0, 1]),
-            jnp.array([2, 3, 4]),
-            jnp.array([5, 6]),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5, 6]),
             None,
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
@@ -989,6 +1004,15 @@ def test_select_only_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
+
+    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
+        data, control_wires, target_wires, select_wires = (
+            jnp.array(data),
+            jnp.array(control_wires),
+            jnp.array(target_wires),
+            jnp.array(select_wires),
+        )
+
     real_probs = select_only_quantum(
         data,
         control_wires,

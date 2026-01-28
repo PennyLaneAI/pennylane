@@ -15,16 +15,18 @@
 Tests for the QROM template.
 """
 
+import numpy
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
+has_jax = True
 try:
     from jax import numpy as jnp
 except ImportError:
-    pass
+    has_jax = False
 
 
 @pytest.mark.jax
@@ -80,22 +82,24 @@ class TestQROM:
                 False,
             ),
             (
-                [
-                    [1, 1, 1],
-                    [1, 0, 1],
-                    [1, 0, 0],
-                    [1, 1, 0],
-                ],
-                [0, 1, 2],
-                [3, 4],
+                np.array(
+                    [
+                        [1, 1, 1],
+                        [1, 0, 1],
+                        [1, 0, 0],
+                        [1, 1, 0],
+                    ]
+                ),
+                np.array([0, 1, 2]),
+                np.array([3, 4]),
                 None,
                 True,
             ),
             (
-                jnp.array([[1, 1], [0, 1], [0, 0], [1, 0]]),
-                jnp.array([0, 1]),
-                jnp.array([2, 3]),
-                jnp.array([4, 5]),
+                [[1, 1], [0, 1], [0, 0], [1, 0]],
+                [0, 1],
+                [2, 3],
+                [4, 5],
                 True,
             ),
             (
@@ -106,34 +110,38 @@ class TestQROM:
                 True,
             ),
             (
-                [[0, 1], [0, 1], [0, 0], [0, 0]],
-                ["a", "b"],
-                [2, 3],
-                [4, 5, 6],
+                np.array([[0, 1], [0, 1], [0, 0], [0, 0]]),
+                np.array(["a", "b"]),
+                np.array([2, 3]),
+                np.array([4, 5, 6]),
                 False,
             ),
             (
-                [
-                    [1, 1, 1],
-                    [0, 0, 1],
-                    [0, 0, 0],
-                    [1, 0, 0],
-                ],
-                [0, 1, "b"],
-                [2, 3],
+                np.array(
+                    [
+                        [1, 1, 1],
+                        [0, 0, 1],
+                        [0, 0, 0],
+                        [1, 0, 0],
+                    ]
+                ),
+                np.array([0, 1, "b"]),
+                np.array([2, 3]),
                 None,
                 False,
             ),
             (
-                [
-                    [1, 1, 1, 1],
-                    [0, 1, 0, 1],
-                    [0, 1, 0, 0],
-                    [1, 0, 1, 0],
-                ],
-                [0, 1, "b", "d"],
-                [2, 3],
-                ["a", 5, 6, 7],
+                np.array(
+                    [
+                        [1, 1, 1, 1],
+                        [0, 1, 0, 1],
+                        [0, 1, 0, 0],
+                        [1, 0, 1, 0],
+                    ]
+                ),
+                np.array([0, 1, "b", "d"]),
+                np.array([2, 3]),
+                np.array(["a", 5, 6, 7]),
                 True,
             ),
         ],
@@ -143,6 +151,14 @@ class TestQROM:
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the QROM template output."""
         dev = qml.device("default.qubit")
+
+        if has_jax and not isinstance(data, numpy.ndarray):
+            data, control_wires, target_wires, work_wires = (
+                jnp.array(data),
+                jnp.array(control_wires),
+                jnp.array(target_wires),
+                jnp.array(work_wires),
+            )
 
         @qml.set_shots(1)
         @qml.qnode(dev)
