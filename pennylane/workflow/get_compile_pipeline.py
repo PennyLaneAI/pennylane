@@ -197,17 +197,15 @@ def get_compile_pipeline(
 
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
-        # Get full compile pipeline
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-        outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
 
         full_compile_pipeline = CompilePipeline()
         full_compile_pipeline += qnode.compile_pipeline
         # NOTE: User transforms that contain an informative transform by pass gradient + device transforms
         if not qnode.compile_pipeline.is_informative:
+            outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
             full_compile_pipeline += outer_pipeline + inner_pipeline
 
-        # Slice out relevant section
         num_user = len(qnode.compile_pipeline)
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
         resolved_pipeline = full_compile_pipeline[level_slice]
