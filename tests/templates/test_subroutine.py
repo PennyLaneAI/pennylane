@@ -385,7 +385,7 @@ class TestSubroutineCapture:
         @qml.capture.run_autograph
         def f(x, wires):
             if x > 0:
-                qml.X(0)
+                qml.X(wires)
 
         jaxpr = jax.make_jaxpr(f)(0.5, 0)
 

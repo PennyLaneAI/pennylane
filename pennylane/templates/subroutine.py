@@ -222,7 +222,7 @@ class Subroutine:
         c()
 
     >>> print(qml.draw(c)())
-    0: ──MyTemplate─┤  State
+    0: ──MyTemplate(0.10,0.20)─┤  State
     >>> print(qml.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
     >>> print(qml.specs(c)().resources)
@@ -283,15 +283,15 @@ class Subroutine:
 
 
     >>> print(qml.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
-    0: ─╭WithSetup─┤
-    1: ─╰WithSetup─┤
+    0: ─╭WithSetup(0.50)─┤
+    1: ─╰WithSetup(0.50)─┤
 
     While not currently integrated, a function to compute the resources can also be provided.
     The calculation of resources should only depend on the static arguments, the number of wires
     in each register, and the shape and ``dtype`` of the dynamic arguments. This will allow
     the calculation of the resources to performed in an abstract way.
 
-    .. code-block::
+    .. code-block:: python
 
         def RXLayerResources(params, wires):
             return {qml.RX: qml.math.shape(params)[0]}
@@ -308,7 +308,7 @@ class Subroutine:
     >>> abstract_params = jax.core.ShapedArray((10,), float)
     >>> abstract_wires = jax.core.ShapedArray((10,), int)
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
-    {pennylane.ops.qubit.parametric_ops_single_qubit.RX: 10}
+    {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
     **Use of Autograph:**
 
@@ -335,7 +335,7 @@ class Subroutine:
             f(x, 0)
             return qml.expval(qml.Z(0))
 
-    >>> c(0.5)
+    >>> c(0.5) # doctest: +SKIP
     Traceback (most recent call last):
         ...
     CaptureError: Autograph must be used when Python control flow is dependent on a dynamic variable
