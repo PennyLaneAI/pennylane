@@ -107,7 +107,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     Args:
             The classical data as a sequence of bitstrings. The size of the classical data must be
-        data (TensorLike):
+        data (TensorLike | Sequence[str]):
             The classical data as a 2-D array.  The shape must be ``(num_data, size_data)``, where ``num_data`` is
             :math:`2^{\texttt{len(control_wires)}}` and ``size_data = len(target_wires)``.
         control_wires (WiresLike):
