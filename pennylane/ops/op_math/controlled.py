@@ -362,7 +362,7 @@ def _try_wrap_in_custom_ctrl_op(
         qml.QueuingManager.remove(op)
         return ops_with_custom_ctrl_ops[custom_key](*op.data, control + op.wires)
 
-    if isinstance(op, qml.Barrier):
+    if isinstance(op, (qml.Barrier, qml.Snapshot)):
         if qml.QueuingManager.recording():
             # for example
             # op = Barrier(), qml.X(), qml.ctrl(op, 1)
