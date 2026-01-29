@@ -198,7 +198,7 @@ def get_compile_pipeline(
 
         full_compile_pipeline = CompilePipeline()
         full_compile_pipeline += qnode.compile_pipeline
-        # NOTE: User transforms that contain an informative transform by pass gradient + device transforms
+        # NOTE: Gradient + device transforms are *not* applied to qnodes that contain informative transforms
         if not qnode.compile_pipeline.is_informative:
             outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
             full_compile_pipeline += outer_pipeline + inner_pipeline
