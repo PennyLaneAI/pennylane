@@ -15,7 +15,6 @@
 Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
-
 import warnings
 
 # pylint: disable=not-callable
@@ -24,6 +23,7 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 from pennylane import math, ops
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import (
     DecompositionUndefinedError,
@@ -128,6 +128,7 @@ def _add_adjoint_transforms(pipeline: CompilePipeline, name="adjoint"):
     pipeline.add_transform(no_sampling, name=name)
     pipeline.add_transform(
         decompose,
+        target_gates=ROTATIONS_PLUS_CNOT,
         stopping_condition=adjoint_ops,
         name=name,
     )

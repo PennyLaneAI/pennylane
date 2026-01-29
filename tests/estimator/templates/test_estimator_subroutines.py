@@ -1748,7 +1748,7 @@ class TestResourceQROM:
     )
     def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, restored):
         """Test that the compressed representation is correct."""
-        expected_num_wires = size_data_points + math.ceil(math.log2(num_data_points))
+        expected_num_wires = size_data_points + qml.math.ceil_log2(num_data_points)
         expected = qre.CompressedResourceOp(
             qre.QROM,
             expected_num_wires,
@@ -2649,7 +2649,7 @@ class TestResourceUnaryIterationQPE:
     )
     def test_resource_rep(self, walk_operator_cmpr, n_iter, adj_qft_cmpr):
         """Test the resource_rep method"""
-        num_estimation_wires = math.ceil(math.log2(n_iter + 1))
+        num_estimation_wires = qml.math.ceil_log2(n_iter + 1)
         expected_num_wires = walk_operator_cmpr.num_wires + num_estimation_wires
 
         expected = qre.CompressedResourceOp(

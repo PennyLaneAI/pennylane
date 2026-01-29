@@ -38,82 +38,10 @@ def test_standard_validity(include_pi):
     qml.ops.functions.assert_valid(op)
 
 
-class TestDecomposition:
-    """Tests that the template defines the correct decomposition."""
-
-    @pytest.mark.parametrize(
-        "layers, qubits, init_state, include_pi",
-        [
-            (1, 4, qml.math.array([1, 1, 0, 0]), False),
-            (2, 4, qml.math.array([1, 1, 0, 0]), True),
-            (1, 6, qml.math.array([1, 1, 0, 0, 0, 0]), False),
-            (2, 6, qml.math.array([1, 1, 0, 0, 0, 0]), True),
-            (1, 8, qml.math.array([1, 1, 0, 0, 0, 0, 0, 0]), False),
-            (2, 8, qml.math.array([1, 1, 1, 1, 0, 0, 0, 0]), True),
-        ],
-    )
-    def test_operations(self, layers, qubits, init_state, include_pi):
-        """Test the correctness of the GateFabric template including the gate count
-        and order, the wires each operation acts on and the correct use of parameters
-        in the circuit."""
-
-        weights = np.random.normal(0, 2 * np.pi, (layers, qubits // 2 - 1, 2))
-
-        if not include_pi:
-            n_gates = 1 + (qubits - 2) * layers
-            exp_gates = (
-                ([qml.DoubleExcitation] + [qml.OrbitalRotation]) * (qubits // 2 - 1)
-            ) * layers
-        else:
-            n_gates = 1 + 3 * (qubits // 2 - 1) * layers
-            exp_gates = (
-                ([qml.OrbitalRotation] + [qml.DoubleExcitation] + [qml.OrbitalRotation])
-                * (qubits // 2 - 1)
-            ) * layers
-
-        op = qml.GateFabric(
-            weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
-        )
-        queue = op.decomposition()
-
-        # number of gates
-        assert len(queue) == n_gates
-
-        # initialization
-        assert isinstance(queue[0], qml.BasisEmbedding)
-
-        # order of gates
-        for op1, op2 in zip(queue[1:], exp_gates):
-            assert isinstance(op1, op2)
-
-        # gate parameter
-        params = qml.math.array(
-            [queue[i].parameters for i in range(1, n_gates) if queue[i].parameters != []]
-        )
-
-        if include_pi:
-            weights = qml.math.insert(weights, 0, [[np.pi] * (qubits // 2 - 1)] * layers, axis=2)
-
-        assert qml.math.allclose(params.flatten(), weights.flatten())
-
-        # gate wires
-        wires = range(qubits)
-        qwires = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
-        if len(wires) // 2 > 2:
-            qwires += [
-                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
-            ]
-
-        exp_wires = []
-        for _ in range(layers):
-            for wire in qwires:
-                if include_pi:
-                    exp_wires.append(list(wire))
-                exp_wires.append(list(wire))
-                exp_wires.append(list(wire))
-
-        res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
-        assert res_wires == exp_wires
+@pytest.mark.system
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+class TestCorrectness:
+    """Tests the correctness of the template in a qnode."""
 
     @pytest.mark.parametrize(
         ("init_state", "exp_state"),
@@ -648,6 +576,84 @@ class TestDecomposition:
 
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
+
+
+class TestDecomposition:  # pylint: disable=too-few-public-methods
+    """Tests that the template defines the correct decomposition."""
+
+    @pytest.mark.parametrize(
+        "layers, qubits, init_state, include_pi",
+        [
+            (1, 4, qml.math.array([1, 1, 0, 0]), False),
+            (2, 4, qml.math.array([1, 1, 0, 0]), True),
+            (1, 6, qml.math.array([1, 1, 0, 0, 0, 0]), False),
+            (2, 6, qml.math.array([1, 1, 0, 0, 0, 0]), True),
+            (1, 8, qml.math.array([1, 1, 0, 0, 0, 0, 0, 0]), False),
+            (2, 8, qml.math.array([1, 1, 1, 1, 0, 0, 0, 0]), True),
+        ],
+    )
+    def test_operations(self, layers, qubits, init_state, include_pi):
+        """Test the correctness of the GateFabric template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters
+        in the circuit."""
+
+        weights = np.random.normal(0, 2 * np.pi, (layers, qubits // 2 - 1, 2))
+
+        if not include_pi:
+            n_gates = 1 + (qubits - 2) * layers
+            exp_gates = (
+                ([qml.DoubleExcitation] + [qml.OrbitalRotation]) * (qubits // 2 - 1)
+            ) * layers
+        else:
+            n_gates = 1 + 3 * (qubits // 2 - 1) * layers
+            exp_gates = (
+                ([qml.OrbitalRotation] + [qml.DoubleExcitation] + [qml.OrbitalRotation])
+                * (qubits // 2 - 1)
+            ) * layers
+
+        op = qml.GateFabric(
+            weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
+        )
+        queue = op.decomposition()
+
+        # number of gates
+        assert len(queue) == n_gates
+
+        # initialization
+        assert isinstance(queue[0], qml.BasisEmbedding)
+
+        # order of gates
+        for op1, op2 in zip(queue[1:], exp_gates):
+            assert isinstance(op1, op2)
+
+        # gate parameter
+        params = qml.math.array(
+            [queue[i].parameters for i in range(1, n_gates) if queue[i].parameters != []]
+        )
+
+        if include_pi:
+            weights = qml.math.insert(weights, 0, [[np.pi] * (qubits // 2 - 1)] * layers, axis=2)
+
+        assert qml.math.allclose(params.flatten(), weights.flatten())
+
+        # gate wires
+        wires = range(qubits)
+        qwires = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
+        if len(wires) // 2 > 2:
+            qwires += [
+                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+            ]
+
+        exp_wires = []
+        for _ in range(layers):
+            for wire in qwires:
+                if include_pi:
+                    exp_wires.append(list(wire))
+                exp_wires.append(list(wire))
+                exp_wires.append(list(wire))
+
+        res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
+        assert res_wires == exp_wires
 
     DECOMP_PARAMS = [
         (qml.math.array([[[-0.080, 2.629]]]), [0, 1, 2, 3], qml.math.array([1, 1, 0, 0]), False),

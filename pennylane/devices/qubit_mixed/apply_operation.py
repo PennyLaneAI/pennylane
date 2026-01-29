@@ -776,7 +776,17 @@ def apply_density_matrix(
     # Partial system update:
     # 1. Partial trace out op_wires from state
     # partial_trace reduces the dimension to only the complement wires
-    sigma = qml.math.partial_trace(state, indices=op_wires)
+    # Note: partial_trace expects state in 2D (dim, dim) or 3D (batch, dim, dim) format,
+    # but the mixed device stores state in tensor format (2, 2, ..., 2).
+    # We need to reshape state to 2D/3D format first.
+    state_dim = 2**num_state_wires
+    if is_state_batched:
+        batch_size = math.shape(state)[0]
+        state_2d = math.reshape(state, (batch_size, state_dim, state_dim))
+    else:
+        state_2d = math.reshape(state, (state_dim, state_dim))
+
+    sigma = qml.math.partial_trace(state_2d, indices=op_wires)
     # sigma now has shape:
     # (batch_size, 2^(n - num_wires), 2^(n - num_wires)) where n = total wires
 

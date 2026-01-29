@@ -574,7 +574,7 @@ class TestPhasedDecomposition:
         """Tests that the matrix decomposes into a linear combination of tensors,
         the identity matrix, and Pauli matrices."""
         shape = matrix.shape
-        num_qubits = int(np.ceil(np.log2(max(shape))))
+        num_qubits = qml.math.ceil_log2(max(shape))
         allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
 
         decomposed_coeff, decomposed_obs = qml.pauli_decompose(
@@ -599,7 +599,7 @@ class TestPhasedDecomposition:
     def test_to_paulisentence_general(self, matrix):
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
         shape = matrix.shape
-        num_qubits = int(np.ceil(np.log2(max(shape))))
+        num_qubits = qml.math.ceil_log2(max(shape))
         ps = qml.pauli_decompose(matrix, pauli=True, check_hermitian=False)
 
         assert isinstance(ps, qml.pauli.PauliSentence)

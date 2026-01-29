@@ -146,8 +146,8 @@ class QAOAEmbedding(Operation):
                 return qml.expval(qml.Z(0))
 
 
-            features = [1., 2.]
-            weights = [[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]]
+            features = qml.numpy.array([1., 2.])
+            weights = qml.numpy.array([[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]])
 
             opt = qml.GradientDescentOptimizer()
             for i in range(10):
