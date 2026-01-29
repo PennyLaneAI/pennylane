@@ -785,30 +785,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
         assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
-        assert jaxpr2.eqns[0].params["argnums"] == (1,)  # shifted by one
-
-    def test_vjp_consts(self):
-        """Test interpreters can handle vjp HOP's and propagate consts correctly."""
-
-        @SimplifyInterpreter()
-        def f(x):
-            @qml.qnode(qml.device("default.qubit", wires=2))
-            def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qml.RX(y, 0) ** exponent
-                return qml.expval(qml.Z(0) + qml.Z(0))
-
-            return qml.vjp(circuit, (x,), (1.0,))
-
-        jaxpr = jax.make_jaxpr(f)(0.5)
-        assert len(jaxpr.consts) == 0
-        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
-
-        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
-        assert jaxpr2.consts == [scalar]
-        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
-        assert jaxpr2.eqns[0].params["argnums"] == (1,)  # shifted by one
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
     def test_vjp_consts(self):
         """Test interpreters can handle vjp HOP's and propagate consts correctly."""

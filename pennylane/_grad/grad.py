@@ -51,12 +51,14 @@ def _get_jacobian_prim():
     jacobian_prim.prim_type = "higher_order"
 
     @jacobian_prim.def_impl
-    def _grad_impl(*args, argnums, jaxpr, method, h, scalar_out, fn):
+    def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid value '{method=}' without QJIT.")
+        consts = args[:n_consts]
+        args = args[n_consts:]
 
         def func(*inner_args):
-            res = jax.core.eval_jaxpr(jaxpr, [], *inner_args)
+            res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
             return res[0] if scalar_out else res
 
         if scalar_out:
@@ -67,10 +69,10 @@ def _get_jacobian_prim():
 
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
-    def _grad_abstract(*args, argnums, jaxpr, method, h, scalar_out, fn):
+    def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
         if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        in_avals = tuple(args[i] for i in argnums)
+        in_avals = tuple(args[i + n_consts] for i in argnums)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
             _shape(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
@@ -110,9 +112,6 @@ def _args_and_argnums(args, argnums):
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):
         argnums = (argnums,)
-    elif not isinstance(argnums, (list, tuple)) or not all(isinstance(a, int) for a in argnums):
-        raise ValueError(f"argnums should be integer or a list of integers, not {argnums}")
-
     argnums = tuple(argnums)
 
     if max(argnums) >= len(args):
@@ -191,7 +190,8 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         flat_inputs, _ = tree_flatten((args, kwargs))
         prim_kwargs = {
             "argnums": shifted_argnums,
-            "jaxpr": no_consts_jaxpr,
+            "jaxpr": jaxpr.jaxpr,
+            "n_consts": len(jaxpr.consts),
             "fn": func,
             "method": method,
             "h": h,

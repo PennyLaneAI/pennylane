@@ -291,6 +291,7 @@ class TestCaptureCircuitsWhileLoop:
         assert grad_eqn.primitive == jacobian_prim
         assert set(grad_eqn.params.keys()) == {
             "argnums",
+            "n_consts",
             "jaxpr",
             "method",
             "h",

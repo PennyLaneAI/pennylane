@@ -120,112 +120,6 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     dparams = tree_unflatten(trainable_in_tree, flat_dparams)
     return results, dparams
 
-from .grad import _args_and_argnums, _setup_h, _setup_method
-
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
-
-
-def _get_shape(x):
-    return x.shape if hasattr(x, "shape") else jax.numpy.shape(x)
-
-
-# pylint: disable=unused-argument
-@lru_cache
-def _get_vjp_prim():
-    if not has_jax:  # pragma: no cover
-        return None
-
-    vjp_prim = capture.QmlPrimitive("vjp")
-    vjp_prim.multiple_results = True
-    vjp_prim.prim_type = "higher_order"
-
-    @vjp_prim.def_impl
-    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
-        params = args[: len(jaxpr.invars)]
-        dy = list(args[len(jaxpr.invars) :])
-
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
-
-        res, vjp_fn = jax.vjp(func, *params)
-        dparams = vjp_fn(dy)
-        return res + [dparams[i] for i in argnums]
-
-    @vjp_prim.def_abstract_eval
-    def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
-        return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
-
-    return vjp_prim
-
-
-def _validate_cotangents(cotangents, out_avals):
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
-
-    if len(cotangents) != len(out_avals):
-        raise ValueError(
-            "The length of cotangents must match the number of"
-            " outputs of the function with qml.vjp."
-        )
-    for p, t in zip(cotangents, out_avals):
-        if _dtype(p) != _dtype(t):
-            raise TypeError(
-                "function output params and cotangents arguments to qml.vjp do not match; "
-                "dtypes must be equal. "
-                f"Got function output params dtype {_dtype(p)} and so expected cotangent dtype "
-                f"{_dtype(p)}, but got cotangent dtype {_dtype(t)} instead."
-            )
-
-        if _get_shape(p) != _get_shape(t):
-            raise ValueError(
-                "qml.vjp called with different function output params and cotangent "
-                f"shapes; got function output params shape {_get_shape(p)} and cotangent shape "
-                f"{_get_shape(t)}"
-            )
-
-
-# pylint: disable=too-many-arguments
-def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
-
-    if argnums is None:
-        argnums = [0]
-    elif isinstance(argnums, int):
-        argnums = [argnums]
-
-    h = _setup_h(h)
-    method = _setup_method(method)
-    flat_args, flat_argnums, _, trainable_in_tree = _args_and_argnums(params, argnums)
-    flat_cotangents = tree_leaves(cotangents)
-    flat_fn = capture.FlatFn(func)
-    jaxpr = jax.make_jaxpr(flat_fn)(*params)
-    j = jaxpr.jaxpr
-    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
-    shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
-
-    _validate_cotangents(flat_cotangents, jaxpr.out_avals)
-
-    prim_kwargs = {
-        "fn": func,
-        "method": method,
-        "h": h,
-        "argnums": shifted_argnums,
-        "jaxpr": no_consts_jaxpr,
-    }
-    out_flat = _get_vjp_prim().bind(*jaxpr.consts, *flat_args, *flat_cotangents, **prim_kwargs)
-    assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-    flat_results, flat_dparams = (
-        out_flat[: flat_fn.out_tree.num_leaves],
-        out_flat[flat_fn.out_tree.num_leaves :],
-    )
-
-    results = tree_unflatten(flat_fn.out_tree, flat_results)
-    dparams = tree_unflatten(trainable_in_tree, flat_dparams)
-    return results, dparams
-
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 def vjp(f, params, cotangents, method=None, h=None, argnums=None):
@@ -295,9 +189,6 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
 
 
     """
-
-    if capture.enabled():
-        return _capture_vjp(f, params, cotangents, argnums=argnums, method=method, h=h)
 
     if capture.enabled():
         return _capture_vjp(f, params, cotangents, argnums=argnums, method=method, h=h)
