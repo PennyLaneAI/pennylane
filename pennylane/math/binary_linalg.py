@@ -89,7 +89,7 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
         same shape as the input. If ``inplace=True``, the returned array is the same object as
         the input ``binary_matrix``, which then has been modified in place.
 
-    .. note::
+    .. warning::
 
         This function is currently not compatible with JAX.
 
@@ -154,7 +154,7 @@ def binary_matrix_rank(binary_matrix: np.ndarray) -> int:
 
     This function does not modify the input.
 
-    .. note::
+    .. warning::
 
         This function is currently not compatible with JAX.
 
@@ -205,7 +205,7 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Binary solution vector with same length as ``A`` and ``b``.
 
-    .. note::
+    .. warning::
 
         This function is currently not compatible with JAX.
 
@@ -256,7 +256,7 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
     Returns:
         bool: Whether ``vector`` is linearly independent of ``basis`` over :math:`\mathbb{Z}_2`.
 
-    .. note::
+    .. warning::
 
         This function is currently not compatible with JAX.
 
@@ -286,7 +286,7 @@ def binary_select_basis(bitstrings: np.ndarray):
         ``bitstrings`` that form a basis for the column space of ``bitstrings`` over
         :math:`\mathbb{Z}_2`. The second contains all other columns.
 
-    .. note::
+    .. warning::
 
         This function is currently not compatible with JAX.
     """
