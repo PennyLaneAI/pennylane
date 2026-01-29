@@ -67,7 +67,7 @@ def translate_op_alias(op_alias):
 @singledispatch
 def to_name(op) -> str:
     """Get the canocial name of an operation for the graph."""
-    raise NotImplementedError(f"{type(op)} is not a valid type for to_name.")
+    raise NotImplementedError(f"{type(op)} is not a valid type for to_name.")  # pragma: no cover
 
 
 @to_name.register
