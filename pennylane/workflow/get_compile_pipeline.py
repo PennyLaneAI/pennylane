@@ -125,12 +125,13 @@ def get_compile_pipeline(
     .. details::
         :title: Usage Details
 
-        Consider the circuit below which has user applied transforms, a checkpoint marker and uses the parameter-shift gradient method,
+        Consider the circuit below which is loaded with user applied transforms, a checkpoint marker and uses the parameter-shift gradient method,
 
         .. code-block:: python
 
             dev = qml.device("default.qubit")
 
+            @qml.metric_tensor
             @qml.transforms.merge_rotations
             @qml.marker("checkpoint")
             @qml.transforms.cancel_inverses
@@ -146,18 +147,18 @@ def get_compile_pipeline(
         Note that this can also be retrieved by manually specifying ``level="device"``,
 
         >>> get_compile_pipeline(circuit)(3.14)
-        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
+        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_metric_tensor, metric_tensor, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
 
         As can be seen above, this not only includes the two transforms we manually applied, but also a set of transforms used by the device in order to execute the circuit.
         The ``"user"`` level will retrieve the portion of the compile pipeline that was manually applied by the user to the qnode,
 
         >>> get_compile_pipeline(circuit, level="user")(3.14)
-        CompilePipeline(cancel_inverses, marker, merge_rotations)
+        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_metric_tensor, metric_tensor)
 
         The ``"gradient"`` level builds on top of this to then add any relevant gradient transforms,
 
         >>> get_compile_pipeline(circuit, level="gradient")(3.14)
-        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_transform_param_shift)
+        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_metric_tensor, metric_tensor, _expand_transform_param_shift)
 
         which in this case is ``_expand_transform_param_shift``, a transform that expands all trainable operations
         to a state where the parameter shift transform can operate on them.
@@ -182,7 +183,7 @@ def get_compile_pipeline(
         Slice levels enable you to extract a specific range of transformations in the compile pipeline. For example, we can retrieve the second to fourth transform by using a slice,
 
         >>> get_compile_pipeline(circuit, level=slice(1,4))(3.14)
-        CompilePipeline(marker, merge_rotations, _expand_transform_param_shift)
+        CompilePipeline(marker, merge_rotations, _expand_metric_tensor)
 
     """
 
