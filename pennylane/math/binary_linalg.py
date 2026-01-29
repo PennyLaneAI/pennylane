@@ -16,51 +16,51 @@ also referred to as finite field F_2, Galois field GF_2, or ℤ_2."""
 import numpy as np
 
 
-def int_to_binary(integer: int | np.ndarray, num_bits: int) -> np.ndarray:
+def int_to_binary(integer: int | np.ndarray, width: int) -> np.ndarray:
     """Convert an integer or an array of integers to an array of bitstrings of
     given length, representing the integers as binaries.
 
     Args:
         integer (int | np.ndarray): Integer(s) to convert. Either a single integers or an
             array of integers.
-        num_bits (int): Length of the bitstrings to which the integer(s) are converted. Note
-            that the ``num_bits`` **least** significant bits corresponding to
-            ``integers % 2**num_bits`` are returned, discarding the most
-            significant contributions if ``integer > 2**(num_bits-1)-1``.
+        width (int): Length of the bitstrings to which the integer(s) are converted. Note
+            that the ``width`` **least** significant bits corresponding to
+            ``integers % 2**width`` are returned, discarding the most
+            significant contributions if ``integer > 2**(width-1)-1``.
 
     Returns:
         np.ndarray: Array of bitstrings representing the ``integer`` input. If ``integer`` is an
-        ``int``, the returned array has shape ``(num_bits,)``. If ``integer`` is an array of
-        shape ``S``, the returned array has shape ``(*S, num_bits)``.
+        ``int``, the returned array has shape ``(width,)``. If ``integer`` is an array of
+        shape ``S``, the returned array has shape ``(*S, width)``.
 
 
     **Example**
 
     We may compute the binary representation of the integer ``13`` on five bits, for example:
 
-    >>> num_bits = 5
-    >>> print(qml.math.int_to_binary(13, num_bits=num_bits))
+    >>> width = 5
+    >>> print(qml.math.int_to_binary(13, width=width))
     [0 1 1 0 1]
 
     This matches the output of ``np.binary_repr`` but returns a numerical array instead
     of a string:
 
-    >>> print(np.binary_repr(13, width=num_bits))
+    >>> print(np.binary_repr(13, width=width))
     01101
 
     For an array-typed input, we obtain a new array with an additinoal axis in the last position,
-    of size ``num_bits``:
+    of size ``width``:
 
     >>> x = np.array([[7, 3], [17, 9], [2, 8]])
     >>> print(x.shape)
     (3, 2)
-    >>> bits = qml.math.int_to_binary(x, num_bits=num_bits)
+    >>> bits = qml.math.int_to_binary(x, width=width)
     >>> print(bits.shape)
     (3, 2, 5)
 
     The input ``integer`` can be reconstructed from the bit strings via
 
-    >>> powers_of_two = 2**np.arange(num_bits-1, -1, -1)
+    >>> powers_of_two = 2**np.arange(width-1, -1, -1)
     >>> reconstruction = bits @ powers_of_two
     >>> print(reconstruction)
     [[ 7  3]
@@ -68,10 +68,10 @@ def int_to_binary(integer: int | np.ndarray, num_bits: int) -> np.ndarray:
      [ 2  8]]
 
     """
-    shifts = np.arange(num_bits - 1, -1, -1)  # [num_bits-1, num_bits-2, ... 1, 0]
+    shifts = np.arange(width - 1, -1, -1)  # [width-1, width-2, ... 1, 0]
     if isinstance(integer, int):
         return (integer >> shifts) % 2
-    return (integer[..., None] >> shifts) % 2  # Broadcasting (new) shape (*S, 1) with (num_bits,)
+    return (integer[..., None] >> shifts) % 2  # Broadcasting (new) shape (*S, 1) with (width,)
 
 
 def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):

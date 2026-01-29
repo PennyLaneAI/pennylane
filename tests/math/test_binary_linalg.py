@@ -93,7 +93,7 @@ class TestIntToBinary:
         assert np.allclose((expected @ 2 ** np.arange(n - 1, -1, -1)), x)
         assert _is_binary(expected)
 
-        out = fn.int_to_binary(x, num_bits=n)
+        out = fn.int_to_binary(x, width=n)
         assert _is_binary(out)
         assert out.shape == (*x.shape, n)
         assert np.allclose(out, expected)
