@@ -812,26 +812,25 @@ class CSWAP(ControlledOp):
         **Example:**
 
         >>> print(qml.CSWAP.compute_decomposition((0,1,2)))
-        [Toffoli(wires=[0, 2, 1]), Toffoli(wires=[0, 1, 2]), Toffoli(wires=[0, 2, 1])]
+        [CNOT(wires=[2, 1]), Toffoli(wires=[0, 1, 2]), CNOT(wires=[2, 1])]
 
         """
-        decomp_ops = [
-            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+        return [
+            qml.CNOT([wires[2], wires[1]]),
             qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
-            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+            qml.CNOT([wires[2], wires[1]]),
         ]
-        return decomp_ops
 
 
 def _cswap_to_toffoli_resources():
-    return {qml.Toffoli: 3}
+    return {qml.CNOT: 2, qml.Toffoli: 1}
 
 
 @register_resources(_cswap_to_toffoli_resources)
 def _cswap(wires: WiresLike, **__):
-    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+    qml.CNOT([wires[2], wires[1]])
     qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
-    qml.Toffoli(wires=[wires[0], wires[2], wires[1]])
+    qml.CNOT([wires[2], wires[1]])
 
 
 def _cswap_to_ppr_resource():
@@ -1057,7 +1056,18 @@ def _ccz(wires: WiresLike, **__):
     qml.Hadamard(wires=wires[2])
 
 
-add_decomps(CCZ, _ccz)
+def _ccz_to_toffoli_resources():
+    return {qml.Hadamard: 2, qml.Toffoli: 1}
+
+
+@register_resources(_ccz_to_toffoli_resources)
+def _ccz_to_toffoli(wires: WiresLike, **__):
+    qml.Hadamard(wires[2])
+    qml.Toffoli(wires)
+    qml.Hadamard(wires[2])
+
+
+add_decomps(CCZ, _ccz, _ccz_to_toffoli)
 add_decomps("Adjoint(CCZ)", self_adjoint)
 add_decomps("Pow(CCZ)", pow_involutory)
 
