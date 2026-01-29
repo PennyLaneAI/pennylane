@@ -294,13 +294,13 @@ def compute_sos_encoding(bits):
     Consider an array of bits with distinct columns:
 
     >>> bits = np.array([
-        [0, 1, 1, 0, 1, 0],
-        [0, 0, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1, 1],
-        [0, 0, 1, 0, 0, 0],
-        [1, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1],
-    ])
+    ...     [0, 1, 1, 0, 1, 0],
+    ...     [0, 0, 1, 1, 1, 0],
+    ...     [1, 1, 1, 1, 1, 1],
+    ...     [0, 0, 1, 0, 0, 0],
+    ...     [1, 1, 0, 0, 0, 0],
+    ...     [0, 0, 0, 0, 0, 1],
+    ... ])
     >>> from pennylane.templates.state_preparations.sum_of_slaters import compute_sos_encoding, _columns_differ
     >>> print(_columns_differ(bits))
     True
@@ -453,7 +453,6 @@ def compute_sos_encoding(bits):
     r, D = bits.shape
     d = ceil_log2(D)
     m = 2 * d - 1
-    print(f"{r=}, {D=}, {d=}, {m=}")
     if r <= m:
         # Case 1: We can use the identity mapping
         U = np.eye(r, dtype=int)
