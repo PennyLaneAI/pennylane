@@ -23,8 +23,8 @@ from pennylane.math import binary_rank, ceil_log2
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
-    _select_rows,
     compute_sos_encoding,
+    select_rows,
 )
 
 
@@ -127,9 +127,9 @@ class TestHelperFunctions:
         ],
     )
     def test_select_rows_need_all_rows(self, bits):
-        """Test that _select_rows correctly selects all rows if they are all needed to
+        """Test that select_rows correctly selects all rows if they are all needed to
         discrimnate the columns of the input"""
-        selectors, new_bits = _select_rows(bits)
+        selectors, new_bits = select_rows(bits)
         assert set(selectors) == set(range(len(bits)))  # all rows are needed
         assert np.allclose(new_bits, bits)
 
@@ -194,9 +194,9 @@ class TestHelperFunctions:
         ],
     )
     def test_select_rows_need_only_few_rows(self, bits, skip_rows):
-        """Test that _select_rows correctly selects a subset of rows if they are not all needed to
+        """Test that select_rows correctly selects a subset of rows if they are not all needed to
         discrimnate the columns of the input"""
-        selectors, new_bits = _select_rows(bits)
+        selectors, new_bits = select_rows(bits)
         assert set(selectors) == set(range(len(bits))) - set(skip_rows)
         assert np.allclose(new_bits, bits[np.array(selectors)])
 

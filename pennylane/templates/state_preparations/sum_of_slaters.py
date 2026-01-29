@@ -11,18 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Contains the SumOfSlatersStatePreparation template."""
+r"""Contains the SumOfSlatersStatePrep template."""
 
+from collections import defaultdict
 from itertools import combinations, product
 
 import numpy as np
 
-from pennylane.math import (
-    binary_finite_reduced_row_echelon,
-    binary_is_independent,
-    binary_select_basis,
-    ceil_log2,
-)
+import pennylane as qml
+from pennylane import allocate, for_loop, math
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+
+# from pennylane math import (
+#    binary_finite_reduced_row_echelon,
+#    binary_is_independent,
+#    binary_select_basis,
+#    ceil_log2,
+# )
+from pennylane.operation import Operation
+
+# from pennylane.ops import CNOT, cond, MultiControlledX
+from pennylane.queuing import AnnotatedQueue, QueuingManager
+
+# from pennylane.templates import QROM, StatePrep
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -75,7 +86,7 @@ def _columns_differ(bits: np.ndarray) -> bool:
     return len(set(ints)) == len(ints)
 
 
-def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
+def select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     r"""Select rows of a bit array of differing columns such that the stacked array of the
     selected rows still contains differing columns. Also memorizes the row indices of the input
     array that were selected.
@@ -112,8 +123,8 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
     Then let's select rows that maintain the uniqueness of the rows:
 
-    >>> from pennylane.templates.state_preparations.sum_of_slaters import _select_rows
-    >>> selectors, new_bits = _select_rows(bitstrings)
+    >>> from pennylane.templates.state_preparations.sum_of_slaters import select_rows
+    >>> selectors, new_bits = select_rows(bitstrings)
     >>> selectors
     [0, 1, 4, 5]
 
@@ -136,11 +147,11 @@ def _select_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     while True:
         # compute weight of each row. We'll try to first remove rows with a
         # mean weight far away from 0.5
-        weights = np.mean(bits, axis=1)
-        ordering = np.argsort(np.abs(0.5 - weights))
+        weights = math.mean(bits, axis=1)
+        ordering = math.argsort(math.abs(0.5 - weights))
         for i in reversed(ordering):
             # Check whether the array with row ``i`` removed still has unique columns
-            _bits = np.concatenate([bits[:i], bits[i + 1 :]])
+            _bits = math.concatenate([bits[:i], bits[i + 1 :]])
             if _columns_differ(_bits):
                 # If the columns remain unique, remove the row and the row index from selectors
                 del selectors[i]
@@ -200,7 +211,8 @@ def _find_single_w(bits, r):
     return W
 
 
-def _find_w(bits_basis, other_bits, r, t):
+def _find_w(bits_basis, other_bits, t):
+    r = bits_basis.shape[0]
     if t == 1:
         all_bits = np.concatenate([bits_basis, other_bits], axis=1)
         # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
@@ -209,7 +221,8 @@ def _find_w(bits_basis, other_bits, r, t):
 
         # Note that the set ``all_bitstrings_to_avoid`` has size at most D+(D^2-D)/2=(D^2+D)/2
         # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1, and thus
-        # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1).
+        # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1), so that 2^(r-1) candidates are enough to find a new
+        # vector.
         for i in range(1, 2 ** (r - 1)):
             w_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
             w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
@@ -223,7 +236,7 @@ def _find_w(bits_basis, other_bits, r, t):
     bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
 
     indep_of_reduced_basis = np.array(
-        [binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
+        [math.binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
     )
 
     # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
@@ -239,20 +252,27 @@ def _find_w(bits_basis, other_bits, r, t):
 
     prev_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
 
-    W_prev = _find_w(bits_basis[:, :-1], prev_bits[:, bits_basis.shape[1] - 1 :], r, t - 1)
+    W_prev = _find_w(bits_basis[:, :-1], prev_bits[:, bits_basis.shape[1] - 1 :], t - 1)
 
     W = np.concatenate([W_prev, w_t[:, None]], axis=1)
     return W
 
 
-def _find_U_from_W(W, r):
-    """Compute a set of vectors ``{u_i}_i`` that satisfy the equations
-    ``u_i @ W = 0``, i.e. that are in the kernel of W.T."""
-    t = W.shape[1]
+def _find_U_from_W(W):
+    """Compute a linearly independent set of vectors ``{u_i}_i`` that satisfy the equations
+    ``u_i @ W = 0`` for a "tall" rectangular matrix ``W`` with maximal rank.
+
+    That is, we compute a basis for the kernel of ``W``, which has the shape ``(r, t)`` with
+    ``r>=t`` and has rank ``t``. For this, we construct the augmented matrix ``A = (W | 1_r)``,
+    where ``1_r`` is the identity matrix in ``r`` dimensions. Then, we compute the (reduced)
+    row echelon form of ``A`` and read out the last ``r-t`` rows of the appended part in ``A``,
+    i.e. the last ``r-t`` rows of the last ``r`` columns.
+    """
+    r, t = W.shape
     # Create augmented matrix for Gauss-Jordan elimination.
-    M = np.concatenate([W, np.eye(r, dtype=int)], axis=1)
-    M = binary_finite_reduced_row_echelon(M, inplace=True)
-    U = M[t:, t:]
+    A = np.concatenate([W, np.eye(r, dtype=int)], axis=1)
+    A = math.binary_finite_reduced_row_echelon(A, inplace=True)
+    U = A[t:, t:]
     return U
 
 
@@ -375,9 +395,14 @@ def compute_sos_encoding(bits):
         6.  Append :math:`w_t=\ell+v_l` to :math:`\mathcal{W}'` to obtain :math:`\mathcal{W}` and return :math:`\mathcal{W}`.
 
     """
+    print(f"{bits=}")
     r, D = bits.shape
-    d = ceil_log2(D)
+    print(f"{r=}")
+    print(f"{D=}")
+    d = math.ceil_log2(D)
+    print(f"{d=}")
     m = 2 * d - 1
+    print(f"{m=}")
     if r <= m:
         U = np.eye(r, dtype=int)
         return U, bits
@@ -386,10 +411,176 @@ def compute_sos_encoding(bits):
         # Particularly simple brute force solution
         W = _find_single_w(bits, r)
     else:
-        bits_basis, other_bits = binary_select_basis(bits)
-        W = _find_w(bits_basis, other_bits, r, t=r - m)
+        bits_basis, other_bits = math.binary_select_basis(bits)
+        print(f"{bits_basis=}")
+        W = _find_w(bits_basis, other_bits, t=r - m)
 
-    U = _find_U_from_W(W, r)
-    assert np.allclose((U @ W) % 2, 0)
+    U = _find_U_from_W(W)
     b = (U @ bits) % 2
     return U, b
+
+
+class SumOfSlatersStatePrep(Operation):
+    """Prepare a sum-of-Slaters state.
+    This operation implements the state preparation as introduced by
+    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__, which
+    is tailored to sparse states.
+
+    .. seealso:: :func:`~.compute_sos_encoding` for the required classical coprocessing.
+
+    Args:
+
+    """
+
+    resource_keys = {"D", "num_wires"}
+
+    @property
+    def resource_params(self):
+        D = len(self.data[0])  # assuming the right representation of state
+        return {"D": D, "num_wires": len(self.wires)}
+
+    def __init__(self, indices, coefficients, wires):
+        super().__init__(indices, coefficients, wires)
+
+    @staticmethod
+    def compute_decomposition(indices, coefficients, wires):  # pylint: disable=arguments-differ
+        with AnnotatedQueue() as q:
+            _sos_state_prep(indices=indices, coefficients=coefficients, wires=wires)
+        if QueuingManager.recording():
+            for op in q:
+                qml.apply(op)
+        return q.queue
+
+
+def _sos_state_prep_resources(D, num_wires):
+    d = math.ceil_log2(D)
+    resources = defaultdict(int)
+
+    # Step 1
+    resources[resource_rep(qml.StatePrep, base_params={"num_wires": d})] += 1
+
+    # Step 2
+    qrom_params = {
+        "num_bitstrings": D,
+        "num_control_wires": d,
+        "num_target_wires": num_wires,
+        "num_work_wires": d - 1,
+        "clean": True,
+    }
+    resources[resource_rep(qml.QROM, base_params=qrom_params)] += 1
+
+    ## Step 3 & 4:
+    resources[resource_rep(qml.CNOT)] += (2 * d - 1) * num_wires  # size {u_k} * bits in u_k
+
+    ## Step 5:
+    mcx_params = {
+        "num_control_wires": 2 * d - 1,
+        "num_zero_control_values": 2 * d - 1,
+        "num_work_wires": 2 * d - 1,
+        "work_wire_type": "zeroed",
+    }
+    # We use two MultiControlledX operators per bitstring
+    resources[resource_rep(qml.MultiControlledX, base_params=mcx_params)] += 2 * D
+    # We use up to d CNOTs for any given bitstring, leading to d*D CNOTs naively.
+    # However, as we actually count up from 0 to D, we know that overall we will have to flip each
+    # bit at most half of the time, so that we have an upper bound of d*D/2
+    resources[resource_rep(qml.CNOT)] += d * D // 2
+
+    ## Step 6:
+    resources[resource_rep(qml.CNOT)] += (2 * d - 1) * num_wires  # size {u_k} * bits in u_k
+
+    return resources
+
+
+def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
+    return (x[None] >> np.arange(length - 1, -1, -1)[:, None]) % 2
+
+
+@register_resources(_sos_state_prep_resources, exact=False)
+def _sos_state_prep(*_, indices, coefficients, wires, **__):
+    """Compute the decomposition of the sum-of-Slaters state preparation technique."""
+    # pylint: disable=no-value-for-parameter
+    n = len(wires)
+    v_bits = _int_to_binary(np.array(indices), n)  # Shape (n, D)
+    D = len(coefficients)
+    assert v_bits.shape == (n, D)
+
+    # Preprocessing: Compute u_bits and b_bits via the algorithm described in Lemma 1,
+    # if not passed to instantiation already
+    # if precomputed_bits is None:
+    # if selector_ids has length r, vtilde_bits has shape (r, D)
+    selector_ids, vtilde_bits = select_rows(v_bits)
+    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, D)
+    u_bits, b_bits = compute_sos_encoding(vtilde_bits)  # u_bits has shape
+    # else:
+    # selector_ids, u_bits, b_bits = precomputed_bits
+
+    r = len(selector_ids)
+    d = math.ceil_log2(D)
+    assert u_bits.shape == (2 * d - 1, r)
+    assert b_bits.shape == (2 * d - 1, D)
+    wires_enumeration = allocate(d, state="zero")
+    wires_identification = allocate(2 * d - 1, state="zero")
+    work_wires_qrom = allocate(d - 1, state="zero")
+    work_wires_mcx = allocate(2 * d - 1, state="zero")
+
+    # Step 1: Dense state preparation in enumeration register
+    # Need to add work wires and correct decomposition
+    # qml.MottonenStatePreparation(coefficients, wires=wires_enumeration)
+    qml.StatePrep(coefficients, wires=wires_enumeration, pad_with=0.0)
+
+    # Step 2: QROM to load v_bits into system register
+    qml.QROM(
+        v_bits,
+        control_wires=wires_enumeration,
+        target_wires=wires,
+        work_wires=work_wires_qrom,
+    )
+
+    # Step 3-4): Encode the b_bits from Lemma 1 in the identification register
+    @for_loop(2 * d - 1)
+    def encoding(i, u_bits):
+        u = u_bits[i]
+
+        @for_loop(r)
+        def inner_loop(j, u):
+            qml.cond(u[j], qml.CNOT([wires[selector_ids[j]], wires_identification[i]]))
+            return u
+
+        inner_loop(u)
+
+        return u_bits
+
+    encoding(u_bits)
+
+    # Step 5): Use the identification register to uncompute the enumeration register
+    @for_loop(D)
+    def uncompute_enumeration(k, b_bits):
+        bits = list(map(int, b_bits[:, k]))
+        qml.MultiControlledX(
+            wires=wires_identification + work_wires_mcx[0],
+            control_values=bits,
+            work_wires=work_wires_mcx[1:],
+        )
+
+        @for_loop(d)
+        def inner_loop(j):
+            bit_is_set = (k >> d - j) & 1
+            qml.cond(bit_is_set, qml.CNOT([work_wires_mcx[0], wires_enumeration[j]]))
+
+        inner_loop()
+
+        qml.MultiControlledX(
+            wires=wires_identification + work_wires_mcx[0],
+            control_values=bits,
+            work_wires=work_wires_mcx[1:],
+        )
+        return b_bits
+
+    uncompute_enumeration(b_bits)
+
+    # Step 6): Uncompute the b_i in the identification register
+    encoding(u_bits)
+
+
+add_decomps(SumOfSlatersStatePrep, _sos_state_prep)
