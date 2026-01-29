@@ -69,6 +69,7 @@ class TestIntToBinary:
     @pytest.mark.parametrize(
         "x, n, expected",
         [
+            # One-dimensional inputs
             (np.array([0]), 1, np.array([0])),
             (np.array([0, 1]), 1, np.array([[0], [1]])),
             (np.array([0, 1, 7]), 3, np.array([[0, 0, 0], [0, 0, 1], [1, 1, 1]])),
@@ -77,6 +78,13 @@ class TestIntToBinary:
                 4,
                 np.array([[1, 0, 0, 0], [0, 0, 1, 1], [0, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
             ),
+            # Two-dimensional inputs
+            (
+                np.array([[0, 1, 3], [7, 5, 2]]),
+                3,
+                np.array([[[0, 0, 0], [0, 0, 1], [0, 1, 1]], [[1, 1, 1], [1, 0, 1], [0, 1, 0]]]),
+            ),
+            (np.array([[0, 1, 3]]), 3, np.array([[[0, 0, 0], [0, 0, 1], [0, 1, 1]]])),
         ],
     )
     def test_with_array(self, x, n, expected):
@@ -85,9 +93,9 @@ class TestIntToBinary:
         assert np.allclose((expected @ 2 ** np.arange(n - 1, -1, -1)), x)
         assert _is_binary(expected)
 
-        out = fn.int_to_binary(x, n)
+        out = fn.int_to_binary(x, num_bits=n)
         assert _is_binary(out)
-        assert out.shape == (len(x), n)
+        assert out.shape == (*x.shape, n)
         assert np.allclose(out, expected)
 
 
