@@ -17,6 +17,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
+  of :class:`~.SelectOnlyQRAM` to rapidly estimate its resources.
+  [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
+
 * :class:`~.CSWAP` is now decomposed more cheaply, using ``change_op_basis`` with
   two ``CNOT`` gates and a single ``Toffoli`` gate.
   [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
