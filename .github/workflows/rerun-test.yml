@@ -19,7 +19,6 @@ on:
           - format
           - module-validation
           - package-warning-as-errors
-          - test-numpy1-compat
           - autograd-tests
           - jax-tests
           - torch-tests
@@ -52,7 +51,7 @@ jobs:
           echo "workflow=${{ inputs.workflow }}"
 
       - name: Set skip tests list
-        if: inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' || inputs.workflow != 'test-numpy1-compat'
+        if: inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' 
         id: set-skip-tests
         run: |
           ALL_TESTS='torch-tests,gradients-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
@@ -109,16 +108,6 @@ jobs:
       matrix:
         run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
     uses: ./.github/workflows/package_warnings_as_errors.yml
-
-  test_numpy1_compat:
-    name: Run test-numpy1-compat
-    needs: prepare-run-count
-    if: inputs.workflow == 'test-numpy1-compat' 
-    strategy:
-      max-parallel: 5
-      matrix:
-        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
-    uses: ./.github/workflows/test_numpy_1_compat.yml
 
   interface-unit-tests:
     name: Run interface-unit-tests
