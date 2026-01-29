@@ -201,8 +201,12 @@ def _find_single_w(bits, r):
 
 
 def _find_w(bits_basis, other_bits, t):
+    """Compute the kernel space W from the original bit strings, including a basis for their
+    column space. See the documentation of ``compute_sos_encoding`` for details.
+    """
     r = bits_basis.shape[0]
     if t == 1:
+        # Step 3: brute-force search of a single vector w_1
         all_bits = np.concatenate([bits_basis, other_bits], axis=1)
         # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
         diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T
@@ -224,26 +228,30 @@ def _find_w(bits_basis, other_bits, t):
     v_r = bits_basis[:, -1]
     bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
 
+    # Step 4: Split the set of bitstrings into three sets:
+    #  - set_M <> \mathcal{M}
+    #  - v_r <> \{v_l\}
+    #  - set_N <> \mathcal{N}
     indep_of_reduced_basis = np.array(
         [binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
     )
 
     # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
     set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
-
     set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
 
+    # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
     ell = _find_ell(set_M, set_N, bits_basis)
 
+    # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of bits_basis[:, :-1]
+    #         and call _find_w recursively on the sub_bits to compute sub_W <> \mathcal{W}'
     w_t = (v_r + ell) % 2
-
     _set_N = (set_N + w_t[:, None]) % 2
+    sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
+    sub_W = _find_w(bits_basis[:, :-1], sub_bits[:, bits_basis.shape[1] - 1 :], t - 1)
 
-    prev_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
-
-    W_prev = _find_w(bits_basis[:, :-1], prev_bits[:, bits_basis.shape[1] - 1 :], t - 1)
-
-    W = np.concatenate([W_prev, w_t[:, None]], axis=1)
+    # Step 8: Append the replacement vector w_t to sub_W
+    W = np.concatenate([sub_W, w_t[:, None]], axis=1)
     return W
 
 
@@ -335,7 +343,7 @@ def compute_sos_encoding(bits):
         To see that this actually ensures :math:`U` to have the properties we are after, assume that :math:`U v_i=0`
         for some :math:`i` with :math:`v_i\neq 0` (or :math:`U(v_i-v_j)` for some :math:`(i,j)`). Due to :math:`\ker U=\mathcal{W}`,
         this would imply :math:`v_i\in\mathcal{W}` (or :math:`v_i-v_j\in\mathcal{W}`), which is false by
-        construction of the vectors :math:`\{w_k\}`, in particular due to Eq.(2)
+        construction of the vectors :math:`\{w_k\}`, in particular due to Eq. (2)
 
         The main work thus is to show that we can actually construct these vectors
         :math:`\{w_k\}` with the required properties. The construction of the map :math:`U` itself will then be a simple linear algebraic task.
@@ -353,51 +361,62 @@ def compute_sos_encoding(bits):
         If :math:`t>1`, we recursively construct the :math:`\{w_k\}`.
         We proceed in the following steps, thinking of ordered sets whenever we speak of sets.
 
-        1.  First, we select :math:`r` of the input vectors :math:`\mathcal{V}=\{v_i\}` that are linearly independent (and thus
-            form a--likely not orthonormal--basis
-            of :math:`\mathbb{Z}_2^r`). We relabel the vectors so that this selection of vectors has
-            the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
-            This is implemented in ``qml.math.binary_select_basis``, which returns the
-            basis and the remaining columns separately.
-        2.  If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use recursion), go
-            to step 2a. Else go to step 2b.
-        2a. Brute-force search a linear combination :math:`w_1` of the basis vectors :math:`\mathcal{B}` that is not
-            contained in the set :math:`\mathcal{V}\cup(\mathcal{V}-\mathcal{V})\cup \{0\}`, where the set
-            difference is meant pairwise between elements. Return :math:`\{w_1\}`.
-        2b. We split :math:`\mathcal{V}` into three sets: First, :math:`\mathcal{M}` contains all vectors that lie
-            in the span :math:`\mathcal{K}` of all but the last basis vector, which we denote as :math:`v_l`. The second set is simply :math:`\{v_l\}`.
-            Third, :math:`\mathcal{N}` contains all vectors that require both :math:`v_l` and a linear combination of the
-            other basis vectors. We maintain the relative ordering within each set, so that the first
-            vectors in :math:`\mathcal{M}` correspond to the basis vectors (except for :math:`v_l` which is
-            not in :math:`\mathcal{M}` by definition).
-        3.  Map each vector in :math:`\mathcal{N}` to the space :math:`\mathcal{K}` by
-            adding :math:`v_l`, and call the resulting set :math:`\mathcal{N}'`.
-        4.  Brute-force search a bitstring :math:`\ell` that is not contained in the set
-            :math:`\mathcal{L}=\mathcal{M}\cup\mathcal{N}'\cup(\mathcal{M}+\mathcal{N})\cup\{0\}`,
-            where addition of sets denotes pairwise addition of elements.
-            :math:`\ell` is guaranteed to exist.
-        5.  Form a new set of vectors :math:`\mathcal{V}'=\mathcal{M}\cup(\mathcal{N}'+\ell)\cup\{\ell\}`, while preserving ordering.
-            Split off the first vectors :math:`\mathcal{B}'` that correspond to the original basis vectors
-            (except for :math:`v_l`) off this set. Set :math:`\mathcal{B}\gets\mathcal{B}'`,
-            :math:`\mathcal{V}\gets\mathcal{V}'` and :math:`t\gets t'=t-1`, and go to step 2 to compute a
-            set of :math:`t'` vectors :math:`\mathcal{W}'` that satisfy the desired properties.
-        6.  Append :math:`w_t=\ell+v_l` to :math:`\mathcal{W}'` to obtain :math:`\mathcal{W}` and return :math:`\mathcal{W}`.
+        1. First, we select :math:`r` of the input vectors :math:`\mathcal{V}=\{v_i\}` that are linearly independent (and thus
+           form a--likely not orthonormal--basis
+           of :math:`\mathbb{Z}_2^r`). We relabel the vectors so that this selection of vectors has
+           the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
+           This is implemented in ``qml.math.binary_select_basis``, which returns the
+           basis and the remaining columns separately.
+        2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use recursion), go
+           to step 3. Else go to step 4.
+        3. Brute-force search a linear combination :math:`w_1` of the basis vectors :math:`\mathcal{B}` that is not
+           contained in the set :math:`\mathcal{V}\cup(\mathcal{V}-\mathcal{V})\cup \{0\}`, where the set
+           difference is meant pairwise between elements. Return :math:`\{w_1\}`.
+        4. We split :math:`\mathcal{V}` into three sets: First, :math:`\mathcal{M}` contains all vectors that lie
+           in the span :math:`\mathcal{K}` of all but the last basis vector, which we denote as :math:`v_l`. The second set is simply :math:`\{v_l\}`.
+           Third, :math:`\mathcal{N}` contains all vectors that require both :math:`v_l` and a linear combination of the
+           other basis vectors. We maintain the relative ordering within each set, so that the first
+           vectors in :math:`\mathcal{M}` correspond to the basis vectors (except for :math:`v_l` which is
+           not in :math:`\mathcal{M}` by definition).
+        5. Map each vector in :math:`\mathcal{N}` to the space :math:`\mathcal{K}` by
+           adding :math:`v_l`, and call the resulting set :math:`\mathcal{N}'`.
+        6. Brute-force search a bitstring :math:`\ell` that is not contained in the set
+           :math:`\mathcal{L}=\mathcal{M}\cup\mathcal{N}'\cup(\mathcal{M}+\mathcal{N})\cup\{0\}`,
+           where addition of sets denotes pairwise addition of elements.
+           :math:`\ell` is guaranteed to exist.
+        7. Form a new set of vectors :math:`\mathcal{V}'=\mathcal{M}\cup(\mathcal{N}'+\ell)\cup\{\ell\}`, while preserving ordering.
+           Split off the first vectors :math:`\mathcal{B}'` that correspond to the original basis vectors
+           (except for :math:`v_l`) off this set. Set :math:`\mathcal{B}\gets\mathcal{B}'`,
+           :math:`\mathcal{V}\gets\mathcal{V}'` and :math:`t\gets t'=t-1`, and go to step 2 to compute a
+           set of :math:`t'` vectors :math:`\mathcal{W}'` that satisfy the desired properties.
+        8. Append :math:`w_t=\ell+v_l` to :math:`\mathcal{W}'` to obtain :math:`\mathcal{W}` and return :math:`\mathcal{W}`.
 
+        This procedure will produce the desired linearly independent vectors :math:`\{w_k\}`.
+        Computing the matrix :math:`U` such that the vectors are in its kernel is rather simple
+        then. This is because the problem is self-dual, i.e., we actually need to find vectors
+        in the kernel of :math:`W^T`, and will construct :math:`U` from the kernel vectors as rows.
     """
     r, D = bits.shape
     d = ceil_log2(D)
     m = 2 * d - 1
     if r <= m:
+        # Case 1: We can use the identity mapping
         U = np.eye(r, dtype=int)
         return U, bits
 
+    # Case 2 splits into two scenarios: t=1 (simple scenario) or t>1 (more involved, see _find_w)
     if r == m + 1:
-        # Particularly simple brute force solution
+        # Particularly simple brute force solution for a single vector w
         W = _find_single_w(bits, r)
     else:
+        # Step 1: Construct a basis for the input bits
         bits_basis, other_bits = binary_select_basis(bits)
+        # Construct the kernel space W, in terms of linearly independent vectors
         W = _find_w(bits_basis, other_bits, t=r - m)
 
+    # Construct the matrix U from the designed kernel W
     U = _find_U_from_W(W)
+
+    # Compute the encoding bit strings b.
     b = (U @ bits) % 2
     return U, b
