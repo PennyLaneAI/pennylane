@@ -276,14 +276,17 @@ class TestDecompositionRule:
 
             qml.add_decomps(CustomOp, custom_decomp)
             qml.add_decomps(CustomOp, custom_decomp2, custom_decomp3)
+            qml.add_decomps(qml.CRX, custom_decomp)
 
             assert qml.decomposition.has_decomp(CustomOp)
             assert qml.decomposition.has_decomp(CustomOp(wires=[0, 1]))
             assert qml.list_decomps(CustomOp) == [custom_decomp, custom_decomp2, custom_decomp3]
+            assert custom_decomp in qml.list_decomps(qml.CRX)
 
         # test that the context properly cleans up.
         assert qml.list_decomps(CustomOp) == []
         assert not qml.decomposition.has_decomp(CustomOp)
+        assert custom_decomp not in qml.list_decomps(qml.CRX)
 
     def test_custom_symbolic_decomposition(self):
         """Tests that custom decomposition rules for symbolic operators can be registered."""
