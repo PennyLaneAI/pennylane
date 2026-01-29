@@ -20,9 +20,10 @@ from functools import partial
 import numpy as np
 
 from pennylane import math
+from pennylane.decomposition import gate_sets
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import decompose
 from pennylane.transforms.core import transform
-from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
 
 from .finite_difference import _processing_fn, finite_diff_coeffs
@@ -61,6 +62,10 @@ def _rademacher_sampler(indices, num_params, *args, rng):
     return direction
 
 
+def _stop_at_expand_invalid_trainable(obj):
+    return not any(math.requires_grad(d) for d in obj.data) or obj.grad_method is not None
+
+
 # pylint: disable=too-many-positional-arguments
 def _expand_transform_spsa(
     tape: QuantumScript,
@@ -76,7 +81,11 @@ def _expand_transform_spsa(
     sampler_rng=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
-    expanded_tape = expand_invalid_trainable(tape)
+    [expanded_tape], _ = decompose(
+        tape,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        stopping_condition=_stop_at_expand_invalid_trainable,
+    )
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
