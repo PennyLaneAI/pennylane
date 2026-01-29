@@ -149,6 +149,7 @@
 
 * Deprecate `id` argument to `qml.Operator`. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+  [(#8974)](https://github.com/PennyLaneAI/pennylane/pull/8974)
   
 * :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar` 
   have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` 
