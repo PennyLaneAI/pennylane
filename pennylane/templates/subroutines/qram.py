@@ -107,7 +107,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     Args:
             The classical data as a sequence of bitstrings. The size of the classical data must be
-        data (TensorLike):
+        data (TensorLike | Sequence[str]):
             The classical data as a 2-D array.  The shape must be ``(num_data, size_data)``, where ``num_data`` is
             :math:`2^{\texttt{len(control_wires)}}` and ``size_data = len(target_wires)``.
         control_wires (WiresLike):
@@ -276,7 +276,7 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     """
     Calculates the resources, assuming the worst case where data is all ones.
     """
-    n_k = int(math.log2(2**num_controls))
+    n_k = num_controls
     resources = defaultdict(int)
     resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
     resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
@@ -848,7 +848,7 @@ class SelectOnlyQRAM(Operation):
         \text{SelectOnlyQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle.
 
     Args:
-        data (TensorLike):
+        data (TensorLike | Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
