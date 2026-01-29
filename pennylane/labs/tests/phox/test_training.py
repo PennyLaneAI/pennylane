@@ -1,6 +1,8 @@
 import pytest
 import jax.numpy as jnp
+import numpy as np
 from pennylane.labs.phox.training import train, TrainingOptions
+from pennylane.labs.phox.simulator_pure_functions import iqp_expval
 
 
 @pytest.fixture
@@ -38,11 +40,8 @@ def test_optimization_success(quadratic_problem):
         options=TrainingOptions(unroll_steps=10, random_state=42),
     )
 
-    # Check if final loss is near zero
     final_loss = result.losses[-1]
     assert final_loss < 1e-3, f"Optimizer failed to converge, final loss: {final_loss}"
-
-    # Check if params are near target (0.0)
     assert jnp.allclose(result.final_params, target, atol=1e-1)
 
 
@@ -54,10 +53,7 @@ def test_determinism(quadratic_problem):
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=5, random_state=123)
 
-    # Run 1
     res1 = train("GradientDescent", loss_fn, 0.01, 50, loss_kwargs.copy(), opts)
-
-    # Run 2
     res2 = train("GradientDescent", loss_fn, 0.01, 50, loss_kwargs.copy(), opts)
 
     assert jnp.array_equal(res1.final_params, res2.final_params)
@@ -73,15 +69,12 @@ def test_unroll_consistency(quadratic_problem):
     loss_fn, _, _, loss_kwargs = quadratic_problem
     seed = 999
 
-    # Mode A: Slow (Python loop every step)
     opts_slow = TrainingOptions(unroll_steps=1, random_state=seed)
     res_slow = train("GradientDescent", loss_fn, 0.01, 20, loss_kwargs.copy(), opts_slow)
 
-    # Mode B: Fast (JAX scan loop)
     opts_fast = TrainingOptions(unroll_steps=5, random_state=seed)
     res_fast = train("GradientDescent", loss_fn, 0.01, 20, loss_kwargs.copy(), opts_fast)
 
-    # JAX optimizations can cause microscopic float variations, so we use allclose
     assert jnp.allclose(res_slow.final_params, res_fast.final_params, atol=1e-6)
     assert jnp.allclose(res_slow.losses, res_fast.losses, atol=1e-6)
 
@@ -93,11 +86,9 @@ def test_convergence_early_stopping(quadratic_problem):
     """
     loss_fn, params_init, target, _ = quadratic_problem
 
-    # Start very close to target so it converges instantly
     params_near = jnp.array([0.01, 0.01])
     loss_kwargs = {"params": params_near, "target": target}
 
-    # Request 1000 iterations, but check convergence every 10 steps
     opts = TrainingOptions(convergence_interval=10, unroll_steps=10)
 
     result = train("GradientDescent", loss_fn, 0.001, 1000, loss_kwargs, opts)
@@ -114,19 +105,14 @@ def test_validation_handling(quadratic_problem):
     """
     loss_fn, params_init, target, _ = quadratic_problem
 
-    # Train on Target 0
     loss_kwargs = {"params": params_init, "target": target}
 
-    # Validate on Target 10 (Different data!)
-    # Loss should remain high for validation as we optimize for 0
     val_kwargs = {"target": jnp.array([10.0, 10.0])}
 
     opts = TrainingOptions(val_kwargs=val_kwargs, unroll_steps=1)
     result = train("Adam", loss_fn, 0.1, 10, loss_kwargs, opts)
 
     assert len(result.val_losses) == 10
-    # Training loss should go down (approaching 0)
-    # Validation loss should correspond to distance from 10
     assert result.losses[-1] < result.losses[0]
     assert not jnp.allclose(result.losses, result.val_losses)
 
@@ -138,17 +124,14 @@ def test_loss_signature_variations():
     """
     params = jnp.array([1.0])
 
-    # Case A: Function expects 'key'
     def loss_with_key(params, key):
         return jnp.sum(params**2)
 
-    # Case B: Function does NOT expect 'key'
     def loss_no_key(params):
         return jnp.sum(params**2)
 
     opts = TrainingOptions(unroll_steps=1)
 
-    # Should not raise TypeError
     train("GradientDescent", loss_with_key, 0.1, 5, {"params": params}, opts)
     train("GradientDescent", loss_no_key, 0.1, 5, {"params": params}, opts)
 
@@ -174,7 +157,57 @@ def test_history_logging_manual(quadratic_problem):
             break
         history.append(batch_result.params)
 
-    # We ran 5 batches. History should have length 5.
     assert len(history) == 5
-    # Each entry should be a jax array of params
     assert history[0].shape == (2,)
+
+
+def test_iqp_optimization():
+    """
+    Test 6: Integration Test.
+    Test full loop with actual IQP simulation as loss function.
+    Objective: Minimize sum of Z expectation values.
+    """
+    n_qubits = 2
+    n_samples = 100
+
+    gates = {
+        0: [[0]],
+        1: [[1]]
+    }
+
+    params_init = jnp.array([0.1, 0.1])
+
+    ops = np.array([
+        ["Z", "I"],
+        ["I", "Z"]
+    ])
+
+    def loss_fn(params, key):
+        expvals, _ = iqp_expval(
+            gates=gates,
+            params=params,
+            ops=ops,
+            n_samples=n_samples,
+            n_qubits=n_qubits,
+            key=key
+        )
+        return jnp.sum(expvals)
+
+    loss_kwargs = {"params": params_init}
+
+    options = TrainingOptions(unroll_steps=10, random_state=42)
+
+    result = train(
+        optimizer="Adam",
+        loss=loss_fn,
+        stepsize=0.1,
+        n_iters=50,
+        loss_kwargs=loss_kwargs,
+        options=options
+    )
+
+    init_loss = result.losses[0]
+    final_loss = result.losses[-1]
+
+    # Optimizer should have moved parameters to reduce loss
+    assert final_loss < init_loss

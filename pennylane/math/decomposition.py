@@ -683,7 +683,7 @@ def givens_decomposition(unitary):
     """
     interface = math.get_deep_interface(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
-    is_real = not "complex" in math.get_dtype_name(unitary)
+    is_real = "complex" not in math.get_dtype_name(unitary)
 
     shape = math.shape(unitary_mat)
 

@@ -2,11 +2,23 @@
 
 <h3>New features since last release</h3>
 
+* Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
+  logarithm of its input and casts the result to an ``int``. It is equivalent to 
+  ``int(np.ceil(np.log2(n)))``.
+  [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
+
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
 
+* Added a `qml.decomposition.local_decomps` context
+  manager that allows one to add decomposition rules to an operator, only taking effect within the context.
+  [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
+
 <h3>Improvements 🛠</h3>
+
+* `qml.vjp` can now be captured into plxpr.
+  [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
@@ -17,6 +29,9 @@
 * A function for setting up transform inputs, including setting default values and basic validation,
   can now be provided to `qml.transform` via `setup_inputs`.
   [(#8732)](https://github.com/PennyLaneAI/pennylane/pull/8732)
+
+* Circuits containing `GlobalPhase` are now trainable without removing the `GlobalPhase`.
+  [(#8950)](https://github.com/PennyLaneAI/pennylane/pull/8950)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -33,6 +48,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
+  [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
+  [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
+  
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
   [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
@@ -128,7 +147,45 @@
 
 <h3>Deprecations 👋</h3>
 
+* :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar` 
+  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` 
+  function for decomposing circuits.
+  [(#8943)](https://github.com/PennyLaneAI/pennylane/pull/8943)
+
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` in reversed or standard mode has been
+  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
+
+* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
+  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
+
+* Providing a value of ``None`` to ``aux_wire`` of ``qml.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
+  [(#8905)](https://github.com/PennyLaneAI/pennylane/pull/8905)
+
+* The ``qml.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
+  Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
+  [(#8977)](https://github.com/PennyLaneAI/pennylane/pull/8977)
+
+* The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
+  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+  [(#8906)](https://github.com/PennyLaneAI/pennylane/pull/8906)
+  [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
+
 <h3>Internal changes ⚙️</h3>
+
+* Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
+  [(#xxxx)](https://github.com/PennyLaneAI/pennylane/pull/xxxx)
+
+* Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
+  Bumped `rng_salt` to `v0.45.0`.
+  [(#8959)](https://github.com/PennyLaneAI/pennylane/pull/8959)
+  [(#8958)](https://github.com/PennyLaneAI/pennylane/pull/8958)
+  [(#8938)](https://github.com/PennyLaneAI/pennylane/pull/8938)
+  [(#8908)](https://github.com/PennyLaneAI/pennylane/pull/8908)
+  [(#8963)](https://github.com/PennyLaneAI/pennylane/pull/8963)
 
 * Updated test helper `get_device` to correctly seed lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
@@ -143,9 +200,20 @@
   they are compatible with the new graph-based decomposition system.
   [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
 
+* Added a `qml.decomposition.toggle_graph_ctx` context manager to temporarily enable or disable graph-based
+  decompositions in a thread-safe way. The fixtures `"enable_graph_decomposition"`, `"disable_graph_decomposition"`,
+  and `"enable_and_disable_graph_decomp"` have been updated to use this method so that they are thread-safe.
+  [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
+  [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
+
+* Improves the error messages when the inputs and outputs to a `qml.for_loop` function do not match.
+  [(#8984)](https://github.com/PennyLaneAI/pennylane/pull/8984)
 
 * Fixes a bug that `qml.QubitDensityMatrix` was applied in `default.mixed` device using `qml.math.partial_trace` incorrectly.
   This would cause wrong results as described in [this issue](https://github.com/PennyLaneAI/pennylane/pull/8932).
@@ -155,6 +223,13 @@
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
+* Fixes a bug with `qml.estimator.templates.QSVT` which allows users to instantiate the class without
+  providing wires. This is now consistent with the standard in the estimator module.
+  [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
+
+* Fixes a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
+  [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -162,6 +237,7 @@ This release contains contributions from (in alphabetical order):
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
+Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,

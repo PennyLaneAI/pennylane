@@ -20,7 +20,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.transforms import decompose
 
 # pylint: disable=expression-not-assigned
 
@@ -356,7 +358,8 @@ class TestHilbertSchmidt:
         with qml.tape.QuantumTape() as tape:
             qml.HilbertSchmidt(V, U)
 
-        for idx, val in enumerate(tape.expand().operations):
+        [tape], _ = decompose(tape, gate_set=gate_sets.ALL_QUBIT_OPS)
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.wires == results[idx].wires
             assert qml.math.allclose(val.parameters, results[idx].parameters)
