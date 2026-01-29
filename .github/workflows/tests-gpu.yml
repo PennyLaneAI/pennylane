@@ -101,11 +101,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools>=75.8.1
-          pip install --group dev --group ci --upgrade
+          uv sync --group dev --group ci --upgrade
 
       - name: Install Torch
         run: |
-          uv pip install --no-cache-dir torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu118/torch_stable.html
+          uv sync --no-cache-dir torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu118/torch_stable.html
 
       - name: Install PennyLane
         run: |

@@ -51,24 +51,23 @@ jobs:
           enable-cache: true  
       - name: Install pip and setuptools
         run: |
-          python -m pip install --upgrade pip
           uv pip install --upgrade setuptools
 
       - name: Install Catalyst and Lightning (dev)
         run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
+          uv pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
 
       - name: Install dependencies of Catalyst and Lightning
         run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+          uv pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
 
       - name: Install PennyLane (editable)
         run: |
-          pip install -e .
+          uv sync
 
       - name: Install external packages
         run: |
-          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
+          uv pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
 
       - name: Print Dependencies
         run: |

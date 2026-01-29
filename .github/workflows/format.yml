@@ -46,7 +46,7 @@ jobs:
           enable-cache: true        
         
       - name: Install Python dependencies
-        run: pip install --group dev
+        run: uv sync --group dev
 
       - name: Run Black
         run: |
