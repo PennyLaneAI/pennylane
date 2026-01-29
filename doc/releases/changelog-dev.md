@@ -33,6 +33,13 @@
 * Circuits containing `GlobalPhase` are now trainable without removing the `GlobalPhase`.
   [(#8950)](https://github.com/PennyLaneAI/pennylane/pull/8950)
 
+* The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
+  decomposition system enabled.
+  [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+
+* The `to_zx` transform is now compatible with the new graph-based decomposition system.
+  [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
