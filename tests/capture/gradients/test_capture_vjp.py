@@ -56,13 +56,13 @@ class TestErrors:
     def test_error_on_wrong_number_of_cotangents(self, cotangents):
         """Test an error is raised on the wrong number of cotangents."""
 
-        def f(x, y):
-            return 2 * x, 3 * y
+        def f(x):
+            return 2 * x, 3 * x
 
         with pytest.raises(
             ValueError, match=r"length of cotangents must match the number of outputs"
         ):
-            qml.vjp(f, (0.5, 1.2), cotangents)
+            qml.vjp(f, (0.5,), cotangents)
 
     def test_error_on_wrong_cotangent_dtype(self):
         """Test an error is raised on the wrong cotangent dtype."""
@@ -71,15 +71,7 @@ class TestErrors:
             return 2 * x
 
         with pytest.raises(TypeError, match="dtypes must be equal."):
-            qml.vjp(
-                f,
-                (
-                    jnp.array(
-                        0.5,
-                    ),
-                ),
-                (jnp.array(1)),
-            )
+            qml.vjp(f, (jnp.array(0.5),), jnp.array(1))
 
     def test_error_on_wrong_cotangent_shape(self):
         """Test an error is raised on the wrong cotangent shape."""
@@ -103,7 +95,7 @@ class TestCapturingVJP:
             return jnp.array([2, 1]) * x
 
         def w(x):
-            return qml.vjp(f, (x,), (jnp.array([1.0, 1.0]),))
+            return qml.vjp(f, (x,), jnp.array([1.0, 1.0]))
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -129,7 +121,7 @@ class TestCapturingVJP:
         y = [2.0, 3.0]
 
         def w(x, y, argnums):
-            return qml.vjp(f, (x, y), (-1.0,), argnums=argnums)
+            return qml.vjp(f, (x, y), -1.0, argnums=argnums)
 
         for argnums in (0, 1):
 
@@ -137,7 +129,7 @@ class TestCapturingVJP:
             vjp_eqn = jaxpr.eqns[0]
             assert vjp_eqn.primitive == vjp_prim
             assert vjp_eqn.params["argnums"] == (2 * argnums, 2 * argnums + 1)
-            assert len(vjp_eqn.outvars) == 3  # one result, two vars
+            assert len(vjp_eqn.outvars) == 3  # one result, two dparams
 
     def test_setting_h(self):
         """Test that an h can be set and captured."""
@@ -146,7 +138,7 @@ class TestCapturingVJP:
             return 2 * x
 
         def w(x):
-            return qml.vjp(f, (x,), (1.0,), h=1e-4)
+            return qml.vjp(f, (x,), 1.0, h=1e-4)
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -162,7 +154,7 @@ class TestCapturingVJP:
             return 2 * x
 
         def w(x):
-            return qml.vjp(f, (x,), (1.0,), method="fd")
+            return qml.vjp(f, (x,), 1.0, method="fd")
 
         jaxpr = jax.make_jaxpr(w)(0.5)
 
@@ -170,6 +162,58 @@ class TestCapturingVJP:
 
         assert jaxpr_eqn.params["method"] == "fd"
         assert jaxpr_eqn.params["h"] == 1e-6
+
+    def test_multiple_outputs(self):
+        """Test capturing the vjp of a function with multiple outputs."""
+
+        def f(x):
+            y = jnp.stack([x, x])
+            z = jnp.stack([y, y])
+            return y**2, z**3
+
+        def w(x, dy1, dy2):
+            return qml.vjp(f, (x,), (dy1, dy2))
+
+        x = jnp.array(0.5)
+        dy1 = jnp.array([2.0, 3.0])
+        dy2 = jnp.array([[3.0, 4.0], [5.0, 6.0]])
+        jaxpr = jax.make_jaxpr(w)(x, dy1, dy2).jaxpr
+        vjp_eqn = jaxpr.eqns[0]
+
+        assert len(vjp_eqn.invars) == 3
+        assert vjp_eqn.invars[0].aval.shape == ()  # input
+        assert vjp_eqn.invars[1].aval.shape == (2,)  # dy1
+        assert vjp_eqn.invars[2].aval.shape == (2, 2)  # dy2
+
+        assert len(vjp_eqn.outvars) == 3
+        assert vjp_eqn.outvars[0].aval.shape == (2,)  # y1
+        assert vjp_eqn.outvars[1].aval.shape == (2, 2)  # y2
+        assert vjp_eqn.outvars[2].aval.shape == ()  # dx
+
+    def test_sequence_argnums(self):
+        """Test that multiple argnums can be provided in a sequence."""
+
+        def f(x, y, z):
+            return jnp.sum(x) + jnp.sum(y) + jnp.sum(z)
+
+        def w(x, y, z, dy):
+            return qml.vjp(f, (x, y, z), dy, argnums=[0, 2])
+
+        x = jnp.arange(2, dtype=float)
+        y = jnp.arange(3, dtype=float)
+        z = jnp.arange(4, dtype=float)
+        dy = jnp.array(2.0)
+        jaxpr = jax.make_jaxpr(w)(x, y, z, dy)
+        vjp_eqn = jaxpr.eqns[0]
+
+        assert vjp_eqn.params["argnums"] == (0, 2)
+
+        assert len(vjp_eqn.invars) == 4  # three inputs, one dy
+        assert len(vjp_eqn.outvars) == 3  # one result, two dx
+
+        assert vjp_eqn.outvars[0].aval.shape == ()  # result
+        assert vjp_eqn.outvars[1].aval.shape == (2,)  # dx
+        assert vjp_eqn.outvars[2].aval.shape == (4,)  # dz
 
 
 def test_pytrees_in_and_out():
@@ -186,7 +230,29 @@ def test_pytrees_in_and_out():
     assert isinstance(results, dict)
     assert jnp.allclose(results["result"], 0.5 * 2 + 3.0 * 1.2)
 
+    assert isinstance(dparams, dict)
+    assert jnp.allclose(dparams["a"], -y[0])
+    assert jnp.allclose(dparams["b"], -y[1])
+
+
+def test_argnum_int_squeeze():
+    """Test that if argnum is an int, dparams looses a singleton dimension"""
+
+    def f(x):
+        return 2 * x
+
+    def w(x, argnums):
+        return qml.vjp(f, (x,), (1.0,), argnums=argnums)
+
+    # as int
+    results, dparams = w(0.5, 0)
+    assert qml.math.allclose(results, 1.0)
+    assert isinstance(dparams, jax.numpy.ndarray)
+    assert qml.math.allclose(dparams, 2)
+
+    # as array
+    results, dparams = w(0.5, [0])
+    assert qml.math.allclose(results, 1.0)
     assert isinstance(dparams, tuple)
-    assert len(dparams) == 1
-    assert jnp.allclose(dparams[0]["a"], -y[0])
-    assert jnp.allclose(dparams[0]["b"], -y[1])
+    assert isinstance(dparams[0], jax.numpy.ndarray)
+    assert qml.math.allclose(dparams[0], 2)

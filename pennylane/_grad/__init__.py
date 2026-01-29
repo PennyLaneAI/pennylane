@@ -20,3 +20,5 @@ from .grad import grad, jacobian
 from .jvp import jvp
 from .vjp import vjp
 from .value_and_grad import value_and_grad
+
+__all__ = ["grad", "jacobian", "jvp", "vjp", "value_and_grad"]

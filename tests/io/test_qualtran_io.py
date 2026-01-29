@@ -75,7 +75,7 @@ class TestFromBloq:
 
         from qualtran.bloqs.basic_gates import XGate
 
-        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(XGate, wires=Wires([1]))"
+        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(X, wires=Wires([1]))"
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.FromBloq("123", 1)
 
@@ -1339,10 +1339,10 @@ class TestToBloqEstimator:
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    (qml.X([0]), True): 4,
-                    (qml.CNOT([0, 1]), True): 34,
+                    (qml.X([0]), True): 7,
+                    (qml.CNOT([0, 1]), True): 32,
                     (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 30,
+                    (qml.H(0), True): 40,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },
@@ -1392,10 +1392,10 @@ class TestToBloqEstimator:
             (
                 qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
-                    (qml.X(0), True): 14,
+                    (qml.X(0), True): 19,
                     (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 68,
-                    (qml.Hadamard(0), True): 54,
+                    (qml.CNOT([0, 1]), True): 62,
+                    (qml.Hadamard(0), True): 69,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },
@@ -1409,10 +1409,11 @@ class TestToBloqEstimator:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 8997,
-                    (qml.CNOT([0, 1]), True): 7398,
-                    (qml.Hadamard(0), True): 9756,
-                    (qml.T(0), True): 316800,
+                    (qml.Toffoli([0, 1, 2]), True): 2865,
+                    (qml.CNOT([0, 1]), True): 5232,
+                    (qml.Hadamard(0), True): 2316,
+                    (qml.T(0), True): 268224,
+                    (qml.X(0), True): 42,
                 },
             ),
             (
@@ -1424,10 +1425,10 @@ class TestToBloqEstimator:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.Toffoli([0, 1, 2]), True): 805,
-                    (qml.CNOT([0, 1]), True): 938,
-                    (qml.Hadamard(0), True): 168,
-                    (qml.T(0), True): 57288,
+                    (qml.Toffoli([0, 1, 2]), True): 609,
+                    (qml.CNOT([0, 1]), True): 882,
+                    (qml.Hadamard(0), True): 84,
+                    (qml.T(0), True): 49896,
                 },
             ),
             (
@@ -1534,10 +1535,10 @@ class TestToBloqEstimator:
                     np.sqrt(np.array([0.5, 0.0, 0.25, 0.25])), [4, 5], [1, 2, 3], [0]
                 ),
                 {
-                    (qml.X([0]), True): 4,
-                    (qml.CNOT([0, 1]), True): 34,
+                    (qml.X([0]), True): 7,
+                    (qml.CNOT([0, 1]), True): 32,
                     (qml.Toffoli([0, 1, 2]), True): 8,
-                    (qml.H(0), True): 30,
+                    (qml.H(0), True): 40,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },
@@ -1545,10 +1546,10 @@ class TestToBloqEstimator:
             (
                 qml.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
-                    (qml.X(0), True): 14,
+                    (qml.X(0), True): 19,
                     (qml.Toffoli([0, 1, 2]), True): 16,
-                    (qml.CNOT([0, 1]), True): 68,
-                    (qml.Hadamard(0), True): 54,
+                    (qml.CNOT([0, 1]), True): 62,
+                    (qml.Hadamard(0), True): 69,
                     (qml.S(0), True): 6,
                     (qml.Z(0), True): 3,
                 },

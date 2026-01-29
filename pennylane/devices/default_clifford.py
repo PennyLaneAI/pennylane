@@ -481,7 +481,10 @@ class DefaultClifford(Device):
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
             compile_pileline.add_transform(
-                decompose, stopping_condition=operation_stopping_condition, name=self.name
+                decompose,
+                target_gates=set(_OPERATIONS_MAP.keys()),
+                stopping_condition=operation_stopping_condition,
+                name=self.name,
             )
             compile_pileline.add_transform(_validate_channels, name=self.name)
         compile_pileline.add_transform(
@@ -588,7 +591,7 @@ class DefaultClifford(Device):
                     self._apply_snapshot(circuit, stim_circuit, op, global_phase_ops, debugger)
 
         tableau_simulator.do_circuit(stim_circuit)
-        global_phase = ops.GlobalPhase(math.sum(op.data[0] for op in global_phase_ops))
+        global_phase = ops.GlobalPhase(sum(op.data[0] for op in global_phase_ops))
 
         # Perform measurements based on whether shots are provided
         if circuit.shots:
@@ -648,7 +651,7 @@ class DefaultClifford(Device):
             if self.wires is not None:
                 snap_sim.set_num_qubits(len(self.wires))
             snap_sim.do_circuit(stim_circuit)
-            global_phase = ops.GlobalPhase(math.sum(op.data[0] for op in global_phase_ops))
+            global_phase = ops.GlobalPhase(sum(op.data[0] for op in global_phase_ops))
 
             snap_result = measurement_func(
                 meas,

@@ -738,8 +738,29 @@ class TestHigherOrderPrimitiveRegistrations:
         jaxpr = jax.make_jaxpr(f)(0.5)
 
         assert jaxpr.eqns[0].primitive == qml.capture.primitives.vjp_prim
-        grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
-        qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        vjp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        qfunc_jaxpr = vjp_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
+        assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
+
+    def test_jvp(self):
+        """Test interpreters can handle the jvp primitive.."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                _ = qml.RX(y, 0) ** 2
+                return qml.expval(qml.Z(0) + qml.Z(0))
+
+            return qml.jvp(circuit, (x,), (1.0,))
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+
+        assert jaxpr.eqns[0].primitive == qml.capture.primitives.jvp_prim
+        jvp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        qfunc_jaxpr = jvp_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
         assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
@@ -779,6 +800,50 @@ class TestHigherOrderPrimitiveRegistrations:
                 return qml.expval(qml.Z(0) + qml.Z(0))
 
             return qml.vjp(circuit, (x,), (1.0,))
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
+        assert jaxpr2.eqns[0].params["argnums"] == (1,)  # shifted by one
+
+    def test_vjp_consts(self):
+        """Test interpreters can handle vjp HOP's and propagate consts correctly."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                exponent = add_3.bind(0)
+                _ = qml.RX(y, 0) ** exponent
+                return qml.expval(qml.Z(0) + qml.Z(0))
+
+            return qml.vjp(circuit, (x,), (1.0,))
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
+        assert jaxpr2.eqns[0].params["argnums"] == (1,)  # shifted by one
+
+    def test_jvp_consts(self):
+        """Test interpreters can handle jvp HOP's and propagate consts correctly."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                exponent = add_3.bind(0)
+                _ = qml.RX(y, 0) ** exponent
+                return qml.expval(qml.Z(0) + qml.Z(0))
+
+            return qml.jvp(circuit, (x,), (1.0,))
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         assert len(jaxpr.consts) == 0

@@ -1212,7 +1212,7 @@ class TestNativeMidCircuitMeasurements:
 
         dev = self.MCMDevice(wires=1)
         dev.operations.add("MidMeasureMP")
-        spy = mocker.spy(qml.dynamic_one_shot, "_transform")
+        spy = mocker.spy(qml.dynamic_one_shot, "_tape_transform")
 
         @qml.qnode(dev, interface=None, diff_method=None, shots=100)
         def func():

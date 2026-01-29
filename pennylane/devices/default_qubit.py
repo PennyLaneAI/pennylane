@@ -133,6 +133,7 @@ _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
     "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
+    "IQP": lambda op: len(op.wires) < 6,
     "Snapshot": lambda _: True,
     "Allocate": lambda _: True,
     "Deallocate": lambda _: True,
@@ -609,7 +610,9 @@ class DefaultQubit(Device):
         compile_pileline = CompilePipeline()
         if config.mcm_config.mcm_method == "deferred":
             compile_pileline.add_transform(defer_measurements, num_wires=len(self.wires))
-        compile_pileline.add_transform(transforms_decompose, stopping_condition=stopping_condition)
+        compile_pileline.add_transform(
+            transforms_decompose, gate_set=ALL_DQ_GATE_SET, stopping_condition=stopping_condition
+        )
 
         return compile_pileline
 
