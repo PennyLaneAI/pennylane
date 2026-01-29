@@ -57,7 +57,7 @@ from .symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
-from .utils import translate_op_alias
+from .utils import to_name
 
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
@@ -257,8 +257,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
         alt_decomps = alt_decomps or {}
-        self._fixed_decomps = {_to_name(k): v for k, v in fixed_decomps.items()}
-        self._alt_decomps = {_to_name(k): v for k, v in alt_decomps.items()}
+        self._fixed_decomps = {to_name(k): v for k, v in fixed_decomps.items()}
+        self._alt_decomps = {to_name(k): v for k, v in alt_decomps.items()}
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
@@ -391,7 +391,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        op_name = _to_name(op)
+        op_name = to_name(op)
 
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
@@ -536,7 +536,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {_to_name(op) for op in unsolved_ops} - _ignore_unsolved_ops()
+            op_names = {to_name(op) for op in unsolved_ops} - _ignore_unsolved_ops()
             # If unsolved operators are left after filtering for those to be ignored, warn
             if op_names:
                 warnings.warn(
@@ -818,12 +818,3 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]
             self.num_work_wires_used[target_idx] = self.num_work_wires_used[src_idx]
-
-
-def _to_name(op):
-    if isinstance(op, type):
-        return op.__name__
-    if isinstance(op, CompressedResourceOp):
-        return op.name
-    assert isinstance(op, str)
-    return translate_op_alias(op)

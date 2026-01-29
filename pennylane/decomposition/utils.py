@@ -14,11 +14,14 @@
 
 r"""
 This module implements utility functions for the decomposition module.
-
 """
+
 import re
 from contextlib import contextmanager
 from contextvars import ContextVar
+from functools import singledispatch
+
+from pennylane.operation import Operator
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -57,6 +60,27 @@ def translate_op_alias(op_alias):
             f'names include: "Adjoint", "C", "Controlled", "Pow".'
         )
     return op_alias
+
+
+@singledispatch
+def to_name(op) -> str:
+    """Get the canocial name of an operation for the graph."""
+    raise NotImplementedError(f"{type(op)} is not a valid type for to_name.")
+
+
+@to_name.register
+def _type_to_name(op: type):
+    return translate_op_alias(op.__name__)
+
+
+@to_name.register
+def _operator_to_name(op: Operator):
+    return translate_op_alias(op.name)
+
+
+@to_name.register
+def _str_to_name(op: str):
+    return translate_op_alias(op)
 
 
 def toggle_graph_decomposition():
