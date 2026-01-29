@@ -62,9 +62,12 @@ from .utils import to_name
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
+UNSUPPORTED_TEMPLATES = {"RandomLayers", "WireCut", "TrotterizedQfunc"}
+
+
 @lru_cache
 def _ignore_unsolved_ops():
-    return IGNORED_UNSOLVED_OPS | set(qml.ops.qutrit.__all__) | {"RandomLayers"}
+    return IGNORED_UNSOLVED_OPS | set(qml.ops.qutrit.__all__) | UNSUPPORTED_TEMPLATES
 
 
 @dataclass(frozen=True)
