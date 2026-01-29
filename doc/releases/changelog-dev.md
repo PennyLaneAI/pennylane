@@ -17,8 +17,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
-  of :class:`~.SelectOnlyQRAM` to rapidly estimate its resources.
+* Added lightweight versions (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
+  of :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding` and :class:`~.BasisState` to rapidly estimate resources.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
 
 * :class:`~.CSWAP` is now decomposed more cheaply, using ``change_op_basis`` with
