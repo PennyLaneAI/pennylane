@@ -22,8 +22,9 @@
   two ``CNOT`` gates and a single ``Toffoli`` gate.
   [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
 
-* `qml.vjp` can now be captured into plxpr.
+* `qml.vjp` and `qml.jvp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
+  [(#8788)](https://github.com/PennyLaneAI/pennylane/pull/8788)
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
