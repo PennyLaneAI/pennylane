@@ -313,7 +313,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
 
     program = CompilePipeline()
     program.add_transform(validate_device_wires, device_wires, name=device_name)
-    _add_adjoint_transforms(program, device_wires=device_wires)
+    _add_adjoint_transforms(program, device_wires=device_wires, target_gates=ALL_DQ_GATES_PLUS_MCM)
 
     try:
         program((circuit,))
@@ -326,7 +326,12 @@ def _supports_adjoint(circuit, device_wires, device_name):
     return True
 
 
-def _add_adjoint_transforms(program: CompilePipeline, device_vjp=False, device_wires=None) -> None:
+def _add_adjoint_transforms(
+    program: CompilePipeline,
+    device_vjp=False,
+    device_wires=None,
+    target_gates=ALL_DQ_GATES,
+) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
 
@@ -334,6 +339,7 @@ def _add_adjoint_transforms(program: CompilePipeline, device_vjp=False, device_w
         program (CompilePipeline): where we will add the adjoint differentiation transforms
         device_vjp (bool): whether or not to use the device-provided Vector Jacobian Product (VJP).
         device_wires (Wires): the device wires, used to calculate available work wires
+        target_gates (GateSet): the set of gates to target in the decomposition
 
     Side Effects:
         Adds transforms to the input program.
@@ -346,7 +352,7 @@ def _add_adjoint_transforms(program: CompilePipeline, device_vjp=False, device_w
         decompose,
         stopping_condition=adjoint_ops,
         device_wires=device_wires,
-        target_gates=ALL_DQ_GATES_PLUS_MCM,
+        target_gates=target_gates,
         name=name,
         skip_initial_state_prep=False,
     )
@@ -694,6 +700,7 @@ class DefaultQubit(Device):
                 compile_pileline,
                 device_vjp=config.use_device_jacobian_product,
                 device_wires=self.wires,
+                target_gates=target_gate_set,
             )
         return compile_pileline
 
