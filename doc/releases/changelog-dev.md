@@ -18,7 +18,7 @@
 <h3>Improvements 🛠</h3>
 
 * :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept 
-  their classical data as `TensorLike` data, which increases compatibility with Catalyst.
+  their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
 
 * `qml.vjp` can now be captured into plxpr.
