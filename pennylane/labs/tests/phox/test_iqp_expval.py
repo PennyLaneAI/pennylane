@@ -145,6 +145,46 @@ class TestIQPExpval:
 
         assert np.allclose(exact_val, approx_val, atol=atol)
 
+    def test_iqp_expval_batching(self):
+        """Test that iqp_expval correctly handles a batch of multiple observables."""
+        n_qubits = 2
+        gates = {0: [[0, 1]]}  # IQP circuit with one interaction gate
+        params = [0.5]
+
+        # Define 3 observables to compute in one go
+        obs_batch = [
+            ["Z", "Z"],  # Z @ Z
+            ["X", "X"],  # X @ X
+            ["Z", "I"],  # Z @ I
+        ]
+
+        generators_binary, param_map = _parse_iqp_dict(gates, n_qubits)
+        generators_pl = [list(np.where(row)[0]) for row in generators_binary]
+        params_pl = np.array(params)[param_map]
+        state = np.zeros(2**n_qubits)
+        state[0] = 1.0
+
+        # 1. Compute expected values individually using standard PennyLane
+        exact_results = []
+        for obs in obs_batch:
+            circuit = iqp_circuit_pl(generators_pl, params_pl, obs, state)
+            exact_results.append(circuit())
+
+        exact_results = np.array(exact_results)
+
+        # 2. Compute all at once using our simulator
+        obs_jax = np.array(obs_batch)
+        key = jax.random.PRNGKey(42)
+        n_samples = 100000  # High sample count for better precision on batch check
+        atol = 3.5 / np.sqrt(n_samples)
+
+        approx_vals, approx_stds = iqp_expval(gates, params, obs_jax, n_samples, n_qubits, key)
+
+        # Check shape and values
+        assert approx_vals.shape == (3,)
+        assert approx_stds.shape == (3,)
+        assert np.allclose(approx_vals, exact_results, atol=atol)
+
 
 @pytest.mark.parametrize(
     "circuit_def,n_qubits,expected_generators,expected_param_map",

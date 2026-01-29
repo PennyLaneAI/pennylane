@@ -170,7 +170,7 @@ def training_iterator(
     Generator that yields training results in batches of size 'unroll_steps'.
 
     Args:
-        optimizer (str): Name of the optimizer to use.
+        optimizer (str): Name of the optimizer to use. Options are "GradientDescent", "Adam", or "BFGS".
         loss (Callable): The loss function.
         stepsize (float): The learning rate.
         loss_kwargs (dict[str, Any]): Arguments to pass to the loss function.
@@ -246,7 +246,7 @@ def train(
     Manages the loop, accumulation of history, and convergence checks.
 
     Args:
-        optimizer (str): Name of the optimizer to use.
+        optimizer (str): Name of the optimizer to use. Options are "GradientDescent", "Adam", or "BFGS".
         loss (Callable): The loss function.
         stepsize (float): The learning rate.
         n_iters (int): Total number of training iterations.

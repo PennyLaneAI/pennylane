@@ -1,6 +1,8 @@
 import pytest
 import jax.numpy as jnp
+import numpy as np
 from pennylane.labs.phox.training import train, TrainingOptions
+from pennylane.labs.phox.simulator_pure_functions import iqp_expval
 
 
 @pytest.fixture
@@ -157,3 +159,55 @@ def test_history_logging_manual(quadratic_problem):
 
     assert len(history) == 5
     assert history[0].shape == (2,)
+
+
+def test_iqp_optimization():
+    """
+    Test 6: Integration Test.
+    Test full loop with actual IQP simulation as loss function.
+    Objective: Minimize sum of Z expectation values.
+    """
+    n_qubits = 2
+    n_samples = 100
+
+    gates = {
+        0: [[0]],
+        1: [[1]]
+    }
+
+    params_init = jnp.array([0.1, 0.1])
+
+    ops = np.array([
+        ["Z", "I"],
+        ["I", "Z"]
+    ])
+
+    def loss_fn(params, key):
+        expvals, _ = iqp_expval(
+            gates=gates,
+            params=params,
+            ops=ops,
+            n_samples=n_samples,
+            n_qubits=n_qubits,
+            key=key
+        )
+        return jnp.sum(expvals)
+
+    loss_kwargs = {"params": params_init}
+
+    options = TrainingOptions(unroll_steps=10, random_state=42)
+
+    result = train(
+        optimizer="Adam",
+        loss=loss_fn,
+        stepsize=0.1,
+        n_iters=50,
+        loss_kwargs=loss_kwargs,
+        options=options
+    )
+
+    init_loss = result.losses[0]
+    final_loss = result.losses[-1]
+
+    # Optimizer should have moved parameters to reduce loss
+    assert final_loss < init_loss
