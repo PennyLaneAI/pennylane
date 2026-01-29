@@ -29,12 +29,18 @@ class TestGradients:
     def test_basic_grad(self, diff_method, device, tol):
         """Test a basic function with one RX and one expectation."""
         wires = 2 if diff_method == "hadamard" else 1
-        dev = device(wires=wires)
+        dev = device(wires=wires + (diff_method == "hadamard"))
         tol = tol(dev.shots)
+
+        qnode_kwargs = {
+            "diff_method": diff_method,
+        }
+
         if diff_method == "hadamard":
             tol += 0.01
+            qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires}
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, **qnode_kwargs)
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
@@ -112,7 +118,13 @@ class TestGradients:
         x = pnp.array(0.543)
         y = pnp.array(-0.654)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        qnode_kwargs = {
+            "diff_method": diff_method,
+        }
+        if diff_method == "hadamard":
+            qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires - 1}
+
+        @qml.qnode(dev, **qnode_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -150,7 +162,13 @@ class TestGradients:
         x = pnp.array(0.543)
         y = pnp.array(-0.654, requires_grad=False)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        qnode_kwargs = {
+            "diff_method": diff_method,
+        }
+        if diff_method == "hadamard":
+            qnode_kwargs["gradient_kwargs"] = {"aux_wire": wires - 1}
+
+        @qml.qnode(dev, **qnode_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -172,7 +190,11 @@ class TestGradients:
         dev = device(wires=wires)
         tol = tol(dev.shots)
 
-        @qml.qnode(dev, diff_method=diff_method, max_diff=2)
+        qnode_kwargs = {"diff_method": diff_method, "max_diff": 2}
+        if diff_method == "hadamard":
+            qnode_kwargs["gradient_kwargs"] = {"mode": "reversed-direct"}
+
+        @qml.qnode(dev, **qnode_kwargs)
         def circuit(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)

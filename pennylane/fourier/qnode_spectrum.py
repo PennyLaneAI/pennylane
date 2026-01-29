@@ -16,6 +16,7 @@ circuit including classical preprocessing within the QNode."""
 
 from __future__ import annotations
 
+from functools import partial
 from inspect import signature
 from itertools import product
 from types import EllipsisType
@@ -23,8 +24,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from pennylane import gradients, math, measurements, transforms, workflow
+from pennylane import gradients, math, measurements, workflow
 from pennylane.capture.autograph import wraps
+from pennylane.decomposition import gate_sets
+from pennylane.exceptions import TermsUndefinedError
+from pennylane.transforms import decompose
 
 from .utils import get_spectrum, join_spectra
 
@@ -154,6 +158,14 @@ def _process_ids(
     return encoding_args, argnum
 
 
+def _multipar_stopping_fn(obj):
+    try:
+        return len(obj.data) == 0 or (obj.has_generator and len(obj.generator().terms()[0]) == 1)
+    except TermsUndefinedError:  # pragma: no cover
+        return True  # pragma: no cover
+
+
+# pylint: disable=too-many-statements
 def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validation_kwargs=None):
     r"""Compute the frequency spectrum of the Fourier representation of quantum circuits,
     including classical preprocessing.
@@ -414,9 +426,15 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
             qnode.interface = new_interface
 
-        jac_fn = gradients.classical_jacobian(
-            qnode, argnum=argnum, expand_fn=transforms.expand_multipar
-        )
+        def expand_fn(*args, **kwargs):
+            [tape], _ = partial(
+                decompose,
+                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+                stopping_condition=_multipar_stopping_fn,
+            )(*args, **kwargs)
+            return tape
+
+        jac_fn = gradients.classical_jacobian(qnode, argnum=argnum, expand_fn=expand_fn)
         # Compute classical Jacobian and assert preprocessing is linear
         if not math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
             raise ValueError(
@@ -434,7 +452,9 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
         cjacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = transforms.expand_multipar(tape)
+        [tape], _ = decompose(
+            tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=_multipar_stopping_fn
+        )
         par_info = tape.par_info
 
         # Iterate over jacobians per argument

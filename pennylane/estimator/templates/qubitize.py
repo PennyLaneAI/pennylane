@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for PennyLane subroutine templates."""
-import math
-
-import numpy as np
-
 from pennylane.estimator.compact_hamiltonian import THCHamiltonian
 from pennylane.estimator.ops.op_math.controlled_ops import MultiControlledX, Toffoli
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled
@@ -30,6 +26,7 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.templates.select import SelectTHC
 from pennylane.estimator.templates.stateprep import PrepTHC
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=signature-differs, arguments-differ, too-many-arguments
@@ -125,7 +122,7 @@ class QubitizeTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        coeff_register = ceil_log2(num_coeff)
 
         if coeff_precision is None:
             coeff_precision = prep_op.coeff_precision if prep_op else 15
@@ -156,13 +153,8 @@ class QubitizeTHC(ResourceOperator):
         # The total algorithmic qubits are thus given by: N + 2*n_M + ceil(log(d)) + \aleph + 6 + m
         # where \aleph is coeff_precision, m = 2n_M + \aleph + 2, N = 2*num_orb,
         # d = num_orb + tensor_rank(tensor_rank+1)/2, and n_M = log_2(tensor_rank+1).
-        self.num_wires = (
-            num_orb * 2
-            + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
-            + coeff_register
-            + 8
-            + coeff_precision
-        )
+        n_M = ceil_log2(tensor_rank + 1)
+        self.num_wires = num_orb * 2 + 4 * n_M + coeff_register + 8 + coeff_precision
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
         super().__init__(wires=wires)
@@ -232,7 +224,7 @@ class QubitizeTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
-        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        coeff_register = ceil_log2(num_coeff)
 
         if coeff_precision is None:
             coeff_precision = prep_op.params["coeff_precision"] if prep_op else 15
@@ -240,11 +232,7 @@ class QubitizeTHC(ResourceOperator):
             rotation_precision = select_op.params["rotation_precision"] if select_op else 15
 
         num_wires = (
-            num_orb * 2
-            + 4 * int(np.ceil(math.log2(tensor_rank + 1)))
-            + coeff_register
-            + 8
-            + coeff_precision
+            num_orb * 2 + 4 * ceil_log2(tensor_rank + 1) + coeff_register + 8 + coeff_precision
         )
 
         params = {
@@ -297,7 +285,7 @@ class QubitizeTHC(ResourceOperator):
         gate_list = []
 
         tensor_rank = thc_ham.tensor_rank
-        m_register = int(np.ceil(np.log2(tensor_rank)))
+        m_register = ceil_log2(tensor_rank)
 
         select_kwargs = {
             "thc_ham": thc_ham,
@@ -367,7 +355,7 @@ class QubitizeTHC(ResourceOperator):
         rotation_precision = target_resource_params.get("rotation_precision")
 
         tensor_rank = thc_ham.tensor_rank
-        m_register = int(np.ceil(np.log2(tensor_rank)))
+        m_register = ceil_log2(tensor_rank)
 
         if num_ctrl_wires > 1:
             mcx = resource_rep(

@@ -19,7 +19,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import QuantumFunctionError
+from pennylane import qnode
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.gradients import hadamard_gradient
 
 
@@ -498,6 +499,27 @@ class TestDifferentModes:
 
         assert standard.call_count == 1
         assert reverse.call_count == 0
+
+    def test_aux_wire_none_deprecated(self):
+        t = np.array(0.0)
+
+        op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Y(2) + qml.Z(0) @ qml.Z(1), t)
+        mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
+        tape = qml.tape.QuantumScript([op], [mp, qml.probs((0, 1))])
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing a value of None to aux_wire",
+        ):
+            _, _ = qml.gradients.hadamard_grad(tape, mode="standard", aux_wire=None)
+
+        tape = qml.tape.QuantumScript([op], [mp])
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing a value of None to aux_wire",
+        ):
+            _, _ = qml.gradients.hadamard_grad(tape, mode="reversed", aux_wire=None)
 
     def test_automatic_mode_raises(self, mocker):
         # setup mocks
@@ -1352,6 +1374,37 @@ class TestHadamardGradEdgeCases:
         assert isinstance(result, np.ndarray)
         assert result.shape == (4, 3)
         assert np.allclose(result, 0)
+
+    @pytest.mark.parametrize(
+        "kwargs", [{"aux_wire": 1}, {"mode": "reversed"}, {"mode": "standard"}]
+    )
+    @pytest.mark.jax
+    def test_higher_order_derivative_with_aux_wire_raises(self, kwargs):
+        import jax
+
+        @qnode(
+            qml.device("default.qubit", wires=2),
+            diff_method="hadamard",
+            interface="auto",
+            grad_on_execution=False,
+            max_diff=2,
+            device_vjp=False,
+            gradient_kwargs=kwargs,
+        )
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.probs(wires=0)
+
+        a = jax.numpy.array(1.0)
+        b = jax.numpy.array(2.0)
+
+        with pytest.raises(ValueError, match="Higher order derivatives"):
+            circuit(a, b)
+
+            jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
+            jac_fn(a, b)
+            jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
 
 
 @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])

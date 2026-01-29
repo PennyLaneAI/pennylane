@@ -1723,7 +1723,8 @@ class TestDecomposition:
 
         assert q.queue == _ops[::-1]
 
-    def test_integration(self, enable_graph_decomposition):
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_integration(self):
         """Test that prod's can be integrated into the decomposition."""
 
         op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)

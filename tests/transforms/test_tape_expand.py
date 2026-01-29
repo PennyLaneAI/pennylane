@@ -24,6 +24,8 @@ from default_qubit_legacy import DefaultQubitLegacy
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
 
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
+
 
 def crit_0(op: qml.operation.Operator):
     return not any(qml.math.requires_grad(d) for d in op.data) or (
@@ -129,6 +131,36 @@ class TestCreateExpandFn:
         assert new_tape.operations[1].name == "Rot"
 
 
+class TestExpandTrainableMultipar:
+    """Test the expansion of trainable multi-parameter gates."""
+
+    def test_expand_trainable_multipar(self):
+        """Test that a trainable multi-parameter gate is decomposed correctly.
+        And that non-trainable multi-parameter gates, single-parameter gates are not decomposed."""
+
+        theta = qml.numpy.array(1.0, requires_grad=True)
+
+        class _CRX(qml.CRX):
+            name = "_CRX"
+
+            @staticmethod
+            def decomposition(theta, wires):
+                raise NotImplementedError()
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(1.5, wires=0)
+            qml.Rot(-2.1, 1.0, -0.418, wires=1)
+            qml.Rot(-2.1, theta, -0.418, wires=1)
+            _CRX(1.5, wires=[0, 2])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_trainable_multipar(tape)
+        new_ops = new_tape.operations
+
+        assert [op.name for op in new_ops] == ["RX", "Rot", "RZ", "RY", "RZ", "_CRX"]
+
+
 class TestExpandMultipar:
     """Test the expansion of multi-parameter gates."""
 
@@ -149,7 +181,9 @@ class TestExpandMultipar:
             _CRX(1.5, wires=[0, 2])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_multipar(tape)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_multipar(tape)
         new_ops = new_tape.operations
 
         assert [op.name for op in new_ops] == ["RX", "RZ", "RY", "RZ", "_CRX"]
@@ -175,7 +209,8 @@ class TestExpandMultipar:
             _CRX(1.5, wires=[0, 2])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_multipar(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_multipar(tape)
         new_ops = new_tape.operations
         expected = ["RX", "RZ", "RY", "RZ", "RZ", "RY", "CNOT", "RY", "CNOT", "RZ"]
         assert [op.name for op in new_ops] == expected
@@ -194,7 +229,8 @@ class TestExpandNonunitaryGen:
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_nonunitary_gen(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_nonunitary_gen(tape)
 
         assert tape.operations == new_tape.operations
 
@@ -208,7 +244,8 @@ class TestExpandNonunitaryGen:
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_nonunitary_gen(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_nonunitary_gen(tape)
         expanded = [
             qml.RZ(0.9, wires=0),
             qml.RY(1.2, wires=0),
@@ -236,7 +273,8 @@ class TestExpandNonunitaryGen:
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_nonunitary_gen(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_nonunitary_gen(tape)
         assert tape.operations[:2] == new_tape.operations[:2]
         exp_op, gph_op = new_tape.operations[2:4]
         assert exp_op.name == "RZ" and exp_op.data == (2.1,) and exp_op.wires == qml.wires.Wires(1)
@@ -254,7 +292,8 @@ class TestExpandNonunitaryGen:
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_nonunitary_gen(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_nonunitary_gen(tape)
 
         assert tape.operations[:2] == new_tape.operations[:2]
         exp_op, gph_op = new_tape.operations[2:4]
@@ -293,7 +332,8 @@ class TestExpandNonunitaryGen:
             qml.FermionicSWAP(0.3, wires=[2, 3])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        new_tape = qml.transforms.expand_nonunitary_gen(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_nonunitary_gen(tape)
 
         for op in new_tape.operations:
             assert op.name in unitarily_generated or op.num_params == 0
@@ -316,7 +356,8 @@ class TestExpandInvalidTrainable:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(tape, "expand")
-        new_tape = qml.transforms.expand_invalid_trainable(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_invalid_trainable(tape)
 
         assert new_tape is tape
         spy.assert_not_called()
@@ -338,7 +379,8 @@ class TestExpandInvalidTrainable:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qml.transforms, "decompose")
-        new_tape = qml.transforms.expand_invalid_trainable(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_invalid_trainable(tape)
 
         assert new_tape is not tape
         spy.assert_called()
@@ -370,7 +412,8 @@ class TestExpandInvalidTrainable:
         assert tape.trainable_params == [1]
 
         spy = mocker.spy(tape, "expand")
-        new_tape = qml.transforms.expand_invalid_trainable(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_invalid_trainable(tape)
 
         assert new_tape is tape
         spy.assert_not_called()
@@ -392,7 +435,8 @@ class TestExpandInvalidTrainable:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(tape, "expand")
-        new_tape = qml.transforms.expand_invalid_trainable(tape)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = qml.transforms.expand_invalid_trainable(tape)
 
         assert new_tape is tape
         spy.assert_not_called()
