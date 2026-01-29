@@ -293,7 +293,7 @@ def _(op: qtemps.SelectOnlyQRAM):
     target_wires = op.hyperparameters["target_wires"]
     select_value = op.hyperparameters["select_value"]
     num_bitstrings = len(bitstrings)
-    num_ones = sum(bitstring.count("1") for bitstring in bitstrings)
+    num_ones = math.sum(bitstring)
     num_control_wires = len(control_wires)
     num_select_wires = len(select_wires)
     num_wires = num_control_wires + num_select_wires + len(target_wires)
