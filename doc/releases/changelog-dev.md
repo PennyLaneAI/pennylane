@@ -30,6 +30,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.CSWAP` is now decomposed more cheaply, using ``change_op_basis`` with
+  two ``CNOT`` gates and a single ``Toffoli`` gate.
+  [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
+
 * `qml.vjp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
 
@@ -160,6 +164,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+  [(#8985)](https://github.com/PennyLaneAI/pennylane/pull/8985)
+
 * :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar` 
   have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` 
   function for decomposing circuits.
@@ -190,7 +197,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
-  [(#xxxx)](https://github.com/PennyLaneAI/pennylane/pull/xxxx)
+  [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
 
 * Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
   Bumped `rng_salt` to `v0.45.0`.
