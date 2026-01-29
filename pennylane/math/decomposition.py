@@ -265,8 +265,8 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
             else:
                 # Table entry from documentation
                 mask_middle = p | (p << 1)
-                in_middle_rows = (s & mask_middle).bit_count() == 1
-                in_last_cols = bool(k & (p << 1))
+                in_middle_rows = (s & mask_middle).bit_count() == 1  # two bits of s are 01 or 10
+                in_last_cols = bool(k & (p << 1))  # latter bit of k is 1
                 if in_middle_rows != in_last_cols:  # xor between in_middle_rows and in_last_cols
                     factor = -1
                 else:
