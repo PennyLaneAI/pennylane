@@ -52,7 +52,7 @@ jobs:
           echo "workflow=${{ inputs.workflow }}"
 
       - name: Set skip tests list
-        if: ${{ inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' || inputs.workflow != 'test-numpy1-compat' }}
+        if: inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' || inputs.workflow != 'test-numpy1-compat'
         id: set-skip-tests
         run: |
           ALL_TESTS='torch-tests,gradients-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
