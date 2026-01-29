@@ -23,6 +23,7 @@ import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+import pennylane.math as pl_math
 from pennylane.operation import Operation
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
@@ -293,7 +294,7 @@ def _(op: qtemps.SelectOnlyQRAM):
     target_wires = op.hyperparameters["target_wires"]
     select_value = op.hyperparameters["select_value"]
     num_bitstrings = len(bitstrings)
-    num_ones = math.sum(bitstring)
+    num_ones = pl_math.sum(bitstrings)
     num_control_wires = len(control_wires)
     num_select_wires = len(select_wires)
     num_wires = num_control_wires + num_select_wires + len(target_wires)
