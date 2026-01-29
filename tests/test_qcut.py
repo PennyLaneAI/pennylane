@@ -39,7 +39,7 @@ from pennylane.queuing import WrappedObj
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
-pytestmark = [pytest.mark.qcut, pytest.mark.usefixtures("disable_graph_decomposition")]
+pytestmark = [pytest.mark.qcut]
 
 I, X, Y, Z = (
     np.eye(2),
