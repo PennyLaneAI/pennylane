@@ -63,7 +63,7 @@ jobs:
   docs:
     name: Run docs
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'docs' }}
+    if: inputs.workflow == 'docs' 
     strategy:
       max-parallel: 5
       matrix:
@@ -73,7 +73,7 @@ jobs:
   documentation-tests:
     name: Run documentation-tests
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'documentation-tests' }}
+    if: inputs.workflow == 'documentation-tests'
     strategy:
       max-parallel: 5
       matrix:
@@ -83,7 +83,7 @@ jobs:
   format:
     name: Run format
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'format' }}
+    if: inputs.workflow == 'format' 
     strategy:
       max-parallel: 5
       matrix:
@@ -93,7 +93,7 @@ jobs:
   module-validation:
     name: Run module-validation
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'module-validation' }}
+    if: inputs.workflow == 'module-validation' 
     strategy:
       max-parallel: 5
       matrix:
@@ -103,7 +103,7 @@ jobs:
   package-warning-as-errors:
     name:  Run package-warning-as-errors
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'package-warning-as-errors' }}
+    if: inputs.workflow == 'package-warning-as-errors' 
     strategy:
       max-parallel: 5
       matrix:
@@ -113,7 +113,7 @@ jobs:
   test_numpy1_compat:
     name: Run test-numpy1-compat
     needs: prepare-run-count
-    if: ${{ inputs.workflow == 'test-numpy1-compat' }}
+    if: inputs.workflow == 'test-numpy1-compat' 
     strategy:
       max-parallel: 5
       matrix:
