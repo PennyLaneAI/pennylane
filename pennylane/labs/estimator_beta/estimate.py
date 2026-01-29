@@ -17,19 +17,23 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
 
+from pennylane.estimator.estimate import (
+    _get_resource_decomposition,
+    _ops_to_compressed_reps,
+    _update_counts_from_compressed_res_op,
+)
 from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
+from pennylane.estimator.resource_config import ResourceConfig
+from pennylane.estimator.resource_mapping import _map_to_resource_op
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
+from pennylane.estimator.resources_base import DefaultGateSet, Resources
+from pennylane.estimator.wires_manager import Allocate, Deallocate, WireResourceManager
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
 
-from pennylane.estimator.estimate import _update_counts_from_compressed_res_op, _ops_to_compressed_reps, _get_resource_decomposition
-from pennylane.estimator.wires_manager import WireResourceManager, Allocate, Deallocate
-from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.resource_mapping import _map_to_resource_op
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
-from pennylane.estimator.resources_base import DefaultGateSet, Resources
 from .wires_manager import estimate_wires_from_circuit
 
 # pylint: disable=too-many-arguments
@@ -378,7 +382,9 @@ def _resources_from_qfunc(
             )
 
         algo_qubits, any_state, zeroed = estimate_wires_from_circuit(
-            q.queue, gate_set, config,
+            q.queue,
+            gate_set,
+            config,
         )
         return Resources(
             zeroed_wires=zeroed,

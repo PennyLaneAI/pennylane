@@ -16,17 +16,19 @@ r"""Resource operators for PennyLane subroutine templates."""
 import math
 
 import pennylane.estimator as qre
+from pennylane.allocation import AllocateState
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.allocation import AllocateState
-from .wires_manager import Allocate, Deallocate
 from pennylane.wires import WiresLike
 
+from .wires_manager import Allocate, Deallocate
+
 # pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
+
 
 class QROM(ResourceOperator):
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
@@ -254,9 +256,16 @@ class QROM(ResourceOperator):
 
             if not restored:
                 gate_cost.append(GateCount(x, (W_opt - 1) * size_bitstring))  # measure and reset
-        
+
         if restored:
-            gate_cost.append(Deallocate((W_opt - 1) * size_bitstring, swap_register, AllocateState.ANY, restored=True,))  # release Swap registers
+            gate_cost.append(
+                Deallocate(
+                    (W_opt - 1) * size_bitstring,
+                    swap_register,
+                    AllocateState.ANY,
+                    restored=True,
+                )
+            )  # release Swap registers
         else:
             gate_cost.append(Deallocate((W_opt - 1) * size_bitstring))  # release Swap registers
 
