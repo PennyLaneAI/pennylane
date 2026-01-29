@@ -30,7 +30,7 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.decomposition_graph import _to_name
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import DecompositionError
 from pennylane.operation import Operation
 
@@ -40,7 +40,7 @@ from pennylane.operation import Operation
 @pytest.mark.unit
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
-    side_effect=lambda x: decompositions[_to_name(x)],
+    side_effect=lambda x: decompositions[to_name(x)],
 )
 class TestDecompositionGraph:
     def test_weighted_graph_solve(self, _):
