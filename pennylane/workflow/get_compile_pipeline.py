@@ -18,6 +18,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec
 
+from pennylane.transforms.core import CompilePipeline
 from pennylane.workflow import construct_execution_config, marker
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
@@ -25,18 +26,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from pennylane.devices.execution_config import ExecutionConfig
-    from pennylane.transforms.core import CompilePipeline
     from pennylane.workflow import QNode
 
 P = ParamSpec("P")
-
-
-def _has_terminal_expansion_pair(compile_pipeline: CompilePipeline) -> bool:
-    """Checks if the compile pipeline ends with a expansion + transform pair."""
-    return (
-        len(compile_pipeline) > 1
-        and getattr(compile_pipeline[-1], "expand_transform", None) == compile_pipeline[-2]
-    )
 
 
 def _find_level(program: CompilePipeline, level: str) -> int:
@@ -101,9 +93,6 @@ def get_compile_pipeline(
 
     Returns:
         CompilePipeline: the compile pipeline corresponding to the requested level.
-
-    Raises:
-        ValueError: If a final transform is applied to the qnode with a level that goes deeper than the gradient level of the compile pipeline.
 
     **Example:**
 
@@ -207,32 +196,18 @@ def get_compile_pipeline(
         # Get full compile pipeline
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
         outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
-        full_compile_pipeline = qnode.compile_pipeline + outer_pipeline + inner_pipeline
 
-        num_user = len(qnode.compile_pipeline)
-        if qnode.compile_pipeline.has_final_transform:
-            # Ignore final transforms for now, will be re-added later if needed
-            num_user -= 2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else 1
-            if (
-                level in {"gradient", "device"}
-                or isinstance(level, int)
-                and level
-                >= num_user + int(hasattr(resolved_config.gradient_method, "expand_transform"))
-            ):
-                raise ValueError(
-                    f"Cannot retrieve compile pipeline at requested level '{level}' due to final transforms being present."
-                )
+        full_compile_pipeline = CompilePipeline()
+        full_compile_pipeline += qnode.compile_pipeline
+        # NOTE: User transforms that contain an informative transform by pass gradient + device transforms
+        if not qnode.compile_pipeline.is_informative:
+            outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
+            full_compile_pipeline += outer_pipeline + inner_pipeline
 
         # Slice out relevant section
+        num_user = len(qnode.compile_pipeline)
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
         resolved_pipeline = full_compile_pipeline[level_slice]
-
-        # Add back final transforms to resolved pipeline if required
-        if qnode.compile_pipeline.has_final_transform and level == "user":
-            final_transform_start = (
-                -2 if _has_terminal_expansion_pair(qnode.compile_pipeline) else -1
-            )
-            resolved_pipeline += qnode.compile_pipeline[final_transform_start:]
 
         return resolved_pipeline
 
