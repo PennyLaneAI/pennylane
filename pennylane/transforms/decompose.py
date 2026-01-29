@@ -322,12 +322,13 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
         jaxpr = jax.make_jaxpr(wrapper)(*args)
         return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
-    def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
+    def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args, **kwargs):
         """Function for applying the ``decompose`` transform on plxpr."""
         # Restore tkwargs from hashable tuple to dict
         tkwargs = dict(tkwargs)
 
-        interpreter = DecomposeInterpreter(*targs, **tkwargs)
+        stopping_condition = kwargs.get("stopping_condition", None)
+        interpreter = DecomposeInterpreter(*targs, **tkwargs, stopping_condition=stopping_condition)
 
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
