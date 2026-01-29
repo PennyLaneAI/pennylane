@@ -276,7 +276,7 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     """
     Calculates the resources, assuming the worst case where data is all ones.
     """
-    n_k = int(math.log2(2**num_controls))
+    n_k = num_controls
     resources = defaultdict(int)
     resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
     resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
