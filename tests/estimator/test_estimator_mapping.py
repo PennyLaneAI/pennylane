@@ -157,7 +157,7 @@ class TestMapToResourceOp:
                     control_wires=(0, 1),
                     target_wires=(2, 3, 4),
                     select_wires=(5, 6),
-                    select_value=0
+                    select_value=0,
                 ),
             ),
             (
