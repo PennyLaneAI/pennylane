@@ -92,3 +92,23 @@ def test_vjp_without_qjit():
         match="Pennylane does not support the VJP function without QJIT.",
     ):
         vjp(x, dy)
+
+
+def test_jvp_without_qjit():
+    """Test that an error is raised when using JVP without QJIT."""
+
+    def jvp(params, dparams):
+        def f(x):
+            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qml.math.stack(y)
+
+        return qml.jvp(f, [params], [dparams])
+
+    x = qml.numpy.array([0.1, 0.2])
+    dy = qml.numpy.array([-0.5, 0.1])
+
+    with pytest.raises(
+        qml.exceptions.CompileError,
+        match="Pennylane does not support the JVP function without QJIT.",
+    ):
+        jvp(x, dy)
