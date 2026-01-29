@@ -139,7 +139,7 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
     return rref_mat
 
 
-def binary_rank(binary_matrix: np.ndarray) -> int:
+def binary_matrix_rank(binary_matrix: np.ndarray) -> int:
     r"""
     Find rank of a matrix over :math:`\mathbb{Z}_2`.
 
@@ -168,7 +168,7 @@ def binary_rank(binary_matrix: np.ndarray) -> int:
 
     We may compute its rank over :math:`\mathbb{Z}_2` and find that it does not have full rank:
 
-    >>> print(qml.math.binary_rank(binary_matrix))
+    >>> print(qml.math.binary_matrix_rank(binary_matrix))
     3
 
     Note that it would have full rank over the real numbers :math:`\mathbb{R}`:
@@ -269,7 +269,7 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
             f"Got {vector.shape=} and {basis.shape=}"
         )
     basis_rank = min(basis.shape)
-    rk = binary_rank(np.concatenate([basis, vector[:, None]], axis=1))
+    rk = binary_matrix_rank(np.concatenate([basis, vector[:, None]], axis=1))
     return rk > basis_rank
 
 
