@@ -215,6 +215,7 @@ def iqp_expval(
     n_samples: int,
     n_qubits: int,
     key: ArrayLike,
+    init_state: tuple[ArrayLike, ArrayLike] | None = None,
     batch_size: int = 1000,
 ):
     """
@@ -229,6 +230,7 @@ def iqp_expval(
         n_samples (int): Number of stochastic shots per operator.
         n_qubits (int): Total number of qubits in the system.
         key (ArrayLike): JAX PRNGKey for random sampling.
+        init_state (tuple[ArrayLike, ArrayLike] | None): Optional tuple $(X, P)$ representing initial state stabilizers.
         batch_size (int): Number of operators to process at once on the GPU. Defaults to 1000.
 
     Returns:
@@ -249,7 +251,7 @@ def iqp_expval(
         ops_chunk = ops[i : i + batch_size]
 
         chunk_mean, chunk_std = _iqp_expval_core(
-            generators, expanded_params, ops_chunk, n_samples, key
+            generators, expanded_params, ops_chunk, n_samples, key, init_state=init_state
         )
 
         results_mean.append(chunk_mean)
