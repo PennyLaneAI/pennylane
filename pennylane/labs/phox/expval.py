@@ -6,6 +6,7 @@ import jax
 import jax.numpy as jnp
 from numpy.typing import ArrayLike
 
+
 @dataclass
 class CircuitConfig:
     n_samples: int
@@ -15,6 +16,7 @@ class CircuitConfig:
     key: int
     init_state: ArrayLike = None
     phase_layer: Callable = None
+
 
 def _phase(pauli: str, qubit: int) -> complex:
     """For a Pauli P return the phase applied by HPH
@@ -42,9 +44,12 @@ def _phase(pauli: str, qubit: int) -> complex:
 
     raise ValueError(f"Expected Pauli I, X, Y, or Z, got {pauli}.")
 
+
 def build_expval_func(config: CircuitConfig) -> Callable:
     samples = jax.random.randint(config.key, (config.n_samples, config.n_qubits), 0, 2)
-    bitflips = jnp.array([[1 if gate in {"Z", "Y"} else 0 for gate in op] for op in config.observables])
+    bitflips = jnp.array(
+        [[1 if gate in {"Z", "Y"} else 0 for gate in op] for op in config.observables]
+    )
     phases = jnp.array(
         [
             [
@@ -63,8 +68,11 @@ def build_expval_func(config: CircuitConfig) -> Callable:
         E = C @ jnp.diag(params) @ B.T
 
         if config.phase_layer is not None:
+
             def compute_phase(phase_params, sample, bitflips):
-                return config.phase_layer(phase_params, sample) - config.phase_layer(phase_params, (sample + bitflips) % 2)
+                return config.phase_layer(phase_params, sample) - config.phase_layer(
+                    phase_params, (sample + bitflips) % 2
+                )
 
             phase_matrix = jax.vmap(compute_phase, in_axes=(None, 0, None))
             phase_matrix = jax.vmap(phase_matrix, in_axes=(None, None, 0))

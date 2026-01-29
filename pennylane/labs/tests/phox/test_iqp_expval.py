@@ -75,29 +75,50 @@ class TestIQPExpval:
 
     @pytest.mark.parametrize("n_samples", [1000, 10000])
     @pytest.mark.parametrize(
-        "obs_strings, generators_pl, params",
+        "obs_strings, generators_pl, params, init_bitstring",
         [
-            (["X", "Z", "Y"], [[0], [1], [0, 1, 2]], [0.37, 0.95, 0.73]),
-            (["X"], [[0]], [0.1]),
-            (["Y", "Y"], [[0], [1], [0, 1]], [0.2, 0.3, 0.4]),
-            (["Z", "Z", "Z"], [[0, 1], [1, 2]], [0.1, 0.2]),
+            (["X", "Z", "Y"], [[0], [1], [0, 1, 2]], [0.37, 0.95, 0.73], None),
+            (["X"], [[0]], [0.1], None),
+            (["Y", "Y"], [[0], [1], [0, 1]], [0.2, 0.3, 0.4], None),
+            (["Z", "Z", "Z"], [[0, 1], [1, 2]], [0.1, 0.2], None),
             (
                 ["X", "Y", "Z", "I"],
                 [[0, 1], [2, 3], [0, 2, 3]],
                 [0.1, 0.2, 0.3],
+                None,
             ),
-            (["I", "I", "I", "I"], [[0, 1], [2, 3]], [0.5, 0.6]),
+            (["I", "I", "I", "I"], [[0, 1], [2, 3]], [0.5, 0.6], None),
+            ([["Z", "Z"], ["X", "X"]], [[0], [1]], [0.1, 0.2], None),
+            (["Z", "Z"], [[0, 1]], [0.1], [1, 0]),
+            (["X", "Z", "Y"], [[0], [1], [0, 1, 2]], [0.2, 0.8, 0.4], [1, 0, 1]),
+            (["Z", "Z", "Z"], [[0, 1], [1, 2]], [0.1, 0.2], [1, 1, 1]),
+            (["X", "X", "X", "X"], [[0, 1], [2, 3], [0, 3]], [0.1, 0.2, 0.3], [1, 0, 0, 1]),
         ],
     )
-    def test_iqp_expval_core_vs_pennylane(self, n_samples, obs_strings, generators_pl, params):
+    def test_iqp_expval_core_vs_pennylane(
+        self, n_samples, obs_strings, generators_pl, params, init_bitstring
+    ):
         """Test that _iqp_expval_core matches PennyLane default.qubit with parametrization."""
-        n_qubits = len(obs_strings)
+        obs_arr = np.array(obs_strings)
+        if obs_arr.ndim == 1:
+            obs_batch = [obs_strings]
+            n_qubits = len(obs_strings)
+        else:
+            obs_batch = obs_strings
+            n_qubits = len(obs_strings[0])
 
         state = np.zeros(2**n_qubits)
-        state[0] = 1.0
+        if init_bitstring is None:
+            state[0] = 1.0
+        else:
+            idx = int("".join(str(b) for b in init_bitstring), 2)
+            state[idx] = 1.0
 
-        circuit = iqp_circuit_pl(generators_pl, params, obs_strings, state)
-        exact_val = circuit()
+        exact_vals = []
+        for obs in obs_batch:
+            circuit = iqp_circuit_pl(generators_pl, params, obs, state)
+            exact_vals.append(circuit())
+        exact_vals = np.array(exact_vals).flatten()
 
         generators_matrix = np.zeros((len(generators_pl), n_qubits), dtype=int)
         for i, wires in enumerate(generators_pl):
@@ -105,13 +126,20 @@ class TestIQPExpval:
         generators = jnp.array(generators_matrix)
 
         params_jax = jnp.array(params)
-        obs_jax = np.array([obs_strings])
+        obs_jax = np.array(obs_batch)
         key = jax.random.PRNGKey(42)  # Fixed key for reproducibility
         atol = 3.5 / np.sqrt(n_samples)
 
-        approx_val, _ = _iqp_expval_core(generators, params_jax, obs_jax, n_samples, key)
+        if init_bitstring is None:
+            init_state = None
+        else:
+            init_state = (jnp.array([init_bitstring]), jnp.array([1.0]))
 
-        assert np.allclose(exact_val, approx_val, atol=atol)
+        approx_val, _ = _iqp_expval_core(
+            generators, params_jax, obs_jax, n_samples, key, init_state=init_state
+        )
+
+        assert np.allclose(exact_vals, approx_val, atol=atol)
 
     @pytest.mark.parametrize(
         "n_qubits, gates, params, obs_strings",
@@ -120,6 +148,7 @@ class TestIQPExpval:
             (2, {}, [], ["Z", "Z"]),
             (3, {0: [[0, 1]], 1: [[1, 2]]}, [0.1, 0.2], ["X", "I", "Z"]),
             (2, {0: [[0, 1]]}, [0.5], ["I", "I"]),
+            (2, {0: [[0, 1]]}, [0.5], [["Z", "Z"], ["X", "X"]]),
         ],
     )
     def test_iqp_expval_vs_pennylane(self, n_qubits, gates, params, obs_strings):
@@ -133,57 +162,26 @@ class TestIQPExpval:
         state = np.zeros(2**n_qubits)
         state[0] = 1.0
 
-        circuit = iqp_circuit_pl(generators_pl, params_pl, obs_strings, state)
-        exact_val = circuit()
+        obs_arr = np.array(obs_strings)
+        if obs_arr.ndim == 1:
+            obs_batch = [obs_strings]
+        else:
+            obs_batch = obs_strings
 
-        obs_jax = np.array([obs_strings])
+        exact_vals = []
+        for obs in obs_batch:
+            circuit = iqp_circuit_pl(generators_pl, params_pl, obs, state)
+            exact_vals.append(circuit())
+        exact_vals = np.array(exact_vals).flatten()
+
+        obs_jax = np.array(obs_batch)
         key = jax.random.PRNGKey(42)
         n_samples = 10000
         atol = 3 * 1 / np.sqrt(n_samples)
 
         approx_val, _ = iqp_expval(gates, params, obs_jax, n_samples, n_qubits, key)
 
-        assert np.allclose(exact_val, approx_val, atol=atol)
-
-    def test_iqp_expval_batching(self):
-        """Test that iqp_expval correctly handles a batch of multiple observables."""
-        n_qubits = 2
-        gates = {0: [[0, 1]]}  # IQP circuit with one interaction gate
-        params = [0.5]
-
-        # Define 3 observables to compute in one go
-        obs_batch = [
-            ["Z", "Z"],  # Z @ Z
-            ["X", "X"],  # X @ X
-            ["Z", "I"],  # Z @ I
-        ]
-
-        generators_binary, param_map = _parse_iqp_dict(gates, n_qubits)
-        generators_pl = [list(np.where(row)[0]) for row in generators_binary]
-        params_pl = np.array(params)[param_map]
-        state = np.zeros(2**n_qubits)
-        state[0] = 1.0
-
-        # 1. Compute expected values individually using standard PennyLane
-        exact_results = []
-        for obs in obs_batch:
-            circuit = iqp_circuit_pl(generators_pl, params_pl, obs, state)
-            exact_results.append(circuit())
-
-        exact_results = np.array(exact_results)
-
-        # 2. Compute all at once using our simulator
-        obs_jax = np.array(obs_batch)
-        key = jax.random.PRNGKey(42)
-        n_samples = 100000  # High sample count for better precision on batch check
-        atol = 3.5 / np.sqrt(n_samples)
-
-        approx_vals, approx_stds = iqp_expval(gates, params, obs_jax, n_samples, n_qubits, key)
-
-        # Check shape and values
-        assert approx_vals.shape == (3,)
-        assert approx_stds.shape == (3,)
-        assert np.allclose(approx_vals, exact_results, atol=atol)
+        assert np.allclose(exact_vals, approx_val, atol=atol)
 
 
 @pytest.mark.parametrize(
