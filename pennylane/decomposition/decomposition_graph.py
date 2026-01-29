@@ -65,7 +65,7 @@ IGNORED_UNSOLVED_OPS = {Allocate, Deallocate}
 
 @lru_cache
 def _ignore_unsolved_ops():
-    return IGNORED_UNSOLVED_OPS | qml.ops.qutrit.__all__
+    return IGNORED_UNSOLVED_OPS | set(qml.ops.qutrit.__all__)
 
 
 @dataclass(frozen=True)
