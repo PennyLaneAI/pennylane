@@ -973,7 +973,13 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     @property
     def transform(self) -> Callable | None:
-        """The raw tape transform definition of the transform."""
+        """The raw tape transform definition of the transform.
+        
+        .. warning::
+            This property is deprecated and will be removed in v0.46.
+            Please use :attr:`~.BoundTransform.tape_transform` instead.
+
+        """
         warnings.warn(
             "The 'BoundTransform.transform' property is deprecated and will be removed in v0.46. "
             "Please use 'BoundTransform.tape_transform' instead.",
