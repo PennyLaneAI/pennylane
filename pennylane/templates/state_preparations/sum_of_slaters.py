@@ -291,7 +291,61 @@ def compute_sos_encoding(bits):
 
     **Example**
 
-    to do
+    Consider an array of bits with distinct columns:
+
+    >>> bits = np.array([
+        [0, 1, 1, 0, 1, 0],
+        [0, 0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1],
+        [0, 0, 1, 0, 0, 0],
+        [1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1],
+    ])
+    >>> from pennylane.templates.state_preparations.sum_of_slaters import compute_sos_encoding, _columns_differ
+    >>> print(_columns_differ(bits))
+    True
+    >>> print(bits.shape)
+    (6, 6)
+
+    Our goal is to encode these bitstrings as new, distinct bitstrings of length ``m=5``:
+
+    >>> D = bits.shape[1]
+    >>> m = 2 * qml.math.ceil_log2(D) - 1
+    >>> print(m)
+    5
+
+    We can achieve this with ``compute_sos_encoding``, which computes the encoding matrix ``U``
+    and the obtained encoded bitstrings ``b``:
+
+    >>> U, b = compute_sos_encoding(bits)
+    >>> print(U)
+    [[1 0 0 0 0 0]
+     [0 1 0 0 0 0]
+     [0 0 1 0 0 0]
+     [0 0 0 1 0 0]
+     [0 0 0 0 1 0]]
+    >>> print(b)
+    [[0 1 1 0 1 0]
+     [0 0 1 1 1 0]
+     [1 1 1 1 1 1]
+     [0 0 1 0 0 0]
+     [1 1 0 0 0 0]]
+    >>> print(_columns_differ(b))
+    True
+
+    Note that in this particular example, we could have achieved the reduction simply by selecting
+    ``4<m`` rows of the input bits:
+
+    >>> from pennylane.templates.state_preparations.sum_of_slaters import select_rows
+    >>> select_ids, sub_bits = select_rows(bits)
+    >>> print(sub_bits)
+    [[0 1 1 0 1 0]
+     [0 0 1 1 1 0]
+     [0 0 1 0 0 0]
+     [1 1 0 0 0 0]]
+
+    In practice, this sub-selection of bits is combined with ``compute_sos_encoding`` to achieve
+    lowest cost.
 
     .. details::
         :title: Implementation notes
@@ -399,6 +453,7 @@ def compute_sos_encoding(bits):
     r, D = bits.shape
     d = ceil_log2(D)
     m = 2 * d - 1
+    print(f"{r=}, {D=}, {d=}, {m=}")
     if r <= m:
         # Case 1: We can use the identity mapping
         U = np.eye(r, dtype=int)
