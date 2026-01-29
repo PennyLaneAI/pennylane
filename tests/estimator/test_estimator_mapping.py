@@ -148,7 +148,17 @@ class TestMapToResourceOp:
                     select_wires=(5, 6),
                     select_value=0,
                 ),
-                re_temps.SelectOnlyQRAM(16, 24, 7, 2, 2, (0, 1), (2, 3, 4), (5, 6), 0),
+                re_temps.SelectOnlyQRAM(
+                    num_bitstrings=16,
+                    num_ones=24,
+                    num_wires=7,
+                    num_control_wires=2,
+                    num_select_wires=2,
+                    control_wires=(0, 1),
+                    target_wires=(2, 3, 4),
+                    select_wires=(5, 6),
+                    select_value=0
+                ),
             ),
             (
                 qtemps.BBQRAM(
