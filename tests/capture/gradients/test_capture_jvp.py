@@ -56,7 +56,7 @@ class TestErrors:
         """Test that an error is raised for the wrong number of tangents."""
 
         with pytest.raises(
-            TypeError, match="number of tangent and number of differentiable parameters"
+            TypeError, match="number of tangents and number of differentiable parameters"
         ):
             qml.jvp(lambda x: x**2, (0.5,), (1.0, 1.0))
 
