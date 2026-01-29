@@ -35,7 +35,6 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
-from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
@@ -60,7 +59,7 @@ from .symbolic_decomposition import (
 )
 from .utils import translate_op_alias
 
-IGNORED_UNSOLVED_OPS = {Allocate, Deallocate}
+IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
 @lru_cache
@@ -309,8 +308,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._all_op_indices[op_node] = op_node_idx
         self._op_to_op_nodes[op].add(op_node)
 
-        if op.name in self._gate_set_weights:
-            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
+        if op in self._gate_set_weights:
+            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
         work_wire_dependent = known_work_wire_dependent
@@ -537,7 +536,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {op.name for op in unsolved_ops if op.op_type not in _ignore_unsolved_ops()}
+            op_names = {_to_name(op) for op in unsolved_ops} - _ignore_unsolved_ops()
             # If unsolved operators are left after filtering for those to be ignored, warn
             if op_names:
                 warnings.warn(
@@ -734,7 +733,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
     def __init__(  # pylint: disable=too-many-arguments
         self,
         graph: rx.PyDiGraph,
-        gate_set: dict,
+        gate_set: GateSet,
         original_op_indices: set[int],
         num_available_work_wires: int | None = None,
         lazy: bool = True,
@@ -810,7 +809,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         target_node = self._graph[target_idx]
         if self._graph[src_idx] is None and isinstance(target_node, _OperatorNode):
             # This branch applies to operators in the target gate set.
-            weight = self._gate_weights[_to_name(target_node.op)]
+            weight = self._gate_weights[target_node.op]
             self.distances[target_idx] = Resources({target_node.op: 1}, weight)
             self.num_work_wires_used[target_idx] = 0
         elif isinstance(target_node, _DecompositionNode):

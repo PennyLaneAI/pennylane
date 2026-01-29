@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
@@ -122,12 +123,16 @@ _BASE_DQ_GATE_SET = {
 
 
 # Complete gate set including controlled and adjoint variants
-ALL_DQ_GATE_SET = (
+ALL_DQ_GATES = GateSet(
     _BASE_DQ_GATE_SET
     | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
     | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
+    | {"Projector"},
+    name="All DefaultQubit Gates",
 )
 
+ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasureMP"})
+ALL_DQ_GATES_PLUS_MCM.name = "All DefaultQubit Gates With MCM"
 
 _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
@@ -341,15 +346,12 @@ def _add_adjoint_transforms(program: CompilePipeline, device_vjp=False, device_w
         decompose,
         stopping_condition=adjoint_ops,
         device_wires=device_wires,
-        target_gates=ALL_DQ_GATE_SET,
+        target_gates=ALL_DQ_GATES_PLUS_MCM,
         name=name,
         skip_initial_state_prep=False,
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
-    program.add_transform(
-        validate_measurements,
-        name=name,
-    )
+    program.add_transform(validate_measurements, name=name)
     program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
     program.add_transform(broadcast_expand)
     program.add_transform(validate_adjoint_trainable_params)
@@ -608,10 +610,15 @@ class DefaultQubit(Device):
 
     def _capture_preprocess_transforms(self, config: ExecutionConfig) -> CompilePipeline:
         compile_pileline = CompilePipeline()
+        target_gate_set = ALL_DQ_GATES
         if config.mcm_config.mcm_method == "deferred":
             compile_pileline.add_transform(defer_measurements, num_wires=len(self.wires))
+        else:
+            target_gate_set = ALL_DQ_GATES_PLUS_MCM
         compile_pileline.add_transform(
-            transforms_decompose, gate_set=ALL_DQ_GATE_SET, stopping_condition=stopping_condition
+            transforms_decompose,
+            gate_set=target_gate_set,
+            stopping_condition=stopping_condition,
         )
 
         return compile_pileline
@@ -636,6 +643,7 @@ class DefaultQubit(Device):
             return self._capture_preprocess_transforms(config)
 
         compile_pileline = CompilePipeline()
+        target_gate_set = ALL_DQ_GATES
 
         if config.interface == math.Interface.JAX_JIT:
             compile_pileline.add_transform(no_counts)
@@ -645,11 +653,13 @@ class DefaultQubit(Device):
             _stopping_condition = no_mcms_stopping_condition
         else:
             _stopping_condition = allow_mcms_stopping_condition
+            target_gate_set = ALL_DQ_GATES_PLUS_MCM
+
         compile_pileline.add_transform(
             decompose,
             stopping_condition=_stopping_condition,
             device_wires=self.wires,
-            target_gates=ALL_DQ_GATE_SET,
+            target_gates=target_gate_set,
             name=self.name,
         )
         _allow_resets = config.mcm_config.mcm_method != "deferred"
