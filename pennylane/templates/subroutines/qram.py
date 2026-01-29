@@ -848,7 +848,7 @@ class SelectOnlyQRAM(Operation):
         \text{SelectOnlyQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle.
 
     Args:
-        data (TensorLike):
+        data (TensorLike | Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
