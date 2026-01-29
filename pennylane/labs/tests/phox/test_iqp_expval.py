@@ -181,9 +181,10 @@ class TestIQPExpval:
         key = jax.random.PRNGKey(42)
         atol = 3.5 / np.sqrt(n_samples)
 
-        approx_val, _ = _iqp_expval_core(
-            generators, params_jax, obs_jax, n_samples, key, init_state=jax_state
+        expval_func = _iqp_expval_core(
+            generators, obs_jax, n_samples, key, init_state=jax_state
         )
+        approx_val, _ = expval_func(params_jax)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
