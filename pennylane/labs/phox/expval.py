@@ -12,9 +12,9 @@ class CircuitConfig:
     n_qubits: int
     generators: list[list[int]]
     observables: list[list[str]]
-    init_state: ArrayLike
-    phase_layer: Callable = None
     key: int
+    init_state: ArrayLike = None
+    phase_layer: Callable = None
 
 def _phase(pauli: str, qubit: int) -> complex:
     """For a Pauli P return the phase applied by HPH
@@ -69,7 +69,7 @@ def build_expval_func(config: CircuitConfig) -> Callable:
             phase_matrix = jax.vmap(compute_phase, in_axes=(None, 0, None))
             phase_matrix = jax.vmap(phase_matrix, in_axes=(None, None, 0))
 
-            E += phase_matrix(phase_params, bitflips, samples)
+            E += phase_matrix(phase_params, samples, bitflips)
 
         M = phases * jnp.exp(1j * E)
 
