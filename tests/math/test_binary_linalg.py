@@ -39,6 +39,58 @@ def _is_binary(x: np.ndarray) -> bool:
     return set(x.flat).issubset({0, 1})
 
 
+class TestIntToBinary:
+    """Tests for ``int_to_binary``."""
+
+    @pytest.mark.parametrize(
+        "x, n, expected",
+        [
+            (0, 1, np.array([0])),
+            (1, 1, np.array([1])),
+            (1, 2, np.array([0, 1])),
+            (2, 2, np.array([1, 0])),
+            (2, 10, np.eye(10)[-2]),
+            (3, 5, np.array([0, 0, 0, 1, 1])),
+            (7, 3, np.array([1, 1, 1])),
+            (13, 4, np.array([1, 1, 0, 1])),
+            (129, 8, np.array([1, 0, 0, 0, 0, 0, 0, 1])),
+        ],
+    )
+    def test_with_int(self, x, n, expected):
+        """Test that ``int_to_binary`` returns the correct bitstring for a single integer input."""
+        # Input validation
+        assert (expected @ 2 ** np.arange(n - 1, -1, -1)) == x
+        assert _is_binary(expected)
+
+        out = fn.int_to_binary(x, n)
+        assert _is_binary(out)
+        assert np.allclose(out, expected)
+
+    @pytest.mark.parametrize(
+        "x, n, expected",
+        [
+            (np.array([0]), 1, np.array([0])),
+            (np.array([0, 1]), 1, np.array([[0], [1]])),
+            (np.array([0, 1, 7]), 3, np.array([[0, 0, 0], [0, 0, 1], [1, 1, 1]])),
+            (
+                np.array([8, 3, 6, 2, 1]),
+                4,
+                np.array([[1, 0, 0, 0], [0, 0, 1, 1], [0, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
+            ),
+        ],
+    )
+    def test_with_array(self, x, n, expected):
+        """Test that ``int_to_binary`` returns the correct bitstrings for an array of integers."""
+        # Input validation
+        assert np.allclose((expected @ 2 ** np.arange(n - 1, -1, -1)), x)
+        assert _is_binary(expected)
+
+        out = fn.int_to_binary(x, n)
+        assert _is_binary(out)
+        assert out.shape == (len(x), n)
+        assert np.allclose(out, expected)
+
+
 class TestBinaryFiniteReducedRowEchelon:
     """Tests for ``binary_finite_reduced_row_echelon``."""
 

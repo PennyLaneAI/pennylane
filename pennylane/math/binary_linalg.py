@@ -16,6 +16,28 @@ also referred to as finite field F_2, Galois field GF_2, or ℤ_2."""
 import numpy as np
 
 
+def int_to_binary(integer: int | np.ndarray, length: int) -> np.ndarray:
+    """Convert an integer or a one-dimensional array of integers to an array of bitstrings of
+    given length, representing the integers in binary.
+
+    Args:
+        integer (int | np.ndarray): Integer(s) to convert. Either a single integers or a
+            one-dimensional array of integers.
+        length (int): Length of the bitstrings to which the integer(s) are converted. Note that the
+            ``length`` **least** significant bits are returned, discarding most
+            significant contributions if ``integer > 2**(length-1)-1``.
+
+    Returns:
+        np.ndarray: Array of bitstrings representing the ``integer`` input. If ``integer`` is an
+        ``int``, the returned array has shape ``(length,)``. If ``integer`` is an array of
+        length ``D``, the returned array has shape ``(D, length)``.
+    """
+    shifts = np.arange(length - 1, -1, -1)  # [length-1, length-2, ... 1, 0]
+    if isinstance(integer, int):
+        return (integer >> shifts) % 2
+    return (integer[:, None] >> shifts[None]) % 2
+
+
 def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
     r"""Computes the `reduced row echelon form (RREF)
     <https://en.wikipedia.org/wiki/Row_echelon_form>`__ of a matrix with
@@ -30,6 +52,10 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
         array[int]: reduced row-echelon form of the given ``binary_matrix``. The output has the
         same shape as the input. If ``inplace=True``, the returned array is the same object as
         the input ``binary_matrix``, which then has been modified in place.
+
+    .. note::
+
+        This function is currently not compatible with JAX.
 
     **Example**
 
@@ -92,6 +118,10 @@ def binary_rank(binary_matrix: np.ndarray) -> int:
 
     This function does not modify the input.
 
+    .. note::
+
+        This function is currently not compatible with JAX.
+
     **Example**
 
     Consider the following binary matrix of shape ``(4, 4)``:
@@ -139,6 +169,10 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Binary solution vector with same length as ``A`` and ``b``.
 
+    .. note::
+
+        This function is currently not compatible with JAX.
+
     **Example**
 
     Consider a simple regular Boolean matrix ``A`` and a coefficient vector ``b``:
@@ -185,6 +219,11 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
 
     Returns:
         bool: Whether ``vector`` is linearly independent of ``basis`` over :math:`\mathbb{Z}_2`.
+
+    .. note::
+
+        This function is currently not compatible with JAX.
+
     """
     # We assume ``basis`` to have full rank.
     r = vector.shape[0]
@@ -210,6 +249,10 @@ def binary_select_basis(bitstrings: np.ndarray):
         tuple[np.ndarray]: Two binary array. The first contains a selection of columns from
         ``bitstrings`` that form a basis for the column space of ``bitstrings`` over
         :math:`\mathbb{Z}_2`. The second contains all other columns.
+
+    .. note::
+
+        This function is currently not compatible with JAX.
     """
     r, _ = bitstrings.shape
     basis = np.zeros((r, 0), dtype=int)
