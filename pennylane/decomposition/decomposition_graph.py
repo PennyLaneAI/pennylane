@@ -29,6 +29,7 @@ import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Set
 from dataclasses import dataclass, replace
+from functools import lru_cache
 
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
@@ -36,7 +37,7 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qml
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DecompositionError
+from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
@@ -60,6 +61,11 @@ from .symbolic_decomposition import (
 from .utils import translate_op_alias
 
 IGNORED_UNSOLVED_OPS = {Allocate, Deallocate}
+
+
+@lru_cache
+def _ignore_unsolved_ops():
+    return IGNORED_UNSOLVED_OPS | qml.ops.qutrit.__all__
 
 
 @dataclass(frozen=True)
@@ -531,13 +537,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {op.name for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS}
+            op_names = {op.name for op in unsolved_ops if op.op_type not in _ignore_unsolved_ops()}
             # If unsolved operators are left after filtering for those to be ignored, warn
             if op_names:
                 warnings.warn(
                     f"The graph-based decomposition system is unable to find a decomposition for "
                     f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
-                    UserWarning,
+                    DecompositionWarning,
                 )
         return DecompGraphSolution(
             visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
