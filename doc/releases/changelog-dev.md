@@ -14,8 +14,13 @@
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
+  [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
 <h3>Improvements 🛠</h3>
+
+* :class:`~.CSWAP` is now decomposed more cheaply, using ``change_op_basis`` with
+  two ``CNOT`` gates and a single ``Toffoli`` gate.
+  [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
 
 * `qml.vjp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
@@ -32,6 +37,13 @@
 
 * Circuits containing `GlobalPhase` are now trainable without removing the `GlobalPhase`.
   [(#8950)](https://github.com/PennyLaneAI/pennylane/pull/8950)
+
+* The decomposition of `QSVT` has been updated to be consistent with or without the graph-based
+  decomposition system enabled.
+  [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+
+* The `to_zx` transform is now compatible with the new graph-based decomposition system.
+  [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -147,6 +159,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+  [(#8985)](https://github.com/PennyLaneAI/pennylane/pull/8985)
+
 * :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar` 
   have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` 
   function for decomposing circuits.
@@ -177,7 +192,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
-  [(#xxxx)](https://github.com/PennyLaneAI/pennylane/pull/xxxx)
+  [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
 
 * Standardized the tolerances of several stochastic tests to use a 3-sigma rule based on theoretical variance and number of shots, reducing spurious failures. This includes `TestHamiltonianSamples::test_multi_wires`, `TestSampling::test_complex_hamiltonian`, and `TestBroadcastingPRNG::test_nonsample_measure`.
   Bumped `rng_salt` to `v0.45.0`.
