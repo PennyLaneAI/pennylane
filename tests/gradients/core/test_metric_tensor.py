@@ -1540,6 +1540,29 @@ def test_error_generator_not_registered(allow_nonunitary):
             qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
 
+def test_expand_metric_tensor():
+    """Tests _expand_metric_tensor works with and without allowed non-unitaries."""
+    allow_nonunitary = [True, False]
+    res = []
+
+    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))
+
+    x = np.array(0.5, requires_grad=True)
+    z = np.array(0.1, requires_grad=True)
+
+    @qml.qnode(dev)
+    def circuit(x, z):
+        qml.H("wire2")
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire1")
+        return qml.expval(qml.PauliZ("wire1"))
+
+    for allow in allow_nonunitary:
+        res.append(qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow)(x, z))
+
+    assert qml.numpy.allclose(res[0], res[1])
+
+
 def test_no_error_missing_aux_wire_not_used():
     """Tests that a no error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing but it is not used, either
