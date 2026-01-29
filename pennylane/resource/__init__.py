@@ -54,12 +54,6 @@ Error Tracking
     ~ErrorOperation
     ~algo_error
 
-.. warning::
-    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
-    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
-    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
-    in v0.45.
-
 Resource Classes
 ----------------
 
@@ -154,28 +148,3 @@ from .resource import (
     substitute,
 )
 from .specs import specs
-
-
-def __getattr__(name):
-    if name in {
-        "estimate_error",
-        "estimate_shots",
-        "FirstQuantization",
-        "DoubleFactorization",
-    }:
-
-        # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane import estimator
-        from pennylane.exceptions import PennyLaneDeprecationWarning
-
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible from the resource module \
-                and must be imported as pennylane.estimator.{name}. \
-                    Support for access through this module will be removed in v0.45.",
-            PennyLaneDeprecationWarning,
-        )
-
-        return getattr(estimator, name)
-
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")  # pragma: no cover

@@ -262,6 +262,9 @@ def cast(tensor, dtype):
         except (AttributeError, TypeError, ImportError):
             dtype = getattr(dtype, "name", dtype)
 
+        if math.get_interface(dtype) == "torch":
+            tensor = np.asarray(tensor, like="torch")
+
     return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
 
 
@@ -292,6 +295,8 @@ def cast_like(tensor1, tensor2):
         dtype = tensor2.dtype
     elif isinstance(tensor2, ArrayBox):
         dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    elif hasattr(tensor2, "dtype"):
+        dtype = tensor2.dtype
     else:
         dtype = ar.to_numpy(tensor2).dtype.type
     return cast(tensor1, dtype)
@@ -643,3 +648,38 @@ def binary_finite_reduced_row_echelon(binary_matrix):
             icol += 1
 
     return rref_mat.astype(int)
+
+
+def ceil_log2(n: int) -> int:
+    """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
+
+    Args:
+        n (int): Integer to compute the rounded-up base-2 logarithm of.
+
+    Returns:
+        int: Rounded-up base-2 logarithm of ``n``.
+
+
+    **Example**
+
+    On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
+    an ``int``:
+
+    >>> qml.math.ceil_log2(8)
+    3
+
+    On other numbers, the rounding of the logarithm becomes visible:
+
+    >>> qml.math.log2(14)
+    3.807354922057604
+    >>> qml.math.ceil_log2(14)
+    4
+
+    Note that we always round up:
+
+    >>> qml.math.round(qml.math.log2(9))
+    3.0
+    >>> qml.math.ceil_log2(9)
+    4
+    """
+    return int(np.ceil(np.log2(n)))

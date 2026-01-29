@@ -42,18 +42,37 @@ class DummyOp(ResourceOperator):
 class TestQSVT:
     """Test the QSVT class."""
 
-    def test_init_error_encoding_dims(self):
-        """Test that an error is raised when encoding_dims is invalid."""
+    @pytest.mark.parametrize(
+        "dims, poly_deg, error_type, error_msg",
+        [
+            (0.5, 5, TypeError, "Expected `encoding_dims` to be an integer or tuple of integers."),
+            ((1, 2, 3), 5, ValueError, "Expected `encoding_dims` to be a tuple of two integers"),
+            ((0,), 5, ValueError, "Expected elements of `encoding_dims` to be positive integers."),
+            (
+                (-2, 2),
+                5,
+                ValueError,
+                "Expected elements of `encoding_dims` to be positive integers.",
+            ),
+            (2, -1, ValueError, "'poly_deg' must be a positive integer greater than zero, got -1"),
+            (
+                2,
+                4.5,
+                ValueError,
+                "'poly_deg' must be a positive integer greater than zero, got 4.5",
+            ),
+        ],
+    )
+    def test_init_failures(self, dims, poly_deg, error_type, error_msg):
+        """Test all invalid inputs raise the correct exceptions."""
         op = DummyOp(wires=[0])
-        with pytest.raises(
-            ValueError, match="Expected `encoding_dims` to be an int or tuple of int"
-        ):
-            qre.QSVT(op, encoding_dims="invalid", poly_deg=2)
+        with pytest.raises(error_type, match=error_msg):
+            qre.QSVT(block_encoding=op, encoding_dims=dims, poly_deg=poly_deg)
 
-        with pytest.raises(
-            ValueError, match="Expected `encoding_dims` to be a tuple of two integers"
-        ):
-            qre.QSVT(op, encoding_dims=(1, 2, 3), poly_deg=2)
+        with pytest.raises(error_type, match=error_msg):
+            qre.QSVT.resource_rep(
+                block_encoding=op.resource_rep(), encoding_dims=dims, poly_deg=poly_deg
+            )
 
     def test_init_encoding_dims_tuple_len_1(self):
         """Test that encoding_dims is correctly handled when it is a tuple of length 1."""
@@ -66,6 +85,15 @@ class TestQSVT:
         op = DummyOp(wires=[0])
         with pytest.raises(ValueError, match="Expected 1 wires, got 2"):
             qre.QSVT(op, encoding_dims=2, poly_deg=2, wires=[0, 1])
+
+    def test_init_without_wires(self):
+        """Test that we can instantiate QSVT without providing wires."""
+        op = qre.RX()
+        qsvt = qre.QSVT(block_encoding=op, encoding_dims=(1, 1), poly_deg=5)
+
+        assert qsvt.num_wires == 1
+        assert qsvt.encoding_dims == (1, 1)
+        assert qsvt.block_encoding == qre.resource_rep(qre.RX)
 
     @pytest.mark.parametrize(
         "encoding_dims, poly_deg",
@@ -179,11 +207,19 @@ class TestQSP:
         ):
             qre.QSP(op, poly_deg=2)
 
+        with pytest.raises(
+            ValueError, match="The block encoding operator should act on a single qubit"
+        ):
+            qre.QSP.resource_rep(op, poly_deg=2)
+
     def test_init_error_convention(self):
         """Test that an error is raised when convention is invalid."""
         op = DummyOp(wires=[0])
         with pytest.raises(ValueError, match="The valid conventions are 'Z' or 'X'"):
             qre.QSP(op, poly_deg=2, convention="Y")
+
+        with pytest.raises(ValueError, match="The valid conventions are 'Z' or 'X'"):
+            qre.QSP.resource_rep(op, poly_deg=2, convention="Y")
 
     def test_init_wires_mismatch(self):
         """Test that an error is raised when wires don't match block encoding."""
@@ -281,7 +317,7 @@ class TestGQSP:
         """Test that an error is raised when wrong number of wires is provided."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match="Expected 2 wires, got 1"):
-            qre.GQSP(op, poly_deg=2, wires=[0])
+            qre.GQSP(op, d_plus=2, wires=[0])
 
     @pytest.mark.parametrize("rot_prec", (0, -1, -2.5))
     def test_rotation_precision_error(self, rot_prec):
@@ -291,24 +327,33 @@ class TestGQSP:
             ValueError,
             match="Expected 'rotation_precision' to be a positive real number greater than zero",
         ):
-            _ = qre.GQSP(op, poly_deg=2, rotation_precision=rot_prec)
+            _ = qre.GQSP(op, d_plus=2, rotation_precision=rot_prec)
+
+        with pytest.raises(
+            ValueError,
+            match="Expected 'rotation_precision' to be a positive real number greater than zero",
+        ):
+            _ = qre.GQSP.resource_rep(op, d_plus=2, rotation_precision=rot_prec)
 
     @pytest.mark.parametrize(
-        "poly_deg, neg_poly_deg, error_msg",
+        "d_plus, d_minus, error_msg",
         (
-            (0.1, 2, "'poly_deg' must be a positive integer greater than zero,"),
-            (-3, 3, "'poly_deg' must be a positive integer greater than zero,"),
-            (0, 5, "'poly_deg' must be a positive integer greater than zero,"),
-            (1, 0.5, "'neg_poly_deg' must be a positive integer,"),
-            (2, -3, "'neg_poly_deg' must be a positive integer,"),
+            (0.1, 2, "'d_plus' must be a positive integer greater than zero,"),
+            (-3, 3, "'d_plus' must be a positive integer greater than zero,"),
+            (0, 5, "'d_plus' must be a positive integer greater than zero,"),
+            (1, 0.5, "'d_minus' must be a non-negative integer,"),
+            (2, -3, "'d_minus' must be a non-negative integer,"),
         ),
     )
-    def test_poly_deg_error(self, poly_deg, neg_poly_deg, error_msg):
+    def test_d_error(self, d_plus, d_minus, error_msg):
         """Test that an error is raised of incompatible values are
         passed for 'poly_deg' and 'neg_poly_deg'."""
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match=error_msg):
-            _ = qre.GQSP(op, poly_deg, neg_poly_deg)
+            _ = qre.GQSP(op, d_plus, d_minus)
+
+        with pytest.raises(ValueError, match=error_msg):
+            _ = qre.GQSP.resource_rep(op, d_plus, d_minus)
 
     @pytest.mark.parametrize(
         "poly_deg, neg_poly_deg, rot_precision",
@@ -322,8 +367,8 @@ class TestGQSP:
         op = qre.RX(0.1, wires=0)
         gqsp = qre.GQSP(op, poly_deg, neg_poly_deg, rot_precision)
 
-        assert gqsp.resource_params["poly_deg"] == poly_deg
-        assert gqsp.resource_params["neg_poly_deg"] == neg_poly_deg
+        assert gqsp.resource_params["d_plus"] == poly_deg
+        assert gqsp.resource_params["d_minus"] == neg_poly_deg
         assert gqsp.resource_params["rotation_precision"] == rot_precision
         assert gqsp.resource_params["cmpr_signal_op"].op_type == qre.RX
 
@@ -344,8 +389,8 @@ class TestGQSP:
             2,  # 1 wire for RX + 1 control
             {
                 "cmpr_signal_op": cmpr_op,
-                "poly_deg": poly_deg,
-                "neg_poly_deg": neg_poly_deg,
+                "d_plus": poly_deg,
+                "d_minus": neg_poly_deg,
                 "rotation_precision": rot_precision,
             },
         )
@@ -451,6 +496,9 @@ class TestGQSPTimeEvolution:
         op = qre.RX(0.1, wires=0)
         with pytest.raises(ValueError, match=error_msg):
             qre.GQSPTimeEvolution(op, time, one_norm, poly_approx_precision)
+
+        with pytest.raises(ValueError, match=error_msg):
+            qre.GQSPTimeEvolution.resource_rep(op, time, one_norm, poly_approx_precision)
 
     def test_resource_params(self):
         """Test that the resource params for GQSPTimeEvolution are correct."""

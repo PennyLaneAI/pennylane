@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Resource operators for select templates."""
 
-import math
 from collections import defaultdict
 
 import numpy as np
@@ -27,6 +26,7 @@ from pennylane.estimator.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
+from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=arguments-differ,super-init-not-called, signature-differs
@@ -51,7 +51,7 @@ class SelectTHC(ResourceOperator):
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
         select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-            used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+            used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
             case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
             ``T``-gate count.
         wires (WiresLike | None): the wires on which the operator acts
@@ -132,7 +132,7 @@ class SelectTHC(ResourceOperator):
 
         if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but got {rotation_precision}."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
@@ -152,7 +152,7 @@ class SelectTHC(ResourceOperator):
         # and SemiAdder operators.
         # 2*n_M wires are for \mu and \nu registers, where n_M = log_2(tensor_rank+1)
         # num_orb*2 for state register and 6 are flags.
-        self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
+        self.num_wires = num_orb * 2 + 2 * ceil_log2(tensor_rank + 1) + 6
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
@@ -173,7 +173,7 @@ class SelectTHC(ResourceOperator):
                 * rotation_precision (int): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. The default value is set to ``15`` bits.
                 * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                  used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                  used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                   case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                   ``T``-gate count.
         """
@@ -204,7 +204,7 @@ class SelectTHC(ResourceOperator):
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                 case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                 ``T``-gate count.
 
@@ -220,7 +220,7 @@ class SelectTHC(ResourceOperator):
 
         if not isinstance(rotation_precision, int) or rotation_precision <= 0:
             raise TypeError(
-                f"`rotation_precision` must be a positive integer, but type {type(rotation_precision)} was provided."
+                f"`rotation_precision` must be a positive integer, but got {rotation_precision}."
             )
 
         if not isinstance(num_batches, int) or num_batches not in range(1, thc_ham.num_orbitals):
@@ -231,7 +231,7 @@ class SelectTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
+        num_wires = num_orb * 2 + 2 * ceil_log2(tensor_rank + 1) + 6
         params = {
             "thc_ham": thc_ham,
             "num_batches": num_batches,
@@ -266,7 +266,7 @@ class SelectTHC(ResourceOperator):
             rotation_precision (int): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. The default value is set to ``15`` bits.
             select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
-                used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
+                used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
                 case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
                 ``T``-gate count.
 
@@ -581,7 +581,7 @@ class SelectPauli(ResourceOperator):
             )
         self.pauli_ham = pauli_ham
 
-        num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))
+        num_ctrl_wires = ceil_log2(pauli_ham.num_terms)
         num_wires = pauli_ham.num_qubits + num_ctrl_wires
 
         if wires:
@@ -633,7 +633,7 @@ class SelectPauli(ResourceOperator):
                     pauli_terms[pw] += freq
 
         num_ops = pauli_ham.num_terms
-        work_qubits = math.ceil(math.log2(num_ops)) - 1
+        work_qubits = ceil_log2(num_ops) - 1
 
         gate_types.append(Allocate(work_qubits))
 
@@ -742,7 +742,7 @@ class SelectPauli(ResourceOperator):
                     pauli_terms[pw] += freq
 
         num_ops = pauli_ham.num_terms
-        work_qubits = math.ceil(math.log2(num_ops))
+        work_qubits = ceil_log2(num_ops)
 
         gate_types.append(Allocate(work_qubits))
 
@@ -807,7 +807,7 @@ class SelectPauli(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        num_ctrl_wires = math.ceil(math.log2(pauli_ham.num_terms))
+        num_ctrl_wires = ceil_log2(pauli_ham.num_terms)
         num_wires = pauli_ham.num_qubits + num_ctrl_wires
         params = {"pauli_ham": pauli_ham}
         return CompressedResourceOp(cls, num_wires, params)

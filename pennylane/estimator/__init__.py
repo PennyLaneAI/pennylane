@@ -79,6 +79,7 @@ from .templates import (
     SelectOnlyQRAM,
     BasisState,
     BasisEmbedding,
+    BBQRAM,
     PhaseGradient,
     OutMultiplier,
     SemiAdder,

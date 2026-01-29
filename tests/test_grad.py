@@ -36,24 +36,6 @@ def test_kwarg_errors_without_qjit(grad_fn):
         grad_fn(f, h=1e-6)(0.5)
 
 
-@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
-def test_argnum_deprecation(grad_fn):
-    """Test that using argnum raises a deprecation warning."""
-
-    def f(x, y):
-        return y * x**2
-
-    with pytest.warns(
-        qml.exceptions.PennyLaneDeprecationWarning, match="has been renamed to argnums"
-    ):
-        g = grad_fn(f, argnum=1)
-
-    x = 0.5
-    y = qml.numpy.array(0.5, requires_grad=True)
-    r = g(x, y)
-    assert qml.math.allclose(r, 0.25)
-
-
 def test_grad_name():
     """Test that grad has name associated with it for the later mlir op."""
 
@@ -90,3 +72,23 @@ def test_jacobian_name():
             return x**2
 
     assert qml.jacobian(A()).__name__ == "<jacobian: A>"
+
+
+def test_vjp_without_qjit():
+    """Test that an error is raised when using VJP without QJIT."""
+
+    def vjp(params, cotangent):
+        def f(x):
+            y = [qml.math.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+            return qml.math.stack(y)
+
+        return qml.vjp(f, [params], [cotangent])
+
+    x = qml.numpy.array([0.1, 0.2])
+    dy = qml.numpy.array([-0.5, 0.1, 0.3])
+
+    with pytest.raises(
+        qml.exceptions.CompileError,
+        match="Pennylane does not support the VJP function without QJIT.",
+    ):
+        vjp(x, dy)
