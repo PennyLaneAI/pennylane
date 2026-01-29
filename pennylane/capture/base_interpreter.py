@@ -633,7 +633,7 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
 
 @PlxprInterpreter.register_primitive(vjp_prim)
 def handle_vjp(self, *invals, jaxpr, argnums, **params):
-    """Handle the jacobian primitive."""
+    """Handle the vector-jacobian-product primitive."""
 
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
 
@@ -648,7 +648,7 @@ def handle_vjp(self, *invals, jaxpr, argnums, **params):
 
 @PlxprInterpreter.register_primitive(jvp_prim)
 def handle_jvp(self, *invals, jaxpr, argnums, **params):
-    """Handle the jacobian primitive."""
+    """Handle the jacobian-vector-product primitive."""
 
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
 

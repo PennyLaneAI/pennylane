@@ -72,7 +72,7 @@ def _validate_tangents(params, dparams, argnums):
 
     if len(dparams) != len(argnums):
         raise TypeError(
-            "number of tangent and number of differentiable parameters in qml.jvp do not "
+            "number of tangents and number of differentiable parameters in qml.jvp do not "
             "match; the number of parameters must be equal. "
             f"Got {len(argnums)} differentiable parameters and so expected "
             f"as many tangents, but got {len(dparams)} instead."
@@ -84,8 +84,8 @@ def _validate_tangents(params, dparams, argnums):
             raise TypeError(
                 "function params and tangents arguments to qml.jvp do not match; "
                 "dtypes must be equal. "
-                f"Got function params dtype {_dtype(x)} and so expected tangent dtype "
-                f"{_dtype(x)}, but got tangent dtype {_dtype(dx)} instead."
+                f"Got function params dtype {_dtype(x)} and expected tangent dtype "
+                f"to match, but got tangent dtype {_dtype(dx)} instead."
             )
 
         if _get_shape(x) != _get_shape(dx):
