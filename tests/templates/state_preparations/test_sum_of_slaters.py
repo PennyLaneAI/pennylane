@@ -23,8 +23,8 @@ from pennylane.math import binary_rank, ceil_log2
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
-    _select_rows,
     compute_sos_encoding,
+    select_rows,
 )
 
 
@@ -103,11 +103,20 @@ class TestHelperFunctions:
             (np.array([[0, 1], [0, 1]]), True),
             (np.array([[0, 0], [1, 1]]), False),
             (np.array([[0, 0, 0], [0, 0, 1], [0, 1, 1]]), True),
+            (np.eye(64, dtype=int), True),
         ],
     )
     def test_columns_differ(self, bits, expected):
         """Test the _columns_differ helper function."""
         assert _columns_differ(bits) is expected
+
+    @pytest.mark.parametrize("size", [65, 100])
+    def test_columns_differ_error(self, size):
+        """Test that an error is raised for bitstrings that are too large."""
+        bits = np.ones((size, 4), dtype=int)
+        bits[:4, :] = np.eye(4, dtype=int)
+        with pytest.raises(ValueError, match="Column comparison uses 64-bit integers internally."):
+            _columns_differ(bits)
 
     @pytest.mark.parametrize(
         "bits ",
@@ -118,9 +127,9 @@ class TestHelperFunctions:
         ],
     )
     def test_select_rows_need_all_rows(self, bits):
-        """Test that _select_rows correctly selects all rows if they are all needed to
+        """Test that select_rows correctly selects all rows if they are all needed to
         discrimnate the columns of the input"""
-        selectors, new_bits = _select_rows(bits)
+        selectors, new_bits = select_rows(bits)
         assert set(selectors) == set(range(len(bits)))  # all rows are needed
         assert np.allclose(new_bits, bits)
 
@@ -185,9 +194,9 @@ class TestHelperFunctions:
         ],
     )
     def test_select_rows_need_only_few_rows(self, bits, skip_rows):
-        """Test that _select_rows correctly selects a subset of rows if they are not all needed to
+        """Test that select_rows correctly selects a subset of rows if they are not all needed to
         discrimnate the columns of the input"""
-        selectors, new_bits = _select_rows(bits)
+        selectors, new_bits = select_rows(bits)
         assert set(selectors) == set(range(len(bits))) - set(skip_rows)
         assert np.allclose(new_bits, bits[np.array(selectors)])
 
@@ -273,6 +282,7 @@ class TestHelperFunctions:
 
 
 class TestComputeSosEncoding:
+    """Tests for ``compute_sos_encoding``."""
 
     @pytest.mark.parametrize("r, D", [(3, 3), (4, 5), (9, 17), (8, 32)])
     def test_trivial_case(self, r, D):
