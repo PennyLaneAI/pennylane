@@ -8,7 +8,7 @@
   
   - :func:`~.math.binary_is_independent` computes whether a vector is linear lindependent of 
     a basis of binary vectors over :math:`\mathbb{Z}_2`.
-  - :func:`~.math.binary_rank` computes the rank over :math:`\mathbb{Z}_2` of a binary matrix.
+  - :func:`~.math.binary_matrix_rank` computes the rank over :math:`\mathbb{Z}_2` of a binary matrix.
   - :func:`~.math.binary_solve_linear_system` solves a linear system of the form :math:`A\cdot x=b`
     with binary matrix :math:`A` and binary coefficient vector :math:`b` over :math:`\mathbb{Z}_2`.
   - :func:`~.math.binary_select_basis` selects linearly independent columns out of a collection
