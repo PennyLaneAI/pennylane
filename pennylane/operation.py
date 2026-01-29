@@ -201,6 +201,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -418,11 +419,15 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     to know about wire labels) or ``(*parameters, wires, **hyperparameters)``, where ``parameters``, ``wires``, and
     ``hyperparameters`` are the respective attributes of the operator class.
 
+    .. warning::
+
+        The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+        wires (Iterable[Any] | Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
+        id (str | None): *Deprecated* A custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
     **Example**
@@ -965,8 +970,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
-
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalue|
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. note::
@@ -1013,7 +1017,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def id(self) -> str:
-        """Custom string to label a specific operator instance."""
+        """Custom string to label a specific operator instance.
+
+        .. warning::
+
+            The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
+        """
+        warnings.warn(
+            "The 'id' argument is deprecated and will be removed in v0.46.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
         return self._id
 
     @name.setter
@@ -1081,7 +1096,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         op_label = base_label or self.__class__.__name__
 
         if self.num_params == 0:
-            return op_label if self._id is None else f'{op_label}("{self._id}")'
+            return op_label if self.id is None else f'{op_label}("{self.id}")'
 
         def _format(x):
             """Format a scalar parameter or retrieve/store a matrix-valued parameter
@@ -1112,17 +1127,25 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         param_strings = [out for p in self.parameters if (out := _format(p)) != ""]
         inner_string = ",\n".join(param_strings)
         # Include operation's id in string
-        if self._id is not None:
+        if self.id is not None:
             if inner_string == "":
-                inner_string = f'"{self._id}"'
+                inner_string = f'"{self.id}"'
             else:
-                inner_string = f'{inner_string},"{self._id}"'
+                inner_string = f'{inner_string},"{self.id}"'
         if inner_string == "":
             return f"{op_label}"
         return f"{op_label}\n({inner_string})"
 
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None, id: str | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
+
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument is deprecated and will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
+
         self._id: str = id
         self._pauli_rep: qml.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
@@ -1801,11 +1824,15 @@ class Operation(Operator):
     please see the documentation for :class:`~.gradients.param_shift`,
     :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
+    .. warning::
+
+        The ``id`` argument is deprecated and will be removed in v0.46.
+
     Args:
         *params (tuple[tensor_like]): trainable parameters
         wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        id (str): custom label given to an operator instance,
+        id (str | None): *Deprecated* A custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
 

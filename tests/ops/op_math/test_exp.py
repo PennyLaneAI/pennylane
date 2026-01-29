@@ -36,12 +36,11 @@ class TestInitialization:
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
 
-        op = constructor(base, id="something")
+        op = constructor(base)
 
         assert op.base is base
         assert op.coeff == 1
         assert op.name == "Exp"
-        assert op.id == "something"
 
         assert op.num_params == 1
         assert op.parameters == [1]

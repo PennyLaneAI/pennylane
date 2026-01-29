@@ -19,12 +19,11 @@ from pennylane import math, templates
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose, null_postprocessing
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.ops import Adjoint
+from pennylane.ops.functions import equal
+from pennylane.ops.op_math import Adjoint
 from pennylane.tape import make_qscript
 from pennylane.transforms.core import BoundTransform, transform
 from pennylane.workflow import get_transform_program
-
-from .conditionals import partial_wires
 
 
 # pylint: disable=too-many-branches
@@ -208,7 +207,7 @@ def add_noise(tape, noise_model, level="user"):
         for condition, noise in zip(conditions, noises):
             if condition(operation):
                 noise_ops = noise(operation, **metadata).operations
-                if operation in noise_ops and _check_queue_op(operation, noise, metadata):
+                if any(equal(operation, o) for o in noise_ops):
                     ops_indx = noise_ops.index(operation)
                     curr_ops = noise_ops[:ops_indx] + curr_ops + noise_ops[ops_indx + 1 :]
                 else:
@@ -254,17 +253,6 @@ def add_noise(tape, noise_model, level="user"):
         return tuple(final_res) if len(final_res) > 1 else final_res[0]
 
     return new_tapes, post_processing_fn
-
-
-def _check_queue_op(operation, noise_func, metadata):
-    """Performs a secondary check for existence of an operation in the queue using a randomized ID"""
-
-    test_id = "f49968bfc4W0H86df3A733bf6e92904d21a_!$-T-@!_c131S549b169b061I25b85398bfd8ec1S3c"
-    test_queue = noise_func(
-        partial_wires(operation, id=test_id)(operation.wires), **metadata
-    ).operations
-
-    return any(test_id == getattr(o, "id", "") for o in test_queue)
 
 
 # pylint:disable = protected-access
