@@ -195,7 +195,6 @@ def get_compile_pipeline(
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
         resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-        outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
 
         full_compile_pipeline = CompilePipeline()
         full_compile_pipeline += qnode.compile_pipeline
