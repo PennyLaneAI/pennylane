@@ -203,7 +203,7 @@ def __getattr__(key):
         return _get_abstract_measurement()
 
     if key == "qnode_prim":
-        from ..workflow._capture_qnode import qnode_prim
+        from ..workflow._capture_qnode import qnode_prim  # tach-ignore
 
         return qnode_prim
 

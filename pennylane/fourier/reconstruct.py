@@ -21,7 +21,7 @@ from autoray import numpy as anp
 
 from pennylane import math
 from pennylane.capture.autograph import wraps
-from pennylane.workflow.qnode import QNode
+from pennylane.workflow import QNode
 
 
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
