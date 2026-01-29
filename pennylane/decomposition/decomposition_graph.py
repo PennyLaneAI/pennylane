@@ -62,7 +62,26 @@ from .utils import to_name
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
-UNSUPPORTED_TEMPLATES = {"RandomLayers", "WireCut", "TrotterizedQfunc"}
+UNSUPPORTED_TEMPLATES = {
+    "RandomLayers",
+    "WireCut",
+    "TrotterizedQfunc",
+    "QDrift",
+    "SpecialUnitary",
+    "DoubleExcitationPlus",
+    "DoubleExcitationMinus",
+    "DisplacementEmbedding",
+    "Beamsplitter",
+    "QutritBasisStatePreparation",
+    "SqueezingEmbedding",
+    "CVNeuralNetLayers",
+    "QROMStatePreparation",
+    "TwoLocalSwapNetwork",
+    "MERA",
+    "MPS",
+    "TTN",
+    "FlipAndRotate",
+}
 
 
 @lru_cache

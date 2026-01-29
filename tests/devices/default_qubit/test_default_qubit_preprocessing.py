@@ -908,6 +908,7 @@ class TestPreprocessingIntegration:
         )
         qml.assert_equal(new_tape, expected)
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_no_mcms_conditionals_defer_measurements(self):
         """Test that an error is raised if an mcm occurs in a decomposition after defer measurements has been applied."""
 
