@@ -223,4 +223,4 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnums)
 
-    raise CompileError("Pennylane does not support the JVP function without QJIT.")
+    raise CompileError("PennyLane does not support the JVP function without QJIT.")
