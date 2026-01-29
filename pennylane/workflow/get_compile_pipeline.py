@@ -77,19 +77,19 @@ def get_compile_pipeline(
     qnode: QNode,
     level: str | int | slice = "device",
 ) -> Callable[P, CompilePipeline]:
-    """Extract a compile pipeline at a designated level.
+    """Retrieve the compile pipeline used during execution of a QNode.
 
     Args:
         qnode (QNode): The QNode to get the compile pipeline for.
-        level (str, int, slice): An indication of what transforms to use from the full compile pipeline.
+        level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline.
 
-            - ``"top"``: Returns an empty compile pipeline.
-            - ``"user"``: Retrieves a compile pipeline containing manually applied user transformations.
-            - ``"gradient"``: Retrieves a compile pipeline that includes user transformations and any relevant gradient transformations.
-            - ``"device"``: Retrieves the entire compile pipeline (user + gradient + device) that is used for execution.
-            - ``str``: Can also accept a string corresponding to the name of a marker that was manually added to the compile pipeline.
-            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
-            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the compile pipeline.
+            - ``"top"``: An empty pipeline, representing the initial stage before any transformations are applied.
+            - ``"user"``: Includes only manually applied user transformations.
+            - ``"gradient"``: Includes user transformations and any appended gradient-related passes.
+            - ``"device"``: The full pipeline (user + gradient + device) as prepared for device execution.
+            - ``str``: The name of the specific :func:`qml.marker` manually inserted into the pipeline.
+            - ``int``: The number of transformations to include from the start of the pipeline (e.g. ``level=0`` is empty).
+            - ``slice``: A subset of the full pipeline defined by a slice object.
 
     Returns:
         CompilePipeline: the compile pipeline corresponding to the requested level.
