@@ -34,6 +34,7 @@ from pennylane.templates.subroutines.qsvt import (
     _W_of_x,
     _z_rotation,
 )
+from pennylane.transforms import decompose
 
 
 def qfunc(A):
@@ -164,7 +165,9 @@ class TestQSVT:
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
                 [
                     qml.RZ(0.1, wires=[0]),
-                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
+                    qml.Z(0),
+                    qml.RY(0.2, wires=[0]),
+                    qml.Z(0),
                     qml.RZ(0.3, wires=[1]),
                 ],
             ),
@@ -175,7 +178,8 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(U_A, lst_projectors)
 
-        for idx, val in enumerate(tape.expand().operations):
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "Z"})
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 
@@ -215,7 +219,9 @@ class TestQSVT:
 
         tape2 = qml.tape.QuantumScript.from_queue(q)
 
-        for expected, val1, val2 in zip(results, tape.expand().operations, tape2.operations):
+        [tape], _ = decompose(tape, gate_set={"Z", "RY", "RZ", "X", "PCPhase"}, max_expansion=1)
+
+        for expected, val1, val2 in zip(results, tape.operations, tape2.operations):
             qml.assert_equal(expected, val1)
             qml.assert_equal(expected, val2)
 
@@ -312,7 +318,8 @@ class TestQSVT:
                 np.array([0.1, 0.2]),
                 [
                     qml.PCPhase(0.1, dim=2, wires=[0]),
-                    qml.prod(qml.PauliX(wires=0), qml.RZ(0.1, wires=0)),
+                    qml.RZ(0.1, wires=0),
+                    qml.PauliX(wires=0),
                     qml.PCPhase(0.2, dim=2, wires=[0]),
                 ],
             ),
@@ -324,7 +331,8 @@ class TestQSVT:
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(quantum_function(A), phi_func(phis))
 
-        for idx, val in enumerate(tape.expand().operations):
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "X", "RX", "RZ"})
+        for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 
