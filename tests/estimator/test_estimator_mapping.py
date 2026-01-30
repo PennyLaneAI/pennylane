@@ -125,7 +125,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.SelectOnlyQRAM(
-                    bitstrings=[
+                    data=[
                         "000",
                         "101",
                         "010",
@@ -149,8 +149,24 @@ class TestMapToResourceOp:
                     select_value=0,
                 ),
                 re_temps.SelectOnlyQRAM(
-                    num_bitstrings=16,
-                    num_ones=24,
+                    data=[
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                        "000",
+                        "101",
+                        "010",
+                        "111",
+                    ],
                     num_wires=7,
                     num_control_wires=2,
                     num_select_wires=2,
