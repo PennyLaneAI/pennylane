@@ -24,6 +24,7 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.templates import HybridQRAM
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,too-many-arguments
@@ -247,7 +248,36 @@ class TestHybridQRAM:
         (
             (
                 np.array([[0, 0, 0], [0, 1, 0], [1, 0, 1], [1, 1, 1]]),
-                15,
+                10,
+                1,
+                2,
+                [
+                    GateCount(resource_rep(qre.CSWAP), 20),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.Controlled.resource_rep(resource_rep(qre.SWAP), 1, 1), 1, 0
+                        ),
+                        12,
+                    ),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.CSWAP), 1, 0), 12),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Hadamard), 1, 0), 12),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0), 6),
+                    GateCount(
+                        qre.Controlled.resource_rep(resource_rep(qre.X), 1, num_zero_ctrl=1), 2
+                    ),
+                    GateCount(resource_rep(qre.CNOT), 2),
+                ],
+            ),
+            (
+                np.array(
+                    [
+                        [0, 1, 0],
+                        [1, 1, 1],
+                        [1, 1, 0],
+                        [0, 0, 0],
+                    ]
+                ),
+                16,
                 0,
                 2,
                 [
@@ -264,45 +294,64 @@ class TestHybridQRAM:
                     GateCount(resource_rep(qre.X), 2),
                 ],
             ),
-            (
-                np.array(
-                    [
-                        [0, 1, 0],
-                        [1, 1, 1],
-                        [1, 1, 0],
-                        [0, 0, 0],
-                        [0, 1, 0],
-                        [1, 1, 1],
-                        [1, 1, 0],
-                        [0, 0, 0],
-                    ]
-                ),
-                15,
-                1,
-                2,
-                [
-                    GateCount(resource_rep(qre.CSWAP), 32),
-                    GateCount(
-                        qre.Controlled.resource_rep(
-                            qre.Controlled.resource_rep(resource_rep(qre.SWAP), 1, 1), 1, 0
-                        ),
-                        40,
-                    ),
-                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.CSWAP), 1, 0), 40),
-                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Hadamard), 1, 0), 12),
-                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0), 12),
-                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.X), 1, 1), 2),
-                    GateCount(resource_rep(qre.CNOT), 2),
-                ],
-            ),
         ),
     )
     def test_resources(self, data, num_wires, num_select_wires, num_control_wires, expected_res):
         """Test that the resources are correct."""
-        assert (
-            qre.HybridQRAM.resource_decomp(data, num_wires, num_select_wires, num_control_wires)
-            == expected_res
+        decomp = qre.HybridQRAM.resource_decomp(
+            data, num_wires, num_select_wires, num_control_wires - num_select_wires
         )
+        assert decomp == expected_res
+
+        dev = qml.device("default.qubit")
+
+        @qml.transforms.decompose(max_expansion=1)
+        @qml.qnode(dev)
+        def circuit():
+            HybridQRAM(
+                data=data,
+                control_wires=range(num_control_wires),
+                target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
+                work_wires=range(
+                    num_control_wires + data.shape[1],
+                    num_control_wires
+                    + data.shape[1]
+                    + num_wires
+                    - (num_control_wires + data.shape[1]),
+                ),
+                k=num_select_wires,
+            )
+
+        specs = qml.specs(circuit)()
+
+        def _match_controlled(name, op):
+            if (
+                name == "MultiControlledX"
+                and op.name.startswith("C(X")
+                or name == "CH"
+                and op.name.startswith("C(H")
+                or name == "2C(SWAP)"
+                and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
+                or name == "CZ"
+                and op.name.startswith("C(Z")
+            ):
+                return True
+            else:
+                return name == op.name
+
+        for ty, count in specs.resources.gate_types.items():
+            found = False
+            i = 0
+            total = 0
+            while i < len(expected_res):
+                if expected_res[i].gate.op_type.__name__ == ty.replace(
+                    "Pauli", ""
+                ) or _match_controlled(ty, expected_res[i].gate):
+                    total += expected_res[i].count
+                    found = True
+                i += 1
+            assert found
+            assert total == count
 
     @pytest.mark.parametrize(
         ("data", "num_wires", "num_select_wires", "num_control_wires"),
