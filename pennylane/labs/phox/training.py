@@ -1,8 +1,8 @@
 import time
-from typing import Callable, Optional, Dict, Any, NamedTuple, Iterator
-from inspect import signature
-from functools import partial
 from dataclasses import dataclass
+from functools import partial
+from inspect import signature
+from typing import Any, Callable, Dict, Iterator, NamedTuple, Optional
 
 import jax
 import jax.numpy as jnp

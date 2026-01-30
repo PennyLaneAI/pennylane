@@ -1,8 +1,23 @@
+import math
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
+from typing import Callable
 import math
+from dataclasses import dataclass
+
+@dataclass
+class CircuitConfig: # unused for now
+    n_samples: int
+    n_qubits: int
+    generators: list[list[int]]
+    observables: list[list[str]]
+    key: int
+    init_state: ArrayLike = None
+    phase_layer: Callable = None
 
 
 def _phase(pauli: str, qubit: int) -> complex:
@@ -42,34 +57,30 @@ def _phase(pauli: str, qubit: int) -> complex:
 
 def _iqp_expval_core(
     generators: ArrayLike,
-    params: ArrayLike,
     ops: ArrayLike,
     n_samples: int,
     key: ArrayLike,
     init_state: tuple[ArrayLike, ArrayLike] | None = None,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
+    phase_layer: Callable = None,
+):
     """
-    Compute expectation value of a batch of Pauli Z operators for an IQP circuit.
+    Builds a function to compute expectation value of a batch of Pauli Z operators for an IQP circuit.
 
     Args:
         generators (ArrayLike): Binary matrix of shape ``(n_generators, n_qubits)`` representing the circuit generators $G$.
-        params (ArrayLike): Parameters $\theta$ for the diagonal operators.
         ops (ArrayLike): Binary matrix representing Pauli Z operators $A$.
         n_samples (int): Number of stochastic samples to draw.
         key (ArrayLike): JAX PRNGKey for random number generation.
         init_state (tuple[ArrayLike, ArrayLike] | None): Optional tuple $(X, P)$ representing initial state stabilizers.
             If None, the initial state is $|0\rangle^{\otimes n}$.
+        phase_layer (Callable | None): Optional function representing the alternating phase layer.
 
     Returns:
-        tuple[jnp.ndarray, jnp.ndarray]: A tuple containing:
+        Callable[[ArrayLike, ArrayLike], tuple[jnp.ndarray, jnp.ndarray]]: A function that takes parameters $\theta$ (and optional phase_params) and returns:
             - Mean expectation values $\langle Z_A \rangle$.
             - Standard error of the mean.
     """
     n_qubits = generators.shape[1]
-
-    if init_state is not None:
-        return _iqp_expval_init_state(generators, params, ops, n_samples, key, init_state)
-
     samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
 
     bitflips = jnp.array([[1 if gate in {"Z", "Y"} else 0 for gate in op] for op in ops])
@@ -83,70 +94,45 @@ def _iqp_expval_core(
         ]
     )
 
-    B = (-1) ** (samples @ generators.T)
-    C = 1 - ((-1) ** (bitflips @ generators.T))
-    E = C @ jnp.diag(params) @ B.T
-    M = phases * jnp.exp(1j * E)
+    def expval_func(
+        params: ArrayLike, phase_params: ArrayLike = None
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
+        B = (-1) ** (samples @ generators.T)
+        C = 1 - ((-1) ** (bitflips @ generators.T))
+        E = C @ jnp.diag(params) @ B.T
 
-    expvals = jnp.real(M)
+        if phase_layer is not None:
 
-    std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
-    return jnp.mean(expvals, axis=1), std_err
+            def compute_phase(phase_params, sample, bitflips):
+                return phase_layer(phase_params, sample) - phase_layer(
+                    phase_params, (sample + bitflips) % 2
+                )
 
+            phase_matrix = jax.vmap(compute_phase, in_axes=(None, 0, None))
+            phase_matrix = jax.vmap(phase_matrix, in_axes=(None, None, 0))
 
-def _iqp_expval_init_state(
-    generators: ArrayLike,
-    params: ArrayLike,
-    ops: ArrayLike,
-    n_samples: int,
-    key: ArrayLike,
-    init_state: tuple[ArrayLike, ArrayLike],
-) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """Helper function for IQP expval with a specific initial state.
+            E += phase_matrix(phase_params, samples, bitflips)
 
-    Args:
-        generators (ArrayLike): Binary matrix of generators.
-        params (ArrayLike): Parameters for the diagonal operators.
-        ops (ArrayLike): Binary matrix representing Pauli Z operators.
-        n_samples (int): Number of samples.
-        key (ArrayLike): JAX PRNGKey.
-        init_state (tuple[ArrayLike, ArrayLike]): Tuple $(X, P)$ defining the initial stabilizer state.
+        M = phases * jnp.exp(1j * E)
 
-    Returns:
-        tuple[jnp.ndarray, jnp.ndarray]: Mean expectation values and standard error.
-    """
-    n_qubits = generators.shape[1]
+        if init_state is not None:
+            X, P = init_state
+            P = P[:, jnp.newaxis]
 
-    samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
+            F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
 
-    bitflips = jnp.array([[1 if gate in {"Z", "Y"} else 0 for gate in op] for op in ops])
-    phases = jnp.array(
-        [
-            [
-                math.prod([_phase(gate, qubit) for gate, qubit in zip(op, sample)])
-                for sample in samples
-            ]
-            for op in ops
-        ]
-    )
+            H1 = ((-1) ** (bitflips @ X.T)) @ F
+            col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
+            H2 = jnp.broadcast_to(col_sums, (bitflips.shape[0], samples.shape[0]))
+            H = H1 * H2
+            expvals = jnp.real(M * H)
+        else:
+            expvals = jnp.real(M)
 
-    B = (-1) ** (samples @ generators.T)
-    C = 1 - ((-1) ** (bitflips @ generators.T))
-    E = C @ jnp.diag(params) @ B.T
-    M = phases * jnp.exp(1j * E)
-    X, P = init_state
-    P = P[:, jnp.newaxis]
+        std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
+        return jnp.mean(expvals, axis=1), std_err
 
-    F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
-
-    H1 = ((-1) ** (bitflips @ X.T)) @ F
-    col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
-    H2 = jnp.broadcast_to(col_sums, (bitflips.shape[0], samples.shape[0]))
-    H = H1 * H2
-    expvals = jnp.real(M * H)
-
-    std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
-    return jnp.mean(expvals, axis=1), std_err
+    return expval_func
 
 
 def bitflip_expval(
@@ -215,6 +201,7 @@ def iqp_expval(
     n_samples: int,
     n_qubits: int,
     key: ArrayLike,
+    init_state: tuple[ArrayLike, ArrayLike] | None = None,
     batch_size: int = 1000,
 ):
     """
@@ -229,6 +216,7 @@ def iqp_expval(
         n_samples (int): Number of stochastic shots per operator.
         n_qubits (int): Total number of qubits in the system.
         key (ArrayLike): JAX PRNGKey for random sampling.
+        init_state (tuple[ArrayLike, ArrayLike] | None): Optional tuple $(X, P)$ representing initial state stabilizers.
         batch_size (int): Number of operators to process at once on the GPU. Defaults to 1000.
 
     Returns:
@@ -248,9 +236,8 @@ def iqp_expval(
     for i in range(0, n_ops, batch_size):
         ops_chunk = ops[i : i + batch_size]
 
-        chunk_mean, chunk_std = _iqp_expval_core(
-            generators, expanded_params, ops_chunk, n_samples, key
-        )
+        expval_func = _iqp_expval_core(generators, ops_chunk, n_samples, key, init_state=init_state)
+        chunk_mean, chunk_std = expval_func(expanded_params)
 
         results_mean.append(chunk_mean)
         results_std.append(chunk_std)
