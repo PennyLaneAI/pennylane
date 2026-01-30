@@ -311,6 +311,7 @@ test_resources_data = {
 }
 
 
+@qml.QueuingManager.stop_recording()
 def _generate_simple_decomp(coeffs, ops, time, order, n):
     """Given coeffs, ops and a time argument in a given framework, generate the
     Trotter product for order and number of trotter steps."""
@@ -1064,8 +1065,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1099,8 +1099,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1143,8 +1142,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1184,8 +1182,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
-                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
             for op in decomp[::-1]:
                 qml.apply(op)
@@ -1707,6 +1704,7 @@ class TestTrotterizedQfuncIntegration:
         expected_decomp = expected_decomp * n
         assert op.decomposition() == expected_decomp
 
+    @qml.QueuingManager.stop_recording()
     def _generate_simple_decomp_trotterize(self, time, order, reverse, args, wires):
         arg1, arg2 = args
 
@@ -2018,12 +2016,11 @@ class TestTrotterizedQfuncIntegration:
 
         @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
-            with qml.QueuingManager.stop_recording():
-                expected_t = time / n
-                expected_decomp = self._generate_simple_decomp_trotterize(
-                    expected_t, order, reverse, (alpha, beta), wires
-                )
-                expected_decomp = expected_decomp * n
+            expected_t = time / n
+            expected_decomp = self._generate_simple_decomp_trotterize(
+                expected_t, order, reverse, (alpha, beta), wires
+            )
+            expected_decomp = expected_decomp * n
 
             for op in expected_decomp:
                 qml.apply(op)
@@ -2094,12 +2091,11 @@ class TestTrotterizedQfuncIntegration:
 
         @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def reference_circ(time, alpha, beta, wires):
-            with qml.QueuingManager.stop_recording():
-                expected_t = time / n
-                expected_decomp = self._generate_simple_decomp_trotterize(
-                    expected_t, order, reverse, (alpha, beta), wires
-                )
-                expected_decomp = expected_decomp * n
+            expected_t = time / n
+            expected_decomp = self._generate_simple_decomp_trotterize(
+                expected_t, order, reverse, (alpha, beta), wires
+            )
+            expected_decomp = expected_decomp * n
 
             for op in expected_decomp:
                 qml.apply(op)

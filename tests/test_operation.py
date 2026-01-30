@@ -983,8 +983,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Operator):
             r"""Dummy custom observable"""
 
-            _queue_category = None
-
             num_wires = 1
             grad_method = None
 

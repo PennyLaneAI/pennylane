@@ -524,7 +524,8 @@ def _build_generator(operation, wire_order, op_gen=None):
             op_gen.pop(PauliWord({}), 0.0)
         else:  # Single-parameter gates
             try:
-                op_gen = operation.generator().pauli_rep
+                with qml.QueuingManager.stop_recording():
+                    op_gen = operation.generator().pauli_rep
 
             except (ValueError, qml.operation.GeneratorUndefinedError) as exc:
                 raise NotImplementedError(
