@@ -288,7 +288,7 @@ def _(op: qtemps.Select):
 
 @_map_to_resource_op.register
 def _(op: qtemps.SelectOnlyQRAM):
-    data = op.hyperparameters["data"]
+    data = op.data[0]
     control_wires = op.hyperparameters["control_wires"]
     select_wires = op.hyperparameters["select_wires"]
     target_wires = op.hyperparameters["target_wires"]
