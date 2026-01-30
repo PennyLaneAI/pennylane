@@ -25,7 +25,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import CNOT, Controlled, X
+from pennylane.ops import CNOT, Controlled
 from pennylane.templates.subroutines.arithmetic import SemiAdder, TemporaryAND
 from pennylane.wires import Wires, WiresLike
 
@@ -46,9 +46,13 @@ class OutSquare(Operation):
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         output_wires (Sequence[int]): the wires that store the squaring result. If the
             register is in a non-zero state :math:`b`, the solution will be added to this value.
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication.
-            ``len(y_wires)`` work wires are required.
+        work_wires (Sequence[int]): the auxiliary wires to use for the squaring.
+            ``len(output_wires)`` work wires are required if ``output_wires_zeroed=False``,
+            otherwise ``min(len(output_wires), len(x_wires)+1)`` work wires are required.
+        output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
+            :math:`|0\rangle` initially. Defaults to ``False``.
 
+    THE REST OF THE DOCSTRING NEEDS UPDATING!
     **Example**
 
     This example performs the multiplication of two integers :math:`x=2` and :math:`y=7` modulo :math:`mod=12`.
@@ -157,17 +161,21 @@ class OutSquare(Operation):
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
 
-        num_required_work_wires = 0  # TODO
+        if output_wires_zeroed:
+            num_required_work_wires = min(len(x_wires) + 1, len(output_wires))
+        else:
+            num_required_work_wires = len(output_wires)
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{len(x_wires)} input wires."
+                f"{len(x_wires)} input wires, {len(output_wires)} output wires "
+                f"and {output_wires_zeroed=}."
             )
 
         registers = [
-            (x_wires, "x_wires"),
-            (output_wires, "output_wires"),
             (work_wires, "work_wires"),
+            (output_wires, "output_wires"),
+            (x_wires, "x_wires"),
         ]
         for (reg0, reg0_name), (reg1, reg1_name) in combinations(registers, r=2):
             if reg0.intersection(reg1):
@@ -243,26 +251,28 @@ class OutSquare(Operation):
 
         **Example**
 
-        >>> qml.OutSquare.compute_decomposition(x_wires=[0,1], output_wires=[2,3], output_wires=[5,6], work_wires=[4,7], output_wires_zeroed=True)
+        >>> qml.OutSquare.compute_decomposition(x_wires=[0,1], output_wires=[2,3], work_wires=[4,7], output_wires_zeroed=True)
         """
         n = len(x_wires)
         m = len(output_wires)
         op_list = []
 
         if output_wires_zeroed:
-            op_list.append(CNOT([x_wires[-1], work_wires[0]]))
+            # Copy x, controlled on the least significant bit (LSB) of x, to the output register,
+            # which is in |0>. This can be reduced to a CNOT for the LSB and temporary ANDs for
+            # the other bits.
             op_list.append(
                 CNOT([x_wires[-1], output_wires[-1]])
             )  # First control-copy reduces to CNOT
             op_list.extend(
                 [
-                    TemporaryAND([work_wires[0], x_wire, out_wire])  # Subsequent control-copies
+                    TemporaryAND([x_wires[-1], x_wire, out_wire])  # Subsequent control-copies
                     for x_wire, out_wire in zip(
                         x_wires[:-1][::-1], output_wires[:-1][::-1]
                     )  # todo unify slicing
                 ]
             )
-            op_list.append(CNOT([x_wires[-1], work_wires[0]]))
+            # Mark that the copying has happened and does not have to happen via an adder below
             x_wires_to_multiply = x_wires[:-1]
             start = 1
         else:
@@ -270,15 +280,22 @@ class OutSquare(Operation):
             start = 0
 
         for i, x_wire in enumerate(reversed(x_wires_to_multiply), start=start):
+            # Add x to the output register, controlled on x_wire via the work_wires[0] and
+            # shifted by i bit positions. For output_wires_zeroed=False, includes the initial copy
+            # The output wires of the adder need to take all of the output register of square
+            # into account due to carry values. For output_wires_zeroed=True, we can reduce to
+            # a fixed size (`n`) instead.
+            # In future, we could investigate whether controlled addition can be made cheaper if
+            # the control is equal to one of the input bits.
+            if output_wires_zeroed:
+                add_y_wires = output_wires[max(0, m - n - i - 1) : max(0, m - i)]
+            else:
+                add_y_wires = output_wires[: max(0, m - i)]
             op_list.extend(
                 [
                     CNOT([x_wire, work_wires[0]]),
                     Controlled(
-                        SemiAdder(
-                            x_wires=x_wires,
-                            y_wires=output_wires[max(0, m - n - i - 1) : max(0, m - i)],
-                            work_wires=work_wires[1:],
-                        ),
+                        SemiAdder(x_wires=x_wires, y_wires=add_y_wires, work_wires=work_wires[1:]),
                         control_wires=work_wires[:1],
                     ),
                     CNOT([x_wire, work_wires[0]]),
@@ -293,16 +310,25 @@ def _out_square_resources(
 ) -> dict:
     # pylint: disable=unused-argument
     resources = defaultdict(int)
-    resources[resource_rep(CNOT)] = 2 * num_x_wires + output_wires_zeroed
-    resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (num_x_wires - 1)
+    resources[resource_rep(CNOT)] = 2 * (num_x_wires - 1)
+    if output_wires_zeroed:
+        # Copying of first bit is a CNOT, all other bits require a TemporaryAND
+        resources[resource_rep(CNOT)] += 1
+        resources[resource_rep(TemporaryAND)] = output_wires_zeroed * (num_x_wires - 1)
+    else:
+        # Copying is done via CNOT-wrapped controlled adder. Account for CNOTs here
+        resources[resource_rep(CNOT)] += 2
+
+    # Controlled adders, includes the one for copying if output_wires_zeroed=False
     for i in range(output_wires_zeroed, min(num_x_wires, num_output_wires)):
+        if output_wires_zeroed:
+            num_out = max(0, num_output_wires - i) - max(0, num_output_wires - num_x_wires - i - 1)
+        else:
+            num_out = max(0, num_output_wires - i)
         resources[
             controlled_resource_rep(
                 base_class=SemiAdder,
-                base_params={
-                    "num_y_wires": max(0, num_output_wires - i)
-                    - max(0, num_output_wires - num_x_wires - i - 1)
-                },
+                base_params={"num_y_wires": num_out},
                 num_control_wires=1,
             )
         ] += 1
