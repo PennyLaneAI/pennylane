@@ -39,6 +39,7 @@ def test_import_pyzx_error(monkeypatch):
             qml.transforms.zx.optimize_t_count(qs)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.external
 class TestOptimizeTCount:
 

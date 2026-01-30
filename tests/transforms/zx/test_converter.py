@@ -66,6 +66,7 @@ def test_import_pyzx_error(monkeypatch):
             qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
 
