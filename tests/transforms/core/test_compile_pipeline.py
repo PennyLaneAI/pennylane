@@ -488,33 +488,10 @@ class TestCompilePipelineDunders:
         assert merged_pipeline2[0].tape_transform is first_valid_transform
 
         assert isinstance(merged_pipeline2[1], BoundTransform)
-        assert merged_pipeline2[1].tape_transform is first_valid_transform
+        assert merged_pipeline2[1].tape_transform is second_valid_transform
 
         assert isinstance(merged_pipeline2[2], BoundTransform)
-        assert merged_pipeline2[2].tape_transform is second_valid_transform
-
-    @pytest.mark.parametrize(
-        "right",
-        [
-            pytest.param(
-                BoundTransform(qml.transform(second_valid_transform)),
-                id="pipeline+container",
-            ),
-            pytest.param(qml.transform(second_valid_transform), id="pipeline+dispatcher"),
-        ],
-    )
-    def test_pipeline_add_maintains_final_transform_at_end(self, right):
-        """Test that adding to a pipeline with final_transform keeps final at end."""
-        container1 = BoundTransform(qml.transform(first_valid_transform, final_transform=True))
-        pipeline = CompilePipeline([container1])
-
-        result = pipeline + right
-        assert isinstance(result, CompilePipeline)
-        assert len(result) == 2
-        # Final transform should be at the end
-        assert result[0].tape_transform is second_valid_transform
-        assert result[1].tape_transform is first_valid_transform
-        assert result[1].is_final_transform
+        assert merged_pipeline2[2].tape_transform is first_valid_transform
 
     @pytest.mark.parametrize(
         "right",
@@ -654,19 +631,6 @@ class TestCompilePipelineDunders:
         assert pipeline1[0].tape_transform is first_valid_transform
         assert pipeline1[1].tape_transform is second_valid_transform
 
-    def test_pipeline_iadd_maintains_final_transform_at_end(self):
-        """Test that __iadd__ keeps final transform at the end."""
-        container1 = BoundTransform(qml.transform(first_valid_transform, final_transform=True))
-        container2 = BoundTransform(qml.transform(second_valid_transform))
-        pipeline = CompilePipeline([container1])
-
-        pipeline += container2
-
-        assert len(pipeline) == 2
-        assert pipeline[0].tape_transform is second_valid_transform
-        assert pipeline[1].tape_transform is first_valid_transform
-        assert pipeline[1].is_final_transform
-
     def test_pipeline_iadd_with_both_final_transform_error(self):
         """Test that __iadd__ raises error when adding final to pipeline with final."""
         container1 = BoundTransform(qml.transform(first_valid_transform, final_transform=True))
@@ -685,20 +649,6 @@ class TestCompilePipelineDunders:
 
         with pytest.raises(TransformError, match="already has a terminal transform"):
             pipeline1 += pipeline2
-
-    def test_pipeline_iadd_pipeline_maintains_final_transform_at_end(self):
-        """Test that __iadd__ with pipeline keeps final transform at the end."""
-        container1 = BoundTransform(qml.transform(first_valid_transform, final_transform=True))
-        container2 = BoundTransform(qml.transform(second_valid_transform))
-        pipeline1 = CompilePipeline([container1])
-        pipeline2 = CompilePipeline([container2])
-
-        pipeline1 += pipeline2
-
-        assert len(pipeline1) == 2
-        assert pipeline1[0].tape_transform is second_valid_transform
-        assert pipeline1[1].tape_transform is first_valid_transform
-        assert pipeline1[1].is_final_transform
 
     def test_pipeline_iadd_pipeline_with_cotransform_cache(self):
         """Test that __iadd__ correctly handles cotransform_cache when adding pipelines."""
@@ -1169,14 +1119,14 @@ class TestCompilePipeline:
         t_normal = BoundTransform(qml.transform(second_valid_transform))
         compile_pipeline.append(t_normal)
         assert len(compile_pipeline) == 2
-        assert compile_pipeline[0] is t_normal
-        assert compile_pipeline[1] is transform1
+        assert compile_pipeline[0] is transform1
+        assert compile_pipeline[1] is t_normal
 
         t_normal2 = BoundTransform(qml.transform(first_valid_transform))
         compile_pipeline.append(t_normal2)
-        assert compile_pipeline[0] is t_normal
-        assert compile_pipeline[1] is t_normal2
-        assert compile_pipeline[2] is transform1
+        assert compile_pipeline[0] is transform1
+        assert compile_pipeline[1] is t_normal
+        assert compile_pipeline[2] is t_normal2
 
         with pytest.raises(
             TransformError, match="The compile pipeline already has a terminal transform."

@@ -383,28 +383,14 @@ def get_transform_program(
     full_transform_program = _get_full_transform_program(qnode, gradient_fn)
 
     num_user = len(qnode.compile_pipeline)
-    if qnode.compile_pipeline.has_final_transform:
-        # final transform is placed after device transforms
-        num_user -= 1
-        if (
-            len(qnode.compile_pipeline) > 1
-            and qnode.compile_pipeline[-1].expand_transform == qnode.compile_pipeline[-2]
-        ):
-            # The expand transform associated with the final transform
-            num_user -= 1
-
-    readd_final_transform = False
-    final_transform_start = -1
 
     if level == "device":
         level = slice(0, None)
     elif level == "top":
         level = slice(0, 0)
     elif level == "user":
-        readd_final_transform = True
         level = slice(0, num_user)
     elif level == "gradient":
-        readd_final_transform = True
         level = num_user + 1 if has_gradient_expand else num_user
         level = slice(0, level)
     elif isinstance(level, str):
@@ -412,17 +398,7 @@ def get_transform_program(
     elif isinstance(level, int):
         level = slice(0, level)
 
-    resolved_program = full_transform_program[level]
-
-    if qnode.compile_pipeline.has_final_transform and readd_final_transform:
-        if (
-            len(qnode.compile_pipeline) > 1
-            and qnode.compile_pipeline[-1].expand_transform == qnode.compile_pipeline[-2]
-        ):
-            final_transform_start = -2
-        resolved_program += qnode.compile_pipeline[final_transform_start:]
-
-    return resolved_program
+    return full_transform_program[level]
 
 
 def construct_batch(

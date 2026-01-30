@@ -767,7 +767,7 @@ class TestCatalystGrad:
         tangent = jnp.array([0.3, 0.6])
 
         with pytest.raises(
-            CompileError, match="Pennylane does not support the JVP function without QJIT."
+            CompileError, match="PennyLane does not support the JVP function without QJIT."
         ):
             jvp(x, tangent)
 
