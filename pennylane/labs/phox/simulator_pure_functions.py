@@ -26,6 +26,7 @@ from jax.typing import ArrayLike
 
 @dataclass
 class CircuitConfig:  # unused for now
+    """Configuration data for an IQP circuit simulation."""
     n_samples: int
     n_qubits: int
     generators: list[list[int]]
@@ -78,7 +79,8 @@ def _iqp_expval_core(
     init_state: tuple[ArrayLike, ArrayLike] | None = None,
     phase_layer: Callable = None,
 ):
-    """
+    # pylint: disable=too-many-arguments
+    r"""
     Builds a function to compute expectation value of a batch of Pauli Z operators for an IQP circuit.
 
     Args:
@@ -219,6 +221,7 @@ def iqp_expval(
     init_state: tuple[ArrayLike, ArrayLike] | None = None,
     batch_size: int = 1000,
 ):
+    # pylint: disable=too-many-arguments
     """
     Computes IQP expectation values from a high-level circuit definition.
     Handles preprocessing and memory batching automatically.

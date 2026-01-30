@@ -165,6 +165,7 @@ class TestIQPExpval:
     def test_iqp_expval_core_vs_pennylane(
         self, n_samples, obs_strings, generators_pl, params, init_state_spec
     ):
+        # pylint: disable=too-many-arguments
         """Test that _iqp_expval_core matches PennyLane default.qubit with parametrization."""
         obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
@@ -208,6 +209,7 @@ class TestIQPExpval:
         ],
     )
     def test_iqp_expval_vs_pennylane(self, n_qubits, gates, params, obs_strings, init_state_spec):
+        # pylint: disable=too-many-arguments
         """Test that iqp_expval matches PennyLane default.qubit."""
         generators_binary, param_map = _parse_iqp_dict(gates, n_qubits)
         generators_pl = [

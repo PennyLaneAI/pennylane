@@ -18,7 +18,7 @@ import time
 from dataclasses import dataclass
 from functools import partial
 from inspect import signature
-from typing import Any, Callable, Dict, Iterator, NamedTuple, Optional
+from typing import Any, Callable, Iterator, NamedTuple
 
 import jax
 import jax.numpy as jnp
@@ -105,14 +105,14 @@ def _create_optimizer(name: str, loss_fn: Callable, stepsize: float, opt_jit: bo
     """
     if name == "GradientDescent":
         return jaxopt.GradientDescent(loss_fn, stepsize=stepsize, verbose=False, jit=opt_jit)
-    elif name == "Adam":
+    if name == "Adam":
         return jaxopt.OptaxSolver(loss_fn, optax.adam(stepsize), verbose=False, jit=opt_jit)
-    elif name == "BFGS":
+    if name == "BFGS":
         return jaxopt.BFGS(loss_fn, verbose=False, jit=opt_jit)
-    else:
-        raise ValueError(
-            f"Optimizer {name} not recognized. Choose from 'Adam', 'BFGS', 'GradientDescent'."
-        )
+
+    raise ValueError(
+        f"Optimizer {name} not recognized. Choose from 'Adam', 'BFGS', 'GradientDescent'."
+    )
 
 
 def _check_convergence(losses: jnp.ndarray, convergence_interval: int) -> bool:
@@ -141,6 +141,7 @@ def _check_convergence(losses: jnp.ndarray, convergence_interval: int) -> bool:
 
 
 def _update_step_scan(carry, _, opt, loss_fn, loss_kwargs, val_kwargs, validation, optimizer_name):
+    # pylint: disable=too-many-arguments
     """
     Single step update logic to be scanned.
 
@@ -257,6 +258,7 @@ def train(
     loss_kwargs: dict[str, Any],
     options: TrainingOptions | None = None,
 ) -> TrainingResult:
+    # pylint: disable=too-many-arguments
     """
     Main training function.
     Manages the loop, accumulation of history, and convergence checks.

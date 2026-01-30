@@ -14,6 +14,7 @@
 """
 Tests for the Phox training module.
 """
+# pylint: disable=redefined-outer-name
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -29,7 +30,7 @@ def quadratic_problem():
     Target is 0, start is 10. Global minimum is 0.
     """
 
-    def loss_fn(params, target, key=None):
+    def loss_fn(params, target, key=None):  # pylint: disable=unused-argument
         diff = params - target
         return jnp.sum(diff**2)
 
@@ -101,7 +102,7 @@ def test_convergence_early_stopping(quadratic_problem):
     Test 4: Convergence Logic.
     If the loss stabilizes, training should stop before n_iters.
     """
-    loss_fn, params_init, target, _ = quadratic_problem
+    loss_fn, _, target, _ = quadratic_problem
 
     params_near = jnp.array([0.01, 0.01])
     loss_kwargs = {"params": params_near, "target": target}
@@ -141,7 +142,7 @@ def test_loss_signature_variations():
     """
     params = jnp.array([1.0])
 
-    def loss_with_key(params, key):
+    def loss_with_key(params, key):  # pylint: disable=unused-argument
         return jnp.sum(params**2)
 
     def loss_no_key(params):
