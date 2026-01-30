@@ -16,6 +16,7 @@ Tests for quantum algorithmic subroutines resource operators.
 """
 import math
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -211,13 +212,11 @@ class TestSelectOnlyQRAM:
             select_wires,
             select_value,
         )
-        assert op.resource_params == {
-            "data": data,
-            "num_wires": num_wires,
-            "select_value": select_value,
-            "num_select_wires": num_select_wires,
-            "num_control_wires": num_control_wires,
-        }
+        assert np.allclose(op.resource_params["data"], data)
+        assert op.resource_params["num_wires"] == num_wires
+        assert op.resource_params["num_control_wires"] == num_control_wires
+        assert op.resource_params["num_select_wires"] == num_select_wires
+        assert op.resource_params["select_value"] == select_value
 
     @pytest.mark.parametrize(
         (
@@ -266,7 +265,7 @@ class TestSelectOnlyQRAM:
         ),
         (
             (
-                [[1], [0], [1], [0]],
+                np.array([[1], [0], [1], [0]]),
                 7,
                 0,
                 2,
@@ -277,7 +276,7 @@ class TestSelectOnlyQRAM:
                         qre.Controlled.resource_rep(
                             resource_rep(qre.X), num_ctrl_wires=4, num_zero_ctrl=0
                         ),
-                        6,
+                        2,
                     ),
                     GateCount(resource_rep(qre.BasisEmbedding, {"num_wires": 2}), 1),
                 ],

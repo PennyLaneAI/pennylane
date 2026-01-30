@@ -17,6 +17,7 @@ import math
 from collections import defaultdict
 
 import pennylane.estimator as qre
+from pennylane import math as pl_math
 from pennylane import numpy as qnp
 from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
@@ -304,8 +305,14 @@ class SelectOnlyQRAM(ResourceOperator):
             all_wires = list(control_wires) + list(target_wires) + list(select_wires)
             if len(all_wires) != num_wires:
                 raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
-        self.num_wires = num_wires
+
+        if isinstance(data, (list, tuple)):
+            data = pl_math.array(data)
+        if isinstance(data[0], str):
+            data = pl_math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
         self.data = data
+
+        self.num_wires = num_wires
         self.select_value = select_value
         self.num_control_wires = num_control_wires
         self.num_select_wires = num_select_wires
