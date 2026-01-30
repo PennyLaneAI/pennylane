@@ -14,8 +14,9 @@
 """
 Tests for the IQP expectation value calculator.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 
 # Attempt to import JAX and the lab module
@@ -181,9 +182,7 @@ class TestIQPExpval:
         key = jax.random.PRNGKey(42)
         atol = 3.5 / np.sqrt(n_samples)
 
-        expval_func = _iqp_expval_core(
-            generators, obs_jax, n_samples, key, init_state=jax_state
-        )
+        expval_func = _iqp_expval_core(generators, obs_jax, n_samples, key, init_state=jax_state)
         approx_val, _ = expval_func(params_jax)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
@@ -208,9 +207,7 @@ class TestIQPExpval:
             ),
         ],
     )
-    def test_iqp_expval_vs_pennylane(
-        self, n_qubits, gates, params, obs_strings, init_state_spec
-    ):
+    def test_iqp_expval_vs_pennylane(self, n_qubits, gates, params, obs_strings, init_state_spec):
         """Test that iqp_expval matches PennyLane default.qubit."""
         generators_binary, param_map = _parse_iqp_dict(gates, n_qubits)
         generators_pl = [

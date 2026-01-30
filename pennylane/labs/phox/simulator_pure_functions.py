@@ -1,9 +1,10 @@
+import math
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
-from typing import Callable
-import math
 
 
 def _phase(pauli: str, qubit: int) -> complex:
@@ -39,6 +40,7 @@ def _phase(pauli: str, qubit: int) -> complex:
         return -1
 
     raise ValueError(f"Expected Pauli I, X, Y, or Z, got {pauli}.")
+
 
 def _iqp_expval_core(
     generators: ArrayLike,
@@ -79,12 +81,15 @@ def _iqp_expval_core(
         ]
     )
 
-    def expval_func(params: ArrayLike, phase_params: ArrayLike = None) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def expval_func(
+        params: ArrayLike, phase_params: ArrayLike = None
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
         B = (-1) ** (samples @ generators.T)
         C = 1 - ((-1) ** (bitflips @ generators.T))
         E = C @ jnp.diag(params) @ B.T
 
         if phase_layer is not None:
+
             def compute_phase(phase_params, sample, bitflips):
                 return phase_layer(phase_params, sample) - phase_layer(
                     phase_params, (sample + bitflips) % 2
@@ -218,9 +223,7 @@ def iqp_expval(
     for i in range(0, n_ops, batch_size):
         ops_chunk = ops[i : i + batch_size]
 
-        expval_func = _iqp_expval_core(
-            generators, ops_chunk, n_samples, key, init_state=init_state
-        )
+        expval_func = _iqp_expval_core(generators, ops_chunk, n_samples, key, init_state=init_state)
         chunk_mean, chunk_std = expval_func(expanded_params)
 
         results_mean.append(chunk_mean)
