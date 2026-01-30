@@ -15,18 +15,17 @@
 Pure function implementations for the Phox simulator.
 """
 import math
+from dataclasses import dataclass
 from typing import Callable
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
-from typing import Callable
-import math
-from dataclasses import dataclass
+
 
 @dataclass
-class CircuitConfig: # unused for now
+class CircuitConfig:  # unused for now
     n_samples: int
     n_qubits: int
     generators: list[list[int]]
