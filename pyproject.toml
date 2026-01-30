@@ -71,6 +71,7 @@ dev = [
     "isort~=7.0.0",
     "black==25.9.0",
     "matplotlib",
+    "astroid==4.0.2"
 ]
 docker = [
     "cvxpy~=1.2",

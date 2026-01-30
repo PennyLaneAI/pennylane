@@ -63,7 +63,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          uv sync
+          uv pip install -e .
 
       - name: Install external packages
         run: |
@@ -116,4 +116,4 @@ jobs:
           ${IGNORE_OPTS_TERTIARY}
           "
 
-          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+          uv run pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
