@@ -773,8 +773,44 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform2)
 
         pipeline_str = str(compile_pipeline)
-        expected_repr = "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] marker(blah),\n  [2] second_valid_transform()\n)"
-        assert pipeline_str == expected_repr
+        expected_str = "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] marker(blah),\n  [2] second_valid_transform()\n)"
+        assert pipeline_str == expected_str
+
+    def test_str_adds_ellipses(self):
+        """Tests that the string representation uses ellipses for long kwargs."""
+
+        # pylint:disable=unused-argument
+        def verbose_transform(
+            tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+            """A valid transform."""
+            return [tape], lambda x: x
+
+        _CURRENT_THRESHOLD = 50
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.append(
+            BoundTransform(
+                verbose_transform,
+                args=("x" * _CURRENT_THRESHOLD,),
+                kwargs={"verbose_kwarg": "x" * _CURRENT_THRESHOLD},
+            )
+        )
+
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
+        assert str(compile_pipeline) == expected_str
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.append(
+            BoundTransform(
+                verbose_transform,
+                args=("x" * _CURRENT_THRESHOLD + 1,),
+                kwargs={"verbose_kwarg": "x" * _CURRENT_THRESHOLD + 1},
+            )
+        )
+
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(..., verbose_kwarg=...)\n)"
+        assert str(compile_pipeline) == expected_str
 
     def test_equality(self):
         """Tests that we can compare CompilePipeline objects with the '==' and '!=' operators."""
