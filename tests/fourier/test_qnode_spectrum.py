@@ -545,6 +545,7 @@ class TestJax:
         Since the Hermitian matrix has shape (2, 2) while rotation parameters
         have shape (), math.stack() in classical_jacobian would fail with
         'All input arrays must have the same shape'.
+        See https://pennylane.ai/qml/demos/tutorial_general_parshift for a realistic usage.
 
         """
 
