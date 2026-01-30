@@ -287,7 +287,7 @@ def _specs_qjit_intermediate_passes(
             gate_types = {}
 
             for res_name, sizes in res.operations.items():
-                if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8"):
+                if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
                     # Separate out PPMs and PPRs by weight
                     for size, count in sizes.items():
                         gate_types[f"{res_name}-w{size}"] = count
