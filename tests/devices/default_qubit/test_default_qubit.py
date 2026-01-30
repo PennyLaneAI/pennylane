@@ -1900,8 +1900,7 @@ class TestPostselection:
         param = qml.math.asarray(param, like=interface)
 
         @qml.set_shots(shots=shots)
-        @qml.defer_measurements
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=interface, mcm_method="deferred")
         def circ_postselect(theta):
             qml.RX(theta, 0)
             qml.CNOT([0, 1])
@@ -1909,8 +1908,7 @@ class TestPostselection:
             return qml.apply(mp)
 
         @qml.set_shots(shots=shots)
-        @qml.defer_measurements
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=interface, mcm_method="deferred")
         def circ_expected():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])

@@ -742,21 +742,6 @@ class TestPreprocessingIntegration:
         expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
         assert np.array_equal(batch_fn(val), expected)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
-    def test_preprocess_check_validity_fail(self):
-        """Test that preprocess throws an error if the split and expanded tapes have
-        unsupported operators."""
-        ops = [qml.Hadamard(0), NoMatNoDecompOp(1), qml.RZ(0.123, wires=1)]
-        measurements = [[qml.expval(qml.PauliZ(0))], [qml.expval(qml.PauliX(1))]]
-        tapes = [
-            qml.tape.QuantumScript(ops=ops, measurements=measurements[0]),
-            qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
-        ]
-
-        program = qml.device("default.qubit").preprocess_transforms()
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-            program(tapes)
-
     @pytest.mark.parametrize(
         "ops, measurement, message",
         [
@@ -908,25 +893,40 @@ class TestPreprocessingIntegration:
         )
         qml.assert_equal(new_tape, expected)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
-    def test_no_mcms_conditionals_defer_measurements(self):
-        """Test that an error is raised if an mcm occurs in a decomposition after defer measurements has been applied."""
 
-        m0 = qml.measure(0)
+@pytest.mark.usefixtures("disable_graph_decomposition")
+def test_no_mcms_conditionals_defer_measurements():
+    """Test that an error is raised if an mcm occurs in a decomposition after defer measurements has been applied."""
 
-        class MyOp(qml.operation.Operator):
-            def decomposition(self):
-                return m0.measurements
+    m0 = qml.measure(0)
 
-        tape = qml.tape.QuantumScript([MyOp(0)])
-        config = qml.devices.ExecutionConfig(
-            mcm_config=qml.devices.MCMConfig(mcm_method="deferred")
-        )
+    class MyOp(qml.operation.Operator):
+        def decomposition(self):
+            return m0.measurements
 
-        prog = DefaultQubit().preprocess_transforms(config)
+    tape = qml.tape.QuantumScript([MyOp(0)])
+    config = qml.devices.ExecutionConfig(mcm_config=qml.devices.MCMConfig(mcm_method="deferred"))
 
-        with pytest.raises(DeviceError, match="not supported with default.qubit"):
-            prog((tape,))
+    prog = DefaultQubit().preprocess_transforms(config)
+
+    with pytest.raises(DeviceError, match="not supported with default.qubit"):
+        prog((tape,))
+
+
+@pytest.mark.usefixtures("disable_graph_decomposition")
+def test_preprocess_check_validity_fail():
+    """Test that preprocess throws an error if the split and expanded tapes have
+    unsupported operators."""
+    ops = [qml.Hadamard(0), NoMatNoDecompOp(1), qml.RZ(0.123, wires=1)]
+    measurements = [[qml.expval(qml.PauliZ(0))], [qml.expval(qml.PauliX(1))]]
+    tapes = [
+        qml.tape.QuantumScript(ops=ops, measurements=measurements[0]),
+        qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
+    ]
+
+    program = qml.device("default.qubit").preprocess_transforms()
+    with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+        program(tapes)
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
