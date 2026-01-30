@@ -271,6 +271,26 @@ class TestExecutionConfig:
         )
         assert isinstance(hash(config), int)
 
+    def test_str_is_readable_multiline(self):
+        """Test that str(ExecutionConfig) produces readable multi-line output."""
+        config = ExecutionConfig(
+            grad_on_execution=True,
+            gradient_method="parameter-shift",
+            device_options={"option1": 42},
+        )
+        result = str(config)
+
+        # Should be multi-line for readability
+        assert "\n" in result
+
+        # Should still contain expected content
+        assert "ExecutionConfig(" in result
+        assert "grad_on_execution=True" in result
+        assert "gradient_method='parameter-shift'" in result
+
+        # repr should still be single-line (dataclass default)
+        assert "\n" not in repr(config)
+
 
 class TestMCMConfig:
     """Tests for the MCMConfig class."""
