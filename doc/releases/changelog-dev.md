@@ -18,6 +18,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
+  of :class:`~.HybridQRAM` to rapidly estimate its resources.
+  [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
+
 * `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
   
