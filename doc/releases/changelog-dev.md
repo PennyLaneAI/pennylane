@@ -65,7 +65,7 @@
 * Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
-  
+
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
   [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
@@ -193,6 +193,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
+  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
+
+* Add documentation tests for the `decomposition` module.
+  [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
 
@@ -250,6 +256,15 @@
 * Fixes a bug where decomposition raises an error for `Pow` operators when the exponent is batched.
   [(#8969)](https://github.com/PennyLaneAI/pennylane/pull/8969)
 
+* Fixes a bug where the `DecomposeInterpreter` cannot be applied on a `QNode` with the new graph-based decomposition system enabled.
+  [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
+
+* Fixes a bug where `qml.equal` raises an error for `SProd` with abstract scalar parameters and `Exp` with abstract coefficients.
+  [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
+
+* Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
+  [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -263,3 +278,4 @@ Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
 David Wierichs,
+Jake Zaia,
