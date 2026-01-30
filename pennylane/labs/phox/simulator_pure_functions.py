@@ -5,6 +5,19 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
+from typing import Callable
+import math
+from dataclasses import dataclass
+
+@dataclass
+class CircuitConfig: # unused for now
+    n_samples: int
+    n_qubits: int
+    generators: list[list[int]]
+    observables: list[list[str]]
+    key: int
+    init_state: ArrayLike = None
+    phase_layer: Callable = None
 
 
 def _phase(pauli: str, qubit: int) -> complex:
