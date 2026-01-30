@@ -234,6 +234,34 @@ class TestIQPExpval:
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
+    def test_iqp_parameter_broadcasting(self):
+        """Test explicit parameter broadcasting where one parameter controls multiple gates."""
+        n_qubits = 3
+        # One parameter (index 0) controls two distinct generators: Z0Z1 and Z1Z2
+        gates = {0: [[0, 1], [1, 2]]}
+        params = [0.8]  # Single parameter
+
+        # We measure something that depends on both entanglements
+        obs_strings = ["X", "X", "X"]  # Global X measurement
+        obs_batch, _ = _prepare_obs_batch(obs_strings)
+
+        # Equivalent separate generators with same parameter value
+        generators_pl = [[0, 1], [1, 2]]
+        params_pl = [0.8, 0.8]
+
+        pl_state = _prepare_pennylane_state(n_qubits, None)
+        exact_vals = _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch, pl_state)
+
+        key = jax.random.PRNGKey(99)
+        n_samples = 20000
+        # Tolerances for MC estimation
+        atol = 0.05
+
+        obs_jax = np.array(obs_batch)
+        approx_val, _ = iqp_expval(gates, params, obs_jax, n_samples, n_qubits, key)
+
+        assert np.allclose(exact_vals, approx_val, atol=atol)
+
 
 @pytest.mark.parametrize(
     "circuit_def,n_qubits,expected_generators,expected_param_map",

@@ -78,6 +78,7 @@ def _iqp_expval_core(
     key: ArrayLike,
     init_state: tuple[ArrayLike, ArrayLike] | None = None,
     phase_layer: Callable = None,
+    param_map: ArrayLike | None = None,
 ):
     # pylint: disable=too-many-arguments
     r"""
@@ -91,6 +92,8 @@ def _iqp_expval_core(
         init_state (tuple[ArrayLike, ArrayLike] | None): Optional tuple $(X, P)$ representing initial state stabilizers.
             If None, the initial state is $|0\rangle^{\otimes n}$.
         phase_layer (Callable | None): Optional function representing the alternating phase layer.
+        param_map (ArrayLike | None): Optional array mapping parameters to generators.
+            If None, parameters map one-to-one to generators.
 
     Returns:
         Callable[[ArrayLike, ArrayLike], tuple[jnp.ndarray, jnp.ndarray]]: A function that takes parameters $\theta$ (and optional phase_params) and returns:
@@ -116,10 +119,12 @@ def _iqp_expval_core(
     ) -> tuple[jnp.ndarray, jnp.ndarray]:
         B = (-1) ** (samples @ generators.T)
         C = 1 - ((-1) ** (bitflips @ generators.T))
-        E = C @ jnp.diag(params) @ B.T
+
+        expanded_params = params if param_map is None else jnp.asarray(params)[param_map]
+
+        E = C @ (expanded_params[:, None] * B.T)
 
         if phase_layer is not None:
-
             def compute_phase(phase_params, sample, bitflips):
                 return phase_layer(phase_params, sample) - phase_layer(
                     phase_params, (sample + bitflips) % 2
@@ -245,7 +250,6 @@ def iqp_expval(
     generators, param_map = _parse_iqp_dict(gates, n_qubits)
 
     params = jnp.asarray(params)
-    expanded_params = params[param_map]
 
     n_ops = ops.shape[0]
     results_mean = []
@@ -254,8 +258,15 @@ def iqp_expval(
     for i in range(0, n_ops, batch_size):
         ops_chunk = ops[i : i + batch_size]
 
-        expval_func = _iqp_expval_core(generators, ops_chunk, n_samples, key, init_state=init_state)
-        chunk_mean, chunk_std = expval_func(expanded_params)
+        expval_func = _iqp_expval_core(
+            generators,
+            ops_chunk,
+            n_samples,
+            key,
+            init_state=init_state,
+            param_map=param_map,
+        )
+        chunk_mean, chunk_std = expval_func(params)
 
         results_mean.append(chunk_mean)
         results_std.append(chunk_std)
