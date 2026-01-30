@@ -50,13 +50,13 @@ jobs:
 
       - name: Run Black
         run: |
-          black -t py311 -t py312 -t py313 -l 100 pennylane/ --check
-          black -t py311 -t py312 -t py313 -l 100 tests/ --check
+          uv runblack -t py311 -t py312 -t py313 -l 100 pennylane/ --check
+          uv runblack -t py311 -t py312 -t py313 -l 100 tests/ --check
 
       - name: Run isort
         run: |
-          isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane --check
-          isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./tests --check
+          uv runisort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane --check
+          uv runisort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./tests --check
 
       - name: Run Pylint (source files)
         if: always()
