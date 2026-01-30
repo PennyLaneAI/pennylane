@@ -100,6 +100,8 @@ def get_compile_pipeline(
 
     .. code-block:: python
 
+        from pennylane.workflow import get_compile_pipeline
+
         dev = qml.device("default.qubit")
 
         @qml.transforms.merge_rotations
