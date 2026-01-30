@@ -64,8 +64,8 @@ class BatchResult(NamedTuple):
 
     params: Any
     state: Any
-    key: Any
-    key_val: Any
+    key: jax.Array
+    key_val: jax.Array
     losses: jnp.ndarray
     val_losses: jnp.ndarray
 
