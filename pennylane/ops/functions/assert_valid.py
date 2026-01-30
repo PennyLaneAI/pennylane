@@ -82,6 +82,9 @@ def _check_decomposition(op, skip_wire_mapping):
             mapped_decomp = mapped_op.decomposition()
             orig_decomp = op.decomposition()
             for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+                print(mapped_op.wires)
+                print(orig_op.wires)
+                print(wire_map)
                 assert (
                     mapped_op.wires
                     == qml.map_wires(orig_op, wire_map).wires  # pylint: disable=no-member
@@ -167,7 +170,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
         assert non_zero_gate_counts == actual_gate_counts, (
             f"\nGate counts expected from resource function:\n{non_zero_gate_counts}"
-            f"\nActual gate counts:\n{actual_gate_counts}"
+            f"\nActual gate counts:\n{dict(actual_gate_counts)}"
         )
     else:
         # If the resource estimate is not expected to match exactly to the actual
