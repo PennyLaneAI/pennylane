@@ -736,17 +736,17 @@ def decompose_arbitrary_ppr_setup_inputs():
     Level: 3
     <BLANKLINE>
     Resource specifications:
-    Total wire allocations: 4
-    Total gates: 6
-    Circuit depth: Not computed
+      Total wire allocations: 4
+      Total gates: 6
+      Circuit depth: Not computed
     <BLANKLINE>
     Gate types:
-        qec.prepare: 1
-        PPM-w3: 1
-        PPM-w1: 1
-        PPR-pi/2-w1: 1
-        PPR-pi/2-w2: 1
-        PPR-Phi: 1
+      qec.prepare: 1
+      PPM-w3: 1
+      PPM-w1: 1
+      PPR-pi/2-w1: 1
+      PPR-pi/2-w2: 1
+      PPR-Phi-w1: 1
     <BLANKLINE>
     Measurements:
         expval(PauliZ): 1
