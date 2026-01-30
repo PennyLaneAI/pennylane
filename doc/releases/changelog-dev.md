@@ -228,6 +228,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Removes automatic unpacking of inner product resources in the resource representation of
+  :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
+  blocks decompositions in this system to use nested operator products while reporting their
+  resources accurately.
+  [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
+  
 * Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
   [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
