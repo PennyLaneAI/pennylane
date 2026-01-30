@@ -1977,7 +1977,6 @@ class HybridQRAM(ResourceOperator):
                     )
                 ] += (num_select_wires > 0) * 2
 
-            cz_count = 0
             for j in range(num_target_wires):
                 for p in range(1 << num_tree_control_wires):
                     cz_count += bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
