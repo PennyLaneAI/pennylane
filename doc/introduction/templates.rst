@@ -127,6 +127,16 @@ state preparation is typically used as the first operation.
     :figure: _static/templates/state_preparations/multiplexerSP_template.png
 
 
+Some state preparations require significant classical coprocessing. Where applicable, these
+coprocessing functions are available as standalone feature as well:
+
+.. autosummary::
+    :toctree: api
+
+    pennylane.order_states
+    pennylane.right_canonicalize_mps
+    pennylane.compute_sos_encoding
+    pennylane.select_sos_rows
 
 .. raw:: html
 

@@ -14,23 +14,24 @@
 """
 Unit tests for the SumOfSlatersStatePreparation template.
 """
-from itertools import product
+from itertools import combinations, product
 
 import numpy as np
 import pytest
 
-from pennylane.math import binary_rank, ceil_log2
+from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
+    _find_single_w,
     compute_sos_encoding,
-    select_rows,
+    select_sos_rows,
 )
 
 
 def _is_binary(x: np.ndarray) -> bool:
     """Return whether all entries of a numpy array are binary."""
-    return set(x.flat).issubset({np.int64(0), np.int64(1)})
+    return set(x.flat).issubset({0, 1})
 
 
 def random_distinct_integers(high, size, rng):
@@ -89,7 +90,7 @@ def random_distinct_bitstrings(num_bits, num_strings, seed, full_rank=False):
     assert _columns_differ(bitstrings)  # Validate that columns are distinct
 
     if full_rank:
-        assert binary_rank(bitstrings) == num_bits
+        assert binary_matrix_rank(bitstrings) == num_bits
     return bitstrings
 
 
@@ -126,10 +127,10 @@ class TestHelperFunctions:
             np.array([[0, 0, 1, 1], [0, 0, 1, 0], [0, 1, 1, 1]]),
         ],
     )
-    def test_select_rows_need_all_rows(self, bits):
-        """Test that select_rows correctly selects all rows if they are all needed to
+    def test_select_sos_rows_need_all_rows(self, bits):
+        """Test that select_sos_rows correctly selects all rows if they are all needed to
         discrimnate the columns of the input"""
-        selectors, new_bits = select_rows(bits)
+        selectors, new_bits = select_sos_rows(bits)
         assert set(selectors) == set(range(len(bits)))  # all rows are needed
         assert np.allclose(new_bits, bits)
 
@@ -193,10 +194,10 @@ class TestHelperFunctions:
             ),
         ],
     )
-    def test_select_rows_need_only_few_rows(self, bits, skip_rows):
-        """Test that select_rows correctly selects a subset of rows if they are not all needed to
+    def test_select_sos_rows_need_only_few_rows(self, bits, skip_rows):
+        """Test that select_sos_rows correctly selects a subset of rows if they are not all needed to
         discrimnate the columns of the input"""
-        selectors, new_bits = select_rows(bits)
+        selectors, new_bits = select_sos_rows(bits)
         assert set(selectors) == set(range(len(bits))) - set(skip_rows)
         assert np.allclose(new_bits, bits[np.array(selectors)])
 
@@ -280,6 +281,38 @@ class TestHelperFunctions:
         # Assert that the found vector ell is indeed different from all vectors to be avoided.
         assert not np.any(np.all(matches, axis=0))
 
+    @pytest.mark.parametrize(
+        "bits",
+        [
+            np.array([[1], [0]]),
+            np.array([[1, 0], [0, 1], [1, 1]]),
+            np.array([[1, 0], [0, 1], [1, 1]]),
+            np.array([[1, 0, 0], [0, 1, 1], [1, 1, 0]]),
+            np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
+        ],
+    )
+    def test_find_single_w(self, bits):
+        """Test _find_single_w."""
+        copy = bits.copy()
+        W = _find_single_w(bits)
+        assert np.allclose(bits, copy)  # Input not altered
+        assert isinstance(W, np.ndarray) and W.shape == (len(bits), 1)
+        assert _is_binary(W)
+        # Assert that the newly found vector indeed differs from the inputs
+        assert _columns_differ(np.concatenate([bits, W], axis=1))
+        # Assert that the newly found vector indeed differs from the differences of inputs
+        assert not any(np.allclose((b0 + b1) % 2, W) for b0, b1 in combinations(bits.T, r=2))
+        # Assert that the newly found vector is not the zero vector
+        assert not np.allclose(W, 0)
+
+    def test_find_single_w_too_many_bits(self, seed):
+        """Test _find_single_w raises an error for bitstrings longer than 64 bits."""
+        bits = np.concatenate(
+            [random_distinct_bitstrings(30, 13, seed), random_distinct_bitstrings(35, 13, seed + 1)]
+        )
+        with pytest.raises(ValueError, match="Bitstring search _find_single_w"):
+            _find_single_w(bits)
+
 
 class TestComputeSosEncoding:
     """Tests for ``compute_sos_encoding``."""
@@ -315,13 +348,13 @@ class TestComputeSosEncoding:
     def test_nontrivial_case(self, r, D):
         """Test ``compute_sos_encoding`` for cases where the number ``D`` of
         input bit strings and their length ``r`` satisfies ``r>2⌈log_2(D)⌉-1``.
-        In this case, the encoding is the identity matrix.
         """
+
         m = 2 * ceil_log2(D) - 1
         # Test case input validation: Want nontrivial case and need D>=r for full rank input
         assert D >= r > m
         # The algorithm assumes that we do not use more bits than there are linearly
-        # independent bitstrings. We re-sample if this is not satisfied by the random bits.
+        # independent bitstrings. We make sure this is true by passing full_rank=True
         bits = random_distinct_bitstrings(r, D, 519, full_rank=True)
 
         U, b = compute_sos_encoding(bits)
@@ -330,4 +363,37 @@ class TestComputeSosEncoding:
         assert b.shape == (m, D)
         assert _is_binary(b)
         assert np.allclose((U @ bits) % 2, b)
+        assert _columns_differ(b)
+
+    @pytest.mark.parametrize(
+        "r, D",
+        [
+            (4, 4),
+            (6, 6),
+            (8, 16),
+            (10, 17),
+            (11, 17),
+            (12, 18),
+            (19, 20),
+            (53, 53),
+            (23, 1052),
+            (22, 1521),
+        ],
+    )
+    def test_integration_with_select_sos_rows(self, r, D, seed):
+        """Test that compute_sos_encoding integrates with select_sos_rows as intended."""
+
+        bits = random_distinct_bitstrings(r, D, seed)
+        selector_ids, new_bits = select_sos_rows(bits)
+
+        new_r = len(new_bits)
+        assert len(selector_ids) == new_r
+
+        U, b = compute_sos_encoding(new_bits)
+        m = min(2 * ceil_log2(D) - 1, new_r)
+        assert U.shape == (m, new_r)
+        assert _is_binary(U)
+        assert b.shape == (m, D)
+        assert _is_binary(b)
+        assert np.allclose((U @ new_bits) % 2, b)
         assert _columns_differ(b)
