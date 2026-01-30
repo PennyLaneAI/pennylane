@@ -116,4 +116,4 @@ jobs:
           ${IGNORE_OPTS_TERTIARY}
           "
 
-          uv run pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+          pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
