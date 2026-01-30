@@ -27,6 +27,7 @@ Execution functions and utilities
     ~workflow.construct_batch
     ~workflow.construct_execution_config
     ~workflow.get_transform_program
+    ~workflow.get_compile_pipeline
     ~workflow.get_best_diff_method
     ~workflow.set_shots
 
@@ -47,6 +48,7 @@ Jacobian Product Calculation
 from .construct_batch import construct_batch, get_transform_program, marker
 from .construct_tape import construct_tape
 from .construct_execution_config import construct_execution_config
+from .get_compile_pipeline import get_compile_pipeline
 from .execution import execute
 from .get_best_diff_method import get_best_diff_method
 from .qnode import QNode, qnode

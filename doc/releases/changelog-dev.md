@@ -16,6 +16,10 @@
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
+* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
+  compile pipeline of a given QNode at a specific level.
+  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+
 <h3>Improvements 🛠</h3>
 
 * The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
