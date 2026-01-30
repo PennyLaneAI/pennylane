@@ -757,7 +757,7 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform2)
 
         pipeline_str = str(compile_pipeline)
-        expected_repr = 'CompilePipeline(\n  [0] first_valid_transform,\n  [1] marker("blah"),\n  [2] second_valid_transform\n)'
+        expected_repr = "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] marker(blah),\n  [2] second_valid_transform()\n)"
         assert pipeline_str == expected_repr
 
     def test_equality(self):
