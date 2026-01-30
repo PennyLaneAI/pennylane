@@ -114,13 +114,26 @@ def get_compile_pipeline(
 
     We can retrieve the compile pipeline used during execution with,
 
-    >>> get_compile_pipeline(circuit)() # or level="device"
-    CompilePipeline(cancel_inverses, merge_rotations, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand, no_sampling)
+    >>> print(get_compile_pipeline(circuit)()) # or level="device"
+    CompilePipeline(
+      [0] cancel_inverses(),
+      [1] merge_rotations(),
+      [2] defer_measurements(allow_postselect=True),
+      [3] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+      [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+      [5] validate_device_wires(None, name=default.qubit),
+      [6] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+      [7] _conditional_broadcast_expand(),
+      [8] no_sampling(name=backprop + default.qubit)
+    )
 
     or use the ``level`` argument to inspect specific stages of the pipeline.
 
-    >>> get_compile_pipeline(circuit, level="user")()
-    CompilePipeline(cancel_inverses, merge_rotations)
+    >>> print(get_compile_pipeline(circuit, level="user")())
+    CompilePipeline(
+      [0] cancel_inverses(),
+      [1] merge_rotations()
+    )
 
     .. details::
         :title: Usage Details
@@ -146,44 +159,80 @@ def get_compile_pipeline(
         By default, without specifying a ``level`` we will get the full compile pipeline that is used during execution on this device.
         Note that this can also be retrieved by manually specifying ``level="device"``,
 
-        >>> get_compile_pipeline(circuit)(3.14)
-        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_metric_tensor, metric_tensor, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
+        >>> print(get_compile_pipeline(circuit)(3.14)) # or level="device"
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] marker(checkpoint),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None),
+          [5] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [6] defer_measurements(allow_postselect=True),
+          [7] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [8] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [9] validate_device_wires(None, name=default.qubit),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [11] _conditional_broadcast_expand()
+        )
 
         As can be seen above, this not only includes the two transforms we manually applied, but also a set of transforms used by the device in order to execute the circuit.
         The ``"user"`` level will retrieve the portion of the compile pipeline that was manually applied by the user to the qnode,
 
-        >>> get_compile_pipeline(circuit, level="user")(3.14)
-        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_metric_tensor, metric_tensor)
+        >>> print(get_compile_pipeline(circuit, level="user")(3.14))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] marker(checkpoint),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None)
+        )
 
         The ``"gradient"`` level builds on top of this to then add any relevant gradient transforms,
 
-        >>> get_compile_pipeline(circuit, level="gradient")(3.14)
-        CompilePipeline(cancel_inverses, marker, merge_rotations, _expand_metric_tensor, metric_tensor, _expand_transform_param_shift)
+        >>> print(get_compile_pipeline(circuit, level="gradient")(3.14))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] marker(checkpoint),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None),
+          [5] _expand_transform_param_shift(shifts=0.7853981633974483)
+        )
 
         which in this case is ``_expand_transform_param_shift``, a transform that expands all trainable operations
         to a state where the parameter shift transform can operate on them.
 
         We can use ``qml.marker`` to further subdivide our compile pipeline into stages,
 
-        >>> get_compile_pipeline(circuit, level="checkpoint")(3.14)
-        CompilePipeline(cancel_inverses)
+        >>> print(get_compile_pipeline(circuit, level="checkpoint")(3.14))
+        CompilePipeline(
+          [0] cancel_inverses()
+        )
 
         If ``"top"`` or ``0`` are specified, an empty compile pipeline will be returned,
 
-        >>> get_compile_pipeline(circuit, level=0)(3.14)
+        >>> print(get_compile_pipeline(circuit, level=0)(3.14))
         CompilePipeline()
-        >>> get_compile_pipeline(circuit, level="top")(3.14)
+        >>> print(get_compile_pipeline(circuit, level="top")(3.14))
         CompilePipeline()
 
         Integer levels correspond to the number of transforms to retrieve from the compile pipeline,
 
-        >>> get_compile_pipeline(circuit, level=3)(3.14)
-        CompilePipeline(cancel_inverses, marker, merge_rotations)
+        >>> print(get_compile_pipeline(circuit, level=3)(3.14))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] marker(checkpoint),
+          [2] merge_rotations()
+        )
 
         Slice levels enable you to extract a specific range of transformations in the compile pipeline. For example, we can retrieve the second to fourth transform by using a slice,
 
-        >>> get_compile_pipeline(circuit, level=slice(1,4))(3.14)
-        CompilePipeline(marker, merge_rotations, _expand_metric_tensor)
+        >>> print(get_compile_pipeline(circuit, level=slice(1,4))(3.14))
+        CompilePipeline(
+          [0] marker(checkpoint),
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None)
+        )
 
     """
 
