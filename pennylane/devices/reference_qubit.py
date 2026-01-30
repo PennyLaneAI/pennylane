@@ -162,6 +162,7 @@ class ReferenceQubit(Device):
         program.add_transform(measurements_from_samples)
         program.add_transform(
             decompose,
+            target_gates=operations,
             stopping_condition=supports_operation,
             skip_initial_state_prep=False,
             name="reference.qubit",

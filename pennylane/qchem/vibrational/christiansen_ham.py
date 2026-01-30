@@ -123,7 +123,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
                 obs[w] = one[l, k_l, h_l]
 
     # two-body terms
-    if not two is None:
+    if two is not None:
         for l in range(modes):
             if ordered is False:
                 m_range = [p for p in range(modes) if p != l]
@@ -151,7 +151,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
                                 obs[w] = two[l, m, k_l, k_m, h_l, h_m]
 
     # three-body terms
-    if not three is None:
+    if three is not None:
         for l in range(modes):
             if not ordered:
                 m_range = [p for p in range(modes) if p != l]

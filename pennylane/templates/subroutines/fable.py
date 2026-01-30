@@ -63,7 +63,7 @@ class FABLE(Operation):
 
     We can see that the input matrix has been block encoded in the matrix of the circuit:
 
-    >>> s = int(np.ceil(np.log2(max(len(input_matrix), len(input_matrix[0])))))
+    >>> s = qml.math.ceil_log2(max(len(input_matrix), len(input_matrix[0])))
     >>> expected = 2**s * qml.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
     >>> print(f"Block-encoded matrix:\n{expected}")
     Block-encoded matrix:
@@ -114,7 +114,7 @@ class FABLE(Operation):
             dimension = max(row, col)
             input_matrix = math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
             row, col = math.shape(input_matrix)
-        n = int(math.ceil(math.log2(col)))
+        n = math.ceil_log2(col)
         if n == 0:  ### For edge case where someone puts a 1x1 array.
             n = 1
         if col < 2**n:

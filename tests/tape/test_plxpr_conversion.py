@@ -260,6 +260,52 @@ class TestCollectOpsandMeas:
         ):
             collector(grad_fn)(0.5)
 
+    def test_vjp_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the vjp of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        def w(x):
+            return qml.vjp(g, (x,), (1.0,))
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the vjp primitive",
+        ):
+            collector(w)(0.5)
+
+    def test_jvp_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the jvp of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        def w(x):
+            return qml.jvp(g, (x,), (1.0,))
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the jvp primitive",
+        ):
+            collector(w)(0.5)
+
     def test_qnode(self):
         """Test that collecting ops from a QNode works."""
         dev = qml.device("default.qubit", wires=3)
