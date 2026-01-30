@@ -401,6 +401,11 @@ class CompilePipeline:
 
     __rmul__ = __mul__
 
+    def _ipython_display_(self):
+        """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        print(str(self))
+
     def __str__(self) -> str:
         """Returns a user friendly representation of the compile pipeline."""
         if not self:

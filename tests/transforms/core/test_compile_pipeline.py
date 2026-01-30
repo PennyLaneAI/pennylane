@@ -741,6 +741,22 @@ class TestCompilePipelineDunders:
         expected_repr = f"CompilePipeline(\n  [0] {repr(transform1)},\n  [1] {repr(transform2)}\n)"
         assert pipeline_repr == expected_repr
 
+    def test_ipython_display(self, capsys):
+        """Test that the ipython display prints the string representation of a CompilePipeline instance."""
+
+        transform1 = BoundTransform(qml.transform(first_valid_transform))
+        marker = qml.marker("blah")
+        transform2 = BoundTransform(qml.transform(second_valid_transform))
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.append(transform1)
+        compile_pipeline.append(marker)
+        compile_pipeline.append(transform2)
+
+        compile_pipeline._ipython_display_()  # pylint: disable=protected-access
+        captured = capsys.readouterr()
+        assert str(compile_pipeline) + "\n" == captured.out
+
     def test_str_pipeline(self):
         """Tests the string representation of a pipeline."""
 
