@@ -14,6 +14,8 @@
 """
 This submodule tests mathematical decomposition functions, for example of matrices or integers.
 """
+import warnings
+
 import pytest
 
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
@@ -51,3 +53,22 @@ def test_decomp_int_to_powers_of_two(k, n, exp_R):
     R = decomp_int_to_powers_of_two(k, n)
     assert R == exp_R, f"\n{R}\n{exp_R}"
     assert sum(val != 0 for val in R) == (k ^ (3 * k)).bit_count()
+
+
+def test_decomp_int_to_powers_of_two_overflow():
+    """Tests that ``decomp_int_to_powers_of_two`` raises an error
+    when ``k`` is too large for the given ``n``."""
+    n = 4
+    k = 2 ** (n - 1) + 1  # too large
+
+    with pytest.raises(AssertionError):
+        decomp_int_to_powers_of_two(k, n)
+
+
+def test_decomp_int_to_powers_of_two_int_overflow_check():
+    """Tests that ``decomp_int_to_powers_of_two`` does not raise overflow warnings
+    when ``k`` is large but valid for the given ``n``."""
+
+    with warnings.catch_warnings(record=True) as w:
+        decomp_int_to_powers_of_two(2**62, 2**7)
+    assert len(w) == 0

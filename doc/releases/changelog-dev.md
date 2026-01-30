@@ -227,6 +227,9 @@
   blocks decompositions in this system to use nested operator products while reporting their
   resources accurately.
   [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
+  
+* Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
+  [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
 * `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
   [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
@@ -253,6 +256,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
