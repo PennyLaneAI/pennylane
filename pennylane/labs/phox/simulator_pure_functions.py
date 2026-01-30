@@ -16,6 +16,7 @@ Pure function implementations for the Phox simulator.
 """
 import math
 from dataclasses import dataclass
+from functools import partial
 from typing import Callable
 
 import jax
@@ -71,6 +72,59 @@ def _phase(pauli: str, qubit: int) -> complex:
     raise ValueError(f"Expected Pauli I, X, Y, or Z, got {pauli}.")
 
 
+@partial(jax.jit, static_argnames=["phase_layer", "use_init_state"])
+def _iqp_execution_kernel(
+    samples: ArrayLike,
+    generators: ArrayLike,
+    bitflips: ArrayLike,
+    phases: ArrayLike,
+    X: ArrayLike,
+    P: ArrayLike,
+    use_init_state: bool,
+    phase_layer: Callable | None,
+    param_map: ArrayLike | None,
+    params: ArrayLike,
+    phase_params: ArrayLike = None,
+):
+    """
+    JIT-compiled kernel for IQP expectation value calculation.
+    """
+    B = (-1) ** (samples @ generators.T)
+    C = 1 - ((-1) ** (bitflips @ generators.T))
+
+    expanded_params = params if param_map is None else jnp.asarray(params)[param_map]
+
+    E = C @ (expanded_params[:, None] * B.T)
+
+    if phase_layer is not None:
+
+        def compute_phase(phase_params, sample, bitflips):
+            return phase_layer(phase_params, sample) - phase_layer(
+                phase_params, (sample + bitflips) % 2
+            )
+
+        phase_matrix = jax.vmap(compute_phase, in_axes=(None, 0, None))
+        phase_matrix = jax.vmap(phase_matrix, in_axes=(None, None, 0))
+
+        E += phase_matrix(phase_params, samples, bitflips)
+
+    M = phases * jnp.exp(1j * E)
+
+    if use_init_state:
+        # X and P are provided
+        F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
+
+        H1 = ((-1) ** (bitflips @ X.T)) @ F
+        col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
+        H2 = jnp.broadcast_to(col_sums, (bitflips.shape[0], samples.shape[0]))
+        H = H1 * H2
+        M = M * H
+
+    expvals = jnp.real(M)
+    std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+    return jnp.mean(expvals, axis=1), std_err
+
+
 def _iqp_expval_core(
     generators: ArrayLike,
     ops: ArrayLike,
@@ -114,47 +168,30 @@ def _iqp_expval_core(
         ]
     )
 
-    def expval_func(
-        params: ArrayLike, phase_params: ArrayLike = None
-    ) -> tuple[jnp.ndarray, jnp.ndarray]:
-        B = (-1) ** (samples @ generators.T)
-        C = 1 - ((-1) ** (bitflips @ generators.T))
+    # Prepare init_state args for the kernel
+    if init_state is not None:
+        X, P = init_state
+        P = P[:, jnp.newaxis]
+        use_init_state = True
+    else:
+        # Dummy arrays to satisfy JIT argument types (shapes don't matter much as they aren't used,
+        # but JAX might trace them so keep them consistent or empty)
+        X = jnp.empty((0, 0))
+        P = jnp.empty((0, 0))
+        use_init_state = False
 
-        expanded_params = params if param_map is None else jnp.asarray(params)[param_map]
-
-        E = C @ (expanded_params[:, None] * B.T)
-
-        if phase_layer is not None:
-            def compute_phase(phase_params, sample, bitflips):
-                return phase_layer(phase_params, sample) - phase_layer(
-                    phase_params, (sample + bitflips) % 2
-                )
-
-            phase_matrix = jax.vmap(compute_phase, in_axes=(None, 0, None))
-            phase_matrix = jax.vmap(phase_matrix, in_axes=(None, None, 0))
-
-            E += phase_matrix(phase_params, samples, bitflips)
-
-        M = phases * jnp.exp(1j * E)
-
-        if init_state is not None:
-            X, P = init_state
-            P = P[:, jnp.newaxis]
-
-            F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
-
-            H1 = ((-1) ** (bitflips @ X.T)) @ F
-            col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
-            H2 = jnp.broadcast_to(col_sums, (bitflips.shape[0], samples.shape[0]))
-            H = H1 * H2
-            expvals = jnp.real(M * H)
-        else:
-            expvals = jnp.real(M)
-
-        std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(n_samples)
-        return jnp.mean(expvals, axis=1), std_err
-
-    return expval_func
+    return partial(
+        _iqp_execution_kernel,
+        samples,
+        generators,
+        bitflips,
+        phases,
+        X,
+        P,
+        use_init_state,
+        phase_layer,
+        param_map,
+    )
 
 
 def bitflip_expval(
