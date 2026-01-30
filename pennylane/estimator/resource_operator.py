@@ -27,7 +27,7 @@ from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from ..typing import TensorLike
+from pennylane.typing import TensorLike
 from .resources_base import Resources
 
 
