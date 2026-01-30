@@ -1790,7 +1790,6 @@ ci = [
     { name = "rich" },
 ]
 dev = [
-    { name = "astroid" },
     { name = "black" },
     { name = "build" },
     { name = "flaky" },
@@ -1883,7 +1882,6 @@ ci = [
     { name = "rich" },
 ]
 dev = [
-    { name = "astroid", specifier = "==4.0.2" },
     { name = "black", specifier = "==25.9.0" },
     { name = "build" },
     { name = "flaky", specifier = ">=3.7.0" },
