@@ -93,7 +93,7 @@ class TestIntToBinary:
         assert np.allclose((expected @ 2 ** np.arange(n - 1, -1, -1)), x)
         assert _is_binary(expected)
 
-        out = fn.int_to_binary(x, num_bits=n)
+        out = fn.int_to_binary(x, width=n)
         assert _is_binary(out)
         assert out.shape == (*x.shape, n)
         assert np.allclose(out, expected)
@@ -226,9 +226,9 @@ class TestBinaryRank:
         ],
     )
     def test_square_matrix(self, binary_matrix, expected):
-        """Test that the binary_rank function correctly computes
+        """Test that the binary_matrix_rank function correctly computes
         the rank over Z_2 for a square matrix."""
-        rk = fn.binary_rank(binary_matrix)
+        rk = fn.binary_matrix_rank(binary_matrix)
         assert rk == expected
 
     @pytest.mark.parametrize(
@@ -243,18 +243,18 @@ class TestBinaryRank:
         ],
     )
     def test_rectangular_matrix(self, binary_matrix, expected):
-        """Test that the binary_rank function correctly computes
+        """Test that the binary_matrix_rank function correctly computes
         the rank over Z_2 for a rectangular (non-square) matrix."""
-        rk = fn.binary_rank(binary_matrix)
+        rk = fn.binary_matrix_rank(binary_matrix)
         assert rk == expected
 
     @pytest.mark.parametrize("shape", [(2, 3), (4, 7), (5, 93), (14, 4), (100, 7)])
     def test_with_random_matrix_against_rref(self, shape, seed):
-        """Test that the rank computed with ``binary_rank`` matches the
+        """Test that the rank computed with ``binary_matrix_rank`` matches the
         rank inferred from the reduced row echelon form of a random matrix."""
         rng = np.random.default_rng(seed)
         binary_matrix = rng.choice(2, size=shape, replace=True)
-        rk_direct = fn.binary_rank(binary_matrix)
+        rk_direct = fn.binary_matrix_rank(binary_matrix)
 
         rref = fn.binary_finite_reduced_row_echelon(binary_matrix)
         rk_from_rref = np.sum(np.any(rref, axis=1))
@@ -297,7 +297,7 @@ class TestSolveBinaryLinearSystem:
     def test_with_regular_matrix(self, A, b, expected):
         """Test that the system is solved for a regular matrix and coefficient vector b."""
         # Input validation
-        assert fn.binary_rank(A) == len(A)  # Regular matrix
+        assert fn.binary_matrix_rank(A) == len(A)  # Regular matrix
         assert np.allclose((A @ expected) % 2, b)  # expected is a solution
 
         x_sol = fn.binary_solve_linear_system(A, b)
@@ -362,7 +362,7 @@ class TestBinaryIsIndependent:
     def test_independence(self, vector, basis, expected):
         """Test that linear independence and dependence are recognized correctly."""
         # input validation. This equality is an assumption of ``binary_is_independent``.
-        assert fn.binary_rank(basis) == min(basis.shape)
+        assert fn.binary_matrix_rank(basis) == min(basis.shape)
 
         is_indep = fn.binary_is_independent(vector, basis)
         assert is_indep is expected
@@ -399,7 +399,7 @@ class TestBinarySelectBasis:
         basis, other_bits = fn.binary_select_basis(bits)
         assert basis.shape == (r, r)
         assert _is_binary(basis)
-        assert fn.binary_rank(basis) == r
+        assert fn.binary_matrix_rank(basis) == r
 
         assert other_bits.shape == (r, D - r)
         assert _is_binary(other_bits)
@@ -426,6 +426,6 @@ class TestBinarySelectBasis:
         basis, other_bits = fn.binary_select_basis(bits)
         assert basis.shape == (r, D)
         assert _is_binary(basis)
-        assert fn.binary_rank(basis) == D
+        assert fn.binary_matrix_rank(basis) == D
 
         assert other_bits.shape == (r, 0)

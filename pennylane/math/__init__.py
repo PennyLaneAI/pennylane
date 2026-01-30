@@ -37,7 +37,7 @@ import autoray as ar
 from .binary_linalg import (
     binary_finite_reduced_row_echelon,
     binary_is_independent,
-    binary_rank,
+    binary_matrix_rank,
     binary_select_basis,
     binary_solve_linear_system,
     int_to_binary,
@@ -210,7 +210,7 @@ __all__ = [
     "array",
     "binary_finite_reduced_row_echelon",
     "binary_is_independent",
-    "binary_rank",
+    "binary_matrix_rank",
     "binary_select_basis",
     "binary_solve_linear_system",
     "block_diag",
