@@ -36,7 +36,7 @@ def f2(p, t):
 
 param = [1.2, 2.3]
 
-test_example = ParametrizedHamiltonian(
+ExampleH = ParametrizedHamiltonian(
     [1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)]
 )
 
@@ -87,26 +87,26 @@ class TestInitialization:
 
     def test_H_fixed_lists(self):
         """Test that attributes H_fixed_ops and H_fixed_coeffs are as expected"""
-        assert test_example.coeffs_fixed == [1, 2]
-        for op1, op2 in zip(test_example.ops_fixed, [qml.PauliX(0), qml.PauliY(1)]):
+        assert ExampleH.coeffs_fixed == [1, 2]
+        for op1, op2 in zip(ExampleH.ops_fixed, [qml.PauliX(0), qml.PauliY(1)]):
             qml.assert_equal(op1, op2)
 
     def test_H_parametrized_lists(self):
         """Test that attributes H_parametrized_ops and H_parametrized_coeffs are as expected"""
-        assert test_example.coeffs_parametrized == [f1, f2]
-        for op1, op2 in zip(test_example.ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)]):
+        assert ExampleH.coeffs_parametrized == [f1, f2]
+        for op1, op2 in zip(ExampleH.ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)]):
             qml.assert_equal(op1, op2)
 
     def test_H_fixed(self):
         """Test that H_fixed() is an Operator of the expected form"""
-        H_fixed = test_example.H_fixed()
+        H_fixed = ExampleH.H_fixed()
         op = qml.sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
         qml.assert_equal(H_fixed, op)
 
     def test_H_parametrized(self):
         """Test H_parametrized is a function that, when passed parameters,
         returns an Operator of the expected format."""
-        H_param = test_example.H_parametrized
+        H_param = ExampleH.H_parametrized
 
         H = H_param([1, 2], 0.5)
         assert len(H) == 2
@@ -384,13 +384,13 @@ class TestProperties:
 
     def test_ops(self):
         """Test stored operator list"""
-        ops = test_example.ops
+        ops = ExampleH.ops
         for op1, op2 in zip(ops, [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)]):
             qml.assert_equal(op1, op2)
 
     def test_coeffs(self):
         """Test stored coefficients list"""
-        coeffs = test_example.coeffs
+        coeffs = ExampleH.coeffs
         assert [1, 2, f1, f2] == coeffs
 
 

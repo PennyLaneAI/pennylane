@@ -5,6 +5,7 @@ Contains the transpiler transform.
 from functools import partial
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops import LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
@@ -163,6 +164,7 @@ def transpile(
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
+            target_gates=gate_sets.ROTATIONS_PLUS_CNOT,
             stopping_condition=stop_at,
             name="transpile",
             error=qml.operation.DecompositionUndefinedError,
@@ -227,7 +229,7 @@ def transpile(
     if not any_state_mp or device_wires is None:
 
         def null_postprocessing(results):
-            """A postprocesing function returned by a transform that only converts the batch of results
+            """A postprocessing function returned by a transform that only converts the batch of results
             into a result for a single ``QuantumTape``.
             """
             return results[0]

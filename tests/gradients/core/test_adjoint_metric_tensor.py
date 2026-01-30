@@ -332,6 +332,7 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*t_params)
+
         mt = qml.adjoint_metric_tensor(circuit)(*t_params)
         assert qml.math.allclose(mt, expected)
 
@@ -549,6 +550,7 @@ class TestAdjointMetricTensorDifferentiability:
 
         mt_fn = qml.adjoint_metric_tensor(circuit)
         argnums = list(range(len(params)))
+
         mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
         if isinstance(mt_jac, tuple):
