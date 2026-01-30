@@ -14,6 +14,7 @@
 """
 Defines qml.value_and_grad.
 """
+import inspect
 from functools import lru_cache, wraps
 
 from pennylane import capture
@@ -41,20 +42,20 @@ def _get_value_and_grad_prim():
     value_and_grad_prim.prim_type = "higher_order"
 
     @value_and_grad_prim.def_impl
-    def _value_and_grad_impl(*args, argnums, jaxpr, method, h, scalar_out, fn):
+    def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):
         if method != "auto":  # pragma: no cover
             raise ValueError(f"Invalid value '{method=}' without QJIT.")
 
         def func(*inner_args):
             res = jax.core.eval_jaxpr(jaxpr, [], *inner_args)
-            return res[0] if scalar_out else res
+            return res[0]
 
         res = jax.value_and_grad(func, argnums=argnums)(*args)
         return jax.tree_util.tree_leaves(res)
 
     # pylint: disable=unused-argument
     @value_and_grad_prim.def_abstract_eval
-    def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, scalar_out, fn):
+    def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
         in_avals = tuple(args[i] for i in argnums)
         out_shapes = [outvar.aval.shape for outvar in jaxpr.outvars]
         grad_shape = [
@@ -62,7 +63,8 @@ def _get_value_and_grad_prim():
             for out_shape in out_shapes
             for in_aval in in_avals
         ]
-        return out_shapes + grad_shape
+        res_avals = [outvar.aval for outvar in jaxpr.outvars]
+        return res_avals + grad_shape
 
     return value_and_grad_prim
 
@@ -88,9 +90,14 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
 
+        if len(jaxpr.out_avals) > 1:
+            raise TypeError(
+                f"Gradient only defined for scalar-output functions. Got {jaxpr.out_avals}"
+            )
+
         num_abstract_shapes = len(abstract_shapes)
         shift = num_abstract_shapes + len(jaxpr.consts)
-        shifted_argnums = [a + shift for a in flat_argnums]
+        shifted_argnums = tuple(a + shift for a in flat_argnums)
         j = jaxpr.jaxpr
         no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
 
@@ -232,6 +239,13 @@ class value_and_grad:
         self._argnums = argnums
         self._method = method
         self._h = h
+        # need to preserve input siganture for use in catalyst AOT compilation, but
+        # get rid of return annotation to placate autograd
+        self.__signature__ = inspect.signature(self._func).replace(
+            return_annotation=inspect.Signature.empty
+        )
+        fn_name = getattr(self._func, "__name__", repr(self._func))
+        self.__name__ = f"<value_and_grad: {fn_name}>"
 
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
@@ -247,4 +261,4 @@ class value_and_grad:
             )
             return g(*args, **kwargs)
 
-        raise CompileError("Pennylane does not support the value_and_grad function without QJIT.")
+        raise CompileError("PennyLane does not support the value_and_grad function without QJIT.")
