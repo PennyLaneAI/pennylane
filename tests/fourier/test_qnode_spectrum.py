@@ -359,12 +359,14 @@ class TestCircuits:
         with pytest.raises(ValueError, match="Only pure numpy arguments"):
             _ = qnode_spectrum(circuit, argnum=[0, 1])(x, y)
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_multi_par_error(self):
         """Test that an error is thrown if the spectrum of
         a multi-parameter gate that cannot be decomposed is requested."""
         dev = qml.device("default.qubit", wires=3)
 
         class nondecompRot(qml.Rot):
+
             @staticmethod
             def compute_decomposition(phi, theta, omega, wires):
                 """Pseudo-decomposition: Just return the gate itself."""
