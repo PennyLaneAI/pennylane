@@ -132,7 +132,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
         available.
 
     .. seealso::
-        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-product-measurement>`_ and
+        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_ and
         :func:`catalyst.passes.ppm_compilation` for compiling these circuits with Catalyst.
 
     Args:
@@ -177,7 +177,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
 
     >>> print(qml.specs(circuit)()['resources'])
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 4
     Circuit depth: 3
     Gate types:

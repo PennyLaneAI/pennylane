@@ -26,7 +26,6 @@ from pennylane.exceptions import (
     AllocationError,
     DecompositionUndefinedError,
     DeviceError,
-    PennyLaneDeprecationWarning,
     QuantumFunctionError,
     WireError,
 )
@@ -42,9 +41,7 @@ from pennylane.operation import Operator, StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import (
-    defer_measurements,
     diagonalize_measurements,
-    dynamic_one_shot,
     resolve_dynamic_wires,
 )
 from pennylane.transforms.core import transform
@@ -54,8 +51,6 @@ from pennylane.transforms.decompose import (
 )
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-from .execution_config import MCMConfig
 
 
 def null_postprocessing(results):
@@ -185,49 +180,6 @@ def validate_device_wires(
         tape = tape.copy(ops=new_ops, measurements=measurements)
 
     return (tape,), null_postprocessing
-
-
-@transform
-def mid_circuit_measurements(
-    tape: QuantumScript,
-    device,
-    mcm_config=MCMConfig(),
-    **kwargs,  # pylint: disable=unused-argument
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Provide the transform to handle mid-circuit measurements.
-
-    In the case where no method is specified, if the tape or device
-    uses finite-shot, the ``qml.dynamic_one_shot`` transform will be
-    applied, otherwise ``qml.defer_measurements`` is used instead.
-
-    .. warning::
-
-        This transform is deprecated and will be removed in a future release. Instead,
-        the device should determine which mcm method to use, and explicitly include
-        :func:`~pennylane.transforms.dynamic_one_shot` or :func:`~pennylane.transforms.defer_measurements`
-        in its preprocess transforms if necessary. See :func:`DefaultQubit.setup_execution_config <pennylane.devices.DefaultQubit.setup_execution_config>`
-        and :func:`DefaultQubit.preprocess_transforms <pennylane.devices.DefaultQubit.preprocess_transforms>` for an example.
-
-    """
-
-    warnings.warn(
-        "The mid_circuit_measurements transform is deprecated. Instead, the device should "
-        "determine the best mcm method, and explicitly include qml.transforms.dynamic_one_shot "
-        "or qml.transforms.defer_measurements in the preprocess compile pileline if needed.",
-        PennyLaneDeprecationWarning,
-    )
-
-    if isinstance(mcm_config, dict):
-        mcm_config = MCMConfig(**mcm_config)
-    mcm_method = mcm_config.mcm_method
-    if mcm_method is None:
-        mcm_method = "one-shot" if tape.shots else "deferred"
-
-    if mcm_method == "one-shot":
-        return dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
-    if mcm_method in ("tree-traversal", "device"):
-        return (tape,), null_postprocessing
-    return defer_measurements(tape, allow_postselect=False)
 
 
 @transform
@@ -447,7 +399,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                max_work_wires=num_available_work_wires,
+                num_work_wires=num_available_work_wires,
                 graph_solution=graph_solution,
                 custom_decomposer=decomposer,
                 strict=True,

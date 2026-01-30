@@ -86,7 +86,7 @@ def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch
     )
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

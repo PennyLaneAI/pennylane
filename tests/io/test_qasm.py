@@ -184,6 +184,7 @@ class TestToQasmUnitTests:
             cx q[0],q[1];
             rz(3.1415926536) q[1];
             cx q[0],q[1];
+            gphase(-1.5707963268) q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             """
@@ -529,6 +530,7 @@ class TestQNodeQasmIntegrationTests:
             cx q[0],q[1];
             rz(3.1415926536) q[1];
             cx q[0],q[1];
+            gphase(-1.5707963268) q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             """

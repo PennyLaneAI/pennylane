@@ -87,6 +87,12 @@ class TestMapToResourceOp:
             ),
             # Custom/Template Gates
             (qtemps.TemporaryAND(wires=[0, 1, 2]), re_ops.TemporaryAND()),
+            (
+                qtemps.Reflection(U=qml.Hadamard(0), alpha=0.1, reflection_wires=[0]),
+                re_temps.Reflection(
+                    num_wires=1, U=re_ops.Hadamard(wires=[0]), alpha=0.1, wires=[0]
+                ),
+            ),
         ],
     )
     def test_map_to_resource_op(self, operator, expected_res_op):
@@ -118,8 +124,25 @@ class TestMapToResourceOp:
                 re_temps.Select(ops=[re_ops.X(), re_ops.Y()], wires=[0, 1, 2]),
             ),
             (
+                qtemps.BBQRAM(
+                    data=["010", "111", "110", "000"],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
+                re_temps.BBQRAM(
+                    num_bitstrings=4,
+                    size_bitstring=3,
+                    num_bit_flips=6,
+                    num_wires=15,
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                ),
+            ),
+            (
                 qtemps.QROM(
-                    bitstrings=["01", "11", "10"],
+                    data=[[0, 1], [1, 1], [1, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3],
                     work_wires=[4],

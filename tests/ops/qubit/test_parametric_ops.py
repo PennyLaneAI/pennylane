@@ -893,6 +893,18 @@ class TestMatrix:
         assert np.allclose(qml.RZ.compute_matrix(np.pi), -1j * Z, atol=tol, rtol=0)
         assert np.allclose(qml.RZ(np.pi, wires=0).matrix(), -1j * Z, atol=tol, rtol=0)
 
+    @pytest.mark.torch
+    def test_rz_matrix_vmap_broadcasting_bug(self):
+        """Test for an error when torch.vmap + parameter broadcasting used with RZ."""
+
+        import torch
+
+        x = torch.tensor([[0.1, 0.2, 0.3]])
+        res = torch.vmap(qml.RZ.compute_matrix, in_dims=0)(x)
+
+        for xi, resi in zip(x[0], res[0]):
+            assert qml.math.allclose(resi, qml.RZ.compute_matrix(xi))
+
     @pytest.mark.parametrize("dim", range(3))
     @pytest.mark.parametrize("wires", (range(2), range(3)))
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
@@ -1860,7 +1872,9 @@ class TestEigvals:
         assert np.allclose(op.eigvals(), expected)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
+
     device_methods = [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],

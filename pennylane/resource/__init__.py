@@ -52,12 +52,7 @@ Error Tracking
     ~AlgorithmicError
     ~SpectralNormError
     ~ErrorOperation
-
-.. warning::
-    The functions ``estimate_error``, ``estimate_shots`` and the classes ``DoubleFactorization``,
-    ``FirstQuantization`` have been moved to the :mod:`pennylane.estimator` module.
-    Accessing them from the :mod:`pennylane.resource` module is deprecated and will be removed
-    in v0.45.
+    ~algo_error
 
 Resource Classes
 ----------------
@@ -126,7 +121,7 @@ We can examine the resources by accessing the :code:`resources` key:
 
     >>> resources_lst = tracker.history['resources']
     >>> print(resources_lst[0])
-    Total qubit allocations: 3
+    Total wire allocations: 3
     Total gates: 7
     Circuit depth: 5
     <BLANKLINE>
@@ -139,7 +134,7 @@ We can examine the resources by accessing the :code:`resources` key:
     Measurements:
       expval(PauliZ): 1
 """
-from .error import AlgorithmicError, ErrorOperation, SpectralNormError
+from .error import AlgorithmicError, ErrorOperation, SpectralNormError, algo_error
 from .resource import (
     Resources,
     ResourcesOperation,
@@ -153,28 +148,3 @@ from .resource import (
     substitute,
 )
 from .specs import specs
-
-
-def __getattr__(name):
-    if name in {
-        "estimate_error",
-        "estimate_shots",
-        "FirstQuantization",
-        "DoubleFactorization",
-    }:
-
-        # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane import estimator
-        from pennylane.exceptions import PennyLaneDeprecationWarning
-
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible from the resource module \
-                and must be imported as pennylane.estimator.{name}. \
-                    Support for access through this module will be removed in v0.45.",
-            PennyLaneDeprecationWarning,
-        )
-
-        return getattr(estimator, name)
-
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")  # pragma: no cover

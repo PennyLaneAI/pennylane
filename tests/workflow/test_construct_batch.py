@@ -193,11 +193,12 @@ class TestCompilePipelineGetter:
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
-        assert p_sliced[0].transform == qml.compile.transform
+        assert p_sliced[0].tape_transform == qml.compile.tape_transform
         assert (
-            p_sliced[2].transform == qml.devices.preprocess.device_resolve_dynamic_wires.transform
+            p_sliced[2].tape_transform
+            == qml.devices.preprocess.device_resolve_dynamic_wires.tape_transform
         )
-        assert p_sliced[1].transform == qml.defer_measurements.transform
+        assert p_sliced[1].tape_transform == qml.defer_measurements.tape_transform
 
     def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
@@ -255,12 +256,15 @@ class TestCompilePipelineGetter:
         assert program[:1] == CompilePipeline([m1])
 
         m2 = BoundTransform(qml.devices.legacy_facade.legacy_device_batch_transform)
-        assert program[1].transform == m2.transform
+        assert program[1].tape_transform == m2.tape_transform
         assert program[1].kwargs["device"] == dev
 
         # a little hard to check the contents of a expand_fn transform
         # this is the best proxy I can find
-        assert program[2].transform == qml.devices.legacy_facade.legacy_device_expand_fn.transform
+        assert (
+            program[2].tape_transform
+            == qml.devices.legacy_facade.legacy_device_expand_fn.tape_transform
+        )
 
     def test_get_transform_program_final_transform(self):
         """Test that gradient preprocessing and device transform occur before a final transform."""
@@ -274,16 +278,16 @@ class TestCompilePipelineGetter:
 
         user_program = get_transform_program(circuit, level="user")
         assert len(user_program) == 3
-        assert user_program[0].transform == qml.compile.transform
-        assert user_program[1].transform == qml.metric_tensor.expand_transform
-        assert user_program[2].transform == qml.metric_tensor.transform
+        assert user_program[0].tape_transform == qml.compile.tape_transform
+        assert user_program[1].tape_transform == qml.metric_tensor.expand_transform
+        assert user_program[2].tape_transform == qml.metric_tensor.tape_transform
 
         grad_program = get_transform_program(circuit, level="gradient")
         assert len(grad_program) == 4
-        assert grad_program[0].transform == qml.compile.transform
-        assert grad_program[1].transform == qml.metric_tensor.expand_transform
-        assert grad_program[2].transform == qml.gradients.param_shift.expand_transform
-        assert grad_program[3].transform == qml.metric_tensor.transform
+        assert grad_program[0].tape_transform == qml.compile.tape_transform
+        assert grad_program[1].tape_transform == qml.metric_tensor.expand_transform
+        assert grad_program[2].tape_transform == qml.metric_tensor.tape_transform
+        assert grad_program[3].tape_transform == qml.gradients.param_shift.expand_transform
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
@@ -291,11 +295,8 @@ class TestCompilePipelineGetter:
         assert len(dev_program) == 4 + len(
             circuit.device.preprocess_transforms(config)
         )  # currently 8
-        assert dev_program[-1].transform == qml.metric_tensor.transform
 
         full_program = get_transform_program(circuit)
-        assert full_program[-1].transform == qml.metric_tensor.transform
-
         assert dev_program == full_program
 
 

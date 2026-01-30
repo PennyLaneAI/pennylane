@@ -29,7 +29,7 @@ from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_interface
-from pennylane.transforms.core import TransformDispatcher
+from pennylane.transforms.core import Transform
 
 SupportedDiffMethods = Literal[
     None,
@@ -186,6 +186,17 @@ def _resolve_mcm_config(
 
 def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> ExecutionConfig:
     diff_method = initial_config.gradient_method
+    if initial_config.derivative_order > 1 and (
+        "aux_wire" in initial_config.gradient_keyword_arguments
+        or (
+            "mode" in initial_config.gradient_keyword_arguments
+            and initial_config.gradient_keyword_arguments["mode"] in ("standard", "reversed")
+        )
+    ):
+        raise ValueError(
+            "Higher order derivatives with hadamard gradients in standard and reversed modes are not possible. "
+            "Instead please use direct or reversed-direct mode to perform a higher order derivative with a hadamard gradient."
+        )
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
         raise ValueError(
@@ -262,7 +273,7 @@ def _resolve_diff_method(
 
         if diff_method in gradient_transform_map:
             updated_values["gradient_method"] = gradient_transform_map[diff_method]
-        elif isinstance(diff_method, TransformDispatcher):
+        elif isinstance(diff_method, Transform):
             updated_values["gradient_method"] = diff_method
         else:
             raise QuantumFunctionError(

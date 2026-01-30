@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import functools
+from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
 
@@ -170,7 +171,7 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if not isinstance(op_type.resource_keys, (set, frozenset)):
+    if not isinstance(op_type.resource_keys, Set):
         raise TypeError(
             f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
         )
