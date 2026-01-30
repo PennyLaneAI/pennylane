@@ -18,6 +18,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a standard decomposition of :class:`~.OutMultiplier` that is significantly cheaper when
+  auxiliary wires are available
+  [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
 * :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept 
   their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
