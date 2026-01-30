@@ -228,9 +228,7 @@ class TestSelectOnlyQRAM:
         ),
         [([[1], [0], [1], [0]], 7, 0, 2, 2)],
     )
-    def test_resource_rep(
-        self, data, num_wires, select_value, num_select_wires, num_control_wires
-    ):
+    def test_resource_rep(self, data, num_wires, select_value, num_select_wires, num_control_wires):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
             qre.SelectOnlyQRAM,

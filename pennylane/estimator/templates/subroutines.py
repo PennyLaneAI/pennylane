@@ -339,9 +339,7 @@ class SelectOnlyQRAM(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
-        cls, data, num_wires, select_value, num_select_wires, num_control_wires
-    ):
+    def resource_rep(cls, data, num_wires, select_value, num_select_wires, num_control_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -365,9 +363,7 @@ class SelectOnlyQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
-        cls, data, num_wires, select_value, num_select_wires, num_control_wires
-    ):
+    def resource_decomp(cls, data, num_wires, select_value, num_select_wires, num_control_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -424,9 +420,7 @@ class SelectOnlyQRAM(ResourceOperator):
         return ret
 
     @staticmethod
-    def tracking_name(
-        data, num_wires, select_value, num_select_wires, num_control_wires
-    ) -> str:
+    def tracking_name(data, num_wires, select_value, num_select_wires, num_control_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"SelectOnlyQRAM({data}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
 
