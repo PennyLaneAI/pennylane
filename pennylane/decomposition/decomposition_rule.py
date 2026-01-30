@@ -605,7 +605,7 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    _new_decompositions = _decompositions_private.copy()
+    _new_decompositions = defaultdict(list, {k: v[:] for k, v in _decompositions_private.items()})
     token = _decompositions_var.set(_new_decompositions)
     try:
         yield
