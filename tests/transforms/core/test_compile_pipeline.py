@@ -804,8 +804,8 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(
             BoundTransform(
                 verbose_transform,
-                args=("x" * _CURRENT_THRESHOLD + 1,),
-                kwargs={"verbose_kwarg": "x" * _CURRENT_THRESHOLD + 1},
+                args=("x" * (_CURRENT_THRESHOLD + 1),),
+                kwargs={"verbose_kwarg": "x" * (_CURRENT_THRESHOLD + 1)},
             )
         )
 
