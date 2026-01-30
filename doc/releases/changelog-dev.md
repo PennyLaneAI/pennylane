@@ -22,6 +22,45 @@
   of :class:`~.HybridQRAM` to rapidly estimate its resources.
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
 
+* `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
+  [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
+  
+  ```python
+  
+  @qml.qjit(target="mlir")
+  @qml.transforms.to_ppr
+  @qml.qnode(qml.device("null.qubit", wires=2))
+  def circuit():
+      qml.H(0)
+      qml.CNOT([0, 1])
+      m = qml.measure(0)
+      qml.T(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=2)())
+  Device: null.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Level: 2
+
+  Resource specifications:
+      Total wire allocations: 2
+      Total gates: 11
+      Circuit depth: Not computed
+
+  Gate types:
+      GlobalPhase: 3
+      PPR-pi/4-w1: 5
+      PPR-pi/4-w2: 1
+      PPM-w1: 1
+      PPR-pi/8-w1: 1
+
+  Measurements:
+      expval(PauliZ): 1
+  ```
+
 * :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept 
   their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
   [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
@@ -278,4 +317,4 @@ Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
 David Wierichs,
-Jake Zaia,
+Jake Zaia.

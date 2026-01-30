@@ -382,7 +382,7 @@ class CircuitSpecs:
         num_device_wires (int): The number of wires on the device.
         shots (Shots): The shots configuration used.
         level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
-        resources (SpecsResources | list[SpecsResources] |
+        resources (SpecsResources | list[SpecsResources] | \
             dict[int | str, SpecsResources | list[SpecsResources]]): The resource specifications.
             Depending on the ``level`` chosen, this may be a single :class:`.SpecsResources` object,
             a list of :class:`.SpecsResources` objects, or a dictionary mapping levels to their
