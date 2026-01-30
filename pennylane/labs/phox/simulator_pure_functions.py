@@ -73,7 +73,7 @@ def _phase(pauli: str, qubit: int) -> complex:
 
 
 @partial(jax.jit, static_argnames=["phase_layer", "use_init_state"])
-def _iqp_execution_kernel(
+def _expval_func(
     samples: ArrayLike,
     generators: ArrayLike,
     bitflips: ArrayLike,
@@ -181,7 +181,7 @@ def _iqp_expval_core(
         use_init_state = False
 
     return partial(
-        _iqp_execution_kernel,
+        _expval_func,
         samples,
         generators,
         bitflips,
