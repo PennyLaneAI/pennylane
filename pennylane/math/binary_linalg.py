@@ -128,7 +128,7 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
             # store remainder right hand side columns of the pivot row irow
             rpvt_cols = rref_mat[irow, icol:].copy()
 
-            # get the column icol and set its irow element to 0 to avoid XORing pivot row with itself
+            # get column icol and set its irow element to 0 to avoid XORing pivot row with itself
             currcol = rref_mat[:, icol].copy()
             currcol[irow] = 0
 
