@@ -46,22 +46,22 @@ jobs:
           enable-cache: true        
         
       - name: Install Python dependencies
-        run: uv pip install --group dev
+        run: pip install --group dev
 
       - name: Run Black
         run: |
-          uv run black -t py311 -t py312 -t py313 -l 100 pennylane/ --check
-          uv run black -t py311 -t py312 -t py313 -l 100 tests/ --check
+          black -t py311 -t py312 -t py313 -l 100 pennylane/ --check
+          black -t py311 -t py312 -t py313 -l 100 tests/ --check
 
       - name: Run isort
         run: |
-          uv run isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane --check
-          uv run isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./tests --check
+          isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane --check
+          isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./tests --check
 
       - name: Run Pylint (source files)
         if: always()
-        run: uv run pylint --rcfile .pylintrc $(find pennylane -name "*.py")
+        run: pylint --rcfile .pylintrc $(find pennylane -name "*.py")
 
       - name: Run Pylint (test files)
         if: always()
-        run: uv run pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+        run: pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
