@@ -25,7 +25,6 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation
 from pennylane.ops import Conditional, MidMeasure, PauliMeasure
 
@@ -34,7 +33,11 @@ from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.resolve_dynamic_wires import resolve_dynamic_wires
 
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.capture,
+    pytest.mark.usefixtures("enable_graph_decomposition"),
+]
 
 
 class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
@@ -95,7 +98,6 @@ def _decomp2_without_work_wire(wires, **__):
     qml.Toffoli(wires=[wires[2], wires[1], wires[0]])
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDecomposeInterpreterGraphEnabled:
     """Tests the DecomposeInterpreter with the new graph-based decomposition system enabled."""
 
@@ -108,16 +110,6 @@ class TestDecomposeInterpreterGraphEnabled:
         assert interpreter.stopping_condition(qml.RZ(1.5, 0))
         assert interpreter.stopping_condition(qml.CNOT(wires=[0, 1]))
         assert not interpreter.stopping_condition(qml.Hadamard(0))
-
-    @pytest.mark.unit
-    def test_callable_gate_set_not_supported(self):
-        """Tests that specifying the gate_set as a function raises an error."""
-
-        with pytest.raises(
-            PennyLaneDeprecationWarning,
-            match="Passing a function to the gate_set argument is deprecated.",
-        ):
-            DecomposeInterpreter(gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"})
 
     @pytest.mark.integration
     def test_fall_back(self):

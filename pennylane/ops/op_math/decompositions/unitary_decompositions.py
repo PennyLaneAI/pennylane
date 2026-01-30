@@ -128,7 +128,7 @@ def two_qubit_decomposition(U, wires):
 
     For the 2-CNOT case, the decomposition is based on the
     real-trace criterion of Proposition III.3 in reference (2).
-    Whenever :math:`trace(\gamma(U))` has real coefficients (equivalently :math:`trace(\gamma(U)`) ∈ R),
+    Whenever :math:`trace(\gamma(U))` has real coefficients (equivalently :math:`trace(\gamma(U))` ∈ R),
     the decomposition uses exactly two CNOT gates.
 
     For a single CNOT, we have a CNOT surrounded by one :math:`SU(2)` per wire on each

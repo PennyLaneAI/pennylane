@@ -74,25 +74,9 @@ def enable_and_disable_graph_decomp(request):
     It automatically handles the setup (enabling/disabling) before the
     test runs and the teardown (always disabling) after the test completes.
     """
-    try:
-        use_graph_decomp = request.param
-
-        # --- Setup Phase ---
-        # This code runs before the test function is executed.
-        if use_graph_decomp:
-            qml.decomposition.enable_graph()
-        else:
-            # Explicitly disable to ensure a clean state
-            qml.decomposition.disable_graph()
-
-        # Yield control to the test function
-        yield use_graph_decomp
-
-    finally:
-        # --- Teardown Phase ---
-        # This code runs after the test function has finished,
-        # regardless of whether it passed or failed.
-        qml.decomposition.disable_graph()
+    use_graph_decomp = request.param
+    with qml.decomposition.toggle_graph_ctx(use_graph_decomp):
+        yield
 
 
 def get_legacy_capabilities(dev):
