@@ -224,15 +224,20 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     >>> transformed_qnode
     <QNode: device='<default.qubit device at ...>', interface='auto', diff_method='best', shots='Shots(total=None)'>
 
-    >>> transformed_qnode.compile_pipeline
-    CompilePipeline(my_quantum_transform)
+    >>> print(transformed_qnode.compile_pipeline)
+    CompilePipeline(
+      [0] my_quantum_transform()
+    )
 
     If we apply ``dispatched_transform`` a second time to the :class:`pennylane.QNode`, we would add
     it to the compile pipeline again and therefore the transform would be applied twice before execution.
 
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
-    >>> transformed_qnode.compile_pipeline
-    CompilePipeline(my_quantum_transform, my_quantum_transform)
+    >>> print(transformed_qnode.compile_pipeline)
+    CompilePipeline(
+      [0] my_quantum_transform(),
+      [1] my_quantum_transform()
+    )
 
     When a transformed QNode is executed, the QNode's compile pipeline is applied to the generated tape
     and creates a sequence of tapes to be executed. The execution results are then post-processed in the
@@ -265,7 +270,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             ...
         TypeError: <transform: my_pass> missing 1 required positional argument: 'a'
         >>> new_circuit = my_transform(circuit, a=2)
-        >>> new_circuit.transform_program[0]
+        >>> new_circuit.compile_pipeline[0]
         <my_pass(2, 1, metadata=my_value)>
 
         We will also have a docstring and signature. If a tape transform is present, the signature will
@@ -884,16 +889,27 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     Repeated versions of the bound transform can be created with multiplication:
 
-    >>> bound_t * 3
-    CompilePipeline(merge_rotations, merge_rotations, merge_rotations)
+    >>> print(bound_t * 3)
+    CompilePipeline(
+      [0] merge_rotations(atol=0.0001),
+      [1] merge_rotations(atol=0.0001),
+      [2] merge_rotations(atol=0.0001)
+    )
 
     And it can be used in conjunction with both individual transforms, bound transforms, and
     compile pipelines.
 
-    >>> bound_t + qml.transforms.cancel_inverses
-    CompilePipeline(merge_rotations, cancel_inverses)
-    >>> bound_t + qml.transforms.cancel_inverses + bound_t
-    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations)
+    >>> print(bound_t + qml.transforms.cancel_inverses)
+    CompilePipeline(
+      [0] merge_rotations(atol=0.0001),
+      [1] cancel_inverses()
+    )
+    >>> print(bound_t + qml.transforms.cancel_inverses + bound_t)
+    CompilePipeline(
+      [0] merge_rotations(atol=0.0001),
+      [1] cancel_inverses(),
+      [2] merge_rotations(atol=0.0001)
+    )
 
     """
 
