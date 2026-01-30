@@ -326,6 +326,7 @@ class TestHybridQRAM:
 
         def _match_controlled(name, op):
             if (
+                # pylint: disable=too-many-boolean-expressions
                 name == "MultiControlledX"
                 and op.name.startswith("C(X")
                 or name == "CH"
@@ -336,8 +337,7 @@ class TestHybridQRAM:
                 and op.name.startswith("C(Z")
             ):
                 return True
-            else:
-                return name == op.name
+            return name == op.name
 
         for ty, count in specs.resources.gate_types.items():
             found = False
