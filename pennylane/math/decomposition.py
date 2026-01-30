@@ -254,7 +254,7 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
     s = 0
     powers = 2 ** np.arange(n)
     for p in powers:  # p = 2**(n-1-i)
-        if s & p == k & p:
+        if not (s ^ k) & p:
             # Equal bit, move on
             factor = 0
         else:
@@ -264,8 +264,9 @@ def decomp_int_to_powers_of_two(k: int, n: int) -> list[int]:
                 factor = 1
             else:
                 # Table entry from documentation
-                in_middle_rows = (s & (p + 2 * p)).bit_count() == 1  # two bits of s are 01 or 10
-                in_last_cols = bool(k & (2 * p))  # latter bit of k is 1
+                mask_middle = p | (p << 1)
+                in_middle_rows = (s & mask_middle).bit_count() == 1  # two bits of s are 01 or 10
+                in_last_cols = bool(k & (p << 1))  # latter bit of k is 1
                 if in_middle_rows != in_last_cols:  # xor between in_middle_rows and in_last_cols
                     factor = -1
                 else:

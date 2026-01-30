@@ -617,7 +617,10 @@ class TestJaxExecuteIntegration:
         """Test that operation and nested tapes expansion
         is differentiable"""
 
-        class U3(qml.U3):
+        class MyU3(qml.U3):
+
+            name = "MyU3"
+
             def expand(self):
                 theta, phi, lam = self.data
                 wires = self.wires
@@ -628,7 +631,7 @@ class TestJaxExecuteIntegration:
 
         def cost_fn(a, p, device):
             qscript = qml.tape.QuantumScript(
-                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+                [qml.RX(a, wires=0), MyU3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
             qscript = qscript.expand(
                 stop_at=lambda obj: qml.devices.default_qubit.stopping_condition(obj)
@@ -642,7 +645,7 @@ class TestJaxExecuteIntegration:
                 qml.Rot(lam, theta, -lam, wires)
                 qml.PhaseShift(phi + lam, wires)
 
-            qml.add_decomps(U3, _decomp)
+            qml.add_decomps(MyU3, _decomp)
 
             a = jax.numpy.array(0.1)
             p = jax.numpy.array([0.1, 0.2, 0.3])
