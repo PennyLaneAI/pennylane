@@ -14,11 +14,13 @@
 """
 Tests for the Fourier spectrum transform.
 """
+
 # pylint: disable=too-few-public-methods
 from collections import OrderedDict
 
 import numpy as np
 import pytest
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -534,3 +536,41 @@ class TestJax:
         qnode = qml.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
+
+    def test_hermitian_observable_with_jax_jit(self):
+        """Test that qnode_spectrum works with Hermitian observables under JAX JIT.
+
+        This is a regression test for a bug where after tape decomposition,
+        all parameters (including the Hermitian matrix) become trainable.
+        Since the Hermitian matrix has shape (2, 2) while rotation parameters
+        have shape (), math.stack() in classical_jacobian would fail with
+        'All input arrays must have the same shape'.
+
+        """
+
+        import jax
+        import jax.numpy as jnp
+
+        n_wires = 1
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        rng = np.random.default_rng(42)
+        real, imag = rng.random((2, 2**n_wires, 2**n_wires))
+        hermitian_matrix = (real + real.T) + 1j * (imag - imag.T)
+
+        initial_state = unitary_group.rvs(2**n_wires, random_state=rng)[0]
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.StatePrep(initial_state, wires=dev.wires)
+            qml.RZ(x, wires=0, id="x")
+            return qml.expval(qml.Hermitian(hermitian_matrix, wires=dev.wires))
+
+        x = jnp.array(0.5)
+        # This should not raise "All input arrays must have the same shape"
+        spec = qnode_spectrum(circuit.__wrapped__)(x)
+
+        assert "x" in spec
+        assert () in spec["x"]
+        assert np.allclose(spec["x"][()], [-1.0, 0.0, 1.0])
