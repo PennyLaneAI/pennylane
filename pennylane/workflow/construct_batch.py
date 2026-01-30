@@ -19,7 +19,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
-from pennylane.transforms.core import CompilePipeline, transform
+from pennylane.transforms.core import CompilePipeline
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -31,50 +31,6 @@ if TYPE_CHECKING:
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
-
-
-def null_postprocessing(results):
-    """A null postprocessing function for the null ``marker`` transform."""
-    return results[0]
-
-
-# pylint: disable=unused-argument
-@transform
-def marker(tape, level: str):
-    """Mark a location in a transform program for easy access with inspectability.
-
-    Args:
-        tape (QuantumScript | QNode | CompilePipeline): the object we want to dispatch the transform onto
-        level (str): the label for the level.
-
-    .. note::
-
-        Invalid level names in ``marker`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``,
-        ``"all"``, and ``"all-mlir"``, which are internally protected.
-
-    .. code-block:: python
-
-        @qml.marker(level="rotations-merged")
-        @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device('null.qubit'))
-        def c():
-            qml.RX(0.2,0)
-            qml.X(0)
-            qml.X(0)
-            qml.RX(0.2, 0)
-            return qml.state()
-
-    >>> print(qml.draw(c, level="my_level")())
-    0: ──RX(0.20)──RX(0.20)─┤  State
-    >>> qml.specs(c, level="my_level")()['resources'].gate_types
-    {'RX': 2}
-    >>> print(qml.draw(c, level="rotations-merged")())
-    0: ──RX(0.40)─┤  State
-
-    """
-    return (tape,), null_postprocessing
 
 
 def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
@@ -116,35 +72,30 @@ def _validate_level(
 
 def _validate_custom_levels(program):
     protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
-    found_levels = set()
+    found_tags = set()
     for t in program:
-        if t.tape_transform == marker.tape_transform:
-            level = t.args[0] if t.args else t.kwargs["level"]
-            if level in protected_options:
-                raise ValueError(
-                    f"Found marker for protected level {level}."
-                    f" Protected options are {protected_options}"
-                )
-            if level in found_levels:
-                raise ValueError(
-                    f"Found multiple markers for level {level}.  Markers should be unique."
-                )
-            found_levels.add(level)
+        tag = getattr(t, "tag", None)
+        if tag and tag in protected_options:
+            raise ValueError(
+                f"Found marker for protected tag {tag}. Protected options are {protected_options}"
+            )
+        if tag and tag in found_tags:
+            raise ValueError(f"Found multiple markers for tag {tag}.  Markers should be unique.")
+        if tag:
+            found_tags.add(tag)
 
 
 def _find_level(program, level):
     found_levels = []
     for idx, t in enumerate(program):
-        if t.tape_transform == marker.tape_transform:
-            found_level = t.args[0] if t.args else t.kwargs["level"]
-            found_levels.append(found_level)
-
-            if found_level == level:
+        if hasattr(t, "tag") and (found_tag := t.tag) == level:
+            found_tag.append(found_tag)
+            if found_tag == level:
                 return idx
     raise ValueError(
-        f"level {level} not found in transform program. "
+        f"Tag {level} not found in transform program. "
         "Builtin options are 'top', 'user', 'device', and 'gradient'."
-        f" Custom levels are {found_levels}."
+        f" Custom tags are {found_levels}."
     )
 
 

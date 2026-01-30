@@ -188,9 +188,7 @@ def _specs_qjit_intermediate_passes(
 
     # Maps to convert back and forth between marker name and int level
     marker_to_level = {
-        trans.kwargs["level"]: i + 1
-        for i, trans in enumerate(trans_prog)
-        if trans.tape_transform == qml.marker.tape_transform
+        trans.tag: i + 1 for i, trans in enumerate(trans_prog) if hasattr(trans, "tag")
     }
     level_to_marker = {v: k for k, v in marker_to_level.items()}
 
