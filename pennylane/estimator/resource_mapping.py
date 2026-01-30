@@ -23,6 +23,7 @@ import pennylane.estimator.ops as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
+from pennylane import math as pl_math
 from pennylane.operation import Operation
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
@@ -310,14 +311,14 @@ def _(op: qtemps.HybridQRAM):
 
 @_map_to_resource_op.register
 def _(op: qtemps.BBQRAM):
-    bitstrings = op.hyperparameters["bitstrings"]
+    bitstrings = op.data[0]
     wire_manager = op.hyperparameters["wire_manager"]
     num_bitstrings = len(bitstrings)
     size_bitstring = len(bitstrings[0]) if num_bitstrings > 0 else 0
     return re_temps.BBQRAM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        num_bit_flips=sum(bitstring.count("1") for bitstring in bitstrings),
+        num_bit_flips=pl_math.sum(bitstrings),
         num_wires=len(op.wires),
         control_wires=wire_manager.control_wires,
         target_wires=wire_manager.target_wires,
@@ -330,9 +331,9 @@ def _(op: qtemps.BBQRAM):
 
 @_map_to_resource_op.register
 def _(op: qtemps.QROM):
-    bitstrings = op.hyperparameters["bitstrings"]
-    num_bitstrings = len(bitstrings)
-    size_bitstring = len(bitstrings[0]) if num_bitstrings > 0 else 0
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
     return re_temps.QROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
