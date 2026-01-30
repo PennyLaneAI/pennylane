@@ -265,7 +265,18 @@ class TestHybridQRAM:
                 ],
             ),
             (
-                np.array([[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]),
+                np.array(
+                    [
+                        [0, 1, 0],
+                        [1, 1, 1],
+                        [1, 1, 0],
+                        [0, 0, 0],
+                        [0, 1, 0],
+                        [1, 1, 1],
+                        [1, 1, 0],
+                        [0, 0, 0],
+                    ]
+                ),
                 15,
                 1,
                 2,
@@ -286,14 +297,10 @@ class TestHybridQRAM:
             ),
         ),
     )
-    def test_resources(
-        self, data, num_wires, num_select_wires, num_control_wires, expected_res
-    ):
+    def test_resources(self, data, num_wires, num_select_wires, num_control_wires, expected_res):
         """Test that the resources are correct."""
         assert (
-            qre.HybridQRAM.resource_decomp(
-                data, num_wires, num_select_wires, num_control_wires
-            )
+            qre.HybridQRAM.resource_decomp(data, num_wires, num_select_wires, num_control_wires)
             == expected_res
         )
 

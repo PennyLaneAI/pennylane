@@ -17,8 +17,8 @@ import math
 from collections import defaultdict
 
 import pennylane.estimator as qre
-from pennylane import numpy as qnp
 from pennylane import math as pl_math
+from pennylane import numpy as qnp
 from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -2008,9 +2008,7 @@ class HybridQRAM(ResourceOperator):
     @staticmethod
     def tracking_name(data, num_wires, num_select_wires, num_tree_control_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return (
-            f"HybridQRAM({data}, {num_wires}, {num_select_wires}, {num_tree_control_wires})"
-        )
+        return f"HybridQRAM({data}, {num_wires}, {num_select_wires}, {num_tree_control_wires})"
 
 
 class BBQRAM(ResourceOperator):
