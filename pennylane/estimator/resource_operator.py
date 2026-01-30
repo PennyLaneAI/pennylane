@@ -226,15 +226,13 @@ class ResourceOperator(ABC):
         equal_params = True
 
         for key, param in self.resource_params.items():
-            if (
-                key not in other.resource_params
-                or (
-                    isinstance(param, TensorLike)
-                    and not (isinstance(np.array(param).flat[0], CompressedResourceOp))
-                    and not np.allclose(param, other.resource_params[key])
-                )
-                or (not isinstance(param, TensorLike) and not param == other.resource_params[key])
-            ):
+            if key not in other.resource_params:
+                equal_params = False
+            elif (
+                isinstance(param, TensorLike)
+                and not (isinstance(np.array(param).flat[0], CompressedResourceOp))
+                and not np.allclose(param, other.resource_params[key])
+            ) or (not isinstance(param, TensorLike) and not param == other.resource_params[key]):
                 equal_params = False
         return (
             self.__class__ is other.__class__ and equal_params and self.num_wires == other.num_wires
