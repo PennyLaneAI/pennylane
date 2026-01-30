@@ -156,8 +156,12 @@ class TestSelectOnlyQRAM:
     def test_raises_with_wrong_wire_num(self):
         with pytest.raises(ValueError, match="Expected 7 wires, got 4."):
             qre.SelectOnlyQRAM(
-                4,
-                6,
+                [
+                    [1],
+                    [1],
+                    [1],
+                    [1],
+                ],
                 7,
                 2,
                 2,
@@ -172,8 +176,7 @@ class TestSelectOnlyQRAM:
 
     @pytest.mark.parametrize(
         (
-            "num_bitstrings",
-            "num_ones",
+            "data",
             "num_wires",
             "num_control_wires",
             "num_select_wires",
@@ -183,13 +186,12 @@ class TestSelectOnlyQRAM:
             "select_value",
         ),
         [
-            (4, 6, 7, 2, 3, (0, 1), (2, 3, 4), (5, 6), 0),
+            ([[1], [0], [1], [0]], 7, 2, 3, (0, 1), (2, 3, 4), (5, 6), 0),
         ],
     )
     def test_resource_params(
         self,
-        num_bitstrings,
-        num_ones,
+        data,
         num_wires,
         num_control_wires,
         num_select_wires,
@@ -200,8 +202,7 @@ class TestSelectOnlyQRAM:
     ):
         """Test that the resource params are correct."""
         op = qre.SelectOnlyQRAM(
-            num_bitstrings,
-            num_ones,
+            data,
             num_wires,
             num_control_wires,
             num_select_wires,
@@ -211,8 +212,7 @@ class TestSelectOnlyQRAM:
             select_value,
         )
         assert op.resource_params == {
-            "num_bitstrings": num_bitstrings,
-            "num_ones": num_ones,
+            "data": data,
             "num_wires": num_wires,
             "select_value": select_value,
             "num_select_wires": num_select_wires,
@@ -221,25 +221,23 @@ class TestSelectOnlyQRAM:
 
     @pytest.mark.parametrize(
         (
-            "num_bitstrings",
-            "num_ones",
+            "data",
             "num_wires",
             "select_value",
             "num_select_wires",
             "num_control_wires",
         ),
-        [(4, 6, 7, 0, 2, 2)],
+        [([[1], [0], [1], [0]], 7, 0, 2, 2)],
     )
     def test_resource_rep(
-        self, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+        self, data, num_wires, select_value, num_select_wires, num_control_wires
     ):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
             qre.SelectOnlyQRAM,
             num_wires,
             {
-                "num_bitstrings": num_bitstrings,
-                "num_ones": num_ones,
+                "data": data,
                 "num_wires": num_wires,
                 "select_value": select_value,
                 "num_select_wires": num_select_wires,
@@ -248,8 +246,7 @@ class TestSelectOnlyQRAM:
         )
         assert (
             qre.SelectOnlyQRAM.resource_rep(
-                num_bitstrings=num_bitstrings,
-                num_ones=num_ones,
+                data=data,
                 num_wires=num_wires,
                 select_value=select_value,
                 num_select_wires=num_select_wires,
@@ -260,8 +257,7 @@ class TestSelectOnlyQRAM:
 
     @pytest.mark.parametrize(
         (
-            "num_bitstrings",
-            "num_ones",
+            "data",
             "num_wires",
             "select_value",
             "num_select_wires",
@@ -270,8 +266,7 @@ class TestSelectOnlyQRAM:
         ),
         (
             (
-                8,
-                6,
+                [[1], [0], [1], [0]],
                 7,
                 0,
                 2,
@@ -291,8 +286,7 @@ class TestSelectOnlyQRAM:
     )
     def test_resources(
         self,
-        num_bitstrings,
-        num_ones,
+        data,
         num_wires,
         select_value,
         num_select_wires,
@@ -302,8 +296,7 @@ class TestSelectOnlyQRAM:
         """Test that the resources are correct."""
         assert (
             qre.SelectOnlyQRAM.resource_decomp(
-                num_bitstrings,
-                num_ones,
+                data,
                 num_wires,
                 select_value,
                 num_select_wires,
@@ -314,29 +307,27 @@ class TestSelectOnlyQRAM:
 
     @pytest.mark.parametrize(
         (
-            "num_bitstrings",
-            "num_ones",
+            "data",
             "num_wires",
             "select_value",
             "num_select_wires",
             "num_control_wires",
         ),
-        [(4, 6, 7, 0, 2, 2)],
+        [([[1], [0], [1], [0]], 7, 0, 2, 2)],
     )
     def test_tracking_name(
-        self, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+        self, data, num_wires, select_value, num_select_wires, num_control_wires
     ):
         """Tests that the tracking name is correct."""
         assert (
             qre.SelectOnlyQRAM.tracking_name(
-                num_bitstrings,
-                num_ones,
+                data,
                 num_wires,
                 select_value,
                 num_select_wires,
                 num_control_wires,
             )
-            == f"SelectOnlyQRAM({num_bitstrings}, {num_ones}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
+            == f"SelectOnlyQRAM({data}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
         )
 
 

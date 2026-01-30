@@ -251,10 +251,8 @@ class SelectOnlyQRAM(ResourceOperator):
     r"""Resource class for SelectOnlyQRAM.
 
     Args:
-        num_bitstrings (int):
-            The size of the classical memory array to retrieve values from.
-        num_ones (int):
-            The number of 1s in the classical memory.
+        data (TensorLike | Sequence[str]):
+            The classical memory array to retrieve values from.
         num_wires (int):
             The number of qubits the operation acts upon.
         num_control_wires (int):
@@ -284,8 +282,7 @@ class SelectOnlyQRAM(ResourceOperator):
     """
 
     resource_keys = {
-        "num_bitstrings",
-        "num_ones",
+        "data",
         "num_control_wires",
         "select_value",
         "num_select_wires",
@@ -293,8 +290,7 @@ class SelectOnlyQRAM(ResourceOperator):
 
     def __init__(
         self,
-        num_bitstrings,
-        num_ones,
+        data,
         num_wires,
         num_control_wires,
         num_select_wires,
@@ -309,8 +305,7 @@ class SelectOnlyQRAM(ResourceOperator):
             if len(all_wires) != num_wires:
                 raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
         self.num_wires = num_wires
-        self.num_bitstrings = num_bitstrings
-        self.num_ones = num_ones
+        self.data = data
         self.select_value = select_value
         self.num_control_wires = num_control_wires
         self.num_select_wires = num_select_wires
@@ -322,16 +317,14 @@ class SelectOnlyQRAM(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * num_bitstrings (int): the size of the classical memory array to retrieve values from
-                * num_ones (int): the number of 1s in the classical memory
+                * data (TensorLike | Sequence[str]): the classical memory array to retrieve values from
                 * num_wires (int): the number of qubits the operation acts upon
                 * select_value (int or None): if provided, only entries whose select bits match this value are loaded
                 * num_select_wires (int): the number of ``select_wires``
                 * num_control_wires (int): the number of ``control_wires``
         """
         return {
-            "num_bitstrings": self.num_bitstrings,
-            "num_ones": self.num_ones,
+            "data": self.data,
             "num_wires": self.num_wires,
             "select_value": self.select_value,
             "num_select_wires": self.num_select_wires,
@@ -340,14 +333,13 @@ class SelectOnlyQRAM(ResourceOperator):
 
     @classmethod
     def resource_rep(
-        cls, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+        cls, data, num_wires, select_value, num_select_wires, num_control_wires
     ):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            num_bitstrings (int): the size of the classical memory array to retrieve values from
-            num_ones (int): the number of 1s in the classical memory
+            data (TensorLike | Sequence[str]): the classical memory array to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
             select_value (int or None): if provided, only entries whose select bits match this value are loaded
             num_select_wires (int): the number of ``select_wires``
@@ -357,8 +349,7 @@ class SelectOnlyQRAM(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
-            "num_bitstrings": num_bitstrings,
-            "num_ones": num_ones,
+            "data": data,
             "num_wires": num_wires,
             "select_value": select_value,
             "num_select_wires": num_select_wires,
@@ -368,14 +359,13 @@ class SelectOnlyQRAM(ResourceOperator):
 
     @classmethod
     def resource_decomp(
-        cls, num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+        cls, data, num_wires, select_value, num_select_wires, num_control_wires
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            num_bitstrings (int): the size of the classical memory array to retrieve values from
-            num_ones (int): the number of 1s in the classical memory
+            data (TensorLike | Sequence[str]): the classical memory array to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
             select_value (int or None): if provided, only entries whose select bits match this value are loaded
             num_select_wires (int): the number of ``select_wires``
@@ -398,10 +388,10 @@ class SelectOnlyQRAM(ResourceOperator):
         if select_value is not None and num_select_wires > 0:
             basis_embedding_count = 1
 
+        mcx_count = 0
         paulix_count = 0
-        mcx_count = num_ones
 
-        for addr in range(num_bitstrings):
+        for addr, bits in enumerate(data):
             if (
                 select_value is not None
                 and num_select_wires > 0
@@ -411,6 +401,10 @@ class SelectOnlyQRAM(ResourceOperator):
 
             control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
             paulix_count += control_values.count(0) * 2
+
+            for j in range(data.shape[1]):
+                if bits[j] == 1:
+                    mcx_count += 1
 
         ret = []
         if paulix_count > 0:
@@ -424,10 +418,10 @@ class SelectOnlyQRAM(ResourceOperator):
 
     @staticmethod
     def tracking_name(
-        num_bitstrings, num_ones, num_wires, select_value, num_select_wires, num_control_wires
+        data, num_wires, select_value, num_select_wires, num_control_wires
     ) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
-        return f"SelectOnlyQRAM({num_bitstrings}, {num_ones}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
+        return f"SelectOnlyQRAM({data}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
 
 
 class PhaseGradient(ResourceOperator):
