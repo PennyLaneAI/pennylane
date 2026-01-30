@@ -417,8 +417,10 @@ class TestQNode:
             gradient_kwargs["mode"] = "direct"
 
         # pylint: disable=too-few-public-methods
-        class U3(qml.U3):
+        class MyU3(qml.U3):
             """Custom U3."""
+
+            name = "MyU3"
 
             def decomposition(self):
                 theta, phi, lam = self.data
@@ -435,7 +437,7 @@ class TestQNode:
                 qml.Rot(lam, theta, -lam, wires)
                 qml.PhaseShift(phi + lam, wires)
 
-            qml.add_decomps(U3, _decomp)
+            qml.add_decomps(MyU3, _decomp)
 
             a = np.array(0.1, requires_grad=False)
             p = np.array([0.1, 0.2, 0.3], requires_grad=True)
@@ -443,7 +445,7 @@ class TestQNode:
             @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
             def circuit(a, p):
                 qml.RX(a, wires=0)
-                U3(p[0], p[1], p[2], wires=0)
+                MyU3(p[0], p[1], p[2], wires=0)
                 return qml.expval(qml.PauliX(0))
 
             res = circuit(a, p)
