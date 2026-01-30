@@ -226,7 +226,7 @@
   :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
   blocks decompositions in this system to use nested operator products while reporting their
   resources accurately.
-  [(#8772)](https://github.com/PennyLaneAI/pennylane/pull/8772)
+  [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
 
 * `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
   [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
