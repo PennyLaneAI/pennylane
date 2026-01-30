@@ -233,7 +233,7 @@ class ResourceOperator(ABC):
                     and not (isinstance(np.array(param).flat[0], CompressedResourceOp))
                     and not np.allclose(param, other.resource_params[key])
                 )
-                or not param == other.resource_params[key]
+                or (not isinstance(param, TensorLike) and not param == other.resource_params[key])
             ):
                 equal_params = False
         return (
