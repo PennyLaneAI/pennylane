@@ -24,6 +24,7 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.templates import SelectOnlyQRAM
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,too-many-arguments
@@ -263,7 +264,9 @@ class TestSelectOnlyQRAM:
         ),
         (
             (
-                np.array([[1], [0], [1], [0]]),
+                np.array(
+                    [[1], [0], [1], [0], [1], [0], [1], [0], [1], [0], [1], [0], [1], [0], [1], [0]]
+                ),
                 7,
                 0,
                 2,
@@ -301,6 +304,38 @@ class TestSelectOnlyQRAM:
             )
             == expected
         )
+
+        dev = qml.device("default.qubit")
+
+        @qml.transforms.decompose
+        @qml.qnode(dev)
+        def circuit():
+            SelectOnlyQRAM(
+                data=data,
+                control_wires=range(num_control_wires),
+                target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
+                select_wires=range(
+                    num_control_wires + data.shape[1],
+                    num_control_wires + data.shape[1] + num_select_wires,
+                ),
+                select_value=select_value,
+            )
+
+        specs = qml.specs(circuit)()
+
+        for ty, count in specs.resources.gate_types.items():
+            found = False
+            i = 0
+            while not found and i < len(expected):
+                if (
+                    expected[i].gate.op_type.__name__ == ty.replace("Pauli", "")
+                    or ty == "MultiControlledX"
+                    and "Controlled" == expected[i].gate.op_type.__name__
+                ):
+                    assert expected[i].count == count
+                    found = True
+                i += 1
+            assert found
 
     @pytest.mark.parametrize(
         (
