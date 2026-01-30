@@ -16,6 +16,7 @@ Tests for quantum algorithmic subroutines resource operators.
 """
 import math
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -171,7 +172,7 @@ class TestHybridQRAM:
     @pytest.mark.parametrize(
         (
             "num_wires",
-            "bitstrings",
+            "data",
             "num_select_wires",
             "num_control_wires",
             "control_wires",
@@ -181,7 +182,7 @@ class TestHybridQRAM:
         [
             (
                 15,
-                ["000", "010", "101", "111"],
+                np.array([[0, 0, 0], [0, 1, 0], [1, 0, 1], [1, 1, 1]]),
                 1,
                 2,
                 (0, 1),
@@ -193,7 +194,7 @@ class TestHybridQRAM:
     def test_resource_params(
         self,
         num_wires,
-        bitstrings,
+        data,
         num_select_wires,
         num_control_wires,
         control_wires,
@@ -202,7 +203,7 @@ class TestHybridQRAM:
     ):
         """Test that the resource params are correct."""
         op = qre.HybridQRAM(
-            bitstrings,
+            data,
             num_wires,
             num_select_wires,
             num_control_wires,
@@ -210,24 +211,22 @@ class TestHybridQRAM:
             target_wires,
             work_wires,
         )
-        assert op.resource_params == {
-            "bitstrings": bitstrings,
-            "num_wires": num_wires,
-            "num_select_wires": num_select_wires,
-            "num_tree_control_wires": num_control_wires - num_select_wires,
-        }
+        assert np.allclose(data, op.resource_params["data"])
+        assert op.resource_params["num_wires"] == num_wires
+        assert op.resource_params["num_select_wires"] == num_select_wires
+        assert op.resource_params["num_tree_control_wires"] == num_control_wires - num_select_wires
 
     @pytest.mark.parametrize(
-        ("num_wires", "bitstrings", "num_select_wires", "num_control_wires"),
+        ("num_wires", "data", "num_select_wires", "num_control_wires"),
         [(15, ["000", "010", "101", "111"], 5, 10)],
     )
-    def test_resource_rep(self, num_wires, bitstrings, num_select_wires, num_control_wires):
+    def test_resource_rep(self, num_wires, data, num_select_wires, num_control_wires):
         """Test that the compressed representation is correct."""
         expected = qre.CompressedResourceOp(
             qre.HybridQRAM,
             num_wires,
             {
-                "bitstrings": bitstrings,
+                "data": data,
                 "num_wires": num_wires,
                 "num_select_wires": num_select_wires,
                 "num_tree_control_wires": num_control_wires - num_select_wires,
@@ -235,7 +234,7 @@ class TestHybridQRAM:
         )
         assert (
             qre.HybridQRAM.resource_rep(
-                bitstrings=bitstrings,
+                data=data,
                 num_wires=num_wires,
                 num_select_wires=num_select_wires,
                 num_tree_control_wires=num_control_wires - num_select_wires,
@@ -244,10 +243,10 @@ class TestHybridQRAM:
         )
 
     @pytest.mark.parametrize(
-        "bitstrings, num_wires, num_select_wires, num_control_wires, expected_res",
+        "data, num_wires, num_select_wires, num_control_wires, expected_res",
         (
             (
-                ["000", "010", "101", "111"],
+                np.array([[0, 0, 0], [0, 1, 0], [1, 0, 1], [1, 1, 1]]),
                 15,
                 0,
                 2,
@@ -266,7 +265,7 @@ class TestHybridQRAM:
                 ],
             ),
             (
-                ["010", "111", "110", "000", "010", "111", "110", "000"],
+                np.array([[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]),
                 15,
                 1,
                 2,
@@ -280,7 +279,7 @@ class TestHybridQRAM:
                     ),
                     GateCount(qre.Controlled.resource_rep(resource_rep(qre.CSWAP), 1, 0), 40),
                     GateCount(qre.Controlled.resource_rep(resource_rep(qre.Hadamard), 1, 0), 12),
-                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0), 6),
+                    GateCount(qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0), 12),
                     GateCount(qre.Controlled.resource_rep(resource_rep(qre.X), 1, 1), 2),
                     GateCount(resource_rep(qre.CNOT), 2),
                 ],
@@ -288,27 +287,27 @@ class TestHybridQRAM:
         ),
     )
     def test_resources(
-        self, bitstrings, num_wires, num_select_wires, num_control_wires, expected_res
+        self, data, num_wires, num_select_wires, num_control_wires, expected_res
     ):
         """Test that the resources are correct."""
         assert (
             qre.HybridQRAM.resource_decomp(
-                bitstrings, num_wires, num_select_wires, num_control_wires
+                data, num_wires, num_select_wires, num_control_wires
             )
             == expected_res
         )
 
     @pytest.mark.parametrize(
-        ("bitstrings", "num_wires", "num_select_wires", "num_control_wires"),
+        ("data", "num_wires", "num_select_wires", "num_control_wires"),
         [(["000", "101", "010", "111"], 15, 1, 2)],
     )
-    def test_tracking_name(self, bitstrings, num_wires, num_select_wires, num_control_wires):
+    def test_tracking_name(self, data, num_wires, num_select_wires, num_control_wires):
         """Tests that the tracking name is correct."""
         assert (
             qre.HybridQRAM.tracking_name(
-                bitstrings, num_wires, num_select_wires, num_control_wires - num_select_wires
+                data, num_wires, num_select_wires, num_control_wires - num_select_wires
             )
-            == f"HybridQRAM({bitstrings}, {num_wires}, {num_select_wires}, {num_control_wires -  num_select_wires})"
+            == f"HybridQRAM({data}, {num_wires}, {num_select_wires}, {num_control_wires -  num_select_wires})"
         )
 
 

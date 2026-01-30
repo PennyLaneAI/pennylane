@@ -18,6 +18,7 @@ from collections import defaultdict
 
 import pennylane.estimator as qre
 from pennylane import numpy as qnp
+from pennylane import math as pl_math
 from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -1820,7 +1821,7 @@ class HybridQRAM(ResourceOperator):
     r"""Resource class for HybridQRAM.
 
     Args:
-        bitstrings (Sequence[str]):
+        data (TensorLike | Sequence[str]):
             The classical memory to retrieve values from.
         num_wires (int):
             The number of qubits the operation acts upon.
@@ -1851,11 +1852,11 @@ class HybridQRAM(ResourceOperator):
     .. seealso:: :class:`~.HybridQRAM`
     """
 
-    resource_keys = {"bitstrings", "num_target_wires", "num_select_wires", "num_control_wires"}
+    resource_keys = {"data", "num_target_wires", "num_select_wires", "num_control_wires"}
 
     def __init__(
         self,
-        bitstrings,
+        data,
         num_wires,
         num_select_wires,
         num_control_wires,
@@ -1869,8 +1870,14 @@ class HybridQRAM(ResourceOperator):
             assert num_control_wires == len(control_wires)
             if len(all_wires) != num_wires:
                 raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
+
+        if isinstance(data, (list, tuple)):
+            data = pl_math.array(data)
+        if isinstance(data[0], str):
+            data = pl_math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
+        self.data = data
+
         self.num_wires = num_wires
-        self.bitstrings = bitstrings
         self.num_select_wires = num_select_wires
         self.num_control_wires = num_control_wires
         super().__init__(wires=all_wires)
@@ -1881,25 +1888,25 @@ class HybridQRAM(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters.
-                * bitstrings (Sequence[str]): the classical memory to retrieve values from
+                * data (TensorLike | Sequence[str]): the classical memory to retrieve values from
                 * num_wires (int): the number of qubits the operation acts upon
                 * num_select_wires (int): the number of select wires
                 * num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
         """
         return {
-            "bitstrings": self.bitstrings,
+            "data": self.data,
             "num_wires": self.num_wires,
             "num_select_wires": self.num_select_wires,
             "num_tree_control_wires": self.num_control_wires - self.num_select_wires,
         }
 
     @classmethod
-    def resource_rep(cls, bitstrings, num_wires, num_select_wires, num_tree_control_wires):
+    def resource_rep(cls, data, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            bitstrings (Sequence[str]): the classical memory to retrieve values from
+            data (TensorLike | Sequence[str]): the classical memory to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
             num_select_wires (int): the number of select wires
             num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
@@ -1908,7 +1915,7 @@ class HybridQRAM(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
-            "bitstrings": bitstrings,
+            "data": data,
             "num_wires": num_wires,
             "num_select_wires": num_select_wires,
             "num_tree_control_wires": num_tree_control_wires,
@@ -1916,12 +1923,12 @@ class HybridQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, bitstrings, num_wires, num_select_wires, num_tree_control_wires):
+    def resource_decomp(cls, data, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            bitstrings (Sequence[str]): the classical memory to retrieve values from
+            data (TensorLike | Sequence[str]): the classical memory to retrieve values from
             num_wires (int): the number of qubits the operation acts upon
             num_select_wires (int): the number of select wires
             num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
@@ -1935,7 +1942,7 @@ class HybridQRAM(ResourceOperator):
                 represents a specific quantum gate and the number of times it appears in the decomposition.
         """
         num_blocks = 1 << num_select_wires
-        num_target_wires = len(bitstrings[0])
+        num_target_wires = data.shape[1]
 
         paulix = resource_rep(qre.X)
         cnot = resource_rep(qre.CNOT)
@@ -1979,7 +1986,7 @@ class HybridQRAM(ResourceOperator):
 
             for j in range(num_target_wires):
                 for p in range(1 << num_tree_control_wires):
-                    cz_count += bitstrings[(block_index << num_tree_control_wires) + p][j] == "1"
+                    cz_count += data[(block_index << num_tree_control_wires) + p][j] == 1
 
         ret = [
             GateCount(cswap_one, cswap_counts),
@@ -1999,10 +2006,10 @@ class HybridQRAM(ResourceOperator):
         return ret
 
     @staticmethod
-    def tracking_name(bitstrings, num_wires, num_select_wires, num_tree_control_wires) -> str:
+    def tracking_name(data, num_wires, num_select_wires, num_tree_control_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return (
-            f"HybridQRAM({bitstrings}, {num_wires}, {num_select_wires}, {num_tree_control_wires})"
+            f"HybridQRAM({data}, {num_wires}, {num_select_wires}, {num_tree_control_wires})"
         )
 
 

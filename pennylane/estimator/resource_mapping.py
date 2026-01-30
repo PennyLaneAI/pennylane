@@ -288,14 +288,14 @@ def _(op: qtemps.Select):
 
 @_map_to_resource_op.register
 def _(op: qtemps.HybridQRAM):
-    bitstrings = op.hyperparameters["bitstrings"]
+    data = op.data[0]
     tree_wire_manager = op.hyperparameters["tree_wire_manager"]
     select_wires = op.hyperparameters["select_wires"]
     signal_wire = op.hyperparameters["signal_wire"]
     control_wires = tree_wire_manager.control_wires
     target_wires = tree_wire_manager.target_wires
     return re_temps.HybridQRAM(
-        bitstrings=bitstrings,
+        data=data,
         num_wires=len(op.wires),
         num_control_wires=len(control_wires),
         num_select_wires=len(select_wires),

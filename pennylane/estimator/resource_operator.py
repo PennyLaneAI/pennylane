@@ -28,6 +28,7 @@ from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resources_base import Resources
+from ..typing import TensorLike
 
 
 class CompressedResourceOp:
@@ -222,9 +223,21 @@ class ResourceOperator(ABC):
         if not isinstance(other, ResourceOperator):
             return False
 
+        equal_params = True
+
+        for key, param in self.resource_params.items():
+            if key not in other.resource_params:
+                equal_params = False
+            elif isinstance(param, TensorLike) and not (
+                    isinstance(param, tuple) and isinstance(param[0], CompressedResourceOp)):
+                if not np.allclose(param, other.resource_params[key]):
+                    equal_params = False
+            elif not param == other.resource_params[key]:
+                equal_params = False
+
         return (
             self.__class__ is other.__class__
-            and self.resource_params == other.resource_params
+            and equal_params
             and self.num_wires == other.num_wires
         )
 

@@ -125,14 +125,14 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.HybridQRAM(
-                    bitstrings=["010", "111", "110", "000"],
+                    data=["010", "111", "110", "000"],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7, 8, 9],
                     k=1,
                 ),
                 re_temps.HybridQRAM(
-                    bitstrings=["010", "111", "110", "000"],
+                    data=["010", "111", "110", "000"],
                     num_wires=10,
                     num_select_wires=1,
                     num_control_wires=2,
