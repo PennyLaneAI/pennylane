@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from contextlib import contextmanager
 from copy import copy
 from functools import partial
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -409,16 +409,19 @@ class CompilePipeline:
         if not self:
             return "CompilePipeline()"
 
+        def truncate(val: Any) -> str:
+            _CHAR_THRESHOLD = 50
+            val_str = str(val)
+            return "..." if len(val_str) > _CHAR_THRESHOLD else val_str
+
         lines = []
         for i, transform in enumerate(self):
-            name = (
-                transform.tape_transform.__name__
-                if transform.tape_transform
-                else transform.pass_name
-            )
-            if name == "marker":
-                name += f'("{transform.args[0]}")'
-            lines.append(f"  [{i}] {name}")
+            args_str = ", ".join(truncate(a) for a in transform.args)
+            kwargs_str = ", ".join(f"{k}={truncate(v)}" for k, v in transform.kwargs.items())
+
+            sep = ", " if args_str and kwargs_str else ""
+            transform_str = f"{transform.tape_transform.__name__}({args_str}{sep}{kwargs_str})"
+            lines.append(f"  [{i}] {transform_str}")
 
         contents = ",\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
