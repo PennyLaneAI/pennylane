@@ -25,6 +25,8 @@ import pennylane as qml
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.wires import Wires
 
+pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
+
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
     np.array(
