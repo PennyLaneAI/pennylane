@@ -189,6 +189,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add documentation tests for the `decomposition` module.
+  [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
 
