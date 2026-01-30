@@ -18,6 +18,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept 
+  their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
+  [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
+
 * :class:`~.CSWAP` is now decomposed more cheaply, using ``change_op_basis`` with
   two ``CNOT`` gates and a single ``Toffoli`` gate.
   [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
@@ -221,6 +225,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
+  [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
+
 * `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
   [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
 
@@ -246,6 +253,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
