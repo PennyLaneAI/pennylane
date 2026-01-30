@@ -14,7 +14,6 @@
 """
 Tests for the Phox training module.
 """
-# pylint: disable=redefined-outer-name
 import jax.numpy as jnp
 import numpy as np
 import pytest
@@ -43,6 +42,7 @@ def quadratic_problem():
 
 
 def test_optimization_success(quadratic_problem):
+    # pylint: disable=redefined-outer-name
     """
     Test 1: Functional Correctness.
     Does the optimizer actually minimize the loss?
@@ -64,6 +64,7 @@ def test_optimization_success(quadratic_problem):
 
 
 def test_determinism(quadratic_problem):
+    # pylint: disable=redefined-outer-name
     """
     Test 2: Determinism.
     Running the function twice with the same seed must produce bit-exact results.
@@ -79,6 +80,7 @@ def test_determinism(quadratic_problem):
 
 
 def test_unroll_consistency(quadratic_problem):
+    # pylint: disable=redefined-outer-name
     """
     Test 3: Unrolling Equivalence.
     Running step-by-step (unroll=1) must yield the same math as
@@ -98,6 +100,7 @@ def test_unroll_consistency(quadratic_problem):
 
 
 def test_convergence_early_stopping(quadratic_problem):
+    # pylint: disable=redefined-outer-name
     """
     Test 4: Convergence Logic.
     If the loss stabilizes, training should stop before n_iters.
@@ -117,6 +120,7 @@ def test_convergence_early_stopping(quadratic_problem):
 
 
 def test_validation_handling(quadratic_problem):
+    # pylint: disable=redefined-outer-name
     """
     Test 5: Validation Data.
     Ensures validation loss is calculated correctly and separately.
@@ -155,6 +159,7 @@ def test_loss_signature_variations():
 
 
 def test_history_logging_manual(quadratic_problem):
+    # pylint: disable=redefined-outer-name
     """
     Test 7: Manual Logging via Iterator.
     Since we removed 'monitor_interval', we verify the user can manually
