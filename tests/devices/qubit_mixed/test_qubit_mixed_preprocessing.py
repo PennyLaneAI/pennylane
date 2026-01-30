@@ -81,6 +81,20 @@ class NoMatNoDecompOp(qml.operation.Operation):
         return False
 
 
+@pytest.fixture(scope="function", autouse=True)
+def custom_decomps():
+    """Locally register decomposition rules."""
+
+    @qml.register_resources({qml.X: 1, qml.Y: 1})
+    def custom_rule_no_mat_op(wires):
+        qml.X(wires)
+        qml.Y(wires)
+
+    with qml.decomposition.local_decomps():
+        qml.add_decomps(NoMatOp, custom_rule_no_mat_op)
+        yield
+
+
 # pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
@@ -306,6 +320,7 @@ class TestPreprocessing:
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the batched and expanded tapes have
         unsupported operators."""
