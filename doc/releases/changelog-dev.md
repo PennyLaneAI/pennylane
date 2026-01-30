@@ -220,6 +220,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Add documentation testing for the `decomposition` module.
+  [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
+
 <h3>Bug fixes 🐛</h3>
 
 * `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
