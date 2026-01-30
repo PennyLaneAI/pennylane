@@ -894,9 +894,7 @@ class DefaultClifford(Device):
             )
         )
 
-        # Use the reduced row echelon form for finding rank efficiently
-        # tapering always come in handy :)
-        rank = math.sum(math.any(math.binary_finite_reduced_row_echelon(partition_mat), axis=1))
+        rank = math.binary_matrix_rank(partition_mat)
 
         # Compute the entropy
         entropy = math.log(2) * (rank - len(wires))
