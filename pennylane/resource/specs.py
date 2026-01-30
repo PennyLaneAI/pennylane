@@ -572,7 +572,7 @@ def specs(
             RX: 1
         <BLANKLINE>
           Measurements:
-            No measurements.
+            probs(all wires): 1
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.
