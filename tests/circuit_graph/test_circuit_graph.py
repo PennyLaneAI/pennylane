@@ -22,6 +22,10 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.ops.mid_measure.measurement_value import MeasurementValue
+from pennylane.ops.mid_measure.mid_measure import MidMeasure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.condition import Conditional
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
@@ -378,6 +382,16 @@ def test_has_path():
     assert graph.has_path_idx(0, 2)
     assert not graph.has_path(ops[0], ops[4])
     assert not graph.has_path_idx(0, 4)
+
+
+def test_path_from_mcm_to_conditional():
+    mcm = MidMeasure(wires=Wires([0]))
+    ppm = PauliMeasure("XY", wires=Wires([0, 1]))
+    m0 = MeasurementValue([mcm, ppm])
+    ops = [mcm, ppm, Conditional(m0, qml.Z(0))]
+    graph = CircuitGraph(ops, [], wires=Wires([0, 1, 2]))
+    assert graph.has_path(mcm, ops[2])
+    assert graph.has_path(ppm, ops[2])
 
 
 def test_has_path_repeated_ops():

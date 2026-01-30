@@ -15,7 +15,6 @@
 
 import inspect
 from collections.abc import Callable, Sequence
-from functools import partial
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -23,8 +22,8 @@ from default_qubit_legacy import DefaultQubitLegacy
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.transforms.core import (
-    TransformContainer,
-    TransformDispatcher,
+    BoundTransform,
+    Transform,
     TransformError,
 )
 from pennylane.typing import PostprocessingFn, TensorLike
@@ -156,25 +155,35 @@ def informative_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
     return [tape], fn
 
 
-class TestTransformContainer:
-    """Tests for the TransformContainer dataclass."""
+class TestBoundTransform:
+    """Tests for the BoundTransform dataclass."""
 
     def test_repr(self):
         """Tests for the repr of a transform container."""
-        t1 = qml.transforms.core.TransformContainer(
-            qml.transforms.compile, kwargs={"num_passes": 2}
-        )
-        assert repr(t1) == "<compile((), {'num_passes': 2})>"
+        t1 = qml.transforms.compile(num_passes=2)
+        assert repr(t1) == "<compile(num_passes=2)>"
 
-    def test_equality(self):
-        """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
+        t2 = qml.transforms.merge_rotations(1e-6)
+        assert repr(t2) == "<merge_rotations(1e-06)>"
 
-        t1 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
-        t2 = TransformContainer(qml.transforms.compile, kwargs={"num_passes": 2})
-        t3 = TransformContainer(qml.transforms.transpile, kwargs={"coupling_map": [(0, 1), (1, 2)]})
+        t3 = qml.transforms.merge_rotations(1e-6, include_gates=["RX"])
+        assert repr(t3) == "<merge_rotations(1e-06, include_gates=['RX'])>"
 
-        t5 = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
-        t6 = TransformContainer(qml.transforms.merge_rotations, args=(1e-7,))
+    def test_equality_and_hash(self):
+        """Tests that we can compare BoundTransform objects with the '==' and '!=' operators."""
+
+        t1 = BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
+        t2 = BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
+        t3 = BoundTransform(qml.transforms.transpile, kwargs={"coupling_map": ((0, 1), (1, 2))})
+
+        t5 = BoundTransform(qml.transforms.merge_rotations, args=(1e-6,))
+        t6 = BoundTransform(qml.transforms.merge_rotations, args=(1e-7,))
+
+        my_name1 = qml.transform(pass_name="my_name1")
+        my_name2 = qml.transform(pass_name="my_name2")
+        t7 = BoundTransform(my_name1, args=(0.5,))
+        t7_duplicate = BoundTransform(my_name1, args=(0.5,))
+        t8 = BoundTransform(my_name2, args=(0.5,))
 
         # test for equality of identical transformers
         assert t1 == t2
@@ -185,15 +194,23 @@ class TestTransformContainer:
         assert t1 != 2
         assert t5 != t6
         assert t5 != t1
+        assert t7 != t8
+        assert t7 == t7_duplicate
+
+        assert hash(t1) == hash(t2)
+        assert hash(t1) != hash(t3)
+        assert hash(t5) != hash(t6)
+        assert hash(t7) == hash(t7_duplicate)
+        assert hash(t7) != hash(t8)
 
         # Test equality with the same args
-        t5_copy = TransformContainer(qml.transforms.merge_rotations, args=(1e-6,))
+        t5_copy = BoundTransform(qml.transforms.merge_rotations, args=(1e-6,))
         assert t5 == t5_copy
 
     @pytest.mark.jax  # needs jax to have non-none plxpr transform
     def test_the_transform_container_attributes(self):
         """Test the transform container attributes."""
-        container = qml.transforms.core.TransformContainer(
+        container = qml.transforms.core.BoundTransform(
             qml.transform(first_valid_transform), args=[0], kwargs={}
         )
 
@@ -209,13 +226,13 @@ class TestTransformContainer:
         assert not is_informative
         assert not final_transform
 
-        assert container.transform is first_valid_transform
+        assert container.tape_transform is first_valid_transform
         assert container.args == (0,)
         assert not container.kwargs
         assert container.classical_cotransform is None
         assert container.plxpr_transform is not None  # tape fallback
         assert not container.is_informative
-        assert not container.final_transform
+        assert not container.is_final_transform
 
     def test_dispatch_container(self):
         """Test that transform containers can be called on objects with their various stored args and kwargs."""
@@ -227,7 +244,7 @@ class TestTransformContainer:
         def repeat_ops(tape, n, new_ops=()):
             return (tape.copy(ops=tape.operations * n + list(new_ops)),), postprocessing
 
-        container = TransformContainer(repeat_ops, (3,), {"new_ops": [qml.X(0)]})
+        container = BoundTransform(repeat_ops, (3,), {"new_ops": [qml.X(0)]})
 
         tape = qml.tape.QuantumScript([qml.X(0)])
         expected = qml.tape.QuantumScript([qml.X(0), qml.X(0), qml.X(0), qml.X(0)])
@@ -241,28 +258,38 @@ class TestTransformContainer:
             return qml.state()
 
         new_c = container(c)
-        assert container == new_c.transform_program[0]
+        assert container == new_c.compile_pipeline[0]
 
     def test_construction_fallback(self):
-        """Test that a TransformContainer can still be constructed in the old way."""
+        """Test that a BoundTransform can still be constructed in the old way."""
 
-        c = TransformContainer(first_valid_transform, is_informative=True)
+        c = BoundTransform(first_valid_transform, is_informative=True)
 
         # pylint: disable=protected-access
-        assert isinstance(c._transform_dispatcher, TransformDispatcher)
+        assert isinstance(c._transform, Transform)
         assert c.is_informative
-        assert c._transform_dispatcher.is_informative  # pylint: disable=protected-access
+        assert c._transform.is_informative  # pylint: disable=protected-access
 
     def test_error_if_extra_kwargs_when_dispatcher(self):
-        """Test that a ValueError is raised if extra kwargs are passed when a TransformDispatcher is provided."""
+        """Test that a ValueError is raised if extra kwargs are passed when a Transform is provided."""
 
-        with pytest.raises(
-            ValueError, match="cannot be passed if a TransformDispatcher is provided"
+        with pytest.raises(ValueError, match="cannot be passed if a transform is provided"):
+            _ = BoundTransform(qml.transform(first_valid_transform), is_informative=True)
+
+    def test_transform_property_deprecated(self):
+        """Test that BoundTransform.transform is deprecated."""
+        container = BoundTransform(qml.transform(first_valid_transform))
+
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning,
+            match=r"'BoundTransform.transform' property is deprecated",
         ):
-            _ = TransformContainer(qml.transform(first_valid_transform), is_informative=True)
+            result = container.transform
+
+        assert result is first_valid_transform
 
 
-class TestTransformDispatcherExtension:
+class TestTransformExtension:
     @pytest.mark.parametrize("explicit_type", (True, False))
     def test_generic_register(self, explicit_type):
         """Test that generic_register can register behavior for a new object."""
@@ -278,9 +305,9 @@ class TestTransformDispatcherExtension:
             return Subroutine(new_tape.operations)
 
         if explicit_type:
-            TransformDispatcher.generic_register(Subroutine)(subroutine_func)
+            Transform.generic_register(Subroutine)(subroutine_func)
         else:
-            TransformDispatcher.generic_register(subroutine_func)
+            Transform.generic_register(subroutine_func)
 
         @qml.transform
         def dummy_transform(tape, op, n_times):
@@ -326,7 +353,7 @@ class TestTransformDispatcherExtension:
         qml.assert_equal(generic_output, qml.tape.QuantumScript([qml.X(0), qml.X(1), qml.X(2)]))
 
 
-class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
+class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.catalyst
@@ -379,7 +406,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
-        assert not qnode_circuit.transform_program
+        assert not qnode_circuit.compile_pipeline
 
         assert qnode_transformed.device is qnode_circuit.device
 
@@ -388,9 +415,9 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert dev.tracker.totals["executions"] == 1
 
         assert isinstance(qnode_transformed, qml.QNode)
-        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(qnode_transformed.compile_pipeline, qml.CompilePipeline)
         assert isinstance(
-            qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
+            qnode_transformed.compile_pipeline.pop(0), qml.transforms.core.BoundTransform
         )
         assert dispatched_transform.is_informative is False
 
@@ -420,13 +447,13 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         qnode_transformed = dispatched_transform(qnode_circuit)
-        assert not qnode_circuit.transform_program
+        assert not qnode_circuit.compile_pipeline
 
         assert qnode_transformed(0.1) == 4
         assert isinstance(qnode_transformed, qml.QNode)
-        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(qnode_transformed.compile_pipeline, qml.CompilePipeline)
         assert isinstance(
-            qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
+            qnode_transformed.compile_pipeline.pop(0), qml.transforms.core.BoundTransform
         )
         assert dispatched_transform.is_informative
 
@@ -438,7 +465,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         dispatched_transform = qml.transform(valid_transform)
         targs = [0]
 
-        @partial(dispatched_transform, targs=targs)
+        @dispatched_transform(targs=targs)
         @qml.qnode(device=dev)
         def qnode_circuit(a):
             """QNode circuit."""
@@ -449,30 +476,81 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode_circuit, qml.QNode)
-        assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
-        assert isinstance(
-            qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
-        )
+        assert isinstance(qnode_circuit.compile_pipeline, qml.CompilePipeline)
+        assert isinstance(qnode_circuit.compile_pipeline.pop(0), qml.transforms.core.BoundTransform)
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_integration_dispatcher_with_valid_transform_decorator_fails(self, valid_transform):
-        """Test that an error is raised with the transform function."""
+    def test_integration_dispatcher_with_invalid_dispatch_target_returns_container(
+        self, valid_transform
+    ):
+        """Test that calling a transform dispatcher with args that are not a valid dispatch target
+        returns a BoundTransform with the supplied args and kwargs."""
 
         dispatched_transform = qml.transform(valid_transform)
         targs = [0]
 
-        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been removed"
-        with pytest.raises(TransformError, match=msg):
+        # Calling with invalid dispatch target should return a BoundTransform
+        container = dispatched_transform(*targs)
+        assert isinstance(container, qml.transforms.core.BoundTransform)
+        assert container.args == (0,)
+        assert container.kwargs == {}
 
-            @dispatched_transform(*targs)
-            @qml.qnode(device=dev)
-            def qnode_circuit(a):  # pylint:disable=unused-variable
-                """QNode circuit."""
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=0)
-                qml.RZ(a, wires=1)
-                return qml.expval(qml.PauliZ(wires=0))
+        # Test with kwargs as well
+        container_with_kwargs = dispatched_transform(1, 2, key="value")
+        assert isinstance(container_with_kwargs, qml.transforms.core.BoundTransform)
+        assert container_with_kwargs.args == (1, 2)
+        assert container_with_kwargs.kwargs == {"key": "value"}
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_combining_dispatcher_and_container(self, valid_transform):
+        """Test that a dispatcher can be combined with a container using the + operator."""
+
+        dispatched_transform = qml.transform(valid_transform)
+
+        kwargs_container = dispatched_transform(key="value", another="kwarg")
+
+        program = dispatched_transform + kwargs_container
+        assert isinstance(program, qml.CompilePipeline)
+        assert len(program) == 2
+        assert program[0].args == ()
+        assert program[1].kwargs == {"key": "value", "another": "kwarg"}
+
+        args_container = dispatched_transform(0)
+
+        program = args_container + dispatched_transform
+        assert isinstance(program, qml.CompilePipeline)
+        assert len(program) == 2
+        assert program[0].args == (0,)
+        assert program[1].args == ()
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_kwargs_only_returns_container(self, valid_transform):
+        """Test that calling a transform dispatcher with only kwargs returns a BoundTransform.
+
+        This enables patterns like:
+            decompose(gate_set=gate_set) + merge_rotations(1e-6)
+        where decompose might be called with only keyword arguments.
+        """
+
+        dispatched_transform = qml.transform(valid_transform)
+
+        # Calling with only kwargs should return a BoundTransform
+        container = dispatched_transform(key="value", another="kwarg")
+        assert isinstance(container, qml.transforms.core.BoundTransform)
+        assert container.args == ()
+        assert container.kwargs == {"key": "value", "another": "kwarg"}
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_missing_obj_without_kwargs_errors(self, valid_transform):
+        """Test that calling a dispatcher without arguments raises the expected TypeError."""
+
+        dispatched_transform = qml.transform(valid_transform)
+
+        with pytest.raises(
+            TypeError,
+            match="requires at least one argument",
+        ):
+            dispatched_transform()
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
@@ -530,17 +608,17 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         # Applied on a qfunc (return a qfunc)
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
 
-        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
-        expand_transform_container = qnode_transformed.transform_program.pop_front()
-        assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
+        assert isinstance(qnode_transformed.compile_pipeline, qml.CompilePipeline)
+        expand_transform_container = qnode_transformed.compile_pipeline.pop(0)
+        assert isinstance(expand_transform_container, qml.transforms.core.BoundTransform)
         assert expand_transform_container.args == (0,)
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-        transform_container = qnode_transformed.transform_program.pop_front()
+        transform_container = qnode_transformed.compile_pipeline.pop(0)
 
-        assert isinstance(transform_container, qml.transforms.core.TransformContainer)
+        assert isinstance(transform_container, qml.transforms.core.BoundTransform)
         assert transform_container.args == (0,)
         assert transform_container.kwargs == {}
         assert transform_container.classical_cotransform is None
@@ -569,15 +647,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             qml.transform(first_valid_transform, expand_transform=non_callable)
 
-    def test_multiple_args_expand_transform(self):
-        """Test that an expand transform must match the signature of the transform"""
-
-        with pytest.raises(
-            TransformError,
-            match="The expand transform must have the same signature as the transform",
-        ):
-            qml.transform(first_valid_transform, expand_transform=non_valid_expand_transform)
-
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
         dispatched_transform = qml.transform(second_valid_transform)
@@ -601,9 +670,22 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         """Test the dispatcher attributes."""
         dispatched_transform = qml.transform(first_valid_transform)
 
-        assert dispatched_transform.transform is first_valid_transform
+        assert dispatched_transform.tape_transform is first_valid_transform
         assert dispatched_transform.expand_transform is None
         assert dispatched_transform.classical_cotransform is None
+
+    def test_first_positional_arg_a_sequence(self):
+        """Test that a BoundTransform is still created when the first positional arg is a sequence."""
+
+        # pylint: disable=unused-argument
+        @qml.transform
+        def f(tape, param):
+            return (tape,), lambda res: res[0]
+
+        bound_t = f("abcd")
+        assert isinstance(bound_t, BoundTransform)
+        assert bound_t.args == ("abcd",)
+        assert bound_t.kwargs == {}
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     @pytest.mark.parametrize("batch_type", (tuple, list))
@@ -682,7 +764,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             history.append((targs, tkwargs))
             return self.default_qnode_transform(qnode, targs, tkwargs)
 
-        @partial(dispatched_transform, index=0)
+        @dispatched_transform(index=0)
         @qml.qnode(dev)
         def qnode1():
             """QNode circuit."""
@@ -690,10 +772,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode1, qml.QNode)
-        assert isinstance(qnode1.transform_program, qml.transforms.core.TransformProgram)
-        assert isinstance(
-            qnode1.transform_program.pop_front(), qml.transforms.core.TransformContainer
-        )
+        assert isinstance(qnode1.compile_pipeline, qml.CompilePipeline)
+        assert isinstance(qnode1.compile_pipeline.pop(0), qml.transforms.core.BoundTransform)
 
         @qml.qnode(dev)
         def qnode2():
@@ -705,10 +785,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qnode2 = dispatched_transform(qnode2, 1)
 
         assert isinstance(qnode2, qml.QNode)
-        assert isinstance(qnode2.transform_program, qml.transforms.core.TransformProgram)
-        assert isinstance(
-            qnode2.transform_program.pop_front(), qml.transforms.core.TransformContainer
-        )
+        assert isinstance(qnode2.compile_pipeline, qml.CompilePipeline)
+        assert isinstance(qnode2.compile_pipeline.pop(0), qml.transforms.core.BoundTransform)
 
         # check that the custom qnode transform was called
         assert history == [((), {"index": 0}), ((1,), {})]
@@ -739,7 +817,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         class DummyDev(qml.devices.Device):
             # pylint: disable=unused-argument
             def preprocess_transforms(self, execution_config=None):
-                prog = qml.transforms.core.TransformProgram()
+                prog = qml.CompilePipeline()
                 prog.add_transform(qml.defer_measurements)
                 prog.add_transform(qml.compile)
                 return prog
@@ -758,13 +836,13 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         program = _dev.preprocess_transforms()
         new_program = new_dev.preprocess_transforms()
 
-        assert isinstance(program, qml.transforms.core.TransformProgram)
-        assert isinstance(new_program, qml.transforms.core.TransformProgram)
+        assert isinstance(program, qml.CompilePipeline)
+        assert isinstance(new_program, qml.CompilePipeline)
 
         assert len(program) == 2
         assert len(new_program) == 3
 
-        assert new_program[-1].transform is valid_transform
+        assert new_program[-1].tape_transform is valid_transform
 
         @qml.qnode(new_dev)
         def circuit():
@@ -791,13 +869,13 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         config = new_dev.setup_execution_config()
         new_program = new_dev.preprocess_transforms(config)
 
-        assert isinstance(program, qml.transforms.core.TransformProgram)
-        assert isinstance(new_program, qml.transforms.core.TransformProgram)
+        assert isinstance(program, qml.CompilePipeline)
+        assert isinstance(new_program, qml.CompilePipeline)
 
         assert len(program) == 3
         assert len(new_program) == 4
 
-        assert new_program[-1].transform is valid_transform
+        assert new_program[-1].tape_transform is valid_transform
 
         @qml.qnode(new_dev)
         def circuit():
@@ -865,3 +943,183 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access
                 return [tape], lambda x: x
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            def setup_inputs(x, y):
+                return (x, y), {}
+
+            qml.transform(setup_inputs=setup_inputs, pass_name="bla")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+            with pytest.raises(
+                ValueError, match="tape_transform or setup_inputs for use with sphinx."
+            ):
+                qml.transform(pass_name="bla")
+
+
+def dummy_fn():
+    return qml.state()
+
+
+dummy_qnode = qml.QNode(dummy_fn, qml.device("default.qubit"))
+
+
+class TestSetupInputs:
+
+    def test_setup_inputs_type_error(self):
+        """Test that errors from the types indicate the original transform."""
+
+        def setup_inputs(a):
+            return (a,), {}
+
+        a = qml.transform(pass_name="bla", setup_inputs=setup_inputs)
+
+        with pytest.raises(
+            TypeError, match=r"<transform: bla> takes 1 positional argument but 2 were given"
+        ):
+            a(1, 2)
+
+    def test_default_with_pass_name_def(self):
+        """Test that the default setup inputs when no tape definition exists just passes on the inputs."""
+
+        t = qml.transform(pass_name="my_pass_name")
+
+        bound_t = t(1.0, key="value")
+        assert bound_t.args == (1.0,)
+        assert bound_t.kwargs == {"key": "value"}
+
+    def test_eager_error_on_bad_input(self):
+        """Test that an eager error is provided on binding a transform with bad inputs."""
+
+        # pylint: disable=unused-argument
+        def f(tape, val=1):
+            return (tape,), lambda res: res[0]
+
+        def setup_inputs(val=1):
+            return (val,), {}
+
+        t = qml.transform(f, setup_inputs=setup_inputs)
+
+        with pytest.raises(TypeError, match="got an unexpected keyword argument 'bad'"):
+            t(bad=3)
+
+    @pytest.mark.parametrize(
+        "target", (dummy_qnode, qml.device("default.qubit"), qml.CompilePipeline())
+    )
+    def test_eager_error_on_bad_input_dispatch(self, target):
+        """Test that an eager error is provided on binding a transform with bad inputs when dispatched onto various objects.."""
+
+        # pylint: disable=unused-argument
+        def f(tape, val=1):
+            return (tape,), lambda res: res[0]
+
+        def setup_inputs(val=1):
+            return (val,), {}
+
+        t = qml.transform(f, setup_inputs=setup_inputs)
+
+        with pytest.raises(TypeError, match="got an unexpected keyword argument 'bad'"):
+            t(target, bad=3)
+
+    def test_run_validation(self):
+        """Test that custom setup_input functions can be provided and are run at dispatch time."""
+
+        def setup_inputs(x):
+            if not isinstance(x, int):
+                raise ValueError("not an int")
+            return (x,), {}
+
+        # pylint: disable=unused-argument
+        def func(tape, x):
+            return (tape,), lambda res: res[0]
+
+        t = qml.transform(func, setup_inputs=setup_inputs)
+
+        with pytest.raises(ValueError, match="not an int"):
+            t(x="a")
+
+        bound_t = t(x=1)
+        assert bound_t.args == (1,)
+        assert bound_t.kwargs == {}
+
+        bound_t = t(1)
+        assert bound_t.args == (1,)
+        assert bound_t.kwargs == {}
+
+    def test_fill_in_defualt_value(self):
+        """Test that setup_inputs can fill in default values."""
+
+        def setup_inputs(x=1, y=2):
+            return (x, y), {}
+
+        t = qml.transform(pass_name="some_val", setup_inputs=setup_inputs)
+
+        bound_t = t(3)
+        assert bound_t.args == (3, 2)
+        assert bound_t.kwargs == {}
+
+
+class TestPassName:
+
+    def test_no_pass_name_or_tape_def(self):
+        """Test that an error is raised if neither a tape def or pass name are provided."""
+
+        with pytest.raises(ValueError, match="must define either a tape transform or a pass_name"):
+            qml.transform()
+
+    def test_providing_pass_name_with_tape_def(self):
+        """Test a pass_name and a tape def can both be applied."""
+
+        def my_tape_def(tape):
+            return (tape,), lambda x: x[0]
+
+        t = qml.transform(my_tape_def, "my_pass_name")
+
+        assert t.tape_transform == my_tape_def
+        assert t.pass_name == "my_pass_name"
+
+        assert repr(t) == "<transform: my_tape_def>"
+
+        c = BoundTransform(t)
+        assert repr(c) == "<my_tape_def()>"
+
+    def test_providing_pass_name_without_tape_def(self):
+        """Test that a transform can be defined by a pass_name without a tape based transform."""
+
+        t = qml.transform(pass_name="my_pass_name")
+        assert t.tape_transform is None
+        assert t.pass_name == "my_pass_name"
+
+        assert repr(t) == "<transform: my_pass_name>"
+
+        tape = qml.tape.QuantumScript()
+        with pytest.raises(
+            NotImplementedError,
+            match="Transform <transform: my_pass_name> has no defined tape implementation",
+        ):
+            t(tape)
+
+        with pytest.raises(
+            NotImplementedError,
+            match="Transform <transform: my_pass_name> has no defined tape implementation",
+        ):
+            t((tape, tape))
+
+        @t
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.expval(qml.Z(0))
+
+        expected_container = BoundTransform(t)
+        assert expected_container.pass_name == "my_pass_name"
+        assert repr(expected_container) == "<my_pass_name()>"
+        assert expected_container.tape_transform is None
+        assert c.compile_pipeline[-1] == expected_container
+        assert repr(c.compile_pipeline) == "CompilePipeline(my_pass_name)"
+
+        with pytest.raises(NotImplementedError, match="has no defined tape transform"):
+            c.compile_pipeline((tape,))
+
+        with pytest.raises(NotImplementedError, match="has no defined tape transform"):
+            c()

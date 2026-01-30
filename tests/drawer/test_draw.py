@@ -14,9 +14,8 @@
 """
 Integration tests for the draw transform
 """
-# pylint: disable=import-outside-toplevel
-from functools import partial
 
+# pylint: disable=import-outside-toplevel
 import pytest
 
 import pennylane as qml
@@ -203,7 +202,7 @@ class TestMatrixParameters:
     def test_matrix_parameters_batch_transform(self):
         """Test matrix parameters only printed once after a batch transform."""
 
-        @partial(qml.gradients.param_shift, shifts=[(0.2,)])
+        @qml.gradients.param_shift(shifts=[(0.2,)])
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
@@ -325,7 +324,7 @@ class TestMidCircuitMeasurements:
             return qml.probs(wires=0)
 
         draw_qnode = qml.draw(circ)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
 
         drawing = draw_qnode()
         spy.assert_not_called()
@@ -899,6 +898,105 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
 
+class TestPauliMeasure:
+    """Tests PauliMeasure in a circuit drawing."""
+
+    def test_pauli_measure_single_wire(self):
+        """Tests drawing a pauli measurement on a single wire."""
+
+        def circ():
+            qml.H(0)
+            qml.pauli_measure("X", wires=0)
+            return qml.probs()
+
+        expected = "0: ──H──┤↗X├─┤  Probs"
+        assert draw(circ)() == expected
+
+    def test_pauli_measure_multi_wires(self):
+        """Tests drawing a pauli measurement on multiple wires."""
+
+        def circ():
+            qml.H(0)
+            qml.pauli_measure("XY", wires=[0, 1])
+            qml.CNOT([1, 2])
+            return qml.expval(qml.Z(2))
+
+        expected = "0: ──H─╭┤↗X├────┤     \n1: ────╰┤↗Y├─╭●─┤     \n2: ──────────╰X─┤  <Z>"
+        assert draw(circ)() == expected
+
+    @pytest.mark.parametrize("postselect", [0, 1])
+    def test_pauli_measure_postselect(self, postselect):
+        """Tests drawing a pauli measurement with postselect."""
+
+        postselect_script = "₁" if postselect == 1 else "₀"
+
+        def circ():
+            qml.H(0)
+            qml.pauli_measure("XY", wires=[0, 1], postselect=postselect)
+            qml.CNOT([1, 2])
+            return qml.expval(qml.Z(2))
+
+        expected = (
+            f"0: ──H─╭┤↗{postselect_script}X├────┤     \n"
+            f"1: ────╰┤↗{postselect_script}Y├─╭●─┤     \n"
+            "2: ───────────╰X─┤  <Z>"
+        )
+        assert draw(circ)() == expected
+
+    def test_pauli_measure_multi_non_adjacent_wires(self):
+        """Tests when the pauli measure skips wires."""
+
+        def circ():
+            qml.H(0)
+            qml.H(1)
+            qml.pauli_measure("XYZ", wires=[3, 0, 2])
+            qml.X(1)
+            return qml.probs()
+
+        expected = (
+            "0: ──H─╭┤↗Y├────┤  Probs\n"
+            "1: ──H─│──────X─┤  Probs\n"
+            "2: ────├┤↗Z├────┤  Probs\n"
+            "3: ────╰┤↗X├────┤  Probs"
+        )
+        assert draw(circ)() == expected
+
+    def test_conditional_on_pauli_measure(self):
+        """Tests drawing using PPMs as classical control."""
+
+        def circ():
+            qml.H(0)
+            qml.H(1)
+            qml.H(2)
+            qml.H(3)
+            qml.H(4)
+            m0 = qml.pauli_measure("XYZ", wires=[3, 0, 2])
+            qml.cond(m0, qml.X)(1)
+            return qml.probs()
+
+        expected = (
+            "0: ──H─╭┤↗Y├────┤  Probs\n"
+            "1: ──H─│──────X─┤  Probs\n"
+            "2: ──H─├┤↗Z├──║─┤  Probs\n"
+            "3: ──H─╰┤↗X├──║─┤  Probs\n"
+            "4: ──H───║────║─┤  Probs\n"
+            "         ╚════╝         "
+        )
+        assert draw(circ)() == expected
+
+    def test_terminal_measure_of_pauli_measure(self):
+        """Tests drawing a terminal measurement of a pauli product measurement."""
+
+        def circ():
+            qml.H(0)
+            qml.H(1)
+            m0 = qml.pauli_measure("XY", wires=[1, 0])
+            return qml.expval(m0)
+
+        expected = "0: ──H─╭┤↗Y├─┤       \n1: ──H─╰┤↗X├─┤       \n         ╚═══╡  <PPM>"
+        assert draw(circ)() == expected
+
+
 class TestLevelExpansionStrategy:
     """Tests for the level expansion strategy in the draw function."""
 
@@ -987,11 +1085,28 @@ class TestLevelExpansionStrategy:
         with pytest.warns(UserWarning, match="the level argument is ignored"):
             qml.draw(qfunc, level=None)
 
+    def test_custom_level(self):
+        """Test that we can draw at a custom level."""
+
+        @qml.transforms.merge_rotations
+        @qml.marker(level="my_level")
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            qml.RX(0.2, 0)
+            qml.X(0)
+            qml.X(0)
+            qml.RX(0.2, 0)
+            return qml.state()
+
+        expected = "0: ──RX(0.20)──RX(0.20)─┤  State"
+        assert qml.draw(c, level="my_level")() == expected
+
 
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""
 
-    @partial(qml.gradients.param_shift, shifts=[(0.2,)])
+    @qml.gradients.param_shift(shifts=[(0.2,)])
     @qml.qnode(qml.device("default.qubit", wires=1))
     def circ(x):
         qml.Hadamard(wires=0)

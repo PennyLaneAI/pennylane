@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumTape"""
+
 # pylint: disable=protected-access,too-few-public-methods
 import copy
-from collections import defaultdict
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import CircuitGraph
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.decomposition import gate_sets
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -33,6 +34,7 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
+from pennylane.transforms import create_expand_trainable_multipar, decompose
 
 
 def TestOperationMonkeypatching():
@@ -522,14 +524,14 @@ class TestResourceEstimation:
         """Test specs attribute on an empty tape"""
         tape = make_empty_tape
 
-        gate_types = defaultdict(int)
-        expected_resources = qml.resource.Resources(num_wires=2, gate_types=gate_types)
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=2,
+            gate_types={},
+            gate_sizes={},
+            measurements={"probs(all wires)": 1},
+            depth=0,
+        )
         assert tape.specs["resources"] == expected_resources
-
-        assert tape.specs["num_observables"] == 1
-        assert tape.specs["num_trainable_params"] == 0
-
-        assert len(tape.specs) == 4
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -537,16 +539,14 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 4
-
-        gate_sizes = defaultdict(int, {1: 3, 2: 1})
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=3,
+            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
+            gate_sizes={1: 3, 2: 1},
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            depth=3,
         )
         assert specs["resources"] == expected_resources
-        assert specs["num_observables"] == 2
-        assert specs["num_trainable_params"] == 5
 
     def test_specs_add_to_tape(self, make_extendible_tape):
         """Test that tapes return correct specs after adding to them."""
@@ -554,18 +554,14 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 4
-
-        gate_sizes = defaultdict(int, {1: 3, 2: 1})
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-
-        expected_resoures = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=3,
+            gate_types={"RX": 2, "Rot": 1, "CNOT": 1},
+            gate_sizes={1: 3, 2: 1},
+            measurements={},
+            depth=3,
         )
-        assert specs1["resources"] == expected_resoures
-
-        assert specs1["num_observables"] == 0
-        assert specs1["num_trainable_params"] == 5
+        assert specs1["resources"] == expected_resources
 
         with tape as tape:
             qml.CNOT(wires=[0, 1])
@@ -575,18 +571,14 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 4
-
-        gate_sizes = defaultdict(int, {1: 4, 2: 2})
-        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
-
-        expected_resoures = qml.resource.Resources(
-            num_wires=5, num_gates=6, gate_types=gate_types, gate_sizes=gate_sizes, depth=4
+        expected_resources = qml.resource.SpecsResources(
+            num_allocs=5,
+            gate_types={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
+            gate_sizes={1: 4, 2: 2},
+            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
+            depth=4,
         )
-        assert specs2["resources"] == expected_resoures
-
-        assert specs2["num_observables"] == 2
-        assert specs2["num_trainable_params"] == 6
+        assert specs2["resources"] == expected_resources
 
 
 class TestParameters:
@@ -843,12 +835,31 @@ class TestInverseAdjoint:
 class TestExpand:
     """Tests for tape expansion"""
 
+    def test_create_expand_trainable_multipar_warns(self):
+        """Tests that create_expand_trainable_multipar warns."""
+        with QuantumTape() as tape:
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        with pytest.raises(
+            PennyLaneDeprecationWarning, match="The create_expand_trainable_multipar is deprecated"
+        ):
+            create_expand_trainable_multipar(tape)
+
+    def test_expand_warns(self):
+        """Tests that expand warns."""
+        with QuantumTape() as tape:
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            _ = tape.expand()
+
     def test_decomposition(self):
         """Test expanding a tape with operations that have decompositions"""
         with QuantumTape() as tape:
             qml.Rot(0.1, 0.2, 0.3, wires=0)
 
-        new_tape = tape.expand()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = tape.expand()
 
         assert len(new_tape.operations) == 3
         assert new_tape.get_parameters() == [0.1, 0.2, 0.3]
@@ -872,7 +883,8 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        new_tape = tape.expand(depth=1)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = tape.expand(depth=1)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"
@@ -889,7 +901,8 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.PauliX(wires=0)
 
-        new_tape = tape.expand()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = tape.expand()
 
         assert len(new_tape.operations) == 2
 
@@ -909,7 +922,11 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(stop_at=lambda obj: getattr(obj, "name", None) in ["Rot"])
+        [new_tape], _ = decompose(
+            tape,
+            gate_set={"Rot", "RZ"},
+            stopping_condition=lambda obj: getattr(obj, "name", None) in ["Rot"],
+        )
         assert len(new_tape.operations) == 4
         assert "Rot" in [i.name for i in new_tape.operations]
         assert "U3" not in [i.name for i in new_tape.operations]
@@ -930,7 +947,8 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=2)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = tape.expand(depth=2)
         assert len(new_tape.operations) == 9
 
     @pytest.mark.parametrize("skip_first", (True, False))
@@ -963,7 +981,8 @@ class TestExpand:
             qml.StatePrep([0, 1], wires=0),
         ]
         tape = QuantumTape(ops=ops, measurements=[])
-        new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
 
         true_decomposition = []
         if skip_first:
@@ -997,9 +1016,10 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(
-            depth=2, stop_at=lambda obj: getattr(obj, "name", None) in ["PauliX"]
-        )
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = tape.expand(
+                depth=2, stop_at=lambda obj: getattr(obj, "name", None) in ["PauliX"]
+            )
         assert len(new_tape.operations) == 7
 
     def test_measurement_expansion(self):
@@ -1015,7 +1035,8 @@ class TestExpand:
             # expands into QubitUnitary on wire 0
             qml.var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[1]))
 
-        new_tape = tape.expand(expand_measurements=True)
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            new_tape = tape.expand(expand_measurements=True)
 
         assert len(new_tape.operations) == 6
 
@@ -1051,7 +1072,8 @@ class TestExpand:
             qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
             qml.expval(qml.PauliX(2))
 
-        tape1_exp = tape1.expand()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            tape1_exp = tape1.expand()
 
         assert tape1_exp.graph.hash == tape2.graph.hash
 
@@ -1066,7 +1088,8 @@ class TestExpand:
             ret(op=qml.PauliZ(0))
 
         with pytest.raises(QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.expand(expand_measurements=True)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [expval, var, probs])
     @pytest.mark.parametrize("wires", [None, 0, [0]])
@@ -1080,7 +1103,8 @@ class TestExpand:
             qml.sample(wires=wires)
 
         with pytest.raises(QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.expand(expand_measurements=True)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [expval, var, probs])
     @pytest.mark.parametrize("wires", [None, 0, [0]])
@@ -1094,7 +1118,8 @@ class TestExpand:
             qml.counts(wires=wires)
 
         with pytest.raises(QuantumFunctionError, match="Only observables that are qubit-wise"):
-            tape.expand(expand_measurements=True)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [sample, counts, probs])
     def test_expand_tape_multiple_wires_non_commuting_for_sample_type_measurements(self, ret):
@@ -1115,7 +1140,8 @@ class TestExpand:
         )
 
         with pytest.raises(QuantumFunctionError, match=expected_error_msg):
-            tape.expand(expand_measurements=True)
+            with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+                tape.expand(expand_measurements=True)
 
     def test_multiple_expand_no_change_original_tape(self):
         """Test that the original tape is not changed multiple time after maximal expansion."""
@@ -1126,9 +1152,11 @@ class TestExpand:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
             qml.expval(qml.PauliZ(0))
 
-        expand_tape = tape.expand()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expand_tape = tape.expand()
         circuit_after_first_expand = expand_tape.operations
-        twice_expand_tape = tape.expand()
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            twice_expand_tape = tape.expand()
         circuit_after_second_expand = twice_expand_tape.operations
         for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand):
             qml.assert_equal(op1, op2)
@@ -1138,7 +1166,9 @@ class TestExpand:
         ops = [qml.RX(1.1, 0)]
         measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0))]
         tape = qml.tape.QuantumTape(ops, measurements)
-        expanded = tape.expand()
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="expand"):
+            expanded = tape.expand()
 
         assert len(tape.operations) == 1
         qml.assert_equal(tape.operations[0], ops[0])
@@ -1166,7 +1196,7 @@ class TestExpand:
             return obj.name in ["PauliX"]
 
         qs = qml.tape.QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
-        qs.expand(stop_at=stop_at)
+        _, _ = decompose(qs, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=stop_at)
         assert len(recwarn) == 0
 
 
@@ -1371,7 +1401,9 @@ class TestExecution:
         def stop_fn(op):
             return isinstance(op, qml.measurements.MeasurementProcess) or stopping_condition(op)
 
-        tape = tape.expand(stop_at=stop_fn)
+        [tape], _ = decompose(
+            tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, stopping_condition=stop_fn
+        )
         res = dev.execute(tape)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
 

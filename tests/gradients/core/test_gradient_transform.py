@@ -24,7 +24,7 @@ from pennylane.gradients.gradient_transform import (
     _validate_gradient_methods,
     choose_trainable_param_indices,
 )
-from pennylane.transforms.core import TransformDispatcher
+from pennylane.transforms.core import Transform
 
 
 def test_supported_gradient_kwargs():
@@ -40,7 +40,7 @@ def test_supported_gradient_kwargs():
         if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
-        if isinstance(obj, TransformDispatcher):
+        if isinstance(obj, Transform):
             grad_transforms.append(obj)
 
     # Collect arguments of all gradient transforms
@@ -375,10 +375,13 @@ class TestGradientTransformIntegration:
 
             grad_method = None
 
+            # hard coded false in rx
+            has_decomposition = True
+
             @staticmethod
-            def compute_decomposition(x, wires):
+            def compute_decomposition(phi, wires):
                 """Decompose into a qml.RX gate."""
-                return [qml.RX(x, wires=wires)]
+                return [qml.RX(phi, wires=wires)]
 
         @qml.qnode(dev)
         def circuit(weights):

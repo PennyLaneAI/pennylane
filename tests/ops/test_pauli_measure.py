@@ -18,6 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import queuing
 from pennylane.ops import MeasurementValue, PauliMeasure
+from pennylane.wires import Wires
 
 
 class TestPauliMeasure:
@@ -34,7 +35,6 @@ class TestPauliMeasure:
         assert isinstance(q.queue[0], PauliMeasure)
         measure_op = q.queue[0]
         assert m.measurements[0] is measure_op
-        assert measure_op.resource_params == {"pauli_word": "XY"}
         assert measure_op.pauli_word == "XY"
         assert measure_op.postselect is None
         assert repr(measure_op) == "PauliMeasure('XY', wires=[0, 1])"
@@ -47,6 +47,14 @@ class TestPauliMeasure:
 
         with pytest.raises(ValueError, match="The number of wires"):
             qml.pauli_measure("XYX", wires=[0, 1])
+
+    def test_label(self):
+        """Tests the label of a PauliMeasure."""
+
+        m = PauliMeasure("XY", wires=Wires([0, 1]))
+        assert m.label() == "┤↗XY├"
+        assert m.label(wire=1) == "┤↗Y├"
+        assert m.label(wire=0) == "┤↗X├"
 
     def test_hash(self):
         """Test that the hash for PauliMeasure is defined correctly."""

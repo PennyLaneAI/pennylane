@@ -19,12 +19,14 @@ executed by a device.
 
 import contextlib
 import copy
+import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
 from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.shots import Shots, ShotsLike
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
@@ -848,7 +850,7 @@ class QuantumScript:
 
             >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.Y(0))]
             >>> tape = qml.tape.QuantumScript([], mps)
-            >>> tape.expand()
+            >>> tape.expand()  # doctest: +SKIP
             Traceback (most recent call last):
                 ...
             pennylane.exceptions.QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
@@ -859,7 +861,7 @@ class QuantumScript:
 
             >>> measurements = [qml.expval(qml.Projector([0], 0)), qml.probs(wires=0)]
             >>> tape = qml.tape.QuantumScript([], measurements)
-            >>> tape.expand()
+            >>> tape.expand()  # doctest: +SKIP
             Traceback (most recent call last):
                 ...
             pennylane.exceptions.QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
@@ -873,15 +875,15 @@ class QuantumScript:
             >>> ops = [qml.Permute((2,1,0), wires=(0,1,2)), qml.X(0)]
             >>> measurements = [qml.expval(qml.X(0))]
             >>> tape = qml.tape.QuantumScript(ops, measurements)
-            >>> expanded_tape = tape.expand()
-            >>> print(expanded_tape.draw())
+            >>> expanded_tape = tape.expand()  # doctest: +SKIP
+            >>> print(expanded_tape.draw())  # doctest: +SKIP
             0: ─╭SWAP──RX─╭GlobalPhase─┤  <X>
             2: ─╰SWAP─────╰GlobalPhase─┤
 
             Specifying a depth greater than one decomposes operations multiple times.
 
-            >>> expanded_tape2 = tape.expand(depth=2)
-            >>> print(expanded_tape2.draw())
+            >>> expanded_tape2 = tape.expand(depth=2)  # doctest: +SKIP
+            >>> print(expanded_tape2.draw())  # doctest: +SKIP
             0: ─╭●─╭X─╭●──RX─┤  <X>
             2: ─╰X─╰●─╰X─────┤
 
@@ -891,8 +893,8 @@ class QuantumScript:
 
             >>> def stop_at(obj):
             ...     return isinstance(obj, qml.X)
-            >>> expanded_tape = tape.expand(stop_at=stop_at)
-            >>> print(expanded_tape.draw())
+            >>> expanded_tape = tape.expand(stop_at=stop_at)  # doctest: +SKIP
+            >>> print(expanded_tape.draw())  # doctest: +SKIP
             0: ─╭SWAP──X─┤  <X>
             2: ─╰SWAP────┤
 
@@ -905,7 +907,7 @@ class QuantumScript:
                 >>> def stop_at(obj):
                 ...     return getattr(obj, "name", "") in {"RX", "RY"}
                 >>> tape = qml.tape.QuantumScript([qml.RZ(0.1, 0)])
-                >>> tape.expand(stop_at=stop_at).circuit
+                >>> tape.expand(stop_at=stop_at).circuit  # doctest: +SKIP
                 [RZ(0.1, wires=[0])]
 
             If more than one observable exists on a wire, the diagonalizing gates will be applied
@@ -914,8 +916,8 @@ class QuantumScript:
 
             >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.X(0) @ qml.X(1))]
             >>> tape = qml.tape.QuantumScript([], mps)
-            >>> expanded_tape = tape.expand()
-            >>> print(expanded_tape.draw())
+            >>> expanded_tape = tape.expand()  # doctest: +SKIP
+            >>> print(expanded_tape.draw())  # doctest: +SKIP
             0: ──RY─┤  <Z> ╭<Z@Z>
             1: ──RY─┤      ╰<Z@Z>
 
@@ -927,10 +929,19 @@ class QuantumScript:
                 Setting ``expand_measurements=True`` should be used with extreme caution.
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
-            >>> tape.expand(expand_measurements=True).circuit
+            >>> tape.expand(expand_measurements=True).circuit  # doctest: +SKIP
             [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
         """
+
+        warnings.warn(
+            """
+            The tape.expand method is deprecated in PennyLane v0.45 and will be removed in v0.46.
+            Please use the qml.transforms.decompose function for decomposing circuits.
+            """,
+            PennyLaneDeprecationWarning,
+        )
+
         return qml.tape.expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )
@@ -983,33 +994,32 @@ class QuantumScript:
         return self._graph
 
     @property
-    def specs(self) -> "qml.resource.resource.SpecsDict[str, Any]":
+    def specs(self) -> dict[str, Any]:
         """Resource information about a quantum circuit.
 
         Returns:
-            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
+            dict[str, Any]: A dictionary containing the specifications of the quantum script.
 
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
          ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0, 1))]
          >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0) @ qml.Z(1))])
 
-        Asking for the specs produces a dictionary of useful information about the circuit:
+        Asking for the specs produces a dictionary of useful information about the circuit.
+        Note that this may return slightly different information than running :func:`~.pennylane.specs` on
+        a qnode directly.
 
-        >>> qscript.specs['num_observables']
-        1
-        >>> print(qscript.specs['resources'])
-        num_wires: 2
-        num_gates: 6
-        depth: 4
-        shots: Shots(total=None)
-        gate_types:
-        {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
-        gate_sizes:
-        {1: 4, 2: 2}
+        >>> from pprint import pprint
+        >>> pprint(qscript.specs['resources'])
+        SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
+                       gate_sizes={1: 4, 2: 2},
+                       measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                       num_allocs=2,
+                       depth=4)
         """
         if self._specs is None:
-            self._specs = qml.resource.resource.specs_from_tape(self)
+            resources, errors = qml.resource.resource.resources_from_tape(self, compute_errors=True)
+            self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

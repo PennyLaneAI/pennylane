@@ -32,7 +32,9 @@ def _binary_repr_int(phi, precision):
     # at the same time, we want to floor off any additional floats when converting to the desired precision,
     # e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
     # so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
-    return int(np.floor(2**precision * phi / (2 * np.pi) + 1e-10))
+    phi = phi % (2 * np.pi)
+    phi_round = np.round(2**precision * phi / (2 * np.pi))
+    return int(bin(int(np.floor(phi_round + 1e-10)))[-precision:], 2)
 
 
 @QueuingManager.stop_recording()
@@ -113,8 +115,6 @@ def rz_phase_gradient(
 
     .. code-block:: python
 
-        from functools import partial
-
         from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
 
         precision = 3
@@ -131,8 +131,7 @@ def rz_phase_gradient(
                 qml.H(w)
                 qml.PhaseShift(-np.pi/2**i, w)
 
-        @partial(
-            rz_phase_gradient,
+        @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,
@@ -213,7 +212,7 @@ def rz_phase_gradient(
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

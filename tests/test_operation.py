@@ -23,7 +23,6 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -41,30 +40,6 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
-
-
-def test_is_hermitian_property_deprecation():
-    """Tests that the is_hermitian property is deprecated."""
-
-    op = qml.ops.X(wires=0)
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
-    ):
-        assert op.is_hermitian
-
-
-def test_is_hermitian_property_subclass_override_deprecation():
-    """Tests that a subclass overriding is_hermitian property will raise a deprecation warning."""
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="The `is_hermitian` property is deprecated"
-    ):
-
-        # pylint: disable = unused-variable
-        class DummyOp(Operator):
-            """Dummy operation that overrides is_hermitian"""
-
-            is_hermitian = True
 
 
 class TestOperatorConstruction:
@@ -595,15 +570,56 @@ class TestHasReprProperties:
         assert MyOp.has_decomposition is True
         assert MyOp(0.2, wires=1).has_decomposition is True
 
+    def test_has_decomposition_graph_decomp(self):
+        """Test that an operator provides a decomposition if it has a register graph decomp."""
+
+        class SomeRandomName(qml.operation.Operator):
+            pass
+
+        with qml.decomposition.local_decomps():
+
+            @qml.register_resources({qml.X: 1})
+            def decomp(x, wires):
+                qml.RX(x, wires)
+
+            qml.add_decomps(SomeRandomName, decomp)
+
+            assert SomeRandomName(0.5, wires=0).has_decomposition
+
+    def test_has_decomposition_graph_decomp_multiple_conditions(self):
+        """Test that operators with multiple decompositions and conditions have
+        correct has_decomposition properties."""
+
+        class MNBV(qml.operation.Operator):
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        @qml.register_condition(lambda num_wires: num_wires == 1)
+        @qml.register_resources({qml.RX: 1})
+        def decomp1(x, wires):
+            qml.RX(x, wires)
+
+        @qml.register_condition(lambda num_wires: num_wires == 2)
+        @qml.register_resources({qml.CRX: 1})
+        def decomp2(x, wires):
+            qml.CRX(x, wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MNBV, decomp1, decomp2)
+
+            assert MNBV(0.5, wires=0).has_decomposition
+            assert MNBV(0.5, wires=(0, 1)).has_decomposition
+            assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
+
     def test_has_decomposition_false(self):
         """Test has_decomposition property defaults to false if neither
         `decomposition` nor `compute_decomposition` are overwritten."""
 
-        class MyOp(qml.operation.Operator):
+        class TREWQ(qml.operation.Operator):
             num_wires = 1
 
-        assert MyOp.has_decomposition is False
-        assert MyOp(wires=0).has_decomposition is False
+        assert TREWQ(wires=0).has_decomposition is False
 
     def test_has_diagonalizing_gates_true_compute_diagonalizing_gates(self):
         """Test has_diagonalizing_gates property detects
@@ -1319,10 +1335,75 @@ class TestDefaultRepresentations:
 
     def test_decomposition_undefined(self):
         """Tests that custom error is raised in the default decomposition representation."""
+
+        class Operator_with_no_decomp(Operator):
+            pass
+
+        op = Operator_with_no_decomp(wires=0)
         with pytest.raises(qml.operation.DecompositionUndefinedError):
-            MyOp.compute_decomposition(wires=[1])
+            Operator_with_no_decomp.compute_decomposition(wires=[1])
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             op.decomposition()
+
+    def test_decomposition_graph_fallback(self):
+        """Test that the first registered decomp can be used if compute_decomposition is not overridden."""
+
+        class OpWithACustomName98786(qml.operation.Operator):
+            pass
+
+        @qml.register_resources({qml.RX: 1})
+        def decomp1(x, wires):
+            qml.RX(x, wires)
+
+        @qml.register_resources({qml.RZ: 1})
+        def decomp2(x, wires):
+            qml.RZ(x, wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(OpWithACustomName98786, decomp1, decomp2)
+
+            [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
+            qml.assert_equal(out, qml.RX(0.5, wires=0))
+
+            op = OpWithACustomName98786(0.5, wires=0)
+            with qml.queuing.AnnotatedQueue() as q:
+                op.decomposition()
+
+            assert len(q.queue) == 1
+            qml.assert_equal(q.queue[0], qml.RX(0.5, wires=0))
+
+    def test_graph_decomposition_fallback_conditions(self):
+        """Test the graph decomposition fallback is sensitive to conditions."""
+
+    def test_has_decomposition_graph_decomp_multiple_conditions(self):
+        """Test that operators with multiple decompositions and conditions have
+        correct has_decomposition properties."""
+
+        class BVCX(qml.operation.Operator):
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        @qml.register_condition(lambda num_wires: num_wires == 1)
+        @qml.register_resources({qml.RX: 1})
+        def decomp1(x, wires):
+            qml.RX(x, wires)
+
+        @qml.register_condition(lambda num_wires: num_wires == 2)
+        @qml.register_resources({qml.CRX: 1})
+        def decomp2(x, wires):
+            qml.CRX(x, wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(BVCX, decomp1, decomp2)
+
+            [op1] = BVCX(0.5, wires=0).decomposition()
+            qml.assert_equal(op1, qml.RX(0.5, wires=0))
+            [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
+            qml.assert_equal(op2, qml.CRX(0.5, wires=(0, 1)))
+
+            with pytest.raises(qml.exceptions.DecompositionUndefinedError):
+                BVCX(0.5, wires=(0, 1, 2)).decomposition()
 
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""

@@ -14,8 +14,6 @@
 """
 This module contains the functions needed for tapering qubits using symmetries.
 """
-
-
 import functools
 import itertools
 
@@ -23,7 +21,7 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.math.utils import binary_finite_reduced_row_echelon
+from pennylane.math import binary_finite_reduced_row_echelon
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws
 from pennylane.wires import Wires

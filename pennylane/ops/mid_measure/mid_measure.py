@@ -20,6 +20,7 @@ from collections.abc import Hashable
 from functools import lru_cache
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.compiler import compiler
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -120,6 +121,7 @@ class MidMeasure(Operator):
     num_wires = 1
     num_params = 0
     batch_size = None
+    resource_keys = set()
 
     def __init__(
         self,
@@ -171,6 +173,10 @@ class MidMeasure(Operator):
         _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
 
     @property
     def hash(self):
@@ -372,5 +378,10 @@ def measure(
     if capture_enabled():
         primitive = _create_mid_measure_primitive()
         return primitive.bind(wires, reset=reset, postselect=postselect)
+
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.measure(wires, reset=reset, postselect=postselect)
 
     return _measure_impl(wires, reset=reset, postselect=postselect)

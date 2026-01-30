@@ -19,7 +19,7 @@ import copy
 import itertools
 import string
 import sys
-from functools import partial, reduce
+from functools import reduce
 from itertools import product
 from os import environ
 from pathlib import Path
@@ -34,7 +34,9 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qcut
+from pennylane.decomposition import gate_sets
 from pennylane.queuing import WrappedObj
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -2539,7 +2541,7 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2, seed=seed)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn, seed=seed)
+        @qml.cut_circuit_mc(classical_processing_fn=fn, seed=seed)
         @qml.qnode(dev, shots=20000)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -2692,7 +2694,7 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2)
 
-        @partial(qml.cut_circuit_mc, shots=456)
+        @qml.cut_circuit_mc(shots=456)
         @qml.qnode(dev)
         def cut_circuit(x):  # pylint: disable=unused-variable,unused-argument
             qml.RX(x, wires=0)
@@ -2949,7 +2951,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = dev_fn(wires=2)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2982,7 +2984,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = dev_fn(wires=2)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -3015,7 +3017,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = dev_fn(wires=2)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -3048,7 +3050,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = dev_fn(wires=2)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -3079,7 +3081,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = dev_fn(wires=3)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3105,7 +3107,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = dev_fn(wires=3)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3125,7 +3127,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = dev_fn(wires=2)
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3163,7 +3165,7 @@ class TestCutCircuitMCTransform:
             qml.Hadamard(wires=[wires[0]])
             qml.CRY(param, wires=[wires[0], wires[1]])
 
-        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev, shots=shots)
         def circuit(params):
             qml.BasisState(np.array([1]), wires=[0])
@@ -4291,7 +4293,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @partial(qml.cut_circuit, use_opt_einsum=use_opt_einsum)
+        @qml.cut_circuit(use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4313,7 +4315,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.cut_circuit, use_opt_einsum=use_opt_einsum)
+        @qml.cut_circuit(use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -5287,7 +5289,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @partial(qml.cut_circuit, auto_cutter=True)
+        @qml.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -5307,7 +5309,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.cut_circuit, auto_cutter=True)
+        @qml.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -5404,7 +5406,7 @@ class TestAutoCutCircuit:
             qml.expval(obs)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape = tape0.expand()
+        [tape], _ = decompose(tape0, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         graph = qcut.tape_to_graph(tape)
         cut_graph = qcut.find_and_place_cuts(
             graph=graph,
@@ -5581,7 +5583,8 @@ class TestCutCircuitWithHamiltonians:
             qml.expval(hamiltonian)
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
-        tape = tape0.expand()
+
+        [tape], _ = decompose(tape0, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 
         frag_lens = [5, 7]

@@ -21,6 +21,7 @@ import sys
 
 import numpy as np
 import pytest
+from packaging.version import Version
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
@@ -172,9 +173,21 @@ def enable_disable_plxpr():
 
 @pytest.fixture(scope="function")
 def enable_disable_dynamic_shapes():
+    """Enable dynamic shapes and apply JAX patches for the duration of a test.
+
+    JAX 0.7.x requires patches to fix AssertionError in trace.frame.add_eqn
+    when using dynamic shapes. See pennylane/capture/jax_patches.py for details.
+    """
     jax.config.update("jax_dynamic_shapes", True)
     try:
-        yield
+        if Version(jax.__version__) >= Version("0.7.0"):
+            from pennylane.capture.jax_patches import get_jax_patches
+            from pennylane.capture.patching import Patcher
+
+            # Apply patches using Patcher context manager for this test
+            patches = get_jax_patches()
+            with Patcher(*patches):
+                yield
     finally:
         jax.config.update("jax_dynamic_shapes", False)
 
@@ -182,11 +195,30 @@ def enable_disable_dynamic_shapes():
 @pytest.fixture(scope="function")
 def enable_graph_decomposition():
     """enable and disable graph-decomposition around each test."""
-    qml.decomposition.enable_graph()
-    try:
+    with qml.decomposition.toggle_graph_ctx(True):
         yield
-    finally:
-        qml.decomposition.disable_graph()
+
+
+@pytest.fixture(scope="function")
+def disable_graph_decomposition():
+    """disable graph-decomposition."""
+    with qml.decomposition.toggle_graph_ctx(False):
+        yield
+
+
+@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
+def enable_and_disable_graph_decomp(request):
+    """
+    A fixture that parametrizes a test to run twice: once with graph
+    decomposition disabled and once with it enabled.
+
+    It automatically handles the setup (enabling/disabling) before the
+    test runs and the teardown (always disabling) after the test completes.
+
+    """
+    use_graph_decomp = request.param
+    with qml.decomposition.toggle_graph_ctx(use_graph_decomp):
+        yield
 
 
 #######################################################################
@@ -307,33 +339,3 @@ def pytest_runtest_setup(item):
                 pytest.skip(
                     f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                 )
-
-
-@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
-def enable_and_disable_graph_decomp(request):
-    """
-    A fixture that parametrizes a test to run twice: once with graph
-    decomposition disabled and once with it enabled.
-
-    It automatically handles the setup (enabling/disabling) before the
-    test runs and the teardown (always disabling) after the test completes.
-    """
-    try:
-        use_graph_decomp = request.param
-
-        # --- Setup Phase ---
-        # This code runs before the test function is executed.
-        if use_graph_decomp:
-            qml.decomposition.enable_graph()
-        else:
-            # Explicitly disable to ensure a clean state
-            qml.decomposition.disable_graph()
-
-        # Yield control to the test function
-        yield use_graph_decomp
-
-    finally:
-        # --- Teardown Phase ---
-        # This code runs after the test function has finished,
-        # regardless of whether it passed or failed.
-        qml.decomposition.disable_graph()

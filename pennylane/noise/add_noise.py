@@ -16,11 +16,12 @@ from copy import copy
 from functools import lru_cache
 
 from pennylane import math, templates
+from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose, null_postprocessing
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.ops import Adjoint
 from pennylane.tape import make_qscript
-from pennylane.transforms.core import TransformContainer, transform
+from pennylane.transforms.core import BoundTransform, transform
 from pennylane.workflow import get_transform_program
 
 from .conditionals import partial_wires
@@ -46,13 +47,13 @@ def add_noise(tape, noise_model, level="user"):
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
             device to be transformed.
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
-        level (str, int, slice): An indication of which stage in the transform program the
+        level (str, int, slice): An indication of which stage in the compile pipeline the
             noise model should be applied to. Only relevant when transforming a ``QNode``. More details
             on the following permissible values can be found in the :func:`~.workflow.get_transform_program` -
 
             * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
             * ``int``: how many transforms to include, starting from the front of the program.
-            * ``slice``: a slice to select out components of the transform program.
+            * ``slice``: a slice to select out components of the compile pipeline.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
@@ -74,8 +75,6 @@ def add_noise(tape, noise_model, level="user"):
 
     .. code-block:: python
 
-        from functools import partial
-
         dev = qml.device("default.mixed", wires=2)
 
         fcond1 = qml.noise.op_eq(qml.RX) & qml.noise.wires_in([0, 1])
@@ -92,7 +91,7 @@ def add_noise(tape, noise_model, level="user"):
             {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, t1=2.0, t2=0.2
         )
 
-        @partial(qml.noise.add_noise, noise_model=noise_model)
+        @qml.noise.add_noise(noise_model=noise_model)
         @qml.qnode(dev)
         def circuit(w, x, y, z):
             qml.RX(w, wires=0)
@@ -141,38 +140,38 @@ def add_noise(tape, noise_model, level="user"):
             noisy_circuit = qml.noise.add_noise(circuit, noise_model)
 
         >>> qml.workflow.get_transform_program(circuit)
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables)
 
         >>> qml.workflow.get_transform_program(noisy_circuit)
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, metric_tensor)
+        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, metric_tensor, add_noise, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables)
 
-        However, one can request to insert the ``add_noise`` transform at any specific point in the transform program. By specifying the ``level`` keyword argument while
-        transforming a ``QNode``, this transform can be added at a designated level within the transform program, as determined using the
+        However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
+        transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, as determined using the
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="device").transform_program
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, metric_tensor)
+        >>> qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline
+        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise)
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
-        to an empty transform program, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
+        to an empty compile pipeline, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
         end of device-specific transforms, and `"gradient"` will allow addition at the end of transforms that expand trainable operations. For example:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="top").transform_program
-        TransformProgram(add_noise)
+        >>> qml.noise.add_noise(circuit, noise_model, level="top").compile_pipeline
+        CompilePipeline(add_noise)
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="user").transform_program
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, metric_tensor)
+        >>> qml.noise.add_noise(circuit, noise_model, level="user").compile_pipeline
+        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, metric_tensor, add_noise)
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="device").transform_program
-        TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, metric_tensor)
+        >>> qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline
+        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, metric_tensor, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise)
 
-        Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the transform program. For example, one can do:
+        Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the compile pipeline. For example, one can do:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level=2).transform_program
-        TransformProgram(cancel_inverses, merge_rotations, add_noise)
+        >>> qml.noise.add_noise(circuit, noise_model, level=2).compile_pipeline
+        CompilePipeline(cancel_inverses, merge_rotations, add_noise)
 
-        >>> qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).transform_program
-        TransformProgram(merge_rotations, undo_swaps, add_noise)
+        >>> qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline
+        CompilePipeline(merge_rotations, undo_swaps, add_noise)
 
     """
     if not hasattr(noise_model, "model_map") or not hasattr(noise_model, "metadata"):
@@ -190,7 +189,11 @@ def add_noise(tape, noise_model, level="user"):
             return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
         [tape], _ = decompose(
-            tape, stopping_condition=stop_at, name="add_noise", error=DecompositionUndefinedError
+            tape,
+            target_gates=gate_sets.ALL_OPS,
+            stopping_condition=stop_at,
+            name="add_noise",
+            error=DecompositionUndefinedError,
         )
 
     conditions, noises = [], []
@@ -271,15 +274,9 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
 
-    transform_program = get_transform_program(qnode, level=level)
+    compile_pipeline = get_transform_program(qnode, level=level)
 
-    cqnode._transform_program = transform_program
-    cqnode.transform_program.push_back(
-        TransformContainer(
-            self,
-            targs,
-            {**tkwargs},
-        )
-    )
+    cqnode._compile_pipeline = compile_pipeline
+    cqnode.compile_pipeline.append(BoundTransform(self, targs, {**tkwargs}))
 
     return cqnode

@@ -17,7 +17,7 @@ Tests for the CotransformCache object.
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.core import TransformContainer
+from pennylane.transforms.core import BoundTransform
 from pennylane.transforms.core.cotransform_cache import CotransformCache
 
 
@@ -30,7 +30,7 @@ def test_classical_jacobian_error_if_not_in_cache():
         qml.RY(x * y, 0)
         return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
 
-    container = TransformContainer(qml.transforms.merge_rotations)
+    container = BoundTransform(qml.transforms.merge_rotations)
     x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
@@ -48,7 +48,7 @@ def test_no_classical_jacobian_if_no_cotransform():
         qml.RY(x * y, 0)
         return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
 
-    container = c.transform_program[-1]
+    container = c.compile_pipeline[-1]
     x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
@@ -66,7 +66,7 @@ def test_simple_classical_jacobian():
         qml.RY(x * y, 0)
         return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
 
-    ps_container = c.transform_program[-1]
+    ps_container = c.compile_pipeline[-1]
     x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
 
     a = CotransformCache(c, (x, y), {})
@@ -123,7 +123,7 @@ def test_simple_argnums(argnums, trainable_params):
 
     c = qml.gradients.param_shift(c, argnums=argnums)
 
-    ps_container = c.transform_program[-1]
+    ps_container = c.compile_pipeline[-1]
     x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
@@ -146,7 +146,7 @@ def test_no_jax_argnum_error():
 
     c = qml.gradients.param_shift(c, argnum=[0])
 
-    ps_container = c.transform_program[-1]
+    ps_container = c.compile_pipeline[-1]
     x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
@@ -171,7 +171,7 @@ def test_no_argnums_if_no_classical_cotransform():
 
     c = qml.transforms.merge_rotations(c)
 
-    container = c.transform_program[-1]
+    container = c.compile_pipeline[-1]
     x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
@@ -191,7 +191,7 @@ def test_no_argnums_nonjax_interface():
 
     c = qml.gradients.param_shift(c, argnum=[0])
 
-    ps_container = c.transform_program[-1]
+    ps_container = c.compile_pipeline[-1]
     x, y = qml.numpy.array([0.5, 0.7]), qml.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})

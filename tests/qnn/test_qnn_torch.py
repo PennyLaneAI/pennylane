@@ -15,7 +15,6 @@
 Tests for the pennylane.qnn.torch module.
 """
 import math
-from collections import defaultdict
 from unittest import mock
 
 import numpy as np
@@ -36,7 +35,6 @@ def indices_up_to(n_max):
     return zip(*[a + 1, b + 1])
 
 
-@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 @pytest.fixture
 def module(get_circuit, n_qubits, output_dim):
     """Fixture for creating a hybrid Torch module. The module is composed of quantum TorchLayers
@@ -948,16 +946,16 @@ def test_specs():
 
     info = qml.specs(qlayer)(x)
 
-    gate_sizes = defaultdict(int, {1: 1, 2: 2})
-    gate_types = defaultdict(int, {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1})
-    expected_resources = qml.resource.Resources(
-        num_wires=2, num_gates=3, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+    gate_sizes = {1: 1, 2: 2}
+    gate_types = {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1}
+    expected_resources = qml.resource.SpecsResources(
+        num_allocs=2,
+        gate_types=gate_types,
+        gate_sizes=gate_sizes,
+        measurements={"expval(PauliZ)": 2},
+        depth=3,
     )
     assert info["resources"] == expected_resources
 
-    assert info["num_observables"] == 2
     assert info["num_device_wires"] == 3
-    assert info["num_tape_wires"] == 2
-    assert info["num_trainable_params"] == 2
-    assert info["interface"] == "torch"
     assert info["device_name"] == "default.qubit"

@@ -34,6 +34,7 @@ By default, this system is disabled.
     ~enable_graph
     ~disable_graph
     ~enabled_graph
+    ~toggle_graph_ctx
 
 >>> qml.decomposition.enabled_graph()
 False
@@ -90,6 +91,7 @@ Inspecting and Managing Decomposition Rules
     ~add_decomps
     ~list_decomps
     ~has_decomp
+    ~local_decomps
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
@@ -146,8 +148,6 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 
 .. code-block:: python
 
-    from functools import partial
-
     qml.decomposition.enable_graph()
 
     @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
@@ -170,8 +170,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qml.RY(np.pi/2, wires[1])
         qml.Z(wires[1])
 
-    @partial(
-        qml.transforms.decompose,
+    @qml.transforms.decompose(
         gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
         alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
         fixed_decomps={qml.IsingXX: isingxx_decomp},
@@ -230,14 +229,17 @@ Utility Classes
     :toctree: api
 
     ~DecompositionError
+    ~gate_set.GateSet
 
 """
 
 from pennylane.exceptions import DecompositionError
+from .gate_set import GateSet
 from .utils import (
     enable_graph,
     disable_graph,
     enabled_graph,
+    toggle_graph_ctx,
 )
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution
 from .resources import (
@@ -257,4 +259,5 @@ from .decomposition_rule import (
     add_decomps,
     list_decomps,
     has_decomp,
+    local_decomps,
 )

@@ -28,9 +28,11 @@ from pennylane.capture.primitives import (
     cond_prim,
     ctrl_transform_prim,
     jacobian_prim,
+    jvp_prim,
     measure_prim,
     pauli_measure_prim,
     qnode_prim,
+    vjp_prim,
 )
 from pennylane.operation import Operator
 from pennylane.ops.mid_measure import (
@@ -143,7 +145,7 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
     conditions = all_args[:n_branches]
-    args = all_args[args_slice]
+    args = all_args[slice(*args_slice)]
 
     # Find predicates that use mid-circuit measurements. We don't check the last
     # condition as that is always `True`.
@@ -157,7 +159,7 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
         conditions = get_mcm_predicates(mcm_conditions)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
-        consts = all_args[const_slice]
+        consts = all_args[slice(*const_slice)]
         if isinstance(pred, MeasurementValue):
             if jaxpr.outvars:
                 outvals = [v.aval for v in jaxpr.outvars]
@@ -189,8 +191,18 @@ def _(self, *wires, pauli_word="", postselect=None):
 
 
 @CollectOpsandMeas.register_primitive(jacobian_prim)
-def _jacobian_primitive(self, *invals, jaxpr, n_consts, **params):
+def _jacobian_primitive(self, *invals, jaxpr, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the jacobian primitive")
+
+
+@CollectOpsandMeas.register_primitive(vjp_prim)
+def _vjp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the vjp primitive")
+
+
+@CollectOpsandMeas.register_primitive(jvp_prim)
+def _jvp_primitive(self, *invals, jaxpr, **params):
+    raise NotImplementedError("CollectOpsandMeas cannot handle the jvp primitive")
 
 
 # pylint: disable=unused-argument

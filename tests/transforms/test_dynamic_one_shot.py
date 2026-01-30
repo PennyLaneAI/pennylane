@@ -20,7 +20,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -81,20 +81,16 @@ def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
         parse_native_mid_circuit_measurements(circuit, [circuit], [np.empty((1, 1))])
 
 
-def test_postselection_error_with_wrong_device():
-    """Test that an error is raised when a device does not support native execution."""
-    dev = qml.device("default.mixed", wires=2)
+def test_qnode_transform_error():
+    """Tests that an error is raised when applying dynamic_one_shot on a qnode."""
 
-    with pytest.raises(
-        TypeError,
-        match="does not support mid-circuit measurements and/or one-shot execution mode natively",
-    ):
+    with pytest.raises(TransformError, match="cannot be applied directly on a QNode"):
 
         @qml.dynamic_one_shot
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def _():
-            qml.measure(0, postselect=1)
-            return qml.probs(wires=[0])
+            qml.X(0)
+            qml.expval(qml.Z(0))
 
 
 def test_postselect_mode():

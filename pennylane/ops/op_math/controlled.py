@@ -29,7 +29,7 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-from pennylane import math
+from pennylane import math, pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.decomposition.resources import resolve_work_wire_type
@@ -565,6 +565,9 @@ class Controlled(SymbolicOp):
         work_wire_type="borrowed",
         id=None,
     ):
+        if isinstance(base, Operator):
+            qml.QueuingManager.remove(base)
+            base = pytrees.unflatten(*pytrees.flatten(base))
         control_wires = Wires(control_wires)
         return cls._primitive.bind(
             base,
@@ -1075,6 +1078,8 @@ class ControlledOp(Controlled, Operation):
 
     @property
     def parameter_frequencies(self):
+        if isinstance(self.base, qml.GlobalPhase):
+            return [(1,)]
         if self.base.num_params == 1:
             try:
                 base_gen = qml.generator(self.base, format="observable")

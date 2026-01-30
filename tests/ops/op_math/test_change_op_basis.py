@@ -45,6 +45,19 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
 
+@pytest.mark.jax
+@pytest.mark.capture
+def test_change_op_basis_capture():
+    """Tests that a change_op_basis can be captured."""
+
+    def circuit():
+        qml.change_op_basis(qml.X(0), qml.Y(0))
+
+    jaxpr = qml.capture.make_plxpr(circuit)()
+    tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+    assert tape.operations == [qml.change_op_basis(qml.X(0), qml.Y(0))]
+
+
 class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 

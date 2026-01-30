@@ -19,7 +19,7 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qml
-from pennylane.capture.autograph import run_autograph
+from pennylane.capture import run_autograph
 
 
 @pytest.mark.jax
@@ -150,6 +150,7 @@ class TestQFT:
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
         import jax
@@ -208,8 +209,6 @@ class TestDynamicDecomposition:
     ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that QFT gives correct result after dynamic decomposition."""
 
-        from functools import partial
-
         import jax
 
         from pennylane.transforms.decompose import DecomposeInterpreter
@@ -227,7 +226,7 @@ class TestDynamicDecomposition:
 
         with qml.capture.pause():
 
-            @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
+            @qml.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
             @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
             def circuit_comparison():
                 qml.QFT(wires=wires)

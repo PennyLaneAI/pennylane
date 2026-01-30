@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import functools
 from collections import defaultdict
+from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
 
@@ -134,6 +135,8 @@ class CompressedResourceOp:
         if self.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
             base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
             return f"C({base_rep.name})"
+        if self.op_type is qml.ops.MidMeasure:
+            return "MidMeasureMP"
         return self.op_type.__name__
 
     def __hash__(self) -> int:
@@ -169,7 +172,7 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if not isinstance(op_type.resource_keys, (set, frozenset)):
+    if not isinstance(op_type.resource_keys, Set):
         raise TypeError(
             f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
         )
@@ -481,6 +484,9 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
         return "borrowed"
 
     if work_wires and work_wire_type == "borrowed":
+        return "borrowed"
+
+    if not work_wires and not base_work_wires:
         return "borrowed"
 
     return "zeroed"

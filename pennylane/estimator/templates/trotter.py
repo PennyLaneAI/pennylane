@@ -19,13 +19,14 @@ import numpy as np
 
 from pennylane.estimator.compact_hamiltonian import (
     CDFHamiltonian,
+    PauliHamiltonian,
     THCHamiltonian,
     VibrationalHamiltonian,
     VibronicHamiltonian,
 )
 from pennylane.estimator.ops.op_math.symbolic import Controlled, Prod
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X
-from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
+from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ, PauliRot
 from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RZ
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
@@ -35,6 +36,7 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
 from .subroutines import (
@@ -89,7 +91,7 @@ class TrotterProduct(ResourceOperator):
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
         number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
         This reduces the counts for those terms to:
@@ -300,6 +302,12 @@ class TrotterCDF(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: if ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires required by the operator
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -307,7 +315,7 @@ class TrotterCDF(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -363,8 +371,19 @@ class TrotterCDF(ResourceOperator):
         if not isinstance(cdf_ham, CDFHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterCDF."
-                f"This method works with cdf Hamiltonian, {type(cdf_ham)} provided"
+                f"This method works with CDFHamiltonian, {type(cdf_ham)} provided"
             )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         self.num_steps = num_steps
         self.order = order
         self.cdf_ham = cdf_ham
@@ -409,6 +428,22 @@ class TrotterCDF(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(cdf_ham, CDFHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterCDF."
+                f"This method works with CDFHamiltonian, {type(cdf_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "cdf_ham": cdf_ham,
             "num_steps": num_steps,
@@ -437,7 +472,7 @@ class TrotterCDF(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -619,6 +654,12 @@ class TrotterTHC(ResourceOperator):
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: if ``thc_ham`` is not an instance of :class:`~.THCHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of expected wires for the operation
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -626,7 +667,7 @@ class TrotterTHC(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last
         terms get grouped. This reduces the counts for those terms to:
@@ -682,8 +723,19 @@ class TrotterTHC(ResourceOperator):
         if not isinstance(thc_ham, THCHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterTHC."
-                f"This method works with thc Hamiltonian, {type(thc_ham)} provided"
+                f"This method works with THCHamiltonian, {type(thc_ham)} provided"
             )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         self.num_steps = num_steps
         self.order = order
         self.thc_ham = thc_ham
@@ -728,6 +780,22 @@ class TrotterTHC(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(thc_ham, THCHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterTHC."
+                f"This method works with THCHamiltonian, {type(thc_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "thc_ham": thc_ham,
             "num_steps": num_steps,
@@ -756,7 +824,7 @@ class TrotterTHC(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last
             terms get grouped. This reduces the counts for those terms to:
@@ -943,6 +1011,12 @@ class TrotterVibrational(ResourceOperator):
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts
 
+    Raises:
+        TypeError: if ``vibration_ham`` is not an instance of :class:`~.VibrationalHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires expected for the operation
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -950,7 +1024,7 @@ class TrotterVibrational(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1016,7 +1090,17 @@ class TrotterVibrational(ResourceOperator):
         if not isinstance(vibration_ham, VibrationalHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibrational."
-                f"This method works with vibrational Hamiltonian, {type(vibration_ham)} provided"
+                f"This method works with VibrationalHamiltonian, {type(vibration_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
         self.num_steps = num_steps
@@ -1076,6 +1160,23 @@ class TrotterVibrational(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+
+        if not isinstance(vibration_ham, VibrationalHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterVibrational."
+                f"This method works with VibrationalHamiltonian, {type(vibration_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "vibration_ham": vibration_ham,
             "num_steps": num_steps,
@@ -1168,7 +1269,7 @@ class TrotterVibrational(ResourceOperator):
         # Shifted QFT for kinetic part
 
         t = T.resource_rep()
-        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
+        gate_lst.append(GateCount(t, num_rep * num_modes * (ceil_log2(num_modes) - 1)))
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
@@ -1206,7 +1307,7 @@ class TrotterVibrational(ResourceOperator):
                 )
 
         # Shifted QFT Adjoint
-        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
+        gate_lst.append(GateCount(t, num_rep * num_modes * (ceil_log2(num_modes) - 1)))
 
         return gate_lst
 
@@ -1237,7 +1338,7 @@ class TrotterVibrational(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1338,6 +1439,12 @@ class TrotterVibronic(ResourceOperator):
         coeff_precision (float | None): precision for the loading of coefficients
         wires (list[int] | None): the wires on which the operator acts.
 
+    Raises:
+        TypeError: if ``vibronic_ham`` is not an instance of :class:`~.VibronicHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the number of wires expected by the operator
+
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
@@ -1345,7 +1452,7 @@ class TrotterVibronic(ResourceOperator):
 
         .. math::
 
-            C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+            C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         This reduces the counts for those terms to:
@@ -1411,7 +1518,17 @@ class TrotterVibronic(ResourceOperator):
         if not isinstance(vibronic_ham, VibronicHamiltonian):
             raise TypeError(
                 f"Unsupported Hamiltonian representation for TrotterVibronic."
-                f"This method works with vibronic Hamiltonian, {type(vibronic_ham)} provided"
+                f"This method works with VibronicHamiltonian, {type(vibronic_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
             )
 
         self.num_steps = num_steps
@@ -1421,8 +1538,7 @@ class TrotterVibronic(ResourceOperator):
         self.coeff_precision = coeff_precision
 
         self.num_wires = (
-            int(np.ceil(np.log2(vibronic_ham.num_states)))
-            + vibronic_ham.num_modes * vibronic_ham.grid_size
+            ceil_log2(vibronic_ham.num_states) + vibronic_ham.num_modes * vibronic_ham.grid_size
         )
 
         if wires is not None and len(Wires(wires)) != self.num_wires:
@@ -1473,6 +1589,22 @@ class TrotterVibronic(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        if not isinstance(vibronic_ham, VibronicHamiltonian):
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for TrotterVibronic."
+                f"This method works with VibronicHamiltonian, {type(vibronic_ham)} provided"
+            )
+
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
         params = {
             "vibronic_ham": vibronic_ham,
             "num_steps": num_steps,
@@ -1481,8 +1613,7 @@ class TrotterVibronic(ResourceOperator):
             "coeff_precision": coeff_precision,
         }
         num_wires = (
-            int(np.ceil(np.log2(vibronic_ham.num_states)))
-            + vibronic_ham.num_modes * vibronic_ham.grid_size
+            ceil_log2(vibronic_ham.num_states) + vibronic_ham.num_modes * vibronic_ham.grid_size
         )
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -1583,7 +1714,7 @@ class TrotterVibronic(ResourceOperator):
         gate_lst = []
         # Shifted QFT for kinetic part
         t = T.resource_rep()
-        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
+        gate_lst.append(GateCount(t, num_rep * num_modes * (ceil_log2(num_modes) - 1)))
 
         kinetic_deg = 2
         cached_tree = {index: [] for index in range(1, kinetic_deg + 1)}
@@ -1633,7 +1764,7 @@ class TrotterVibronic(ResourceOperator):
                 )
 
         # Shifted QFT Adjoint
-        gate_lst.append(GateCount(t, num_rep * (num_modes * int(np.ceil(np.log2(num_modes) - 1)))))
+        gate_lst.append(GateCount(t, num_rep * num_modes * (ceil_log2(num_modes) - 1)))
 
         return gate_lst
 
@@ -1664,7 +1795,7 @@ class TrotterVibronic(ResourceOperator):
 
             .. math::
 
-                C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}.
 
             Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
             This reduces the counts for those terms to:
@@ -1711,7 +1842,7 @@ class TrotterVibronic(ResourceOperator):
         gate_list.append(GateCount(x, num_modes * grid_size))
 
         # electronic state
-        gate_list.append(GateCount(resource_rep(Hadamard), int(np.ceil(np.log2(num_states)))))
+        gate_list.append(GateCount(resource_rep(Hadamard), ceil_log2(num_states)))
 
         if order == 1:
             gate_list += TrotterVibronic._rep_circuit(vibronic_ham, coeff_precision, num_steps)
@@ -1721,7 +1852,7 @@ class TrotterVibronic(ResourceOperator):
             )
 
         # Adjoint for electronic state
-        gate_list.append(GateCount(resource_rep(Hadamard), int(np.ceil(np.log2(num_states)))))
+        gate_list.append(GateCount(resource_rep(Hadamard), ceil_log2(num_states)))
 
         # Adjoint of Basis state prep, implemented only for the first step
         gate_list.append(GateCount(x, num_modes * grid_size))
@@ -1733,3 +1864,304 @@ class TrotterVibronic(ResourceOperator):
         gate_list.append(Deallocate(phase_grad_wires * (taylor_degree - 1)))
 
         return gate_list
+
+
+class TrotterPauli(ResourceOperator):
+    r"""A resource operation representing the Suzuki-Trotter product approximation for the complex matrix
+    exponential of a Hamiltonian represented as a linear combination of tensor products of Pauli operators.
+
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute.
+    For instance, in the Hamiltonian :math:`H = \Sigma^{N}_{j=0} \alpha_{j} \cdot O_{j}`, the product formula is
+    constructed using symmetrized products of the terms in the Hamiltonian. The symmetrized products
+    of order :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
+
+    .. math::
+
+        \begin{align}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t \alpha_{j} O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} \alpha_{j} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} \alpha_{j} O_{j}} \\
+            &\vdots \\
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
+        \end{align}
+
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m^{\text{th}}`
+    order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+    .. math::
+
+        e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
+
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
+
+    Args:
+        pauli_ham (:class:`~.pennylane.estimator.compact_hamiltonian.PauliHamiltonian`):
+            the Hamiltonian to be approximately exponentiated
+        num_steps (int): number of Trotter steps to perform
+        order (int): order of the approximation, must be ``1`` or an even number
+        wires (WiresLike | None): the wires on which the operator acts
+
+    Raises:
+        TypeError: if ``pauli_ham`` is not an instance of :class:`~.PauliHamiltonian`
+        ValueError: if ``num_steps`` is not a positive integer
+        ValueError: if ``order`` is not 1 or a positive even integer
+        ValueError: if the number of wires provided does not match the wires expected by the operator
+
+    Resources:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) as:
+
+        .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
+
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
+        This reduces the counts for those terms to:
+
+        .. math::
+
+            \begin{align}
+                C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+            \end{align}
+
+    .. seealso:: :class:`~.estimator.compact_hamiltonian.PauliHamiltonian`, :class:`~.TrotterProduct`
+
+    **Example**
+
+    The resources for this operation are computed using the code below.
+
+    >>> pauli_terms = {"X":10, "XX":5, "XXXX":3, "YY": 5, "ZZ":5, "Z": 2}
+    >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=pauli_terms)
+    >>> num_steps, order = (1, 2)
+    >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
+    >>> print(res)
+    --- Resources: ---
+     Total wires: 10
+       algorithmic wires: 10
+       allocated wires: 0
+         zero state: 0
+         any state: 0
+     Total gates : 2.844E+3
+       'T': 2.640E+3,
+       'CNOT': 96,
+       'Z': 20,
+       'S': 40,
+       'Hadamard': 48
+
+    .. details::
+        :title: Usage Details
+
+        This example computes the resources for a Hamiltonian partitioned into commuting groups of
+        Pauli terms. See :class:`~.estimator.compact_hamiltonian.PauliHamiltonian` for more
+        information. Note that placing the largest commuting groups at the
+        boundaries, either the beginning or the end of the list, optimizes resource reduction. This
+        efficiency is achieved by merging the final operation of the Trotter step ``i`` with the initial
+        operation of step ``i+1`` which effectively minimizes gate overhead.
+
+        >>> commuting_groups = (
+        ...     {"X":10, "XX":5, "XXXX":3},
+        ...     {"YY": 5, "ZZ":5},
+        ...     {"Z": 2},
+        ... )
+        >>> pauli_ham = qre.PauliHamiltonian(num_qubits=10, pauli_terms=commuting_groups)
+        >>> num_steps, order = (1, 2)
+        >>> res = qre.estimate(qre.TrotterPauli(pauli_ham, num_steps, order))
+        >>> print(res)
+        --- Resources: ---
+         Total wires: 10
+           algorithmic wires: 10
+           allocated wires: 0
+             zero state: 0
+             any state: 0
+         Total gates : 2.756E+3
+           'T': 2.552E+3,
+           'CNOT': 96,
+           'Z': 20,
+           'S': 40,
+           'Hadamard': 48
+
+    """
+
+    resource_keys = {"pauli_ham", "num_steps", "order"}
+
+    def __init__(
+        self,
+        pauli_ham: PauliHamiltonian,
+        num_steps: int,
+        order: int,
+        wires: WiresLike | None = None,
+    ):
+
+        if not isinstance(pauli_ham, PauliHamiltonian):
+            raise TypeError(
+                "Unsupported Hamiltonian representation for TrotterPauli."
+                f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
+            )
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
+        self.num_steps = num_steps
+        self.order = order
+        self.pauli_ham = pauli_ham
+
+        self.num_wires = pauli_ham.num_qubits
+
+        if wires is not None and len(Wires(wires)) != self.num_wires:
+            raise ValueError(f"Expected {self.num_wires} wires, got {len(Wires(wires))}")
+
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
+                  The Hamiltonian to be approximately exponentiated
+                * num_steps (int): number of Trotter steps to perform
+                * order (int): order of the approximation, must be 1 or even.
+        """
+        return {
+            "pauli_ham": self.pauli_ham,
+            "num_steps": self.num_steps,
+            "order": self.order,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls,
+        pauli_ham: PauliHamiltonian,
+        num_steps: int,
+        order: int,
+    ) -> CompressedResourceOp:
+        """Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
+                The Hamiltonian to be approximately exponentiated
+            num_steps (int): number of Trotter steps to perform
+            order (int): order of the approximation, must be 1 or even.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+
+        if not isinstance(pauli_ham, PauliHamiltonian):
+            raise TypeError(
+                "Unsupported Hamiltonian representation for TrotterPauli."
+                f"This method works with PauliHamiltonian, {type(pauli_ham)} provided"
+            )
+        if (not isinstance(num_steps, int)) or num_steps < 1:
+            raise ValueError(
+                f"`num_steps` is expected to be a positive integer greater than one, got {num_steps}"
+            )
+
+        if not (isinstance(order, int) and order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"`order` is expected to be a positive integer and either one or a multiple of two; got {order}"
+            )
+
+        params = {
+            "pauli_ham": pauli_ham,
+            "num_steps": num_steps,
+            "order": order,
+        }
+        num_wires = pauli_ham.num_qubits
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(
+        cls,
+        pauli_ham: PauliHamiltonian,
+        num_steps: int,
+        order: int,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object represents a
+        quantum gate and the number of times it occurs in the decomposition.
+
+        Args:
+            pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):
+                The Hamiltonian to be approximately exponentiated
+            num_steps (int): number of Trotter steps to perform
+            order (int): order of the approximation, must be 1 or even.
+
+        Resources:
+            The resources are defined according to the recursive formula presented above.
+            The number of times an operator :math:`e^{itO_{j}}` is applied depends on the
+            number of Trotter steps (`n`) and the order of the approximation (`m`) as:
+
+            .. math:: C_{O_j} = 2 \cdot n \cdot 5^{\frac{m}{2} - 1}
+
+            Furthermore, because of the symmetric form of the recursive formula, the first and last terms are grouped.
+            This reduces the counts for those terms to:
+
+            .. math::
+
+                \begin{align}
+                    C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                    C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
+                \end{align}
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        k = order // 2
+        pauli_terms = pauli_ham.pauli_terms
+
+        if isinstance(pauli_terms, dict):
+            cost_fragments = cls._cost_pauli_group(pauli_terms)
+            fragment_repetition = num_steps if order == 1 else 2 * num_steps * (5 ** (k - 1))
+            return [fragment_repetition * gate_count for gate_count in cost_fragments]
+
+        num_groups = len(pauli_terms)  # commuting groups
+        cost_groups = [cls._cost_pauli_group(group) for group in pauli_terms]
+        gate_count_lst = []
+        if order == 1:
+            for group_cost_lst in cost_groups:
+                gate_count_lst.extend([num_steps * gate_count for gate_count in group_cost_lst])
+
+            return gate_count_lst
+
+        for index, group_cost_lst in enumerate(cost_groups):
+            if index == 0:
+                fragment_repetition = num_steps * (5 ** (k - 1)) + 1
+            elif index == num_groups - 1:
+                fragment_repetition = num_steps * (5 ** (k - 1))
+            else:
+                fragment_repetition = 2 * num_steps * (5 ** (k - 1))
+
+            gate_count_lst.extend(
+                [fragment_repetition * gate_count for gate_count in group_cost_lst]
+            )
+
+        return gate_count_lst
+
+    @staticmethod
+    def _cost_pauli_group(pauli_terms: dict):
+        """Given a dictionary of Pauli words and frequencies, return the cost of exponentiating
+        the group of terms.
+
+        Args:
+            pauli_terms (dict): A dictionary which represents the types of Pauli words in the
+                Hamiltonian and their relative frequencies.
+
+        Returns:
+            Iterable[~.pennylane.estimator.resource_operator.GateCount]: The cost of exponentiating
+                a commuting group of Pauli words.
+
+        """
+        return [
+            GateCount(PauliRot.resource_rep(pauli_word), count)
+            for pauli_word, count in pauli_terms.items()
+        ]

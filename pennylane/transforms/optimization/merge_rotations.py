@@ -17,6 +17,7 @@
 from functools import lru_cache, partial
 
 import pennylane as qml
+from pennylane.decomposition import gate_sets
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
@@ -236,6 +237,7 @@ def _get_plxpr_merge_rotations():
     # pylint: disable=redefined-outer-name
     def merge_rotations_plxpr_to_plxpr(jaxpr, consts, _, tkwargs, *args):
         """Function for applying the ``merge_rotations`` transform on plxpr."""
+        tkwargs = dict(tkwargs)
 
         merge_rotations = MergeRotationsInterpreter(**tkwargs)
 
@@ -250,7 +252,7 @@ def _get_plxpr_merge_rotations():
 MergeRotationsInterpreter, merge_rotations_plxpr_to_plxpr = _get_plxpr_merge_rotations()
 
 
-@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr)
+@partial(transform, plxpr_transform=merge_rotations_plxpr_to_plxpr, pass_name="merge-rotations")
 def merge_rotations(
     tape: QuantumScript, atol=1e-8, include_gates=None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -367,6 +369,7 @@ def merge_rotations(
 
     [expanded_tape], _ = qml.devices.preprocess.decompose(
         tape,
+        target_gates=gate_sets.ALL_OPS,
         stopping_condition=stop_at,
         name="merge_rotations",
         error=qml.operation.DecompositionUndefinedError,
@@ -385,7 +388,7 @@ def merge_rotations(
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
-        if not current_gate in composable_rotations:
+        if current_gate not in composable_rotations:
             new_operations.append(current_gate)
             list_copy.pop(0)
             continue
@@ -456,7 +459,7 @@ def merge_rotations(
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
+        """A postprocessing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
         return results[0]

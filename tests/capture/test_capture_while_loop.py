@@ -298,7 +298,7 @@ class TestCaptureCircuitsWhileLoop:
             "fn",
             "scalar_out",
         }
-        assert grad_eqn.params["argnums"] == [0]
+        assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 

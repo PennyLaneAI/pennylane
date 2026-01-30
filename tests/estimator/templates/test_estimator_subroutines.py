@@ -23,7 +23,7 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,too-many-arguments
 
@@ -55,6 +55,238 @@ class TestResourceOutOfPlaceSquare:
         assert qre.OutOfPlaceSquare.resource_decomp(register_size=register_size) == expected
 
 
+class TestIQP:
+    """Test the IQP class."""
+
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym"),
+        [
+            (4, [[[0]], [[1]], [[2]], [[3]]], False),
+            (
+                6,
+                [[[0]], [[4]], [[3]], [[2]], [[1]], [[5]]],
+                True,
+            ),
+        ],
+    )
+    def test_resource_params(self, num_wires, pattern, spin_sym):
+        """Test that the resource params are correct."""
+        op = qre.IQP(num_wires, pattern, spin_sym)
+        assert op.resource_params == {
+            "spin_sym": spin_sym,
+            "pattern": pattern,
+            "num_wires": num_wires,
+        }
+
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym"),
+        [
+            (4, [[[0]], [[1]], [[2]], [[3]]], False),
+            (
+                6,
+                [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
+                True,
+            ),
+        ],
+    )
+    def test_resource_rep(self, num_wires, pattern, spin_sym):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.IQP,
+            num_wires,
+            {
+                "num_wires": num_wires,
+                "pattern": pattern,
+                "spin_sym": spin_sym,
+            },
+        )
+        assert (
+            qre.IQP.resource_rep(num_wires=num_wires, pattern=pattern, spin_sym=spin_sym)
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym", "expected_res"),
+        [
+            (
+                4,
+                [[[0]], [[1]], [[2]], [[3]]],
+                False,
+                [
+                    GateCount(resource_rep(qre.Hadamard), 8),
+                    GateCount(resource_rep(qre.MultiRZ, {"num_wires": 1}), 4),
+                ],
+            ),
+            (
+                6,
+                [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
+                True,
+                [
+                    GateCount(resource_rep(qre.Hadamard), 12),
+                    GateCount(resource_rep(qre.PauliRot, {"pauli_string": "YXXXXX"}), 1),
+                    GateCount(resource_rep(qre.MultiRZ, {"num_wires": 1}), 6),
+                ],
+            ),
+        ],
+    )
+    def test_resources(self, num_wires, pattern, spin_sym, expected_res):
+        """Test that the resources are correct."""
+        assert qre.IQP.resource_decomp(num_wires, pattern, spin_sym) == expected_res
+
+    @pytest.mark.parametrize(
+        ("num_wires", "pattern", "spin_sym", "expected"),
+        [
+            (4, [[[0]], [[1]], [[2]], [[3]]], False, "IQP(4, [[[0]], [[1]], [[2]], [[3]]], False)"),
+            (
+                6,
+                [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]],
+                True,
+                "IQP(6, [[[0]], [[1]], [[2]], [[3]], [[4]], [[5]]], True)",
+            ),
+        ],
+    )
+    def test_tracking_name(self, num_wires, pattern, spin_sym, expected):
+        """Test that the tracking name is correct."""
+        assert qre.IQP.tracking_name(num_wires, pattern, spin_sym) == expected
+
+
+class TestBBQRAM:
+    """Test the BBQRAM class."""
+
+    def test_raises_with_wrong_wire_num(self):
+        with pytest.raises(ValueError, match="Expected 4 wires, got 3."):
+            qre.BBQRAM(
+                4,
+                3,
+                4,
+                6,
+                control_wires=(1,),
+                target_wires=(2,),
+                work_wires=(3,),
+            )
+
+    @pytest.mark.parametrize(
+        (
+            "num_wires",
+            "num_bitstrings",
+            "size_bitstring",
+            "num_bit_flips",
+            "control_wires",
+            "target_wires",
+            "work_wires",
+        ),
+        [
+            (
+                15,
+                4,
+                3,
+                6,
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            ),
+            (
+                15,
+                4,
+                3,
+                None,
+                (0, 1),
+                (2, 3, 4),
+                (5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+            ),
+        ],
+    )
+    def test_resource_params(
+        self,
+        num_wires,
+        num_bitstrings,
+        size_bitstring,
+        num_bit_flips,
+        control_wires,
+        target_wires,
+        work_wires,
+    ):
+        """Test that the resource params are correct."""
+        op = qre.BBQRAM(
+            num_bitstrings,
+            size_bitstring,
+            num_wires,
+            num_bit_flips,
+            control_wires,
+            target_wires,
+            work_wires,
+        )
+        assert op.resource_params == {
+            "num_bitstrings": num_bitstrings,
+            "size_bitstring": size_bitstring,
+            "num_bit_flips": (
+                num_bit_flips if num_bit_flips is not None else num_bitstrings * size_bitstring // 2
+            ),
+            "num_wires": num_wires,
+        }
+
+    @pytest.mark.parametrize(
+        ("num_wires", "num_bitstrings", "size_bitstring", "num_bit_flips"), [(15, 4, 3, 6)]
+    )
+    def test_resource_rep(self, num_wires, num_bitstrings, size_bitstring, num_bit_flips):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.BBQRAM,
+            num_wires,
+            {
+                "num_bitstrings": num_bitstrings,
+                "size_bitstring": size_bitstring,
+                "num_bit_flips": num_bit_flips,
+                "num_wires": num_wires,
+            },
+        )
+        assert (
+            qre.BBQRAM.resource_rep(
+                num_bitstrings=num_bitstrings,
+                size_bitstring=size_bitstring,
+                num_bit_flips=num_bit_flips,
+                num_wires=num_wires,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res",
+        (
+            (
+                4,
+                3,
+                6,
+                15,
+                [
+                    GateCount(resource_rep(qre.SWAP), 16),
+                    GateCount(resource_rep(qre.Hadamard), 6),
+                    GateCount(resource_rep(qre.CSWAP), 40),
+                    GateCount(resource_rep(qre.Z), 6),
+                ],
+            ),
+        ),
+    )
+    def test_resources(
+        self, num_bitstrings, size_bitstring, num_bit_flips, num_wires, expected_res
+    ):
+        """Test that the resources are correct."""
+        assert (
+            qre.BBQRAM.resource_decomp(num_bitstrings, size_bitstring, num_bit_flips, num_wires)
+            == expected_res
+        )
+
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "size_bitstring", "num_bit_flips", "num_wires"), [(4, 3, 6, 15)]
+    )
+    def test_tracking_name(self, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
+        """Tests that the tracking name is correct."""
+        assert (
+            qre.BBQRAM.tracking_name(num_bitstrings, size_bitstring, num_bit_flips, num_wires)
+            == f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_bit_flips}, {num_wires})"
+        )
+
+
 class TestResourcePhaseGradient:
     """Test the PhaseGradient class."""
 
@@ -65,7 +297,7 @@ class TestResourcePhaseGradient:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.PhaseGradient()
 
     @pytest.mark.parametrize("num_wires", (1, 2, 3, 4, 5))
@@ -228,6 +460,24 @@ class TestResourceSemiAdder:
         (
             (
                 1,
+                1,
+                1,
+                [
+                    GateCount(resource_rep(qre.X), 2),
+                    GateCount(
+                        resource_rep(
+                            qre.Controlled,
+                            {
+                                "base_cmpr_op": resource_rep(qre.CNOT),
+                                "num_ctrl_wires": 1,
+                                "num_zero_ctrl": 0,
+                            },
+                        )
+                    ),
+                ],
+            ),
+            (
+                1,
                 0,
                 5,
                 [
@@ -296,17 +546,6 @@ class TestResourceSemiAdder:
             num_zero_ctrl=num_zero_ctrl,
         )
         assert op.resource_decomp(**op.resource_params) == expected_res
-
-    @pytest.mark.parametrize("max_register_size", (-1, 0, 2))
-    def test_resources_controlled_error(self, max_register_size):
-        """Test that the controlled_resource_decomp raises correct errors."""
-
-        with pytest.raises(ResourcesUndefinedError):
-            qre.SemiAdder.controlled_resource_decomp(
-                num_ctrl_wires=1,
-                num_zero_ctrl=0,
-                target_resource_params={"max_register_size": max_register_size},
-            )
 
 
 class TestResourceControlledSequence:
@@ -875,7 +1114,7 @@ class TestResourceQFT:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.QFT()
 
     def test_tracking_name(self):
@@ -971,6 +1210,24 @@ class TestResourceQFT:
         """Test that the resources are correct for phase gradient method."""
         assert qre.QFT.phase_grad_resource_decomp(num_wires) == expected_res
 
+    def test_phase_grad_resource_decomp_estimate(self):
+        """Test the resource estimation with QFT.phase_grad_resource_decomp."""
+        config = qre.ResourceConfig()
+        config.set_decomp(qre.QFT, qre.QFT.phase_grad_resource_decomp)
+
+        op = qre.QFT(3)
+        resources = qre.estimate(op, config=config)
+
+        expected_gates = {
+            "Toffoli": 5,
+            "CNOT": 6,
+            "Hadamard": 6,
+        }
+        assert resources.gate_counts == expected_gates
+        assert resources.algo_wires == 3
+        assert resources.any_state_wires == 0
+        assert resources.zeroed_wires == 1
+
 
 class TestResourceAQFT:
     """Test the ResourceAQFT class."""
@@ -988,7 +1245,7 @@ class TestResourceAQFT:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and num_wires are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.AQFT(order=2)
 
     def test_tracking_name(self):
@@ -1135,7 +1392,7 @@ class TestResourceBasisRotation:
 
     def test_init_raises_error(self):
         """Test that an error is raised when wires and dim are both not provided"""
-        with pytest.raises(ValueError, match="Must provide atleast one of"):
+        with pytest.raises(ValueError, match="Must provide at least one of"):
             qre.BasisRotation()
 
     @pytest.mark.parametrize("dim", (1, 2, 3))
@@ -1329,7 +1586,7 @@ class TestResourceQROM:
     )
     def test_resource_rep(self, num_data_points, size_data_points, num_bit_flips, depth, restored):
         """Test that the compressed representation is correct."""
-        expected_num_wires = size_data_points + math.ceil(math.log2(num_data_points))
+        expected_num_wires = size_data_points + qml.math.ceil_log2(num_data_points)
         expected = qre.CompressedResourceOp(
             qre.QROM,
             expected_num_wires,
@@ -1397,6 +1654,8 @@ class TestResourceQROM:
                     ),
                     qre.Deallocate(5),
                     GateCount(qre.CSWAP.resource_rep(), 5),
+                    GateCount(qre.X.resource_rep(), 5),
+                    qre.Deallocate(5),
                 ],
             ),
             (
@@ -1407,31 +1666,30 @@ class TestResourceQROM:
                 True,
                 [
                     qre.Allocate(3),
-                    GateCount(qre.Hadamard.resource_rep(), 4),
-                    GateCount(qre.X.resource_rep(), 42),
-                    GateCount(qre.CNOT.resource_rep(), 30),
-                    GateCount(qre.TemporaryAND.resource_rep(), 20),
+                    GateCount(qre.X.resource_rep(), 21),
+                    GateCount(qre.CNOT.resource_rep(), 15),
+                    GateCount(qre.TemporaryAND.resource_rep(), 10),
                     GateCount(
                         qre.Adjoint.resource_rep(
                             qre.TemporaryAND.resource_rep(),
                         ),
-                        20,
+                        10,
                     ),
                     qre.Deallocate(3),
-                    GateCount(qre.CSWAP.resource_rep(), 0),
-                    qre.Deallocate(0),
                 ],
             ),
             (
                 12,
                 2,
                 5,
-                128,  # This will get turncated to 16 as the max depth
+                128,  # This will get truncated to 16 as the max depth
                 False,
                 [
                     qre.Allocate(30),
                     GateCount(qre.X.resource_rep(), 5),
                     GateCount(qre.CSWAP.resource_rep(), 30),
+                    GateCount(qre.X.resource_rep(), 30),
+                    qre.Deallocate(30),
                 ],
             ),
             (
@@ -1521,28 +1779,16 @@ class TestResourceQROM:
                 True,
                 [
                     qre.Allocate(4),
-                    GateCount(qre.Hadamard.resource_rep(), 6),
-                    GateCount(qre.X.resource_rep(), 36),
-                    GateCount(qre.CNOT.resource_rep(), 48),
-                    GateCount(qre.TemporaryAND.resource_rep(), 18),
+                    GateCount(qre.X.resource_rep(), 18),
+                    GateCount(qre.CNOT.resource_rep(), 24),
+                    GateCount(qre.TemporaryAND.resource_rep(), 9),
                     GateCount(
                         qre.Adjoint.resource_rep(
                             qre.TemporaryAND.resource_rep(),
                         ),
-                        18,
+                        9,
                     ),
                     qre.Deallocate(4),
-                    qre.Allocate(1),
-                    GateCount(qre.TemporaryAND.resource_rep(), 0),
-                    GateCount(qre.CSWAP.resource_rep(), 0),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        0,
-                    ),
-                    qre.Deallocate(1),
-                    qre.Deallocate(0),
                 ],
             ),
             (
@@ -1635,28 +1881,16 @@ class TestResourceQROM:
                     qre.Allocate(1),
                     GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
                     qre.Allocate(4),
-                    GateCount(qre.Hadamard.resource_rep(), 6),
-                    GateCount(qre.X.resource_rep(), 36),
-                    GateCount(qre.CNOT.resource_rep(), 48),
-                    GateCount(qre.TemporaryAND.resource_rep(), 18),
+                    GateCount(qre.X.resource_rep(), 18),
+                    GateCount(qre.CNOT.resource_rep(), 24),
+                    GateCount(qre.TemporaryAND.resource_rep(), 9),
                     GateCount(
                         qre.Adjoint.resource_rep(
                             qre.TemporaryAND.resource_rep(),
                         ),
-                        18,
+                        9,
                     ),
                     qre.Deallocate(4),
-                    qre.Allocate(1),
-                    GateCount(qre.TemporaryAND.resource_rep(), 0),
-                    GateCount(qre.CSWAP.resource_rep(), 0),
-                    GateCount(
-                        qre.Adjoint.resource_rep(
-                            qre.TemporaryAND.resource_rep(),
-                        ),
-                        0,
-                    ),
-                    qre.Deallocate(1),
-                    qre.Deallocate(0),
                     GateCount(qre.MultiControlledX.resource_rep(2, 0), 1),
                     qre.Deallocate(1),
                 ],
@@ -1689,6 +1923,177 @@ class TestResourceQROM:
             )
             == expected_res
         )
+
+    @pytest.mark.parametrize(
+        "num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res",
+        (
+            (
+                10,
+                3,
+                15,
+                None,
+                True,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 3),
+                    qre.Allocate(4),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CSWAP.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CZ.resource_rep(), 2),
+                    GateCount(qre.CNOT.resource_rep(), 2),
+                    GateCount(qre.X.resource_rep(), 14),
+                    GateCount(qre.CNOT.resource_rep(), 16),
+                    GateCount(qre.TemporaryAND.resource_rep(), 6),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        6,
+                    ),
+                    qre.Deallocate(4),
+                ],
+            ),
+            (
+                100,
+                5,
+                50,
+                2,
+                False,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 5),
+                    qre.Allocate(7),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 4),
+                    GateCount(qre.CSWAP.resource_rep(), 1),
+                    GateCount(qre.Hadamard.resource_rep(), 1),
+                    GateCount(qre.CZ.resource_rep(), 1),
+                    GateCount(qre.CNOT.resource_rep(), 1),
+                    GateCount(qre.X.resource_rep(), 97),
+                    GateCount(qre.CNOT.resource_rep(), 98),
+                    GateCount(qre.TemporaryAND.resource_rep(), 48),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        48,
+                    ),
+                    qre.Deallocate(7),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                1,
+                True,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    qre.Allocate(4),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CSWAP.resource_rep(), 0),
+                    GateCount(qre.Hadamard.resource_rep(), 0),
+                    GateCount(qre.CZ.resource_rep(), 0),
+                    GateCount(qre.CNOT.resource_rep(), 0),
+                    GateCount(qre.X.resource_rep(), 21),
+                    GateCount(qre.CNOT.resource_rep(), 16),
+                    GateCount(qre.TemporaryAND.resource_rep(), 10),
+                    GateCount(
+                        qre.Adjoint.resource_rep(
+                            qre.TemporaryAND.resource_rep(),
+                        ),
+                        10,
+                    ),
+                    qre.Deallocate(4),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                128,  # This will get truncated to 16 as the max depth
+                False,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    qre.Allocate(16),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 32),
+                    GateCount(qre.CSWAP.resource_rep(), 15),
+                    GateCount(qre.Hadamard.resource_rep(), 15),
+                    GateCount(qre.CZ.resource_rep(), 15),
+                    GateCount(qre.CNOT.resource_rep(), 15),
+                    GateCount(qre.X.resource_rep(), 8),
+                    qre.Deallocate(16),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                16,
+                True,
+                [
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    qre.Allocate(16),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(qre.CSWAP.resource_rep(), 30),
+                    GateCount(qre.Hadamard.resource_rep(), 30),
+                    GateCount(qre.CZ.resource_rep(), 30),
+                    GateCount(qre.CNOT.resource_rep(), 30),
+                    GateCount(qre.X.resource_rep(), 16),
+                    qre.Deallocate(16),
+                ],
+            ),
+        ),
+    )
+    def test_adjoint_resources(
+        self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
+    ):
+        """Test that the resources are correct."""
+
+        assert (
+            qre.QROM.adjoint_resource_decomp(
+                {
+                    "num_bitstrings": num_data_points,
+                    "size_bitstring": size_data_points,
+                    "num_bit_flips": num_bit_flips,
+                    "restored": restored,
+                    "select_swap_depth": depth,
+                }
+            )
+            == expected_res
+        )
+
+    @pytest.mark.parametrize(
+        "num_data_points, output_size, restored, depth",
+        (
+            (100, 10, False, 2),
+            (100, 2, False, 4),
+            (12, 1, False, 1),
+            (12, 3, True, 1),
+            (160, 8, True, 2),
+        ),
+    )
+    def test_toffoli_counts(self, num_data_points, output_size, restored, depth):
+        """Test that the Toffoli counts are correct compared to arXiv:1092.02134."""
+
+        qrom = qre.Adjoint(
+            qre.QROM(
+                num_bitstrings=num_data_points,
+                size_bitstring=output_size,
+                restored=restored,
+                select_swap_depth=depth,
+            )
+        )
+        resources = qre.estimate(qrom)
+
+        toffoli_count = int(math.ceil(num_data_points / depth)) + depth - 3
+        if restored and depth > 1:
+            toffoli_count *= 2
+
+        assert resources.gate_counts["Toffoli"] == toffoli_count
 
 
 class TestResourceSelectPauliRot:
@@ -1897,3 +2302,760 @@ class TestResourceSelectPauliRot:
                 )
                 == expected_res
             )
+
+
+class TestResourceUnaryIterationQPE:
+    """Test the UnaryIterationQPE class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        walk_op = qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40))
+        with pytest.raises(ValueError, match="Expected 101 wires, got 3"):
+            qre.UnaryIterationQPE(walk_op=walk_op, num_iterations=8, wires=[0, 1, 2])
+
+    def test_tracking_name(self):
+        """Test that the name of the operator is tracked correctly."""
+        walk_op = qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40))
+        walk_op_name = walk_op.resource_rep_from_op().name
+        res_params = walk_op.resource_params
+
+        op = qre.UnaryIterationQPE(walk_op=walk_op, num_iterations=8, adj_qft_op=qre.QFT(3))
+        assert (
+            op.tracking_name(
+                resource_rep(qre.QubitizeTHC, res_params),
+                8,
+                resource_rep(qre.QFT, {"num_wires": 3}),
+            )
+            == f"UnaryIterationQPE({walk_op_name}, 8, adj_qft=QFT(3))"
+        )
+
+    @pytest.mark.parametrize(
+        "walk_op, adj_qft, input_wires, expected_wires",
+        (
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                qre.Adjoint(qre.QFT(4)),
+                None,
+                None,
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                qre.Adjoint(qre.QFT(4)),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                    wires=[1, 2, 3, 4],
+                ),
+                qre.Adjoint(qre.QFT(4, ["c1", "c2", "c3", "c4"])),
+                None,
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                    wires=[1, 2, 3, 4],
+                ),
+                qre.Adjoint(qre.QFT(4)),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                qre.Adjoint(qre.QFT(4, wires=["c1", "c2", "c3", "c4"])),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+            ),
+        ),
+    )
+    def test_wires_init(self, walk_op, adj_qft, input_wires, expected_wires):
+        """Test that we can correctly initialize the wires of the operator"""
+        op = qre.UnaryIterationQPE(
+            walk_op=walk_op,
+            num_iterations=11,
+            adj_qft_op=adj_qft,
+            wires=input_wires,
+        )
+        assert op.wires == expected_wires
+
+    @pytest.mark.parametrize(
+        "walk_op, n_iter, error_message",
+        (
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                0,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                3.5,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (
+                qre.QubitizeTHC(qre.THCHamiltonian(40, 10)),
+                -2,
+                "Expected 'num_iterations' to be an integer greater than zero,",
+            ),
+            (qre.RZ(), 4, "Expected the 'walk_op' to be a qubitization type operator "),
+        ),
+    )
+    def test_init_errors(self, walk_op, n_iter, error_message):
+        """Test that Value errors are raised when incompatible inputs are provided."""
+        with pytest.raises(ValueError, match=error_message):
+            _ = qre.UnaryIterationQPE(walk_op, n_iter)
+
+    @pytest.mark.parametrize(
+        "walk_operator, n_iter, adj_qft",
+        (
+            (qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)), 5, None),
+            (
+                qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=10, tensor_rank=15)),
+                3,
+                qre.QFT(2),
+            ),
+            (
+                qre.Qubitization(qre.UniformStatePrep(3), qre.Select([qre.X(), qre.Y(), qre.Z()])),
+                4,
+                qre.Adjoint(qre.AQFT(3, 2)),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                4,
+                qre.Adjoint(qre.AQFT(3, 2)),
+            ),
+        ),
+    )
+    def test_resource_params(self, walk_operator, n_iter, adj_qft):
+        """Test the resource_params method"""
+        walk_operator_cmpr = walk_operator.resource_rep_from_op()
+
+        if adj_qft is None:
+            op = qre.UnaryIterationQPE(walk_operator, n_iter)
+            adj_qft_cmpr = None
+        else:
+            op = qre.UnaryIterationQPE(walk_operator, n_iter, adj_qft)
+            adj_qft_cmpr = adj_qft.resource_rep_from_op()
+
+        assert op.resource_params == {
+            "cmpr_walk_op": walk_operator_cmpr,
+            "num_iterations": n_iter,
+            "adj_qft_cmpr_op": adj_qft_cmpr,
+        }
+
+    @pytest.mark.parametrize(
+        "walk_operator_cmpr, n_iter, adj_qft_cmpr",
+        (
+            (
+                qre.QubitizeTHC(
+                    thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+                ).resource_rep_from_op(),
+                5,
+                None,
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3), qre.Select([qre.X(), qre.Y(), qre.Z()])
+                ).resource_rep_from_op(),
+                3,
+                qre.QFT.resource_rep(2),
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ).resource_rep_from_op(),
+                4,
+                qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 2)),
+            ),
+        ),
+    )
+    def test_resource_rep(self, walk_operator_cmpr, n_iter, adj_qft_cmpr):
+        """Test the resource_rep method"""
+        num_estimation_wires = qml.math.ceil_log2(n_iter + 1)
+        expected_num_wires = walk_operator_cmpr.num_wires + num_estimation_wires
+
+        expected = qre.CompressedResourceOp(
+            qre.UnaryIterationQPE,
+            expected_num_wires,
+            {
+                "cmpr_walk_op": walk_operator_cmpr,
+                "num_iterations": n_iter,
+                "adj_qft_cmpr_op": adj_qft_cmpr,
+            },
+        )
+
+        assert (
+            qre.UnaryIterationQPE.resource_rep(walk_operator_cmpr, n_iter, adj_qft_cmpr) == expected
+        )
+
+    @pytest.mark.parametrize(
+        "walk_operator, n_iter, adj_qft_op, expected_res",
+        (
+            (
+                qre.QubitizeTHC(thc_ham=qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)),
+                5,
+                None,
+                [
+                    qre.Allocate(2),
+                    GateCount(qre.Hadamard.resource_rep(), 3),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 4),
+                    GateCount(qre.CNOT.resource_rep(), 4),
+                    GateCount(qre.X.resource_rep(), 10),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.Reflection.resource_rep(
+                                num_wires=qre.PrepTHC(
+                                    qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+                                ).num_wires,
+                                alpha=math.pi,
+                                cmpr_U=qre.PrepTHC(
+                                    qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+                                ).resource_rep_from_op(),
+                            ),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        6,
+                    ),
+                    GateCount(
+                        qre.SelectTHC(
+                            qre.THCHamiltonian(num_orbitals=20, tensor_rank=40)
+                        ).resource_rep_from_op(),
+                        5,
+                    ),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 4),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.QFT.resource_rep(3)),
+                    ),
+                    qre.Deallocate(2),
+                ],
+            ),
+            (
+                qre.Qubitization(qre.UniformStatePrep(3), qre.Select([qre.X(), qre.Y(), qre.Z()])),
+                3,
+                qre.QFT(2),
+                [
+                    qre.Allocate(1),
+                    GateCount(qre.Hadamard.resource_rep(), 2),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 2),
+                    GateCount(qre.CNOT.resource_rep(), 2),
+                    GateCount(qre.X.resource_rep(), 6),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.Reflection.resource_rep(
+                                num_wires=2,
+                                alpha=math.pi,
+                                cmpr_U=qre.UniformStatePrep(3).resource_rep_from_op(),
+                            ),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        4,
+                    ),
+                    GateCount(qre.Select([qre.X(), qre.Y(), qre.Z()]).resource_rep_from_op(), 3),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 2),
+                    GateCount(qre.QFT.resource_rep(2)),
+                    qre.Deallocate(1),
+                ],
+            ),
+            (
+                qre.Qubitization(
+                    qre.UniformStatePrep(3),
+                    qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
+                ),
+                4,
+                qre.Adjoint(qre.AQFT(3, 2)),
+                [
+                    qre.Allocate(2),
+                    GateCount(qre.Hadamard.resource_rep(), 3),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "left"}), 3),
+                    GateCount(qre.CNOT.resource_rep(), 3),
+                    GateCount(qre.X.resource_rep(), 8),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            qre.Reflection.resource_rep(
+                                num_wires=2,
+                                alpha=math.pi,
+                                cmpr_U=qre.UniformStatePrep(3).resource_rep_from_op(),
+                            ),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=0,
+                        ),
+                        5,
+                    ),
+                    GateCount(
+                        qre.SelectPauli(
+                            qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})
+                        ).resource_rep_from_op(),
+                        4,
+                    ),
+                    GateCount(resource_rep(qre.Toffoli, {"elbow": "right"}), 3),
+                    GateCount(
+                        qre.Adjoint.resource_rep(qre.AQFT.resource_rep(3, 2)),
+                    ),
+                    qre.Deallocate(2),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, walk_operator, n_iter, adj_qft_op, expected_res):
+        """Test that resources method is correct"""
+        op = (
+            qre.UnaryIterationQPE(walk_operator, n_iter)
+            if adj_qft_op is None
+            else qre.UnaryIterationQPE(walk_operator, n_iter, adj_qft_op)
+        )
+        assert op.resource_decomp(**op.resource_params) == expected_res
+
+
+class TestResourceReflection:
+    """Test the Reflection class."""
+
+    def test_init_raises_error(self):
+        """Test that an error is raised when neither num_wires nor U is provided."""
+        with pytest.raises(ValueError, match="Must provide at least one of `num_wires` or `U`"):
+            qre.Reflection()
+
+        with pytest.raises(ValueError, match="Must provide atleast one of `num_wires` or `U`"):
+            qre.Reflection.resource_rep()
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        with pytest.raises(ValueError, match="Expected 3 wires, got 2"):
+            qre.Reflection(num_wires=3, U=qre.QFT(3), wires=[0, 1])
+
+    def test_init_with_U_no_num_wires(self):
+        """Test that we can instantiate the operator with U but without providing num_wires."""
+        U = qre.QFT(3)
+        op = qre.Reflection(U=U)
+        assert op.num_wires == 3
+        assert op.cmpr_U == U.resource_rep_from_op()
+
+    def test_init_with_num_wires_no_U(self):
+        """Test that we can instantiate the operator with num_wires but without providing U."""
+        op = qre.Reflection(num_wires=1)
+        assert op.num_wires == 1
+        assert op.cmpr_U == qre.Identity.resource_rep()
+
+    @pytest.mark.parametrize("alpha", (-1, 7))
+    def test_init_alpha_error(self, alpha):
+        """Test that an error is raised if the alpha is provided outside of the expected range"""
+        with pytest.raises(ValueError, match="alpha must be within"):
+            _ = qre.Reflection(num_wires=1, alpha=alpha)
+
+        with pytest.raises(ValueError, match="alpha must be within"):
+            _ = qre.Reflection.resource_rep(num_wires=1, alpha=alpha)
+
+    @pytest.mark.parametrize(
+        "U, alpha",
+        (
+            (qre.QFT(3), math.pi),
+            (qre.AQFT(2, 5), math.pi / 2),
+            (qre.Hadamard(), 0),
+            (qre.Identity(), math.pi),
+        ),
+    )
+    def test_resource_params(self, U, alpha):
+        """Test that the resource params are correct."""
+        op = qre.Reflection(U=U, alpha=alpha)
+        cmpr_U = U.resource_rep_from_op()
+
+        assert op.resource_params == {
+            "alpha": alpha,
+            "num_wires": cmpr_U.num_wires,
+            "cmpr_U": cmpr_U,
+        }
+
+    @pytest.mark.parametrize(
+        "num_wires, cmpr_U, alpha",
+        (
+            (3, qre.QFT.resource_rep(3), math.pi),
+            (5, qre.AQFT.resource_rep(2, 5), math.pi / 2),
+            (2, qre.Hadamard.resource_rep(), 0),
+            (4, qre.Identity.resource_rep(), math.pi),
+        ),
+    )
+    def test_resource_rep(self, num_wires, cmpr_U, alpha):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.Reflection,
+            num_wires,
+            {"alpha": alpha, "num_wires": num_wires, "cmpr_U": cmpr_U},
+        )
+        assert qre.Reflection.resource_rep(num_wires, alpha, cmpr_U) == expected
+
+    @pytest.mark.parametrize(
+        "num_wires, cmpr_U, alpha, expected_res",
+        (
+            # alpha = 0 case: just global phase
+            (
+                3,
+                qre.QFT.resource_rep(3),
+                0,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                ],
+            ),
+            # alpha = 2*pi case: just global phase
+            (
+                3,
+                qre.QFT.resource_rep(3),
+                2 * math.pi,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                ],
+            ),
+            # alpha = pi, num_wires > 1 case
+            (
+                3,
+                qre.QFT.resource_rep(3),
+                math.pi,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.QFT.resource_rep(3)),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.Z.resource_rep(),
+                            num_ctrl_wires=2,
+                            num_zero_ctrl=2,
+                        )
+                    ),
+                    GateCount(qre.Adjoint.resource_rep(qre.QFT.resource_rep(3))),
+                ],
+            ),
+            # alpha = pi, num_wires = 1 case
+            (
+                1,
+                qre.Hadamard.resource_rep(),
+                math.pi,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.Hadamard.resource_rep()),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Z.resource_rep()),
+                    GateCount(qre.Adjoint.resource_rep(qre.Hadamard.resource_rep())),
+                ],
+            ),
+            # alpha != pi case (uses PhaseShift)
+            (
+                2,
+                qre.CNOT.resource_rep(),
+                math.pi / 2,
+                [
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.CNOT.resource_rep()),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.PhaseShift.resource_rep(),
+                            num_ctrl_wires=1,
+                            num_zero_ctrl=1,
+                        )
+                    ),
+                    GateCount(qre.Adjoint.resource_rep(qre.CNOT.resource_rep())),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, num_wires, cmpr_U, alpha, expected_res):
+        """Test that the resources are correct."""
+        assert (
+            qre.Reflection.resource_decomp(num_wires=num_wires, alpha=alpha, cmpr_U=cmpr_U)
+            == expected_res
+        )
+
+    @pytest.mark.parametrize(
+        "num_wires, cmpr_U, alpha",
+        (
+            (3, qre.QFT.resource_rep(3), math.pi),
+            (2, qre.Hadamard.resource_rep(), math.pi / 2),
+        ),
+    )
+    def test_adjoint_resources(self, num_wires, cmpr_U, alpha):
+        """Test that the adjoint resources are correct (reflection is self-adjoint)."""
+        target_params = {"num_wires": num_wires, "cmpr_U": cmpr_U, "alpha": alpha}
+        expected = [GateCount(qre.Reflection.resource_rep(num_wires, alpha, cmpr_U))]
+        assert qre.Reflection.adjoint_resource_decomp(target_params) == expected
+
+    @pytest.mark.parametrize(
+        "num_ctrl_wires, num_zero_ctrl, num_wires, cmpr_U, alpha, expected_res",
+        (
+            # alpha = 0 case: just controlled global phase
+            (
+                1,
+                0,
+                3,
+                qre.QFT.resource_rep(3),
+                0,
+                [
+                    GateCount(qre.MultiControlledX.resource_rep(1, 0), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                ],
+            ),
+            # alpha = pi, all zero controls
+            (
+                2,
+                2,
+                3,
+                qre.QFT.resource_rep(3),
+                math.pi,
+                [
+                    GateCount(qre.MultiControlledX.resource_rep(2, 2), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.QFT.resource_rep(3)),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.Z.resource_rep(),
+                            num_ctrl_wires=4,  # num_wires - 1 + num_ctrl_wires
+                            num_zero_ctrl=4,  # num_wires - 1 + num_zero_ctrl
+                        )
+                    ),
+                    GateCount(qre.Adjoint.resource_rep(qre.QFT.resource_rep(3))),
+                ],
+            ),
+            # alpha = pi, not all zero controls (absorbs X into control)
+            (
+                2,
+                1,
+                3,
+                qre.QFT.resource_rep(3),
+                math.pi,
+                [
+                    GateCount(qre.MultiControlledX.resource_rep(2, 1), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.QFT.resource_rep(3)),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.Z.resource_rep(),
+                            num_ctrl_wires=4,  # num_wires - 1 + num_ctrl_wires
+                            num_zero_ctrl=4,  # num_wires - 1 + num_zero_ctrl + 1
+                        )
+                    ),
+                    GateCount(qre.Adjoint.resource_rep(qre.QFT.resource_rep(3))),
+                ],
+            ),
+            # alpha != pi case (uses PhaseShift)
+            (
+                1,
+                1,
+                2,
+                qre.CNOT.resource_rep(),
+                math.pi / 2,
+                [
+                    GateCount(qre.MultiControlledX.resource_rep(1, 1), 2),
+                    GateCount(qre.Z.resource_rep(), 2),
+                    GateCount(qre.CNOT.resource_rep()),
+                    GateCount(qre.X.resource_rep(), 2),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op=qre.PhaseShift.resource_rep(),
+                            num_ctrl_wires=2,
+                            num_zero_ctrl=2,
+                        )
+                    ),
+                    GateCount(qre.Adjoint.resource_rep(qre.CNOT.resource_rep())),
+                ],
+            ),
+        ),
+    )
+    def test_controlled_resources(
+        self, num_ctrl_wires, num_zero_ctrl, num_wires, cmpr_U, alpha, expected_res
+    ):
+        """Test that the controlled resources are correct."""
+        target_params = {"num_wires": num_wires, "cmpr_U": cmpr_U, "alpha": alpha}
+        assert (
+            qre.Reflection.controlled_resource_decomp(num_ctrl_wires, num_zero_ctrl, target_params)
+            == expected_res
+        )
+
+
+class TestResourceQubitization:
+    """Test the Qubitization class."""
+
+    def test_wire_error(self):
+        """Test that an error is raised when wrong number of wires is provided."""
+        prep = qre.QFT(3)
+        sel = qre.Select(
+            [qre.X(), qre.Y(), qre.Z()]
+        )  # has 4 wires (3 ops + 2 ctrl, but ops share wires)
+        with pytest.raises(ValueError, match="Expected .* wires, got"):
+            qre.Qubitization(prep, sel, wires=[0])
+
+    def test_init_wires_inherited(self):
+        """Test that wires are inherited from prep and sel when possible."""
+        prep = qre.QFT(2, wires=[0, 1])
+        sel = qre.Select([qre.X(wires=2), qre.Y(wires=2)], wires=[3, 2])
+        op = qre.Qubitization(prep, sel)
+        assert op.num_wires == sel.num_wires
+
+    def test_init_wires_inherited_success(self):
+        """Test that wires are inherited from prep and sel when they match num_wires."""
+        prep = qre.Hadamard(wires=0)
+        sel = qre.Select([qre.X(wires=1), qre.Z(wires=1)], wires=[0])
+        op = qre.Qubitization(prep, sel)
+
+        assert op.wires == qml.wires.Wires([0, 1])
+        assert op.num_wires == 2
+
+    @pytest.mark.parametrize(
+        "prep, sel",
+        (
+            (qre.QFT(3), qre.Select([qre.X(), qre.Y(), qre.Z()])),
+            (qre.AQFT(2, 4), qre.Select([qre.RX(), qre.RY()])),
+            (qre.Hadamard(), qre.Select([qre.Z()])),
+        ),
+    )
+    def test_resource_params(self, prep, sel):
+        """Test that the resource params are correct."""
+        op = qre.Qubitization(prep, sel)
+        assert op.resource_params == {
+            "prep_op": prep.resource_rep_from_op(),
+            "select_op": sel.resource_rep_from_op(),
+        }
+
+    @pytest.mark.parametrize(
+        "prep_cmpr, sel_cmpr",
+        (
+            (
+                qre.QFT.resource_rep(3),
+                qre.Select.resource_rep(
+                    (qre.X.resource_rep(), qre.Y.resource_rep(), qre.Z.resource_rep()), 4
+                ),
+            ),
+            (
+                qre.AQFT.resource_rep(2, 4),
+                qre.Select.resource_rep((qre.RX.resource_rep(), qre.RY.resource_rep()), 3),
+            ),
+            (qre.Hadamard.resource_rep(), qre.Select.resource_rep((qre.Z.resource_rep(),), 1)),
+        ),
+    )
+    def test_resource_rep(self, prep_cmpr, sel_cmpr):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.Qubitization,
+            sel_cmpr.num_wires,
+            {"prep_op": prep_cmpr, "select_op": sel_cmpr},
+        )
+        assert qre.Qubitization.resource_rep(prep_cmpr, sel_cmpr) == expected
+
+    @pytest.mark.parametrize(
+        "prep_cmpr, sel_cmpr",
+        (
+            (
+                qre.QFT.resource_rep(3),
+                qre.Select.resource_rep(
+                    (qre.X.resource_rep(), qre.Y.resource_rep(), qre.Z.resource_rep()), 4
+                ),
+            ),
+            (
+                qre.Hadamard.resource_rep(),
+                qre.Select.resource_rep((qre.Z.resource_rep(),), 1),
+            ),
+        ),
+    )
+    def test_resources(self, prep_cmpr, sel_cmpr):
+        """Test that the resources are correct."""
+        ref_op = qre.Reflection.resource_rep(
+            num_wires=prep_cmpr.num_wires,
+            alpha=math.pi,
+            cmpr_U=prep_cmpr,
+        )
+        expected_res = [
+            GateCount(sel_cmpr),
+            GateCount(ref_op),
+        ]
+        assert qre.Qubitization.resource_decomp(prep_cmpr, sel_cmpr) == expected_res
+
+    @pytest.mark.parametrize(
+        "prep_cmpr, sel_cmpr",
+        (
+            (
+                qre.QFT.resource_rep(3),
+                qre.Select.resource_rep(
+                    (qre.X.resource_rep(), qre.Y.resource_rep(), qre.Z.resource_rep()), 4
+                ),
+            ),
+            (qre.Hadamard.resource_rep(), qre.Select.resource_rep((qre.Z.resource_rep(),), 1)),
+        ),
+    )
+    def test_adjoint_resources(self, prep_cmpr, sel_cmpr):
+        """Test that the adjoint resources are correct."""
+        target_params = {"prep_op": prep_cmpr, "select_op": sel_cmpr}
+        ref_op = qre.Reflection.resource_rep(
+            num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=prep_cmpr
+        )
+
+        expected = [
+            GateCount(ref_op),
+            GateCount(sel_cmpr),
+        ]
+        assert qre.Qubitization.adjoint_resource_decomp(target_params) == expected
+
+    @pytest.mark.parametrize(
+        "num_ctrl_wires, num_zero_ctrl, prep_cmpr, sel_cmpr",
+        (
+            (
+                1,
+                0,
+                qre.QFT.resource_rep(3),
+                qre.Select.resource_rep((qre.X.resource_rep(), qre.Y.resource_rep()), 3),
+            ),
+            (
+                2,
+                1,
+                qre.Hadamard.resource_rep(),
+                qre.Select.resource_rep((qre.Z.resource_rep(),), 1),
+            ),
+        ),
+    )
+    def test_controlled_resources(self, num_ctrl_wires, num_zero_ctrl, prep_cmpr, sel_cmpr):
+        """Test that the controlled resources are correct."""
+        target_params = {"prep_op": prep_cmpr, "select_op": sel_cmpr}
+        ref_op = qre.Reflection.resource_rep(
+            num_wires=prep_cmpr.num_wires, alpha=math.pi, cmpr_U=prep_cmpr
+        )
+
+        ctrl_sel = qre.Controlled.resource_rep(
+            base_cmpr_op=sel_cmpr,
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+        )
+        ctrl_ref = qre.Controlled.resource_rep(
+            base_cmpr_op=ref_op,
+            num_ctrl_wires=num_ctrl_wires,
+            num_zero_ctrl=num_zero_ctrl,
+        )
+
+        expected = [
+            GateCount(ctrl_sel),
+            GateCount(ctrl_ref),
+        ]
+        assert (
+            qre.Qubitization.controlled_resource_decomp(
+                num_ctrl_wires, num_zero_ctrl, target_params
+            )
+            == expected
+        )

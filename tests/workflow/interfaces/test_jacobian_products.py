@@ -47,7 +47,12 @@ param_shift_cached_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.param_shift, cache_full_jacobian=True
 )
 hadamard_grad_jpc = TransformJacobianProducts(
-    inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
+    inner_execute_numpy,
+    qml.gradients.hadamard_grad,
+    {
+        "aux_wire": "aux",
+        "mode": "standard",
+    },
 )
 device_jacs = DeviceDerivatives(dev, adjoint_config)
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)

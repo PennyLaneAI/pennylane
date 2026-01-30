@@ -14,6 +14,7 @@
 """
 Tests for the AllSinglesDoubles template.
 """
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods
@@ -191,6 +192,24 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
+    @pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
+    def test_optional_arguments(self, singles, doubles):
+        """Tests that optional arguments are truly optional."""
+        if singles is None and doubles is None:
+            pytest.skip(reason="Not a valid configuration - both cannot be empty.")
+
+        weights = np.array([1.0]) if singles is None or doubles is None else np.array([1.0, 2.0])
+        op = qml.AllSinglesDoubles(
+            weights,
+            np.array(list(range(4))),
+            np.array([1, 1, 0, 0]),
+            singles=singles,
+            doubles=doubles,
+        )
+        qml.ops.functions.assert_valid(op)
+
     @pytest.mark.parametrize(
         ("weights", "wires", "singles", "doubles", "hf_state", "msg_match"),
         [
@@ -224,7 +243,7 @@ class TestInputs:
                 None,
                 [[0, 1, 2, 3, 4]],
                 np.array([1, 1, 0, 0]),
-                "Expected entries of 'doubles' to be of size 4",
+                "Expected all entries of 'doubles' to be of size 4",
             ),
             (
                 np.array([-2.8]),
@@ -232,7 +251,7 @@ class TestInputs:
                 [[0, 2, 3]],
                 None,
                 np.array([1, 1, 0, 0]),
-                "Expected entries of 'singles' to be of size 2",
+                "Expected all entries of 'singles' to be of size 2",
             ),
             (
                 np.array([-2.8, 0.5]),
@@ -240,7 +259,7 @@ class TestInputs:
                 [[0, 2]],
                 [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0, 0]),
-                "State must be of length 4",
+                r"Expected length of 'hf_state' to match number of wires \(4\)",
             ),
             (
                 np.array([-2.8, 1.6]),

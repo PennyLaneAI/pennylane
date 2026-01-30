@@ -377,7 +377,7 @@ def _controlled_semi_adder_resource(
             {},
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
-            work_wire_type="zeroed",
+            work_wire_type="borrowed",
         ): num_y_wires,
     }
 

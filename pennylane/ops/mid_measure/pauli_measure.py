@@ -31,8 +31,6 @@ _VALID_PAULI_CHARS = "XYZ"
 class PauliMeasure(Operator):
     """A Pauli product measurement."""
 
-    resource_keys = {"pauli_word"}
-
     def __init__(
         self,
         pauli_word: str,
@@ -74,9 +72,12 @@ class PauliMeasure(Operator):
     def __repr__(self) -> str:
         return f"PauliMeasure('{self.pauli_word}', wires={self.wires.tolist()})"
 
-    @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
+    def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
+        """How the pauli-product measurement is represented in diagrams and drawings."""
+        postselect = "" if self.postselect is None else ("₁" if self.postselect == 1 else "₀")
+        if wire is None:
+            return f"┤↗{postselect}{self.pauli_word}├"
+        return f"┤↗{postselect}{self.pauli_word[self.wires.index(wire)]}├"
 
     @property
     def hash(self) -> int:
@@ -104,6 +105,7 @@ def _create_pauli_measure_primitive():
 
     @pauli_measure_p.def_impl
     def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
+        wires = [w if math.is_abstract(w) else int(w) for w in wires]
         return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
     @pauli_measure_p.def_abstract_eval
@@ -115,7 +117,76 @@ def _create_pauli_measure_primitive():
 
 
 def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = None):
-    """Perform a Pauli product measurement."""
+    """Perform a Pauli product measurement.
+
+    A Pauli product measurement (PPM) is the measurement of a tensor product of Pauli observables (``X``, ``Y``, ``Z``, and ``I``).
+
+    The eigenvalue of this tensor product is one of 1 or -1, which is mapped to the 0 or 1 outcome of
+    the PPM, respectively. After the measurement, the state collapses to the superpositions of all
+    degenerate eigenstates corresponding to the measured eigenvalue.
+
+    .. note::
+
+        Circuits comprising ``pauli_measure`` are currently not executable on any backend.
+        This function is only for analysis using the ``null.qubit`` device and potential future execution when a suitable backend is
+        available.
+
+    .. seealso::
+        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_ and
+        :func:`catalyst.passes.ppm_compilation` for compiling these circuits with Catalyst.
+
+    Args:
+        pauli_word (str): The Pauli word to measure.
+        wires (Wires): The wires that the Pauli word acts on.
+        postselect (Optional[int]): The postselection value, one of ``0`` or ``1``. It determines which subspace of
+            degenerate eigenstates to postselect after a Pauli product measurement. ``None`` by default.
+
+    Returns:
+        MeasurementValue: A reference to the future result of the Pauli product measurement
+
+    Raises:
+        ValueError: if the Pauli word has characters other than X, Y and Z.
+        ValueError: if the number of wires does not match the length of the Pauli word.
+
+    **Example:**
+
+    The following example illustrates how to include a Pauli product measurement (PPM) in a circuit by specifiying
+    the Pauli word and the wires it acts on.
+
+    .. code-block:: python
+
+        @qml.qnode(qml.device("null.qubit", wires=3))
+        def circuit():
+            qml.Hadamard(0)
+            qml.Hadamard(2)
+
+            ppm = qml.pauli_measure(pauli_word="XY", wires=[0, 2])
+            qml.cond(ppm, qml.X)(wires=1)
+
+            return qml.expval(qml.Z(0))
+
+    The ``X`` operation on wire ``1`` will be applied conditionally on the value of the PPM outcome:
+
+    >>> print(qml.draw(circuit)())
+    0: ──H─╭┤↗X├────┤  <Z>
+    1: ────│──────X─┤
+    2: ──H─╰┤↗Y├──║─┤
+             ╚════╝
+
+    Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`
+    where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
+
+    >>> print(qml.specs(circuit)()['resources'])
+    Total wire allocations: 3
+    Total gates: 4
+    Circuit depth: 3
+    Gate types:
+      Hadamard: 2
+      PauliMeasure: 1
+      Conditional(PauliX): 1
+    Measurements:
+      expval(PauliZ): 1
+    """
 
     if capture_enabled():
         primitive = _create_pauli_measure_primitive()

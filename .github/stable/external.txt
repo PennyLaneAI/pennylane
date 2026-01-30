@@ -13,7 +13,7 @@ astunparse==1.6.3
 async-lru==2.0.5
 attrs==25.4.0
 autograd==1.8.0
-autoray==0.8.0
+autoray==0.8.2
 babel==2.17.0
 bartiq==0.9.0
 beautifulsoup4==4.14.2
@@ -24,7 +24,7 @@ build==1.3.0
 cachetools==6.2.2
 certifi==2025.11.12
 cffi==2.0.0
-cfgv==3.4.0
+cfgv==3.5.0
 charset-normalizer==3.4.4
 chex==0.1.91
 cirq-core==1.4.0
@@ -33,7 +33,7 @@ click==8.3.1
 comm==0.2.3
 contourpy==1.3.3
 cotengra==0.7.5
-coverage==7.11.3
+coverage==7.12.0
 cryptography==46.0.3
 cvxopt==1.3.2
 cvxpy==1.7.3
@@ -94,7 +94,7 @@ jupyter_client==8.6.3
 jupyter_core==5.9.1
 jupyter_server==2.17.0
 jupyter_server_terminals==0.5.3
-jupyterlab==4.4.10
+jupyterlab==4.5.0
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.28.0
 jupyterlab_widgets==3.0.16
@@ -109,17 +109,17 @@ mccabe==0.7.0
 mdurl==0.1.2
 mistune==3.1.4
 mitiq==0.47.0
-ml_dtypes==0.5.3
+ml_dtypes==0.5.4
 mpmath==1.3.0
 mypy_extensions==1.1.0
-narwhals==2.11.0
+narwhals==2.12.0
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
 nest-asyncio==1.6.0
-networkx==3.5
+networkx==3.6
 nodeenv==1.9.1
-notebook==7.4.7
+notebook==7.5.0
 notebook_shim==0.2.4
 numba==0.62.1
 numpy==1.26.4
@@ -135,16 +135,16 @@ pandocfilters==1.5.1
 parso==0.8.5
 pathspec==0.12.1
 PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@d3b94e31c6d83697f5a764d28c9a681557a6a14e
-pennylane_catalyst==0.14.0.dev31
+pennylane_catalyst==0.14.0.dev38
 pennylane_lightning==0.44.0.dev11
 pennylane_lightning_kokkos==0.44.0.dev11
 pexpect==4.9.0
 pillow==12.0.0
 platformdirs==4.5.0
-plotly==6.4.0
+plotly==6.5.0
 pluggy==1.6.0
 ply==3.11
-pre_commit==4.4.0
+pre_commit==4.5.0
 prometheus_client==0.23.1
 prompt_toolkit==3.0.52
 protobuf==6.33.1
@@ -199,7 +199,7 @@ rich==13.9.4
 rpds-py==0.29.0
 rustworkx==0.17.1
 scipy==1.15.2
-scipy-openblas32==0.3.30.0.7
+scipy-openblas32==0.3.30.0.8
 scs==3.2.9
 Send2Trash==1.8.3
 six==1.17.0
@@ -208,7 +208,7 @@ sniffio==1.3.1
 sortedcontainers==2.4.0
 soupsieve==2.8
 stack-data==0.6.3
-stevedore==5.5.0
+stevedore==5.6.0
 stim==1.15.0
 sympy==1.14.0
 tabulate==0.9.0

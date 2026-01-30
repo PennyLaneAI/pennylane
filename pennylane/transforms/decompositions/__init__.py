@@ -14,3 +14,13 @@
 r"""This module contains decompositions for quantum circuits."""
 
 from .clifford_t_transform import clifford_t_decomposition
+from .gridsynth import gridsynth
+from .pauli_based_computation import (
+    to_ppr,
+    commute_ppr,
+    merge_ppr_ppm,
+    ppm_compilation,
+    ppr_to_ppm,
+    reduce_t_depth,
+    decompose_arbitrary_ppr,
+)

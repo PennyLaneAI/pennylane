@@ -3,11 +3,11 @@ appdirs
 autograd
 autoray
 cachetools
-jax==0.6.0
-jaxlib==0.6.0
+jax==0.7.1
+jaxlib==0.7.1
 mistune==0.8.4
 m2r2
-numpy
+numpy>=2.0
 pygments-github-lexers
 packaging
 pyzx
@@ -25,16 +25,15 @@ sphinxcontrib-serializinghtml==2.0.0
 tensorflow==2.19
 tensornetwork==0.3
 tomlkit
-torch==2.8.0
+torch==2.9.0
 jinja2>=3.1
 rustworkx>=0.14.0
 networkx==3.1
-requests==2.32.3
+requests==2.32.4
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme
-tomli~=2.0.0 # Drop once minimum Python version is 3.11
 sphinxext-opengraph==0.9.0
-matplotlib==3.8.0
+sphinx-sitemap
+matplotlib==3.10.0
 diastatic-malt
-galois

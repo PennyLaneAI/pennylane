@@ -414,7 +414,6 @@ def mitigate_with_zne(
     .. code-block:: python
 
         import numpy as np
-        from functools import partial
         from pennylane import qnode
         from pennylane.noise import fold_global, poly_extrapolate
 
@@ -425,14 +424,13 @@ def mitigate_with_zne(
         rng = np.random.default_rng(12345)
         w1, w2 = [rng.random(s) for s in shapes]
 
-        @partial(
-            qml.noise.mitigate_with_zne,
+        @qml.noise.mitigate_with_zne(
             scale_factors=[1., 2., 3.],
             folding=fold_global,
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order' : 2},
         )
-        @partial(qml.transforms.decompose, gate_set = ["RY", "CZ"])
+        @qml.transforms.decompose(gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -547,7 +545,6 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape = tape.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [

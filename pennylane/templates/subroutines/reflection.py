@@ -19,7 +19,7 @@ import copy
 
 import numpy as np
 
-from pennylane import ops
+from pennylane import ops, pytrees
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -271,7 +271,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
         ops.PhaseShift(alpha, wires=wires)
         ops.PauliX(wires=wires)
 
-    U._unflatten(*U._flatten())  # pylint: disable=protected-access
+    pytrees.unflatten(*pytrees.flatten(U))
 
 
 add_decomps(Reflection, _reflection_decomposition)

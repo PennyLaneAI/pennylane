@@ -275,8 +275,10 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        toffolis_qnode = qml.specs(qnode)()["resources"].gate_types["Toffoli"]
-        toffolis_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types["Toffoli"]
+        toffolis_qnode = qml.specs(qnode)()["resources"].gate_types.get("Toffoli", 0)
+        toffolis_optimized_qnode = qml.specs(optimized_qnode)()["resources"].gate_types.get(
+            "Toffoli", 0
+        )
 
         tape = qml.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 11
@@ -323,12 +325,12 @@ class TestPatternMatchingOptimization:
         optimized_qnode_res = optimized_qnode()
 
         gate_qnode = qml.specs(qnode)()["resources"].gate_types
-        swap_qnode = gate_qnode["SWAP"]
-        cnot_qnode = gate_qnode["CNOT"]
+        swap_qnode = gate_qnode.get("SWAP", 0)
+        cnot_qnode = gate_qnode.get("CNOT", 0)
 
         gate_qnode_optimized = qml.specs(optimized_qnode)()["resources"].gate_types
-        swap_optimized_qnode = gate_qnode_optimized["SWAP"]
-        cnot_optimized_qnode = gate_qnode_optimized["CNOT"]
+        swap_optimized_qnode = gate_qnode_optimized.get("SWAP", 0)
+        cnot_optimized_qnode = gate_qnode_optimized.get("CNOT", 0)
 
         tape = qml.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 8
@@ -375,12 +377,12 @@ class TestPatternMatchingOptimization:
         optimized_qnode_res = optimized_qnode()
 
         gate_qnode = qml.specs(qnode)()["resources"].gate_types
-        swap_qnode = gate_qnode["SWAP"]
-        cnot_qnode = gate_qnode["CNOT"]
+        swap_qnode = gate_qnode.get("SWAP", 0)
+        cnot_qnode = gate_qnode.get("CNOT", 0)
 
         gate_qnode_optimized = qml.specs(optimized_qnode)()["resources"].gate_types
-        swap_optimized_qnode = gate_qnode_optimized["SWAP"]
-        cnot_optimized_qnode = gate_qnode_optimized["CNOT"]
+        swap_optimized_qnode = gate_qnode_optimized.get("SWAP", 0)
+        cnot_optimized_qnode = gate_qnode_optimized.get("CNOT", 0)
 
         tape = qml.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 11
@@ -427,12 +429,12 @@ class TestPatternMatchingOptimization:
         optimized_qnode_res = optimized_qnode()
 
         gate_qnode = qml.specs(qnode)()["resources"].gate_types
-        cswap_qnode = gate_qnode["CSWAP"]
-        cnot_qnode = gate_qnode["CNOT"]
+        cswap_qnode = gate_qnode.get("CSWAP", 0)
+        cnot_qnode = gate_qnode.get("CNOT", 0)
 
         gate_qnode_optimized = qml.specs(optimized_qnode)()["resources"].gate_types
-        cswap_optimized_qnode = gate_qnode_optimized["CSWAP"]
-        cnot_optimized_qnode = gate_qnode_optimized["CNOT"]
+        cswap_optimized_qnode = gate_qnode_optimized.get("CSWAP", 0)
+        cnot_optimized_qnode = gate_qnode_optimized.get("CNOT", 0)
 
         tape = qml.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 11
@@ -488,11 +490,15 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode(0.1, 0.2)
 
-        rx_qnode = qml.specs(qnode)(0.1, 0.2)["resources"].gate_types["RX"]
-        rx_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["resources"].gate_types["RX"]
+        rx_qnode = qml.specs(qnode)(0.1, 0.2)["resources"].gate_types.get("RX", 0)
+        rx_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["resources"].gate_types.get(
+            "RX", 0
+        )
 
-        rz_qnode = qml.specs(qnode)(0.1, 0.2)["resources"].gate_types["RZ"]
-        rz_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["resources"].gate_types["RZ"]
+        rz_qnode = qml.specs(qnode)(0.1, 0.2)["resources"].gate_types.get("RZ", 0)
+        rz_optimized_qnode = qml.specs(optimized_qnode)(0.1, 0.2)["resources"].gate_types.get(
+            "RZ", 0
+        )
 
         tape = qml.workflow.construct_tape(qnode)(0.1, 0.2)
         assert len(tape.operations) == 14

@@ -29,6 +29,11 @@ from pennylane.wires import Wires
 class TestMergeRotations:
     """Test that adjacent rotation gates of the same type will add the angles."""
 
+    def test_defined_pass_name(self):
+        """Test that merge_rotations defines a pass_name."""
+
+        assert merge_rotations.pass_name == "merge-rotations"
+
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [
@@ -563,8 +568,8 @@ class TestTransformDispatch:
     def test_qnode(self):
         """Test the transform on a qnode directly."""
         transformed_qnode = merge_rotations(qnode_circuit)
-        assert not transformed_qnode.transform_program.is_empty()
-        assert len(transformed_qnode.transform_program) == 1
+        assert transformed_qnode.compile_pipeline
+        assert len(transformed_qnode.compile_pipeline) == 1
         res = transformed_qnode([0.1, 0.2, 0.3, 0.4])
         exp_res = qnode_circuit([0.1, 0.2, 0.3, 0.4])
         assert np.allclose(res, exp_res)

@@ -24,15 +24,20 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.operation import Operation
+from pennylane.ops import Conditional, MidMeasure, PauliMeasure
 
 jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.resolve_dynamic_wires import resolve_dynamic_wires
 
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.capture,
+    pytest.mark.usefixtures("enable_graph_decomposition"),
+]
 
 
 class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
@@ -93,7 +98,6 @@ def _decomp2_without_work_wire(wires, **__):
     qml.Toffoli(wires=[wires[2], wires[1], wires[0]])
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDecomposeInterpreterGraphEnabled:
     """Tests the DecomposeInterpreter with the new graph-based decomposition system enabled."""
 
@@ -106,16 +110,6 @@ class TestDecomposeInterpreterGraphEnabled:
         assert interpreter.stopping_condition(qml.RZ(1.5, 0))
         assert interpreter.stopping_condition(qml.CNOT(wires=[0, 1]))
         assert not interpreter.stopping_condition(qml.Hadamard(0))
-
-    @pytest.mark.unit
-    def test_callable_gate_set_not_supported(self):
-        """Tests that specifying the gate_set as a function raises an error."""
-
-        with pytest.raises(
-            PennyLaneDeprecationWarning,
-            match="Passing a function to the gate_set argument is deprecated.",
-        ):
-            DecomposeInterpreter(gate_set=lambda op: op.name in {"RX", "RZ", "CNOT"})
 
     @pytest.mark.integration
     def test_fall_back(self):
@@ -281,7 +275,6 @@ class TestDecomposeInterpreterGraphEnabled:
         """Tests that an adjoint operation is decomposed."""
 
         class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
-
             resource_keys = set()
 
             @property
@@ -344,7 +337,6 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(gate_set={"CNOT", "RX", "RY", "RZ"})
         def f(x, wires):
-
             def true_fn():
                 qml.CRX(x, wires=wires)
 
@@ -381,7 +373,6 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(gate_set={"CNOT", "RX", "RY", "RZ"})
         def f(x, wires):
-
             def true_fn():
                 qml.RX(x, wires=wires[1])
 
@@ -413,6 +404,71 @@ class TestDecomposeInterpreterGraphEnabled:
         ]
 
     @pytest.mark.integration
+    @pytest.mark.parametrize("m_type", ["mcm", "ppm"])
+    def test_decompose_with_mcm(self, m_type):
+        """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            resource_keys = set()
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
+
+        @qml.register_resources({qml.H: 1, qml.X: 1, measure_obj_class: 1})
+        def _custom_decomp(wires, **_):
+            qml.H(wires[0])
+            m0 = (
+                qml.measure(wires[0])
+                if m_type == "mcm"
+                else qml.pauli_measure("XY", wires=[wires[0], wires[1]])
+            )
+            qml.cond(m0, qml.H)(wires[1])
+
+        @qml.register_resources({qml.H: 3, qml.X: 2, qml.CNOT: 1})
+        def _expensive_decomp(wires, **_):
+            raise NotImplementedError
+
+        @DecomposeInterpreter(
+            gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
+            fixed_decomps={qml.GlobalPhase: null_decomp},
+            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
+        )
+        def circuit():
+            CustomOp(wires=[1, 0])
+            m0 = qml.measure(0) if m_type == "mcm" else qml.pauli_measure("XZ", wires=[0, 1])
+            qml.cond(m0, qml.X)(0)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        ops = collector.state["ops"]
+
+        def equivalent_circuit():
+            qml.RZ(np.pi, wires=1)
+            qml.RY(np.pi / 2, wires=1)
+            m0 = qml.measure(1) if m_type == "mcm" else qml.pauli_measure("XZ", wires=[1, 0])
+            qml.cond(m0, qml.RZ)(np.pi, wires=0)
+            qml.cond(m0, qml.RY)(np.pi / 2, wires=0)
+            m1 = qml.measure(0) if m_type == "mcm" else qml.pauli_measure("XY", wires=[0, 1])
+            qml.cond(m1, qml.RX)(np.pi, wires=0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            equivalent_circuit()
+
+        qml.assert_equal(ops[0], q.queue[0])
+        qml.assert_equal(ops[1], q.queue[1])
+        assert isinstance(ops[3], Conditional)
+        assert isinstance(ops[4], Conditional)
+        assert isinstance(ops[6], Conditional)
+        qml.assert_equal(ops[3].base, q.queue[3].base)
+        qml.assert_equal(ops[4].base, q.queue[4].base)
+        qml.assert_equal(ops[6].base, q.queue[6].base)
+        assert isinstance(ops[2], measure_obj_class)
+        assert isinstance(ops[5], measure_obj_class)
+
     @pytest.mark.parametrize(
         "num_work_wires, expected_gate_count",
         [
@@ -473,7 +529,7 @@ class TestDecomposeInterpreterGraphEnabled:
 
         @DecomposeInterpreter(
             gate_set={qml.Toffoli, qml.RZ, qml.RY, qml.CNOT},
-            max_work_wires=num_work_wires,
+            num_work_wires=num_work_wires,
             alt_decomps={
                 CustomOpDynamicWireDecomp: [_decomp_without_work_wire, _decomp_with_work_wire],
                 LargeOpDynamicWireDecomp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
@@ -497,3 +553,80 @@ class TestDecomposeInterpreterGraphEnabled:
                 continue
             gate_counts[type(op)] += 1
         assert gate_counts == expected_gate_count
+
+    def test_nested_composite_ops(self):
+        """Tests that nested composite operators are decomposed properly."""
+
+        @DecomposeInterpreter(gate_set={qml.X, qml.Y, qml.Z, "Adjoint(PauliX)", "Adjoint(PauliY)"})
+        def f():
+            qml.change_op_basis(qml.prod(qml.X(0), qml.Y(0)), qml.Z(0))
+
+        plxpr = jax.make_jaxpr(f)()
+        tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
+        assert tape.operations == [
+            qml.Y(0),
+            qml.X(0),
+            qml.Z(0),
+            qml.adjoint(qml.X(0)),
+            qml.adjoint(qml.Y(0)),
+        ]
+
+    def test_minimize_work_wires(self):
+        """Tests that the number of allocations can be minimized."""
+
+        class SomeOtherOp(Operation):
+            """Some other operation."""
+
+        @qml.register_resources(
+            {qml.CNOT: 2, LargeOpDynamicWireDecomp: 2},
+            work_wires={"zeroed": 1},
+        )
+        def _some_decomp(wires):
+            with qml.allocation.allocate(1, state="zero", restored=True) as work_wires:
+                qml.CNOT([wires[0], work_wires[0]])
+                LargeOpDynamicWireDecomp(wires)
+                qml.CNOT([wires[0], work_wires[0]])
+
+        @DecomposeInterpreter(
+            gate_set={qml.Toffoli: 1, qml.CRot: 7, qml.CNOT: 1},
+            num_work_wires=None,
+            minimize_work_wires=True,
+            alt_decomps={
+                CustomOpDynamicWireDecomp: [_decomp_with_work_wire, _decomp_without_work_wire],
+                LargeOpDynamicWireDecomp: [_decomp2_with_work_wire],
+                SomeOtherOp: [_some_decomp],
+            },
+        )
+        def circuit():
+            SomeOtherOp(wires=[0, 1, 2, 3, 4])
+            CustomOpDynamicWireDecomp(wires=[0, 1, 4])
+
+        plxpr = jax.make_jaxpr(circuit)()
+        decomp = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
+        [result], _ = qml.transforms.resolve_dynamic_wires([decomp], min_int=5)
+
+        with qml.capture.pause():
+            with qml.queuing.AnnotatedQueue() as q:
+                # The only decomposition rule available for SomeOtherOp
+                with qml.allocation.allocate(1, state="zero", restored=True) as work_wires:
+                    qml.CNOT([0, work_wires[0]])
+                    # The only decomposition available for LargeOpDynamicWireDecomp
+                    with qml.allocation.allocate(1, state="zero", restored=True) as sub_work_wires:
+                        qml.Toffoli(wires=[0, 1, sub_work_wires[0]])
+                        # At this point, to minimize the number of work wires allocated, we
+                        # select the decomposition rule that does not use any work wires for
+                        # the CustomOpDynamicWireDecomp at the very bottom of the chain
+                        _decomp_without_work_wire(wires=[sub_work_wires[0], 2, 3])
+                        qml.Toffoli(wires=[0, 1, sub_work_wires[0]])
+                        _decomp_without_work_wire(wires=[1, 2, 3])
+                    qml.CNOT([0, work_wires[0]])
+                # Since the SomeOtherOp that came before already used two work wires, this
+                # second CustomOpDynamicWireDecomp should be free to use up to two work wires,
+                # and we verify that this is indeed what happens.
+                _decomp_with_work_wire(wires=[0, 1, 4])
+
+        expected = qml.tape.QuantumScript.from_queue(q)
+        [expected], _ = qml.transforms.resolve_dynamic_wires([expected], min_int=5)
+
+        for actual, exp in zip(result.operations, expected.operations, strict=True):
+            qml.assert_equal(actual, exp)

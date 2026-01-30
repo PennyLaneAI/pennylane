@@ -360,6 +360,14 @@ def apply_mid_measure(
     slices[axis] = 0
     prob0 = math.real(math.norm(state[tuple(slices)])) ** 2
 
+    if interface == "numpy":
+        norm = math.sum(prob0, axis=-1)
+        eps = 10 * math.finfo(state.dtype).eps
+        if (norm - 1) > eps:
+            raise ValueError(f"probabilities greater than 1. Got norm {norm}.")
+        if norm > 1:
+            prob0 = prob0 / norm
+
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
         from jax.random import binomial
@@ -729,7 +737,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax~=0.6.0"
+            "You can install jax via: pip install jax"
         ) from e
 
     if operation.data is None or operation.t is None:

@@ -29,6 +29,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
+from pennylane.wires import Wires, WiresLike
 
 
 class AQFT(Operation):
@@ -126,16 +127,17 @@ class AQFT(Operation):
 
     resource_keys = {"num_wires", "order"}
 
-    def __init__(self, order, wires=None, id=None):
+    def __init__(self, order: int, wires: WiresLike, *, id=None) -> None:
+        wires = Wires(wires)
         n_wires = len(wires)
 
         if not isinstance(order, int):
-            warnings.warn(f"The order must be an integer. Using order = {round(order)}")
+            warnings.warn(f"The order must be an integer. Using order = {round(order)}.")
             order = round(order)
 
         if order >= n_wires - 1:
             warnings.warn(
-                f"The order ({order}) is >= to the number of wires - 1 ({n_wires-1}). Using the QFT class is recommended in this case."
+                f"The order ({order}) is >= to the number of wires - 1 ({n_wires - 1}). Using the QFT class is recommended in this case."
             )
             order = n_wires - 1
 
@@ -204,7 +206,6 @@ class AQFT(Operation):
 
 
 def _AQFT_resources(num_wires, order):
-
     resources = {}
 
     resources[resource_rep(Hadamard)] = num_wires

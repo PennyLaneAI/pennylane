@@ -169,18 +169,38 @@ class TestResourceConfig:
         with pytest.raises(ValueError, match="Precision must be a non-negative value"):
             config.set_precision(DummyOp, negative_precision)
 
-    def test_set_precision_raises_error_for_unsupported_op(self):
+    @pytest.mark.parametrize(
+        "resource_key",
+        ("precision", "coeff_precision", "rot_precision"),
+    )
+    def test_set_precision_raises_error_for_unsupported_op(self, resource_key):
         """Test that set_precision raises ValueError for an unsupported operator."""
         config = ResourceConfig()
-        config.resource_op_precisions[DummyOp] = {"bits": 10}
-        match_str = "Setting precision for DummyOp is not supported."
+        config.resource_op_precisions[DummyOp] = {"bits": 10}  # only valid key is bits
+        match_str = f"Setting '{resource_key}' for DummyOp is not supported."
         with pytest.raises(ValueError, match=match_str):
-            config.set_precision(DummyOp, 0.123)
+            config.set_precision(DummyOp, 0.123, resource_key=resource_key)
 
     def test_set_precision_sets_value(self):
         """Test that set_precision correctly sets the precision for a supported operator."""
         config = ResourceConfig()
-        config.resource_op_precisions[DummyOp] = {"precision": 1e-9}
+        config.resource_op_precisions[DummyOp] = {
+            "precision": 1e-9,
+            "coeff_precision": 1e-5,
+            "rot_precision": 1e-3,
+            "bits": 10,
+        }
         new_precision = 1e-5
+        new_coeff_precision = 0.123 * 1e-4
+        new_rot_precision = 1e-3
+        new_bits = 12
+
         config.set_precision(DummyOp, new_precision)
+        config.set_precision(DummyOp, new_coeff_precision, resource_key="coeff_precision")
+        config.set_precision(DummyOp, new_rot_precision, resource_key="rot_precision")
+        config.set_precision(DummyOp, new_bits, resource_key="bits")
+
         assert config.resource_op_precisions[DummyOp]["precision"] == new_precision
+        assert config.resource_op_precisions[DummyOp]["coeff_precision"] == new_coeff_precision
+        assert config.resource_op_precisions[DummyOp]["rot_precision"] == new_rot_precision
+        assert config.resource_op_precisions[DummyOp]["bits"] == new_bits

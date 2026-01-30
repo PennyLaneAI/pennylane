@@ -123,9 +123,21 @@ class ZSqrtTwo:
         if isinstance(other, int) or (isinstance(other, float) and other.is_integer()):
             return ZSqrtTwo(self.a % int(other), self.b % int(other))
 
+        if self in (zero := ZSqrtTwo(0, 0), other):  # Trivial cases
+            return zero
+
         d = abs(other)
         n1, n2 = (self.a * other.a - 2 * self.b * other.b), (self.b * other.a - self.a * other.b)
-        return self - ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
+        if (dv := ZSqrtTwo(n1 // d, n2 // d)) != ZSqrtTwo(0, 0):  # Check if floor division works
+            return self - dv * other
+
+        # If floor division leads to a zero divisor, search neighbours.
+        dv_a, dv_b = max(round(n1 / d), dv.a), dv.b
+        if dv_a == dv.a:
+            dv_b = max(round(n2 / d), dv.b)
+
+        # Adjust the sign difference based on the adjusted values.
+        return (-1) ** (dv_a != dv.a or dv_b != dv.b) * (self - ZSqrtTwo(dv_a, dv_b) * other)
 
     @property
     def flatten(self: ZSqrtTwo) -> list[int]:
@@ -288,8 +300,11 @@ class ZOmega:
 
     def __mod__(self, other: ZOmega) -> ZOmega:
         d = abs(other)
-        n = self * other.conj() * ((other * other.conj()).adj2())
-        return ZOmega(*[(s + d // 2) // d for s in n.flatten]) * other - self
+        n = self * other.conj() * (other * other.conj()).adj2()
+        r = other * ZOmega(*[(s + d // 2) // d for s in n.flatten])
+        # TODO [sc-105367]: The logic for selecting the remainder needs a bit more
+        # tweaking to ensure the remainder with the smallest norm is selected here.
+        return self - r if abs(self) > abs(r) else r - self
 
     @classmethod
     def from_sqrt_pair(cls, alpha: ZSqrtTwo, beta: ZSqrtTwo, shift: ZOmega) -> ZOmega:
