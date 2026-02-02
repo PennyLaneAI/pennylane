@@ -1090,13 +1090,13 @@ class TestDecomposition:
         op = qml.ctrl(qml.RZ(1.2, wires=0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        qml.assert_equal(decomp[0], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[0], qml.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
         assert isinstance(decomp[1], qml.QubitUnitary)
-        qml.assert_equal(decomp[2], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[2], qml.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
         assert isinstance(decomp[3].base, qml.QubitUnitary)
-        qml.assert_equal(decomp[4], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[4], qml.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
         assert isinstance(decomp[5], qml.QubitUnitary)
-        qml.assert_equal(decomp[6], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[6], qml.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
         assert isinstance(decomp[7].base, qml.QubitUnitary)
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
