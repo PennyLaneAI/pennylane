@@ -273,7 +273,7 @@
 
 * Removes automatic unpacking of inner product resources in the resource representation of
   :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
-  blocks decompositions in this system to use nested operator products while reporting their
+  prevents decompositions in this system from using nested operator products while reporting their
   resources accurately.
   [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
   
