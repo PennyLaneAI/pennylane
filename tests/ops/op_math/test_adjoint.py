@@ -767,6 +767,13 @@ def test_error_adjoint_on_noncallable(obj):
         adjoint(obj)
 
 
+def test_error_on_None():
+    """Test that the error on None points to Subroutines needing to be treated as a Quantum Function."""
+
+    with pytest.raises(ValueError, match="if you apply adjoint to the output of a Subroutine"):
+        adjoint(None)
+
+
 class TestAdjointConstructorPreconstructedOp:
     """Test providing an already initialized operator to the transform."""
 

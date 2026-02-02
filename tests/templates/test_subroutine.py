@@ -242,7 +242,10 @@ class TestSubroutineCall:
             assert isinstance(pauli_words, tuple)
             qml.PauliRot(0.5, pauli_words[0], wires)
 
-        op = f(0, ["X"])
+        with qml.queuing.AnnotatedQueue() as q:
+            out = f(0, ["X"])
+        op = q.queue[0]
+        assert out is None
         assert op.bound_args.arguments["pauli_words"] == ("X",)
 
     def test_fill_in_default_values(self):
@@ -252,7 +255,10 @@ class TestSubroutineCall:
         def f(wires, metadata="default_value"):
             pass
 
-        op = f(0)
+        with qml.queuing.AnnotatedQueue() as q:
+            out = f(0)
+        assert out is None
+        op = q.queue[0]
         assert op.bound_args.arguments["metadata"] == "default_value"
 
     def test_mcm_outputs(self):

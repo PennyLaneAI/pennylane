@@ -1744,6 +1744,12 @@ class TestCtrl:
         with pytest.raises(ValueError, match=r"<class 'int'> is not an Operator or callable."):
             qml.ctrl(1, control=2)
 
+    def test_None_input_error(self):
+        """Test that a special error is raised if the input is None."""
+
+        with pytest.raises(ValueError, match="apply ctrl to the output of a Subroutine"):
+            qml.ctrl(None, control=2)
+
     def test_ctrl_barrier_queueing(self):
         """Test that a ctrl Barrier is queued where the ctrl happens."""
 

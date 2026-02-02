@@ -464,4 +464,4 @@ class Subroutine:
         with queuing.AnnotatedQueue() as decomposition:
             output = self.definition(*bound_args.args, **bound_args.kwargs)
         op = SubroutineOp(self, bound_args, decomposition.queue, output)
-        return op if op.output is None else op.output
+        return op.output
