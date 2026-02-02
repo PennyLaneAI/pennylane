@@ -713,6 +713,7 @@ class Controlled(SymbolicOp):
             control=new_control_wires,
             control_values=self.control_values,
             work_wires=new_work_wires,
+            work_wire_type=self.work_wire_type,
         )
 
     # Properties for resource estimation ###############

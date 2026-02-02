@@ -370,11 +370,12 @@ class TestControlledProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.is_verified_hermitian is value
 
-    def test_map_wires(self):
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_map_wires(self, work_wire_type):
         """Test that we can get and set private wires."""
 
         base = qml.IsingXX(1.234, wires=(0, 1))
-        op = Controlled(base, (3, 4), work_wires="aux")
+        op = Controlled(base, (3, 4), work_wires="aux", work_wire_type=work_wire_type)
 
         assert op.wires == Wires((3, 4, 0, 1))
 
@@ -383,6 +384,7 @@ class TestControlledProperties:
         assert op.base.wires == Wires(("c", "d"))
         assert op.control_wires == Wires(("a", "b"))
         assert op.work_wires == Wires("extra")
+        assert op.work_wire_type == work_wire_type
 
 
 class TestControlledMiscMethods:
