@@ -293,7 +293,10 @@ class CompilePipeline:
         """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         compile pipeline"""
         if isinstance(idx, slice):
-            return CompilePipeline(self._compile_pipeline[idx])
+            markers = {k: v - idx.start for k, v in self._markers.items() if v >= (idx.start or 0)}
+            compile_pipeline = CompilePipeline(self._compile_pipeline[idx])
+            compile_pipeline._markers = markers
+            return compile_pipeline
         return self._compile_pipeline[idx]
 
     def __bool__(self) -> bool:
