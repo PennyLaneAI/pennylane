@@ -145,6 +145,20 @@ def generate_subroutine_op_example(*args, **kwargs):
     return SubroutineOp(Example1Subroutine, bound_args, decomposition=q.queue, output=output)
 
 
+def test_operator_method():
+    """Test that the operator method returns a SubroutineOp"""
+
+    @Subroutine
+    def f(x, wires):
+        qml.RX(x, wires)
+        return 2
+
+    op = f.operator(0.5, 0)
+    assert isinstance(op, SubroutineOp)
+    assert op.output == 2
+    qml.equal(op.decomposition()[0], qml.RX(0.5, 0))
+
+
 class TestSubroutineOp:
 
     op1 = generate_subroutine_op_example(

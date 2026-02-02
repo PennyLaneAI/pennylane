@@ -90,9 +90,7 @@ class SubroutineOp(Operation):
     def __deepcopy__(self, memo) -> "SubroutineOp":
         bound_args = copy.deepcopy(self._bound_args, memo)
         # create new decomp and output to keep inputs, decomp, and outputs consistent with each other
-        with queuing.AnnotatedQueue() as decomposition:
-            output = self.subroutine.definition(**bound_args.arguments)
-        return SubroutineOp(self.subroutine, bound_args, decomposition.queue, output)
+        return self.subroutine.operator(*bound_args.args, **bound_args.kwargs)
 
     grad_method = None
 
@@ -111,10 +109,7 @@ class SubroutineOp(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         subroutine = metadata[0]
-        with queuing.AnnotatedQueue() as decomposition:
-            output = subroutine.definition(**data[0], **dict(metadata[1]))
-        bound_args = subroutine.signature.bind(**data[0], **dict(metadata[1]))
-        return SubroutineOp(subroutine, bound_args, decomposition.queue, output)
+        return subroutine.operator(**data[0], **dict(metadata[1]))
 
     def __repr__(self):
         inputs = ", ".join(f"{key}={value}" for key, value in self._bound_args.arguments.items())
@@ -164,10 +159,7 @@ class SubroutineOp(Operation):
         for wire_argname in self._subroutine.wire_argnames:
             new_wires = tuple(wire_map.get(w, w) for w in self._bound_args.arguments[wire_argname])
             new_args.arguments[wire_argname] = new_wires
-
-        with queuing.AnnotatedQueue() as decomposition:
-            output = self.subroutine.definition(*new_args.args, **new_args.kwargs)
-        return SubroutineOp(self.subroutine, new_args, decomposition.queue, output)
+        return self.subroutine.operator(*new_args.args, **new_args.kwargs)
 
     def decomposition(self):
         if queuing.QueuingManager.recording():
@@ -455,13 +447,16 @@ class Subroutine:
 
         return tuple(name for name in self._signature.parameters if not is_static(name))
 
-    def __call__(self, *args, **kwargs):
+    def operator(self, *args, **kwargs) -> SubroutineOp:
+        """Create a ``SubroutineOp`` from the template."""
         bound_args = self._full_setup_inputs(*args, **kwargs)
-
-        if capture.enabled():
-            return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
-
         with queuing.AnnotatedQueue() as decomposition:
             output = self.definition(*bound_args.args, **bound_args.kwargs)
-        op = SubroutineOp(self, bound_args, decomposition.queue, output)
+        return SubroutineOp(self, bound_args, decomposition.queue, output)
+
+    def __call__(self, *args, **kwargs):
+        if capture.enabled():
+            bound_args = self._full_setup_inputs(*args, **kwargs)
+            return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
+        op = self.operator(*args, **kwargs)
         return op.output
