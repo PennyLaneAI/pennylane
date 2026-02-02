@@ -63,7 +63,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          uv sync
+          uv pip install -e .
 
       - name: Install external packages
         run: |
