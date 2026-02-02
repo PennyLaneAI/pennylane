@@ -81,6 +81,7 @@ UNSUPPORTED_TEMPLATES = {
     "MPS",
     "TTN",
     "FlipAndRotate",
+    "BlockEncode",
 }
 
 
