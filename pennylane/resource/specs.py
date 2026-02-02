@@ -187,9 +187,7 @@ def _specs_qjit_intermediate_passes(
     single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
 
     # Maps to convert back and forth between marker name and int level
-    marker_to_level = {
-        trans.tag: i + 1 for i, trans in enumerate(trans_prog) if hasattr(trans, "tag")
-    }
+    marker_to_level = {marker: trans_prog.get_marker_level(marker) for marker in trans_prog.markers}
     level_to_marker = {v: k for k, v in marker_to_level.items()}
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
