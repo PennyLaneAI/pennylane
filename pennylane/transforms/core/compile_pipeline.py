@@ -361,12 +361,7 @@ class CompilePipeline:
         if expand_transform := other.expand_transform:
             transforms.insert(0, expand_transform)
         transforms += self._compile_pipeline
-        offset = len(self._compile_pipeline)
-        for name, pos in other._markers.items():
-            self._markers[name] = pos + offset
-        new_pipeline = CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
-        new_pipeline._markers = self._markers
-        return new_pipeline
+        return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
 
     def __iadd__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
         """In-place addition to append a transform to the program.
