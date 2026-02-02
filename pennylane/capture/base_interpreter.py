@@ -34,6 +34,7 @@ from .primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
+    jvp_prim,
     qnode_prim,
     vjp_prim,
     while_loop_prim,
@@ -632,7 +633,7 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
 
 @PlxprInterpreter.register_primitive(vjp_prim)
 def handle_vjp(self, *invals, jaxpr, argnums, **params):
-    """Handle the jacobian primitive."""
+    """Handle the vector-jacobian-product primitive."""
 
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
 
@@ -641,6 +642,21 @@ def handle_vjp(self, *invals, jaxpr, argnums, **params):
     argnums = tuple(a + len(j.constvars) for a in argnums)
 
     return vjp_prim.bind(
+        *new_jaxpr.consts, *invals, jaxpr=no_consts_jaxpr, argnums=argnums, **params
+    )
+
+
+@PlxprInterpreter.register_primitive(jvp_prim)
+def handle_jvp(self, *invals, jaxpr, argnums, **params):
+    """Handle the jacobian-vector-product primitive."""
+
+    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
+
+    j = new_jaxpr.jaxpr
+    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    argnums = tuple(a + len(j.constvars) for a in argnums)
+
+    return jvp_prim.bind(
         *new_jaxpr.consts, *invals, jaxpr=no_consts_jaxpr, argnums=argnums, **params
     )
 

@@ -18,12 +18,59 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
+  [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
+
+* `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
+  [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
+  
+  ```python
+  
+  @qml.qjit(target="mlir")
+  @qml.transforms.to_ppr
+  @qml.qnode(qml.device("null.qubit", wires=2))
+  def circuit():
+      qml.H(0)
+      qml.CNOT([0, 1])
+      m = qml.measure(0)
+      qml.T(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.specs(circuit, level=2)())
+  Device: null.qubit
+  Device wires: 2
+  Shots: Shots(total=None)
+  Level: 2
+
+  Resource specifications:
+      Total wire allocations: 2
+      Total gates: 11
+      Circuit depth: Not computed
+
+  Gate types:
+      GlobalPhase: 3
+      PPR-pi/4-w1: 5
+      PPR-pi/4-w2: 1
+      PPM-w1: 1
+      PPR-pi/8-w1: 1
+
+  Measurements:
+      expval(PauliZ): 1
+  ```
+
+* :class:`~.BBQRAM`, :class:`~.HybridQRAM`, :class:`SelectOnlyQRAM` and :class:`~.QROM` now accept 
+  their classical data as a 2-dimensional array data type, which increases compatibility with Catalyst.
+  [(#8791)](https://github.com/PennyLaneAI/pennylane/pull/8791)
+
 * :class:`~.CSWAP` is now decomposed more cheaply, using ``change_op_basis`` with
   two ``CNOT`` gates and a single ``Toffoli`` gate.
   [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
 
-* `qml.vjp` can now be captured into plxpr.
+* `qml.vjp` and `qml.jvp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
+  [(#8788)](https://github.com/PennyLaneAI/pennylane/pull/8788)
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
@@ -63,7 +110,7 @@
 * Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
-  
+
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
   [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
@@ -183,6 +230,7 @@
   Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#8941)](https://github.com/PennyLaneAI/pennylane/pull/8941)
   [(#8977)](https://github.com/PennyLaneAI/pennylane/pull/8977)
+  [(#9006)](https://github.com/PennyLaneAI/pennylane/pull/9006)
 
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
   The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
@@ -190,6 +238,12 @@
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
+  [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
+
+* Add documentation tests for the `decomposition` module.
+  [(#9004)](https://github.com/PennyLaneAI/pennylane/pull/9004)
 
 * Seeded a test `tests/measurements/test_classical_shadow.py::TestClassicalShadow::test_return_distribution` to fix stochastic failures by adding a `seed` parameter to the circuit helper functions and the test method.
   [(#8981)](https://github.com/PennyLaneAI/pennylane/pull/8981)
@@ -223,6 +277,15 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Removes automatic unpacking of inner product resources in the resource representation of
+  :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
+  prevents decompositions in this system from using nested operator products while reporting their
+  resources accurately.
+  [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
+  
+* Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
+  [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
 * `CompilePipeline` no longer automatically pushes final transforms to the end of the pipeline as it's being built.
   [(#8995)](https://github.com/PennyLaneAI/pennylane/pull/8995)
@@ -258,6 +321,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
@@ -266,3 +330,4 @@ Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
 David Wierichs,
+Jake Zaia.
