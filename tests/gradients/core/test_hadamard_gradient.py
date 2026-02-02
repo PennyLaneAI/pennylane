@@ -20,7 +20,11 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import (
+    DecompositionWarning,
+    PennyLaneDeprecationWarning,
+    QuantumFunctionError,
+)
 from pennylane.gradients import hadamard_gradient
 
 
@@ -443,7 +447,8 @@ class TestDifferentModes:
 
         op = qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.Y(0), t)
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
-        batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+        with pytest.warns(DecompositionWarning):
+            batch, _ = qml.gradients.hadamard_grad(tape, mode="auto")
 
         assert len(batch) == 6  # three terms and no work wire
 
@@ -452,7 +457,8 @@ class TestDifferentModes:
         assert reverse.call_count == 0
         assert reversed_direct.call_count == 0
 
-        batch2, _ = qml.gradients.hadamard_grad(tape, aux_wire=2, mode="auto")
+        with pytest.warns(DecompositionWarning):
+            batch2, _ = qml.gradients.hadamard_grad(tape, aux_wire=2, mode="auto")
         assert len(batch2) == 3  # three terms and work wire
 
         assert standard.call_count == 1
@@ -464,7 +470,8 @@ class TestDifferentModes:
         mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
         tape2 = qml.tape.QuantumScript([op], [mp])
 
-        batch3, _ = qml.gradients.hadamard_grad(tape2, mode="auto")
+        with pytest.warns(DecompositionWarning):
+            batch3, _ = qml.gradients.hadamard_grad(tape2, mode="auto")
         assert len(batch3) == 6  # three terms with no work wire.
 
         assert standard.call_count == 1
@@ -472,7 +479,8 @@ class TestDifferentModes:
         assert reverse.call_count == 0
         assert reversed_direct.call_count == 1
 
-        batch, _ = qml.gradients.hadamard_grad(tape2, aux_wire=3, mode="auto")
+        with pytest.warns(DecompositionWarning):
+            batch, _ = qml.gradients.hadamard_grad(tape2, aux_wire=3, mode="auto")
         assert len(batch) == 3
 
         assert standard.call_count == 1
@@ -495,7 +503,9 @@ class TestDifferentModes:
             qml.expval(qml.Z(0)),
         ]
         tape = qml.tape.QuantumScript([op], mps)
-        batch, _ = qml.gradients.hadamard_grad(tape, aux_wire=3, mode="auto")
+
+        with pytest.warns(DecompositionWarning):
+            batch, _ = qml.gradients.hadamard_grad(tape, aux_wire=3, mode="auto")
         assert len(batch) == 3
 
         assert standard.call_count == 1
@@ -508,19 +518,21 @@ class TestDifferentModes:
         mp = qml.expval(qml.Z(0) @ qml.X(1) + qml.Y(0) + qml.X(0) @ qml.Z(1))
         tape = qml.tape.QuantumScript([op], [mp, qml.probs((0, 1))])
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Providing a value of None to aux_wire",
-        ):
+        with pytest.warns() as record:
             _, _ = qml.gradients.hadamard_grad(tape, mode="standard", aux_wire=None)
+
+        assert len(record) == 2
+        assert record[0].category is DecompositionWarning
+        assert record[1].category is PennyLaneDeprecationWarning
 
         tape = qml.tape.QuantumScript([op], [mp])
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="Providing a value of None to aux_wire",
-        ):
+        with pytest.warns() as record:
             _, _ = qml.gradients.hadamard_grad(tape, mode="reversed", aux_wire=None)
+
+        assert len(record) == 2
+        assert record[0].category is DecompositionWarning
+        assert record[1].category is PennyLaneDeprecationWarning
 
     def test_automatic_mode_raises(self, mocker):
         # setup mocks
@@ -536,9 +548,12 @@ class TestDifferentModes:
             ValueError,
             match="Computing the gradient of probabilities is only possible with the standard",
         ):
-            _, _ = qml.gradients.hadamard_grad(tape, mode="auto")
+            with pytest.warns(DecompositionWarning):
+                _, _ = qml.gradients.hadamard_grad(tape, mode="auto")
 
-        _, _ = qml.gradients.hadamard_grad(tape, mode="auto", aux_wire=3)
+        with pytest.warns(DecompositionWarning):
+            _, _ = qml.gradients.hadamard_grad(tape, mode="auto", aux_wire=3)
+
         assert standard.call_count == 1
 
     @pytest.mark.parametrize("mode", ["direct", "reversed-direct"])
