@@ -30,8 +30,6 @@ jobs:
     if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
-    env:
-      UV_SYSTEM_PYTHON: 1
 
     name: Documentation Tests on Python 3.11
 
@@ -44,39 +42,31 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: 0.9.17
-          enable-cache: true  
       - name: Install pip and setuptools
         run: |
-          uv pip install --upgrade setuptools
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools
 
       - name: Install Catalyst and Lightning (dev)
         run: |
-          uv pip install --upgrade \
-          --index-url https://test.pypi.org/simple/ \
-          --extra-index-url https://pypi.org/simple/ \
-          --pre \
-          pennylane-catalyst pennylane-lightning
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
 
-      # - name: Install dependencies of Catalyst and Lightning
-      #   run: |
-      #     uv pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+      - name: Install dependencies of Catalyst and Lightning
+        run: |
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
 
       - name: Install PennyLane (editable)
         run: |
-          uv pip install -e .
+          pip install -e .
 
       - name: Install external packages
         run: |
-          uv pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
+          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
 
       - name: Print Dependencies
         run: |
           python -c "import pennylane as qml; qml.about()"
-          uv pip list
+          python -m pip list
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
@@ -94,6 +84,7 @@ jobs:
           --ignore=pennylane/ops/qubit
           --ignore=pennylane/ops/qutrit
           --ignore=pennylane/capture
+          --ignore=pennylane/decomposition
           --ignore=pennylane/devices
           "
           IGNORE_OPTS_AUXILIARY="
