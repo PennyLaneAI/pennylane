@@ -330,7 +330,9 @@ class CompilePipeline:
                 cotransform_cache = self.cotransform_cache
             elif other.cotransform_cache:
                 cotransform_cache = other.cotransform_cache
-            return CompilePipeline(transforms, cotransform_cache=cotransform_cache)
+            new_pipeline = CompilePipeline(transforms, cotransform_cache=cotransform_cache)
+            new_pipeline._markers = self._markers
+            return new_pipeline
 
         return NotImplemented
 
@@ -356,7 +358,12 @@ class CompilePipeline:
         if expand_transform := other.expand_transform:
             transforms.insert(0, expand_transform)
         transforms += self._compile_pipeline
-        return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
+        offset = len(self._compile_pipeline)
+        for name, pos in other._markers.items():
+            self._markers[name] = pos + offset
+        new_pipeline = CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
+        new_pipeline._markers = self._markers
+        return new_pipeline
 
     def __iadd__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
         """In-place addition to append a transform to the program.
@@ -414,6 +421,9 @@ class CompilePipeline:
             raise TransformError(
                 "Cannot multiply a compile pipeline that has a terminal transform."
             )
+
+        if self._markers:
+            raise TransformError("Cannot multiply a compile pipeline that has markers.")
 
         transforms = self._compile_pipeline * n
         return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
@@ -584,6 +594,8 @@ class CompilePipeline:
             transform (transform or BoundTransform): the transform to insert
 
         """
+        self._markers = {k: (v + 1 if v >= index else v) for k, v in self._markers.items()}
+
         if not isinstance(transform, BoundTransform):
             transform = BoundTransform(transform)
 
