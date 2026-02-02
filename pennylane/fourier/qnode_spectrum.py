@@ -430,6 +430,9 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
                 stopping_condition=_multipar_stopping_fn,
             )(*args, **kwargs)
+            tape.trainable_params = math.get_trainable_indices(
+                tape.get_parameters(trainable_only=False)
+            )
             return tape
 
         jac_fn = gradients.classical_jacobian(qnode, argnum=argnum, expand_fn=expand_fn)
