@@ -387,15 +387,18 @@ def _try_wrap_in_custom_ctrl_op(
 def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires, work_wire_type):
     """Handles PauliX-based controlled operations."""
 
-    op_map = {
-        (qml.PauliX, 1): qml.CNOT,
-        (qml.PauliX, 2): qml.Toffoli,
-        (qml.CNOT, 1): qml.Toffoli,
+    # We map some small combinations of base operators and control wires to custom operators.
+    # However, we only should map to custom operators if there is no benefit from having work wires
+    # or if no work wires are provided
+    op_map = {  # Key: (base cls, num_control_wires, has work wires)
+        (qml.PauliX, 1, False): qml.CNOT,
+        (qml.PauliX, 1, True): qml.CNOT,
+        (qml.PauliX, 2, False): qml.Toffoli,
+        (qml.CNOT, 1, False): qml.Toffoli,
     }
 
-    custom_key = (type(op), len(control))
-    # Only can map to custom operators if no work wires are provided
-    if not work_wires and custom_key in op_map and all(control_values):
+    custom_key = (type(op), len(control), bool(work_wires))
+    if custom_key in op_map and all(control_values):
         qml.QueuingManager.remove(op)
         return op_map[custom_key](wires=control + op.wires)
 
