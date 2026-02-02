@@ -729,7 +729,7 @@ batched_state_to_be_normalized = np.stack(
 batched_state_not_normalized = np.stack(
     [
         np.array([[0, 0], [0, 1]]),
-        np.array([[1.0000004, 0], [1, 0]]) / np.sqrt(2),
+        np.array([[1.000004, 0], [1, 0]]) / np.sqrt(2),
         np.array([[1, 1], [1, 0.9999995]]) / 2,
     ]
 )
@@ -1344,14 +1344,14 @@ class TestSampleProbs:
 
     def test_cutoff_edge_case_failure(self, seed):
         """Test sampling with probabilities just outside the cutoff."""
-        cutoff = 1e-7  # Assuming this is the cutoff used in sample_probs
+        cutoff = 1e-6  # Assuming this is the cutoff used in sample_probs
         probs = np.array([0.5, 0.5 - 2 * cutoff])
         with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=seed)
 
     def test_batched_cutoff_edge_case_failure(self, seed):
         """Test sampling with probabilities just outside the cutoff."""
-        cutoff = 1e-7  # Assuming this is the cutoff used in sample_probs
+        cutoff = 1e-6  # Assuming this is the cutoff used in sample_probs
         probs = np.array(
             [
                 [0.5, 0.5 - 2 * cutoff],
@@ -1360,3 +1360,38 @@ class TestSampleProbs:
         )
         with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=seed)
+
+    @pytest.mark.jax
+    def test_no_error_with_jax_32_bit_precision(self):
+        """Tests that a bug reported where jax 32 bit parameters caused a probability norm further from 1 then the initial cutoff.
+
+        See https://github.com/PennyLaneAI/pennylane/issues/9000 for the report.
+        """
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        feature_count = 2
+
+        key = jax.random.key(123)
+        key_inputs, key_params = jax.random.split(key)
+
+        inputs = jax.random.uniform(key_inputs, shape=(1450, 2))
+        params = jax.random.uniform(key_params, shape=(2, 3))
+
+        device = qml.device("default.qubit")
+
+        @qml.qnode(device)
+        def circuit(inputs, weights):
+            for i in range(feature_count):
+                qml.RY(inputs[:, i], wires=i)
+            for i in range(feature_count):
+                qml.RX(weights[i, 3], wires=i)
+                qml.RY(weights[i, 4], wires=i)
+                qml.RX(weights[i, 5], wires=i)
+                qml.CNOT(wires=[i, (i + 1) % feature_count])
+            for i in range(1, feature_count - 1):
+                qml.CNOT(wires=[i, (i + 1)])
+            return qml.expval(qml.sum(*[qml.PauliZ(i) for i in range(feature_count)]))
+
+        # just testing it runs without error
+        _ = qml.set_shots(circuit, 8)(inputs, params)

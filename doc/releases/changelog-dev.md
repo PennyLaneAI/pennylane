@@ -271,6 +271,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
+  1 in Default Qubit.
+
 * Removes automatic unpacking of inner product resources in the resource representation of
   :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
   prevents decompositions in this system from using nested operator products while reporting their
