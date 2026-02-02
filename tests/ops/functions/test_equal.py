@@ -3138,8 +3138,8 @@ class TestCompareSubroutines:
         def Subroutine2(wires):
             qml.Y(wires)
 
-        op1 = Subroutine1(0)
-        op2 = Subroutine2(0)
+        op1 = qml.tape.make_qscript(Subroutine1)(0)[0]
+        op2 = qml.tape.make_qscript(Subroutine2)(0)[0]
 
         assert not qml.equal(op1, op2)
         with pytest.raises(AssertionError, match="op1 is <Subroutine: Subroutine1>"):
@@ -3152,8 +3152,8 @@ class TestCompareSubroutines:
         def f(a, wires):
             pass
 
-        op1 = f("val1", 0)
-        op2 = f("val2", 0)
+        op1 = qml.tape.make_qscript(f)("val1", 0)[0]
+        op2 = qml.tape.make_qscript(f)("val2", 0)[0]
 
         assert not qml.equal(op1, op2)
         with pytest.raises(AssertionError, match="op2 has value val2 for input a"):
@@ -3166,8 +3166,8 @@ class TestCompareSubroutines:
         def f(reg1, reg2):
             pass
 
-        op1 = f((0,), (1,))
-        op2 = f((1,), (0,))
+        op1 = qml.tape.make_qscript(f)((0,), (1,))[0]
+        op2 = qml.tape.make_qscript(f)((1,), (0,))[0]
         assert not qml.equal(op1, op2)
         with pytest.raises(AssertionError, match=r"has value Wires\(\[1\]\) for register reg1"):
             qml.assert_equal(op1, op2)
@@ -3179,8 +3179,8 @@ class TestCompareSubroutines:
         def f(x, wires):
             pass
 
-        op1 = f((0.5,), 0)
-        op2 = f((0.5, 0.6), 0)
+        op1 = qml.tape.make_qscript(f)((0.5,), 0)[0]
+        op2 = qml.tape.make_qscript(f)((0.5, 0.6), 0)[0]
 
         assert not qml.equal(op1, op2)
         with pytest.raises(AssertionError, match="have different pytree structures"):
@@ -3193,17 +3193,17 @@ class TestCompareSubroutines:
         def f(x, wires):
             pass
 
-        op1 = f(np.array(0.5), 0)
-        op2 = f(np.array(0.5 + 1e-5), 0)
+        op1 = qml.tape.make_qscript(f)(np.array(0.5), 0)[0]
+        op2 = qml.tape.make_qscript(f)(np.array(0.5 + 1e-5), 0)[0]
 
         assert not qml.equal(op1, op2)
         assert qml.equal(op1, op2, rtol=1e-4)
         assert qml.equal(op1, op2, atol=1e-4)
 
-        op3 = f(qml.numpy.array(0.5, requires_grad=False), 0)
+        op3 = qml.tape.make_qscript(f)(qml.numpy.array(0.5, requires_grad=False), 0)[0]
         assert not qml.equal(op1, op3)
         assert qml.equal(op1, op3, check_interface=False)
 
-        op4 = f(qml.numpy.array(0.5), 0)
+        op4 = qml.tape.make_qscript(f)(qml.numpy.array(0.5), 0)[0]
         assert not qml.equal(op3, op4)
         assert qml.equal(op3, op4, check_trainability=False)
