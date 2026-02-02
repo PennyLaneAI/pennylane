@@ -271,8 +271,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
-  to handle the ``work_wire_type`` correctly within ``map_wires``.
+* Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
+  to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
+  ``Controlled.map_wires`` to preserve ``work_wires``.
   [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
 
 * Removes automatic unpacking of inner product resources in the resource representation of
