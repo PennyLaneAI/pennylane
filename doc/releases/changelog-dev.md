@@ -275,6 +275,12 @@
   to handle the ``work_wire_type`` correctly within ``map_wires``.
   [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
 
+* Removes automatic unpacking of inner product resources in the resource representation of
+  :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
+  prevents decompositions in this system from using nested operator products while reporting their
+  resources accurately.
+  [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
+  
 * Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
   [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
