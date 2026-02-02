@@ -552,20 +552,22 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     **Example**
 
     >>> import pennylane as qml
-    >>> qml.list_decomps(qml.CRX)
-    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+    >>> from pprint import pprint
+    >>> pprint(qml.list_decomps(qml.CRX))
+    [<pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>]
 
     Each decomposition rule can be inspected:
 
     >>> print(qml.list_decomps(qml.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi, wires, **__):
-        qml.RX(phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
-        qml.RX(-phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+        qml.RX(phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.RX(-phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
     >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤

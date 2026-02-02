@@ -675,7 +675,7 @@ class DecompGraphSolution:
          RY(-0.25, wires=[1]),
          CNOT(wires=[0, 1]),
          RZ(-1.5707963267948966, wires=[1])]
-        >>> graph.resource_estimate(op)
+        >>> solution.resource_estimate(op)
         <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
         """
@@ -710,10 +710,7 @@ class DecompGraphSolution:
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [RY(0.1, wires=[2]),
-         CNOT(wires=[0, 2]),
-         RY(-0.1, wires=[2]),
-         CNOT(wires=[0, 2])]
+        [PauliRot(0.1, Y, wires=[2]), PauliRot(-0.1, ZY, wires=[0, 2])]
 
         """
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
