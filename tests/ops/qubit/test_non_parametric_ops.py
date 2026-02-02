@@ -47,6 +47,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -496,19 +497,22 @@ class TestDecompositions:
         op = qml.CSWAP(wires=[0, 1, 2])
         res = op.decomposition()
 
-        assert len(res) == 3
+        expected_ops = [qml.CNOT([2, 1]), qml.Toffoli([0, 1, 2]), qml.CNOT([2, 1])]
+        assert all(
+            qml.equal(dec_op, exp_op) for dec_op, exp_op in zip(res, expected_ops, strict=True)
+        )
 
         mats = []
 
         for i in reversed(res):  # only use 3 toffoli gates
-            if i.wires == Wires([0, 2, 1]) and i.name == "Toffoli":
+            if i.wires == Wires([2, 1]) and i.name == "CNOT":
                 mats.append(
                     np.array(
                         [
                             [1, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 1],
                             [0, 0, 0, 0, 0, 0, 1, 0],
@@ -727,7 +731,7 @@ class TestMultiControlledX:
                 control_values=control_values,
             )
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT", "X"})
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -759,7 +763,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=2)
+        [tape], _ = decompose(tape, max_expansion=2, gate_set={"CNOT"})
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -792,7 +796,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=1)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT"})
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)

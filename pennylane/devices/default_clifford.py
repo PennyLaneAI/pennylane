@@ -894,7 +894,7 @@ class DefaultClifford(Device):
             )
         )
 
-        rank = math.binary_rank(partition_mat)
+        rank = math.binary_matrix_rank(partition_mat)
 
         # Compute the entropy
         entropy = math.log(2) * (rank - len(wires))
