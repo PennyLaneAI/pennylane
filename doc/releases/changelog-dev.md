@@ -271,6 +271,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
+  to handle the ``work_wire_type`` correctly within ``map_wires``.
+  [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
+
 * Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
   [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
