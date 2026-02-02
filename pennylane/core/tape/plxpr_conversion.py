@@ -64,7 +64,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
             qml.RX(2*x, 0)
             return qml.probs(wires=0), qml.expval(qml.Z(1))
 
-    >>> from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+    >>> from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
     >>> from jax import make_jaxpr
     >>> qml.capture.enable()
     >>> plxpr = make_jaxpr(f)(0.5)

@@ -32,7 +32,7 @@ from pennylane.capture.autograph import run_autograph
 
 # must be below jax importorskip
 from pennylane.capture.primitives import qnode_prim, transform_prim
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
 
 def get_qnode_output_eqns(jaxpr):

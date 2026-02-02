@@ -23,8 +23,10 @@ from copy import copy, deepcopy
 from dataclasses import replace
 
 from pennylane import math, ops
+from pennylane.core.devices import Device, ExecutionConfig
+from pennylane.core.devices.capabilities import DeviceCapabilities
+from pennylane.core.operation import Operator
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
-from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     DeviceError,
@@ -33,7 +35,6 @@ from pennylane.exceptions import (
 )
 from pennylane.math import Interface, requires_grad
 from pennylane.measurements import ExpectationMP, Shots
-from pennylane.operation import Operator
 from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
@@ -41,8 +42,6 @@ from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.wires import Wires
 
 from ._legacy_device import Device as LegacyDevice
-from .device_api import Device
-from .execution_config import ExecutionConfig
 from .modifiers import single_tape_support
 from .preprocess import (
     decompose,

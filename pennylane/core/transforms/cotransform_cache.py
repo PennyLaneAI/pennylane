@@ -19,7 +19,7 @@ from functools import partial
 import pennylane as qml  # for qml.workflow.construct_tape
 from pennylane import math
 from pennylane._grad import jacobian as autograd_jacobian
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.core.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 
 from .transform import BoundTransform

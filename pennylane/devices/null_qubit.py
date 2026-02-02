@@ -26,6 +26,7 @@ from numbers import Number
 import numpy as np
 
 from pennylane import math
+from pennylane.core.devices import ExecutionConfig
 from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
@@ -43,7 +44,6 @@ from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
-from .execution_config import ExecutionConfig
 from .preprocess import decompose
 
 logger = logging.getLogger(__name__)

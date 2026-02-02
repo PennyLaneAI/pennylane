@@ -26,14 +26,14 @@ from functools import cached_property
 from typing import Any, ParamSpec, TypeVar
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import MeasurementProcess
-from pennylane.measurements.shots import Shots, ShotsLike
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation, Operator
-from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.core.exceptions import PennyLaneDeprecationWarning
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operation import _UNSET_BATCH_SIZE, Operation, Operator
+from pennylane.core.pytrees import register_pytree
+from pennylane.core.queuing import AnnotatedQueue, process_queue
+from pennylane.core.shots import Shots, ShotsLike
+from pennylane.core.wires import Wires
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 QS = TypeVar("QS", bound="QuantumScript")
 

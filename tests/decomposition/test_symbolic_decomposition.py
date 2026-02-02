@@ -64,7 +64,7 @@ class TestAdjointDecompositionRules:
     def test_cancel_adjoint_capture(self):
         """Tests that the adjoint of an adjoint works with capture."""
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=0)))
 
@@ -189,7 +189,7 @@ class TestPowDecomposition:
     def test_repeat_pow_base_capture(self):
         """Tests that the general pow decomposition works with capture."""
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         op = qml.pow(qml.H(0), 3)
 

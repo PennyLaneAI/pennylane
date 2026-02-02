@@ -21,7 +21,8 @@ from typing import Optional
 
 from pennylane import capture
 from pennylane.math import is_abstract
-from pennylane.wires import Wires
+
+from .wires import Wires
 
 has_jax = True
 try:

@@ -21,11 +21,11 @@ import numpy as np
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, measure_prim
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.devices import ExecutionConfig
 from pennylane.measurements import Shots
 from pennylane.ops import MidMeasure, adjoint, ctrl
 from pennylane.ops.qubit import Projector
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state

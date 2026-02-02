@@ -24,20 +24,20 @@ from typing import Optional
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
-from pennylane.exceptions import (
+from pennylane.core.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
     QuantumFunctionError,
 )
+from pennylane.core.operation import Operator, _get_abstract_operator
+from pennylane.core.pytrees import flatten, register_pytree, unflatten
+from pennylane.core.queuing import QueuingManager
+from pennylane.core.wires import Wires
 from pennylane.math.utils import is_abstract
-from pennylane.operation import Operator, _get_abstract_operator
 from pennylane.ops import MeasurementValue
-from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
-from .capture_measurements import (
+from ._capture_measurements import (
     create_measurement_mcm_primitive,
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,

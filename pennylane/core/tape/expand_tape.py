@@ -18,10 +18,10 @@ import warnings
 
 # pylint: disable=protected-access
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator, StatePrepBase
-from pennylane.queuing import QueuingManager
+from pennylane.core.exceptions import PennyLaneDeprecationWarning
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operation import Operator, StatePrepBase
+from pennylane.core.queuing import QueuingManager
 
 from .qscript import QuantumScript
 from .tape import (

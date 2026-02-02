@@ -204,7 +204,7 @@ def _get_adjoint_qfunc_prim():
 
     @adjoint_prim.def_impl
     def _impl(*args, jaxpr, lazy, n_consts):
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
         args = args[n_consts:]

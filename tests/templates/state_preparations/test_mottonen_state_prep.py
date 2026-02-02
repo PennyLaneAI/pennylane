@@ -335,7 +335,7 @@ class TestDecomposition:
         """Tests that the new decomposition works with capture."""
         from jax import numpy as jnp
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         state = jnp.array([0, 0, 0, 1j])
 

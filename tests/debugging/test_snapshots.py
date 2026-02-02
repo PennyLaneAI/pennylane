@@ -614,7 +614,7 @@ class TestSnapshotSupportedQNode:
             with pytest.raises(
                 ValueError,
                 match="The measurement PauliZ is not supported as it is not an instance "
-                "of <class 'pennylane.measurements.measurements.MeasurementProcess'>",
+                "of <class 'pennylane.core.measurements.measurements.MeasurementProcess'>",
             ):
                 qml.Snapshot(measurement=qml.PauliZ(0))
             return qml.expval(qml.PauliZ(0))

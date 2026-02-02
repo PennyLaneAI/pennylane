@@ -25,13 +25,13 @@ from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane.core.operation import _UNSET_BATCH_SIZE, Operation
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_csr_matrix,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation
 
 ml_frameworks_list = [
     "numpy",

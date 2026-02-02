@@ -16,12 +16,11 @@
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import MeasurementProcess
 from pennylane.operation import EigvalsUndefinedError
 from pennylane.ops import MeasurementValue
 from pennylane.typing import Sequence, TensorLike
 from pennylane.wires import WiresLike
-
-from .measurements import MeasurementProcess
 
 
 # pylint: disable=too-many-arguments

@@ -289,7 +289,7 @@ def _get_ctrl_qfunc_prim():
 
     @ctrl_prim.def_impl
     def _impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         consts = args[:n_consts]
         control_wires = args[-n_control:]

@@ -18,8 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.core.operation import _UNSET_BATCH_SIZE
 from pennylane.measurements import Shots, StateMP
-from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison

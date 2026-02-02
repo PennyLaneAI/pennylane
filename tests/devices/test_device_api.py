@@ -17,6 +17,7 @@ Tests for the basic default behavior of the Device API.
 import pytest
 
 import pennylane as qml
+from pennylane.core.transforms import CompilePipeline
 from pennylane.devices import Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
@@ -25,7 +26,6 @@ from pennylane.devices.capabilities import (
 )
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 

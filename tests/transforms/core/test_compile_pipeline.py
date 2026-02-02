@@ -18,21 +18,21 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qml
-from pennylane.decomposition import gate_sets
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms.core import (
+from pennylane.core.transforms import (
     BoundTransform,
     CompilePipeline,
     TransformError,
     transform,
 )
-from pennylane.transforms.core.compile_pipeline import (
+from pennylane.core.transforms.compile_pipeline import (
     CotransformCache,
     _apply_postprocessing_stack,
     _batch_postprocessing,
     null_postprocessing,
 )
+from pennylane.decomposition import gate_sets
+from pennylane.exceptions import QuantumFunctionError
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 from tests.capture.capture_utils import extract_ops_and_meas_prims
 

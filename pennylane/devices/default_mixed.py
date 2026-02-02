@@ -24,6 +24,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 import pennylane as qml
+from pennylane.core.devices import ExecutionConfig
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
@@ -34,7 +35,6 @@ from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
-from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,

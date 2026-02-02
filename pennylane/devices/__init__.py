@@ -155,14 +155,9 @@ Qutrit Mixed-State Simulation Tools
 .. automodule:: pennylane.devices.qutrit_mixed
 
 """
+from pennylane.core.devices import Device, Tracker, DeviceCapabilities, ExecutionConfig, MCMConfig
 
-
-from .tracker import Tracker
-
-from .capabilities import DeviceCapabilities
-from .execution_config import ExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
-from .device_api import Device
 from .default_qubit import DefaultQubit
 from .legacy_facade import LegacyDeviceFacade
 

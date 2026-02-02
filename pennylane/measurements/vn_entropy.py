@@ -17,10 +17,9 @@ This module contains the qml.vn_entropy measurement.
 """
 
 from pennylane import math
+from pennylane.core.measurements import StateMeasurement
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-from .measurements import StateMeasurement
 
 
 class VnEntropyMP(StateMeasurement):

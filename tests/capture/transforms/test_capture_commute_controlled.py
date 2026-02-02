@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 from pennylane.capture.primitives import cond_prim, for_loop_prim, measure_prim, while_loop_prim
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.commute_controlled import (
     CommuteControlledInterpreter,
     commute_controlled,

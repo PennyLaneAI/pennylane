@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestAdjointQfunc:

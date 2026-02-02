@@ -30,7 +30,7 @@ from pennylane.capture.primitives import (
     transform_prim,
     while_loop_prim,
 )
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.optimization_utils import fuse_rot_angles
 from pennylane.transforms.optimization.single_qubit_fusion import (
     SingleQubitFusionInterpreter,

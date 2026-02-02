@@ -20,14 +20,14 @@ from dataclasses import dataclass
 import pytest
 
 import pennylane as qml
-from pennylane.data import Dataset, DatasetPyTree
-from pennylane.pytrees.pytrees import (
+from pennylane.core.pytrees.pytrees import (
     _register_pytree_with_pennylane,
     flatten_registrations,
     type_to_typename,
     typename_to_type,
     unflatten_registrations,
 )
+from pennylane.data import Dataset, DatasetPyTree
 
 
 @dataclass

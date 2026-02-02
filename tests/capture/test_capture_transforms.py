@@ -31,8 +31,8 @@ from pennylane.capture.primitives import (
     transform_prim,
     while_loop_prim,
 )
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.transforms.core import CompilePipeline, TransformError, transform
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.transforms import CompilePipeline, TransformError, transform
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

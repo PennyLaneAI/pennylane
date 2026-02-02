@@ -23,15 +23,15 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import (
+from pennylane.core.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
     Operator,
     StatePrepBase,
     operation_derivative,
 )
+from pennylane.core.wires import Wires
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call

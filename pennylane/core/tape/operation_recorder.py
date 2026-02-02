@@ -15,7 +15,7 @@
 This module contains the :class:`OperationRecorder`.
 """
 
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .tape import QuantumScript
 

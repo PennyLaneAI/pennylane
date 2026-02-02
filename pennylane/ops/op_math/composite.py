@@ -22,7 +22,7 @@ from functools import wraps
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import _UNSET_BATCH_SIZE, Operator
+from pennylane.core.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes

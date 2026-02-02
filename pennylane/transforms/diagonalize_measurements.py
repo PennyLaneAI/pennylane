@@ -17,13 +17,13 @@ from copy import copy
 from functools import singledispatch
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
-from pennylane.pauli import diagonalize_qwc_pauli_words
-from pennylane.tape.tape import (
+from pennylane.core.tape.tape import (
     _validate_computational_basis_sampling,
     rotations_and_diagonal_measurements,
 )
+from pennylane.exceptions import QuantumFunctionError
+from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
+from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.transforms.core import transform
 
 # pylint: disable=unused-argument

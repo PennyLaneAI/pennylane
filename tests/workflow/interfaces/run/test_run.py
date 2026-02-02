@@ -19,9 +19,9 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.devices import ExecutionConfig
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import BoundTransform, CompilePipeline
 from pennylane.transforms.optimization import merge_rotations
 from pennylane.workflow import run
 

@@ -24,6 +24,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import math, ops
+from pennylane.core.devices import Device, ExecutionConfig
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -49,8 +50,6 @@ from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from .default_qubit import accepted_sample_measurement
-from .device_api import Device
-from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,

@@ -59,6 +59,11 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 # they cannot depend on any module "lower" than them.
 
 [[modules]]
+path = "pennylane.core"
+layer = "core"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.control_flow"
 layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]

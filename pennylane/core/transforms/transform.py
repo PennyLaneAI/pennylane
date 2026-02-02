@@ -24,12 +24,12 @@ from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
 
 from pennylane import capture, math
 from pennylane.capture import autograph
-from pennylane.exceptions import PennyLaneDeprecationWarning, TransformError
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
-from pennylane.pytrees import flatten
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.tape import QuantumScript
+from pennylane.core.exceptions import PennyLaneDeprecationWarning, TransformError
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operation import Operator
+from pennylane.core.pytrees import flatten
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.tape import QuantumScript
 from pennylane.typing import ResultBatch
 
 

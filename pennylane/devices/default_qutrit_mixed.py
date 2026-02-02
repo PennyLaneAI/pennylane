@@ -22,6 +22,7 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
+from pennylane.core.devices import ExecutionConfig
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
@@ -31,7 +32,6 @@ from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit
-from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,

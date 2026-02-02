@@ -23,7 +23,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
+from pennylane.core.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,
     legacy_device_batch_transform,

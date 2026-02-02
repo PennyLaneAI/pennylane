@@ -20,6 +20,7 @@ and plugin development purposes.
 import numpy as np
 
 from pennylane import math
+from pennylane.core.devices import Device, ExecutionConfig
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript
 from pennylane.transforms import (
@@ -31,8 +32,6 @@ from pennylane.transforms import (
 from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result
 
-from .device_api import Device
-from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,

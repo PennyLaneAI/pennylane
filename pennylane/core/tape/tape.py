@@ -20,10 +20,10 @@ from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.core.exceptions import QuantumFunctionError
+from pennylane.core.pytrees import register_pytree
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, process_queue
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
-from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
 

@@ -19,6 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
@@ -27,7 +28,6 @@ from pennylane.gradients.parameter_shift import (
     _make_zero_rep,
     _put_zeros_in_pdA2_involutory,
 )
-from pennylane.measurements.shots import Shots
 
 # Constants for TestEvaluateGradient
 # Coefficients and expectation values

@@ -19,11 +19,10 @@ from collections.abc import Sequence
 from copy import copy
 
 from pennylane import math
+from pennylane.core.measurements import StateMeasurement
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-from .measurements import StateMeasurement
 
 
 class MutualInfoMP(StateMeasurement):

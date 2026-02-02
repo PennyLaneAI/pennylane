@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.core.devices import Device, ExecutionConfig, MCMConfig
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
@@ -56,8 +57,6 @@ from pennylane.transforms import (
 from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
-from .device_api import Device
-from .execution_config import ExecutionConfig, MCMConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,

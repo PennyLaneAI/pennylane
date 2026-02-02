@@ -32,12 +32,12 @@ from pennylane import (
     ResetError,
     math,
 )
+from pennylane.core.operation import _UNSET_BATCH_SIZE
 from pennylane.devices.qubit_mixed import apply_operation, measure
 from pennylane.devices.qubit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE
 
 ml_frameworks_list = [
     "numpy",

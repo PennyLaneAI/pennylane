@@ -16,7 +16,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.core import TransformError
+from pennylane.core.transforms import TransformError
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -41,7 +41,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.merge_amplitude_embedding import (
     MergeAmplitudeEmbeddingInterpreter,
     merge_amplitude_embedding_plxpr_to_plxpr,

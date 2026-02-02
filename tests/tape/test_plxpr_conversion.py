@@ -23,9 +23,10 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
+
 # pylint: disable=wrong-import-position
 from pennylane.ops.mid_measure import MidMeasure
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestCollectOpsandMeas:

@@ -20,7 +20,7 @@ from dataclasses import replace
 
 import pytest
 
-from pennylane.devices.execution_config import (
+from pennylane.core.devices.execution_config import (
     MCM_METHOD,
     POSTSELECT_MODE,
     ExecutionConfig,

@@ -17,8 +17,8 @@ Tests for the CotransformCache object.
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.core import BoundTransform
-from pennylane.transforms.core.cotransform_cache import CotransformCache
+from pennylane.core.transforms import BoundTransform
+from pennylane.core.transforms.cotransform_cache import CotransformCache
 
 
 def test_classical_jacobian_error_if_not_in_cache():

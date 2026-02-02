@@ -635,7 +635,7 @@ class TestMPSPrep:
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         mps = [
             np.array([[0.0, 0.107], [0.994, 0.0]]),

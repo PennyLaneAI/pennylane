@@ -24,6 +24,8 @@ from functools import lru_cache
 import numpy as np
 
 from pennylane.boolean_fn import BooleanFn
+from pennylane.core.devices import Tracker
+from pennylane.core.operation import Operation, Operator, StatePrepBase
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
@@ -36,13 +38,10 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
 from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
 from pennylane.wires import Wires
-
-from .tracker import Tracker
 
 
 class _LegacyMeta(abc.ABCMeta):

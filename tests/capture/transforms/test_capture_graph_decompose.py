@@ -29,7 +29,7 @@ from pennylane.operation import Operation
 from pennylane.ops import Conditional, MidMeasure, PauliMeasure
 
 jax = pytest.importorskip("jax")
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.resolve_dynamic_wires import resolve_dynamic_wires
 

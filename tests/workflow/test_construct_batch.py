@@ -21,7 +21,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.transforms.core import BoundTransform, CompilePipeline
+from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.workflow import construct_batch, get_transform_program
 
 

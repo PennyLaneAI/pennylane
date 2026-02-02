@@ -325,7 +325,7 @@ class TestDynamicDecomposition:
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         wires = [0, 1, 2]

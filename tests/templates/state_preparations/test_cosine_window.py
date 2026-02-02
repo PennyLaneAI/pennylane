@@ -78,7 +78,7 @@ class TestDecomposition:
         import jax
         from jax import numpy as jnp
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         def f():
             qml.CosineWindow(wires=[0, 1])

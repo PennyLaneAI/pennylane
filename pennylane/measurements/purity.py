@@ -15,12 +15,11 @@
 """
 This module contains the qml.purity measurement.
 """
+from pennylane.core.measurements import StateMeasurement
 from pennylane.math import dm_from_state_vector
 from pennylane.math import purity as math_purity
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-from .measurements import StateMeasurement
 
 
 class PurityMP(StateMeasurement):

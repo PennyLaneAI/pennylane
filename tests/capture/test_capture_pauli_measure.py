@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 
 import jax.numpy as jnp
 
-from pennylane.tape.plxpr_conversion import plxpr_to_tape
+from pennylane.core.tape.plxpr_conversion import plxpr_to_tape
 
 pytestmark = [pytest.mark.capture, pytest.mark.jax]
 

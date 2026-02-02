@@ -22,8 +22,8 @@ from copy import copy
 from functools import partial
 from typing import TYPE_CHECKING, Any, overload
 
-from pennylane.exceptions import TransformError
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.exceptions import TransformError
+from pennylane.core.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .cotransform_cache import CotransformCache

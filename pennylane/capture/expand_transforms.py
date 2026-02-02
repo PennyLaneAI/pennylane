@@ -20,7 +20,7 @@ from functools import wraps
 
 import jax
 
-from pennylane.transforms.core.transform import _create_transform_primitive
+from pennylane.core.transforms.transform import _create_transform_primitive
 
 from .base_interpreter import PlxprInterpreter
 

@@ -22,7 +22,7 @@ import re
 import pytest
 
 import pennylane as qml
-from pennylane.devices.capabilities import (
+from pennylane.core.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
     OperatorProperties,

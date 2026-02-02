@@ -32,7 +32,7 @@ from pennylane.capture.primitives import (
     transform_prim,
     while_loop_prim,
 )
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.merge_rotations import (
     MergeRotationsInterpreter,
     merge_rotations_plxpr_to_plxpr,

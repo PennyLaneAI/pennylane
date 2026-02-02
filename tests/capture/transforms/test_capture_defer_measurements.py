@@ -21,7 +21,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.capture.primitives import jacobian_prim, qnode_prim
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.defer_measurements import (
     DeferMeasurementsInterpreter,
     defer_measurements_plxpr_to_plxpr,

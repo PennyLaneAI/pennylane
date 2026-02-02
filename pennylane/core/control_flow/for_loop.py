@@ -21,7 +21,7 @@ from pennylane import capture
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
-from pennylane.exceptions import CaptureWarning
+from pennylane.core.exceptions import CaptureWarning
 
 from ._loop_abstract_axes import (
     add_abstract_shapes,

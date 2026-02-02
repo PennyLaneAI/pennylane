@@ -17,7 +17,7 @@ This module contains the qml.mutual_info measurement.
 """
 import numpy as np
 
-from .measurements import SampleMeasurement, StateMeasurement
+from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 
 
 class NullMeasurement(SampleMeasurement, StateMeasurement):

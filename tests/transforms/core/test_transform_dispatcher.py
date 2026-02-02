@@ -20,13 +20,13 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
-from pennylane.transforms.core import (
+from pennylane.core.transforms import (
     BoundTransform,
     Transform,
     TransformError,
 )
-from pennylane.transforms.core.compile_pipeline import CompilePipeline
+from pennylane.core.transforms.compile_pipeline import CompilePipeline
+from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)

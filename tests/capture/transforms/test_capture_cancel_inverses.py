@@ -28,7 +28,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.optimization.cancel_inverses import (
     CancelInversesInterpreter,
     cancel_inverses_plxpr_to_plxpr,

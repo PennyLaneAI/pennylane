@@ -1503,7 +1503,7 @@ class TestQubitUnitaryDecompositionGraph:
 
         import jax
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         # Just a random matrix
         U = np.array(
@@ -1563,7 +1563,7 @@ class TestQubitUnitaryDecompositionGraph:
 
         import jax
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.core.tape.plxpr_conversion import CollectOpsandMeas
 
         @DecomposeInterpreter(gate_set=gate_set)
         def circuit(mat):

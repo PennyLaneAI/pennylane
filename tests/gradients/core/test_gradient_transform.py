@@ -18,13 +18,13 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.core.transforms import Transform
 from pennylane.gradients.gradient_transform import (
     SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
     _validate_gradient_methods,
     choose_trainable_param_indices,
 )
-from pennylane.transforms.core import Transform
 
 
 def test_supported_gradient_kwargs():

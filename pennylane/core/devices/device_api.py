@@ -22,11 +22,17 @@ from dataclasses import replace
 from numbers import Number
 from typing import overload
 
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import Shots
+from pennylane.core.exceptions import PennyLaneDeprecationWarning
+from pennylane.core.shots import Shots
+from pennylane.core.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
+from pennylane.core.transforms import CompilePipeline, Transform, TransformError
+from pennylane.devices.preprocess import (
+    decompose,
+    validate_device_wires,
+    validate_measurements,
+    validate_observables,
+)
 from pennylane.ops import H, X, Y, Z
-from pennylane.tape import QuantumScript, QuantumScriptOrBatch
-from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms import (
     broadcast_expand,
     defer_measurements,
@@ -35,7 +41,6 @@ from pennylane.transforms import (
     split_non_commuting,
     split_to_single_terms,
 )
-from pennylane.transforms.core import CompilePipeline, Transform, TransformError
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import Wires
 
@@ -45,12 +50,6 @@ from .capabilities import (
     validate_mcm_method,
 )
 from .execution_config import ExecutionConfig
-from .preprocess import (
-    decompose,
-    validate_device_wires,
-    validate_measurements,
-    validate_observables,
-)
 from .tracker import Tracker
 
 
