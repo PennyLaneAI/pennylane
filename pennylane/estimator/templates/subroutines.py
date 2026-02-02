@@ -1984,9 +1984,7 @@ class HybridQRAM(ResourceOperator):
                     )
                 ] += (num_select_wires > 0) * 2
 
-            for j in range(num_target_wires):
-                for p in range(1 << num_tree_control_wires):
-                    cz_count += data[(block_index << num_tree_control_wires) + p][j] == 1
+        cz_count = int(pl_math.sum(data))
 
         ret = [
             GateCount(cswap_one, cswap_counts),
