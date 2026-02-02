@@ -505,8 +505,7 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
         coeff, base = params[0] * base.scalar, base.base
     coeff = 2j * coeff  # The 2j cancels the coefficient added by PauliRot
     pauli_word = qml.pauli.pauli_word_to_string(base)
-    if not all(p == "I" for p in pauli_word):
-        qml.PauliRot(coeff, pauli_word, base.wires)
+    qml.PauliRot(coeff, pauli_word, base.wires)
 
 
 add_decomps(Exp, pauli_rot_decomp)
