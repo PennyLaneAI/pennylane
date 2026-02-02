@@ -108,7 +108,7 @@ def _get_user_transform_slice(
         return slice(0, None)
 
     if isinstance(level, str):
-        return slice(0, _find_level(program, level))
+        return slice(0, _find_level(program, level) + 1)
 
     if isinstance(level, int):
         return slice(0, level)
