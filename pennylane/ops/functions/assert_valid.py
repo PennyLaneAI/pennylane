@@ -151,23 +151,15 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     tape = qml.tape.QuantumScript.from_queue(q)
 
     total_work_wires = rule.get_work_wire_spec(**op.resource_params).total
-    print(f"{total_work_wires=}")
-    for _op in tape.operations:
-        print(_op.resource_params)
     if total_work_wires:
         [tape], _ = qml.transforms.resolve_dynamic_wires(
             [tape], zeroed=range(len(tape.wires), len(tape.wires) + total_work_wires)
         )
-    for _op in tape.operations:
-        print(_op.resource_params)
 
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
         if isinstance(_op, qml.ops.Conditional):
             _op = _op.base
-        print(_op)
-        print(_op.resource_params)
-        print()
         resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
         actual_gate_counts[resource_rep] += 1
 
@@ -180,10 +172,10 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        # assert set(actual_gate_counts).issubset(set(gate_counts))
-        assert all(
-            op in gate_counts for op in actual_gate_counts
-        ), f"Expected (a subset of) gate types {list(gate_counts.keys())}, but got gate types {list(actual_gate_counts.keys())}.\nAsymmetric difference:\n{set(actual_gate_counts.keys()).difference(gate_counts.keys())}"
+        asym_diff = set(actual_gate_counts.keys()).difference(gate_counts.keys())
+        assert (
+            not asym_diff
+        ), f"Expected (a subset of) gate types\n{list(gate_counts.keys())},\nbut got gate types\n{list(actual_gate_counts.keys())}.\nAsymmetric difference:\n{asym_diff}"
 
     # Tests that the decomposition produces the same matrix
     if op.has_matrix and not skip_decomp_matrix_check:

@@ -530,14 +530,20 @@ class SumOfSlatersPrep(Operation):
 
     """
 
-    resource_keys = {"D", "num_wires"}
+    resource_keys = {"D", "num_bits", "num_wires"}
 
     @property
     def resource_params(self):
-        D = len(self.data[0])  # assuming the right representation of state
-        return {"D": D, "num_wires": len(self.wires)}
+        indices = self.data[0]
+        D = len(indices)
+        n = len(self.wires)
+        v_bits = _int_to_binary(indices, n)  # v_bits.shape = (n, D)
+        selector_ids, _ = select_sos_rows(v_bits)
+        r = len(selector_ids)
+        return {"D": D, "num_bits": r, "num_wires": len(self.wires)}
 
     def __init__(self, indices, coefficients, wires):
+        # indices = qml.math.array(indices)
         super().__init__(indices, coefficients, wires)
 
     @staticmethod
@@ -552,11 +558,11 @@ class SumOfSlatersPrep(Operation):
         return op_list
 
 
-def _sos_state_prep_resources(D, num_wires):
+def _sos_state_prep_resources(D, num_bits, num_wires):
     if D == 1:
         return {resource_rep(qml.BasisState, num_wires=num_wires): 1}
     d = math.ceil_log2(D)
-    m = 2 * d - 1  # It could be that r is smaller and that m=min(r, 2d-1)=r, but we can't know that
+    m = min(num_bits, 2 * d - 1)
     resources = defaultdict(int)
 
     # Step 1
@@ -608,9 +614,9 @@ def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
     return (x[None] >> np.arange(length - 1, -1, -1)[:, None]) % 2
 
 
-def _sos_state_prep_work_wires(D, num_wires):
+def _sos_state_prep_work_wires(D, num_bits, **_):
     d = math.ceil_log2(D)
-    m = 2 * d - 1  # It could be that r is smaller and that m=min(r, 2d-1)=r, but we can't know that
+    m = min(num_bits, 2 * d - 1)
     return {"zeroed": d + m + (d - 1) + m}
 
 
@@ -655,8 +661,8 @@ def _sos_state_prep(indices, coefficients, wires, **__):
         qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
 
         # Step 2: QROM to load v_bits into system register
-        qrom_op = qml.QROM(
-            v_bits,
+        qml.QROM(
+            v_bits.T,
             control_wires=enumeration_wires,
             target_wires=wires,
             work_wires=qrom_work_wires,

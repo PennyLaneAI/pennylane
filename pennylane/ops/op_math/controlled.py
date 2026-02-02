@@ -394,7 +394,7 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
     }
 
     custom_key = (type(op), len(control))
-    if custom_key in op_map and all(control_values):
+    if custom_key in op_map and all(control_values) and not work_wires:
         qml.QueuingManager.remove(op)
         return op_map[custom_key](wires=control + op.wires)
 

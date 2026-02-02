@@ -92,7 +92,6 @@ def null_postprocessing(results: ResultBatch) -> Result:
 
 
 def _new_ops(operations, manager, wire_map, deallocated):
-    print(f"{wire_map=}")
     for op in operations:
         # check name faster than isinstance
         if op.name == "Allocate":
@@ -106,7 +105,6 @@ def _new_ops(operations, manager, wire_map, deallocated):
                 manager.return_wire(wire_map.pop(w))
         else:
             if wire_map:
-                print(f"Mapping wires ({wire_map=})")
                 op = op.map_wires(wire_map)
             if deallocated and (intersection := deallocated.intersection(set(op.wires))):
                 raise AllocationError(
@@ -260,14 +258,8 @@ def resolve_dynamic_wires(
     wire_map = {}
     deallocated = set()
 
-    print(f"Before _new_ops")
-    for op in tape.operations:
-        print(op.resource_params)
     # note that manager, wire_map, and deallocated updated in place
     new_ops = list(_new_ops(tape.operations, manager, wire_map, deallocated))
-    print(f"After _new_ops")
-    for op in new_ops:
-        print(op.resource_params)
 
     if wire_map:
         mps = [mp.map_wires(wire_map) for mp in tape.measurements]
