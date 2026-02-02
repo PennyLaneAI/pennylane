@@ -273,6 +273,7 @@
 
 * Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
   1 in Default Qubit.
+  [(#9014)](https://github.com/PennyLaneAI/pennylane/pull/9014)
 
 * Removes automatic unpacking of inner product resources in the resource representation of
   :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
