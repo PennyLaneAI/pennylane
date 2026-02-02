@@ -47,8 +47,6 @@ def test_to_bloq_error():
             qml.to_bloq(qml.H(0))
 
 
-@pytest.mark.external
-@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 @pytest.fixture
 def qubits():
     """Provides cirq.LineQubit instances for tests."""
@@ -57,8 +55,6 @@ def qubits():
     return cirq.LineQubit(0), cirq.LineQubit(1)
 
 
-@pytest.mark.external
-@pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
 @pytest.fixture
 def dtypes():
     """Provides qualtran QDType instances for tests."""
@@ -79,7 +75,7 @@ class TestFromBloq:
 
         from qualtran.bloqs.basic_gates import XGate
 
-        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(XGate, wires=Wires([1]))"
+        assert repr(qml.FromBloq(XGate(), 1)) == "FromBloq(X, wires=Wires([1]))"
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qml.FromBloq("123", 1)
 
@@ -669,7 +665,7 @@ class TestToBloqDecomposition:
                 {
                     (
                         qml.QROM(
-                            bitstrings=["001"],
+                            data=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -680,7 +676,7 @@ class TestToBloqDecomposition:
                     (
                         qml.adjoint(
                             qml.QROM(
-                                bitstrings=["001"],
+                                data=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -691,7 +687,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qml.QROM(
-                            bitstrings=["000", "001"],
+                            data=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -702,7 +698,7 @@ class TestToBloqDecomposition:
                     (
                         qml.adjoint(
                             qml.QROM(
-                                bitstrings=["000", "001"],
+                                data=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -716,7 +712,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    bitstrings=["000", "001"],
+                    data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -737,7 +733,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    bitstrings=["001"],
+                    data=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -750,7 +746,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    bitstrings=["000", "001"],
+                    data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -775,7 +771,7 @@ class TestToBloqDecomposition:
                 {
                     (
                         qml.QROM(
-                            bitstrings=["001"],
+                            data=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -786,7 +782,7 @@ class TestToBloqDecomposition:
                     (
                         qml.adjoint(
                             qml.QROM(
-                                bitstrings=["001"],
+                                data=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -797,7 +793,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qml.QROM(
-                            bitstrings=["000", "001"],
+                            data=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -808,7 +804,7 @@ class TestToBloqDecomposition:
                     (
                         qml.adjoint(
                             qml.QROM(
-                                bitstrings=["000", "001"],
+                                data=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -819,7 +815,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qml.QROM(
-                            bitstrings=["000", "000", "001", "001"],
+                            data=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                             control_wires=[4, 5],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -830,7 +826,7 @@ class TestToBloqDecomposition:
                     (
                         qml.adjoint(
                             qml.QROM(
-                                bitstrings=["000", "000", "001", "001"],
+                                data=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                                 control_wires=[4, 5],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -978,7 +974,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    bitstrings=["010", "111", "110", "000"],
+                    data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
@@ -987,7 +983,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    bitstrings=["010", "111", "110", "000"],
+                    data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
@@ -1059,7 +1055,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qml.QROM(
-                    bitstrings=["010", "111", "110", "000"],
+                    data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
@@ -1144,7 +1140,7 @@ class TestToBloqDecomposition:
                 },
                 "qrom_custom_mapping": {
                     qml.QROM(
-                        bitstrings=["010", "111", "110", "000"],
+                        data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
                         control_wires=[0, 1],
                         target_wires=[2, 3, 4],
                         work_wires=[5, 6, 7],
@@ -1353,7 +1349,7 @@ class TestToBloqEstimator:
             ),
             (
                 qml.QROM(
-                    bitstrings=["000", "001"],
+                    data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -1368,7 +1364,7 @@ class TestToBloqEstimator:
             ),
             (
                 qml.QROM(
-                    bitstrings=["001"],
+                    data=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -1380,7 +1376,7 @@ class TestToBloqEstimator:
             ),
             (
                 qml.QROM(
-                    bitstrings=["000", "001"],
+                    data=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],

@@ -117,7 +117,7 @@ def _(op: qtemps.subroutines.TrotterizedQfunc):
         with AnnotatedQueue() as q:
             qfunc_args = op.parameters
             qfunc_kwargs = {
-                k: v for k, v in op.hyperparameters.items() if not k in base_hyper_params
+                k: v for k, v in op.hyperparameters.items() if k not in base_hyper_params
             }
 
             qfunc = op.hyperparameters["qfunc"]
@@ -160,7 +160,7 @@ def _(op: qtemps.state_preparations.Superposition):
     ]
     msp = qops.StatePrep(
         math.stack(sorted_coefficients),
-        wires=wires[-int(math.ceil(math.log2(len(coeffs)))) :],
+        wires=wires[-math.ceil_log2(len(coeffs)) :],
         pad_with=0,
     )
     gate_types[_map_to_bloq(msp, call_graph="decomposition")] = 1
@@ -192,7 +192,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
         """Helper to create a QROM, count it and its adjoint."""
         qrom_op = qtemps.QROM(
-            bitstrings=bitstrings,
+            data=bitstrings,
             target_wires=precision_wires,
             control_wires=control_wires,
             work_wires=work_wires,
@@ -262,10 +262,10 @@ def _(op: qtemps.subroutines.QROM):
 
     # From ResourceQROM
     gate_types = defaultdict(int, {})
-    bitstrings = op.hyperparameters["bitstrings"]
+    bitstrings = op.data[0]
     num_bitstrings = len(bitstrings)
 
-    num_bit_flips = sum(bits.count("1") for bits in bitstrings)
+    num_bit_flips = math.sum(bitstrings)
 
     num_work_wires = len(op.hyperparameters["work_wires"])
     size_bitstring = len(op.hyperparameters["target_wires"])
@@ -284,7 +284,7 @@ def _(op: qtemps.subroutines.QROM):
     num_parallel_computations = min(num_parallel_computations, square_fact)
 
     num_swap_wires = math.floor(math.log2(num_parallel_computations))
-    num_select_wires = math.ceil(math.log2(math.ceil(num_bitstrings / (2**num_swap_wires))))
+    num_select_wires = math.ceil_log2(math.ceil(num_bitstrings / (2**num_swap_wires)))
 
     swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
     free_work_wires = num_work_wires - swap_work_wires
@@ -372,7 +372,7 @@ def _(op: qtemps.subroutines.Select):
     x = qt_gates.XGate()
 
     num_ops = len(cmpr_ops)
-    num_ctrl_wires = int(np.ceil(np.log2(num_ops)))
+    num_ctrl_wires = math.ceil_log2(num_ops)
     num_total_ctrl_possibilities = 2**num_ctrl_wires  # 2^n
 
     num_zero_controls = num_total_ctrl_possibilities // 2
@@ -567,7 +567,9 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     if mapped_op is not None:
         return mapped_op
 
-    data = np.array([int(b, 2) for b in op.bitstrings])
+    data = op.data[0]
+    powers_of_two = 2 ** np.arange(data.shape[1])[::-1]
+    data = math.sum(powers_of_two * data, axis=1)
     if op.clean:
         return QROAMClean.build_from_data(data)
 
@@ -1018,12 +1020,12 @@ class FromBloq(Operation):
                     in_quregs = {}
                     for succ in succ_cxns:
                         soq = succ.left
-                        if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
+                        if soq.reg.side == qt.Side.RIGHT and soq.reg.name not in in_quregs:
                             soq_to_wires_len -= np.prod(soq.reg.shape) * soq.reg.bitsize
 
                     for succ in succ_cxns:
                         soq = succ.left
-                        if soq.reg.side == qt.Side.RIGHT and not soq.reg.name in in_quregs:
+                        if soq.reg.side == qt.Side.RIGHT and soq.reg.name not in in_quregs:
                             total_elements = np.prod(soq.reg.shape) * soq.reg.bitsize
                             ascending_vals = np.arange(
                                 soq_to_wires_len,

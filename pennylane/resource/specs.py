@@ -36,6 +36,8 @@ def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     Returns:
         CircuitSpecs: result object that contains QNode specifications
     """
+    if level is None:
+        level = "gradient"
 
     if compute_depth is None:
         compute_depth = True
@@ -117,16 +119,10 @@ def _specs_qjit_device_level_tracking(
         with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
-        # TODO: Once measurements are tracked for runtime specs, include that data here
-        warnings.warn(
-            "Measurement resource tracking is not yet supported for qjit'd QNodes. "
-            "The returned SpecsResources will have an empty measurements field.",
-            UserWarning,
-        )
         return SpecsResources(
             gate_types=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
-            measurements={},  # Not tracked at the moment
+            measurements=resource_data["measurements"],
             num_allocs=resource_data["num_wires"],
             depth=resource_data["depth"],
         )
@@ -186,9 +182,9 @@ def _specs_qjit_intermediate_passes(
     from catalyst.python_interface.inspection import mlir_specs
 
     # Note that this only gets transforms manually applied by the user
-    trans_prog = original_qnode.transform_program
+    trans_prog = original_qnode.compile_pipeline
 
-    single_level = isinstance(level, (int, str)) and not level in ("all", "all-mlir")
+    single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
 
     # Maps to convert back and forth between marker name and int level
     marker_to_level = {
@@ -282,8 +278,18 @@ def _specs_qjit_intermediate_passes(
                 for size, count in sizes.items():
                     gate_sizes[size] += count
 
+            gate_types = {}
+
+            for res_name, sizes in res.operations.items():
+                if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+                    # Separate out PPMs and PPRs by weight
+                    for size, count in sizes.items():
+                        gate_types[f"{res_name}-w{size}"] = count
+                else:
+                    gate_types[res_name] = sum(sizes.values())
+
             res_resources = SpecsResources(
-                gate_types={r: sum(sizes.values()) for r, sizes in res.operations.items()},
+                gate_types=gate_types,
                 gate_sizes=dict(gate_sizes),
                 measurements=dict(res.measurements),
                 num_allocs=res.num_allocs,
@@ -305,6 +311,9 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
     from catalyst.passes.pass_api import PassPipelineWrapper
+
+    if level is None:
+        level = "device"
 
     # Unwrap the original QNode if any passes have been applied
     pass_pipeline_wrapped = False
@@ -354,7 +363,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
 
 def specs(
     qnode,
-    level: str | int | slice = "gradient",
+    level: str | int | slice | None = None,
     compute_depth: bool | None = None,
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides the specifications of a quantum circuit.
@@ -368,7 +377,7 @@ def specs(
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
             computing the resource information. See :func:`~pennylane.workflow.get_transform_program` for more details
-            on the available levels. Default is ``"gradient"``.
+            on the available levels. Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
             depth (behaves as ``True``), except where not available, such as in pass-by-pass analysis with :func:`~pennylane.qjit` present.
@@ -496,7 +505,7 @@ def specs(
 
         If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the
         desired transforms, the specs output's resources field is instead returned as a list with a
-        :class:`~.resource.CircuitSpecs` for each resulting tape:
+        :class:`~.resource.SpecsResources` for each resulting tape:
 
         .. code-block:: python
 
@@ -573,11 +582,7 @@ def specs(
             RX: 1
         <BLANKLINE>
           Measurements:
-            No measurements.
-
-        .. warning::
-            Measurement data is not currently supported with runtime resource tracking, so measurement
-            data may show as missing.
+            probs(all wires): 1
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.

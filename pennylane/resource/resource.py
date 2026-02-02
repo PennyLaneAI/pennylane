@@ -382,7 +382,7 @@ class CircuitSpecs:
         num_device_wires (int): The number of wires on the device.
         shots (Shots): The shots configuration used.
         level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
-        resources (SpecsResources | list[SpecsResources] |
+        resources (SpecsResources | list[SpecsResources] | \
             dict[int | str, SpecsResources | list[SpecsResources]]): The resource specifications.
             Depending on the ``level`` chosen, this may be a single :class:`.SpecsResources` object,
             a list of :class:`.SpecsResources` objects, or a dictionary mapping levels to their
@@ -880,7 +880,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
     gate_name, num_wires = gate_info
 
-    if not num_wires in initial_resources.gate_sizes:
+    if num_wires not in initial_resources.gate_sizes:
         raise ValueError(f"initial_resources does not contain a gate acting on {num_wires} wires.")
 
     gate_count = initial_resources.gate_types.get(gate_name, 0)

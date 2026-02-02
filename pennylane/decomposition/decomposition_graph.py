@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Set
 from dataclasses import dataclass, replace
 
 import rustworkx as rx
@@ -35,6 +35,7 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionError
 from pennylane.operation import Operator
 
@@ -187,7 +188,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     Args:
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
-        gate_set (set[str | type] | dict[type | str, float]): A set of gates in the target gate set or a dictionary
+        gate_set (Set | Mapping | GateSet): A set of gates in the target gate set or a dictionary
             mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
@@ -222,17 +223,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def __init__(
         self,
         operations: list[Operator | CompressedResourceOp],
-        gate_set: set[type | str] | dict[type | str, float],
+        gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
     ):
-        self._gate_set_weights: dict[str, float]
-        if isinstance(gate_set, dict):
-            # the gate_set is a dict
-            self._gate_set_weights = {_to_name(gate): weight for gate, weight in gate_set.items()}
-        else:
-            # The names of the gates in the target gate set.
-            self._gate_set_weights = {_to_name(gate): 1.0 for gate in gate_set}
+
+        if not isinstance(gate_set, GateSet):
+            gate_set = GateSet(gate_set)
+
+        self._gate_set_weights = gate_set
 
         # The list of operator indices for every op in the original list of operators that the
         # graph is initialized with. This is used to check whether we have found a decomposition
@@ -677,7 +676,7 @@ class DecompGraphSolution:
          RY(-0.25, wires=[1]),
          CNOT(wires=[0, 1]),
          RZ(-1.5707963267948966, wires=[1])]
-        >>> graph.resource_estimate(op)
+        >>> solution.resource_estimate(op)
         <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
         """
@@ -712,10 +711,7 @@ class DecompGraphSolution:
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [RY(0.1, wires=[2]),
-         CNOT(wires=[0, 2]),
-         RY(-0.1, wires=[2]),
-         CNOT(wires=[0, 2])]
+        [PauliRot(0.1, Y, wires=[2]), PauliRot(-0.1, ZY, wires=[0, 2])]
 
         """
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)

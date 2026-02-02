@@ -35,6 +35,7 @@ def oracle(items, wires):
         qml.FlipSign(item, wires=wires)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestInitialization:
     """Test that AmplitudeAmplification initializes correctly."""
 
@@ -74,6 +75,7 @@ class TestInitialization:
         qml.ops.functions.assert_valid(op)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "n_wires, items, iters",
     (
@@ -109,6 +111,7 @@ def test_compare_grover(n_wires, items, iters):
     assert np.allclose(circuit_amplitude_amplification(), circuit_grover(), atol=1e-5)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_default_lightning_devices():
     """Test that AmplitudeAmplification executes with the default.qubit and lightning.qubit simulators."""
 
@@ -136,6 +139,7 @@ def test_default_lightning_devices():
     assert np.allclose(res1, res2, atol=1e-5)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDifferentiability:
     """Test that AmplitudeAmplification is differentiable"""
 
@@ -244,6 +248,7 @@ class TestDifferentiability:
         assert qml.math.allclose(res, self.exp_grad, atol=0.001)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_correct_queueing():
     """Test that operations in a circuit containing AmplitudeAmplification are correctly queued"""
     dev = qml.device("default.qubit")
@@ -278,6 +283,7 @@ def test_correct_queueing():
     assert np.allclose(circuit1(), circuit3())
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 def test_amplification():
     """Test that AmplitudeAmplification amplifies a marked element."""
 
@@ -300,6 +306,7 @@ def test_amplification():
     assert np.allclose(res, expected)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(("p_min"), [0.7, 0.8, 0.9])
 def test_p_min(p_min):
     """Test that the p_min parameter works correctly."""
