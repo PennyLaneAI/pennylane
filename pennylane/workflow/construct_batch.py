@@ -273,43 +273,84 @@ def get_transform_program(
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
-        >>> qml.workflow.get_transform_program(circuit)
-        CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor, _expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements, _conditional_broadcast_expand)
+        >>> print(qml.workflow.get_transform_program(circuit))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None),
+          [3] metric_tensor(device_wires=None),
+          [4] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [5] defer_measurements(allow_postselect=True),
+          [6] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [7] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [8] validate_device_wires(None, name=default.qubit),
+          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [10] _conditional_broadcast_expand()
+        )
 
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
-        >>> qml.workflow.get_transform_program(circuit, level="user")
-        CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.workflow.get_transform_program(circuit, level="user"))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None),
+          [3] metric_tensor(device_wires=None)
+        )
 
         The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
         This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
         it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
         present at the very end of resulting program.
 
-        >>> qml.workflow.get_transform_program(circuit, level="gradient")
-        CompilePipeline(cancel_inverses, merge_rotations, _expand_metric_tensor, metric_tensor, _expand_transform_param_shift)
+        >>> print(qml.workflow.get_transform_program(circuit, level="gradient"))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None),
+          [3] metric_tensor(device_wires=None),
+          [4] _expand_transform_param_shift(shifts=0.7853981633974483)
+        )
 
         ``"top"`` and ``0`` both return empty transform programs.
 
-        >>> qml.workflow.get_transform_program(circuit, level="top")
+        >>> print(qml.workflow.get_transform_program(circuit, level="top"))
         CompilePipeline()
-        >>> qml.workflow.get_transform_program(circuit, level=0)
+        >>> print(qml.workflow.get_transform_program(circuit, level=0))
         CompilePipeline()
 
         The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
-        >>> qml.workflow.get_transform_program(circuit, level=2)
-        CompilePipeline(cancel_inverses, merge_rotations)
+        >>> print(qml.workflow.get_transform_program(circuit, level=2))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations()
+        )
 
         ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
         transform program.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
-        >>> qml.workflow.get_transform_program(circuit, level=slice(1,3))
-        CompilePipeline(merge_rotations, _expand_metric_tensor)
-        >>> qml.workflow.get_transform_program(circuit, level=slice(None, None, -1))
-        CompilePipeline(_conditional_broadcast_expand, validate_measurements, validate_device_wires, device_resolve_dynamic_wires, decompose, defer_measurements, _expand_transform_param_shift, metric_tensor, _expand_metric_tensor, merge_rotations, cancel_inverses)
+        >>> print(qml.workflow.get_transform_program(circuit, level=slice(1,3)))
+        CompilePipeline(
+          [0] merge_rotations(),
+          [1] _expand_metric_tensor(device_wires=None)
+        )
+        >>> print(qml.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
+        CompilePipeline(
+          [0] _conditional_broadcast_expand(),
+          [1] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [2] validate_device_wires(None, name=default.qubit),
+          [3] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [4] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [5] defer_measurements(allow_postselect=True),
+          [6] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [7] metric_tensor(device_wires=None),
+          [8] _expand_metric_tensor(device_wires=None),
+          [9] merge_rotations(),
+          [10] cancel_inverses()
+        )
 
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
@@ -317,10 +358,19 @@ def get_transform_program(
         >>> user_prog = qml.workflow.get_transform_program(circuit, level="user")
         >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
         >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
-        >>> grad_prog[len(user_prog) - 1 : -1]
-        CompilePipeline(metric_tensor)
-        >>> dev_prog[len(grad_prog) - 1 : -1]
-        CompilePipeline(_expand_transform_param_shift, defer_measurements, decompose, device_resolve_dynamic_wires, validate_device_wires, validate_measurements)
+        >>> print(grad_prog[len(user_prog) - 1 : -1])
+        CompilePipeline(
+          [0] metric_tensor(device_wires=None)
+        )
+        >>> print(dev_prog[len(grad_prog) - 1 : -1])
+        CompilePipeline(
+          [0] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [1] defer_measurements(allow_postselect=True),
+          [2] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [3] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [4] validate_device_wires(None, name=default.qubit),
+          [5] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit)
+        )
 
     """
     _validate_level(level)

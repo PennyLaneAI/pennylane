@@ -201,13 +201,13 @@ def two_qubit_decomposition(U, wires):
 
     with queuing.AnnotatedQueue() as q:
 
-        U, global_phase = math.convert_to_su4(U, return_global_phase=True)
+        U, phase = math.convert_to_su4(U, return_global_phase=True)
 
         if _is_jax_jit(U):
             # Always use the 3-CNOT case when in jax.jit, because it is not compatible
             # with conditional logic. However, we want to still take advantage of the
             # more efficient decompositions in a qjit or program capture context.
-            global_phase += _decompose_3_cnots(U, wires, global_phase)
+            phase += _decompose_3_cnots(U, wires, phase)
         else:
             num_cnots = _compute_num_cnots(U)
 
@@ -219,15 +219,17 @@ def two_qubit_decomposition(U, wires):
             if not capture.enabled():
                 elifs.append((num_cnots == 2, _decompose_2_cnots))
 
-            global_phase += ops.cond(
+            phase += ops.cond(
                 num_cnots == 0,
                 _decompose_0_cnots,
                 _decompose_3_cnots,
                 elifs=elifs,
-            )(U, wires, global_phase)
+            )(U, wires, phase)
 
-        if _is_jax_jit(U) or not math.allclose(global_phase, 0):
-            ops.GlobalPhase(-global_phase)
+        if _is_jax_jit(U):
+            ops.GlobalPhase(-phase)
+        else:
+            ops.cond(math.logical_not(math.allclose(phase, 0)), ops.GlobalPhase)(-phase)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
@@ -294,9 +296,12 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
-        U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+        U, phase = math.convert_to_su2(U, return_global_phase=True)
         su2_rule(U, wires=wires)
-        ops.cond(math.logical_not(math.allclose(global_phase, 0)), ops.GlobalPhase)(-global_phase)
+        if _is_jax_jit(U):
+            ops.GlobalPhase(-phase)
+        else:
+            ops.cond(math.logical_not(math.allclose(phase, 0)), ops.GlobalPhase)(-phase)
 
     return _impl
 

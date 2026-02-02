@@ -729,21 +729,88 @@ class TestCompilePipelineDunders:
         """Test the string representation of a pipeline."""
         compile_pipeline = CompilePipeline()
 
+        assert repr(compile_pipeline) == "CompilePipeline()"
+
         transform1 = BoundTransform(qml.transform(first_valid_transform))
         transform2 = BoundTransform(qml.transform(second_valid_transform))
 
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
-        str_pipeline = repr(compile_pipeline)
-        assert (
-            str_pipeline
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
+        pipeline_repr = repr(compile_pipeline)
+        expected_repr = f"CompilePipeline(\n  [0] {repr(transform1)},\n  [1] {repr(transform2)}\n)"
+        assert pipeline_repr == expected_repr
+
+    def test_ipython_display(self, capsys):
+        """Test that the ipython display prints the string representation of a CompilePipeline instance."""
+
+        transform1 = BoundTransform(qml.transform(first_valid_transform))
+        marker = qml.marker("blah")
+        transform2 = BoundTransform(qml.transform(second_valid_transform))
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.append(transform1)
+        compile_pipeline.append(marker)
+        compile_pipeline.append(transform2)
+
+        compile_pipeline._ipython_display_()  # pylint: disable=protected-access
+        captured = capsys.readouterr()
+        assert str(compile_pipeline) + "\n" == captured.out
+
+    def test_str_pipeline(self):
+        """Tests the string representation of a pipeline."""
+
+        compile_pipeline = CompilePipeline()
+
+        assert str(compile_pipeline) == "CompilePipeline()"
+
+        transform1 = BoundTransform(qml.transform(first_valid_transform))
+        marker = qml.marker("blah")
+        transform2 = BoundTransform(qml.transform(second_valid_transform))
+
+        compile_pipeline.append(transform1)
+        compile_pipeline.append(marker)
+        compile_pipeline.append(transform2)
+
+        pipeline_str = str(compile_pipeline)
+        expected_str = "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] marker(blah),\n  [2] second_valid_transform()\n)"
+        assert pipeline_str == expected_str
+
+    def test_str_adds_ellipses(self):
+        """Tests that the string representation uses ellipses for long kwargs."""
+
+        # pylint:disable=unused-argument
+        def verbose_transform(
+            tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+            """A valid transform."""
+            return [tape], lambda x: x
+
+        _CURRENT_THRESHOLD = 50
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.append(
+            BoundTransform(
+                verbose_transform,
+                args=("x" * _CURRENT_THRESHOLD,),
+                kwargs={"verbose_kwarg": "x" * _CURRENT_THRESHOLD},
+            )
         )
+
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
+        assert str(compile_pipeline) == expected_str
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.append(
+            BoundTransform(
+                verbose_transform,
+                args=("x" * (_CURRENT_THRESHOLD + 1),),
+                kwargs={"verbose_kwarg": "x" * (_CURRENT_THRESHOLD + 1)},
+            )
+        )
+
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(..., verbose_kwarg=...)\n)"
+        assert str(compile_pipeline) == expected_str
 
     def test_equality(self):
         """Tests that we can compare CompilePipeline objects with the '==' and '!=' operators."""
@@ -1773,14 +1840,9 @@ class TestCompilePipelineIntegration:
         new_qnode = dispatched_transform(dispatched_transform(qnode_circuit, 0), 0)
 
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(first_valid_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform, args=(0,)),
+            BoundTransform(dispatched_transform, args=(0,)),
         )
 
         assert pipeline
@@ -1806,16 +1868,9 @@ class TestCompilePipelineIntegration:
             return qml.expval(qml.PauliZ(wires=0))
 
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0))
-
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(informative_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform_1, args=(0,)), dispatched_transform_2
         )
 
         assert pipeline
@@ -1846,16 +1901,10 @@ class TestCompilePipelineIntegration:
         new_qnode = dispatched_transform_2(dispatched_transform_1(qnode_circuit, 0), 0)
 
         pipeline = new_qnode.compile_pipeline
-        transformed_qnode_rep = repr(pipeline)
-        assert (
-            transformed_qnode_rep
-            == "CompilePipeline("
-            + str(first_valid_transform.__name__)
-            + ", "
-            + str(second_valid_transform.__name__)
-            + ")"
+        assert pipeline == CompilePipeline(
+            BoundTransform(dispatched_transform_1, args=(0,)),
+            BoundTransform(dispatched_transform_2, args=(0,)),
         )
-
         assert pipeline
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
