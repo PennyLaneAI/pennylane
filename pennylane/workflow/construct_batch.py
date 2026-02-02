@@ -70,32 +70,14 @@ def _validate_level(
     raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")
 
 
-def _validate_custom_levels(program):
-    protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
-    found_tags = set()
-    for t in program:
-        tag = getattr(t, "tag", None)
-        if tag and tag in protected_options:
-            raise ValueError(
-                f"Found marker for protected tag {tag}. Protected options are {protected_options}"
-            )
-        if tag and tag in found_tags:
-            raise ValueError(f"Found multiple markers for tag {tag}.  Markers should be unique.")
-        if tag:
-            found_tags.add(tag)
-
-
 def _find_level(program, level):
-    found_levels = []
-    for idx, t in enumerate(program):
-        if hasattr(t, "tag") and (found_tag := t.tag) == level:
-            found_tag.append(found_tag)
-            if found_tag == level:
-                return idx
+    found_level = program.get_marker_level(level)
+    if found_level is not None:
+        return found_level
     raise ValueError(
-        f"Tag {level} not found in transform program. "
+        f"Level {level} not found in transform program. "
         "Builtin options are 'top', 'user', 'device', and 'gradient'."
-        f" Custom tags are {found_levels}."
+        f" Custom levels are {program.markers}."
     )
 
 
@@ -449,7 +431,6 @@ def construct_batch(
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
     user_program = qnode.compile_pipeline
-    _validate_custom_levels(user_program)
     num_user_transforms = len(user_program)
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:

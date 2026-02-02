@@ -26,6 +26,7 @@ from pennylane.workflow import construct_batch, get_transform_program
 
 
 class TestMarker:
+    """Tests the integration with the QNode."""
 
     def test_level_not_found(self):
         """Test the error message when a requested level is not found."""
@@ -36,7 +37,7 @@ class TestMarker:
             return qml.state()
 
         expected = (
-            r"level bla not found in transform program. "
+            r"Level bla not found in transform program. "
             r"Builtin options are 'top', 'user', 'device', and 'gradient'."
             r" Custom levels are \['something'\]."
         )
@@ -92,37 +93,6 @@ class TestMarker:
         res = c(0.5)
         assert qml.math.allclose(res, np.cos(0.5))
 
-    def test_tape_application(self):
-        """Test that the tape transform leaves the input unaffected."""
-
-        input = qml.tape.QuantumScript([qml.X(0)], [qml.state()])
-        (out,), fn = qml.marker(input, level="level")
-        assert input is out
-        assert fn(("a",)) == "a"
-
-    def test_uniqueness_checking(self):
-        """Test an error is raised if a level is not unique."""
-
-        @qml.marker(level="something")
-        @qml.marker(level="something")
-        @qml.qnode(qml.device("null.qubit"))
-        def c():
-            return qml.state()
-
-        with pytest.raises(ValueError, match="Found multiple markers for level something"):
-            construct_batch(c)()
-
-    def test_protected_levels(self):
-        """Test an error is raised for using a protected level."""
-
-        @qml.marker(level="gradient")
-        @qml.qnode(qml.device("null.qubit"))
-        def c():
-            return qml.state()
-
-        with pytest.raises(ValueError, match="Found marker for protected level gradient."):
-            construct_batch(c)()
-
 
 class TestCompilePipelineGetter:
     def test_bad_string_key(self):
@@ -132,7 +102,7 @@ class TestCompilePipelineGetter:
         def circuit():
             return qml.state()
 
-        with pytest.raises(ValueError, match=r"level bla not found in transform program."):
+        with pytest.raises(ValueError, match=r"Level bla not found in transform program."):
             get_transform_program(circuit, level="bla")
 
     def test_bad_other_key(self):

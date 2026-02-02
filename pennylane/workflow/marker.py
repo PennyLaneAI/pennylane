@@ -16,11 +16,11 @@
 from typing import Any
 
 
-def marker(tag: str, /):
-    """Marks a PennyLane object with a tag."""
+def marker(level: str):
+    """Marks the compile pipeline of a QNode with a level label."""
 
-    def decorator(obj: Any) -> Any:
-        setattr(obj, "tag", tag)
-        return obj
+    def decorator(qnode: Any) -> Any:
+        qnode.compile_pipeline.add_marker(level)
+        return qnode
 
     return decorator

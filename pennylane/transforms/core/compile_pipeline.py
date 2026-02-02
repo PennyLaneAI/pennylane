@@ -231,12 +231,14 @@ class CompilePipeline:
         *,
         cotransform_cache: CotransformCache | None = None,
     ): ...
+
     @overload
     def __init__(
         self,
         *transforms: CompilePipeline | BoundTransform | Transform,
         cotransform_cache: CotransformCache | None = None,
     ): ...
+
     def __init__(
         self,
         *transforms: CompilePipeline
@@ -250,10 +252,12 @@ class CompilePipeline:
             # If all elements are BoundTransform, store directly (already expanded)
             if all(isinstance(t, BoundTransform) for t in transforms):
                 self._compile_pipeline = transforms
+                self._markers: dict[str, int] = {}
                 self.cotransform_cache = cotransform_cache
                 return
 
         self._compile_pipeline = []
+        self._markers: dict[str, int] = {}
         self.cotransform_cache = cotransform_cache
         for obj in transforms:
             if not isinstance(obj, (CompilePipeline, BoundTransform, Transform)):
@@ -264,7 +268,12 @@ class CompilePipeline:
             self += obj
 
     def __copy__(self):
-        return CompilePipeline(self._compile_pipeline[:], cotransform_cache=self.cotransform_cache)
+        old_markers = self._markers.copy()
+        new_pipeline = CompilePipeline(
+            self._compile_pipeline[:], cotransform_cache=self.cotransform_cache
+        )
+        new_pipeline._markers = old_markers
+        return new_pipeline
 
     def __iter__(self):
         """list[BoundTransform]: Return an iterator to the underlying compile pipeline."""
@@ -276,8 +285,10 @@ class CompilePipeline:
 
     @overload
     def __getitem__(self, idx: int) -> BoundTransform: ...
+
     @overload
     def __getitem__(self, idx: slice) -> CompilePipeline: ...
+
     def __getitem__(self, idx):
         """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         compile pipeline"""
@@ -302,6 +313,10 @@ class CompilePipeline:
 
         # Handle CompilePipeline
         if isinstance(other, CompilePipeline):
+            offset = len(self._compile_pipeline)
+            for name, pos in other._markers.items():
+                self._markers[name] = pos + offset
+
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
@@ -363,6 +378,10 @@ class CompilePipeline:
             other = CompilePipeline(transforms)
 
         if isinstance(other, CompilePipeline):
+            offset = len(self._compile_pipeline)
+            for name, pos in other._markers.items():
+                self._markers[name] = pos + offset
+
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
@@ -417,13 +436,15 @@ class CompilePipeline:
             return "..." if len(val_str) > _CHAR_THRESHOLD else val_str
 
         lines = []
+        inv_marker_map = {v: k for k, v in self._markers.items()}
         for i, transform in enumerate(self):
             args_str = ", ".join(truncate(a) for a in transform.args)
             kwargs_str = ", ".join(f"{k}={truncate(v)}" for k, v in transform.kwargs.items())
 
             sep = ", " if args_str and kwargs_str else ""
             transform_str = f"{transform.tape_transform.__name__}({args_str}{sep}{kwargs_str})"
-            lines.append(f"  [{i}] {transform_str}")
+            identifier = f"[{i}, {inv_marker_map.get(i)}]" if inv_marker_map.get(i) else f"[{i}]"
+            lines.append(f"  {identifier} {transform_str}")
 
         contents = ",\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
@@ -515,6 +536,27 @@ class CompilePipeline:
         # Handle iterables (list, tuple, etc.)
         for t in transforms:
             self += t
+
+    def add_marker(self, level: str) -> None:
+        """Adds a mark at the current level."""
+        protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
+        if level in protected_options:
+            raise ValueError(
+                f"Found marker for protected level {level}. Protected options are {protected_options}."
+            )
+        if level in self._markers:
+            raise ValueError(f"Found multiple markers for level {level}. Markers should be unique.")
+
+        self._markers[level] = len(self._compile_pipeline) - 1 if self else 0
+
+    @property
+    def markers(self) -> list[str]:
+        """Retrieve list of markers present in the compiliation pipeline."""
+        return list(self._markers.keys())
+
+    def get_marker_level(self, label: str) -> int | None:
+        """Retrieve the level corresponding to a marker label."""
+        return self._markers.get(label)
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
@@ -706,12 +748,15 @@ class CompilePipeline:
     def __call__(
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr: ...
+
     @overload
     def __call__(self, qnode: qml.QNode, *args, **kwargs) -> qml.QNode: ...
+
     @overload
     def __call__(
         self, tape: QuantumScript | QuantumScriptBatch
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
+
     def __call__(self, *args, **kwargs):
         if type(args[0]).__name__ == "Jaxpr":
             return self.__call_jaxpr(*args, **kwargs)

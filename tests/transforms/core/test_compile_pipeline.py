@@ -765,15 +765,15 @@ class TestCompilePipelineDunders:
         assert str(compile_pipeline) == "CompilePipeline()"
 
         transform1 = BoundTransform(qml.transform(first_valid_transform))
-        marker = qml.marker("blah")
         transform2 = BoundTransform(qml.transform(second_valid_transform))
 
         compile_pipeline.append(transform1)
-        compile_pipeline.append(marker)
+        compile_pipeline.add_marker("t1")
         compile_pipeline.append(transform2)
+        compile_pipeline.add_marker("t2")
 
         pipeline_str = str(compile_pipeline)
-        expected_str = "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] marker(blah),\n  [2] second_valid_transform()\n)"
+        expected_str = "CompilePipeline(\n  [0, t1] first_valid_transform(),\n  [1, t2] second_valid_transform()\n)"
         assert pipeline_str == expected_str
 
     def test_str_adds_ellipses(self):
@@ -1909,3 +1909,27 @@ class TestCompilePipelineIntegration:
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is second_valid_transform
+
+    def test_uniqueness_checking(self):
+        """Test an error is raised if a level is not unique."""
+
+        with pytest.raises(
+            ValueError,
+            match="Found multiple markers for level something. Markers should be unique.",
+        ):
+
+            @qml.marker(level="something")
+            @qml.marker(level="something")
+            @qml.qnode(qml.device("null.qubit"))
+            def c():
+                return qml.state()
+
+    def test_protected_levels(self):
+        """Test an error is raised for using a protected level."""
+
+        with pytest.raises(ValueError, match="Found marker for protected level gradient"):
+
+            @qml.marker(level="gradient")
+            @qml.qnode(qml.device("null.qubit"))
+            def c():
+                return qml.state()
