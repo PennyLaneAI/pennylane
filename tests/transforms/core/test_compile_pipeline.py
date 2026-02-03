@@ -14,6 +14,8 @@
 """Unit and integration tests for the compile pipeline."""
 # pylint: disable=no-member
 
+from copy import copy
+
 import pytest
 import rustworkx as rx
 
@@ -2022,3 +2024,18 @@ class TestMarkers:
             pipeline_repr
             == "CompilePipeline(\n  [0] <first_valid_transform()>,\n   └─▶ marker1\n  [1] <second_valid_transform()>\n   └─▶ marker2\n)"
         )
+
+    def test_copy_preserves_markers(self):
+        """Tests that copying a pipeline preserves markers."""
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.add_transform(transform(first_valid_transform))
+        compile_pipeline.add_marker("marker1")
+        compile_pipeline.add_transform(transform(second_valid_transform))
+        compile_pipeline.add_marker("marker2")
+
+        copied_pipeline = copy(compile_pipeline)
+
+        assert copied_pipeline.markers == ["marker1", "marker2"]
+        assert copied_pipeline.get_marker_level("marker1") == 0
+        assert copied_pipeline.get_marker_level("marker2") == 1
