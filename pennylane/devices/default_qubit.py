@@ -127,7 +127,7 @@ ALL_DQ_GATES = GateSet(
     _BASE_DQ_GATE_SET
     | {f"C({gate})" for gate in _BASE_DQ_GATE_SET}
     | {f"Adjoint({gate})" for gate in _BASE_DQ_GATE_SET}
-    | {"Projector"},
+    | {"Projector", "BasisStateProjector", "StateVectorProjector"},
     name="All DefaultQubit Gates",
 )
 
