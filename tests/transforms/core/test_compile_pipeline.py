@@ -2011,6 +2011,7 @@ class TestMarkers:
         """Tests that the string representation of a pipeline includes markers."""
 
         compile_pipeline = CompilePipeline()
+        compile_pipeline.add_marker("marker0")
         compile_pipeline.add_transform(transform(first_valid_transform))
         compile_pipeline.add_marker("marker1")
         compile_pipeline.add_transform(transform(second_valid_transform))
@@ -2019,13 +2020,14 @@ class TestMarkers:
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n  [1] first_valid_transform(),\n   └─▶ marker1\n  [2] second_valid_transform()\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0\n  [1] first_valid_transform(),\n   └─▶ marker1\n  [2] second_valid_transform()\n   └─▶ marker2\n)"
         )
 
     def test_repr_pipeline_with_markers(self):
         """Tests that the repr representation of a pipeline includes markers."""
 
         compile_pipeline = CompilePipeline()
+        compile_pipeline.add_marker("marker0")
         compile_pipeline.add_transform(transform(first_valid_transform))
         compile_pipeline.add_marker("marker1")
         compile_pipeline.add_transform(transform(second_valid_transform))
@@ -2034,7 +2036,7 @@ class TestMarkers:
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n  [1] <first_valid_transform()>,\n   └─▶ marker1\n  [2] <second_valid_transform()>\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0\n  [1] <first_valid_transform()>,\n   └─▶ marker1\n  [2] <second_valid_transform()>\n   └─▶ marker2\n)"
         )
 
     def test_copy_preserves_markers(self):
