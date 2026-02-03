@@ -26,7 +26,7 @@ on:
         description: The version of uv (docs.astral.sh/uv/) to use to install dependencies
         required: false
         type: string
-        default: 0.9.17
+        default: 0.9.12
       job_runner_name:
         description: The name of the runner to use for the job
         required: false
@@ -94,6 +94,7 @@ on:
         default: ''
 
 env:
+  UV_SYSTEM_PYTHON: 1
   TEST_REPORTS_DIR: .github/test-reports
 
 jobs:
@@ -136,13 +137,13 @@ jobs:
             fi
           done <<< "$ADDITIONAL_OS_PACKAGES"
 
-      # - name: Upgrade PIP and install wheel
-      #   run: |
-      #     uv pip install --upgrade pip wheel setuptools>=75.8.1
+      - name: Upgrade PIP and install wheel
+        run: |
+          uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
         run: |
-          uv sync --group dev --group ci --upgrade
+          uv pip install --group dev --group ci --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
@@ -202,21 +203,19 @@ jobs:
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: |
-          uv pip list
-          uv run pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
-      - name: Freeze dependencies   # replace with uv lock
+      - name: Freeze dependencies
         shell: bash
         if: inputs.requirements_file != ''
         run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
 
-      # - name: Upload frozen requirements # upload uv lock
-      #   if: inputs.requirements_file != ''
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: frozen-uv-lock
-      #     path: uv.lock
+      - name: Upload frozen requirements
+        if: inputs.requirements_file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-${{ inputs.requirements_file }}
+          path: ${{ inputs.requirements_file }}
 
       - name: Upload Durations file as artifact
         if: inputs.pytest_durations_file_path != ''
