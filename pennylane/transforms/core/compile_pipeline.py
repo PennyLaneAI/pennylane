@@ -420,11 +420,10 @@ class CompilePipeline:
                 "Cannot multiply a compile pipeline that has a terminal transform."
             )
 
-        if self._markers:
-            raise TransformError("Cannot multiply a compile pipeline that has markers.")
-
         transforms = self._compile_pipeline * n
-        return CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
+        new_pipeline = CompilePipeline(transforms, cotransform_cache=self.cotransform_cache)
+        new_pipeline._markers = self._markers.copy()
+        return new_pipeline
 
     __rmul__ = __mul__
 
@@ -451,10 +450,15 @@ class CompilePipeline:
 
             sep = ", " if args_str and kwargs_str else ""
             transform_str = f"{transform.tape_transform.__name__}({args_str}{sep}{kwargs_str})"
-            identifier = f"[{i}, {inv_marker_map.get(i)}]" if inv_marker_map.get(i) else f"[{i}]"
-            lines.append(f"  {identifier} {transform_str}")
+            lines.append(f"  [{i}] {transform_str}" + "," * bool(i != len(self) - 1))
 
-        contents = ",\n".join(lines)
+            if inv_marker_map.get(i):
+                lines.append(f"   └─▶ {inv_marker_map[i]}")
+
+        if inv_marker_map.get(len(self)):
+            lines.append(f"   └─▶ {inv_marker_map[len(self)]}")
+
+        contents = "\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
 
     def __repr__(self) -> str:
@@ -463,10 +467,16 @@ class CompilePipeline:
             return "CompilePipeline()"
 
         lines = []
-        for i, transform in enumerate(self):
-            lines.append(f"  [{i}] {repr(transform)}")
+        inv_marker_map = {v: k for k, v in self._markers.items()}
 
-        contents = ",\n".join(lines)
+        for i, transform in enumerate(self):
+            lines.append(f"  [{i}] {repr(transform)}" + "," * bool(i != len(self) - 1))
+            if inv_marker_map.get(i):
+                lines.append(f"   └─▶ {inv_marker_map[i]}")
+
+        if inv_marker_map.get(len(self)):
+            lines.append(f"   └─▶ {inv_marker_map[len(self)]}")
+        contents = "\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
 
     def __eq__(self, other) -> bool:

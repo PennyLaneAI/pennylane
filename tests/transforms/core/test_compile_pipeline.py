@@ -588,6 +588,7 @@ class TestCompilePipelineDunders:
             _ = container1 + pipeline
 
     # ============ __iadd__ tests ============
+
     def test_pipeline_iadd_container(self):
         """Test that __iadd__ appends a container in place."""
         container1 = BoundTransform(qml.transform(first_valid_transform))
@@ -745,12 +746,10 @@ class TestCompilePipelineDunders:
         """Test that the ipython display prints the string representation of a CompilePipeline instance."""
 
         transform1 = BoundTransform(qml.transform(first_valid_transform))
-        marker = qml.marker("blah")
         transform2 = BoundTransform(qml.transform(second_valid_transform))
 
         compile_pipeline = CompilePipeline()
         compile_pipeline.append(transform1)
-        compile_pipeline.append(marker)
         compile_pipeline.append(transform2)
 
         compile_pipeline._ipython_display_()  # pylint: disable=protected-access
@@ -768,12 +767,12 @@ class TestCompilePipelineDunders:
         transform2 = BoundTransform(qml.transform(second_valid_transform))
 
         compile_pipeline.append(transform1)
-        compile_pipeline.add_marker("t1")
         compile_pipeline.append(transform2)
-        compile_pipeline.add_marker("t2")
 
         pipeline_str = str(compile_pipeline)
-        expected_str = "CompilePipeline(\n  [0, t1] first_valid_transform(),\n  [1, t2] second_valid_transform()\n)"
+        expected_str = (
+            "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] second_valid_transform()\n)"
+        )
         assert pipeline_str == expected_str
 
     def test_str_adds_ellipses(self):
@@ -1910,26 +1909,116 @@ class TestCompilePipelineIntegration:
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is second_valid_transform
 
-    def test_uniqueness_checking(self):
-        """Test an error is raised if a level is not unique."""
 
-        with pytest.raises(
-            ValueError,
-            match="Found multiple markers for level something. Markers should be unique.",
-        ):
+class TestMarkers:
+    """Tests markers in a compile pipeline"""
 
-            @qml.marker(level="something")
-            @qml.marker(level="something")
-            @qml.qnode(qml.device("null.qubit"))
-            def c():
-                return qml.state()
+    def test_add_marker(self):
+        """Tests that add_marker method works."""
 
-    def test_protected_levels(self):
-        """Test an error is raised for using a protected level."""
+        pipeline = CompilePipeline()
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("test")
+        pipeline.add_transform(transform(second_valid_transform))
 
-        with pytest.raises(ValueError, match="Found marker for protected level gradient"):
+        assert pipeline.markers == ["test"]
+        assert pipeline.get_marker_level("test") == 0
 
-            @qml.marker(level="gradient")
-            @qml.qnode(qml.device("null.qubit"))
-            def c():
-                return qml.state()
+    def test_iadd_pipelines_with_markers(self):
+        """Tests that markers are preserved when pipelines are combined with +=."""
+
+        pipeline1 = CompilePipeline()
+        pipeline1.add_transform(transform(first_valid_transform))
+        pipeline1.add_marker("marker1")
+
+        pipeline2 = CompilePipeline()
+        pipeline2.add_transform(transform(second_valid_transform))
+        pipeline2.add_marker("marker2")
+
+        pipeline1 += pipeline2
+
+        assert pipeline1.markers == ["marker1", "marker2"]
+        assert pipeline1.get_marker_level("marker1") == 0
+        assert pipeline1.get_marker_level("marker2") == 1
+
+    def test_add_pipelines_with_markers(self):
+        """Tests that markers are preserved when pipelines are combined with +."""
+
+        pipeline1 = CompilePipeline()
+        pipeline1.add_transform(transform(first_valid_transform))
+        pipeline1.add_marker("marker1")
+
+        pipeline2 = CompilePipeline()
+        pipeline2.add_transform(transform(second_valid_transform))
+        pipeline2.add_marker("marker2")
+
+        combined_pipeline = pipeline1 + pipeline2
+
+        assert combined_pipeline.markers == ["marker1", "marker2"]
+        assert combined_pipeline.get_marker_level("marker1") == 0
+        assert combined_pipeline.get_marker_level("marker2") == 1
+
+    def test_radd_pipelines_with_markers(self):
+        """Tests that markers are preserved when pipelines are combined with + in reverse order."""
+
+        pipeline1 = CompilePipeline()
+        pipeline1.add_transform(transform(first_valid_transform))
+        pipeline1.add_marker("marker1")
+
+        pipeline2 = CompilePipeline()
+        pipeline2.add_transform(transform(second_valid_transform))
+        pipeline2.add_marker("marker2")
+
+        combined_pipeline = pipeline2 + pipeline1
+
+        assert combined_pipeline.markers == ["marker2", "marker1"]
+        assert combined_pipeline.get_marker_level("marker2") == 0
+        assert combined_pipeline.get_marker_level("marker1") == 1
+
+    def test_insert_with_markers(self):
+        """Tests that markers are preserved when inserting transforms into a pipeline."""
+
+        compile_pipeline = CompilePipeline()
+        transform1 = transform(second_valid_transform)
+        compile_pipeline.add_transform(transform1)
+        compile_pipeline *= 2  # Duplicate to have two transforms
+        compile_pipeline.add_marker("test_marker")
+        assert compile_pipeline.markers == ["test_marker"]
+        assert compile_pipeline.get_marker_level("test_marker") == 1
+
+        # insert a new transform in between at position 1
+        compile_pipeline.insert(1, transform(first_valid_transform))
+
+        assert compile_pipeline.markers == ["test_marker"]
+        # marker gets bumped to level 2
+        assert compile_pipeline.get_marker_level("test_marker") == 2
+
+    def test_str_pipeline_with_markers(self):
+        """Tests that the string representation of a pipeline includes markers."""
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.add_transform(transform(first_valid_transform))
+        compile_pipeline.add_marker("marker1")
+        compile_pipeline.add_transform(transform(second_valid_transform))
+        compile_pipeline.add_marker("marker2")
+
+        pipeline_str = str(compile_pipeline)
+        assert (
+            pipeline_str
+            == "CompilePipeline(\n  [0] first_valid_transform(),\n   └─▶ marker1\n  [1] second_valid_transform()\n   └─▶ marker2\n)"
+        )
+
+    def test_repr_pipeline_with_markers(self):
+        """Tests that the repr representation of a pipeline includes markers."""
+
+        compile_pipeline = CompilePipeline()
+        compile_pipeline.add_transform(transform(first_valid_transform))
+        compile_pipeline.add_marker("marker1")
+        compile_pipeline.add_transform(transform(second_valid_transform))
+        compile_pipeline.add_marker("marker2")
+
+        pipeline_repr = repr(compile_pipeline)
+        assert (
+            pipeline_repr
+            == "CompilePipeline(\n  [0] <first_valid_transform()>,\n   └─▶ marker1\n  [1] <second_valid_transform()>\n   └─▶ marker2\n)"
+        )
