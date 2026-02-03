@@ -230,6 +230,8 @@ class ResourceOperator(ABC):
                 equal_params = False
             elif (
                 isinstance(param, TensorLike)
+                # Note that we may have a tuple of CompressedResourceOps in which case we would
+                # end up with a TensorLike that contains CompressedResourceOps.
                 and not (isinstance(np.array(param).flat[0], CompressedResourceOp))
                 and not np.allclose(param, other.resource_params[key])
             ) or (not isinstance(param, TensorLike) and not param == other.resource_params[key]):
