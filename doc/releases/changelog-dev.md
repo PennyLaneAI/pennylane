@@ -280,6 +280,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
+  to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
+  ``Controlled.map_wires`` to preserve ``work_wires``.
+  [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
+
 * Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
   1 in Default Qubit.
   [(#9014)](https://github.com/PennyLaneAI/pennylane/pull/9014)

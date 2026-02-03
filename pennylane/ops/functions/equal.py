@@ -461,6 +461,9 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     if op1.work_wires != op2.work_wires:
         return f"op1 and op2 have different work wires. Got {op1.work_wires} and {op2.work_wires}"
 
+    if op1.work_wire_type != op2.work_wire_type:
+        return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
+
     # work wires and control_wire/control_value combinations compared here
     op1_control_dict = dict(zip(op1.control_wires, op1.control_values))
     op2_control_dict = dict(zip(op2.control_wires, op2.control_values))
