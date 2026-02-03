@@ -1925,6 +1925,10 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
+        @qml.register_resources({qml.RX: 1})
+        def _decomp(param, wires):
+            qml.RX(3 * param, wires)
+
         @qnode(dev, diff_method=diff_method, grad_on_execution=grad_on_execution)
         def circuit(x):
             UnsupportedOp(x, wires=0)
@@ -1935,8 +1939,10 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = pnp.array(0.5)
-        circuit(x)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(UnsupportedOp, _decomp)
+            x = pnp.array(0.5)
+            circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
