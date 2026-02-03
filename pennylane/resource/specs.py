@@ -183,15 +183,9 @@ def _specs_qjit_intermediate_passes(
     single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
 
     # Maps to convert back and forth between marker name and int level
-<<<<<<< fix-marker
-    marker_to_level = {marker: trans_prog.get_marker_level(marker) for marker in trans_prog.markers}
-=======
     marker_to_level = {
-        trans.kwargs["level"]: i + 1
-        for i, trans in enumerate(compile_pipeline)
-        if trans.tape_transform == qml.marker.tape_transform
+        marker: compile_pipeline.get_marker_level(marker) for marker in compile_pipeline.markers
     }
->>>>>>> master
     level_to_marker = {v: k for k, v in marker_to_level.items()}
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
