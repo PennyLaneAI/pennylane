@@ -741,7 +741,7 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform2)
 
         pipeline_repr = repr(compile_pipeline)
-        expected_repr = f"CompilePipeline(\n  [0] {repr(transform1)},\n  [1] {repr(transform2)}\n)"
+        expected_repr = f"CompilePipeline(\n  [1] {repr(transform1)},\n  [2] {repr(transform2)}\n)"
         assert pipeline_repr == expected_repr
 
     def test_ipython_display(self, capsys):
@@ -773,7 +773,7 @@ class TestCompilePipelineDunders:
 
         pipeline_str = str(compile_pipeline)
         expected_str = (
-            "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] second_valid_transform()\n)"
+            "CompilePipeline(\n  [1] first_valid_transform(),\n  [2] second_valid_transform()\n)"
         )
         assert pipeline_str == expected_str
 
@@ -798,7 +798,7 @@ class TestCompilePipelineDunders:
             )
         )
 
-        expected_str = "CompilePipeline(\n  [0] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
+        expected_str = "CompilePipeline(\n  [1] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
         assert str(compile_pipeline) == expected_str
 
         compile_pipeline = CompilePipeline()
@@ -810,7 +810,7 @@ class TestCompilePipelineDunders:
             )
         )
 
-        expected_str = "CompilePipeline(\n  [0] verbose_transform(..., verbose_kwarg=...)\n)"
+        expected_str = "CompilePipeline(\n  [1] verbose_transform(..., verbose_kwarg=...)\n)"
         assert str(compile_pipeline) == expected_str
 
     def test_equality(self):
@@ -1924,7 +1924,7 @@ class TestMarkers:
         pipeline.add_transform(transform(second_valid_transform))
 
         assert pipeline.markers == ["test"]
-        assert pipeline.get_marker_level("test") == 0
+        assert pipeline.get_marker_level("test") == 1
 
     def test_mul_pipeline_with_markers(self):
         """Tests that markers are preserved when pipelines are duplicated with *."""
@@ -1936,7 +1936,7 @@ class TestMarkers:
         pipeline *= 3
 
         assert pipeline.markers == ["test_marker"]
-        assert pipeline.get_marker_level("test_marker") == 0
+        assert pipeline.get_marker_level("test_marker") == 1
 
     def test_iadd_pipelines_with_markers(self):
         """Tests that markers are preserved when pipelines are combined with +=."""
@@ -1952,8 +1952,8 @@ class TestMarkers:
         pipeline1 += pipeline2
 
         assert pipeline1.markers == ["marker1", "marker2"]
-        assert pipeline1.get_marker_level("marker1") == 0
-        assert pipeline1.get_marker_level("marker2") == 1
+        assert pipeline1.get_marker_level("marker1") == 1
+        assert pipeline1.get_marker_level("marker2") == 2
 
     def test_add_pipelines_with_markers(self):
         """Tests that markers are preserved when pipelines are combined with +."""
@@ -1969,8 +1969,8 @@ class TestMarkers:
         combined_pipeline = pipeline1 + pipeline2
 
         assert combined_pipeline.markers == ["marker1", "marker2"]
-        assert combined_pipeline.get_marker_level("marker1") == 0
-        assert combined_pipeline.get_marker_level("marker2") == 1
+        assert combined_pipeline.get_marker_level("marker1") == 1
+        assert combined_pipeline.get_marker_level("marker2") == 2
 
     def test_radd_pipelines_with_markers(self):
         """Tests that markers are preserved when pipelines are combined with + in reverse order."""
@@ -1986,8 +1986,8 @@ class TestMarkers:
         combined_pipeline = pipeline2 + pipeline1
 
         assert combined_pipeline.markers == ["marker2", "marker1"]
-        assert combined_pipeline.get_marker_level("marker2") == 0
-        assert combined_pipeline.get_marker_level("marker1") == 1
+        assert combined_pipeline.get_marker_level("marker2") == 1
+        assert combined_pipeline.get_marker_level("marker1") == 2
 
     def test_insert_with_markers(self):
         """Tests that markers are preserved when inserting transforms into a pipeline."""
@@ -1998,14 +1998,14 @@ class TestMarkers:
         compile_pipeline *= 2  # Duplicate to have two transforms
         compile_pipeline.add_marker("test_marker")
         assert compile_pipeline.markers == ["test_marker"]
-        assert compile_pipeline.get_marker_level("test_marker") == 1
+        assert compile_pipeline.get_marker_level("test_marker") == 2
 
         # insert a new transform in between at position 1
         compile_pipeline.insert(1, transform(first_valid_transform))
 
         assert compile_pipeline.markers == ["test_marker"]
-        # marker gets bumped to level 2
-        assert compile_pipeline.get_marker_level("test_marker") == 2
+        # marker gets bumped to level 3
+        assert compile_pipeline.get_marker_level("test_marker") == 3
 
     def test_str_pipeline_with_markers(self):
         """Tests that the string representation of a pipeline includes markers."""
@@ -2019,7 +2019,7 @@ class TestMarkers:
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n  [0] first_valid_transform(),\n   └─▶ marker1\n  [1] second_valid_transform()\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n  [1] first_valid_transform(),\n   └─▶ marker1\n  [2] second_valid_transform()\n   └─▶ marker2\n)"
         )
 
     def test_repr_pipeline_with_markers(self):
@@ -2034,7 +2034,7 @@ class TestMarkers:
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n  [0] <first_valid_transform()>,\n   └─▶ marker1\n  [1] <second_valid_transform()>\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n  [1] <first_valid_transform()>,\n   └─▶ marker1\n  [2] <second_valid_transform()>\n   └─▶ marker2\n)"
         )
 
     def test_copy_preserves_markers(self):
@@ -2049,5 +2049,5 @@ class TestMarkers:
         copied_pipeline = copy(compile_pipeline)
 
         assert copied_pipeline.markers == ["marker1", "marker2"]
-        assert copied_pipeline.get_marker_level("marker1") == 0
-        assert copied_pipeline.get_marker_level("marker2") == 1
+        assert copied_pipeline.get_marker_level("marker1") == 1
+        assert copied_pipeline.get_marker_level("marker2") == 2
