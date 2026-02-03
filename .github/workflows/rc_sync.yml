@@ -40,7 +40,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: 0.6.5
+          version: 0.9.17
           enable-cache: true  
 
       # Ensure setuptools is up-to-date for pyproject.toml processing

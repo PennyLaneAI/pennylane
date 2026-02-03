@@ -26,7 +26,7 @@ on:
         description: The version of uv (docs.astral.sh/uv/) to use to install dependencies
         required: false
         type: string
-        default: 0.9.12
+        default: 0.9.17
       job_runner_name:
         description: The name of the runner to use for the job
         required: false
