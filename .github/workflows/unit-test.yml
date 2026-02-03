@@ -157,7 +157,7 @@ jobs:
                 echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                uv add $line
+                uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
