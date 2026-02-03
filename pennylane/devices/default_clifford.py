@@ -571,11 +571,16 @@ class DefaultClifford(Device):
 
         # TODO: Add a method to prepare directly from a Tableau
         if use_prep_ops:
-            stim_tableau = stim.Tableau.from_state_vector(
-                math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
-                endian="big",
-            )
-            stim_circuit += stim_tableau.to_circuit()
+            if isinstance(prep, ops.BasisState):
+                for op in prep.decomposition():
+                    gate, wires = _pl_op_to_stim(op)
+                    stim_circuit.append_from_stim_program_text(f"{gate} {wires}")
+            else:
+                stim_tableau = stim.Tableau.from_state_vector(
+                    math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
+                    endian="big",
+                )
+                stim_circuit += stim_tableau.to_circuit()
 
         # Iterate over the gates --> manage them manually or apply them to circuit
         global_phase_ops = []
