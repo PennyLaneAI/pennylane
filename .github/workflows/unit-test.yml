@@ -143,7 +143,7 @@ jobs:
       
       - name: Install PennyLane dependencies
         run: |
-          uv pip install --group dev --group ci --upgrade
+          uv sync --frozen --group dev --group ci --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
@@ -205,12 +205,12 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
-      - name: Freeze dependencies
+      - name: Freeze dependencies # upload uv lock
         shell: bash
         if: inputs.requirements_file != ''
         run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
 
-      - name: Upload frozen requirements
+      - name: Upload frozen requirements # upload uv lock
         if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
         with:
