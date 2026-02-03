@@ -60,6 +60,17 @@ class TestMarkerQNode:
         assert c.compile_pipeline.get_marker_level("after-merge-rotations") == 1
         assert c.compile_pipeline.get_marker_level("after-cancel-inverses") == 2
 
+    def test_marker_missing_level(self):
+        """Tests when the marker is missing level."""
+
+        with pytest.raises(ValueError, match="marker requires a 'level' argument."):
+
+            @qml.marker()
+            @qml.transforms.cancel_inverses
+            @qml.qnode(qml.device("null.qubit"))
+            def c():
+                return qml.state()
+
     def test_marker_is_first_decorator(self):
         """Tests when the marker is the first decorator."""
 
