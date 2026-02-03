@@ -451,7 +451,7 @@ def _get_resource_decomposition(comp_res_op: CompressedResourceOp, config: Resou
     return decomp_func(**params, **filtered_kwargs)
 
 
-def _compute_resources_trace(
+def _compute_operator_resources(
     comp_res_op: CompressedResourceOp,
     gate_set: set[str],
     config: ResourceConfig,
@@ -469,11 +469,11 @@ def _compute_resources_trace(
     qubit_alloc_sum = _sum_allocated_wires(resource_decomp)
 
     total_gates = defaultdict(int)
-    total_trace = []
+    total_wire_actions = []
 
     for action in resource_decomp:
         if isinstance(action, GateCount):
-            sub_gates, sub_trace = _compute_resources_trace(
+            sub_gates, sub_wire_actions = _compute_operator_resources(
                 action.gate, gate_set, config, cache
             )
 
@@ -481,22 +481,22 @@ def _compute_resources_trace(
             for g, c in sub_gates.items():
                 total_gates[g] += c * action.count
 
-            # Aggregate trace
-            for action_type, amt, is_scalable in sub_trace:
-                # If existing trace item is scalable, it multiplies by action.count
+            # Aggregate wire actions
+            for action_type, amt, is_scalable in sub_wire_actions:
+                # If existing action is scalable, it multiplies by action.count
                 # If fixed, it stays fixed.
                 new_amt = amt * action.count if is_scalable else amt
-                total_trace.append((action_type, new_amt, is_scalable))
+                total_wire_actions.append((action_type, new_amt, is_scalable))
 
         elif isinstance(action, Allocate):
             sc = qubit_alloc_sum != 0
-            total_trace.append(("ALLOC", action.num_wires, sc))
+            total_wire_actions.append(("ALLOC", action.num_wires, sc))
 
         elif isinstance(action, Deallocate):
             sc = qubit_alloc_sum != 0
-            total_trace.append(("DEALLOC", action.num_wires, sc))
+            total_wire_actions.append(("DEALLOC", action.num_wires, sc))
 
-    res = (total_gates, total_trace)
+    res = (total_gates, total_wire_actions)
     cache[comp_res_op] = res
     return res
 
@@ -531,12 +531,12 @@ def _update_counts_from_compressed_res_op(
     if cache is None:
         cache = {}
 
-    gates, trace = _compute_resources_trace(comp_res_op, gate_set, config, cache)
+    gates, wire_actions = _compute_operator_resources(comp_res_op, gate_set, config, cache)
 
     for g, c in gates.items():
         gate_counts_dict[g] += c * scalar
 
-    for action_type, amt, is_scalable in trace:
+    for action_type, amt, is_scalable in wire_actions:
         val = amt * scalar if is_scalable else amt
         if action_type == "ALLOC":
             wire_manager.grab_zeroed(val)
