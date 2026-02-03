@@ -1926,6 +1926,18 @@ class TestMarkers:
         assert pipeline.markers == ["test"]
         assert pipeline.get_marker_level("test") == 0
 
+    def test_mul_pipeline_with_markers(self):
+        """Tests that markers are preserved when pipelines are duplicated with *."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("test_marker")
+
+        pipeline *= 3
+
+        assert pipeline.markers == ["test_marker"]
+        assert pipeline.get_marker_level("test_marker") == 0
+
     def test_iadd_pipelines_with_markers(self):
         """Tests that markers are preserved when pipelines are combined with +=."""
 
