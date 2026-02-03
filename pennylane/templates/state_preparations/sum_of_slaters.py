@@ -531,23 +531,62 @@ class SumOfSlatersPrep(Operation):
     @property
     def resource_params(self):
         indices = self.hyperparameters["indices"]
+        wires = self.hyperparameters["target_wires"]
         D = len(indices)
-        n = len(self.wires)
+        n = len(wires)
         v_bits = _int_to_binary(np.array(indices), n)  # v_bits.shape = (n, D)
         selector_ids, _ = select_sos_rows(v_bits)
         r = len(selector_ids)
-        return {"D": D, "num_bits": r, "num_wires": len(self.wires)}
+        return {"D": D, "num_bits": r, "num_wires": n}
 
     ndim_params = (1,)
 
-    def __init__(self, coefficients, wires, indices):
-        super().__init__(coefficients, wires=wires)
+    def __init__(
+        self,
+        coefficients,
+        target_wires,
+        enumeration_wires,
+        identification_wires,
+        qrom_work_wires,
+        mcx_work_wires,
+        indices,
+    ):
+        wire_inputs = [
+            target_wires,
+            enumeration_wires,
+            identification_wires,
+            qrom_work_wires,
+            mcx_work_wires,
+        ]
+        all_wires = sum((list(w) for w in wire_inputs), start=[])
+        super().__init__(coefficients, wires=all_wires)
+        self.hyperparameters["target_wires"] = target_wires
+        self.hyperparameters["enumeration_wires"] = enumeration_wires
+        self.hyperparameters["identification_wires"] = identification_wires
+        self.hyperparameters["qrom_work_wires"] = qrom_work_wires
+        self.hyperparameters["mcx_work_wires"] = mcx_work_wires
         self.hyperparameters["indices"] = indices
 
     @staticmethod
-    def compute_decomposition(coefficients, wires, indices):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        coefficients,
+        target_wires,
+        enumeration_wires,
+        identification_wires,
+        qrom_work_wires,
+        mcx_work_wires,
+        indices,
+    ):  # pylint: disable=arguments-differ
         with AnnotatedQueue() as q:
-            _sos_state_prep(coefficients=coefficients, wires=wires, indices=indices)
+            _sos_state_prep(
+                coefficients,
+                target_wires,
+                enumeration_wires,
+                identification_wires,
+                qrom_work_wires,
+                mcx_work_wires,
+                indices,
+            )
 
         op_list = []
         if QueuingManager.recording():
@@ -619,14 +658,22 @@ def _sos_state_prep_work_wires(D, num_bits, **_):
 
 
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-def _sos_state_prep(coefficients, wires, indices):
+def _sos_state_prep(
+    coefficients,
+    target_wires,
+    enumeration_wires,
+    identification_wires,
+    qrom_work_wires,
+    mcx_work_wires,
+    indices,
+):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     # pylint: disable=no-value-for-parameter
-    n = len(wires)
+    n = len(target_wires)
     D = len(coefficients)
     v_bits = _int_to_binary(np.array(indices), n)  # Shape (n, D)
     if D == 1:
-        qml.BasisState(v_bits[:, 0], wires=wires)
+        qml.BasisState(v_bits[:, 0], wires=target_wires)
         return
     assert v_bits.shape == (n, D)
 
@@ -643,76 +690,77 @@ def _sos_state_prep(coefficients, wires, indices):
     r = len(selector_ids)
     d = math.ceil_log2(D)
     m = min(r, 2 * d - 1)
+    print(f"{d=}")
+    print(f"{m=}")
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, D)
-    kw = {"state": "zero", "restored": True}
-    with (
-        allocate(d, **kw) as enumeration_wires,
-        allocate(m, **kw) as identification_wires,
-        allocate(d - 1, **kw) as qrom_work_wires,
-        allocate(m, **kw) as mcx_work_wires,
-    ):
+    # kw = {"state": "zero", "restored": True}
+    enumeration_wires = enumeration_wires[:d]
+    identification_wires = identification_wires[:m]
+    qrom_work_wires = qrom_work_wires[: d - 1]
+    mcx_work_wires = mcx_work_wires[:m]
+    print(enumeration_wires)
+    print(identification_wires)
+    print(qrom_work_wires)
+    print(mcx_work_wires)
 
-        # Step 1: Dense state preparation in enumeration register
-        # Need to add work wires and correct decomposition
-        # qml.MottonenStatePreparation(coefficients, wires=enumeration_wires)
-        qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
+    # Step 1: Dense state preparation in enumeration register
+    # Need to add work wires and correct decomposition
+    # qml.MottonenStatePreparation(coefficients, wires=enumeration_wires)
+    qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
 
-        # Step 2: QROM to load v_bits into system register
-        qml.QROM(
-            v_bits.T,
-            control_wires=enumeration_wires,
-            target_wires=wires,
-            work_wires=qrom_work_wires,
+    # Step 2: QROM to load v_bits into system register
+    qml.QROM(
+        v_bits.T,
+        control_wires=enumeration_wires,
+        target_wires=target_wires,
+        work_wires=qrom_work_wires,
+    )
+
+    # Step 3-4): Encode the b_bits from Lemma 1 in the identification register
+    @for_loop(m)
+    def encoding(i):
+        u = u_bits[i]
+
+        @for_loop(r)
+        def inner_loop(j):
+            qml.cond(u[j], qml.CNOT([target_wires[selector_ids[j]], identification_wires[i]]))
+
+        inner_loop()
+
+    encoding()
+
+    # Step 5): Use the identification register to uncompute the enumeration register
+    @for_loop(D)
+    def uncompute_enumeration(k, b_bits):
+        bits = list(map(int, b_bits[:, k]))
+
+        qml.MultiControlledX(
+            wires=qml.math.concatenate([identification_wires, mcx_work_wires[:1]]),
+            control_values=bits,
+            work_wires=mcx_work_wires[1:],
+            work_wire_type="zeroed",
         )
 
-        # Step 3-4): Encode the b_bits from Lemma 1 in the identification register
-        @for_loop(m)
-        def encoding(i, u_bits):
-            u = u_bits[i]
+        @for_loop(d)
+        def inner_loop(j):
+            bit_is_set = (k >> d - j) & 1
+            qml.cond(bit_is_set, qml.CNOT([mcx_work_wires[0], enumeration_wires[j]]))
 
-            @for_loop(r)
-            def inner_loop(j, u):
-                qml.cond(u[j], qml.CNOT([wires[selector_ids[j]], identification_wires[i]]))
-                return u
+        inner_loop()
 
-            inner_loop(u)
+        qml.MultiControlledX(
+            wires=qml.math.concatenate([identification_wires, mcx_work_wires[:1]]),
+            control_values=bits,
+            work_wires=mcx_work_wires[1:],
+            work_wire_type="zeroed",
+        )
+        return b_bits
 
-            return u_bits
+    uncompute_enumeration(b_bits)
 
-        encoding(u_bits)
-
-        # Step 5): Use the identification register to uncompute the enumeration register
-        @for_loop(D)
-        def uncompute_enumeration(k, b_bits):
-            bits = list(map(int, b_bits[:, k]))
-
-            qml.MultiControlledX(
-                wires=identification_wires + mcx_work_wires[0],
-                control_values=bits,
-                work_wires=mcx_work_wires[1:],
-                work_wire_type="zeroed",
-            )
-
-            @for_loop(d)
-            def inner_loop(j):
-                bit_is_set = (k >> d - j) & 1
-                qml.cond(bit_is_set, qml.CNOT([mcx_work_wires[0], enumeration_wires[j]]))
-
-            inner_loop()
-
-            qml.MultiControlledX(
-                wires=identification_wires + mcx_work_wires[0],
-                control_values=bits,
-                work_wires=mcx_work_wires[1:],
-                work_wire_type="zeroed",
-            )
-            return b_bits
-
-        uncompute_enumeration(b_bits)
-
-        # Step 6): Uncompute the b_i in the identification register (self-adjoint)
-        encoding(u_bits)
+    # Step 6): Uncompute the b_i in the identification register (self-adjoint)
+    encoding()
 
 
 add_decomps(SumOfSlatersPrep, _sos_state_prep)
