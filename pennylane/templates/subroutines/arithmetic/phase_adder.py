@@ -340,7 +340,7 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
             *reversed(ops.adjoint(_add_k_fourier_loop)(k)),
         ),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
-        ops.prod(ops.prod(_add_k_fourier_loop)(k), QFT(wires=x_wires), ops.X(aux_k)),
+        ops.prod(ops.prod(_add_k_fourier_loop)(k), QFT(wires=x_wires), ops.X(aux_k), lazy=False),
     )
 
 

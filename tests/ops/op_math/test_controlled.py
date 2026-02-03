@@ -980,36 +980,76 @@ special_par_op_decomps = [
 
 custom_ctrl_op_decomps = special_non_par_op_decomps + special_par_op_decomps
 
-pauli_x_based_op_decomps = [
-    (qml.PauliX, [0], [1], [qml.CNOT([1, 0])]),
+pauli_x_based_op_decomps = [  # (base_cls, base_wires, ctrl_wires, work_wires, expected)
+    (qml.PauliX, [0], [1], None, [qml.CNOT([1, 0])]),
     (
         qml.PauliX,
         [2],
         [0, 1],
+        None,
+        qml.Toffoli.compute_decomposition(wires=[0, 1, 2]),
+    ),
+    (
+        qml.PauliX,
+        [2],
+        [0, 1],
+        ["aux"],
+        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2], work_wires=Wires("aux")),
+    ),
+    (
+        qml.CNOT,
+        [1, 2],
+        [0],
+        None,
         qml.Toffoli.compute_decomposition(wires=[0, 1, 2]),
     ),
     (
         qml.CNOT,
         [1, 2],
         [0],
-        qml.Toffoli.compute_decomposition(wires=[0, 1, 2]),
+        ["aux"],
+        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2], work_wires=Wires("aux")),
     ),
     (
         qml.PauliX,
         [3],
         [0, 1, 2],
+        None,
+        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
+    ),
+    (
+        qml.PauliX,
+        [3],
+        [0, 1, 2],
+        ["aux"],
         qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
     ),
     (
         qml.CNOT,
         [2, 3],
         [0, 1],
+        None,
+        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
+    ),
+    (
+        qml.CNOT,
+        [2, 3],
+        [0, 1],
+        ["aux"],
         qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
     ),
     (
         qml.Toffoli,
         [1, 2, 3],
         [0],
+        None,
+        qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=[]),
+    ),
+    (
+        qml.Toffoli,
+        [1, 2, 3],
+        [0],
+        ["aux"],
         qml.MultiControlledX.compute_decomposition(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
     ),
 ]
@@ -1050,13 +1090,13 @@ class TestDecomposition:
         op = qml.ctrl(qml.RZ(1.2, wires=0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        qml.assert_equal(decomp[0], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[0], qml.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
         assert isinstance(decomp[1], qml.QubitUnitary)
-        qml.assert_equal(decomp[2], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[2], qml.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
         assert isinstance(decomp[3].base, qml.QubitUnitary)
-        qml.assert_equal(decomp[4], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[4], qml.MultiControlledX(wires=(1, 2, 0), work_wires=[3, 4]))
         assert isinstance(decomp[5], qml.QubitUnitary)
-        qml.assert_equal(decomp[6], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[6], qml.MultiControlledX(wires=(3, 4, 0), work_wires=[1, 2]))
         assert isinstance(decomp[7].base, qml.QubitUnitary)
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
@@ -1155,14 +1195,14 @@ class TestDecomposition:
         )
 
     @pytest.mark.parametrize(
-        "base_cls, base_wires, ctrl_wires, expected",
+        "base_cls, base_wires, ctrl_wires, work_wires, expected",
         pauli_x_based_op_decomps,
     )
-    def test_decomposition_pauli_x(self, base_cls, base_wires, ctrl_wires, expected):
+    def test_decomposition_pauli_x(self, base_cls, base_wires, ctrl_wires, work_wires, expected):
         """Tests decompositions where the base is PauliX"""
 
         base_op = base_cls(wires=base_wires)
-        ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=Wires("aux"))
+        ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=work_wires)
 
         assert ctrl_op.decomposition() == expected
         assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
@@ -1874,62 +1914,105 @@ class TestCtrl:
         assert op == expected
 
     @pytest.mark.parametrize(
-        "op, ctrl_wires, ctrl_values, expected_op",
+        "op, ctrl_wires, ctrl_values, work_wires, expected_op",
         [
-            (qml.PauliX(wires=[0]), [1], [1], qml.CNOT([1, 0])),
+            (qml.PauliX(wires=[0]), [1], [1], None, qml.CNOT([1, 0])),
             (
                 qml.PauliX(wires=[2]),
                 [0, 1],
                 [1, 1],
+                None,
+                qml.Toffoli(wires=[0, 1, 2]),
+            ),
+            (
+                qml.PauliX(wires=[2]),
+                [0, 1],
+                [1, 1],
+                ["aux"],
+                qml.MultiControlledX(wires=[0, 1, 2], work_wires=["aux"]),
+            ),
+            (
+                qml.CNOT(wires=[1, 2]),
+                [0],
+                [1],
+                None,
                 qml.Toffoli(wires=[0, 1, 2]),
             ),
             (
                 qml.CNOT(wires=[1, 2]),
                 [0],
                 [1],
-                qml.Toffoli(wires=[0, 1, 2]),
+                ["aux"],
+                qml.MultiControlledX(wires=[0, 1, 2], work_wires=["aux"]),
             ),
             (
                 qml.PauliX(wires=[0]),
                 [1],
                 [0],
+                None,
+                qml.MultiControlledX(wires=[1, 0], control_values=[0], work_wires=[]),
+            ),
+            (
+                qml.PauliX(wires=[0]),
+                [1],
+                [0],
+                ["aux"],
                 qml.MultiControlledX(wires=[1, 0], control_values=[0], work_wires=["aux"]),
             ),
             (
                 qml.PauliX(wires=[2]),
                 [0, 1],
                 [1, 0],
+                None,
+                qml.MultiControlledX(wires=[0, 1, 2], control_values=[1, 0], work_wires=[]),
+            ),
+            (
+                qml.PauliX(wires=[2]),
+                [0, 1],
+                [1, 0],
+                ["aux"],
                 qml.MultiControlledX(wires=[0, 1, 2], control_values=[1, 0], work_wires=["aux"]),
             ),
             (
                 qml.CNOT(wires=[1, 2]),
                 [0],
                 [0],
+                None,
+                qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1], work_wires=[]),
+            ),
+            (
+                qml.CNOT(wires=[1, 2]),
+                [0],
+                [0],
+                ["aux"],
                 qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1], work_wires=["aux"]),
             ),
             (
                 qml.PauliX(wires=[3]),
                 [0, 1, 2],
                 [1, 1, 1],
-                qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+                None,
+                qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]),
             ),
             (
                 qml.CNOT(wires=[2, 3]),
                 [0, 1],
                 [1, 1],
+                ["aux"],
                 qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
             ),
             (
                 qml.Toffoli(wires=[1, 2, 3]),
                 [0],
                 [1],
-                qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=Wires("aux")),
+                None,
+                qml.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[]),
             ),
         ],
     )
-    def test_pauli_x_based_ctrl_ops(self, op, ctrl_wires, ctrl_values, expected_op):
+    def test_pauli_x_based_ctrl_ops(self, op, ctrl_wires, ctrl_values, work_wires, expected_op):
         """Tests that PauliX-based ops are handled correctly."""
-        op = qml.ctrl(op, control=ctrl_wires, control_values=ctrl_values, work_wires=["aux"])
+        op = qml.ctrl(op, control=ctrl_wires, control_values=ctrl_values, work_wires=work_wires)
         assert op == expected_op
 
     def test_nested_pauli_x_based_ctrl_ops(self):

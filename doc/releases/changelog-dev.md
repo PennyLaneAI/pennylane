@@ -37,12 +37,15 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.transforms.decompose` is now imported top level as `qml.decompose`.
+  [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
+
 * The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
   [(#8990)](https://github.com/PennyLaneAI/pennylane/pull/8990)
 
 * `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
-  
+
   ```python
   
   @qml.qjit(target="mlir")
@@ -251,6 +254,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
+  Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
+  [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
+
 * Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
 
@@ -290,10 +297,21 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
-  to handle the ``work_wire_type`` correctly within ``map_wires``.
+* Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
+  to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
+  ``Controlled.map_wires`` to preserve ``work_wires``.
   [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
 
+* Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
+  1 in Default Qubit.
+  [(#9014)](https://github.com/PennyLaneAI/pennylane/pull/9014)
+
+* Removes automatic unpacking of inner product resources in the resource representation of
+  :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
+  prevents decompositions in this system from using nested operator products while reporting their
+  resources accurately.
+  [(#8773)](https://github.com/PennyLaneAI/pennylane/pull/8773)
+  
 * Decompose integers into powers of two while adhering to standard 64-bit C integer bounds and avoid overflow in the decomposition system.
   [(#8993)](https://github.com/PennyLaneAI/pennylane/pull/8993)
 
