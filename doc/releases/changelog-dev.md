@@ -26,7 +26,7 @@
 
 * `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
-  
+
   ```python
   
   @qml.qjit(target="mlir")
@@ -234,6 +234,10 @@
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
+  Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
+  [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
 
 * Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
