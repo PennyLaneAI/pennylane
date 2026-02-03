@@ -82,6 +82,7 @@ UNSUPPORTED_TEMPLATES = {
     "TTN",
     "FlipAndRotate",
     "BlockEncode",
+    "ParametrizedEvolution",
 }
 
 
