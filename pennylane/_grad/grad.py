@@ -92,7 +92,7 @@ def _shape(shape, dtype, weak_type=False):
     return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
 
-def _setup_argnums(argnums):
+def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int,...], bool]:
     if argnums is None:
         argnums = 0
     if argnums_is_int := isinstance(argnums, int):
