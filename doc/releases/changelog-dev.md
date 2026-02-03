@@ -26,7 +26,7 @@
 
 * `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
   [(#8983)](https://github.com/PennyLaneAI/pennylane/pull/8983)
-  
+
   ```python
   
   @qml.qjit(target="mlir")
@@ -235,6 +235,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
+  Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
+  [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
+
 * Specs can now return measurement information for QJIT'd workloads when passed ``level="device"``.
   [(#8988)](https://github.com/PennyLaneAI/pennylane/pull/8988)
 
@@ -273,6 +277,10 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
+  1 in Default Qubit.
+  [(#9014)](https://github.com/PennyLaneAI/pennylane/pull/9014)
 
 * Removes automatic unpacking of inner product resources in the resource representation of
   :class:`~.ops.op_math.Prod` for the graph-based decomposition system. This resolves a bug that
