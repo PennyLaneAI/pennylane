@@ -143,6 +143,7 @@ jobs:
       
       - name: Install PennyLane dependencies
         run: |
+          uv lock --upgrade-package numpy==2.4.2
           uv sync --group dev --group ci --upgrade
 
       - name: Install additional PIP packages (Pre-PennyLane)
