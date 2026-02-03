@@ -13,14 +13,29 @@
 # limitations under the License.
 """Contains the 'marker' utility for marking PennyLane objects."""
 
-from typing import Any
+from collections.abc import Callable
+
+from .qnode import QNode
 
 
-def marker(level: str):
+def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callable:
     """Marks the compile pipeline of a QNode with a level label."""
 
-    def decorator(qnode: Any) -> Any:
-        qnode.compile_pipeline.add_marker(level)
-        return qnode
+    if isinstance(obj, QNode) and level is not None:
+        obj.compile_pipeline.add_marker(level)
+        return obj
 
-    return decorator
+    # NOTE: In order to use as decorator: @qml.marker(level="blah")
+    if isinstance(obj, str):
+        level = obj
+        obj = None
+
+    if obj is None and level is not None:
+
+        def decorator(qnode: QNode) -> QNode:
+            qnode.compile_pipeline.add_marker(level)
+            return qnode
+
+        return decorator
+
+    raise ValueError("marker requires a 'level' argument.")
