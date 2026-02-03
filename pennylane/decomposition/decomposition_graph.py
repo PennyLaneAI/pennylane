@@ -63,32 +63,37 @@ IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
 UNSUPPORTED_TEMPLATES = {
-    "RandomLayers",
-    "WireCut",
-    "TrotterizedQfunc",
-    "QDrift",
-    "SpecialUnitary",
+    "BlockEncode",
+    "CVNeuralNetLayers",
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
     "DisplacementEmbedding",
-    "Beamsplitter",
-    "QutritBasisStatePreparation",
-    "SqueezingEmbedding",
-    "CVNeuralNetLayers",
-    "QROMStatePreparation",
-    "TwoLocalSwapNetwork",
+    "FlipAndRotate",
     "MERA",
     "MPS",
-    "TTN",
-    "FlipAndRotate",
-    "BlockEncode",
     "ParametrizedEvolution",
+    "RandomLayers",
+    "SpecialUnitary",
+    "SqueezingEmbedding",
+    "TrotterizedQfunc",
+    "TTN",
+    "TwoLocalSwapNetwork",
+    "WireCut",
+    "QDrift",
+    "QROMStatePreparation",
+    "QutritBasisStatePreparation",
 }
 
 
 @lru_cache
 def _ignore_unsolved_ops():
-    return IGNORED_UNSOLVED_OPS | set(qml.ops.qutrit.__all__) | UNSUPPORTED_TEMPLATES
+    return (
+        IGNORED_UNSOLVED_OPS
+        | set(qml.ops.qutrit.__all__)
+        | set(qml.ops.channel.__all__)
+        | set(qml.ops.cv.__all__)
+        | UNSUPPORTED_TEMPLATES
+    )
 
 
 @dataclass(frozen=True)
