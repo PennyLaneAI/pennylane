@@ -65,6 +65,7 @@ IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 UNSUPPORTED_TEMPLATES = {
     "BlockEncode",
     "CVNeuralNetLayers",
+    "Adjoint(CVNeuralNetLayers)",
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
     "DisplacementEmbedding",
