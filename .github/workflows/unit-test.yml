@@ -144,7 +144,7 @@ jobs:
       - name: Install PennyLane dependencies
         run: |
           uv sync --group dev --group ci --upgrade
-          uv pip instll numpy==2.4.2
+          uv pip install numpy==2.4.2
 
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
