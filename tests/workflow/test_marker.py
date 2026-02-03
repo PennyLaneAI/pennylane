@@ -44,3 +44,18 @@ class TestMarkerQNode:
             @qml.qnode(qml.device("null.qubit"))
             def c():
                 return qml.state()
+
+    def test_simple_qnode(self):
+        """Tests that markers are placed in the qnode's compilation pipeline."""
+
+        @qml.marker(level="after-cancel-inverses")
+        @qml.transforms.cancel_inverses
+        @qml.marker("after-merge-rotations")
+        @qml.transforms.merge_rotations
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        assert c.compile_pipeline.markers == ["after-merge-rotations", "after-cancel-inverses"]
+        assert c.compile_pipeline.get_marker_level("after-merge-rotations") == 0
+        assert c.compile_pipeline.get_marker_level("after-cancel-inverses") == 1
