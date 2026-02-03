@@ -18,8 +18,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a lightweight version (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
-  of :class:`~.HybridQRAM` to rapidly estimate its resources.
+* A new lightweight representation of the :class:`~.HybridQRAM` has been added for fast and efficient resource 
+  estimation. This operation is available under the `qp.estimator` module as: ``qp.estimator.HybridQRAM``.
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
 
 * The `CompilePipeline` object now has an improved `__str__`, `__repr__` and `_ipython_display_` allowing improved inspectibility.
