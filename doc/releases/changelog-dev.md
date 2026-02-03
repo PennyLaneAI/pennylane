@@ -74,6 +74,7 @@
 * `qml.vjp` and `qml.jvp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
   [(#8788)](https://github.com/PennyLaneAI/pennylane/pull/8788)
+  [(#9019)](https://github.com/PennyLaneAI/pennylane/pull/9019)
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
