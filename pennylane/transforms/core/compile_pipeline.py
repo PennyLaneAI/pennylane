@@ -293,7 +293,9 @@ class CompilePipeline:
         """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         compile pipeline"""
         if isinstance(idx, slice):
-            markers = {k: v - idx.start for k, v in self._markers.items() if v >= (idx.start or 0)}
+            markers = {
+                k: v - (idx.start or 0) for k, v in self._markers.items() if v >= (idx.start or 0)
+            }
             compile_pipeline = CompilePipeline(self._compile_pipeline[idx])
             compile_pipeline._markers = markers
             return compile_pipeline
@@ -444,16 +446,19 @@ class CompilePipeline:
 
         lines = []
         inv_marker_map = {v: k for k, v in self._markers.items()}
+        if marker := inv_marker_map.get(0):
+            lines.append(f"   ├─▶ {marker}")
+
         for i, transform in enumerate(self):
             args_str = ", ".join(truncate(a) for a in transform.args)
             kwargs_str = ", ".join(f"{k}={truncate(v)}" for k, v in transform.kwargs.items())
 
             sep = ", " if args_str and kwargs_str else ""
             transform_str = f"{transform.tape_transform.__name__}({args_str}{sep}{kwargs_str})"
-            lines.append(f"  [{i}] {transform_str}" + "," * bool(i != len(self) - 1))
+            lines.append(f"  [{i+1}] {transform_str}" + "," * bool(i != len(self) - 1))
 
-            if inv_marker_map.get(i):
-                lines.append(f"   └─▶ {inv_marker_map[i]}")
+            if marker := inv_marker_map.get(i + 1):
+                lines.append(f"   └─▶ {marker}")
 
         contents = "\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
@@ -466,10 +471,13 @@ class CompilePipeline:
         lines = []
         inv_marker_map = {v: k for k, v in self._markers.items()}
 
+        if marker := inv_marker_map.get(0):
+            lines.append(f"   ├─▶ {marker}")
+
         for i, transform in enumerate(self):
-            lines.append(f"  [{i}] {repr(transform)}" + "," * bool(i != len(self) - 1))
-            if inv_marker_map.get(i):
-                lines.append(f"   └─▶ {inv_marker_map[i]}")
+            lines.append(f"  [{i+1}] {repr(transform)}" + "," * bool(i != len(self) - 1))
+            if marker := inv_marker_map.get(i + 1):
+                lines.append(f"   └─▶ {marker}")
 
         contents = "\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
@@ -560,7 +568,7 @@ class CompilePipeline:
         if level in self._markers:
             raise ValueError(f"Found multiple markers for level {level}. Markers should be unique.")
 
-        self._markers[level] = len(self._compile_pipeline) - 1 if self else 0
+        self._markers[level] = len(self._compile_pipeline)
 
     @property
     def markers(self) -> list[str]:

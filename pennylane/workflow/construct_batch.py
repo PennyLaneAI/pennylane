@@ -108,7 +108,7 @@ def _get_user_transform_slice(
         return slice(0, None)
 
     if isinstance(level, str):
-        return slice(0, _find_level(program, level) + 1)
+        return slice(0, _find_level(program, level))
 
     if isinstance(level, int):
         return slice(0, level)
@@ -327,7 +327,7 @@ def get_transform_program(
         level = num_user + 1 if has_gradient_expand else num_user
         level = slice(0, level)
     elif isinstance(level, str):
-        level = slice(0, _find_level(full_transform_program, level) + 1)
+        level = slice(0, _find_level(full_transform_program, level))
     elif isinstance(level, int):
         level = slice(0, level)
 
