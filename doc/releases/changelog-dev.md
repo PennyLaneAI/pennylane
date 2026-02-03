@@ -18,8 +18,9 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added lightweight versions (based on the :class:`~.estimator.resource_operator.ResourceOperator` class) 
-  of :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding` and :class:`~.BasisState` to rapidly estimate resources.
+* New lightweight representations of the :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
+  been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
+``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
 
 * `~.specs` now includes PPR and PPM weights in its output, allowing for better categorization of PPMs and PPRs.
