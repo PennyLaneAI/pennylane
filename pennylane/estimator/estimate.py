@@ -477,11 +477,9 @@ def _compute_operator_resources(
                 action.gate, gate_set, config, cache
             )
 
-            # Aggregate gates
             for g, c in sub_gates.items():
                 total_gates[g] += c * action.count
 
-            # Aggregate wire actions
             for action_type, amt, is_scalable in sub_wire_actions:
                 # If existing action is scalable, it multiplies by action.count
                 # If fixed, it stays fixed.
