@@ -428,7 +428,7 @@ def decompose(
 
     You can decompose the circuit into a set of gates:
 
-    >>> batch, fn = qml.transforms.decompose(tape, gate_set={qml.CNOT, qml.RX})
+    >>> batch, fn = qml.decompose(tape, gate_set={qml.CNOT, qml.RX})
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]), RX(1.2, wires=[0]), CNOT(wires=[0, 1]), expval(Z(0))]
 
@@ -436,7 +436,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qml.transforms.decompose(gate_set={qml.Toffoli, "RX", "RZ"})
+        @qml.decompose(gate_set={qml.Toffoli, "RX", "RZ"})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -456,7 +456,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qml.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -494,13 +494,13 @@ def decompose(
                 estimation_wires=estimation_wires,
             )
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=0))())
+    >>> print(qml.draw(qml.decompose(circuit, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=1))())
+    >>> print(qml.draw(qml.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
     1: ──H─╰●──────│───────│───────╭QFT†─┤
     2: ──H─────────╰●──────│───────├QFT†─┤
@@ -510,7 +510,7 @@ def decompose(
     [[0.877...+0.j         0.        -0.479...j]
      [0.        -0.479...j 0.877...+0.j        ]]
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=2))())
+    >>> print(qml.draw(qml.decompose(circuit, max_expansion=2))())
     0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
     1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
     2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
@@ -542,7 +542,7 @@ def decompose(
                 qml.CRX(0.5, wires=[0, 1])
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
+            [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
         >>> from pprint import pprint
         >>> pprint(new_tape.operations)
@@ -556,7 +556,7 @@ def decompose(
         With the new system enabled, the transform produces the expected outcome.
 
         >>> qml.decomposition.enable_graph()
-        >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+        >>> [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
         >>> new_tape.operations
         [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
@@ -566,7 +566,7 @@ def decompose(
 
         .. code-block:: python
 
-            @qml.transforms.decompose(
+            @qml.decompose(
                 gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
             )
             @qml.qnode(qml.device("default.qubit"))
@@ -582,7 +582,7 @@ def decompose(
 
         .. code-block:: python
 
-            @qml.transforms.decompose(
+            @qml.decompose(
                 gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
             )
             @qml.qnode(qml.device("default.qubit"))
@@ -637,7 +637,7 @@ def decompose(
 
         .. code-block:: python
 
-            @qml.transforms.decompose(
+            @qml.decompose(
                 gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
                 stopping_condition=stopping_condition,
             )
@@ -700,7 +700,7 @@ def decompose(
                 qml.RY(np.pi/2, wires[1])
                 qml.Z(wires[1])
 
-            @qml.transforms.decompose(
+            @qml.decompose(
                 gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
                 alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
                 fixed_decomps={qml.IsingXX: isingxx_decomp},
