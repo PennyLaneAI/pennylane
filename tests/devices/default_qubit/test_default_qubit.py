@@ -1900,7 +1900,8 @@ class TestPostselection:
         param = qml.math.asarray(param, like=interface)
 
         @qml.set_shots(shots=shots)
-        @qml.qnode(dev, interface=interface, mcm_method="deferred")
+        @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
             qml.RX(theta, 0)
             qml.CNOT([0, 1])
@@ -1908,7 +1909,8 @@ class TestPostselection:
             return qml.apply(mp)
 
         @qml.set_shots(shots=shots)
-        @qml.qnode(dev, interface=interface, mcm_method="deferred")
+        @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ_expected():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -1962,7 +1964,8 @@ class TestPostselection:
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
 
             @qml.set_shots(shots=shots)
-            @qml.qnode(dev, interface=interface, mcm_method="deferred")
+            @qml.defer_measurements
+            @qml.qnode(dev, interface=interface)
             def circ_postselect(theta):
                 qml.RX(theta, 0)
                 qml.CNOT([0, 1])
@@ -2094,7 +2097,8 @@ class TestPostselection:
         dev = qml.device("default.qubit")
 
         @qml.set_shots(shots=shots)
-        @qml.qnode(dev, interface=interface, mcm_method="deferred")
+        @qml.defer_measurements
+        @qml.qnode(dev, interface=interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
