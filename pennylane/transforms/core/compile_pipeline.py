@@ -455,9 +455,6 @@ class CompilePipeline:
             if inv_marker_map.get(i):
                 lines.append(f"   └─▶ {inv_marker_map[i]}")
 
-        if inv_marker_map.get(len(self)):
-            lines.append(f"   └─▶ {inv_marker_map[len(self)]}")
-
         contents = "\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
 
@@ -474,8 +471,6 @@ class CompilePipeline:
             if inv_marker_map.get(i):
                 lines.append(f"   └─▶ {inv_marker_map[i]}")
 
-        if inv_marker_map.get(len(self)):
-            lines.append(f"   └─▶ {inv_marker_map[len(self)]}")
         contents = "\n".join(lines)
         return f"CompilePipeline(\n{contents}\n)"
 
