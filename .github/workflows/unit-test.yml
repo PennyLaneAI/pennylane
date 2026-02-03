@@ -94,7 +94,7 @@ on:
         default: ''
 
 env:
-  UV_SYSTEM_PYTHON: 1
+  # UV_SYSTEM_PYTHON: 1
   TEST_REPORTS_DIR: .github/test-reports
 
 jobs:
@@ -137,9 +137,9 @@ jobs:
             fi
           done <<< "$ADDITIONAL_OS_PACKAGES"
 
-      - name: Upgrade PIP and install wheel
-        run: |
-          uv pip install --upgrade pip wheel setuptools>=75.8.1
+      # - name: Upgrade PIP and install wheel
+      #   run: |
+      #     uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
         run: |
