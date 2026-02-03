@@ -22,11 +22,7 @@ import pennylane as qml
 from pennylane import allocate, for_loop, math
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
-
-# from pennylane.ops import CNOT, cond, MultiControlledX
 from pennylane.queuing import AnnotatedQueue, QueuingManager
-
-# from pennylane.templates import QROM, StatePrep
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -534,22 +530,24 @@ class SumOfSlatersPrep(Operation):
 
     @property
     def resource_params(self):
-        indices = self.data[0]
+        indices = self.hyperparameters["indices"]
         D = len(indices)
         n = len(self.wires)
-        v_bits = _int_to_binary(indices, n)  # v_bits.shape = (n, D)
+        v_bits = _int_to_binary(np.array(indices), n)  # v_bits.shape = (n, D)
         selector_ids, _ = select_sos_rows(v_bits)
         r = len(selector_ids)
         return {"D": D, "num_bits": r, "num_wires": len(self.wires)}
 
-    def __init__(self, indices, coefficients, wires):
-        # indices = qml.math.array(indices)
-        super().__init__(indices, coefficients, wires)
+    ndim_params = (1,)
+
+    def __init__(self, coefficients, wires, indices):
+        super().__init__(coefficients, wires=wires)
+        self.hyperparameters["indices"] = indices
 
     @staticmethod
-    def compute_decomposition(indices, coefficients, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(coefficients, wires, indices):  # pylint: disable=arguments-differ
         with AnnotatedQueue() as q:
-            _sos_state_prep(indices=indices, coefficients=coefficients, wires=wires)
+            _sos_state_prep(coefficients=coefficients, wires=wires, indices=indices)
 
         op_list = []
         if QueuingManager.recording():
@@ -621,7 +619,7 @@ def _sos_state_prep_work_wires(D, num_bits, **_):
 
 
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-def _sos_state_prep(indices, coefficients, wires, **__):
+def _sos_state_prep(coefficients, wires, indices):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     # pylint: disable=no-value-for-parameter
     n = len(wires)
@@ -689,14 +687,12 @@ def _sos_state_prep(indices, coefficients, wires, **__):
         def uncompute_enumeration(k, b_bits):
             bits = list(map(int, b_bits[:, k]))
 
-            op = qml.MultiControlledX(
+            qml.MultiControlledX(
                 wires=identification_wires + mcx_work_wires[0],
                 control_values=bits,
                 work_wires=mcx_work_wires[1:],
                 work_wire_type="zeroed",
             )
-            # print(f"{op.work_wire_type=}")
-            # print(f"{op.resource_params=}")
 
             @for_loop(d)
             def inner_loop(j):
@@ -705,13 +701,12 @@ def _sos_state_prep(indices, coefficients, wires, **__):
 
             inner_loop()
 
-            op = qml.MultiControlledX(
+            qml.MultiControlledX(
                 wires=identification_wires + mcx_work_wires[0],
                 control_values=bits,
                 work_wires=mcx_work_wires[1:],
                 work_wire_type="zeroed",
             )
-            print(f"{op.work_wire_type=}")
             return b_bits
 
         uncompute_enumeration(b_bits)

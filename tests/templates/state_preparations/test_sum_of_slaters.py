@@ -411,9 +411,9 @@ class TestSumOfSlatersPrep:
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator."""
         rng = np.random.default_rng(seed)
-        indices = rng.choice(2**num_wires, size=num_entries, replace=False)
+        indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         coefficients = rng.random(num_entries)
         coefficients /= np.linalg.norm(coefficients)
         wires = list(range(num_wires))
-        op = SumOfSlatersPrep(indices, coefficients, wires)
+        op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
