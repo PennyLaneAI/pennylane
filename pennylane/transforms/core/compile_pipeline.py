@@ -17,6 +17,7 @@ This module contains the ``CompilePipeline`` class.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Sequence
 from copy import copy
 from functools import partial
@@ -471,8 +472,6 @@ class CompilePipeline:
 
     def __str__(self) -> str:
         """Returns a user friendly representation of the compile pipeline."""
-        if not self:
-            return "CompilePipeline()"
 
         def truncate(val: Any) -> str:
             _CHAR_THRESHOLD = 50
@@ -480,9 +479,12 @@ class CompilePipeline:
             return "..." if len(val_str) > _CHAR_THRESHOLD else val_str
 
         lines = []
-        inv_marker_map = {v: k for k, v in self._markers.items()}
+        inv_marker_map = defaultdict(list)
+        for label, index in self._markers.items():
+            inv_marker_map[index].append(label)
+
         if marker := inv_marker_map.get(0):
-            lines.append(f"   ├─▶ {marker}")
+            lines.append(f"   ├─▶ {', '.join(marker)}")
 
         for i, transform in enumerate(self):
             args_str = ", ".join(truncate(a) for a in transform.args)
@@ -490,32 +492,49 @@ class CompilePipeline:
 
             sep = ", " if args_str and kwargs_str else ""
             transform_str = f"{transform.tape_transform.__name__}({args_str}{sep}{kwargs_str})"
-            lines.append(f"  [{i+1}] {transform_str}" + "," * bool(i != len(self) - 1))
+            lines.append(f"  [{i + 1}] {transform_str}" + "," * bool(i != len(self) - 1))
 
             if marker := inv_marker_map.get(i + 1):
-                lines.append(f"   └─▶ {marker}")
+                lines.append(f"   └─▶ {', '.join(marker)}")
 
-        contents = "\n".join(lines)
-        return f"CompilePipeline(\n{contents}\n)"
+        # More markers than transforms
+        leftover_indices = sorted([k for k in inv_marker_map.keys() if k > len(self)])
+        for idx in leftover_indices:
+            marker = inv_marker_map[idx]
+            lines.append(f"   └─▶ {', '.join(marker)}")
+
+        if lines:
+            contents = "\n".join(lines)
+            return f"CompilePipeline(\n{contents}\n)"
+        return "CompilePipeline()"
 
     def __repr__(self) -> str:
         """The detailed string representation of the compile pipeline."""
-        if not self:
-            return "CompilePipeline()"
 
         lines = []
-        inv_marker_map = {v: k for k, v in self._markers.items()}
+        inv_marker_map = defaultdict(list)
+        for label, index in self._markers.items():
+            inv_marker_map[index].append(label)
 
         if marker := inv_marker_map.get(0):
-            lines.append(f"   ├─▶ {marker}")
+            lines.append(f"   ├─▶ {', '.join(marker)}")
 
         for i, transform in enumerate(self):
-            lines.append(f"  [{i+1}] {repr(transform)}" + "," * bool(i != len(self) - 1))
+            lines.append(f"  [{i + 1}] {repr(transform)}" + "," * bool(i != len(self) - 1))
             if marker := inv_marker_map.get(i + 1):
-                lines.append(f"   └─▶ {marker}")
+                lines.append(f"   └─▶ {', '.join(marker)}")
 
-        contents = "\n".join(lines)
-        return f"CompilePipeline(\n{contents}\n)"
+        # More markers than transforms
+        leftover_indices = sorted([k for k in inv_marker_map.keys() if k > len(self)])
+        for idx in leftover_indices:
+            marker = inv_marker_map[idx]
+            lines.append(f"   └─▶ {', '.join(marker)}")
+
+        if lines:
+            contents = "\n".join(lines)
+            return f"CompilePipeline(\n{contents}\n)"
+
+        return "CompilePipeline()"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CompilePipeline):
@@ -546,9 +565,14 @@ class CompilePipeline:
             # pylint: disable=protected-access
             if (isinstance(obj, Transform) and obj == self[i]._transform) or self[i] == obj:
                 removed = self._compile_pipeline.pop(i)
+                self._markers = {k: (v - 1 if v > i else v) for k, v in self._markers.items()}
+
                 # Remove the associated expand_transform if present
                 if i > 0 and removed.expand_transform == self[i - 1]:
                     self._compile_pipeline.pop(i - 1)
+                    self._markers = {
+                        k: (v - 1 if v > i - 1 else v) for k, v in self._markers.items()
+                    }
                     i -= 1
             i -= 1
 
@@ -592,6 +616,12 @@ class CompilePipeline:
         # Handle iterables (list, tuple, etc.)
         for t in transforms:
             self += t
+
+    def remove_marker(self, level: str) -> None:
+        """Removes a mark at the given level."""
+        if level not in self._markers:
+            raise ValueError(f"No marker found for level '{level}'.")
+        del self._markers[level]
 
     def add_marker(self, level: str) -> None:
         """Adds a mark at the current level."""
@@ -653,7 +683,7 @@ class CompilePipeline:
         if expand_transform := transform.expand_transform:
             self._compile_pipeline.insert(index, expand_transform)
 
-    def pop(self, index: int = -1):
+    def pop(self, index: int = -1) -> BoundTransform:
         """Pop the transform container at a given index of the program.
 
         Args:
@@ -664,8 +694,18 @@ class CompilePipeline:
 
         """
         transform = self._compile_pipeline.pop(index)
+
+        # Adjust index to be non-negative
+        index = index if index >= 0 else len(self) + index + 1
+
+        # Decrement relevant markers
+        self._markers = {k: (v - 1 if v > index else v) for k, v in self._markers.items()}
+
         if index > 0 and transform.expand_transform == self._compile_pipeline[index - 1]:
             self._compile_pipeline.pop(index - 1)
+            # Decrement relevant markers
+            self._markers = {k: (v - 1 if v > index - 1 else v) for k, v in self._markers.items()}
+
         return transform
 
     @property

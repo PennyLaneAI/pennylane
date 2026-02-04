@@ -2037,32 +2037,55 @@ class TestMarkers:
         """Tests that the string representation of a pipeline includes markers."""
 
         compile_pipeline = CompilePipeline()
+        pipeline_str = str(compile_pipeline)
+        assert pipeline_str == "CompilePipeline()"
+
         compile_pipeline.add_marker("marker0")
-        compile_pipeline.add_transform(transform(first_valid_transform))
+        pipeline_str = str(compile_pipeline)
+        assert pipeline_str == "CompilePipeline(\n   ├─▶ marker0\n)"
+
         compile_pipeline.add_marker("marker1")
-        compile_pipeline.add_transform(transform(second_valid_transform))
+
+        pipeline_str = str(compile_pipeline)
+        assert pipeline_str == "CompilePipeline(\n   ├─▶ marker0, marker1\n)"
+
+        compile_pipeline.add_transform(transform(first_valid_transform))
         compile_pipeline.add_marker("marker2")
+        compile_pipeline.add_transform(transform(second_valid_transform))
+        compile_pipeline.add_marker("marker3")
 
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n   ├─▶ marker0\n  [1] first_valid_transform(),\n   └─▶ marker1\n  [2] second_valid_transform()\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform(),\n   └─▶ marker2\n  [2] second_valid_transform()\n   └─▶ marker3\n)"
         )
 
     def test_repr_pipeline_with_markers(self):
         """Tests that the repr representation of a pipeline includes markers."""
 
         compile_pipeline = CompilePipeline()
+        pipeline_repr = repr(compile_pipeline)
+        assert pipeline_repr == "CompilePipeline()"
+
         compile_pipeline.add_marker("marker0")
-        compile_pipeline.add_transform(transform(first_valid_transform))
+
+        pipeline_repr = repr(compile_pipeline)
+        assert pipeline_repr == "CompilePipeline(\n   ├─▶ marker0\n)"
+
         compile_pipeline.add_marker("marker1")
-        compile_pipeline.add_transform(transform(second_valid_transform))
+
+        pipeline_repr = repr(compile_pipeline)
+        assert pipeline_repr == "CompilePipeline(\n   ├─▶ marker0, marker1\n)"
+
+        compile_pipeline.add_transform(transform(first_valid_transform))
         compile_pipeline.add_marker("marker2")
+        compile_pipeline.add_transform(transform(second_valid_transform))
+        compile_pipeline.add_marker("marker3")
 
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n   ├─▶ marker0\n  [1] <first_valid_transform()>,\n   └─▶ marker1\n  [2] <second_valid_transform()>\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>,\n   └─▶ marker2\n  [2] <second_valid_transform()>\n   └─▶ marker3\n)"
         )
 
     def test_copy_preserves_markers(self):
@@ -2079,3 +2102,72 @@ class TestMarkers:
         assert copied_pipeline.markers == ["marker1", "marker2"]
         assert copied_pipeline.get_marker_level("marker1") == 1
         assert copied_pipeline.get_marker_level("marker2") == 2
+
+    def test_pop_updates_markers(self):
+        """Test that popping a transform shifts subsequent markers."""
+        pipeline = CompilePipeline()
+        pipeline.add_marker("start")  # level 0
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("after-first")  # level 1
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("after-second")  # level 2
+
+        pipeline.pop(0)  # Remove first transform
+
+        # 'start' still points to 0, 'after-first' should now point to 0, 'after-second' to 1
+        assert pipeline.markers == ["start", "after-first", "after-second"]
+        assert pipeline.get_marker_level("start") == 0
+        assert pipeline.get_marker_level("after-first") == 0
+        assert pipeline.get_marker_level("after-second") == 1
+
+    def test_pop_with_expand_transform_updates_markers(self):
+        """Test that popping a transform shifts subsequent markers."""
+        pipeline = CompilePipeline()
+        pipeline.add_marker("start")  # level 0
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("after-first")  # level 1
+        pipeline.add_transform(transform(first_valid_transform, expand_transform=expand_transform))
+        pipeline.add_marker("after-second")  # level 2
+
+        assert len(pipeline) == 3
+
+        pipeline.pop()  # Remove second and third transform
+
+        # 'start' still points to 0, 'after-first' should now point to 0, 'after-second' to 1
+        assert pipeline.markers == ["start", "after-first", "after-second"]
+        assert pipeline.get_marker_level("start") == 0
+        assert pipeline.get_marker_level("after-first") == 1
+        assert pipeline.get_marker_level("after-second") == 1
+
+    def test_remove_updates_markers(self):
+        """Test that removing a transform shifts subsequent markers."""
+        pipeline = CompilePipeline()
+        pipeline.add_marker("start")  # level 0
+        pipeline += BoundTransform(transform(first_valid_transform))
+        pipeline.add_marker("after-first")  # level 1
+        pipeline += BoundTransform(transform(second_valid_transform))
+        pipeline.add_marker("after-second")  # level 2
+
+        pipeline.remove(BoundTransform(transform(first_valid_transform)))  # Remove first transform
+
+        assert len(pipeline) == 1
+        assert pipeline[0].tape_transform is second_valid_transform
+
+        # 'start' still points to 0, 'after-first' should now point to 0, 'after-second' to 1
+        assert pipeline.markers == ["start", "after-first", "after-second"]
+        assert pipeline.get_marker_level("start") == 0
+        assert pipeline.get_marker_level("after-first") == 0
+        assert pipeline.get_marker_level("after-second") == 1
+
+    def test_top_level_marker_concatenation(self):
+        """Test that a marker at level 0 stays at 0 during prepending."""
+        p1 = CompilePipeline()
+        p1.add_marker("start")
+        p1.add_transform(transform(first_valid_transform))
+
+        p2 = CompilePipeline()
+        p2.add_transform(transform(second_valid_transform))
+
+        combined = p2 + p1
+        # 'start' should now be at level 1 of the combined pipeline.
+        assert combined.get_marker_level("start") == 1
