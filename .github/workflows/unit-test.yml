@@ -203,16 +203,14 @@ jobs:
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: |
-          uv pip list
-          pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} -v
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
-      - name: Freeze dependencies # upload uv lock
+      - name: Freeze dependencies
         shell: bash
         if: inputs.requirements_file != ''
         run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
 
-      - name: Upload frozen requirements # upload uv lock
+      - name: Upload frozen requirements
         if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
         with:

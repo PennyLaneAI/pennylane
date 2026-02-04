@@ -84,6 +84,7 @@ jobs:
         shell: bash
         run: |
           pip freeze | grep -v 'file:///' > doc.txt
+          uv lock
           cat doc.txt
 
       - name: Upload frozen requirements  # upload uv lock
