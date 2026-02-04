@@ -115,12 +115,14 @@ class SubroutineOp(Operation):
         inputs = ", ".join(f"{key}={value}" for key, value in self._bound_args.arguments.items())
         return f"<{self.name}({inputs})>"
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         subroutine: "Subroutine",
         bound_args: BoundArguments,
         decomposition: list[Operation],
         output: Any = None,
+        id: None | str = None,
     ):
         self._subroutine = subroutine
         self._bound_args = bound_args
@@ -136,7 +138,7 @@ class SubroutineOp(Operation):
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
         data = tuple(flatten(dynamic_args)[0])
-        super().__init__(*data, wires=wires)
+        super().__init__(*data, wires=wires, id=id)
         self.name = subroutine.name
 
     @property
@@ -447,12 +449,12 @@ class Subroutine:
 
         return tuple(name for name in self._signature.parameters if not is_static(name))
 
-    def operator(self, *args, **kwargs) -> SubroutineOp:
+    def operator(self, *args, id: str | None = None, **kwargs) -> SubroutineOp:
         """Create a ``SubroutineOp`` from the template."""
         bound_args = self._full_setup_inputs(*args, **kwargs)
         with queuing.AnnotatedQueue() as decomposition:
             output = self.definition(*bound_args.args, **bound_args.kwargs)
-        return SubroutineOp(self, bound_args, decomposition.queue, output)
+        return SubroutineOp(self, bound_args, decomposition.queue, output, id=id)
 
     def __call__(self, *args, **kwargs):
         if capture.enabled():

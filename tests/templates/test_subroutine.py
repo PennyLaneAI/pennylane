@@ -275,6 +275,17 @@ class TestSubroutineCall:
         op = q.queue[0]
         assert op.bound_args.arguments["metadata"] == "default_value"
 
+    def test_handle_id(self):
+        """Test that Subroutine's can handle accepting an id."""
+
+        @Subroutine
+        def f(wires, id=None):
+            pass
+
+        op = f.operator(0, id="val")
+
+        assert op.id == "val"
+
     def test_mcm_outputs(self):
         """Test that a subroutine can return mcms."""
 
