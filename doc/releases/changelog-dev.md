@@ -252,6 +252,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.counts` of mid circuit measurements can now be captured into jaxpr.
+  [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
+
 * Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
   Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
   [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
