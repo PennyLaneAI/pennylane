@@ -148,7 +148,7 @@ def circuit_spectrum(
         def circuit(x, w):
             for l in range(n_layers):
                 for i in range(n_qubits):
-                    qml.fourier.mark(ml.RX(x[i], wires=i), f"x{i}")
+                    qml.fourier.mark(qml.RX(x[i], wires=i), f"x{i}")
                     qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
             qml.fourier.mark(qml.RZ(x[0], wires=0), "x0")
             return qml.expval(qml.Z(0))
