@@ -598,10 +598,10 @@ class CompilePipeline:
         protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
         if level in protected_options:
             raise ValueError(
-                f"Found marker for protected level {level}. Protected options are {protected_options}."
+                f"Found marker for protected level '{level}'. Protected options are {protected_options}."
             )
         if level in self._markers:
-            raise ValueError(f"Found multiple markers for level {level}. Markers should be unique.")
+            raise ValueError(f"Found multiple markers for level '{level}'. Markers must be unique.")
 
         self._markers[level] = len(self._compile_pipeline)
 

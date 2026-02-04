@@ -1926,6 +1926,32 @@ class TestMarkers:
         assert pipeline.markers == ["test"]
         assert pipeline.get_marker_level("test") == 1
 
+    @pytest.mark.parametrize(
+        "protected_name", ["top", "user", "gradient", "device", "all", "all-mlir"]
+    )
+    def test_add_marker_with_protected_name(self, protected_name):
+        """Test that adding a marker with a protected name raises an error."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_transform(transform(first_valid_transform))
+        with pytest.raises(
+            ValueError,
+            match=f"Found marker for protected level '{protected_name}'",
+        ):
+            pipeline.add_marker(protected_name)
+
+    def test_add_duplicate_marker(self):
+        """Test that adding a duplicate marker raises an error."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("test")
+        pipeline.add_transform(transform(second_valid_transform))
+        with pytest.raises(
+            ValueError, match="Found multiple markers for level 'test'. Markers must be unique."
+        ):
+            pipeline.add_marker("test")
+
     def test_mul_pipeline_with_markers(self):
         """Tests that markers are preserved when pipelines are duplicated with *."""
 
