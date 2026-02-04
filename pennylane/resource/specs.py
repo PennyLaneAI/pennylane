@@ -260,7 +260,9 @@ def _specs_qjit_intermediate_passes(
     )
     if mlir_levels == "all" or len(mlir_levels) > 0:
         try:
-            results = mlir_specs(qjit, mlir_levels, level_to_marker, *args, **kwargs)
+            results = mlir_specs(
+                qjit, mlir_levels, *args, **kwargs, level_to_marker=level_to_marker
+            )
         except ValueError as ve:
             levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
             bad_levels = [str(int(lvl) + num_trans_levels) for lvl in levels[1].split(", ")]
