@@ -109,6 +109,15 @@ class TestCounts:
         ):
             qml.counts()
 
+    def test_counts_no_implementation_mcm(self):
+        """Test that counts of an mcm can't be measured and raises a NotImplementedError."""
+
+        with pytest.raises(
+            NotImplementedError,
+            match=r"Counts has no execution implementation with program capture.",
+        ):
+            qml.counts(2)
+
     def test_warning_about_all_outcomes(self):
         """Test a warning is raised about all_outcomes=False"""
 
