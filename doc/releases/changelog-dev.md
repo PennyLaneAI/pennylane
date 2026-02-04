@@ -18,6 +18,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The performance of the `qml.estimate` function has been significantly improved by memoizing the resource calculation for resource operators. This avoids redundant computations when the same operator type and parameters appear multiple times in a workflow.
+  [(#9021)](https://github.com/PennyLaneAI/pennylane/pull/9021)
+
 * `qml.transforms.decompose` is now imported top level as `qml.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
