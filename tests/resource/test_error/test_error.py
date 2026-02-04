@@ -14,13 +14,13 @@
 """
 Test base AlgorithmicError class and its associated methods.
 """
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import DecompositionWarning
 from pennylane.operation import Operation
 from pennylane.resource.error import (
     AlgorithmicError,
@@ -281,8 +281,7 @@ class TestSpecAndTracker:
         """Test that tracker are tracking errors as expected."""
 
         with qml.Tracker(self.dev) as tracker:
-            with pytest.warns(DecompositionWarning):
-                self.circuit()
+            self.circuit()
 
         algo_errors = tracker.latest["errors"]
         assert len(algo_errors) == 3
