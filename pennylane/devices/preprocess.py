@@ -382,6 +382,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
+            strict=True,
         )
 
     if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
