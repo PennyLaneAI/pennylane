@@ -94,6 +94,7 @@ on:
         default: ''
 
 env:
+  UV_SYSTEM_PYTHON: 1
   TEST_REPORTS_DIR: .github/test-reports
 
 jobs:

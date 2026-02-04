@@ -27,6 +27,8 @@ jobs:
     if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    env:
+      UV_SYSTEM_PYTHON: 1
 
     steps:
       - name: Set up Python
