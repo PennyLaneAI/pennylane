@@ -104,8 +104,8 @@ jobs:
       - sphinx
     uses: ./.github/workflows/check_in_artifact.yml
     with:
-      artifact_name_pattern: "frozen-doc"
-      artifact_save_path: ".github/stable/"
+      artifact_name_pattern: "frozen-uv-lock"
+      artifact_save_path: "uv.lock"
       merge_multiple: true
       pull_request_head_branch_name: bot/stable-deps-update
       commit_message_description: Frozen Doc Dependencies Update

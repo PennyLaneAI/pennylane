@@ -63,8 +63,7 @@ jobs:
           pip install uv
           uv lock
 
-      - name: Upload frozen requirements # upload uv lock
-        # if: github.event_name == 'schedule'
+      - name: Upload frozen requirements 
         uses: actions/upload-artifact@v4
         with:
           name: frozen-uv-lock
@@ -76,7 +75,7 @@ jobs:
     if: github.event_name == 'schedule'
     with:
       artifact_name_pattern: "frozen-*"
-      artifact_save_path: ".github/stable/"
+      artifact_save_path: "uv.lock"
       pull_request_head_branch_name: bot/stable-deps-update
       commit_message_description: Frozen Dependencies Update
       pull_request_title: Update stable dependency files
