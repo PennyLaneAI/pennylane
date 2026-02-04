@@ -16,6 +16,7 @@ Tests for quantum algorithmic subroutines resource operators.
 """
 import math
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -23,6 +24,7 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
+from pennylane.templates import SelectOnlyQRAM
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,too-many-arguments
@@ -148,6 +150,217 @@ class TestIQP:
     def test_tracking_name(self, num_wires, pattern, spin_sym, expected):
         """Test that the tracking name is correct."""
         assert qre.IQP.tracking_name(num_wires, pattern, spin_sym) == expected
+
+
+class TestSelectOnlyQRAM:
+    """Test the SelectOnlyQRAM class."""
+
+    def test_raises_with_wrong_wire_num(self):
+        with pytest.raises(ValueError, match="Expected 7 wires, got 4."):
+            qre.SelectOnlyQRAM(
+                [
+                    [1],
+                    [1],
+                    [1],
+                    [1],
+                ],
+                7,
+                2,
+                2,
+                control_wires=(
+                    0,
+                    1,
+                ),
+                target_wires=(2,),
+                select_wires=(3,),
+                select_value=0,
+            )
+
+    @pytest.mark.parametrize(
+        (
+            "data",
+            "num_wires",
+            "num_control_wires",
+            "num_select_wires",
+            "control_wires",
+            "target_wires",
+            "select_wires",
+            "select_value",
+        ),
+        [
+            ([[1], [0], [1], [0]], 7, 2, 3, (0, 1), (2, 3, 4), (5, 6), 0),
+        ],
+    )
+    def test_resource_params(
+        self,
+        data,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires,
+        target_wires,
+        select_wires,
+        select_value,
+    ):
+        """Test that the resource params are correct."""
+        op = qre.SelectOnlyQRAM(
+            data,
+            num_wires,
+            num_control_wires,
+            num_select_wires,
+            control_wires,
+            target_wires,
+            select_wires,
+            select_value,
+        )
+        assert np.allclose(op.resource_params["data"], data)
+        assert op.resource_params["num_wires"] == num_wires
+        assert op.resource_params["num_control_wires"] == num_control_wires
+        assert op.resource_params["num_select_wires"] == num_select_wires
+        assert op.resource_params["select_value"] == select_value
+
+    @pytest.mark.parametrize(
+        (
+            "data",
+            "num_wires",
+            "select_value",
+            "num_select_wires",
+            "num_control_wires",
+        ),
+        [([[1], [0], [1], [0]], 7, 0, 2, 2)],
+    )
+    def test_resource_rep(self, data, num_wires, select_value, num_select_wires, num_control_wires):
+        """Test that the compressed representation is correct."""
+        expected = qre.CompressedResourceOp(
+            qre.SelectOnlyQRAM,
+            num_wires,
+            {
+                "data": data,
+                "num_wires": num_wires,
+                "select_value": select_value,
+                "num_select_wires": num_select_wires,
+                "num_control_wires": num_control_wires,
+            },
+        )
+        assert (
+            qre.SelectOnlyQRAM.resource_rep(
+                data=data,
+                num_wires=num_wires,
+                select_value=select_value,
+                num_select_wires=num_select_wires,
+                num_control_wires=num_control_wires,
+            )
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "data",
+            "num_wires",
+            "select_value",
+            "num_select_wires",
+            "num_control_wires",
+            "expected",
+        ),
+        (
+            (
+                np.array(
+                    [[1], [0], [1], [0], [1], [0], [1], [0], [1], [0], [1], [0], [1], [0], [1], [0]]
+                ),
+                7,
+                0,
+                2,
+                2,
+                [
+                    GateCount(resource_rep(qre.X), 24),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            resource_rep(qre.X), num_ctrl_wires=4, num_zero_ctrl=0
+                        ),
+                        2,
+                    ),
+                    GateCount(resource_rep(qre.BasisEmbedding, {"num_wires": 2}), 1),
+                ],
+            ),
+        ),
+    )
+    def test_resources(
+        self,
+        data,
+        num_wires,
+        select_value,
+        num_select_wires,
+        num_control_wires,
+        expected,
+    ):
+        """Test that the resources are correct."""
+        assert (
+            qre.SelectOnlyQRAM.resource_decomp(
+                data,
+                num_wires,
+                select_value,
+                num_select_wires,
+                num_control_wires,
+            )
+            == expected
+        )
+
+        dev = qml.device("default.qubit")
+
+        @qml.transforms.decompose
+        @qml.qnode(dev)
+        def circuit():
+            SelectOnlyQRAM(
+                data=data,
+                control_wires=range(num_control_wires),
+                target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
+                select_wires=range(
+                    num_control_wires + data.shape[1],
+                    num_control_wires + data.shape[1] + num_select_wires,
+                ),
+                select_value=select_value,
+            )
+
+        specs = qml.specs(circuit)()
+
+        for ty, count in specs.resources.gate_types.items():
+            found = False
+            i = 0
+            while not found and i < len(expected):
+                if (
+                    expected[i].gate.op_type.__name__ == ty.replace("Pauli", "")
+                    or ty == "MultiControlledX"
+                    and "Controlled" == expected[i].gate.op_type.__name__
+                ):
+                    assert expected[i].count == count
+                    found = True
+                i += 1
+            assert found
+
+    @pytest.mark.parametrize(
+        (
+            "data",
+            "num_wires",
+            "select_value",
+            "num_select_wires",
+            "num_control_wires",
+        ),
+        [([[1], [0], [1], [0]], 7, 0, 2, 2)],
+    )
+    def test_tracking_name(
+        self, data, num_wires, select_value, num_select_wires, num_control_wires
+    ):
+        """Tests that the tracking name is correct."""
+        assert (
+            qre.SelectOnlyQRAM.tracking_name(
+                data,
+                num_wires,
+                select_value,
+                num_select_wires,
+                num_control_wires,
+            )
+            == f"SelectOnlyQRAM({data}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
+        )
 
 
 class TestBBQRAM:

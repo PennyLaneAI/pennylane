@@ -532,7 +532,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     if base_class is qml.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
             return resource_rep(qml.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0:
+        if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
             return resource_rep(qml.Toffoli)
         return resource_rep(
             qml.MultiControlledX,

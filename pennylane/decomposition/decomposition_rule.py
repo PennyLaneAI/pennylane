@@ -194,7 +194,7 @@ def register_resources(
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @qml.transforms.decompose(gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.decompose(gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -339,7 +339,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qml.transforms.decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qml.decompose(fixed_decomps=decomps, num_work_wires=1)
           @qml.qnode(qml.device("default.qubit"))
           def circuit():
               qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -628,7 +628,7 @@ def null_decomp(*_, **__):
 
         qml.decomposition.enable_graph()
 
-        @qml.transforms.decompose(
+        @qml.decompose(
             gate_set={qml.RZ},
             fixed_decomps={qml.GlobalPhase: null_decomp}
         )

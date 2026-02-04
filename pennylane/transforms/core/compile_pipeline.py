@@ -198,7 +198,7 @@ class CompilePipeline:
 
     Additionally, multiple compilation pipelines can be concatenated:
 
-    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+    >>> another_pipeline = qml.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
     >>> print(another_pipeline + pipeline)
     CompilePipeline(
       [0] decompose(gate_set=...),
