@@ -76,6 +76,7 @@ from .ops.op_math import (
 from .templates import (
     OutOfPlaceSquare,
     IQP,
+    HybridQRAM,
     SelectOnlyQRAM,
     BasisState,
     BasisEmbedding,
