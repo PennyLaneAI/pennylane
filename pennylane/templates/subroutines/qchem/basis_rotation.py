@@ -24,6 +24,10 @@ from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.templates import Subroutine
 
 
+def _is_jax_jit(U):
+    return math.is_abstract(U) and not compiler.active() and not capture.enabled()
+
+
 def _adjust_determinant(matrix):
     """Given an orthogonal (real-valued unitary) matrix, adjust its determinant to be 1
     and queue a phase shift that is equivalent to this adjustment in the context of BasisRotation.
@@ -376,7 +380,3 @@ def BasisRotation(wires, unitary_matrix, check=False):
 
     is_real = math.is_real_obj_or_close(unitary_matrix)
     cond(is_real, _real_unitary, _complex_unitary)(unitary=unitary_matrix, wires=wires)
-
-
-def _is_jax_jit(U):
-    return math.is_abstract(U) and not compiler.active() and not capture.enabled()

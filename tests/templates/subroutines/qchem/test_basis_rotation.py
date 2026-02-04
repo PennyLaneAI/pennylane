@@ -379,7 +379,7 @@ class TestDecomposition:
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
-            qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix))
+            qml.adjoint(qml.BasisRotation)(wires=wires, unitary_matrix=unitary_matrix)
             for idx, eigenval in enumerate(eigen_values):
                 qml.RZ(-eigenval, wires=[idx])
             qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
@@ -425,25 +425,12 @@ class TestInputs:
     def test_basis_rotation_exceptions(self, wires, unitary_matrix, msg_match):
         """Test that BasisRotation template throws an exception if the parameters have illegal
         shapes, types or values."""
-
-        dev = qml.device("default.qubit", wires=len(wires))
-
-        @qml.qnode(dev)
-        def circuit():
+        with pytest.raises(ValueError, match=msg_match):
             qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match=msg_match):
-            circuit()
-
-        with pytest.raises(ValueError, match=msg_match):
-            qml.BasisRotation.compute_decomposition(
-                wires=wires, unitary_matrix=unitary_matrix, check=True
-            )
 
     def test_id(self):
         """Test that the id attribute can be set."""
-        template = qml.BasisRotation(
+        template = qml.BasisRotation.operator(
             wires=range(2),
             unitary_matrix=qml.math.array(
                 [
