@@ -139,7 +139,7 @@ class TestMapToResourceOp:
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7, 8, 9],
-                )
+                ),
             ),
             (
                 qtemps.SelectOnlyQRAM(

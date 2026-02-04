@@ -308,6 +308,7 @@ def _(op: qtemps.HybridQRAM):
         + tree_wire_manager.portR_wires,
     )
 
+
 @_map_to_resource_op.register
 def _(op: qtemps.SelectOnlyQRAM):
     data = op.data[0]

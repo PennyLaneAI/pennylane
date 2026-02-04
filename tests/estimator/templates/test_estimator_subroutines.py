@@ -24,8 +24,7 @@ import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.templates import HybridQRAM
-from pennylane.templates import SelectOnlyQRAM
+from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use,too-many-arguments
