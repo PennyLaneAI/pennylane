@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Define a mechanism for capturing subroutines by patching the pjit primitive.
+Here we define a mechanism for capturing subroutines by patching the pjit primitive.
 
 While we need to come back and develop custom handling that does not involve patching
 jax internals, this will let us build on it for the time being.
