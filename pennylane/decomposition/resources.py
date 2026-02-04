@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import functools
-from collections import defaultdict
 from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -293,14 +292,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
-    if op_type is qml.ops.op_math.Prod:
-        resources = defaultdict(int)
-        for rep, count in params["resources"].items():
-            addition = rep.params["resources"] if rep.op_type is qml.ops.op_math.Prod else {rep: 1}
-            for sub_rep, sub_count in addition.items():
-                resources[sub_rep] += count * sub_count
-
-        params["resources"] = resources
     return CompressedResourceOp(op_type, params)
 
 
@@ -539,7 +530,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     if base_class is qml.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
             return resource_rep(qml.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0:
+        if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
             return resource_rep(qml.Toffoli)
         return resource_rep(
             qml.MultiControlledX,
