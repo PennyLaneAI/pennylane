@@ -314,7 +314,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         rules = [rule for rule in self._get_decompositions(op) if rule.is_applicable(**op.params)]
 
-        # Treat ops that does not have a decomposition as supported if strict=False
+        # Treat ops that do not have a decomposition as supported if strict=False
         if not rules and not self._strict:
             # Assign a prohibitively high cost to this operator so that nothing decomposes to
             # this op unless there is no other choice.
