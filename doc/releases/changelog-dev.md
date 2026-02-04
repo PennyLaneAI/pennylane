@@ -18,10 +18,11 @@
 
 <h3>Improvements 🛠</h3>
 
-* New lightweight representations of the :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
+* New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
-``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
+  ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
+  [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
 
 * `qml.transforms.decompose` is now imported top level as `qml.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
@@ -86,6 +87,9 @@
 
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
+
+* Adds a `qml.capture.subroutine` for jitting quantum subroutines with program capture.
+  [(#8912)](https://github.com/PennyLaneAI/pennylane/pull/8912)
 
 * A function for setting up transform inputs, including setting default values and basic validation,
   can now be provided to `qml.transform` via `setup_inputs`.
@@ -248,6 +252,9 @@
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* `qml.counts` of mid circuit measurements can now be captured into jaxpr.
+  [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
 * Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
   Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
