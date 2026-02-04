@@ -249,6 +249,15 @@ def test_no_recursion_error_raised_sprod():
     _assert_method_and_property_no_recursion_error(op)
 
 
+def test_no_recursion_error_raised_prod():
+    """Tests that no RecursionError is raised from any property of method of a nested Prod."""
+
+    op = qml.RX(np.random.uniform(0, 2 * np.pi), wires=1)
+    for _ in range(5000):
+        op = qml.prod(qml.I(0), op)
+    _assert_method_and_property_no_recursion_error(op)
+
+
 def _assert_method_and_property_no_recursion_error(instance):
     """Checks that all methods and properties do not raise a RecursionError when accessed."""
 
