@@ -77,11 +77,6 @@ on:
         required: false
         type: string
         default: ''
-      requirements_file:
-        description: File name to store stable version of requirements for a test group
-        required: false
-        type: string
-        default: ''
       additional_os_packages:
         description: Additional packages to install. Values will be passed to apt-get install {value}
         required: false
@@ -207,11 +202,9 @@ jobs:
 
       - name: Freeze dependencies
         shell: bash
-        if: inputs.requirements_file != ''
         run: uv lock 
 
       - name: Upload frozen requirements
-        if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
         with:
           name: frozen-lockfile

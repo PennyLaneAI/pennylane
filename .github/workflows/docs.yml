@@ -85,15 +85,13 @@ jobs:
         with:
           version: 0.9.17
           enable-cache: true  
-          
-      - name: Freeze dependencies # replace with uv lock
+
+      - name: Freeze dependencies
         shell: bash
         run: |
-          pip freeze | grep -v 'file:///' > doc.txt
           uv lock
-          cat doc.txt
 
-      - name: Upload frozen requirements  # upload uv lock
+      - name: Upload frozen requirements
         uses: actions/upload-artifact@v4
         with:
           name: frozen-uv-lock

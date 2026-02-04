@@ -44,7 +44,7 @@ jobs:
       - name: Build PennyLane wheel
         run: |
           uv pip install build
-          uv build --wheel --outdir dist
+          uv build --wheel --out-dir dist
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
