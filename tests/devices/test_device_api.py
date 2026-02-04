@@ -310,6 +310,8 @@ class TestPreprocessTransforms:
                 super().__init__()
                 if supports_projector:
                     self.capabilities.operations["Projector"] = OperatorProperties()
+                    self.capabilities.operations["BasisStateProjector"] = OperatorProperties()
+                    self.capabilities.operations["StateVectorProjector"] = OperatorProperties()
 
             def execute(
                 self,
