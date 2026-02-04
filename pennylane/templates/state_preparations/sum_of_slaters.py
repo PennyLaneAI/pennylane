@@ -570,12 +570,13 @@ class SumOfSlatersPrep(Operation):
     @staticmethod
     def compute_decomposition(
         coefficients,
-        target_wires,
-        enumeration_wires,
-        identification_wires,
-        qrom_work_wires,
-        mcx_work_wires,
-        indices,
+        wires=None,
+        target_wires=None,
+        enumeration_wires=None,
+        identification_wires=None,
+        qrom_work_wires=None,
+        mcx_work_wires=None,
+        indices=None,
     ):  # pylint: disable=arguments-differ
         with AnnotatedQueue() as q:
             _sos_state_prep(
