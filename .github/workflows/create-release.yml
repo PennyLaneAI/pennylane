@@ -23,8 +23,6 @@ jobs:
   bump_rc_branch:
     name: Update catalyst and lightning in RC branch
     runs-on: ubuntu-latest
-    env:
-      UV_SYSTEM_PYTHON: 1
     steps:
       - name: Checkout PennyLane repo
         uses: actions/checkout@v4
