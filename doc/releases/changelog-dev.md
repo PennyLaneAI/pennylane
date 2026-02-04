@@ -79,6 +79,7 @@
 * `qml.vjp` and `qml.jvp` can now be captured into plxpr.
   [(#8736)](https://github.com/PennyLaneAI/pennylane/pull/8736)
   [(#8788)](https://github.com/PennyLaneAI/pennylane/pull/8788)
+  [(#9019)](https://github.com/PennyLaneAI/pennylane/pull/9019)
 
 * :func:`~.matrix` can now also be applied to a sequence of operators.
   [(#8861)](https://github.com/PennyLaneAI/pennylane/pull/8861)
@@ -111,6 +112,7 @@
 * Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
+  [(#9017)](https://github.com/PennyLaneAI/pennylane/pull/9017)
 
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from  :class:`~.Operator`
   and all subclasses that implemented them. The graph decomposition system should be used when capture is enabled.
@@ -282,6 +284,11 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
+  to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
+  ``Controlled.map_wires`` to preserve ``work_wires``.
+  [(#9010)](https://github.com/PennyLaneAI/pennylane/pull/9010)
 
 * Bumps the tolerance used in determining whether the norm of the probabilities is sufficiently close to
   1 in Default Qubit.
