@@ -328,6 +328,83 @@ class TestDecomposeGraphEnabled:
         assert new_tape.operations == [qml.H(1), qml.CNOT(wires=[0, 1]), qml.H(1)]
 
     @pytest.mark.integration
+    def test_strict_false(self, recwarn):
+        """Test that a decomposition is found if strict=False."""
+
+        class NoDecompOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({NoDecompOp: 1})
+        def _decomp(wires):
+            NoDecompOp(wires)
+
+        tape = qml.tape.QuantumScript([CustomOp([0, 1])])
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(CustomOp, _decomp)
+            [decomp], _ = qml.decompose(tape, gate_set=qml.gate_sets.CLIFFORD_T, strict=False)
+
+        assert decomp.operations == [NoDecompOp([0, 1])]
+        assert not recwarn
+
+    @pytest.mark.integration
+    def test_no_decomp_op_with_alternative(self, recwarn):
+        """Tests that when strict=False, ops without decompositions are not chosen
+        if there is an alternative pathway available."""
+
+        class NoDecompOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({NoDecompOp: 1})
+        def _decomp(wires):
+            NoDecompOp(wires)
+
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def _decomp2(wires):
+            qml.H(wires[1])
+            qml.CNOT(wires)
+            qml.H(wires[1])
+
+        tape = qml.tape.QuantumScript([NoDecompOp([0, 1]), CustomOp([0, 1])])
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(CustomOp, _decomp, _decomp2)
+            [decomp], _ = qml.decompose(tape, gate_set=qml.gate_sets.CLIFFORD_T, strict=False)
+
+        assert decomp.operations == [NoDecompOp([0, 1]), qml.H(1), qml.CNOT([0, 1]), qml.H(1)]
+        assert not recwarn
+
+    @pytest.mark.integration
     def test_global_phase_warning(self):
         """Tests that a sensible warning is raised when the graph fails to find a solution
         due to GlobalPhase not being part of the gate set."""

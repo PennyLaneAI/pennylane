@@ -90,6 +90,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
+            strict=True,
         ):  # pylint: disable=too-many-arguments
             self.max_expansion = max_expansion
             self._current_depth = 0
@@ -116,6 +117,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             gate_set, stopping_condition = _resolve_gate_set(gate_set, stopping_condition)
             self._gate_set = gate_set
             self.stopping_condition = stopping_condition
+            self._strict = strict
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
@@ -231,6 +233,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                         self._minimize_work_wires,
                         self._fixed_decomps,
                         self._alt_decomps,
+                        self._strict,
                     )
                     self._num_work_wires = self._decomp_graph_solution.num_work_wires
 
@@ -351,6 +354,7 @@ def decompose(
     minimize_work_wires: bool = False,
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
+    strict: bool = True,
 ):  # pylint: disable=too-many-arguments
     """Decomposes a quantum circuit into a user-specified gate set.
 
@@ -397,6 +401,8 @@ def decompose(
             decomposition rules defined for this operator, and one of them may be chosen if they
             lead to a more resource-efficient decomposition. This is only used when :func:`~pennylane.decomposition.enable_graph`
             is present.
+        strict (bool): If ``False``, operators that do not define a decomposition will be treated
+            as supported. Defaults to ``True``
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -752,6 +758,7 @@ def decompose(
             minimize_work_wires=minimize_work_wires,
             fixed_decomps=fixed_decomps,
             alt_decomps=alt_decomps,
+            strict=strict,
         )
         num_work_wires = decomp_graph_solution.num_work_wires
 
@@ -872,12 +879,16 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         )
 
     else:
-        warnings.warn(
-            f"Operator {op.name} does not define a decomposition to the target gate set and was not found in the "
-            f"target gate set. To remove this warning, add the operator name ({op.name}) or "
-            f"type ({type(op)}) to the gate set.",
-            UserWarning,
-        )
+        if not enabled_graph():
+            # Only warn about this if graph mode is not enabled, because if it is, the
+            # graph would have already raised this warning. There is no need to raise
+            # duplicate warnings.
+            warnings.warn(
+                f"Operator {op.name} does not define a decomposition to the target gate set "
+                "and was not found in the target gate set. To remove this warning, add the "
+                f"operator name ({op.name}) or type ({type(op)}) to the gate set.",
+                UserWarning,
+            )
         yield op
 
     current_depth += 1
@@ -964,6 +975,7 @@ def _construct_and_solve_decomp_graph(  # pylint: disable=too-many-arguments
     minimize_work_wires,
     fixed_decomps,
     alt_decomps,
+    strict,
 ):
     """Create and solve a DecompositionGraph instance to optimize the decomposition."""
 
@@ -973,6 +985,7 @@ def _construct_and_solve_decomp_graph(  # pylint: disable=too-many-arguments
         target_gates,
         fixed_decomps=fixed_decomps,
         alt_decomps=alt_decomps,
+        strict=strict,
     )
 
     # Find the efficient pathways to the target gate set

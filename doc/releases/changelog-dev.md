@@ -16,6 +16,10 @@
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
+* Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
+  allows the decomposition graph to treat operators without a decomposition as part of the gate set.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
 <h3>Improvements 🛠</h3>
 
 * New lightweight representations of the :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
@@ -100,6 +104,10 @@
 
 * The `to_zx` transform is now compatible with the new graph-based decomposition system.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+
+* When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
+  transform no longer raise duplicate warnings about operators that cannot be decomposed.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -248,6 +256,9 @@
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* `qml.counts` of mid circuit measurements can now be captured into jaxpr.
+  [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
 * Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
   Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
