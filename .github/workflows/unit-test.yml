@@ -208,14 +208,14 @@ jobs:
       - name: Freeze dependencies
         shell: bash
         if: inputs.requirements_file != ''
-        run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
+        run: uv lock 
 
       - name: Upload frozen requirements
         if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
         with:
-          name: frozen-${{ inputs.requirements_file }}
-          path: ${{ inputs.requirements_file }}
+          name: frozen-lockfile
+          path: uv.lock
 
       - name: Upload Durations file as artifact
         if: inputs.pytest_durations_file_path != ''

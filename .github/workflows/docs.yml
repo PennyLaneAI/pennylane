@@ -80,6 +80,12 @@ jobs:
             && pip3 install aiohttp fsspec h5py
           build-command: "sphinx-build -b html . _build -W --keep-going"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 0.9.17
+          enable-cache: true  
+          
       - name: Freeze dependencies # replace with uv lock
         shell: bash
         run: |
