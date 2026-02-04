@@ -193,7 +193,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
-        strict (bool): If ``False``, treat operators that does not define a decomposition as supported.
+        strict (bool): If ``False``, treat operators that do not define a decomposition as supported.
             Defaults to ``True``.
 
     **Example**
