@@ -456,9 +456,9 @@ class Subroutine:
             output = self.definition(*bound_args.args, **bound_args.kwargs)
         return SubroutineOp(self, bound_args, decomposition.queue, output, id=id)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, id: str | None = None, **kwargs):
         if capture.enabled():
             bound_args = self._full_setup_inputs(*args, **kwargs)
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
-        op = self.operator(*args, **kwargs)
+        op = self.operator(*args, id=id, **kwargs)
         return op.output
