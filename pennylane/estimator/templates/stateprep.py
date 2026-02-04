@@ -34,7 +34,7 @@ class BasisState(ResourceOperator):
     r"""Resource class for preparing a single basis state.
 
     Args:
-        num_wires (int): number of wires the operator acts on
+        num_wires (int): the number of wires the operator acts on
         wires (WiresLike, Optional): the wire(s) the operation acts on
     """
 
