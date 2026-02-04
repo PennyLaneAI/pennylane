@@ -216,6 +216,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
+  queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
+  [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
+
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
   [(#8985)](https://github.com/PennyLaneAI/pennylane/pull/8985)
 
@@ -291,6 +295,10 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
+  of an operator product computed via ``@``, i.e. the dunder method ``__matmul__``. 
+  [(#9___)](https://github.com/PennyLaneAI/pennylane/pull/9___)
 
 * Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
   to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
