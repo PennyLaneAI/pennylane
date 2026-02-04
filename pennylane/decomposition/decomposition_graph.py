@@ -25,6 +25,7 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
+import math
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Set
@@ -227,7 +228,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             mapping gates in the target gate set to their respective weights. All weights must be positive.
         fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
-        strict (bool): If ``False``, treat operators that does not define a decomposition as supported.
+        strict (bool): If ``False``, treat operators that do not define a decomposition as supported.
             Defaults to ``True``.
 
     **Example**
@@ -350,11 +351,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Treat ops that does not have a decomposition as supported if strict=False
         if not rules and not self._strict:
-            max_cost = max(self._gate_set_weights.values())
             # Assign a prohibitively high cost to this operator so that nothing decomposes to
             # this op unless there is no other choice.
-            self._gate_set_weights |= GateSet({to_name(op): max_cost * 1000})
-            self._graph.add_edge(self._start, op_node_idx, max_cost * 1000)
+            self._gate_set_weights |= GateSet({to_name(op): math.inf})
+            self._graph.add_edge(self._start, op_node_idx, math.inf)
             return op_node_idx
 
         work_wire_dependent = known_work_wire_dependent
@@ -801,7 +801,8 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         if not isinstance(edge_obj, tuple):
             return float(edge_obj)
         op_node_idx, d_node_idx = edge_obj
-        return self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
+        cost = self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
+        return math.inf if math.isnan(cost) else cost
 
     def discover_vertex(self, v, score):  # pylint: disable=unused-argument
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
