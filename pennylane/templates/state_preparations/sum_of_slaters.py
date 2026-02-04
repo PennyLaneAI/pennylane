@@ -691,31 +691,10 @@ def _sos_state_prep(
     r = len(selector_ids)
     d = math.ceil_log2(D)
     m = min(r, 2 * d - 1)
-    print(f"{d=}")
-    print(f"{m=}")
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, D)
+    # For allocate
     # kw = {"state": "zero", "restored": True}
-    print(enumeration_wires)
-    print(identification_wires)
-    print(qrom_work_wires)
-    print(mcx_work_wires)
-    enumeration_wires = list(enumeration_wires)
-    identification_wires = list(identification_wires)
-    qrom_work_wires = list(qrom_work_wires)
-    mcx_work_wires = list(mcx_work_wires)
-    print(enumeration_wires)
-    print(identification_wires)
-    print(qrom_work_wires)
-    print(mcx_work_wires)
-    enumeration_wires = enumeration_wires[:d]
-    identification_wires = identification_wires[:m]
-    qrom_work_wires = qrom_work_wires[: d - 1]
-    mcx_work_wires = mcx_work_wires[:m]
-    print(enumeration_wires)
-    print(identification_wires)
-    print(qrom_work_wires)
-    print(mcx_work_wires)
 
     # Step 1: Dense state preparation in enumeration register
     # Need to add work wires and correct decomposition
