@@ -329,6 +329,11 @@ class LinearCombination(Sum):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.prod(t[0], t[1], lazy=False) for t in ops_list]
+            if qml.QueuingManager.recording():
+                # pylint: disable=not-context-manager
+                with qml.QueuingManager.active_context() as context:
+                    context.remove(self)
+                    context.remove(other)
             return qml.ops.LinearCombination(coeffs, terms)
 
         if isinstance(other, Operator):
