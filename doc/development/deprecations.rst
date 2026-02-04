@@ -9,6 +9,20 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been deprecated and will be removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
 * :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
   have been deprecated and will be removed in v0.46. Instead, please use the :func:`qml.transforms.decompose <.transforms.decompose>`
   function for decomposing circuits.
@@ -213,19 +227,19 @@ Completed deprecation cycles
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
 
-* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
 
   - Deprecated in v0.43
   - Removed in v0.44
 
 * Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module has been removed.
-  Instead, these functions should be imported from the ``pennylane.noise`` module.	
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
 
-  - Deprecated in v0.43	
+  - Deprecated in v0.43
   - Removed in v0.44
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
   ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are restored to their original state upon completing the decomposition.
@@ -264,9 +278,9 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.44
 
-* ``MeasurementProcess.expand`` is removed. The relevant method can be replaced with 
+* ``MeasurementProcess.expand`` is removed. The relevant method can be replaced with
   ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
-  
+
   - Deprecated in v0.43
   - Removed in v0.44
 
@@ -363,14 +377,14 @@ Completed deprecation cycles
   - Deprecated in v0.42
   - Removed in v0.43
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` 
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning``
   is now removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
 
   - Deprecated in v0.42
   - Removed in v0.43
 
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is now removed in v0.42.
-  The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit 
+  The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit
   dictionary, like ``gradient_kwargs={"h": 1e-4}``.
 
   - Deprecated in v0.41
@@ -383,7 +397,7 @@ Completed deprecation cycles
   - Removed in v0.42
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`_ 
+  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`_
   or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
 
   - Deprecated in v0.41
@@ -419,23 +433,23 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.42
 
-* Specifying ``pipeline=None`` with ``qml.compile`` has been removed. 
+* Specifying ``pipeline=None`` with ``qml.compile`` has been removed.
   A sequence of transforms should now always be specified.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed. 
+* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed.
   Instead, please use the ``wires`` argument.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
+* The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``.
   Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
-  - Removed in v0.42  
+  - Removed in v0.42
 
 * ``MultiControlledX`` no longer accepts strings as control values.
 
@@ -447,17 +461,17 @@ Completed deprecation cycles
   - Deprecated in v0.22
   - Removed in v0.41
 
-* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed. 
+* The ``decomp_depth`` argument in :func:`~pennylane.transforms.set_decomposition` has been removed.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed. 
+* The ``max_expansion`` argument in :func:`~pennylane.devices.preprocess.decompose` has been removed.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
+* The ``tape`` and ``qtape`` properties of ``QNode`` have been removed.
   Instead, use the ``qml.workflow.construct_tape`` function.
 
   - Deprecated in v0.40
@@ -468,8 +482,8 @@ Completed deprecation cycles
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+* The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed.
+  Instead, use the ``qml.workflow.get_best_diff_method`` function.
 
   - Deprecated in v0.40
   - Removed in v0.41
@@ -595,7 +609,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is removed. 
+* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is removed.
   Instead, use the ``level`` argument which provides a superset of options.
 
   - Deprecated in v0.38
@@ -641,7 +655,7 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.38
 
-* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
+* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use
   ``measurements=[]`` to remove measurements from the original circuit.
 
   - Deprecated in v0.37

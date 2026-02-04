@@ -2027,18 +2027,28 @@ class TestSymbolicOpComparison:
                 assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
-    def test_controlled_work_wires_comparison(self, wire1, wire2, res):
+    @pytest.mark.parametrize(
+        "wwt1, wwt2", [("zeroed", "zeroed"), ("borrowed", "borrowed"), ("borrowed", "zeroed")]
+    )
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qml.MultiRZ(1.23, [0, 1])
         base2 = qml.MultiRZ(1.23, [0, 1])
-        op1 = Controlled(base1, control_wires=2, work_wires=wire1)
-        op2 = Controlled(base2, control_wires=2, work_wires=wire2)
+        op1 = Controlled(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
+        op2 = Controlled(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
+        # res is given by the wire parametrization, but is overwritten to False if the work
+        # wire types differ. match is only used if res=False, and is adjusted if res was True
+        match = "op1 and op2 have different work wires."
+        if res and wwt1 != wwt2:
+            match = "op1 and op2 have different work wire types."
+            res = False
+
+        assert qml.equal(op1, op2) is res
+
         if res:
-            assert qml.equal(op1, op2) == res
             assert_equal(op1, op2)
         else:
-            assert qml.equal(op1, op2) is False
-            with pytest.raises(AssertionError, match="op1 and op2 have different work wires."):
+            with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
 
     def test_controlled_arithmetic_depth(self):
@@ -3046,6 +3056,14 @@ def test_ops_with_abstract_parameters_not_equal():
     assert not jax.jit(qml.equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
     with pytest.raises(AssertionError, match="Data contains a tracer"):
         jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
+
+    assert not jax.jit(qml.equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+
+    assert not jax.jit(qml.equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
 
 
 @pytest.mark.parametrize(

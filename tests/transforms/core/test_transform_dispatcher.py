@@ -26,6 +26,7 @@ from pennylane.transforms.core import (
     Transform,
     TransformError,
 )
+from pennylane.transforms.core.compile_pipeline import CompilePipeline
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
@@ -275,6 +276,18 @@ class TestBoundTransform:
 
         with pytest.raises(ValueError, match="cannot be passed if a transform is provided"):
             _ = BoundTransform(qml.transform(first_valid_transform), is_informative=True)
+
+    def test_transform_property_deprecated(self):
+        """Test that BoundTransform.transform is deprecated."""
+        container = BoundTransform(qml.transform(first_valid_transform))
+
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning,
+            match=r"'BoundTransform.transform' property is deprecated",
+        ):
+            result = container.transform
+
+        assert result is first_valid_transform
 
 
 class TestTransformExtension:
@@ -1104,7 +1117,7 @@ class TestPassName:
         assert repr(expected_container) == "<my_pass_name()>"
         assert expected_container.tape_transform is None
         assert c.compile_pipeline[-1] == expected_container
-        assert repr(c.compile_pipeline) == "CompilePipeline(my_pass_name)"
+        assert c.compile_pipeline == CompilePipeline(t)
 
         with pytest.raises(NotImplementedError, match="has no defined tape transform"):
             c.compile_pipeline((tape,))
