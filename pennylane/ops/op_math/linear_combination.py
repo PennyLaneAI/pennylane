@@ -345,6 +345,11 @@ class LinearCombination(Sum):
                     new_pr = pr1 @ pr2
                 else:
                     new_pr = None
+                if qml.QueuingManager.recording():
+                    # pylint: disable=not-context-manager
+                    with qml.QueuingManager.active_context() as context:
+                        context.remove(self)
+                        context.remove(other)
                 return LinearCombination(self.coeffs, new_ops, _pauli_rep=new_pr)
             return qml.prod(self, other)
 
