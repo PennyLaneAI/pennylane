@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Define a mechanism for capturing subroutines by patching the pjit primitive.
+Here we define a mechanism for capturing subroutines by patching the pjit primitive.
 
 While we need to come back and develop custom handling that does not involve patching
 jax internals, this will let us build on it for the time being.
@@ -24,8 +24,11 @@ time we don't have.
 
 We also can't just use the normal ``jit`` primitive, because we currently need to know
 which higher order primitive needs to have QReg's added to it's inputs and removed from
-it's outputs in ``from_plxpr``.
+it's outputs in Catalyst's ``from_plxpr``.
 
+The steps involved in lowering a subroutine include adding a quantum register input and output, and translating the inside code from plxpr to catalyst jaxpr. The registers are also handled in the aforementioned Catalyst frontend.
+
+Note that this explanation will probably get out of date.
 """
 
 import copy
