@@ -86,7 +86,7 @@ _Subroutine_map: dict = {}
 def _register_subroutine(subroutine: qtemps.Subroutine):
     """Register a function for calculating the resources of a SubroutineOp using a decorator.
 
-    .. code-block:: python
+    .. code-block::
         @_register_subroutine(MySubroutine)
         def _resources(op: SubroutineOp):
             return re_estimation_version(...)
