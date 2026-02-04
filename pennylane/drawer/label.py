@@ -44,9 +44,10 @@ def _resources(base_class, base_params):
 
 
 @register_resources(_resources)
-def CustomLabelDecomp(*params, wires, base, **_):
+def _custom_label_decomp(*params, wires, base, **_):
     apply(base)
 
+add_decomps(CustomLabelOp, _custom_label_decomp)
 
 def label(op: Operator, new_label: str) -> CustomLabelOp:
     return CustomLabelOp(op, new_label)
