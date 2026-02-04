@@ -18,6 +18,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* New lightweight representations of the :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
+  been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
+``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
+  [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
+
 * `qml.transforms.decompose` is now imported top level as `qml.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
 
