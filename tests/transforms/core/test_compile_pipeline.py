@@ -1926,6 +1926,24 @@ class TestMarkers:
         assert pipeline.markers == ["test"]
         assert pipeline.get_marker_level("test") == 1
 
+    def test_remove_marker(self):
+        """Tests that remove_marker method works."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("test")
+        pipeline.add_transform(transform(second_valid_transform))
+
+        assert pipeline.markers == ["test"]
+        assert pipeline.get_marker_level("test") == 1
+
+        pipeline.remove_marker("test")
+
+        assert pipeline.markers == []
+
+        with pytest.raises(ValueError, match="No marker found for level 'test'"):
+            pipeline.remove_marker("test")
+
     @pytest.mark.parametrize(
         "protected_name", ["top", "user", "gradient", "device", "all", "all-mlir"]
     )

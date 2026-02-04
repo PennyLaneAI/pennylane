@@ -497,12 +497,6 @@ class CompilePipeline:
             if marker := inv_marker_map.get(i + 1):
                 lines.append(f"   └─▶ {', '.join(marker)}")
 
-        # More markers than transforms
-        leftover_indices = sorted([k for k in inv_marker_map.keys() if k > len(self)])
-        for idx in leftover_indices:
-            marker = inv_marker_map[idx]
-            lines.append(f"   └─▶ {', '.join(marker)}")
-
         if lines:
             contents = "\n".join(lines)
             return f"CompilePipeline(\n{contents}\n)"
@@ -523,12 +517,6 @@ class CompilePipeline:
             lines.append(f"  [{i + 1}] {repr(transform)}" + "," * bool(i != len(self) - 1))
             if marker := inv_marker_map.get(i + 1):
                 lines.append(f"   └─▶ {', '.join(marker)}")
-
-        # More markers than transforms
-        leftover_indices = sorted([k for k in inv_marker_map.keys() if k > len(self)])
-        for idx in leftover_indices:
-            marker = inv_marker_map[idx]
-            lines.append(f"   └─▶ {', '.join(marker)}")
 
         if lines:
             contents = "\n".join(lines)
