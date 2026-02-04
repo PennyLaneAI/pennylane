@@ -162,6 +162,41 @@ class CompilePipeline:
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
 
+    We can inspect the pipeline by printing it,
+
+    >>> print(pipeline)
+    CompilePipeline(
+      [0] commute_controlled(),
+      [1] cancel_inverses(recursive=True),
+      [2] merge_rotations()
+    )
+
+    We can add markers in the pipeline to help mark important positions,
+
+    >>> pipeline.add_marker("final-transform")
+    >>> print(pipeline)
+    CompilePipeline(
+      [0] commute_controlled(),
+      [1] cancel_inverses(recursive=True),
+      [2] merge_rotations()
+       └─▶ final-transform
+    )
+    >>> pipeline.markers
+    ["final-transform"]
+    >>> print(pipeline.get_marker_level("final-transform"))
+    2
+
+    As can be seen above, the pipeline is visualized organized as follows,
+
+    .. code-block::
+
+        CompilePipeline(
+          ...
+          [index] pass_name(),
+           └─▶ marker
+          ...
+        )
+
     Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
     example, the transforms can be added together with ``+``:
 
