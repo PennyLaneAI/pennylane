@@ -260,6 +260,82 @@ class TestDecompositionGraph:
         # verify that is_solved_for returns False for non-existent operators
         assert not solution.is_solved_for(qml.Toffoli(wires=[0, 1, 2]))
 
+    def test_graph_strict(self, _, recwarn):
+        """Test the graph with strict=False."""
+
+        class NoDecompOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({NoDecompOp: 1})
+        def _decomp(wires):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0)],
+            gate_set=qml.gate_sets.CLIFFORD_T,
+            alt_decomps={CustomOp: [_decomp]},
+            strict=False,
+        )
+        solution = graph.solve()
+        assert solution.is_solved_for(CustomOp(0))
+        assert not recwarn
+
+    def test_strict_no_decomp_op_with_alternative(self, _, recwarn):
+        """Tests that when strict=False, ops without decompositions are not chosen
+        if there is an alternative pathway available."""
+
+        class NoDecompOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({NoDecompOp: 1})
+        def _decomp(wires):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def _decomp2(wires):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0)],
+            gate_set=qml.gate_sets.CLIFFORD_T,
+            alt_decomps={CustomOp: [_decomp, _decomp2]},
+            strict=False,
+        )
+        solution = graph.solve()
+        assert solution.is_solved_for(CustomOp(0))
+        assert solution.decomposition(CustomOp(0)) is _decomp2
+        assert not recwarn
+
     def test_decomposition_not_found_warning(self, _):
         """Tests that the correct warning is raised if a decomposition isn't found."""
 
