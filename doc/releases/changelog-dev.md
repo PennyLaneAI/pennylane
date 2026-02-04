@@ -88,6 +88,9 @@
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
+* Adds a `qml.capture.subroutine` for jitting quantum subroutines with program capture.
+  [(#8912)](https://github.com/PennyLaneAI/pennylane/pull/8912)
+
 * A function for setting up transform inputs, including setting default values and basic validation,
   can now be provided to `qml.transform` via `setup_inputs`.
   [(#8732)](https://github.com/PennyLaneAI/pennylane/pull/8732)
