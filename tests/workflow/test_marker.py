@@ -26,7 +26,7 @@ class TestMarkerQNode:
 
         with pytest.raises(
             ValueError,
-            match="Found multiple markers for level something. Markers should be unique.",
+            match="Found multiple markers for level 'something'. Markers must be unique.",
         ):
 
             @qml.marker(level="something")
@@ -38,7 +38,7 @@ class TestMarkerQNode:
     def test_protected_levels(self):
         """Test an error is raised for using a protected level."""
 
-        with pytest.raises(ValueError, match="Found marker for protected level gradient"):
+        with pytest.raises(ValueError, match="Found marker for protected level 'gradient'"):
 
             @qml.marker(level="gradient")
             @qml.qnode(qml.device("null.qubit"))
