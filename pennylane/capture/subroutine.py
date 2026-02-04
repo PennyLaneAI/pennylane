@@ -24,7 +24,7 @@ time we don't have.
 
 We also can't just use the normal ``jit`` primitive, because we currently need to know
 which higher order primitive needs to have QReg's added to it's inputs and removed from
-it's outputs in ``from_plxpr``.
+it's outputs in Catalyst's ``from_plxpr``.
 
 ``from_plxpr`` lives in the Catalyst frontend at https://github.com/PennyLaneAI/catalyst/tree/main/frontend. The steps involved in lowering a subroutine include adding a quantum register input and output, and translating the inside code from plxpr to catalyst jaxpr. The registers are also handled in the aforementioned Catalyst frontend.
 
