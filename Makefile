@@ -25,7 +25,7 @@ install:
 ifndef PYTHON3
 	@echo "To install PennyLane you need to have Python 3 installed"
 endif
-	uv sync
+	uv pip install .
 
 .PHONY: wheel
 wheel:

@@ -776,8 +776,6 @@ jobs:
       - gradients-tests
       - data-tests
       - device-tests
-    env:
-      UV_SYSTEM_PYTHON: 1
 
     # Run this if any of the test jobs failed or were cancelled
     if: >-
@@ -817,7 +815,7 @@ jobs:
           PENNYLANE_OSS_SERVER_API_KEY: ${{ secrets.test_report_server_api_key }}
           UV_SYSTEM_PYTHON: 1
         run: |
-          uv sync --group upload-reports
+          uv pip install --group upload-reports
 
           python .github/workflows/scripts/upload_reports/upload.py \
             --commit-sha "${{ github.sha }}" \
