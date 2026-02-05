@@ -184,6 +184,13 @@ def create_adjoint_op(fn, lazy):
         if qml.capture.enabled():
             return _capture_adjoint_transform(fn, lazy=lazy)
         return _adjoint_transform(fn, lazy=lazy)
+    if fn is None:
+        raise ValueError(
+            "None is not callable. "
+            "This error might occur if you apply adjoint to the output of a "
+            "Subroutine (template). Subroutines should now be treated "
+            "as Quantum Functions, rather than operators."
+        )
     raise ValueError(
         f"The object {fn} of type {type(fn)} is not callable. "
         "This error might occur if you apply adjoint to a list "

@@ -68,6 +68,24 @@ def test_weights_affect_graph_decomposition():
     ]
 
 
+class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+
+class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
+    """A custom operation."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self):
+        return {}
+
+
 class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
     """A custom operation."""
 
@@ -300,7 +318,7 @@ class TestDecomposeGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOpWithFallback(Operation):  # pylint: disable=too-few-public-methods
             """Dummy custom op."""
 
             resource_keys = set()
@@ -316,16 +334,57 @@ class TestDecomposeGraphEnabled:
         def my_decomp(wires, **__):
             qml.CRZ(np.pi, wires=wires)
 
-        tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1])])
+        tape = qml.tape.QuantumScript([CustomOpWithFallback(wires=[0, 1])])
 
         with pytest.warns(UserWarning, match="The graph-based decomposition system is unable"):
             [new_tape], _ = qml.transforms.decompose(
                 [tape],
                 gate_set={"CNOT", "Hadamard"},
-                fixed_decomps={CustomOp: my_decomp},
+                fixed_decomps={CustomOpWithFallback: my_decomp},
             )
 
         assert new_tape.operations == [qml.H(1), qml.CNOT(wires=[0, 1]), qml.H(1)]
+
+    @pytest.mark.integration
+    def test_strict_false(self, recwarn):
+        """Test that a decomposition is found if strict=False."""
+
+        @qml.register_resources({AnotherOp: 1})
+        def _decomp(wires):
+            AnotherOp(wires)
+
+        tape = qml.tape.QuantumScript([CustomOp([0, 1])])
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(CustomOp, _decomp)
+            [decomp], _ = qml.decompose(tape, gate_set=qml.gate_sets.CLIFFORD_T, strict=False)
+
+        assert decomp.operations == [AnotherOp([0, 1])]
+        assert not recwarn
+
+    @pytest.mark.integration
+    def test_no_decomp_op_with_alternative(self, recwarn):
+        """Tests that when strict=False, ops without decompositions are not chosen
+        if there is an alternative pathway available."""
+
+        @qml.register_resources({AnotherOp: 1})
+        def _decomp(wires):
+            AnotherOp(wires)
+
+        @qml.register_resources({qml.H: 2, qml.CNOT: 1})
+        def _decomp2(wires):
+            qml.H(wires[1])
+            qml.CNOT(wires)
+            qml.H(wires[1])
+
+        tape = qml.tape.QuantumScript([AnotherOp([0, 1]), CustomOp([0, 1])])
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(CustomOp, _decomp, _decomp2)
+            [decomp], _ = qml.decompose(tape, gate_set=qml.gate_sets.CLIFFORD_T, strict=False)
+
+        assert decomp.operations == [AnotherOp([0, 1]), qml.H(1), qml.CNOT([0, 1]), qml.H(1)]
+        assert not recwarn
 
     @pytest.mark.integration
     def test_global_phase_warning(self):
@@ -368,13 +427,6 @@ class TestDecomposeGraphEnabled:
     def test_adjoint_decomp(self):
         """Tests decomposing an adjoint operation."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
-            resource_keys = set()
-
-            @property
-            def resource_params(self) -> dict:
-                return {}
-
         @qml.register_resources({qml.RX: 1, qml.RY: 1, qml.RZ: 1})
         def custom_decomp(theta, phi, omega, wires):
             qml.RX(theta, wires[0])
@@ -405,13 +457,6 @@ class TestDecomposeGraphEnabled:
     def test_decompose_with_mid_measures(self, m_type):
         """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
 
-        class OpWithCustomName4567(Operation):  # pylint: disable=too-few-public-methods
-            resource_keys = set()
-
-            @property
-            def resource_params(self) -> dict:
-                return {}
-
         measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
 
         @qml.register_resources({qml.H: 2, measure_obj_class: 1})
@@ -431,11 +476,11 @@ class TestDecomposeGraphEnabled:
         @qml.transforms.decompose(
             gate_set={qml.RX, qml.RY, qml.RZ, qml.CNOT, "measure", "ppm"},
             fixed_decomps={qml.GlobalPhase: null_decomp},
-            alt_decomps={OpWithCustomName4567: [_custom_decomp, _expensive_decomp]},
+            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
         )
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
-            OpWithCustomName4567(wires=[0, 1])
+            CustomOp(wires=[0, 1])
             m0 = qml.measure(0) if m_type == "mcm" else qml.pauli_measure("XZ", wires=[0, 1])
             qml.cond(m0, qml.X)(0)
             return qml.probs()
@@ -550,9 +595,6 @@ class TestDecomposeGraphEnabled:
     def test_minimize_work_wires(self):
         """Tests that the number of allocations can be minimized."""
 
-        class SomeOtherOp(Operation):  # pylint: disable=too-few-public-methods
-            """Some other operation."""
-
         @qml.register_resources(
             {qml.CNOT: 2, LargeOpDynamicWireDecomp: 2},
             work_wires={"zeroed": 1},
@@ -563,7 +605,7 @@ class TestDecomposeGraphEnabled:
                 LargeOpDynamicWireDecomp(wires)
                 qml.CNOT([wires[0], work_wires[0]])
 
-        op1 = SomeOtherOp(wires=[0, 1, 2, 3, 4])
+        op1 = AnotherOp(wires=[0, 1, 2, 3, 4])
         op2 = CustomOpDynamicWireDecomp(wires=[0, 1, 4])
         tape = qml.tape.QuantumScript([op1, op2])
 
@@ -575,7 +617,7 @@ class TestDecomposeGraphEnabled:
             alt_decomps={
                 CustomOpDynamicWireDecomp: [_decomp_with_work_wire, _decomp_without_work_wire],
                 LargeOpDynamicWireDecomp: [_decomp2_with_work_wire],
-                SomeOtherOp: [_some_decomp],
+                AnotherOp: [_some_decomp],
             },
         )
 

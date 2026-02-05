@@ -11,6 +11,31 @@
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
 
+* Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
+  quantum functions. These objects can now return classical values or mid circuit measurements,
+  and are compatible with Program Capture Catalyst. Any `Operator` with a single definition
+  in terms of its implementation, a more complicated call signature, and that exists
+  at a higher, algorithmic layer of abstraction should switch to using this class instead
+  of `Operator`/ `Operation`.
+  [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
+
+```python
+from pennylane.templates import Subroutine
+
+@Subroutine
+def MyTemplate(x, y, wires):
+    qml.RX(x, wires[0])
+    qml.RY(y, wires[0])
+
+@qml.qnode(qml.device('default.qubit'))
+def c():
+    MyTemplate(0.1, 0.2, 0)
+    return qml.state()
+```
+
+>>> print(qml.draw(c)())
+0: ──MyTemplate(0.10,0.20)─┤  State
+
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
@@ -19,13 +44,18 @@
 * Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
   compile pipeline of a given QNode at a specific level.
   [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  
+* Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
+  allows the decomposition graph to treat operators without a decomposition as part of the gate set.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
 <h3>Improvements 🛠</h3>
 
-* New lightweight representations of the :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
+* New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
-``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
+  ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
+  [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
 
 * `qml.transforms.decompose` is now imported top level as `qml.decompose`.
   [(#9011)](https://github.com/PennyLaneAI/pennylane/pull/9011)
@@ -91,6 +121,9 @@
 * The ``qml.estimator.Resources`` class now has a nice string representation in Jupyter Notebooks.
   [(#8880)](https://github.com/PennyLaneAI/pennylane/pull/8880)
 
+* Adds a `qml.capture.subroutine` for jitting quantum subroutines with program capture.
+  [(#8912)](https://github.com/PennyLaneAI/pennylane/pull/8912)
+
 * A function for setting up transform inputs, including setting default values and basic validation,
   can now be provided to `qml.transform` via `setup_inputs`.
   [(#8732)](https://github.com/PennyLaneAI/pennylane/pull/8732)
@@ -104,6 +137,10 @@
 
 * The `to_zx` transform is now compatible with the new graph-based decomposition system.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+
+* When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
+  transform no longer raise duplicate warnings about operators that cannot be decomposed.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -253,6 +290,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.counts` of mid circuit measurements can now be captured into jaxpr.
+  [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
+
 * Pass-by-pass specs now use ``BoundTransform.tape_transform`` rather than the deprecated ``BoundTransform.transform``.
   Additionally, several internal comments have been updated to bring specs in line with the new ``CompilePipeline`` class.
   [(#9012)](https://github.com/PennyLaneAI/pennylane/pull/9012)
@@ -277,8 +317,10 @@
 * Updated test helper `get_device` to correctly seed lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
 
-* Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
+* Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.32.2).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
+  [(#8962)](https://github.com/PennyLaneAI/pennylane/pull/8962)
+  [(#9030)](https://github.com/PennyLaneAI/pennylane/pull/9030)
 
 * Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
