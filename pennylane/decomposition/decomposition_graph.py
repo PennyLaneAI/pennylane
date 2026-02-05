@@ -330,7 +330,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if not rules and not self._strict:
             # Assign a prohibitively high cost to this operator so that nothing decomposes to
             # this op unless there is no other choice.
-            self._gate_set_weights |= GateSet({_to_name(op): math.inf})
+            self._gate_set_weights |= GateSet({to_name(op): math.inf})
             self._graph.add_edge(self._start, op_node_idx, math.inf)
             return op_node_idx
 
