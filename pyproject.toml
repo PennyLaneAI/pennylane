@@ -116,16 +116,16 @@ docs = [
     "galois",
     "requests==2.32.4"
 ]
-external = [
+external-libraries = [
     "pyzx",
     "stim",
     "quimb",
-    "mitiq>=0.45.1",
     "optax",
     "scipy-openblas32>=0.3.26",
     "qualtran",
     "openqasm3",
     "antlr4_python3_runtime",
+    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master"
 ]
 
 [[project.maintainers]]

@@ -42,9 +42,8 @@ jobs:
       run: |
         pip install --upgrade --no-cache-dir pip setuptools 
         pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
-        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir .[docs]
         pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
-
+        pip install --group docs
 
     - name: Build Sphinx HTML
       run: |
