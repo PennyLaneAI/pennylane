@@ -94,7 +94,7 @@ jobs:
       - name: Upload frozen requirements
         uses: actions/upload-artifact@v4
         with:
-          name: frozen-uv-lock
+          name: frozen-lockfile
           path: uv.lock
 
   upload-stable-deps:
