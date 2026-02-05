@@ -62,10 +62,10 @@ jobs:
         if: ${{ env.branch_exists == 'true' }}
         run: |
           git fetch
-          git checkout "${{ env.rc_branch }}"
+          git checkout "${{ env.docs_branch }}"
           BRANCH="docs-rc_$(date +'%Y-%m-%d-%H-%M-%S')"
           echo "tmp_branch=$BRANCH" >> $GITHUB_ENV
-          git checkout -b "$DOCS_BRANCH"
+          git checkout -b "$BRANCH"
           # Exclude some files known to be divergent during the release process from the PR
           git checkout ${{ env.rc_branch }} -- pennylane/_version.py
           git checkout ${{ env.rc_branch }} -- doc/development/release_notes.md
@@ -85,4 +85,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout ${{ env.tmp_branch }}
-          gh pr create --title "Daily docs-rc sync to rc" --body "" 
+          gh pr create --base ${{ env.rc_branch }} --title "Daily docs rc sync to rc" --body "" 
