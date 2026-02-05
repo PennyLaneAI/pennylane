@@ -307,7 +307,8 @@ def c():
 
 * Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.32.2).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
-  [(#)]()
+  [(#8962)](https://github.com/PennyLaneAI/pennylane/pull/8962)
+  [(#9030)](https://github.com/PennyLaneAI/pennylane/pull/9030)
 
 * Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
