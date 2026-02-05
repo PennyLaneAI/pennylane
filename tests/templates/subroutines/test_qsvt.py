@@ -19,8 +19,8 @@ from copy import copy
 
 import pytest
 from numpy.linalg import matrix_power
-from numpy.polynomial.chebyshev import Chebyshev
 from numpy.polynomial import chebyshev
+from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -859,11 +859,10 @@ class TestRootFindingSolver:
     @pytest.mark.parametrize(
         "poly",
         [
-            (np.array([ 0.        ,  0.29478458,  0.        , -0.0685941 ])),
-            (np.array([ 0.        ,  0.26680652,  0.        , -0.11519821,  0.        ,
-        0.02894724])), 
-            #at the moment not testing with even poly's as there is not consensus between qsppack and nlft-qsp
-            #these poly's is used and verified elsewhere
+            (np.array([0.0, 0.29478458, 0.0, -0.0685941])),
+            (np.array([0.0, 0.26680652, 0.0, -0.11519821, 0.0, 0.02894724])),
+            # at the moment not testing with even poly's as there is not consensus between qsppack and nlft-qsp
+            # these poly's is used and verified elsewhere
         ],
     )
     @pytest.mark.parametrize(
