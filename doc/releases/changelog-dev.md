@@ -286,6 +286,9 @@ def c():
 
 <h3>Internal changes ⚙️</h3>
 
+* Update pennylane to use a uv lockfile for package dependency tracking. 
+  [(8755)](https://github.com/PennyLaneAI/pennylane/pull/8755)
+
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
