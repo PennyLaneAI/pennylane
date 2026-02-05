@@ -329,11 +329,10 @@ class LinearCombination(Sum):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.prod(t[0], t[1], lazy=False) for t in ops_list]
-            if qml.QueuingManager.recording():
-                # pylint: disable=not-context-manager
-                with qml.QueuingManager.active_context() as context:
-                    context.remove(self)
-                    context.remove(other)
+            # Need to explicitly dequeue self and other, because only the operators in their
+            # ``ops`` attributes are entering ``prod`` calls above and thus are being de-queued
+            qml.QueuingManager.remove(self)
+            qml.QueuingManager.remove(other)
             return qml.ops.LinearCombination(coeffs, terms)
 
         if isinstance(other, Operator):
@@ -345,11 +344,7 @@ class LinearCombination(Sum):
                     new_pr = pr1 @ pr2
                 else:
                     new_pr = None
-                if qml.QueuingManager.recording():
-                    # pylint: disable=not-context-manager
-                    with qml.QueuingManager.active_context() as context:
-                        context.remove(self)
-                        context.remove(other)
+                qml.QueuingManager.remove(self)
                 return LinearCombination(self.coeffs, new_ops, _pauli_rep=new_pr)
             return qml.prod(self, other)
 
