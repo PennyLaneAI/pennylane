@@ -56,11 +56,11 @@ def test_alias():
     assert res2 == res2_true
 
 
-def test_no_recording_in_context():
-    """Test that commutator is not recorded"""
+def test_no_queuing_in_context():
+    """Test that commutator is not queued"""
     with qml.queuing.AnnotatedQueue() as q1:
-        a = qml.PauliX(0)  # gets recorded
-        b = qml.PauliY(0)  # gets recorded
+        a = qml.PauliX(0)  # gets queued
+        b = qml.PauliY(0)  # gets queued
         comm = qml.commutator(a, b)
 
     with qml.queuing.AnnotatedQueue() as q2:
@@ -73,11 +73,11 @@ def test_no_recording_in_context():
         qml.assert_equal(op2, exp_op)
 
 
-def test_no_recording_in_context_with_pauli():
-    """Test that commutator is not recorded while one of the ops is a Pauli"""
+def test_no_queuing_in_context_with_pauli():
+    """Test that commutator is not queued while one of the ops is a Pauli"""
     with qml.queuing.AnnotatedQueue() as q1:
-        a = qml.PauliX(0)  # gets recorded
-        b = PauliWord({0: "Y"})  # does not get recorded
+        a = qml.PauliX(0)  # gets queued
+        b = PauliWord({0: "Y"})  # does not get queued
         comm = qml.commutator(a, b)
 
     with qml.queuing.AnnotatedQueue() as q2:
@@ -89,8 +89,8 @@ def test_no_recording_in_context_with_pauli():
         qml.assert_equal(op2, exp_op)
 
 
-def test_recording_wanted():
-    """Test that commutator can be correctly recorded with qml.apply still"""
+def test_queuing_wanted():
+    """Test that commutator can be correctly queued with qml.apply still"""
     with qml.queuing.AnnotatedQueue() as q1:
         a = qml.PauliX(0)
         b = qml.PauliY(0)

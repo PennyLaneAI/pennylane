@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.decomposition import gate_sets
+from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript
@@ -380,11 +381,10 @@ def to_zx(tape, expand_measurements=False):
             q_mapper.set_qubit(i, i)
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
-        [mapped_tape], _ = qml.transforms.decompose(
-            mapped_tape,
-            gate_set=gate_sets.PYZX,
-            max_expansion=10,
-        )
+        kwargs = {"gate_set": gate_sets.PYZX}
+        if qml.decomposition.enabled_graph():
+            kwargs["fixed_decomps"] = {qml.GlobalPhase: null_decomp}
+        [mapped_tape], _ = qml.transforms.decompose(mapped_tape, **kwargs)
 
         if expand_measurements:
             [mapped_tape], _ = qml.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)

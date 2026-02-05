@@ -320,7 +320,10 @@ def _check_copy(op, skip_deepcopy):
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operaiton"
     if not skip_deepcopy:
-        assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
+        try:
+            assert_equal(copy.deepcopy(op), op)
+        except AssertionError as e:
+            raise AssertionError("deep copied op must also be equal") from e
 
 
 # pylint: disable=import-outside-toplevel, protected-access
@@ -342,8 +345,12 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
-    assert op == new_op, "metadata and data must be able to reproduce the original operation"
-
+    try:
+        assert_equal(op, new_op)
+    except AssertionError as e:
+        raise AssertionError(
+            "metadata and data must be able to reproduce the original operation"
+        ) from e
     try:
         import jax
     except ImportError:
@@ -359,6 +366,8 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
+    if isinstance(op, qml.templates.SubroutineOp):
+        return
     try:
         import jax
     except ImportError:
@@ -445,7 +454,6 @@ def _check_differentiation(op):
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
-
     if skip_wire_mapping:
         return
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
