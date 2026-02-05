@@ -379,12 +379,7 @@ matmul_LinearCombinations = [
     (
         qml.ops.LinearCombination([1], [X(0)]),
         qml.ops.LinearCombination([0.5], [Z(3)]),
-        qml.ops.LinearCombination(
-            [0.5],
-            [
-                X(0) @ Z(3),
-            ],
-        ),
+        qml.ops.LinearCombination([0.5], [X(0) @ Z(3)]),
     ),
     (
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
