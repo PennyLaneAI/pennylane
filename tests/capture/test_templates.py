@@ -892,7 +892,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of BBQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000"),
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11]),
@@ -926,7 +926,16 @@ class TestModifiedTemplates:
         """Test the primitve bind call of SelectOnlyQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000", "010", "111", "110", "000"),
+            "data": (
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+                (0, 1, 0),
+                (1, 1, 1),
+                (1, 1, 0),
+                (0, 0, 0),
+            ),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "select_wires": (12),
@@ -961,7 +970,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of HybridQRAM."""
 
         kwargs = {
-            "bitstrings": ("010", "111", "110", "000"),
+            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5, 6, 7, 8, 12, 13, 14, 15, 9, 10, 11]),
@@ -996,7 +1005,7 @@ class TestModifiedTemplates:
         """Test the primitive bind call of QROM."""
 
         kwargs = {
-            "bitstrings": ["0", "1"],
+            "data": ((0,), (1,)),
             "control_wires": [0],
             "target_wires": [1],
             "work_wires": None,
@@ -1597,6 +1606,8 @@ unsupported_templates = [
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
     qml.TrotterizedQfunc,  # TODO: add support in follow up PR
+    qml.templates.SubroutineOp,
+    qml.templates.Subroutine,
 ]
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
@@ -1608,6 +1619,8 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
+    if template == qml.templates.SubroutineOp:
+        return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
 

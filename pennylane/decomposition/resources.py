@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import functools
-from collections import defaultdict
 from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -250,12 +249,8 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         To declare this controlled operator in the resource function, we find the resource keys
         of ``qml.ops.Controlled``:
 
-        >>> qml.ops.Controlled.resource_keys
-        {'base_class',
-         'base_params',
-         'num_control_wires',
-         'num_work_wires',
-         'num_zero_control_values'}
+        >>> print(sorted(qml.ops.Controlled.resource_keys))
+        ['base_class', 'base_params', 'num_control_wires', 'num_work_wires', 'num_zero_control_values', 'work_wire_type']
 
         Then the resource representation can be created as follows:
 
@@ -265,9 +260,10 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     base_params={'num_wires': 3},
         ...     num_control_wires=2,
         ...     num_zero_control_values=1,
-        ...     num_work_wires=1
+        ...     num_work_wires=1,
+        ...     work_wire_type='borrowed'
         ... )
-        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1)
+        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1, work_wire_type=borrowed)
 
         Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
 
@@ -278,7 +274,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         ...     num_zero_control_values=1,
         ...     num_work_wires=1
         ... )
-        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1)
+        Controlled(base_class=<class 'pennylane.ops.qubit.parametric_ops_multi_qubit.MultiRZ'>, base_params={'num_wires': 3}, num_control_wires=2, num_zero_control_values=1, num_work_wires=1, work_wire_type=borrowed)
 
         .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
@@ -296,14 +292,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
-    if op_type is qml.ops.op_math.Prod:
-        resources = defaultdict(int)
-        for rep, count in params["resources"].items():
-            addition = rep.params["resources"] if rep.op_type is qml.ops.op_math.Prod else {rep: 1}
-            for sub_rep, sub_count in addition.items():
-                resources[sub_rep] += count * sub_count
-
-        params["resources"] = resources
     return CompressedResourceOp(op_type, params)
 
 
@@ -542,7 +530,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     if base_class is qml.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
             return resource_rep(qml.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0:
+        if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
             return resource_rep(qml.Toffoli)
         return resource_rep(
             qml.MultiControlledX,
