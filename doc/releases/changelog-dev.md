@@ -330,7 +330,7 @@ def c():
 
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
   of an operator product computed via ``@``, i.e. the dunder method ``__matmul__``. 
-  [(#9___)](https://github.com/PennyLaneAI/pennylane/pull/9___)
+  [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
 
 * Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
   to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
