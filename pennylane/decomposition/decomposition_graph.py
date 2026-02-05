@@ -71,6 +71,7 @@ UNSUPPORTED_TEMPLATES = {
     "DoubleExcitationMinus",
     "DisplacementEmbedding",
     "FlipAndRotate",
+    "GraphStatePrep",
     "MERA",
     "MPS",
     "ParametrizedEvolution",
