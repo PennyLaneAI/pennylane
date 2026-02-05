@@ -28,6 +28,7 @@ on:
   # Scheduled trigger on Monday at 2:47am UTC
   schedule:
     - cron: "47 2 * * 1"
+  workflow_call:
 
 permissions: write-all
 
