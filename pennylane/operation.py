@@ -1080,7 +1080,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         op_label = base_label or self.__class__.__name__
 
-        if self.num_params == 0:
+        if len(self.data) == 0:
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         def _format(x):
@@ -1578,7 +1578,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Options are:
             * `"_ops"`
             * `"_measurements"`
-            * `None`
+            * `None` (deprecated)
         """
         return "_ops"
 
