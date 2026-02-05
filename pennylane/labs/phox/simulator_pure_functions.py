@@ -95,31 +95,45 @@ def _parse_iqp_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
     return jnp.array(generators), param_map
 
 
+def _obs_to_numeric(obs: list[list[str]] | list[str]) -> jnp.ndarray:
+    """
+    Helper to convert observable strings to numeric encoding:
+    I -> 0, X -> 1, Y -> 2, Z -> 3.
+    """
+    if isinstance(obs, list):
+        if not obs:
+            return jnp.array([], dtype=jnp.int32)
+        if isinstance(obs[0], str): # Handle Single observable case
+             obs = [obs]
+    
+    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
+    
+    numeric_batch = []
+    for row in obs:
+        if isinstance(row, str) and len(row) > 1:
+            numeric_row = [mapping[gate] for gate in row]
+        else:
+            numeric_row = [mapping[gate] for gate in row]
+        numeric_batch.append(numeric_row)
+        
+    return jnp.array(numeric_batch, dtype=jnp.int32)
+
+
 def iqp_expval(
     gates: dict[int, list[list[int]]],
     n_qubits: int,
     init_state: tuple[ArrayLike, ArrayLike] | None = None,
 ):
     """
-    Factory that returns a JIT-optimized expectation value function for a specific circuit structure.
+    Factory that returns a function for computing expectation values.
 
     Args:
-        gates (dict[int, list[list[int]]]): Dictionary mapping parameter indices to lists of qubit indices.
-            Example: ``{0: [[0, 1], [1, 2]]}``.
-        n_qubits (int): Total number of qubits in the system.
-        init_state (tuple[ArrayLike, ArrayLike] | None): Optional tuple $(X, P)$ representing initial state stabilizers.
+        gates (dict[int, list[list[int]]]): Circuit structure.
+        n_qubits (int): Number of qubits.
+        init_state (tuple): Initial state.
 
     Returns:
-        Callable[[ArrayLike, ArrayLike, int, ArrayLike], tuple[jnp.ndarray, jnp.ndarray]]: 
-            A JIT-compiled function ``expval_execution(params, ops_numeric, n_samples, key)`` that computes:
-            - Mean expectation values.
-            - Standard deviation of the expectation values.
-            
-            Args for the returned function:
-                params (ArrayLike): Array of parameters.
-                ops_numeric (ArrayLike): Matrix of Pauli words using integer encoding: I=0, X=1, Y=2, Z=3.
-                n_samples (int): Number of stochastic shots per operator.
-                key (ArrayLike): JAX PRNGKey for random sampling.
+        Callable: A function ``execute(params, ops, n_samples, key)``.
     """
     generators, param_map = _parse_iqp_dict(gates, n_qubits)
 
@@ -170,4 +184,11 @@ def iqp_expval(
         std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
         return jnp.mean(expvals, axis=1), std_err
 
-    return jax.jit(expval_execution, static_argnames=["n_samples"])
+    # Compile the inner kernel
+    jitted_kernel = jax.jit(expval_execution, static_argnames=["n_samples"])
+
+    # Wrapper to handle string -> numeric conversion
+    def execute(params, ops, n_samples, key):
+        return jitted_kernel(params, _obs_to_numeric(ops), n_samples, key)
+
+    return execute

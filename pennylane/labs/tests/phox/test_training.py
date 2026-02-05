@@ -208,12 +208,11 @@ def test_iqp_optimization():
     params_init = jnp.array([0.1, 0.1])
 
     ops_strings = [["Z", "I"], ["I", "Z"]]
-    ops_numeric = _obs_to_numeric(ops_strings)
 
     expval_func = iqp_expval(gates, n_qubits)
 
     def loss_fn(params, key):
-        expvals, _ = expval_func(params, ops_numeric, n_samples, key)
+        expvals, _ = expval_func(params, ops_strings, n_samples, key)
         return jnp.sum(expvals)
 
     loss_kwargs = {"params": params_init}

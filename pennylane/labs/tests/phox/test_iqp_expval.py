@@ -40,16 +40,6 @@ def _prepare_obs_batch(obs_strings):
     return obs_strings, len(obs_strings[0])
 
 
-def _obs_to_numeric(obs_batch):
-    """Convert batch of string observables to numeric encoding (I=0, X=1, Y=2, Z=3)."""
-    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
-    numeric_batch = []
-    for op in obs_batch:
-        numeric_row = [mapping[gate] for gate in op]
-        numeric_batch.append(numeric_row)
-    return np.array(numeric_batch, dtype=int)
-
-
 def _prepare_pennylane_state(n_qubits, init_state_spec):
     """Check init_state_spec and build dense complex state vector."""
     state = np.zeros(2**n_qubits, dtype=complex)
@@ -186,12 +176,11 @@ class TestIQPExpval:
         gates = {i: [wires] for i, wires in enumerate(generators_pl)}
 
         params_jax = jnp.array(params)
-        obs_numeric = _obs_to_numeric(obs_batch)
         key = jax.random.PRNGKey(42)
         atol = 3.5 / np.sqrt(n_samples)
 
         expval_func = iqp_expval(gates, n_qubits, init_state=jax_state)
-        approx_val, _ = expval_func(params_jax, obs_numeric, n_samples, key)
+        approx_val, _ = expval_func(params_jax, obs_batch, n_samples, key)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -230,13 +219,12 @@ class TestIQPExpval:
 
         exact_vals = _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch, pl_state)
 
-        obs_numeric = _obs_to_numeric(obs_batch)
         key = jax.random.PRNGKey(42)
         n_samples = 10000
         atol = 3.5 / np.sqrt(n_samples)
 
         expval_func = iqp_expval(gates, n_qubits, init_state=jax_state)
-        approx_val, _ = expval_func(np.array(params), obs_numeric, n_samples, key)
+        approx_val, _ = expval_func(np.array(params), obs_batch, n_samples, key)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -263,9 +251,8 @@ class TestIQPExpval:
         # Tolerances for MC estimation
         atol = 0.05
 
-        obs_numeric = _obs_to_numeric(obs_batch)
         expval_func = iqp_expval(gates, n_qubits)
-        approx_val, _ = expval_func(np.array(params), obs_numeric, n_samples, key)
+        approx_val, _ = expval_func(np.array(params), obs_batch, n_samples, key)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
