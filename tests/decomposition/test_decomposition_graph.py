@@ -31,7 +31,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.utils import to_name
-from pennylane.exceptions import DecompositionError
+from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
 
 # pylint: disable=protected-access,no-name-in-module
@@ -317,7 +317,7 @@ class TestDecompositionGraph:
 
         op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
-        with pytest.warns(UserWarning, match="unable to find a decomposition for {'Hadamard'}"):
+        with pytest.warns(DecompositionWarning, match="find a decomposition for {'Hadamard'}"):
             graph.solve()
 
     @pytest.mark.parametrize(
