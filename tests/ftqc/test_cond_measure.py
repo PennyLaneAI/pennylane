@@ -228,14 +228,11 @@ class TestWorkflows:
         # without the transform, the mid-circuit measurements are all treated as computational
         # basis measurements, and they are inside Conditional, which doesn't execute correctly,
         # so we return incorrect results, even with a high atol (± ~20-30% of expected outcome)
-        with pytest.warns() as record:
-            assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
-
         if qml.decomposition.enabled_graph():
-            assert len(record) == 1
-            assert record[0].category is DecompositionWarning
+            with pytest.warns(DecompositionWarning):
+                assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
         else:
-            assert len(record) == 0
+            assert not np.isclose(circ(), -np.sin(2.345), atol=0.2)
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_cascading_conditional_measurements(self, mcm_method, shots):
