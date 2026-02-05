@@ -2189,3 +2189,27 @@ class TestMarkers:
         combined = p2 + p1
         # 'start' should now be at level 1 of the combined pipeline.
         assert combined.get_marker_level("start") == 1
+
+    def test_markers_dont_mutate_during_addition(self):
+        """Tests that markers in the original pipelines don't mutate during addition."""
+
+        pipeline1 = CompilePipeline()
+        pipeline1.add_transform(transform(first_valid_transform))
+        pipeline1.add_marker("marker1")
+
+        pipeline2 = CompilePipeline()
+        pipeline2.add_transform(transform(second_valid_transform))
+        pipeline2.add_marker("marker2")
+
+        combined = pipeline1 + pipeline2
+
+        # Original pipelines should remain unchanged
+        assert pipeline1.markers == ["marker1"]
+        assert pipeline1.get_marker_level("marker1") == 1
+
+        assert pipeline2.markers == ["marker2"]
+        assert pipeline2.get_marker_level("marker2") == 1
+
+        assert combined.markers == ["marker1", "marker2"]
+        assert combined.get_marker_level("marker1") == 1
+        assert combined.get_marker_level("marker2") == 2
