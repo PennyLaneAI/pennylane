@@ -234,6 +234,13 @@ def create_controlled_op(
             work_wire_type=work_wire_type,
         )
 
+    if op is None:
+        raise ValueError(
+            "None is not callable. "
+            "This error might occur if you apply ctrl to the output of a "
+            "Subroutine (template). Subroutines should now be treated "
+            "as Quantum Functions, rather than operators."
+        )
     if not callable(op):
         raise ValueError(
             f"The object {op} of type {type(op)} is not an Operator or callable. "

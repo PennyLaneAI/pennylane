@@ -203,7 +203,9 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize("n_wires", [4, 5])
     @pytest.mark.parametrize("wires", [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3]])
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
-    @pytest.mark.parametrize("gate_set", [[qml.Hadamard, qml.CNOT, qml.PhaseShift], None])
+    @pytest.mark.parametrize(
+        "gate_set", [[qml.Hadamard, qml.CNOT, qml.PhaseShift, qml.GlobalPhase], None]
+    )
     def test_qft(
         self, max_expansion, gate_set, n_wires, wires, autograph
     ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
