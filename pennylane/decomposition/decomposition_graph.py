@@ -270,13 +270,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
-            if isinstance(op, qml.ops.Conditional):
-                op = op.base  # decompose the base of a classically controlled operator.
-            if isinstance(op, Operator):
-                op = resource_rep(type(op), **op.resource_params)
-            idx = self._add_op_node(op, 0)
-            self._original_ops_indices.add(idx)
-            self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
+            if isinstance(op, qml.templates.SubroutineOp):
+                self._construct_graph(op.decomposition())
+            else:
+                if isinstance(op, qml.ops.Conditional):
+                    op = op.base  # decompose the base of a classically controlled operator.
+                if isinstance(op, Operator):
+                    op = resource_rep(type(op), **op.resource_params)
+                idx = self._add_op_node(op, 0)
+                self._original_ops_indices.add(idx)
+                self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
 
     def _add_op_node(self, op: CompressedResourceOp, num_used_work_wires: int) -> int:
         """Recursively adds an operation node to the graph.
@@ -318,6 +321,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # Assign a prohibitively high cost to this operator so that nothing decomposes to
             # this op unless there is no other choice.
             self._gate_set_weights |= GateSet({to_name(op): math.inf})
+            self._graph.add_edge(self._start, op_node_idx, math.inf)
+            return op_node_idx
+
+        rules = [rule for rule in self._get_decompositions(op) if rule.is_applicable(**op.params)]
+
+        # Treat ops that do not have a decomposition as supported if strict=False
+        if not rules and not self._strict:
+            # Assign a prohibitively high cost to this operator so that nothing decomposes to
+            # this op unless there is no other choice.
+            self._gate_set_weights |= GateSet({_to_name(op): math.inf})
             self._graph.add_edge(self._start, op_node_idx, math.inf)
             return op_node_idx
 
