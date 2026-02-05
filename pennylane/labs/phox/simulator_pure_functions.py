@@ -16,7 +16,6 @@ Pure function implementations for the Phox simulator.
 """
 import math
 from dataclasses import dataclass
-from functools import partial
 from typing import Callable
 
 import jax
@@ -124,36 +123,24 @@ def iqp_expval(
     """
     generators, param_map = _parse_iqp_dict(gates, n_qubits)
 
-    # Prepare init_state args for the kernel
     if init_state is not None:
         X, P = init_state
         P = P[:, jnp.newaxis]
         use_init_state = True
     else:
-        # Dummy arrays to satisfy JIT argument types
         X = jnp.empty((0, 0))
         P = jnp.empty((0, 0))
         use_init_state = False
 
-    @partial(jax.jit, static_argnames=["n_samples"])
     def expval_execution(params, ops_numeric, n_samples, key):
         samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
         
-        # bitflips calculation: Z (3) or Y (2) => 1
         is_z_or_y = (ops_numeric == 3) | (ops_numeric == 2)
         bitflips = is_z_or_y.astype(jnp.int32)
-        
-        # phases calculation
-        # Y (2) contributes -1j * (-1)^bit
-        # X (1) contributes 1 * (-1)^bit
-        # Z (3) contributes 1
-        # I (0) contributes 1
         
         count_y = jnp.sum(ops_numeric == 2, axis=1)
         
         is_x_or_y = (ops_numeric == 1) | (ops_numeric == 2)
-        # We need sum over qubits of (is_x_or_y * sample_bit)
-        # Result shape (n_ops, n_samples)
         dot_xy_samples = is_x_or_y.astype(jnp.int32) @ samples.T
         
         phase_y_base = (-1j) ** count_y
@@ -171,7 +158,6 @@ def iqp_expval(
         M = phases * jnp.exp(1j * E)
 
         if use_init_state:
-            # X and P are provided
             F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
 
             H1 = ((-1) ** (bitflips @ X.T)) @ F
@@ -184,4 +170,4 @@ def iqp_expval(
         std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
         return jnp.mean(expvals, axis=1), std_err
 
-    return expval_execution
+    return jax.jit(expval_execution, static_argnames=["n_samples"])
