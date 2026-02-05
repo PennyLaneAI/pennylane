@@ -366,16 +366,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(self._start, op_node_idx, math.inf)
             return op_node_idx
 
-        rules = [rule for rule in self._get_decompositions(op) if rule.is_applicable(**op.params)]
-
-        # Treat ops that do not have a decomposition as supported if strict=False
-        if not rules and not self._strict:
-            # Assign a prohibitively high cost to this operator so that nothing decomposes to
-            # this op unless there is no other choice.
-            self._gate_set_weights |= GateSet({to_name(op): math.inf})
-            self._graph.add_edge(self._start, op_node_idx, math.inf)
-            return op_node_idx
-
         work_wire_dependent = known_work_wire_dependent
         min_work_wires = -1  # use -1 to represent undetermined work wire requirement
         for decomposition in rules:

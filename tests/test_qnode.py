@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-
 import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
@@ -28,7 +27,13 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.exceptions import (
+    DecompositionWarning,
+    DeviceError,
+    PennyLaneDeprecationWarning,
+    QuantumFunctionError,
+)
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _make_execution_config
@@ -1131,10 +1136,12 @@ class TestIntegration:
             def decomposition(self) -> list:
                 return []
 
-        graph = nx.complete_graph(3)
-        tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
-        res = qml.execute([tape], dev)
-        assert qml.math.get_interface(res) == "numpy"
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(DummyCustomGraphOp, null_decomp)
+            graph = nx.complete_graph(3)
+            tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
+            res = qml.execute([tape], dev)
+            assert qml.math.get_interface(res) == "numpy"
 
     def test_error_device_vjp_unsuppoprted(self):
         """Test that an error is raised in the device_vjp is unsupported."""
@@ -2059,8 +2066,13 @@ def test_resets_after_execution_error():
         BadOp(x, wires=0)
         return qml.state()
 
-    with pytest.raises(DeviceError):
-        circuit(qml.numpy.array(0.1))
+    if qml.decomposition.enabled_graph():
+        with pytest.raises(DeviceError):
+            with pytest.warns(DecompositionWarning):
+                circuit(qml.numpy.array(0.1))
+    else:
+        with pytest.raises(DeviceError):
+            circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
 
