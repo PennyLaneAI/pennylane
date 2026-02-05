@@ -167,9 +167,9 @@ class CompilePipeline:
 
     >>> print(pipeline)
     CompilePipeline(
-      [0] commute_controlled(),
-      [1] cancel_inverses(recursive=True),
-      [2] merge_rotations()
+      [1] commute_controlled(),
+      [2] cancel_inverses(recursive=True),
+      [3] merge_rotations()
     )
 
     We can add markers in the pipeline to help mark important positions,
@@ -177,15 +177,21 @@ class CompilePipeline:
     >>> pipeline.add_marker("final-transform")
     >>> print(pipeline)
     CompilePipeline(
-      [0] commute_controlled(),
-      [1] cancel_inverses(recursive=True),
-      [2] merge_rotations()
+      [1] commute_controlled(),
+      [2] cancel_inverses(recursive=True),
+      [3] merge_rotations()
        └─▶ final-transform
     )
     >>> pipeline.markers
-    ["final-transform"]
+    ['final-transform']
     >>> print(pipeline.get_marker_level("final-transform"))
-    2
+    3
+
+    and we can remove markers,
+
+    >>> pipeline.remove_marker("final-transform")
+    >>> pipeline.markers
+    []
 
     As can be seen above, the pipeline is visualized organized as follows,
 
@@ -204,8 +210,8 @@ class CompilePipeline:
     >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
     >>> print(pipeline)
     CompilePipeline(
-      [0] merge_rotations(),
-      [1] cancel_inverses(recursive=True)
+      [1] merge_rotations(),
+      [2] cancel_inverses(recursive=True)
     )
 
     Or multiplied by a scalar via ``*``:
@@ -213,10 +219,10 @@ class CompilePipeline:
     >>> pipeline += 2 * qml.transforms.commute_controlled
     >>> print(pipeline)
     CompilePipeline(
-      [0] merge_rotations(),
-      [1] cancel_inverses(recursive=True),
-      [2] commute_controlled(),
-      [3] commute_controlled()
+      [1] merge_rotations(),
+      [2] cancel_inverses(recursive=True),
+      [3] commute_controlled(),
+      [4] commute_controlled()
     )
 
     A compilation pipeline can also be easily modified using operations similar to Python lists, including
@@ -225,11 +231,11 @@ class CompilePipeline:
     >>> pipeline.insert(0, qml.transforms.remove_barrier)
     >>> print(pipeline)
     CompilePipeline(
-      [0] remove_barrier(),
-      [1] merge_rotations(),
-      [2] cancel_inverses(recursive=True),
-      [3] commute_controlled(),
-      [4] commute_controlled()
+      [1] remove_barrier(),
+      [2] merge_rotations(),
+      [3] cancel_inverses(recursive=True),
+      [4] commute_controlled(),
+      [5] commute_controlled()
     )
 
     Additionally, multiple compilation pipelines can be concatenated:
@@ -237,13 +243,13 @@ class CompilePipeline:
     >>> another_pipeline = qml.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
     >>> print(another_pipeline + pipeline)
     CompilePipeline(
-      [0] decompose(gate_set=...),
-      [1] combine_global_phases(),
-      [2] remove_barrier(),
-      [3] merge_rotations(),
-      [4] cancel_inverses(recursive=True),
-      [5] commute_controlled(),
-      [6] commute_controlled()
+      [1] decompose(gate_set=...),
+      [2] combine_global_phases(),
+      [3] remove_barrier(),
+      [4] merge_rotations(),
+      [5] cancel_inverses(recursive=True),
+      [6] commute_controlled(),
+      [7] commute_controlled()
     )
 
     We can create a new pipeline that will do multiple passes of the original with multiplication:
@@ -251,10 +257,10 @@ class CompilePipeline:
     >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
     >>> print(2 * original)
     CompilePipeline(
-      [0] merge_rotations(),
-      [1] cancel_inverses(),
-      [2] merge_rotations(),
-      [3] cancel_inverses()
+      [1] merge_rotations(),
+      [2] cancel_inverses(),
+      [3] merge_rotations(),
+      [4] cancel_inverses()
     )
 
     """
