@@ -2058,24 +2058,35 @@ class TestMarkers:
         pipeline_str = str(compile_pipeline)
         assert pipeline_str == "CompilePipeline()"
 
+        # First marker has a bent arrow
         compile_pipeline.add_marker("marker0")
         pipeline_str = str(compile_pipeline)
-        assert pipeline_str == "CompilePipeline(\n   ├─▶ marker0\n)"
+        assert pipeline_str == "CompilePipeline(\n   └─▶ marker0\n)"
 
         compile_pipeline.add_marker("marker1")
 
+        # Markers stack properly
         pipeline_str = str(compile_pipeline)
-        assert pipeline_str == "CompilePipeline(\n   ├─▶ marker0, marker1\n)"
+        assert pipeline_str == "CompilePipeline(\n   └─▶ marker0, marker1\n)"
 
         compile_pipeline.add_transform(transform(first_valid_transform))
         compile_pipeline.add_marker("marker2")
-        compile_pipeline.add_transform(transform(second_valid_transform))
-        compile_pipeline.add_marker("marker3")
 
+        # First markers have bar, second marker has a bent arrow
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform(),\n   └─▶ marker2\n  [2] second_valid_transform()\n   └─▶ marker3\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform()\n   └─▶ marker2\n)"
+        )
+
+        compile_pipeline.add_transform(transform(second_valid_transform))
+        compile_pipeline.add_marker("marker3")
+
+        # Only final marker has the bent arrow, rest have bars
+        pipeline_str = str(compile_pipeline)
+        assert (
+            pipeline_str
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform(),\n   ├─▶ marker2\n  [2] second_valid_transform()\n   └─▶ marker3\n)"
         )
 
     def test_repr_pipeline_with_markers(self):
@@ -2088,22 +2099,29 @@ class TestMarkers:
         compile_pipeline.add_marker("marker0")
 
         pipeline_repr = repr(compile_pipeline)
-        assert pipeline_repr == "CompilePipeline(\n   ├─▶ marker0\n)"
+        assert pipeline_repr == "CompilePipeline(\n   └─▶ marker0\n)"
 
         compile_pipeline.add_marker("marker1")
 
         pipeline_repr = repr(compile_pipeline)
-        assert pipeline_repr == "CompilePipeline(\n   ├─▶ marker0, marker1\n)"
+        assert pipeline_repr == "CompilePipeline(\n   └─▶ marker0, marker1\n)"
 
         compile_pipeline.add_transform(transform(first_valid_transform))
         compile_pipeline.add_marker("marker2")
+
+        # First markers have bar, second marker has a bent arrow
+        pipeline_repr = repr(compile_pipeline)
+        assert (
+            pipeline_repr
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>\n   └─▶ marker2\n)"
+        )
         compile_pipeline.add_transform(transform(second_valid_transform))
         compile_pipeline.add_marker("marker3")
 
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>,\n   └─▶ marker2\n  [2] <second_valid_transform()>\n   └─▶ marker3\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>,\n   ├─▶ marker2\n  [2] <second_valid_transform()>\n   └─▶ marker3\n)"
         )
 
     def test_copy_preserves_markers(self):
