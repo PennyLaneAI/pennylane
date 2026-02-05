@@ -491,7 +491,8 @@ class CompilePipeline:
             inv_marker_map[index].append(label)
 
         if marker := inv_marker_map.get(0):
-            lines.append(f"   ├─▶ {', '.join(marker)}")
+            symbol = "├─▶" if self else "└─▶"
+            lines.append(f"   {symbol} {', '.join(marker)}")
 
         for i, transform in enumerate(self):
             args_str = ", ".join(truncate(a) for a in transform.args)
@@ -502,7 +503,8 @@ class CompilePipeline:
             lines.append(f"  [{i + 1}] {transform_str}" + "," * bool(i != len(self) - 1))
 
             if marker := inv_marker_map.get(i + 1):
-                lines.append(f"   └─▶ {', '.join(marker)}")
+                symbol = "├─▶" if i != len(self) - 1 else "└─▶"
+                lines.append(f"   {symbol} {', '.join(marker)}")
 
         if lines:
             contents = "\n".join(lines)
@@ -518,12 +520,14 @@ class CompilePipeline:
             inv_marker_map[index].append(label)
 
         if marker := inv_marker_map.get(0):
-            lines.append(f"   ├─▶ {', '.join(marker)}")
+            symbol = "├─▶" if self else "└─▶"
+            lines.append(f"   {symbol} {', '.join(marker)}")
 
         for i, transform in enumerate(self):
             lines.append(f"  [{i + 1}] {repr(transform)}" + "," * bool(i != len(self) - 1))
             if marker := inv_marker_map.get(i + 1):
-                lines.append(f"   └─▶ {', '.join(marker)}")
+                symbol = "├─▶" if i != len(self) - 1 else "└─▶"
+                lines.append(f"   {symbol} {', '.join(marker)}")
 
         if lines:
             contents = "\n".join(lines)
