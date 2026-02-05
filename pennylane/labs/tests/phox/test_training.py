@@ -184,6 +184,16 @@ def test_history_logging_manual(quadratic_problem):
     assert history[0].shape == (2,)
 
 
+def _obs_to_numeric(obs_batch):
+    """Convert batch of string observables to numeric encoding (I=0, X=1, Y=2, Z=3)."""
+    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
+    numeric_batch = []
+    for op in obs_batch:
+        numeric_row = [mapping[gate] for gate in op]
+        numeric_batch.append(numeric_row)
+    return np.array(numeric_batch, dtype=int)
+
+
 def test_iqp_optimization():
     """
     Test 6: Integration Test.
@@ -197,12 +207,13 @@ def test_iqp_optimization():
 
     params_init = jnp.array([0.1, 0.1])
 
-    ops = np.array([["Z", "I"], ["I", "Z"]])
+    ops_strings = [["Z", "I"], ["I", "Z"]]
+    ops_numeric = _obs_to_numeric(ops_strings)
+
+    expval_func = iqp_expval(gates, n_qubits)
 
     def loss_fn(params, key):
-        expvals, _ = iqp_expval(
-            gates=gates, params=params, ops=ops, n_samples=n_samples, n_qubits=n_qubits, key=key
-        )
+        expvals, _ = expval_func(params, ops_numeric, n_samples, key)
         return jnp.sum(expvals)
 
     loss_kwargs = {"params": params_init}
