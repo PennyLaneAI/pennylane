@@ -25,7 +25,6 @@ jnp = pytest.importorskip("jax.numpy")
 
 try:
     from pennylane.labs.phox.simulator_pure_functions import (
-        _iqp_expval_core,
         _parse_iqp_dict,
         iqp_expval,
     )
@@ -39,6 +38,16 @@ def _prepare_obs_batch(obs_strings):
     if obs_arr.ndim == 1:
         return [obs_strings], len(obs_strings)
     return obs_strings, len(obs_strings[0])
+
+
+def _obs_to_numeric(obs_batch):
+    """Convert batch of string observables to numeric encoding (I=0, X=1, Y=2, Z=3)."""
+    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
+    numeric_batch = []
+    for op in obs_batch:
+        numeric_row = [mapping[gate] for gate in op]
+        numeric_batch.append(numeric_row)
+    return np.array(numeric_batch, dtype=int)
 
 
 def _prepare_pennylane_state(n_qubits, init_state_spec):
@@ -166,25 +175,23 @@ class TestIQPExpval:
         self, n_samples, obs_strings, generators_pl, params, init_state_spec
     ):
         # pylint: disable=too-many-arguments
-        """Test that _iqp_expval_core matches PennyLane default.qubit with parametrization."""
+        """Test that iqp_expval (used as core substitute) matches PennyLane default.qubit with parametrization."""
         obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
         jax_state = _prepare_jax_state(init_state_spec)
 
         exact_vals = _run_pennylane_ground_truth(generators_pl, params, obs_batch, pl_state)
 
-        generators_matrix = np.zeros((len(generators_pl), n_qubits), dtype=int)
-        for i, wires in enumerate(generators_pl):
-            generators_matrix[i, wires] = 1
-        generators = jnp.array(generators_matrix)
+        # Map each generator to its own parameter to simulate 1-to-1 mapping
+        gates = {i: [wires] for i, wires in enumerate(generators_pl)}
 
         params_jax = jnp.array(params)
-        obs_jax = np.array(obs_batch)
+        obs_numeric = _obs_to_numeric(obs_batch)
         key = jax.random.PRNGKey(42)
         atol = 3.5 / np.sqrt(n_samples)
 
-        expval_func = _iqp_expval_core(generators, obs_jax, n_samples, key, init_state=jax_state)
-        approx_val, _ = expval_func(params_jax)
+        expval_func = iqp_expval(gates, n_qubits, init_state=jax_state)
+        approx_val, _ = expval_func(params_jax, obs_numeric, n_samples, key)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -223,14 +230,13 @@ class TestIQPExpval:
 
         exact_vals = _run_pennylane_ground_truth(generators_pl, params_pl, obs_batch, pl_state)
 
-        obs_jax = np.array(obs_batch)
+        obs_numeric = _obs_to_numeric(obs_batch)
         key = jax.random.PRNGKey(42)
         n_samples = 10000
         atol = 3.5 / np.sqrt(n_samples)
 
-        approx_val, _ = iqp_expval(
-            gates, params, obs_jax, n_samples, n_qubits, key, init_state=jax_state
-        )
+        expval_func = iqp_expval(gates, n_qubits, init_state=jax_state)
+        approx_val, _ = expval_func(np.array(params), obs_numeric, n_samples, key)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -257,8 +263,9 @@ class TestIQPExpval:
         # Tolerances for MC estimation
         atol = 0.05
 
-        obs_jax = np.array(obs_batch)
-        approx_val, _ = iqp_expval(gates, params, obs_jax, n_samples, n_qubits, key)
+        obs_numeric = _obs_to_numeric(obs_batch)
+        expval_func = iqp_expval(gates, n_qubits)
+        approx_val, _ = expval_func(np.array(params), obs_numeric, n_samples, key)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
