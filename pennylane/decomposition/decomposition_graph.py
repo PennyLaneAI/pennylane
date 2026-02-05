@@ -71,11 +71,13 @@ UNSUPPORTED_TEMPLATES = {
     "DoubleExcitationMinus",
     "DisplacementEmbedding",
     "FlipAndRotate",
+    "Interferometer",
     "GraphStatePrep",
     "MERA",
     "MPS",
     "ParametrizedEvolution",
     "RandomLayers",
+    "Adjoint(RandomLayers)",
     "SpecialUnitary",
     "SqueezingEmbedding",
     "TrotterizedQfunc",
@@ -84,7 +86,10 @@ UNSUPPORTED_TEMPLATES = {
     "WireCut",
     "QDrift",
     "QROMStatePreparation",
+    "QSVT",
     "QutritBasisStatePreparation",
+    "QuantumPhaseEstimation",
+    "QuantumMonteCarlo",
 }
 
 
