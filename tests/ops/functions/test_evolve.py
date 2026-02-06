@@ -16,7 +16,7 @@ import warnings
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 

@@ -21,7 +21,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
 from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum

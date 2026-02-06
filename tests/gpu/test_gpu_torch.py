@@ -17,7 +17,7 @@ Unit tests for PyTorch GPU support.
 # pylint: disable=protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark_gpu = pytest.mark.gpu
 pytestmark_torch = pytest.mark.torch

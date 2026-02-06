@@ -23,7 +23,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.condition import CondCallable
 

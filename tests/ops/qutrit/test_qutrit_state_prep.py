@@ -16,7 +16,7 @@ Unit tests for the available qubit state preparation operations.
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import WireError
 

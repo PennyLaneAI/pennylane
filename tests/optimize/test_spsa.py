@@ -14,7 +14,7 @@
 """Tests for the SPSA optimizer"""
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 univariate = [(np.sin), (lambda x: np.exp(x / 10.0)), (lambda x: x**2)]

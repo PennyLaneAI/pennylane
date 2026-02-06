@@ -23,7 +23,7 @@ import pytest
 from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as npp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX

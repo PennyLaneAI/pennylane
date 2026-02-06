@@ -16,7 +16,7 @@
 import pytest
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.devices.qubit import create_initial_state
 from pennylane.operation import StatePrepBase

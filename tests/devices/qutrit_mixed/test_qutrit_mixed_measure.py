@@ -17,7 +17,7 @@ from functools import reduce
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.devices.qutrit_mixed import apply_operation, create_initial_state, measure

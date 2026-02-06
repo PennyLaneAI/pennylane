@@ -14,7 +14,7 @@
 """Tests for the gradients.jvp module."""
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
 from pennylane.measurements.shots import Shots

@@ -18,7 +18,7 @@ Tests for capturing a qnode into jaxpr.
 # pylint: disable=protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import CaptureError, QuantumFunctionError
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]

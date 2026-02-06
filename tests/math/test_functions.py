@@ -22,7 +22,7 @@ import pytest
 import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math as fn
 from pennylane import numpy as np
 from pennylane.math.single_dispatch import _sparse_matrix_power_bruteforce

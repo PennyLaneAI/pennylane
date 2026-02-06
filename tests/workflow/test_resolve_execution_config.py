@@ -16,7 +16,7 @@
 # pylint: disable=redefined-outer-name
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.workflow.resolution import _resolve_execution_config

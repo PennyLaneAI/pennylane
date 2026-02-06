@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from scipy.linalg import sqrtm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import X, Y, Z
 from pennylane.liealg import (
     adjvec_to_op,

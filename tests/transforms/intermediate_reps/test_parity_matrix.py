@@ -18,7 +18,7 @@ from itertools import permutations
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms import parity_matrix
 
 circ1 = qml.tape.QuantumScript(

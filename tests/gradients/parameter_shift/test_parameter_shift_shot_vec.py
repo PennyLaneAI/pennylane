@@ -19,7 +19,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 from device_shots_to_analytic import shots_to_analytic
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
 from pennylane.measurements import Shots

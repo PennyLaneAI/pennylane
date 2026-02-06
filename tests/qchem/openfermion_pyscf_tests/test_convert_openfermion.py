@@ -20,7 +20,7 @@ import sys
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import fermi
 from pennylane import numpy as np
 

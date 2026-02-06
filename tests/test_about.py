@@ -24,7 +24,7 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 @pytest.mark.slow

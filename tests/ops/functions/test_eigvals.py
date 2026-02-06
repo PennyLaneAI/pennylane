@@ -21,7 +21,7 @@ import pytest
 import scipy
 from gate_data import CNOT, H, I, S, X, Y, Z
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms import TransformError
 

@@ -22,7 +22,7 @@ from inspect import getmembers, isclass
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis

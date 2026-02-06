@@ -16,7 +16,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.math import Interface
 from pennylane.tape import QuantumScript

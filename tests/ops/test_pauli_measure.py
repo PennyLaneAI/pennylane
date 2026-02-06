@@ -15,7 +15,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import queuing
 from pennylane.ops import MeasurementValue, PauliMeasure
 from pennylane.wires import Wires

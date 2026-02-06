@@ -19,7 +19,7 @@
 import pytest
 from numpy.testing import assert_allclose
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import while_loop
 
 pytestmark = [pytest.mark.capture]

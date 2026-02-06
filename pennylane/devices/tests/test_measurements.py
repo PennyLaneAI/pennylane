@@ -17,7 +17,7 @@ import pytest
 from flaky import flaky
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import DeviceError
 from pennylane.measurements import (

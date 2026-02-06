@@ -18,7 +18,7 @@ import copy
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 symbols = ["H", "H", "H"]

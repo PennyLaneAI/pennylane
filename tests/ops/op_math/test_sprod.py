@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError

@@ -23,7 +23,7 @@ import pytest
 from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import ExecutionConfig
 from pennylane.devices.default_tensor import _operations, stopping_condition
 from pennylane.exceptions import DeviceError, WireError

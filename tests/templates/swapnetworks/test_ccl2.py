@@ -17,7 +17,7 @@ Tests for the TwoLocalSwapNetwork template.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 

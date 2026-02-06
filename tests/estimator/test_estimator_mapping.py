@@ -18,7 +18,7 @@ operator.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.estimator as re_ops
 import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops

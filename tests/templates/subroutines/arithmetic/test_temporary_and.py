@@ -17,7 +17,7 @@ Tests for the TemporaryAND template.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_TemporaryAND
 

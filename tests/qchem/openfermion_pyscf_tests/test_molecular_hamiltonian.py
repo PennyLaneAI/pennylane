@@ -17,7 +17,7 @@ Unit tests for molecular Hamiltonians.
 # pylint: disable=too-many-arguments, protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem

@@ -20,7 +20,7 @@ from collections.abc import Sequence
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementProcess, ProbabilityMP

@@ -17,7 +17,7 @@ Tests for the Fourier module helper functions.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.fourier.utils import format_nvec, get_spectrum, join_spectra
 
 

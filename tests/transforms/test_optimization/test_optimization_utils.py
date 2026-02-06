@@ -20,7 +20,7 @@ from itertools import product
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms.optimization.optimization_utils import find_next_gate, fuse_rot_angles
 

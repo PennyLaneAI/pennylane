@@ -18,7 +18,7 @@ Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.io.qualtran_io import (
     _get_op_call_graph,

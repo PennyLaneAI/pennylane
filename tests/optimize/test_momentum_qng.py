@@ -16,7 +16,7 @@
 import pytest
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 

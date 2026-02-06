@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.core import BoundTransform, CompilePipeline
 from pennylane.workflow import construct_batch, get_transform_program
 

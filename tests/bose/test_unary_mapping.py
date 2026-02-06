@@ -14,7 +14,7 @@
 """This module contains tests for unary_mapping of bosonic operators."""
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import I, X, Y, Z
 from pennylane.bose import BoseSentence, BoseWord, unary_mapping
 from pennylane.pauli import PauliSentence, PauliWord

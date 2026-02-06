@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 from flaky import flaky
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.devices.qubit.apply_operation import apply_operation
 from pennylane.ftqc import (

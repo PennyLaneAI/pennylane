@@ -16,7 +16,7 @@ Unit tests for the dot function
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 

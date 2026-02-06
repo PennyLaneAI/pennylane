@@ -19,7 +19,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 from scipy import stats
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad

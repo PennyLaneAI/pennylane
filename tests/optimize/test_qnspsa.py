@@ -20,7 +20,7 @@ from copy import deepcopy
 import pytest
 from scipy.linalg import sqrtm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 

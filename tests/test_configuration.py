@@ -19,7 +19,7 @@ import os
 import pytest
 import tomlkit as toml
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import Configuration
 
 config_filename = "default_config.toml"

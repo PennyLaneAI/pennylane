@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.functions import bind_new_parameters
 
 

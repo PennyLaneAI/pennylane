@@ -13,7 +13,7 @@
 # limitations under the License.
 """Convenient utility functions for testing optimization transforms."""
 
-import pennylane as qml
+import pennylane as qp
 
 
 def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):

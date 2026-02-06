@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import LegacyDevice as Device
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.wires import Wires

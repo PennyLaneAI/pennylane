@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,

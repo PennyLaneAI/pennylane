@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,

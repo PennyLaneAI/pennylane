@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import structure_constants
 from pennylane.pauli import PauliSentence, PauliWord
 

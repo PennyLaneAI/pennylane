@@ -19,7 +19,7 @@ Tests for the GQSP template.
 import pytest
 from numpy.linalg import matrix_power
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 

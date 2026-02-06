@@ -16,7 +16,7 @@
 import pytest
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.optimize.qng import _flatten_np, _unflatten_np
 

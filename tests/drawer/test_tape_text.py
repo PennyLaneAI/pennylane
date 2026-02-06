@@ -20,7 +20,7 @@ from copy import copy
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.drawer import tape_text
 from pennylane.drawer._add_obj import (

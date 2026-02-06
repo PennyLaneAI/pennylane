@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ftqc.operations import RotXZX
 from pennylane.ops.functions import assert_valid
 from pennylane.queuing import AnnotatedQueue

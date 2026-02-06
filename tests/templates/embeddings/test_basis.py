@@ -17,7 +17,7 @@ Tests for the BasisEmbedding template.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 
 

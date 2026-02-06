@@ -22,7 +22,7 @@ import numpy as np
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import _check_capture

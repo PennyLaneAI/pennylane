@@ -20,7 +20,7 @@ import functools
 import pytest
 import scipy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.math.utils import binary_finite_reduced_row_echelon
 from pennylane.pauli import pauli_sentence

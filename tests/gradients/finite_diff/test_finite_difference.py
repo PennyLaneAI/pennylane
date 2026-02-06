@@ -19,7 +19,7 @@ import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import finite_diff, finite_diff_coeffs

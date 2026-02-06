@@ -21,7 +21,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.resource_estimation import (
     CompressedResourceOp,
     QubitManager,

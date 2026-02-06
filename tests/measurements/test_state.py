@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.exceptions import QuantumFunctionError, WireError
 from pennylane.math.matrix_manipulation import _permute_dense_matrix

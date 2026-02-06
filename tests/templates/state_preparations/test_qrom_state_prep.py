@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.templates.state_preparations.qrom_state_prep import _float_to_binary
 

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 def test_my_feature_is_deprecated():

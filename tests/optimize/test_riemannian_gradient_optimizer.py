@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from scipy.sparse.linalg import expm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.optimize import RiemannianGradientOptimizer
 
 

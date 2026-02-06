@@ -15,7 +15,7 @@
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import (
     ClassicalShadowMP,
     MeasurementProcess,

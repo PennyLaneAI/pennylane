@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,

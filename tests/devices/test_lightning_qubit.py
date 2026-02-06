@@ -17,7 +17,7 @@ Tests for the accessibility of the Lightning-Qubit device
 import pytest
 from flaky import flaky
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 

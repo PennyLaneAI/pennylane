@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 import scipy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
 from pennylane.exceptions import DeviceError

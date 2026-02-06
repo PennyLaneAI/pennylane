@@ -19,7 +19,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QueuingError
 from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 

@@ -17,7 +17,7 @@ Unittests for is_commuting
 # pylint: disable=too-many-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.functions.is_commuting import _check_mat_commutation, _get_target_name

@@ -20,7 +20,7 @@ import scipy as sp
 from dummy_debugger import Debugger
 from stat_utils import fisher_exact_test
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 from pennylane.devices.qubit.simulate import (
     TreeTraversalStack,

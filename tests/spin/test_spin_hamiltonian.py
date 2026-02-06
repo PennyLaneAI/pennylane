@@ -19,7 +19,7 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import I, X, Y, Z
 from pennylane.spin import (
     Lattice,

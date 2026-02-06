@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 
 SPARSEHAMILTONIAN_TEST_MATRIX = np.array(

@@ -18,7 +18,7 @@ Unit tests for utility functions in the ``decomposition`` module.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.utils import translate_op_alias
 
 

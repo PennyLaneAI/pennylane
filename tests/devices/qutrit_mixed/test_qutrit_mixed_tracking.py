@@ -17,7 +17,7 @@ Tests for the tracking capabilities of default qutrit mixed.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.resource import SpecsResources
 
 

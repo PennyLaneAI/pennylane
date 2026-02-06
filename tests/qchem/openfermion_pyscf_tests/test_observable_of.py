@@ -19,7 +19,7 @@ import sys
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import qchem
 
 openfermion = pytest.importorskip("openfermion")

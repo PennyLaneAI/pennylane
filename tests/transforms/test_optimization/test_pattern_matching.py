@@ -18,7 +18,7 @@ Unit tests for the optimization transform ``pattern_matching_optimization``.
 # pylint: disable=too-many-statements
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.transforms.commutation_dag import commutation_dag

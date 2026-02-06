@@ -20,7 +20,7 @@ import pytest
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
     cond_prim,

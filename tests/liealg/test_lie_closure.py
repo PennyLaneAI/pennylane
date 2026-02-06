@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import I, X, Y, Z, lie_closure
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 

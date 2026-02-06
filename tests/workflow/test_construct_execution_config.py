@@ -17,7 +17,7 @@ from dataclasses import replace
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.workflow import construct_execution_config
 

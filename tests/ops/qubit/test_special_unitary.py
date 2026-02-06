@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 from scipy.linalg import expm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.qubit.special_unitary import (
     TmpPauliRot,
     _pauli_letters,

@@ -17,7 +17,7 @@ import logging
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 _grad_log_map = {
     "adjoint": "diff_method=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",

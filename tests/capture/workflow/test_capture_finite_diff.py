@@ -18,7 +18,7 @@ with program capture enabled.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

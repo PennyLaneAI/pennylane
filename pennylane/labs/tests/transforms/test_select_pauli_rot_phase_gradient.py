@@ -19,7 +19,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.transforms.select_pauli_rot_phase_gradient import (
     _binary_repr_int,
     _select_pauli_rot_phase_gradient,

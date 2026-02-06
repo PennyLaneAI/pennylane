@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.fermi.fermionic import (
     FermiA,

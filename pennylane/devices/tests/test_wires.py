@@ -15,7 +15,7 @@
 # pylint: disable=no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 # ===== Factories for circuits using arbitrary wire labels and numbers

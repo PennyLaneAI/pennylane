@@ -21,7 +21,7 @@ from gate_data import H, I, S, T, X, Z
 from scipy.stats import unitary_group
 from test_optimization.utils import check_matrix_equivalence
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms import unitary_to_rot
 from pennylane.wires import Wires

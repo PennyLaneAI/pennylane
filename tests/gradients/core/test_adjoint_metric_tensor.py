@@ -20,7 +20,7 @@ import numpy as onp
 # pylint: disable=protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]

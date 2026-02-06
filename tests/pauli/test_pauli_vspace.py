@@ -18,7 +18,7 @@ from copy import copy
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 
 ops1 = [

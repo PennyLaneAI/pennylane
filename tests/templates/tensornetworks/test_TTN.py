@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.templates.tensornetworks.ttn import TTN, compute_indices
 
 

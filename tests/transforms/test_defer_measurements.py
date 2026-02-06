@@ -23,7 +23,7 @@ from functools import partial
 import pytest
 from device_shots_to_analytic import shots_to_analytic
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.exceptions import DeviceError

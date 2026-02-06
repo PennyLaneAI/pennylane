@@ -23,7 +23,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode

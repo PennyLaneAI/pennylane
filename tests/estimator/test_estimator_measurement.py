@@ -16,7 +16,7 @@ Unit tests for functions needed for estimating the complexity of measuring expec
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]

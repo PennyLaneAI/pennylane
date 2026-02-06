@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error, too-few-public-methods, bad-continuation
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as pnp
 from pennylane.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
 

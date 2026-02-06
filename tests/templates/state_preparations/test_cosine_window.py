@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import WireError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms.decompose import DecomposeInterpreter

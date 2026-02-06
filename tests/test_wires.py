@@ -19,7 +19,7 @@ from importlib import import_module, util
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import WireError
 from pennylane.wires import Wires
 

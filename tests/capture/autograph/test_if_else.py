@@ -20,7 +20,7 @@ converting if/else statements to qml.cond."""
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import cond, measure
 
 pytestmark = pytest.mark.capture

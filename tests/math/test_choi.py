@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.math import choi_matrix
 

@@ -19,7 +19,7 @@ import functools
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import expval, sample, var
 
 Z = np.array([[1, 0], [0, -1]])

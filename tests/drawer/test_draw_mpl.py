@@ -20,7 +20,7 @@ page in the developement guide.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 
 mpl = pytest.importorskip("matplotlib")

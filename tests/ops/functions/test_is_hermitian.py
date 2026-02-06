@@ -17,7 +17,7 @@ Unit tests for the qml.is_hermitian function
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 
 hermitian_ops = (

@@ -17,7 +17,7 @@ Unit tests for ensuring that objects that are pickled/unpickled are identical to
 
 import pickle
 
-import pennylane as qml
+import pennylane as qp
 
 
 def test_unpickling_tensor():

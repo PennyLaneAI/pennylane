@@ -20,7 +20,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.exceptions import WireError
 from pennylane.ops import channel

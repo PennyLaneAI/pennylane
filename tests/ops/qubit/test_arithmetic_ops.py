@@ -21,7 +21,7 @@ import itertools
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 

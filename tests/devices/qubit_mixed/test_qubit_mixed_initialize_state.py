@@ -15,7 +15,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import BasisState, StatePrep, math
 from pennylane import numpy as np
 from pennylane.devices.qubit_mixed import create_initial_state

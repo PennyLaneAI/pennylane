@@ -14,7 +14,7 @@
 """
 Unit tests for the ``OperationRecorder`` in PennyLane.
 """
-import pennylane as qml
+import pennylane as qp
 
 
 class TestOperationRecorder:

@@ -17,7 +17,7 @@ import math
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.decompositions.normal_forms import (
     _clifford_gates_to_SU2,
     _clifford_group_to_SO3,

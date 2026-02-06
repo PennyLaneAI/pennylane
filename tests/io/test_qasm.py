@@ -21,7 +21,7 @@ from textwrap import dedent
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.wires import Wires
 
 

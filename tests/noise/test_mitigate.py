@@ -18,7 +18,7 @@ Tests for mitigation transforms.
 import pytest
 from packaging import version
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.noise.insert_ops import insert
 from pennylane.noise.mitigate import (

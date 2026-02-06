@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.math import is_independent
 from pennylane.math.is_independent import _get_random_args

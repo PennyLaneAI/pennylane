@@ -15,7 +15,7 @@
 # pylint:disable=protected-access, wrong-import-position
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.core import TransformError
 
 jax = pytest.importorskip("jax")

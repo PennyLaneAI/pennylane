@@ -16,7 +16,7 @@ Unit tests for the :mod:`pauli` interface functions in ``pauli/pauli_interface.p
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.pauli import pauli_word_prefactor
 
 ops_factors = (

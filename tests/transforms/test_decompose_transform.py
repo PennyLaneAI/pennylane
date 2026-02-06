@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operation

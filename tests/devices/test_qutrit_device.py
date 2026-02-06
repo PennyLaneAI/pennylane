@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.devices import QubitDevice, QutritDevice
 from pennylane.exceptions import DeviceError, QuantumFunctionError

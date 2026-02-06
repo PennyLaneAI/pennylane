@@ -17,7 +17,7 @@ Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitD
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 

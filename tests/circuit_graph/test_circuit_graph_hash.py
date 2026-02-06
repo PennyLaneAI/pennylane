@@ -18,7 +18,7 @@ Unit and integration tests for creating the :mod:`pennylane` :attr:`tape.graph.h
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 

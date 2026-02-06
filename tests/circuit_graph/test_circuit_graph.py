@@ -19,7 +19,7 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.ops.mid_measure.measurement_value import MeasurementValue

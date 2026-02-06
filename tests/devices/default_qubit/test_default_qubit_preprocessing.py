@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition

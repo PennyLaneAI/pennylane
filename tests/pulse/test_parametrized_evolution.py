@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import DefaultQubit
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian

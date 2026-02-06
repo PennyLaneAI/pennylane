@@ -16,7 +16,7 @@ Tests for the basic default behavior of the Device API.
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import (
     DeviceCapabilities,

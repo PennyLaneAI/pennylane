@@ -17,7 +17,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
 from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum

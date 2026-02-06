@@ -18,7 +18,7 @@ Tests for the AmplitudeAmplification template.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 

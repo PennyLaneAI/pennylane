@@ -15,7 +15,7 @@
 # pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import X, Y, Z
 from pennylane.liealg import (
     cartan_decomp,

@@ -20,7 +20,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import queuing
 from pennylane.measurements import MeasurementValue
 from pennylane.ops import RX

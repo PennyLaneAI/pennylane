@@ -20,7 +20,7 @@ import numpy as np
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 k_delta_sz_init_state_wires = [
     (1, 0, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3])),

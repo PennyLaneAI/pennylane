@@ -6,7 +6,7 @@ from math import isclose
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms.transpile import transpile
 

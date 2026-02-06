@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule

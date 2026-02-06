@@ -20,7 +20,7 @@ from unittest import mock
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")

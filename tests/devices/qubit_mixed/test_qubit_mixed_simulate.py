@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, simulate
 

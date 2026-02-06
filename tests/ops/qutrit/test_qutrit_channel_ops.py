@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from numpy.linalg import matrix_power
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.ops.qutrit import channel

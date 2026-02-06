@@ -18,7 +18,7 @@ from collections import defaultdict
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.estimator.estimate import estimate
 from pennylane.estimator.ops.op_math.symbolic import Adjoint
 from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, X, Z

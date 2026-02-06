@@ -16,7 +16,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import queuing
 from pennylane.decomposition.resources import (
     Resources,

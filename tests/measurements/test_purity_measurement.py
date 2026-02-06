@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import PurityMP
 
 # pylint: disable=too-many-arguments

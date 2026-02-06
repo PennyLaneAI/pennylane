@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 from packaging.version import Version
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import DefaultGaussian
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))

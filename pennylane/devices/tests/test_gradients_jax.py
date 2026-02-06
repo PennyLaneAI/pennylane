@@ -17,7 +17,7 @@ import numpy as np
 # pylint:disable=no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")

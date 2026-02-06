@@ -17,7 +17,7 @@ Integration tests for differentiation with capture.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

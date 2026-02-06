@@ -17,7 +17,7 @@ Unit tests for the comm function
 # pylint: disable=too-many-arguments, unused-variable
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.ops import SProd
 from pennylane.pauli import PauliSentence, PauliWord

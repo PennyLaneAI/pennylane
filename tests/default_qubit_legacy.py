@@ -25,7 +25,7 @@ from string import ascii_letters
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import BasisState, Snapshot, StatePrep
 from pennylane._version import __version__
 from pennylane.devices._qubit_device import QubitDevice

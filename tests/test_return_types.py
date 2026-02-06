@@ -17,7 +17,7 @@ Unit tests for the new return types.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError
 from pennylane.measurements import MeasurementProcess
 

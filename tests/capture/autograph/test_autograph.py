@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 from malt.core import converter
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import grad, jacobian, measure
 from pennylane.capture.autograph.transformer import (
     NESTED_OPTIONS,

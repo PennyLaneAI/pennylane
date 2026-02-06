@@ -18,7 +18,7 @@ Tests for the CommutingEvolution template.
 import pytest
 from scipy.linalg import expm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 

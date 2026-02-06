@@ -14,7 +14,7 @@
 """Unit testing of christiansen mapping for Bose operators."""
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import I, X, Y, Z
 from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 from pennylane.ops import SProd

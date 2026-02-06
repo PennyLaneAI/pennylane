@@ -18,7 +18,7 @@ import shutil
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 def cmd_exists(cmd):

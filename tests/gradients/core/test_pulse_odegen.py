@@ -21,7 +21,7 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients.pulse_gradient_odegen import (
     _generate_tapes_and_coeffs,

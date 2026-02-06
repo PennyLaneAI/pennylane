@@ -18,7 +18,7 @@ from random import shuffle
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
 from pennylane.devices.qubit.sampling import sample_probs
 from pennylane.devices.qubit.simulate import _FlexShots

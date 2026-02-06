@@ -26,7 +26,7 @@ import jax.numpy as jnp
 from jax import make_jaxpr
 from jax.core import eval_jaxpr
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.capture.autograph import run_autograph
 
 

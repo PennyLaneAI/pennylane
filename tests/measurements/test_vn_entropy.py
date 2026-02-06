@@ -17,7 +17,7 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires

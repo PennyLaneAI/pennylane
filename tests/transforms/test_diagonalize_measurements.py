@@ -19,7 +19,7 @@ observables in measurements on a tape.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import Hadamard, X, Y, Z
 from pennylane.measurements import ExpectationMP, SampleMP, VarianceMP
 from pennylane.pauli import diagonalize_qwc_pauli_words

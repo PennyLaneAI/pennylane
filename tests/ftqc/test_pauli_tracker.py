@@ -18,7 +18,7 @@ import random
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ftqc import RotXZX, get_byproduct_corrections
 from pennylane.ftqc.pauli_tracker import (
     _parse_mid_measurements,

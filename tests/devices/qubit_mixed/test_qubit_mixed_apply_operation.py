@@ -20,7 +20,7 @@ import pytest
 from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import (
     CNOT,
     ISWAP,

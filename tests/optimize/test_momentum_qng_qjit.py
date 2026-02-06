@@ -18,7 +18,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 dev_names = (
     "default.qubit",

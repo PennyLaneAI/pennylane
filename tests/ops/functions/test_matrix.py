@@ -25,7 +25,7 @@ from gate_data import Rotx as RX
 from gate_data import Roty as RY
 from gate_data import S, X, Y, Z
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.transforms import TransformError

@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])

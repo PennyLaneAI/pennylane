@@ -18,7 +18,7 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,

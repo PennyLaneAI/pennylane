@@ -35,7 +35,7 @@ from gate_data import (
 )
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation, Operator

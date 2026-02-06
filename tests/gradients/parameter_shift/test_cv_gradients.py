@@ -20,7 +20,7 @@ import autograd
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as anp  # only to be used inside classical computational nodes
 
 alpha = 0.5  # displacement in tests

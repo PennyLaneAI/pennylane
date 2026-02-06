@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 from gate_data import CNOT, I, Toffoli, X
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (

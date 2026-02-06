@@ -18,7 +18,7 @@ import uuid
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import allocate, deallocate
 from pennylane.allocation import (
     Allocate,

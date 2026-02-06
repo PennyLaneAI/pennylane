@@ -17,7 +17,7 @@ import numpy as np
 # pylint:disable=no-self-use,no-member
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 torch = pytest.importorskip("torch")
 

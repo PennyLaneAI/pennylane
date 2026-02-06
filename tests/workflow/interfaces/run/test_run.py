@@ -17,7 +17,7 @@
 # pylint: disable=too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.devices import ExecutionConfig
 from pennylane.tape import QuantumScript

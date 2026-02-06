@@ -17,7 +17,7 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 # pylint: disable=protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import DefaultMixed
 from pennylane.math import Interface
 

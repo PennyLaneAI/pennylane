@@ -16,7 +16,7 @@ Tests for the `resolve_dynamic_wires` transform.
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.allocation import AllocateState
 
 

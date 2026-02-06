@@ -19,7 +19,7 @@ import sys
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as pnp
 from pennylane.pauli import are_identical_pauli_words, are_pauli_words_qwc

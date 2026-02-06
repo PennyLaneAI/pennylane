@@ -1,6 +1,6 @@
 """Convenience gate representations for testing"""
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as np
 

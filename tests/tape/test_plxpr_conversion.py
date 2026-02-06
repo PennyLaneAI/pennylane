@@ -16,7 +16,7 @@ Tests for CollectOpsandMeas and plxpr_to_tape
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.condition import Conditional
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]

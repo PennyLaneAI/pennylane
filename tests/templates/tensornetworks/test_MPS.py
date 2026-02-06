@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-many-arguments
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.templates.tensornetworks.mps import MPS, compute_indices_MPS
 
 

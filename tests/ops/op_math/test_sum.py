@@ -21,7 +21,7 @@ import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
 from pennylane.exceptions import MatrixUndefinedError

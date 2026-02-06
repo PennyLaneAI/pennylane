@@ -21,7 +21,7 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,

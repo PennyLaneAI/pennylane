@@ -15,7 +15,7 @@
 Tests for the while_loop
 """
 
-import pennylane as qml
+import pennylane as qp
 
 
 def test_while_loop_python_fallback():

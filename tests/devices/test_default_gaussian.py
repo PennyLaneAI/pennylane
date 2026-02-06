@@ -22,7 +22,7 @@ import pytest
 from scipy.linalg import block_diag
 from scipy.special import factorial as fac
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.default_gaussian import (
     beamsplitter,
     coherent_state,

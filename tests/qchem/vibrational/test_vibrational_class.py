@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vibrational_class
 

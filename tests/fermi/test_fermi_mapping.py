@@ -14,7 +14,7 @@
 """Unit testing of conversion functions for Fermi operators."""
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.fermi.conversion import jordan_wigner
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.ops import Identity, SProd

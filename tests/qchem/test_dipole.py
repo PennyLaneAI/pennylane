@@ -17,7 +17,7 @@ Unit tests for functions needed for computing the dipole.
 # pylint: disable=too-many-arguments
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem

@@ -23,7 +23,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable=wrong-import-position
-import pennylane as qml
+import pennylane as qp
 from pennylane.capture.primitives import (
     cond_prim,
     for_loop_prim,

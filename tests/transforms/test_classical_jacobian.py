@@ -17,7 +17,7 @@ import numpy as np
 # pylint: disable=too-many-arguments
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients.classical_jacobian import classical_jacobian
 

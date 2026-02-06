@@ -20,7 +20,7 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.gradients.general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from pennylane.gradients.pulse_gradient import (
     _parshift_and_integrate,

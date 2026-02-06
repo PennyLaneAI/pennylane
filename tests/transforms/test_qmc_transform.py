@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from scipy.stats import norm, unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.transforms.qmc import (
     _apply_controlled_v,

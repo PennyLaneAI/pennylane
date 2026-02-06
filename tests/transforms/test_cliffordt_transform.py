@@ -20,7 +20,7 @@ from functools import reduce
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.decompositions.clifford_t_transform import (
     _CLIFFORD_T_GATES,
     _CachedCallable,

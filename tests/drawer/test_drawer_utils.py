@@ -17,7 +17,7 @@ Unit tests for the pennylane.drawer.utils` module.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.drawer.utils import (
     convert_wire_order,
     cwire_connections,

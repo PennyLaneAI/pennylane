@@ -20,7 +20,7 @@ import itertools
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.capture.autograph import run_autograph
 from pennylane.ops import Hadamard, MultiControlledX, PauliZ
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule

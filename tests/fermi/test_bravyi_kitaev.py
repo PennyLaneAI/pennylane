@@ -2,7 +2,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.fermi.conversion import bravyi_kitaev
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.ops import Identity, SProd

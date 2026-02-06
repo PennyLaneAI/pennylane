@@ -21,7 +21,7 @@ from operator import matmul
 import pytest
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Prod, SProd, Sum

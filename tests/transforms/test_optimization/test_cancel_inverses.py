@@ -18,7 +18,7 @@ Unit tests for the optimization transform ``cancel_inverses``.
 import pytest
 from utils import compare_operation_lists
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms.optimization import cancel_inverses
 from pennylane.wires import Wires

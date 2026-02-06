@@ -16,7 +16,7 @@ Unit tests for the backbone of the :mod:`pennylane.capture` module.
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 @pytest.mark.jax

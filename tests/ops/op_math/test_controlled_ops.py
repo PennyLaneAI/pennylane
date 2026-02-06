@@ -22,7 +22,7 @@ from scipy import sparse
 from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
 from pennylane.wires import Wires
 

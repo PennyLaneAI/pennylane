@@ -18,7 +18,7 @@ Unit tests for the ParametrizedHamiltonianPytree class
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 try:
     from pennylane.pulse.hardware_hamiltonian import _reorder_parameters, amplitude_and_phase, drive

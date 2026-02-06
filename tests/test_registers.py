@@ -17,7 +17,7 @@ Unit tests for pennylane.registers.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.wires import Wires
 
 

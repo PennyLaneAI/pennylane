@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from flaky import flaky
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = pytest.mark.skip_unsupported
 

@@ -18,7 +18,7 @@ Unit tests for the qml.map_wires function
 # pylint: disable=too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires

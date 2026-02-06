@@ -19,7 +19,7 @@ from collections import defaultdict
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.operation import Operation
 from pennylane.ops.mid_measure import MidMeasure

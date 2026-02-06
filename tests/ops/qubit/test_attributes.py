@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
 
 # Dummy attribute

@@ -16,7 +16,7 @@ Unit tests for the qml.is_unitary function
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 unitary_ops = (
     qml.Identity(0),

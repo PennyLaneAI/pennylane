@@ -18,7 +18,7 @@ from collections import OrderedDict
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as np
 from pennylane.wires import Wires
 

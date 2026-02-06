@@ -18,7 +18,7 @@ This file provides a device that calculates derivatives via parameter shift.
 import dataclasses
 from typing import Optional
 
-import pennylane as qml
+import pennylane as qp
 
 
 # pylint: disable=unused-argument

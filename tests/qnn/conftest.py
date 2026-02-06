@@ -17,7 +17,7 @@ Common fixtures for the qnn module.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 @pytest.fixture

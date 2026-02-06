@@ -19,7 +19,7 @@ import re
 # pylint:disable=protected-access, unused-argument
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError

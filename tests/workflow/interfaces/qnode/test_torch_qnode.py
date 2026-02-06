@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
 from pennylane.exceptions import DeviceError

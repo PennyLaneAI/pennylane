@@ -17,7 +17,7 @@ from itertools import product
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue, MidMeasure

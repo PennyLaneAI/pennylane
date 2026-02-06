@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 from jax import numpy as jnp  # pylint: disable=wrong-import-position
 
-import pennylane as qml  # pylint: disable=wrong-import-position
+import pennylane as qp  # pylint: disable=wrong-import-position
 
 # must be below the importorskip
 # pylint: disable=wrong-import-position

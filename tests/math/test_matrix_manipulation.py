@@ -21,7 +21,7 @@ from gate_data import CNOT, II, SWAP, I, Toffoli
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.math import expand_matrix, expand_vector, sqrt_matrix, sqrt_matrix_sparse
 from pennylane.math.quantum import _denman_beavers_iterations

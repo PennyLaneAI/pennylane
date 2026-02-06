@@ -18,7 +18,7 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import (
     DecompositionUndefinedError,

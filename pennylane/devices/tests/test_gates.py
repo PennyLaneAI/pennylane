@@ -28,7 +28,7 @@ import pytest
 from flaky import flaky
 from scipy.linalg import block_diag
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError
 
 pytestmark = pytest.mark.skip_unsupported

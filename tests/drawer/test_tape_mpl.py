@@ -23,7 +23,7 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.drawer import tape_mpl
 from pennylane.ops.op_math import Controlled
 from pennylane.tape import QuantumScript

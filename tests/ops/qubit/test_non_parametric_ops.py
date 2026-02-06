@@ -45,7 +45,7 @@ from gate_data import (
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 

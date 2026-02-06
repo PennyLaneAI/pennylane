@@ -18,7 +18,7 @@ Unit tests for the available conditional utitlities for noise models.
 # pylint: disable = too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.noise import meas_eq, op_eq, op_in, partial_wires, wires_eq, wires_in
 
 

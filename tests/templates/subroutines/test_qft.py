@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from gate_data import QFT
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.capture.autograph import run_autograph
 
 

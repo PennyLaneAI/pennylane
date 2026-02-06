@@ -16,7 +16,7 @@ Integration tests for the qnode for all interfaces.
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 
 @pytest.mark.parametrize(

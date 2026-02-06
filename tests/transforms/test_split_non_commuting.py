@@ -18,7 +18,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms import split_non_commuting
 from pennylane.transforms.split_non_commuting import ShotDistFunction
 

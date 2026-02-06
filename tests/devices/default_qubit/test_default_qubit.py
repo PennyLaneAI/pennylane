@@ -19,7 +19,7 @@ from unittest import mock
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.exceptions import DeviceError
 

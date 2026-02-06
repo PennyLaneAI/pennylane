@@ -19,7 +19,7 @@ from functools import reduce
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as qnp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import allclose, isclose

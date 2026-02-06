@@ -17,7 +17,7 @@ import pytest
 from dummy_debugger import Debugger
 from flaky import flaky
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.devices.qutrit_mixed import get_final_state, measure_final_state, simulate
 

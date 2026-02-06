@@ -21,7 +21,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.pulse.parametrized_hamiltonian import ParametrizedHamiltonian
 
 

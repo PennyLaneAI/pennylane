@@ -18,7 +18,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit import measure as apply_qubit_measurement
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ftqc import (

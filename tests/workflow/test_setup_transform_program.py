@@ -16,7 +16,7 @@
 from dataclasses import replace
 from unittest.mock import MagicMock
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import ExecutionConfig
 from pennylane.transforms.core import CompilePipeline
 from pennylane.workflow._setup_transform_program import _setup_transform_program

@@ -18,7 +18,7 @@ Unit tests for the HardwareHamiltonian class.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.pulse import HardwareHamiltonian, drive, rydberg_interaction
 from pennylane.pulse.hardware_hamiltonian import (
     AmplitudeAndPhase,

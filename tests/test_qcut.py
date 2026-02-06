@@ -31,7 +31,7 @@ from networkx import __version__ as networkx_version
 from networkx import number_of_selfloops
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qcut
 from pennylane.queuing import WrappedObj

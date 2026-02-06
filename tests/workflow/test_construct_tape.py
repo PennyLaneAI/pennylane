@@ -18,7 +18,7 @@ Contains tests for `construct_tape`.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.workflow import construct_tape
 
 

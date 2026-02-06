@@ -17,7 +17,7 @@ Test private functions computing Trotter-Suzuki product formula errors.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as qnp
 from pennylane.resource.error.trotter_error import (
     _commutator_error,

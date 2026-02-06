@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 

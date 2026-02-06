@@ -19,7 +19,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.devices.qubit_mixed import create_initial_state, measure_with_samples, sample_state
 from pennylane.measurements import Shots

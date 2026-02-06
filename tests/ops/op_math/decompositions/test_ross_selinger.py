@@ -17,7 +17,7 @@ import math
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.decompositions.rings import ZOmega
 from pennylane.ops.op_math.decompositions.ross_selinger import (
     _domain_correction,

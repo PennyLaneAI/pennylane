@@ -21,7 +21,7 @@ import numpy as onp
 import pytest
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.exceptions
 from pennylane import numpy as np
 from pennylane.numpy.tensor import tensor_to_arraybox

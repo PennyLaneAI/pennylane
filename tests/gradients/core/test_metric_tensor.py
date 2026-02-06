@@ -21,7 +21,7 @@ import importlib
 import pytest
 from scipy.linalg import block_diag
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients.metric_tensor import _get_aux_wire

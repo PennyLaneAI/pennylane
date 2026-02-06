@@ -30,7 +30,7 @@ from gate_data import (
 )
 from scipy.linalg import expm, fractional_matrix_power
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 
 PARAMETRIZED_QCHEM_OPERATIONS = [

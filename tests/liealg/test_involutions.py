@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-few-public-methods, protected-access, no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import X, Y, Z
 from pennylane.liealg import (
     AI,

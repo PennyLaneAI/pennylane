@@ -18,7 +18,7 @@ import math
 import pytest
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.decompositions.solovay_kitaev import (
     _approximate_set,
     _contains_SU2,

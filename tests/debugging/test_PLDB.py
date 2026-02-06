@@ -19,7 +19,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.debugging import PLDB, pldb_device_manager
 
 

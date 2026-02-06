@@ -17,7 +17,7 @@ Unit tests for the new return types with QNode.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 test_wires = [2, 3, 4]
 devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]

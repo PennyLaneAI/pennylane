@@ -22,7 +22,7 @@ import mcm_utils
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value

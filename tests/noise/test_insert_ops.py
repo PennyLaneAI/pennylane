@@ -17,7 +17,7 @@ Tests for the insert transform.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.noise.insert_ops import insert
 from pennylane.tape import QuantumScript
 

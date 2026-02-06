@@ -5,7 +5,7 @@ Tests for the combine_global_phases transform.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms import combine_global_phases
 
 

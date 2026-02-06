@@ -18,7 +18,7 @@ from textwrap import dedent
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,

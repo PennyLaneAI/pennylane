@@ -15,7 +15,7 @@
 # pylint: disable=import-outside-toplevel,protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 catalyst = pytest.importorskip("catalyst")
 mpl = pytest.importorskip("matplotlib")

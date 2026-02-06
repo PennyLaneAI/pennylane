@@ -24,7 +24,7 @@ from gate_data import I, X, Y, Z
 from scipy.sparse import csr_matrix, kron
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_csr_matrix,

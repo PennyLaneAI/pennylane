@@ -16,7 +16,7 @@ Tests for capturing differentiation into jaxpr.
 """
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

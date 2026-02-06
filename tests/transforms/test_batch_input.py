@@ -18,7 +18,7 @@ Unit tests for the ``batch_inputs`` transform.
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 

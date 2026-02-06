@@ -20,7 +20,7 @@ import numpy as np
 # pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.resource.error import (
     AlgorithmicError,

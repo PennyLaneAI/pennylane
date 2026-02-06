@@ -17,7 +17,7 @@ Unit tests for functions needed to computing integrals over basis functions.
 # pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane import qchem
 

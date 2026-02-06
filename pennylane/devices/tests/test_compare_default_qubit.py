@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from flaky import flaky
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
 

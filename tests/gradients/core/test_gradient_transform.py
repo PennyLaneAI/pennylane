@@ -16,7 +16,7 @@ import inspect
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
     SUPPORTED_GRADIENT_KWARGS,

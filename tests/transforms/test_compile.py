@@ -19,7 +19,7 @@ from functools import partial
 import pytest
 from test_optimization.utils import compare_operation_lists
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.transforms import unitary_to_rot
 from pennylane.transforms.compile import compile

@@ -17,7 +17,7 @@ Tests for the gradients.hadamard_gradient module.
 # pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import hadamard_gradient

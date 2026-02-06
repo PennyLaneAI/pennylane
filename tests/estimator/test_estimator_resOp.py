@@ -21,7 +21,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.estimator.ops as qre_ops
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep

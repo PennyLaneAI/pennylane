@@ -14,7 +14,7 @@
 """Unit tests for the ``Evolution`` operator."""
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Evolution, Exp

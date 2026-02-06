@@ -15,7 +15,7 @@
 # pylint:disable=wrong-import-position, protected-access
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")

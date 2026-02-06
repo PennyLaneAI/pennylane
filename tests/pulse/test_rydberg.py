@@ -19,7 +19,7 @@ Tests for everything related to rydberg system specific functionality.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.pulse import rydberg_drive, rydberg_interaction
 from pennylane.pulse.hardware_hamiltonian import (
     AmplitudeAndPhase,

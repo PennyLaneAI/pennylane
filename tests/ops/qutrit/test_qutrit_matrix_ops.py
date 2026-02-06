@@ -21,7 +21,7 @@ import pytest
 from gate_data import TSWAP
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.wires import Wires
 

@@ -16,7 +16,7 @@
 # pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position, too-many-positional-arguments
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
 
 jax = pytest.importorskip("jax")

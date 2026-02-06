@@ -18,7 +18,7 @@ Tests for the add_noise transform.
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.noise.add_noise import add_noise
 from pennylane.tape import QuantumScript
 

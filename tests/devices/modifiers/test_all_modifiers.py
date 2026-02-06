@@ -17,7 +17,7 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import Device
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 

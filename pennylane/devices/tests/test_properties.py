@@ -15,7 +15,7 @@
 # pylint: disable=no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as pnp
 from pennylane.exceptions import QuantumFunctionError
 

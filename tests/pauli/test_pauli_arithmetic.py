@@ -20,7 +20,7 @@ from copy import copy, deepcopy
 import pytest
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 

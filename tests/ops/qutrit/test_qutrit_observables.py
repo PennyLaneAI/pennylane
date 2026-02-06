@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from gate_data import GELL_MANN
 
-import pennylane as qml
+import pennylane as qp
 
 # pylint: disable=protected-access, unused-argument
 

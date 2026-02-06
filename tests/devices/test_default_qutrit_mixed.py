@@ -18,7 +18,7 @@ from functools import partial, reduce
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as qnp
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig

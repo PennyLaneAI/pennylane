@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.trotter_error import ProductFormula, generic_fragments, perturbation_error
 from pennylane.qchem import fermionic_observable
 

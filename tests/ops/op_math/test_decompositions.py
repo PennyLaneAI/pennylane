@@ -23,7 +23,7 @@ import pytest
 from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _compute_num_cnots,

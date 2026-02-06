@@ -19,7 +19,7 @@ import sys
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     _recursive_find_mcm_stats_layer,

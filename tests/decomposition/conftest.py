@@ -18,7 +18,7 @@
 
 from collections import defaultdict
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import auto_wrap
 from pennylane.decomposition.symbolic_decomposition import (

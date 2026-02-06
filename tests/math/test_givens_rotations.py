@@ -18,7 +18,7 @@ Unit tests for functions needed for performing givens decomposition of a unitary
 import pytest
 from scipy.stats import ortho_group, unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
 

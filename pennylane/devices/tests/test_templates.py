@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.exceptions import DeviceError
 

@@ -22,7 +22,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.kernels as kern
 from pennylane import numpy as pnp
 

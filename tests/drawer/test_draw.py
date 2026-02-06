@@ -18,7 +18,7 @@ Integration tests for the draw transform
 # pylint: disable=import-outside-toplevel
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.drawer import draw
 

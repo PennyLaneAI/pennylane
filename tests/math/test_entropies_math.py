@@ -15,7 +15,7 @@
 # pylint: disable=too-many-arguments
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces

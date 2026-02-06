@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.rz_phase_gradient import _binary_repr_int, _rz_phase_gradient
 
 

@@ -18,7 +18,7 @@ import copy
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, QubitManager
 
 

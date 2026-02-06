@@ -15,7 +15,7 @@
 # pylint: disable=no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 from .conftest import get_legacy_capabilities
 

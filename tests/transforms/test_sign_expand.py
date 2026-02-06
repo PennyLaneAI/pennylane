@@ -13,7 +13,7 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.tape
 
 # Defines the device used for all tests

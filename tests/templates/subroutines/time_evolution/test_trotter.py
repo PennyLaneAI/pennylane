@@ -21,7 +21,7 @@ from functools import partial, reduce
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule

@@ -17,7 +17,7 @@ This module contains tests for class needed to map PennyLane operations to their
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.labs.resource_estimation.ops as re_ops
 import pennylane.labs.resource_estimation.templates as re_temps
 import pennylane.templates as qtemps

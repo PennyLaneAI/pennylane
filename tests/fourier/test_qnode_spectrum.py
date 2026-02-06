@@ -20,7 +20,7 @@ from collections import OrderedDict
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.fourier.qnode_spectrum import _process_ids, qnode_spectrum
 from pennylane.measurements import SampleMP, StateMP, VarianceMP

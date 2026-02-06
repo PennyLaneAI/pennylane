@@ -17,7 +17,7 @@ This submodule tests strategy structure for defining custom plxpr interpreters
 # pylint: disable=protected-access, too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")

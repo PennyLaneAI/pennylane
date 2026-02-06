@@ -17,7 +17,7 @@ import numpy as np
 # pylint: disable=protected-access,too-few-public-methods,unnecessary-lambda
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import execute
 from pennylane.gradients import param_shift
 from pennylane.typing import TensorLike

@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 from scipy.stats import ttest_ind
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ops.functions.equal import assert_equal
 

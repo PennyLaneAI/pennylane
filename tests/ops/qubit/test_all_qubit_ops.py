@@ -20,7 +20,7 @@ the more specific file.
 import pytest
 from gate_data import I
 
-import pennylane as qml
+import pennylane as qp
 
 
 class TestOperations:

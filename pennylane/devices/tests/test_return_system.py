@@ -15,7 +15,7 @@
 # pylint: disable=no-self-use
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np  # Import from PennyLane to mirror the standard approach in demos
 
 pytestmark = pytest.mark.skip_unsupported

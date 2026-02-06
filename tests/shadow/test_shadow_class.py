@@ -18,7 +18,7 @@
 import numpy as onp
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
 

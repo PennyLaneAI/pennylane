@@ -18,7 +18,7 @@ import math
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 import pennylane.estimator as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_config import ResourceConfig

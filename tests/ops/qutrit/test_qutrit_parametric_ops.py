@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 from gate_data import TCLOCK, TSHIFT
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as npp
 from pennylane.ops.qutrit import validate_subspace
 from pennylane.wires import Wires

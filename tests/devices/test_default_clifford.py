@@ -20,7 +20,7 @@ import pytest
 import scipy as sp
 from dummy_debugger import Debugger
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.default_clifford import _pl_op_to_stim
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 

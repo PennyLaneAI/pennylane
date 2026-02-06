@@ -17,7 +17,7 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements.expval import ExpectationMP
 
 

@@ -21,7 +21,7 @@ import pytest
 from numpy.linalg import matrix_power
 from numpy.polynomial.chebyshev import Chebyshev
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (

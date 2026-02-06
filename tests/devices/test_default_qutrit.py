@@ -21,7 +21,7 @@ import pytest
 from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
 from scipy.stats import unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.wires import Wires

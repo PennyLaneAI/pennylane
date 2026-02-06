@@ -15,7 +15,7 @@
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.workflow import get_best_diff_method
 
 

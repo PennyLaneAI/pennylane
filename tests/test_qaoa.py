@@ -24,7 +24,7 @@ from networkx import Graph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import qaoa
 from pennylane.qaoa.cycle import (
     _inner_net_flow_constraint_hamiltonian,

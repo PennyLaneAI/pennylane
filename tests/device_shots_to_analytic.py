@@ -18,7 +18,7 @@ It can be used to eliminate flakiness in shot vector tests.
 import copy
 from types import MethodType
 
-import pennylane as qml
+import pennylane as qp
 
 
 def shots_to_analytic(dev: qml.devices.Device) -> qml.devices.Device:

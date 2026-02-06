@@ -19,7 +19,7 @@ import numpy as np
 # pylint: disable=too-few-public-methods
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane import ops as qml_ops
 from pennylane.capture.autograph import run_autograph

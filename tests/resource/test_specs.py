@@ -16,7 +16,7 @@
 # pylint: disable=invalid-sequence-index
 import pytest
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
