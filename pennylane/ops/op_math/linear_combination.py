@@ -337,6 +337,7 @@ class LinearCombination(Sum):
 
         if isinstance(other, Operator):
             if other.arithmetic_depth == 0:
+                # other will be de-queued in the following line, if it is in the current queue.
                 new_ops = [op @ other for op in self.ops]
 
                 # build new pauli rep using old pauli rep
@@ -344,6 +345,7 @@ class LinearCombination(Sum):
                     new_pr = pr1 @ pr2
                 else:
                     new_pr = None
+                # other already has been removed above, as mentioned
                 qml.QueuingManager.remove(self)
                 return LinearCombination(self.coeffs, new_ops, _pauli_rep=new_pr)
             return qml.prod(self, other)
