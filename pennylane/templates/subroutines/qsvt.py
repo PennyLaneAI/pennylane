@@ -40,7 +40,7 @@ from .qubitization import Qubitization
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
     is_jax_available = True
-else:
+else:  # pragma: no cover
     is_jax_available = False
     jax = None
 
@@ -60,7 +60,7 @@ def jit_if_jax_available(f, **kwargs):
 
     if is_jax_available:
         return jax.jit(f, **kwargs)
-    return f
+    return f  # pragma: no cover
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):

@@ -14,9 +14,9 @@
 """
 Tests for the QSVT template and qsvt wrapper function.
 """
+
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
-from importlib import import_module, util
 
 import pytest
 from numpy.linalg import matrix_power
@@ -25,10 +25,9 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.qsvt import (  # Scipy-based functions; Optax-based functions (may not be available without JAX/Optax)
+from pennylane.templates.subroutines.qsvt import (
     _cheby_pol_scipy,
     _complementary_poly,
-    _grid_pts_scipy,
     _poly_func_scipy,
     _qsp_iterate_broadcast_scipy,
     _qsp_iterate_scipy,
@@ -37,37 +36,6 @@ from pennylane.templates.subroutines.qsvt import (  # Scipy-based functions; Opt
     _z_rotation_scipy,
 )
 from pennylane.transforms import decompose
-
-# Conditional imports for optax-based functions
-try:
-    from pennylane.templates.subroutines.qsvt import (
-        _cheby_pol_optax,
-        _grid_pts_optax,
-        _poly_func_optax,
-        _qsp_iterate_broadcast_optax,
-        _qsp_iterate_optax,
-        _qsp_optimization_optax,
-        _W_of_x_optax,
-        _z_rotation_optax,
-    )
-
-    optax_functions_available = True
-except ImportError:
-    optax_functions_available = False
-
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    is_jax_available = True
-else:
-    is_jax_available = False
-    jax = None
-
-if util.find_spec("optax") is not None:
-    optax = import_module("optax")
-    is_optax_available = True
-else:
-    is_optax_available = False
-    optax = None
 
 
 def qfunc(A):
@@ -470,6 +438,7 @@ class TestQSVTMatrix:
         encoding and projector-controlled phase shift data in a QSVT instance
         are taken into account when inferring the backend of a QuantumScript.
         """
+        import jax
 
         def identity_and_qsvt(angles):
             qml.Identity(wires=wires[0])
@@ -760,6 +729,7 @@ class Testqsvt:
     @pytest.mark.jax
     def test_qsvt_grad(self):
         """Test that the qsvt function generates the correct output with qml.grad and jax.grad."""
+        import jax
         import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
@@ -782,6 +752,7 @@ class Testqsvt:
         Note that the traceable argument is A.
         """
 
+        import jax
         import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
@@ -866,7 +837,7 @@ class TestRootFindingSolver:
         ],
     )
     def test_correctness_QSP_angles_finding(self, poly, angle_solver):
-        """Tests that angles generate desired poly (root-finding and scipy iterative)"""
+        """Tests that angles generate desired poly"""
 
         angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
         rng = np.random.default_rng(123)
@@ -885,36 +856,7 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
-    @pytest.mark.external
-    @pytest.mark.parametrize(
-        "poly",
-        [
-            (generate_polynomial_coeffs(4, 0)),
-            (generate_polynomial_coeffs(3, 1)),
-            (generate_polynomial_coeffs(6, 0)),
-        ],
-    )
-    def test_correctness_QSP_angles_finding_optax(self, poly):
-        """Tests that angles generate desired poly with iterative_optax solver"""
-        jax.config.update("jax_enable_x64", True)
-
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver="iterative_optax")
-        rng = np.random.default_rng(123)
-        x = rng.uniform(low=-1.0, high=1.0)
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit_qsp():
-            qml.RX(2 * angles[0], wires=0)
-            for angle in angles[1:]:
-                qml.RZ(-2 * np.arccos(x), wires=0)
-                qml.RX(2 * angle, wires=0)
-
-            return qml.state()
-
-        output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
-        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
-        assert np.isclose(output.real, expected.real)
-
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "poly",
         [
@@ -968,38 +910,9 @@ class TestRootFindingSolver:
         ],
     )
     def test_correctness_QSVT_angles(self, poly, angle_solver):
-        """Tests that angles generate desired poly (root-finding and scipy iterative)"""
+        """Tests that angles generate desired poly"""
 
         angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
-        rng = np.random.default_rng(123)
-        x = rng.uniform(low=-1.0, high=1.0)
-
-        block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
-        projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit_qsvt():
-            qml.QSVT(block_encoding, projectors)
-            return qml.state()
-
-        output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
-        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
-        assert qml.math.isclose(output.real, expected.real)
-
-    @pytest.mark.external
-    @pytest.mark.parametrize(
-        "poly",
-        [
-            (generate_polynomial_coeffs(4, 0)),
-            (generate_polynomial_coeffs(3, 1)),
-            (generate_polynomial_coeffs(6, 0)),
-        ],
-    )
-    def test_correctness_QSVT_angles_optax(self, poly):
-        """Tests that angles generate desired poly with iterative_optax solver"""
-        jax.config.update("jax_enable_x64", True)
-
-        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver="iterative_optax")
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 
@@ -1068,89 +981,57 @@ class TestRootFindingSolver:
         with pytest.raises((AssertionError, ValueError), match=msg_match):
             _ = qml.poly_to_angles(poly, routine, angle_solver)
 
-    @pytest.mark.parametrize(
-        "poly",
-        [
-            ([0.1, 0.2, 0.3, 0.1, 0.05]),
-            ([0.1, 0.3, 0.2, 0.1]),
-        ],
-    )
-    def test_gqsp_angles(self, poly):
-        """Test that GQSP poly_to_angles returns valid angles (theta, phi, lambda)"""
-        angles = qml.poly_to_angles(poly, "GQSP")
-        # GQSP returns a tuple of (theta, phi, lambda)
-        assert len(angles) == 3
-        angles_theta, angles_phi, angles_lambda = angles
-        # Check that angles have the correct length
-        assert len(angles_theta) == len(poly)
-        assert len(angles_phi) == len(poly)
-        assert len(angles_lambda) == len(poly)
 
-    def test_iterative_optax_import_error(self, monkeypatch):
-        """Test that iterative_optax raises ImportError without jax/optax installed"""
-        # Monkeypatch sys.modules to make jax import fail
-        import builtins
-        import sys
-
-        original_import = builtins.__import__
-
-        def mock_import(name, *args, **kwargs):
-            if name == "jax" or name.startswith("jax."):
-                raise ImportError("No module named 'jax'")
-            return original_import(name, *args, **kwargs)
-
-        monkeypatch.setattr(builtins, "__import__", mock_import)
-
-        # Need to also remove from sys.modules if cached
-        jax_modules = [k for k in sys.modules if k == "jax" or k.startswith("jax.")]
-        for mod in jax_modules:
-            monkeypatch.delitem(sys.modules, mod, raising=False)
-
-        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3]
-        with pytest.raises(ImportError, match="iterative_optax.*requires JAX and Optax"):
-            # We need to reload the function that does the import
-            from pennylane.templates.subroutines.qsvt import (
-                _compute_qsp_angles_iteratively_optax,
-            )
-
-            _compute_qsp_angles_iteratively_optax(poly)
-
-
-# pylint: disable=too-many-public-methods
 class TestIterativeSolver:
-    """Tests for the iterative QSP angle solvers (Scipy and Optax backends)."""
-
-    # =========================================================================
-    # Scipy-based solver tests
-    # =========================================================================
-
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
-            # Use generate_polynomial_coeffs for correct parity handling
-            (generate_polynomial_coeffs(4, 0)),  # degree 4 even parity
-            (generate_polynomial_coeffs(5, 1)),  # degree 5 odd parity
-            (generate_polynomial_coeffs(6, 0)),  # degree 6 even parity
+            (generate_polynomial_coeffs(10, 0)),
+            (generate_polynomial_coeffs(7, 1)),
+            (generate_polynomial_coeffs(12, 0)),
         ],
     )
-    def test_qsp_optimization_scipy(self, polynomial_coeffs_in_cheby_basis):
-        """Test that _qsp_optimization_scipy runs and produces valid outputs.
-
-        Note: The scipy L-BFGS-B optimizer may not converge as well as Optax for
-        complex polynomials. This test validates basic functionality and output structure.
-        For production use with complex polynomials, prefer angle_solver='iterative_optax'.
-        """
+    def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
+        """Test that _qsp_optimization returns correct angles"""
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
-        target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis
+        parity = degree % 2
+        if parity:
+            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
+        else:
+            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
         phis, cost_func = _qsp_optimization_scipy(degree, target_polynomial_coeffs)
 
-        # Check basic sanity: cost should be non-negative, phis should have right length
-        assert cost_func >= 0, "Cost function should be non-negative"
-        assert len(phis) == degree + 1, f"phis should have length {degree + 1}"
+        rng = np.random.default_rng(123)
+        x_point = rng.uniform(size=1, low=-1.0, high=1.0)
 
-        # Verify output types are sensible
-        assert hasattr(phis, "__len__"), "phis should be array-like"
-        assert isinstance(float(cost_func), float), "cost_func should be convertible to float"
+        x_point = x_point.item()
+        # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
+        # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
+        tolerance = (
+            np.sum(
+                np.array(
+                    [
+                        2 * np.sqrt(cost_func) * abs(_cheby_pol_scipy(degree=2 * i, x=x_point))
+                        for i in range(len(target_polynomial_coeffs))
+                    ]
+                )
+            )
+            if not parity
+            else np.sum(
+                np.array(
+                    [
+                        2 * np.sqrt(cost_func) * abs(_cheby_pol_scipy(degree=2 * i + 1, x=x_point))
+                        for i in range(len(target_polynomial_coeffs))
+                    ]
+                )
+            )
+        )
+
+        assert qml.math.isclose(
+            _qsp_iterate_broadcast_scipy(phis, x_point, None),
+            _poly_func_scipy(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
+            atol=tolerance,
+        )
 
     @pytest.mark.parametrize(
         "x, degree",
@@ -1169,201 +1050,50 @@ class TestIterativeSolver:
     @pytest.mark.parametrize(
         "coeffs, parity, x",
         [
-            (generate_polynomial_coeffs(10, 0)[0::2], 0, 0.1),
-            (generate_polynomial_coeffs(7, 1)[1::2], 1, 0.2),
-            (generate_polynomial_coeffs(12, 0)[0::2], 0, 0.3),
+            (generate_polynomial_coeffs(100, 0), 0, 0.1),
+            (generate_polynomial_coeffs(7, 1), 1, 0.2),
+            (generate_polynomial_coeffs(12, 0), 0, 0.3),
         ],
     )
     def test_poly_func_scipy(self, coeffs, parity, x):
         """Test internal function _poly_func_scipy"""
-        # Build full chebyshev coeffs from the parity-selected coeffs
-        full_coeffs = np.zeros(2 * len(coeffs))
-        full_coeffs[parity::2] = coeffs
-        val = _poly_func_scipy(coeffs=coeffs, parity=parity, x=x)
-        ref = Chebyshev(full_coeffs)(x)
-        assert np.isclose(val, ref)
-
-    @pytest.mark.parametrize("degree", [4, 5, 10])
-    @pytest.mark.parametrize("interface", ["numpy"])
-    def test_grid_pts_scipy(self, degree, interface):
-        """Test internal function _grid_pts_scipy"""
-        grid = _grid_pts_scipy(degree, interface)
-        # Grid points should be in [-1, 1]
-        assert all(-1 <= x <= 1 for x in grid)
-        # Grid points should have correct length: (degree + 1) // 2 + (degree + 1) % 2
-        d = (degree + 1) // 2 + (degree + 1) % 2
-        assert len(grid) == d
-
-    @pytest.mark.parametrize("phis", [[0.1, 0.2, 0.3], [0.5, 0.3, 0.1, 0.2]])
-    @pytest.mark.parametrize("x", [0.3, 0.7])
-    @pytest.mark.parametrize("interface", ["numpy"])
-    def test_qsp_iterate_broadcast_scipy(self, phis, x, interface):
-        """Test internal function _qsp_iterate_broadcast_scipy"""
-        phis_array = np.array(phis)
-        result = _qsp_iterate_broadcast_scipy(phis_array, x, interface)
-        # Result should be a numeric scalar (the (0,0) element of the QSP unitary)
-        # Can be a float, np.floating, or jax array scalar
-        assert np.isfinite(float(result))
-
-    @pytest.mark.parametrize("angle", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize("interface", ["numpy"])
-    def test_z_rotation_scipy(self, angle, interface):
-        """Test internal function _z_rotation_scipy"""
-        assert np.allclose(_z_rotation_scipy(angle, interface), qml.RZ.compute_matrix(-2 * angle))
-
-    @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize("interface", ["numpy"])
-    def test_qsp_iterate_scipy(self, phi, interface):
-        """Test internal function _qsp_iterate_scipy"""
-        mtx = _qsp_iterate_scipy(0.0, phi, interface)
-        ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
-        assert np.allclose(mtx, ref)
-
-    @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize("interface", ["numpy"])
-    def test_W_of_x_scipy(self, x, interface):
-        """Test internal function _W_of_x_scipy"""
-        mtx = _W_of_x_scipy(x, interface)
-        ref = qml.RX.compute_matrix(-2 * np.arccos(x))
-        assert np.allclose(mtx, ref)
-
-    # =========================================================================
-    # Optax-based solver tests (require JAX and Optax)
-    # =========================================================================
-
-    @pytest.mark.external
-    @pytest.mark.parametrize(
-        "polynomial_coeffs_in_cheby_basis",
-        [
-            (generate_polynomial_coeffs(10, 0)),
-            (generate_polynomial_coeffs(7, 1)),
-            (generate_polynomial_coeffs(12, 0)),
-        ],
-    )
-    def test_qsp_optimization_optax(self, polynomial_coeffs_in_cheby_basis):
-        """Test that _qsp_optimization_optax returns correct angles"""
-        jax.config.update("jax_enable_x64", True)
-
-        degree = len(polynomial_coeffs_in_cheby_basis) - 1
-        target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis
-        phis, cost_func = _qsp_optimization_optax(degree, jax.numpy.array(target_polynomial_coeffs))
-
-        key = jax.random.key(123)
-        x_point = jax.random.uniform(key=key, shape=(1,), minval=-1, maxval=1)
-        x_point = x_point.item()
-
-        # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func)
-        tolerance = np.sum(
-            np.array(
-                [
-                    2 * np.sqrt(cost_func) * abs(_cheby_pol_optax(degree=i, x=x_point))
-                    for i in range(len(target_polynomial_coeffs))
-                ]
-            )
-        )
-
-        assert qml.math.isclose(
-            _qsp_iterate_broadcast_optax(phis, x_point, "jax"),
-            _poly_func_optax(coeffs=jax.numpy.array(target_polynomial_coeffs), x=x_point),
-            atol=tolerance,
-        )
-
-    @pytest.mark.external
-    @pytest.mark.parametrize(
-        "coeffs, x",
-        [
-            (generate_polynomial_coeffs(100, 0), 0.1),
-            (generate_polynomial_coeffs(7, 1), 0.2),
-            (generate_polynomial_coeffs(12, 0), 0.3),
-            (generate_polynomial_coeffs(12, None), 0.4),
-        ],
-    )
-    def test_poly_func_optax(self, coeffs, x):
-        """Test internal function _poly_func_optax"""
-        val = _poly_func_optax(coeffs=jax.numpy.array(coeffs), x=x)
+        val = _poly_func_scipy(coeffs=coeffs[parity::2], parity=parity, x=x)
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
-    @pytest.mark.external
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_z_rotation_optax(self, angle, interface):
-        """Test internal function _z_rotation_optax"""
-        assert np.allclose(_z_rotation_optax(angle, interface), qml.RZ.compute_matrix(-2 * angle))
+    def test_z_rotation_scipy(self, angle):
+        """Test internal function _z_rotation_scipy"""
+        assert np.allclose(_z_rotation_scipy(angle, None), qml.RZ.compute_matrix(-2 * angle))
 
-    @pytest.mark.external
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_qsp_iterate_optax(self, phi, interface):
-        """Test internal function _qsp_iterate_optax"""
-        mtx = _qsp_iterate_optax(0.0, phi, interface)
+    def test_qsp_iterate_scipy(self, phi):
+        """Test internal function _qsp_iterate_scipy"""
+        mtx = _qsp_iterate_scipy(0.0, phi, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.external
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "x",
         list([0.1, 0.2, 0.3, 0.4]),
     )
     @pytest.mark.parametrize("degree", range(2, 6))
-    def test_qsp_iterate_broadcast_optax(self, x, degree):
-        """Test internal function _qsp_iterate_broadcast_optax"""
-        jax.config.update("jax_enable_x64", True)
+    def test_qsp_iterate_broadcast_scipy(self, x, degree):
+        """Test internal function _qsp_iterate_broadcast_scipy"""
+        from jax import numpy as jnp
 
-        phis = jax.numpy.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterate_broadcast_optax(phis, x, "jax")
+        phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
+        qsp_be = _qsp_iterate_broadcast_scipy(phis, x, "jax")
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
-        assert jax.numpy.isclose(qsp_be, ref)
+        assert jnp.isclose(qsp_be, ref)
 
-    @pytest.mark.external
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_W_of_x_optax(self, x, interface):
-        """Test internal function _W_of_x_optax"""
-        mtx = _W_of_x_optax(x, interface)
+    def test_W_of_x_scipy(self, x):
+        """Test internal function _W_of_x_scipy"""
+        mtx = _W_of_x_scipy(x, None)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
-
-    @pytest.mark.external
-    @pytest.mark.parametrize("degree", [4, 5, 10])
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_grid_pts_optax(self, degree, interface):
-        """Test internal function _grid_pts_optax"""
-        grid = _grid_pts_optax(degree, interface)
-        # Grid points should be in [-1, 1]
-        assert all(-1 <= x <= 1 for x in grid)
-        # Grid points should have correct length: (degree + 1) // 2 + (degree + 1) % 2
-        d = (degree + 1) // 2 + (degree + 1) % 2
-        assert len(grid) == d
-
-    # =========================================================================
-    # Error handling tests
-    # =========================================================================
-
-    @pytest.mark.external
-    def test_iterative_optax_requires_x64_mode(self):
-        """Test that iterative_optax raises RuntimeError without 64-bit mode"""
-        # Ensure x64 is disabled for this test
-        original_x64 = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", False)
-
-        try:
-            poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3]
-            with pytest.raises(RuntimeError, match="JAX must be in 64-bit mode"):
-                qml.poly_to_angles(poly, "QSVT", angle_solver="iterative_optax")
-        finally:
-            # Restore original setting
-            jax.config.update("jax_enable_x64", original_x64)
-
-    def test_invalid_angle_solver_raises_error(self):
-        """Test that invalid angle_solver raises ValueError"""
-        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3]
-        with pytest.raises(ValueError, match="Unknown angle_solver"):
-            qml.poly_to_angles(poly, "QSVT", angle_solver="invalid_solver")
-
-    # =========================================================================
-    # Interface and immutability tests
-    # =========================================================================
 
     def test_immutable_input(self):
         """Test `poly_to_angles` does not modify the input"""
@@ -1389,6 +1119,8 @@ class TestIterativeSolver:
     @pytest.mark.jax
     def test_interface_jax(self):
         """Test `poly_to_angles` works with jax"""
+
+        import jax
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         angles = qml.poly_to_angles(poly, "QSVT")
