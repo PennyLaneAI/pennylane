@@ -103,7 +103,7 @@ def _register_pytree_with_jax(pytree_type: type, flatten_fn: FlattenFn, unflatte
 
 
 def register_pytree(
-    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn, *, namespace: str = "qml"
+    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn, *, namespace: str = "qp"
 ):
     """Register a type with all available pytree backends.
 

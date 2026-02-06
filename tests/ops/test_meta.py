@@ -163,7 +163,7 @@ class TestBarrier:
         op = qp.Barrier(wires=(0, 1, 2, 3), only_visual=False)
         assert op.simplify() is op
 
-    def test_qml_matrix_gives_identity(self):
+    def test_qp_matrix_gives_identity(self):
         """Test that qp.matrix(op) gives an identity."""
         op = qp.Barrier(0)
         assert np.allclose(qp.matrix(op), np.eye(2))
@@ -207,7 +207,7 @@ class TestWireCut:
         ):
             qp.WireCut(wires=[])
 
-    def test_qml_matrix_gives_identity(self):
+    def test_qp_matrix_gives_identity(self):
         """Test that qp.matrix(op) gives an identity."""
         op = qp.WireCut(0)
         assert np.allclose(qp.matrix(op), np.eye(2))

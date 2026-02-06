@@ -140,7 +140,7 @@ def breakpoint():
     through the circuit execution. Since it is based on the `Python Debugger <https://docs.python.org/3/library/pdb.html>`_ (PDB), commands like
     (:code:`list`, :code:`next`, :code:`continue`, :code:`quit`) can be used to navigate the code.
 
-    .. seealso:: :doc:`/code/qml_debugging`
+    .. seealso:: :doc:`/code/qp_debugging`
 
     **Example**
 

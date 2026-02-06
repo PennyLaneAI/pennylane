@@ -270,7 +270,7 @@ def _custom_decomp_context(custom_decomps):
     def _custom_decomposition(obj, fn):
         # Covers the case where the user passes a string to indicate the Operator
         if isinstance(obj, str):
-            obj = getattr(qml, obj)
+            obj = getattr(qp, obj)
 
         original_decomp_method = obj.compute_decomposition
         original_has_decomp_property = obj.has_decomposition

@@ -268,7 +268,7 @@ class TestOptimize:
         new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
 
         expected_mt = np.array([0.25, (np.cos(params[0]) ** 2) / 4])
-        expected_params = params_qml - opt.stepsize * qp.grad(circ)(params_qml) / expected_mt
+        expected_params = params_qml - opt.stepsize * qp.grad(circ)(params_qp) / expected_mt
         expected_cost = circ(params)
 
         assert np.allclose(new_params1, expected_params)
@@ -300,7 +300,7 @@ class TestOptimize:
 
         expected_cost = circ(params)
         expected_mt = np.array([1 / 16, 1 / 4])
-        expected_params = params_qml - opt.stepsize * qp.grad(circ)(params_qml) / expected_mt
+        expected_params = params_qml - opt.stepsize * qp.grad(circ)(params_qp) / expected_mt
 
         assert np.allclose(cost, expected_cost)
         assert np.allclose(new_params1, expected_params)

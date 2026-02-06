@@ -393,7 +393,7 @@ class TestEqual:
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -414,12 +414,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -427,8 +427,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -437,8 +437,8 @@ class TestEqual:
 
         with pytest.raises(AssertionError, match="Parameters have different trainability"):
             assert_equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -457,7 +457,7 @@ class TestEqual:
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -478,12 +478,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -491,8 +491,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -546,7 +546,7 @@ class TestEqual:
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -567,12 +567,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -580,8 +580,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -636,7 +636,7 @@ class TestEqual:
         param_qml = npp.array([1, 2, 3])
         param_np = np.array([1, 2, 3])
 
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -657,12 +657,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(*param_qml, wires=wire),
-                op1(*param_qml_1, wires=wire),
+                op1(*param_qp, wires=wire),
+                op1(*param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -670,8 +670,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(*param_qml, wires=wire),
-                op1(*param_qml_1, wires=wire),
+                op1(*param_qp, wires=wire),
+                op1(*param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -726,7 +726,7 @@ class TestEqual:
         param_np = np.array([1, 2])
 
         op1 = PARAMETRIZED_OPERATIONS_2P_1W[0]
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -747,12 +747,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(*param_qml, wires=wire),
-                op1(*param_qml_1, wires=wire),
+                op1(*param_qp, wires=wire),
+                op1(*param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -760,8 +760,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(*param_qml, wires=wire),
-                op1(*param_qml_1, wires=wire),
+                op1(*param_qp, wires=wire),
+                op1(*param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -775,7 +775,7 @@ class TestEqual:
         param_np = np.array(1)
 
         op1 = PARAMETRIZED_OPERATIONS_1P_3W[0]
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -796,12 +796,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -809,8 +809,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -824,7 +824,7 @@ class TestEqual:
         param_np = np.array([1, 2, 3])
 
         op1 = PARAMETRIZED_OPERATIONS_3P_2W[0]
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -845,12 +845,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(*param_qml, wires=wire),
-                op1(*param_qml_1, wires=wire),
+                op1(*param_qp, wires=wire),
+                op1(*param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -858,8 +858,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(*param_qml, wires=wire),
-                op1(*param_qml_1, wires=wire),
+                op1(*param_qp, wires=wire),
+                op1(*param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -873,7 +873,7 @@ class TestEqual:
         param_np = np.array(1)
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[0]
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -894,12 +894,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, "Y", wires=wire),
-                op1(param_qml_1, "Y", wires=wire),
+                op1(param_qp, "Y", wires=wire),
+                op1(param_qp_1, "Y", wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -907,8 +907,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, "Y", wires=wire),
-                op1(param_qml_1, "Y", wires=wire),
+                op1(param_qp, "Y", wires=wire),
+                op1(param_qp_1, "Y", wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -922,7 +922,7 @@ class TestEqual:
         param_np = np.eye(2) * 1j
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[1]
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -943,12 +943,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -956,8 +956,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -971,7 +971,7 @@ class TestEqual:
         param_np = np.array([1.0, 1.0j])
 
         op1 = PARAMETRIZED_OPERATIONS_Remaining[2]
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -992,12 +992,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -1005,8 +1005,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, wires=wire),
-                op1(param_qml_1, wires=wire),
+                op1(param_qp, wires=wire),
+                op1(param_qp_1, wires=wire),
                 check_trainability=True,
                 check_interface=False,
             )
@@ -1022,7 +1022,7 @@ class TestEqual:
         # ControlledQubitUnitary
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
         wires = [wire + 1, wire]
-        param_list = [param_qml, param_torch, param_jax, param_np]
+        param_list = [param_qp, param_torch, param_jax, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert (
                 qp.equal(
@@ -1043,12 +1043,12 @@ class TestEqual:
                 is False
             )
 
-        param_qml_1 = param_qp.copy()
-        param_qml_1.requires_grad = False
+        param_qp_1 = param_qp.copy()
+        param_qp_1.requires_grad = False
         assert (
             qp.equal(
-                op1(param_qml, wires=wires),
-                op1(param_qml_1, wires=wires),
+                op1(param_qp, wires=wires),
+                op1(param_qp_1, wires=wires),
                 check_trainability=False,
                 check_interface=False,
             )
@@ -1056,8 +1056,8 @@ class TestEqual:
         )
         assert (
             qp.equal(
-                op1(param_qml, wires=wires),
-                op1(param_qml_1, wires=wires),
+                op1(param_qp, wires=wires),
+                op1(param_qp_1, wires=wires),
                 check_trainability=True,
                 check_interface=False,
             )

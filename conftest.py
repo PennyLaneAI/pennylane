@@ -34,7 +34,7 @@ except ImportError:
 
 
 namespace = {
-    "qml": qml,
+    "qp": qp,
     "np": base_numpy,
     "sp": base_scipy,
     "pnp": qp.numpy,

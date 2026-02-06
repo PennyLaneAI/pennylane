@@ -2370,5 +2370,5 @@ def test_renomalization_issue():
 
     circuit_qml = qp.QNode(circuit, qp.device("default.qubit"), interface="jax", shots=1000)
 
-    circuit_qml(params)
+    circuit_qp(params)
     jax.config.update("jax_enable_x64", initial_mode)

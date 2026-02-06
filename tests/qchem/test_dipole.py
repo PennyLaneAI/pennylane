@@ -320,7 +320,7 @@ def test_gradient_expvalD():
 
     grad_finitediff = (d_2 - d_1) / 0.0002
 
-    assert np.allclose(grad_qml[0][0], grad_finitediff)
+    assert np.allclose(grad_qp[0][0], grad_finitediff)
 
 
 def test_molecular_dipole_error():

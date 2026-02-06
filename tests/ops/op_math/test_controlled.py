@@ -1447,7 +1447,7 @@ class TestControlledSupportsBroadcasting:
         par = pnp.array([0.25, 2.1, -0.42])
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(par, wires=wires)
         op = Controlled(base, "wire1")
 
@@ -1462,7 +1462,7 @@ class TestControlledSupportsBroadcasting:
         on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
         """
         par = pnp.array([0.25, 2.1, -0.42])
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
 
         # Provide up to 6 wires and take as many as the class requires
         # This assumes that the class does *not* have `num_wires=None`
@@ -1483,7 +1483,7 @@ class TestControlledSupportsBroadcasting:
         par = (pnp.array([0.25, 2.1, -0.42]), pnp.array([-6.2, 0.12, 0.421]))
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(*par, wires=wires)
         op = Controlled(base, "wire1")
 
@@ -1505,7 +1505,7 @@ class TestControlledSupportsBroadcasting:
         )
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(*par, wires=wires)
         op = Controlled(base, "wire1")
 
@@ -1527,7 +1527,7 @@ class TestControlledSupportsBroadcasting:
         )
         wires = ["wire0", 214]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         base = cls(*par, wires=wires)
         op = Controlled(base, "wire1")
 

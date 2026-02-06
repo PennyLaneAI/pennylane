@@ -619,7 +619,7 @@ class TestToBloqDecomposition:
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",  # Computed by resources from labs or decompositions
+            "qp_call_graph",  # Computed by resources from labs or decompositions
         ),
         [
             (
@@ -943,11 +943,11 @@ class TestToBloqDecomposition:
             ),
         ],
     )
-    def test_build_call_graph(self, op, qml_call_graph):
+    def test_build_call_graph(self, op, qp_call_graph):
         """ "Tests that the defined call_graphs match the expected decompostions"""
         bloq_call_graph = {}
 
-        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+        for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
             bloq_call_graph[qp.to_bloq(k[0], map_ops=k[1])] = v
 
         call_graph = _get_op_call_graph(op)
@@ -1311,7 +1311,7 @@ class TestToBloqEstimator:
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",
+            "qp_call_graph",
         ),
         [
             (
@@ -1503,11 +1503,11 @@ class TestToBloqEstimator:
             ),
         ],
     )
-    def test_build_call_graph(self, op, qml_call_graph):
+    def test_build_call_graph(self, op, qp_call_graph):
         """ "Tests that the defined call_graphs match the expected decompostions"""
         bloq_call_graph = {}
 
-        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+        for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
             bloq_call_graph[qp.to_bloq(k[0], map_ops=k[1])] = v
 
         call_graph = _get_op_call_graph_estimator(op)
@@ -1516,7 +1516,7 @@ class TestToBloqEstimator:
     @pytest.mark.parametrize(
         (
             "op",
-            "qml_call_graph",
+            "qp_call_graph",
         ),
         [
             (
@@ -1626,11 +1626,11 @@ class TestToBloqEstimator:
             ),
         ],
     )
-    def test_to_bloq_call_graph(self, op, qml_call_graph):
+    def test_to_bloq_call_graph(self, op, qp_call_graph):
         """Tests that the defined call_graphs match the expected decompositions"""
         bloq_call_graph = {}
 
-        for k, v in qml_call_graph.items():  # k is a tuple of (op, bool)
+        for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
             bloq_call_graph[qp.to_bloq(k[0], map_ops=k[1])] = v
 
         to_bloq_call_graph = qp.to_bloq(op, call_graph="estimator").call_graph()[1]

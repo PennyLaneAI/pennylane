@@ -421,7 +421,7 @@ class TestBroadcasting:
     def test_broadcasting_with_extra_measurement_wires(self, mocker):
         """Test that broadcasting works when the operations don't act on all wires."""
         # I can't mock anything in `simulate` because the module name is the function name
-        spy = mocker.spy(qml, "map_wires")
+        spy = mocker.spy(qp, "map_wires")
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
         ops = [qp.PauliX(wires=2), qp.RY(x, wires=1), qp.CNOT(wires=[1, 2])]

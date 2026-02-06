@@ -2068,7 +2068,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 * Fixed a bug that made the queueing behaviour of 
   :meth:`qp.PauliWord.operation <~.PauliWord.operation>` and 
-  :meth:`qmle.PauliSentence.operation <~.PauliSentence.operation>` depndent on the global state of a
+  :meth:`qpe.PauliSentence.operation <~.PauliSentence.operation>` depndent on the global state of a
   program due to a caching issue.
   [(#8135)](https://github.com/PennyLaneAI/pennylane/pull/8135)
 

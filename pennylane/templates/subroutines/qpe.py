@@ -27,7 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
-from pennylane.ops import pow as qml_pow
+from pennylane.ops import pow as qp_pow
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
@@ -330,7 +330,7 @@ def _qpe_decomp(wires, unitary, estimation_wires, **_):  # pylint: disable=unuse
     for w in estimation_wires:
         ops.Hadamard(w)
     for i, w in enumerate(estimation_wires):
-        ops.ctrl(qml_pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
+        ops.ctrl(qp_pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
     ops.adjoint(QFT(wires=estimation_wires))
 
 

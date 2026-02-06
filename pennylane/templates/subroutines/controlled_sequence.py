@@ -25,7 +25,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops.op_math import SymbolicOp, ctrl
-from pennylane.ops.op_math import pow as qml_pow
+from pennylane.ops.op_math import pow as qp_pow
 from pennylane.wires import Wires
 
 
@@ -207,7 +207,7 @@ class ControlledSequence(SymbolicOp, Operation):
         ops = []
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
+            ops.append(qp_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
 
@@ -239,7 +239,7 @@ def _ctrl_seq_decomposition(*_, base=None, control_wires=None, **__):
         j = len(powers_of_two) - 1 - i
         ctrl_wire = control_wires[j]
         z = powers_of_two[i]
-        qml_pow(ctrl(base, control=ctrl_wire), z=z)
+        qp_pow(ctrl(base, control=ctrl_wire), z=z)
 
     _powers_loop()
 

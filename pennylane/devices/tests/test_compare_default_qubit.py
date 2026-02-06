@@ -200,7 +200,7 @@ class TestComparison:
         n_layers = pnp.random.randint(1, 5)
         weights = 2 * pnp.pi * pnp.random.rand(n_layers, 1)
 
-        ret_type = getattr(qml, ret)
+        ret_type = getattr(qp, ret)
 
         def circuit(weights):
             RandomLayers(weights, wires=range(n_wires))

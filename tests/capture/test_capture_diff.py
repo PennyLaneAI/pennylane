@@ -112,7 +112,7 @@ class TestGrad:
         def inner_func(x, y):
             return jnp.prod(jnp.sin(x) * jnp.cos(y) ** 2)
 
-        def func_qml(x):
+        def func_qp(x):
             return qp.grad(inner_func, argnums=argnums)(x, 0.4 * jnp.sqrt(x))
 
         def func_jax(x):
@@ -120,10 +120,10 @@ class TestGrad:
 
         x = 0.7
         jax_out = func_jax(x)
-        assert qp.math.allclose(func_qml(x), jax_out)
+        assert qp.math.allclose(func_qp(x), jax_out)
 
         # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_qml)(x)
+        jaxpr = jax.make_jaxpr(func_qp)(x)
         assert jaxpr.in_avals == [jax.core.ShapedArray((), float, weak_type=True)]
         assert len(jaxpr.eqns) == 3
         if isinstance(argnums, int):
@@ -156,11 +156,11 @@ class TestGrad:
         x = 0.7
 
         # 1st order
-        qml_func_1 = qp.grad(func)
+        qp_func_1 = qp.grad(func)
         expected_1 = 3 * jnp.sin(x) ** 2 * jnp.cos(x)
-        assert qp.math.allclose(qml_func_1(x), expected_1)
+        assert qp.math.allclose(qp_func_1(x), expected_1)
 
-        jaxpr_1 = jax.make_jaxpr(qml_func_1)(x)
+        jaxpr_1 = jax.make_jaxpr(qp_func_1)(x)
         assert jaxpr_1.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr_1.eqns) == 1
         assert jaxpr_1.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
@@ -174,36 +174,36 @@ class TestGrad:
         assert qp.math.allclose(manual_eval_1, expected_1)
 
         # 2nd order
-        qml_func_2 = qp.grad(qml_func_1)
+        qp_func_2 = qp.grad(qp_func_1)
 
-        jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
+        jaxpr_2 = jax.make_jaxpr(qp_func_2)(x)
         assert jaxpr_2.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr_2.eqns) == 1
         assert jaxpr_2.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
 
         grad_eqn = jaxpr_2.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_2.out_avals
-        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qml_func_1)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qp_func_1)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
         assert grad_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         # 3rd order
-        qml_func_3 = qp.grad(qml_func_2)
+        qp_func_3 = qp.grad(qp_func_2)
 
-        jaxpr_3 = jax.make_jaxpr(qml_func_3)(x)
+        jaxpr_3 = jax.make_jaxpr(qp_func_3)(x)
         assert jaxpr_3.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr_3.eqns) == 1
         assert jaxpr_3.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
 
         grad_eqn = jaxpr_3.eqns[0]
         assert [var.aval for var in grad_eqn.outvars] == jaxpr_3.out_avals
-        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qml_func_2)
+        diff_eqn_assertions(grad_eqn, scalar_out=True, fn=qp_func_2)
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
         assert grad_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         # jax v0.5.3 broke this
         # expected_2 = 6 * jnp.sin(x) * jnp.cos(x) ** 2 - 3 * jnp.sin(x) ** 3
-        # assert qp.math.allclose(qml_func_2(x), expected_2)
+        # assert qp.math.allclose(qp_func_2(x), expected_2)
 
         # manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
         # assert qp.math.allclose(manual_eval_2, expected_2)
@@ -214,7 +214,7 @@ class TestGrad:
         #    - 9 * jnp.sin(x) ** 2 * jnp.cos(x)
         # )
 
-        # assert qp.math.allclose(qml_func_3(x), expected_3)
+        # assert qp.math.allclose(qp_func_3(x), expected_3)
         # manual_eval_3 = jax.core.eval_jaxpr(jaxpr_3.jaxpr, jaxpr_3.consts, x)
         # assert qp.math.allclose(manual_eval_3, expected_3)
 
@@ -285,7 +285,7 @@ class TestGrad:
         def inner_func(x, y):
             return jnp.prod(jnp.sin(x["a"]) * jnp.cos(y[0]["b"][1]) ** 2)
 
-        def func_qml(x):
+        def func_qp(x):
             return qp.grad(inner_func, argnums=argnums)(
                 {"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]},)
             )
@@ -298,12 +298,12 @@ class TestGrad:
         x = 0.7
         jax_out = func_jax(x)
         jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
-        qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(func_qml(x))
-        assert jax_out_tree == qml_out_tree
-        assert qp.math.allclose(jax_out_flat, qml_out_flat)
+        qp_out_flat, qp_out_tree = jax.tree_util.tree_flatten(func_qp(x))
+        assert jax_out_tree == qp_out_tree
+        assert qp.math.allclose(jax_out_flat, qp_out_flat)
 
         # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_qml)(x)
+        jaxpr = jax.make_jaxpr(func_qp)(x)
         assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr.eqns) == 3
         argnums = (argnums,) if isinstance(argnums, int) else tuple(argnums)
@@ -339,12 +339,12 @@ class TestGrad:
         x = {"a": 0.6, "b": 0.9}
         y = 0.6
         z = ({"c": 0.5}, [0.2, 0.3])
-        qml_out = dcircuit(x, y, z)
-        qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(qml_out)
+        qp_out = dcircuit(x, y, z)
+        qp_out_flat, qp_out_tree = jax.tree_util.tree_flatten(qp_out)
         jax_out = jax.grad(circuit, argnums=argnums)(x, y, z)
         jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
-        assert jax_out_tree == qml_out_tree
-        assert qp.math.allclose(jax_out_flat, qml_out_flat)
+        assert jax_out_tree == qp_out_tree
+        assert qp.math.allclose(jax_out_flat, qp_out_flat)
 
         jaxpr = jax.make_jaxpr(dcircuit)(x, y, z)
 
@@ -439,12 +439,12 @@ class TestJacobian:
         func_jax = jax.jacobian(inner_func, argnums=argnums)
 
         jax_out = func_jax(x, y)
-        qml_out = func_qml(x, y)
+        qp_out = func_qp(x, y)
         num_axes = 1 if (int_argnums := isinstance(argnums, int)) else 2
-        assert _jac_allclose(qml_out, jax_out, num_axes)
+        assert _jac_allclose(qp_out, jax_out, num_axes)
 
         # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_qml)(x, y)
+        jaxpr = jax.make_jaxpr(func_qp)(x, y)
 
         if int_argnums := isinstance(argnums, int):
             argnums = (argnums,)
@@ -491,8 +491,8 @@ class TestJacobian:
         eye = jnp.eye(dim)
 
         # 1st order
-        qml_func_1 = qp.jacobian(func)
-        jaxpr_1 = jax.make_jaxpr(qml_func_1)(x)
+        qp_func_1 = qp.jacobian(func)
+        jaxpr_1 = jax.make_jaxpr(qp_func_1)(x)
         assert jaxpr_1.in_avals == [jax.core.ShapedArray((dim,), fdtype)]
         assert len(jaxpr_1.eqns) == 1
         assert jaxpr_1.out_avals == [
@@ -507,15 +507,15 @@ class TestJacobian:
         prod_sin = jnp.prod(x) * jnp.sin(x)
         prod_cos_e_i = jnp.prod(x) * jnp.cos(x) * eye
         expected_1 = (prod_sin[:, None] / x[None, :] + prod_cos_e_i, 2 * x)
-        assert _jac_allclose(qml_func_1(x), expected_1, 1)
+        assert _jac_allclose(qp_func_1(x), expected_1, 1)
 
         # 2nd order
-        qml_func_2 = qp.jacobian(qml_func_1)
+        qp_func_2 = qp.jacobian(qp_func_1)
 
         manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
         assert _jac_allclose(manual_eval_1, expected_1, 1)
 
-        jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
+        jaxpr_2 = jax.make_jaxpr(qp_func_2)(x)
         assert jaxpr_2.in_avals == [jax.core.ShapedArray((dim,), fdtype)]
         assert len(jaxpr_2.eqns) == 1
         assert jaxpr_2.out_avals == [
@@ -524,7 +524,7 @@ class TestJacobian:
 
         jac_eqn = jaxpr_2.eqns[0]
         assert [var.aval for var in jac_eqn.outvars] == jaxpr_2.out_avals
-        diff_eqn_assertions(jac_eqn, scalar_out=False, fn=qml_func_1)
+        diff_eqn_assertions(jac_eqn, scalar_out=False, fn=qp_func_1)
         assert len(jac_eqn.params["jaxpr"].eqns) == 1  # inner jacobian equation
         assert jac_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
@@ -542,7 +542,7 @@ class TestJacobian:
         # )
         # Output only has one tuple axis
         # atol = 1e-8 if jax.config.jax_enable_x64 else 2e-7
-        # assert _jac_allclose(qml_func_2(x), expected_2, 1, atol=atol)
+        # assert _jac_allclose(qp_func_2(x), expected_2, 1, atol=atol)
 
         # manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
         # assert _jac_allclose(manual_eval_2, expected_2, 1, atol=atol)
@@ -617,7 +617,7 @@ class TestJacobian:
                 "sum_sin": jnp.sum(jnp.sin(x["a"]) * jnp.sin(y[1]["c"]) ** 2),
             }
 
-        def func_qml(x):
+        def func_qp(x):
             return qp.jacobian(inner_func, argnums=argnums)(
                 {"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]}, {"c": 0.5})
             )
@@ -630,12 +630,12 @@ class TestJacobian:
         x = 0.7
         jax_out = func_jax(x)
         jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
-        qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(func_qml(x))
-        assert jax_out_tree == qml_out_tree
-        assert qp.math.allclose(jax_out_flat, qml_out_flat)
+        qp_out_flat, qp_out_tree = jax.tree_util.tree_flatten(func_qp(x))
+        assert jax_out_tree == qp_out_tree
+        assert qp.math.allclose(jax_out_flat, qp_out_flat)
 
         # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_qml)(x)
+        jaxpr = jax.make_jaxpr(func_qp)(x)
         assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr.eqns) == 3
 

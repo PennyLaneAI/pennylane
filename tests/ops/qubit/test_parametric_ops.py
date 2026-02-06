@@ -3153,14 +3153,14 @@ class TestPauliRot:
             # this is the identity
             expected_gen = qp.Identity(wires=0)
         else:
-            expected_gen = getattr(qml, f"Pauli{pauli_word[0]}")(wires=0)
+            expected_gen = getattr(qp, f"Pauli{pauli_word[0]}")(wires=0)
 
         for i, pauli in enumerate(pauli_word[1:]):
             i += 1
             if pauli == "I":
                 expected_gen = expected_gen @ qp.Identity(wires=i)
             else:
-                expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
+                expected_gen = expected_gen @ getattr(qp, f"Pauli{pauli}")(wires=i)
 
         qp.assert_equal(gen, qp.Hamiltonian([-0.5], [expected_gen]))
 

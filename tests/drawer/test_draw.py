@@ -134,7 +134,7 @@ class TestDecimals:
         expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤     \n1.234: ──RZ(3)─┤     "
         assert draw(circuit, decimals=0)(1.234, 2.3456, 3.456) == expected
 
-    def test_qml_numpy_parameters(self):
+    def test_qp_numpy_parameters(self):
         """Test numpy parameters display as normal numbers."""
 
         expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "

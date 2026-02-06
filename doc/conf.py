@@ -93,7 +93,7 @@ intersphinx_mapping = {
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
-ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
+ignore_warnings = [("code/api/qp_transforms*", "no module named pennylane.transforms")]
 autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -368,7 +368,7 @@ def add_noindex_to_estimator_stubs(app, docname, source):
 
 def add_links_to_estimator_table(app, doctree, fromdocname):
     """Replace literal names in automodsumm tables with links to stub HTML files."""
-    if "qml_estimator" not in fromdocname:
+    if "qp_estimator" not in fromdocname:
         return
     # Define the modules and their corresponding table indices
     modules = {3: "ops", 4: "templates"}

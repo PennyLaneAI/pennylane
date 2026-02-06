@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane import ops as qml_ops
+from pennylane import ops as qp_ops
 from pennylane.capture.autograph import run_autograph
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
@@ -63,7 +63,7 @@ class TestDecomposition:
     ]
 
     @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
+        "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
     @pytest.mark.capture
     def test_decomposition_new_capture(
@@ -79,7 +79,7 @@ class TestDecomposition:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
+        "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
     def test_decomposition_new(
         self, n_wires, imprimitive, batch_dim

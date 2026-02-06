@@ -27,7 +27,7 @@ import pennylane as qp
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 
 # Used for device-level qjit resource tracking
-_RESOURCE_TRACKING_FILEPATH = "__qml_specs_qjit_resources.json"
+_RESOURCE_TRACKING_FILEPATH = "__qp_specs_qjit_resources.json"
 
 
 def _specs_qnode(qnode, level, compute_depth, *args, **kwargs) -> CircuitSpecs:

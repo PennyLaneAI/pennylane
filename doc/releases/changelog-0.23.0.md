@@ -464,7 +464,7 @@
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
 * The `qp.draw` and `qp.draw_mpl` transforms are now located in the `drawer` module. They can still be
-  accessed via the top-level `qml` namespace.
+  accessed via the top-level `qp` namespace.
   [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
 * Raise a warning where caching produces identical shot noise on execution results with finite shots.

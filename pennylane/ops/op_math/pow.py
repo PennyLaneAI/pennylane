@@ -20,7 +20,7 @@ from typing import Union
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
-from pennylane import math as qmlmath
+from pennylane import math as qpmath
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -237,18 +237,18 @@ class Pow(ScalarSymbolicOp):
                 # exponents below.
                 if scalar == 0:
                     # Used instead of qp.math.eye for tracing derivatives
-                    return mat @ qmlmath.linalg.inv(mat)
+                    return mat @ qpmath.linalg.inv(mat)
                 if scalar > 0:
                     out = mat
                 else:
-                    out = mat = qmlmath.linalg.inv(mat)
+                    out = mat = qpmath.linalg.inv(mat)
                     scalar *= -1
 
                 for _ in range(scalar - 1):
                     out @= mat
                 return out
 
-            return qmlmath.linalg.matrix_power(mat, scalar)
+            return qpmath.linalg.matrix_power(mat, scalar)
 
         return fractional_matrix_power(mat, scalar)
 

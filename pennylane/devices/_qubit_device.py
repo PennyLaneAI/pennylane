@@ -31,8 +31,8 @@ import numpy as np
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.exceptions import DeviceError, EigvalsUndefinedError, QuantumFunctionError
-from pennylane.math import multiply as qmlmul
-from pennylane.math import sum as qmlsum
+from pennylane.math import multiply as qpmul
+from pennylane.math import sum as qpsum
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -139,7 +139,7 @@ class QubitDevice(Device):
     @staticmethod
     def _const_mul(constant, array):
         """Data type preserving multiply operation"""
-        return qmlmul(constant, array, dtype=array.dtype)
+        return qpmul(constant, array, dtype=array.dtype)
 
     observables = {
         "PauliX",
@@ -1642,7 +1642,7 @@ class QubitDevice(Device):
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment
-        dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
+        dot_product_real = lambda b, k: self._real(qpsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
             if not isinstance(m, ExpectationMP):

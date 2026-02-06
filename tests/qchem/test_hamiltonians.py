@@ -415,7 +415,7 @@ def test_gradient_expvalH():
 
     grad_finitediff = (e_2 - e_1) / 0.0002
 
-    assert pnp.allclose(grad_qml[0][0], grad_finitediff)
+    assert pnp.allclose(grad_qp[0][0], grad_finitediff)
 
 
 @pytest.mark.jax

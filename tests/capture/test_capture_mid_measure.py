@@ -87,7 +87,7 @@ class TestMidMeasureCapture:
             pytest.skip("Cannot use sequence of MCMs with expval or var.")
 
         p_name = measurement + "_mcm"
-        measure_fn = getattr(qml, measurement)
+        measure_fn = getattr(qp, measurement)
 
         def f(x):
             qp.RX(x, 0)

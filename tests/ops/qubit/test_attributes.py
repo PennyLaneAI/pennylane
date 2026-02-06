@@ -170,7 +170,7 @@ class TestSupportsBroadcasting:
         par = np.array([0.25, 2.1, -0.42])
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         op = cls(par, wires=wires)
 
         mat1 = op.matrix()
@@ -185,7 +185,7 @@ class TestSupportsBroadcasting:
         """Test that single-scalar-parameter operations on multiple wires marked
         as supporting parameter broadcasting actually do support broadcasting."""
         par = np.array([0.25, 2.1, -0.42])
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
 
         # Provide up to 6 wires and take as many as the class requires
         # This assumes that the class does *not* have `num_wires=qp.operation.None`
@@ -206,7 +206,7 @@ class TestSupportsBroadcasting:
         par = (np.array([0.25, 2.1, -0.42]), np.array([-6.2, 0.12, 0.421]))
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         op = cls(*par, wires=wires)
 
         mat1 = op.matrix()
@@ -228,7 +228,7 @@ class TestSupportsBroadcasting:
         )
         wires = ["wire0"]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         op = cls(*par, wires=wires)
 
         mat1 = op.matrix()
@@ -250,7 +250,7 @@ class TestSupportsBroadcasting:
         )
         wires = ["wire0", 214]
 
-        cls = getattr(qml, name)
+        cls = getattr(qp, name)
         op = cls(*par, wires=wires)
 
         mat1 = op.matrix()
@@ -482,7 +482,7 @@ class TestHasUnitaryGenerator:
     def test_generator_unitarity(self, entry):
         """Test directly that generators of the operators in the ``has_unitary_generator``
         attribute are unitary up to a factor of 2."""
-        op_class = getattr(qml, entry)
+        op_class = getattr(qp, entry)
         phi = 1.23
         wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
         if op_class is qp.PauliRot:
@@ -503,7 +503,7 @@ class TestHasUnitaryGenerator:
         if entry in unitarily_generated_ops:
             pytest.skip("Operator declared as having unitary generator")
 
-        op_class = getattr(qml, entry)
+        op_class = getattr(qp, entry)
 
         if not op_class.has_generator:
             pytest.skip("Operator does not have a generator")

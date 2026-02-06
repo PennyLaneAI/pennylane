@@ -141,7 +141,7 @@ class TestCaptureForLoop:
             loop()
             return qp.expval(qp.Z(0) @ qp.Z(1))
 
-        def func_qml(x):
+        def func_qp(x):
             return qp.grad(inner_func)(x)
 
         def func_jax(x):
@@ -149,10 +149,10 @@ class TestCaptureForLoop:
 
         x = 0.7
         jax_out = func_jax(x)
-        assert qp.math.allclose(func_qml(x), jax_out)
+        assert qp.math.allclose(func_qp(x), jax_out)
 
         # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_qml)(x)
+        jaxpr = jax.make_jaxpr(func_qp)(x)
         assert len(jaxpr.eqns) == 1  # a single grad equation
 
         grad_eqn = jaxpr.eqns[0]

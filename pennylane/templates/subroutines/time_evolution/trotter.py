@@ -18,7 +18,7 @@ import copy
 from collections import defaultdict
 
 from pennylane import math
-from pennylane import ops as qml_ops
+from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation, Operator
@@ -61,10 +61,10 @@ def _recursive_expression(x, order, ops):
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        return [qml_ops.Evolution(op, -x) for op in ops]
+        return [qp_ops.Evolution(op, -x) for op in ops]
 
     if order == 2:
-        return [qml_ops.Evolution(op, -x * 0.5) for op in ops + ops[::-1]]
+        return [qp_ops.Evolution(op, -x * 0.5) for op in ops + ops[::-1]]
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
@@ -261,7 +261,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, qml_ops.LinearCombination):
+        if isinstance(hamiltonian, qp_ops.LinearCombination):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(
@@ -269,9 +269,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 )
             if QueuingManager.recording():
                 QueuingManager.remove(hamiltonian)
-            hamiltonian = qml_ops.functions.dot(coeffs, ops)
+            hamiltonian = qp_ops.functions.dot(coeffs, ops)
 
-        if isinstance(hamiltonian, qml_ops.op_math.SProd):
+        if isinstance(hamiltonian, qp_ops.op_math.SProd):
             if QueuingManager.recording():
                 QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
@@ -280,7 +280,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qp.exp`"
                 )
 
-        if not isinstance(hamiltonian, qml_ops.Sum):
+        if not isinstance(hamiltonian, qp_ops.Sum):
             raise TypeError(
                 f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
@@ -311,7 +311,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = qml_ops.functions.map_wires(
+        new_op._hyperparameters["base"] = qp_ops.functions.map_wires(
             new_op._hyperparameters["base"], wire_map
         )
         return new_op
@@ -500,14 +500,14 @@ def _trotter_product_decomposition_resources(n, order, ops):
 
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * _count(op, ops)
+            reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = n * _count(op, ops)
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = n * 2 * _count(op, ops)
+            reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = n * 2 * _count(op, ops)
         return reps
     for op in ops:
-        reps[resource_rep(qml_ops.op_math.Evolution, base=op)] = (
+        reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = (
             n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
@@ -523,12 +523,12 @@ def _trotter_product_decomposition(*args, **kwargs):
     def _recursive(x, order, ops):
         if order == 1:
             for op in ops[::-1]:
-                qml_ops.Evolution(op, -x)
+                qp_ops.Evolution(op, -x)
             return
 
         if order == 2:
             for op in ops + ops[::-1]:
-                qml_ops.Evolution(op, -x * 0.5)
+                qp_ops.Evolution(op, -x * 0.5)
             return
 
         scalar_1 = _scalar(order)
