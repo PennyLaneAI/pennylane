@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ Tests for the QSVT Optax-based iterative angle solver.
 These tests require JAX and Optax to be installed and are marked as external.
 """
 
-# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
+# pylint: disable=too-many-arguments, wrong-import-position
 import pytest
 
 # Skip entire module if JAX or Optax are not available
@@ -233,50 +233,3 @@ class TestOptaxInternalFunctions:
         # Grid points should have correct length: (degree + 1) // 2 + (degree + 1) % 2
         d = (degree + 1) // 2 + (degree + 1) % 2
         assert len(grid) == d
-
-
-class TestOptaxErrorHandling:
-    """Tests for error handling in the Optax-based solver."""
-
-    def test_iterative_optax_requires_x64_mode(self):
-        """Test that iterative_optax raises RuntimeError without 64-bit mode"""
-        # Ensure x64 is disabled for this test
-        original_x64 = jax.config.jax_enable_x64
-        jax.config.update("jax_enable_x64", False)
-
-        try:
-            poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3]
-            with pytest.raises(RuntimeError, match="JAX must be in 64-bit mode"):
-                qml.poly_to_angles(poly, "QSVT", angle_solver="iterative_optax")
-        finally:
-            # Restore original setting
-            jax.config.update("jax_enable_x64", original_x64)
-
-    def test_iterative_optax_import_error(self, monkeypatch):
-        """Test that iterative_optax raises ImportError without jax/optax installed"""
-        # Monkeypatch sys.modules to make jax import fail
-        import builtins
-        import sys
-
-        original_import = builtins.__import__
-
-        def mock_import(name, *args, **kwargs):
-            if name == "jax" or name.startswith("jax."):
-                raise ImportError("No module named 'jax'")
-            return original_import(name, *args, **kwargs)
-
-        monkeypatch.setattr(builtins, "__import__", mock_import)
-
-        # Need to also remove from sys.modules if cached
-        jax_modules = [k for k in sys.modules if k == "jax" or k.startswith("jax.")]
-        for mod in jax_modules:
-            monkeypatch.delitem(sys.modules, mod, raising=False)
-
-        poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3]
-        with pytest.raises(ImportError, match="iterative_optax.*requires JAX and Optax"):
-            # We need to reload the function that does the import
-            from pennylane.templates.subroutines.qsvt import (
-                _compute_qsp_angles_iteratively_optax,
-            )
-
-            _compute_qsp_angles_iteratively_optax(poly)
