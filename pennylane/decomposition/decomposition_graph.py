@@ -87,6 +87,8 @@ UNSUPPORTED_TEMPLATES = {
     "QDrift",
     "QROMStatePreparation",
     "QSVT",
+    "Qubitization",
+    "C(Pow(Qubitization))",
     "QutritBasisStatePreparation",
     "QuantumPhaseEstimation",
     "QuantumMonteCarlo",
