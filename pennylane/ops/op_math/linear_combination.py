@@ -337,8 +337,11 @@ class LinearCombination(Sum):
 
         if isinstance(other, Operator):
             if other.arithmetic_depth == 0:
-                # other will be de-queued in the following line, if it is in the current queue.
+                # `other` will be de-queued in the following line, if it is in the current queue
+                # and len(self.ops) > 0. If len(self.ops)==0, we de-queue manually.
                 new_ops = [op @ other for op in self.ops]
+                if len(self.ops) == 0:
+                    qml.QueuingManager.remove(other)
 
                 # build new pauli rep using old pauli rep
                 if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:

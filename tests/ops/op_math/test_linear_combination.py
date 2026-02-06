@@ -408,6 +408,16 @@ matmul_LinearCombinations = [
         ),
     ),
     (
+        qml.ops.LinearCombination([], []),
+        X(2),
+        qml.ops.LinearCombination([], []),
+    ),
+    (
+        qml.ops.LinearCombination([0.2], [Z(1)]),
+        X(2),
+        qml.ops.LinearCombination([0.2], [Z(1) @ X(2)]),
+    ),
+    (
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
         qml.ops.LinearCombination([1, 1], [X(0) @ X(2), Z(1) @ X(2)]),
