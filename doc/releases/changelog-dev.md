@@ -41,6 +41,10 @@ def c():
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
+* Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
+  allows the decomposition graph to treat operators without a decomposition as part of the gate set.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
 <h3>Improvements 🛠</h3>
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
@@ -129,6 +133,10 @@ def c():
 
 * The `to_zx` transform is now compatible with the new graph-based decomposition system.
   [(#8994)](https://github.com/PennyLaneAI/pennylane/pull/8994)
+
+* When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
+  transform no longer raise duplicate warnings about operators that cannot be decomposed.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -373,8 +381,10 @@ def c():
 * Updated test helper `get_device` to correctly seed lightning devices.
   [(#8942)](https://github.com/PennyLaneAI/pennylane/pull/8942)
 
-* Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.33).
+* Updated internal dependencies `autoray` (to 0.8.4), `tach` (to 0.32.2).
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
+  [(#8962)](https://github.com/PennyLaneAI/pennylane/pull/8962)
+  [(#9030)](https://github.com/PennyLaneAI/pennylane/pull/9030)
 
 * Relaxed the `torch` dependency from `==2.9.0` to `~=2.9.0` to allow for compatible patch updates.
   [(#8911)](https://github.com/PennyLaneAI/pennylane/pull/8911)
