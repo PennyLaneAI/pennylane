@@ -28,7 +28,7 @@ from pennylane.devices.default_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionWarning, DeviceError
 
 
 # pylint: disable=protected-access
@@ -320,7 +320,6 @@ class TestPreprocessing:
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the batched and expanded tapes have
         unsupported operators."""
@@ -332,8 +331,13 @@ class TestPreprocessing:
         ]
 
         program, _ = DefaultMixed(wires=2).preprocess()
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-            program(tapes)
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                with pytest.warns(DecompositionWarning):
+                    program(tapes)
+        else:
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                program(tapes)
 
     @pytest.mark.parametrize(
         "readout_err, req_warn",
