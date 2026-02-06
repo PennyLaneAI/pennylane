@@ -76,11 +76,11 @@ def drive(amplitude, phase, wires):
         import jax.numpy as jnp
 
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
+        H_int = sum([qp.X(i) @ qp.X((i+1)%len(wires)) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
-        H_d = qml.pulse.drive(amplitude, phase, wires)
+        H_d = qp.pulse.drive(amplitude, phase, wires)
 
     >>> H_int
     (
@@ -106,12 +106,12 @@ def drive(amplitude, phase, wires):
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_int + H_d)(params, t=[0, 10])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H_int + H_d)(params, t=[0, 10])
+            return qp.expval(qp.Z(0))
 
     >>> params = [2.4]
     >>> circuit(params)
@@ -126,15 +126,15 @@ def drive(amplitude, phase, wires):
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
-        H_local = qml.pulse.drive(amplitude_local, phase_local, [0, 1])
+        H_local = qp.pulse.drive(amplitude_local, phase_local, [0, 1])
 
         H = H_int + H_d + H_local
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit_local(params):
-            qml.evolve(H)(params, t=[0, 10])
-            return qml.expval(qml.Z(0))
+            qp.evolve(H)(params, t=[0, 10])
+            return qp.expval(qp.Z(0))
 
         p_global = 2.4
         p_amp = [1.3, -2.0]
@@ -187,7 +187,7 @@ def drive(amplitude, phase, wires):
             atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
             wires = [1, 2, 3, 4]
             assert len(wires) == len(atom_coordinates)
-            H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+            H_i = qp.pulse.rydberg_interaction(atom_coordinates, wires)
 
         We can now simulate driving those atoms with an oscillating amplitude :math:`\Omega` that is trainable, for a duration of :math:`10 \mu s`.
 
@@ -196,10 +196,10 @@ def drive(amplitude, phase, wires):
             amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
             phase = jnp.pi / 2
 
-            H_d = qml.pulse.drive(amplitude, phase, wires)
+            H_d = qp.pulse.drive(amplitude, phase, wires)
 
             # detuning term
-            H_z = qml.dot([-3*jnp.pi/4]*len(wires), [qml.Z(i) for i in wires])
+            H_z = qp.dot([-3*jnp.pi/4]*len(wires), [qp.Z(i) for i in wires])
 
 
         The total Hamiltonian of that evolution is given by
@@ -212,11 +212,11 @@ def drive(amplitude, phase, wires):
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=wires)
-            @qml.qnode(dev, interface="jax")
+            dev = qp.device("default.qubit", wires=wires)
+            @qp.qnode(dev, interface="jax")
             def circuit(params):
-                qml.evolve(H_i + H_z + H_d)(params, t=[0, 10])
-                return qml.expval(qml.Z(1))
+                qp.evolve(H_i + H_z + H_d)(params, t=[0, 10])
+                return qp.expval(qp.Z(1))
 
         >>> params = [2.4]
         >>> circuit(params)
@@ -318,7 +318,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         observables,
         reorder_fn: Callable = _reorder_parameters,
         pulses: list["HardwarePulse"] | None = None,
-        settings: Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"] | None = None,
+        settings: Union["qp.pulse.RydbergSettings", "qp.pulse.TransmonSettings"] | None = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses

@@ -202,7 +202,7 @@ def get_deep_interface(value):
 
     This can be especially useful when converting to the appropriate interface:
 
-    >>> qml.math.asarray(x, like=qml.math.get_deep_interface(x))
+    >>> qp.math.asarray(x, like=qp.math.get_deep_interface(x))
     Array([[1, 2],
            [3, 4]], dtype=int64)
 

@@ -139,26 +139,26 @@ class Molecule:
         if l is None:
             l = [i[0] for i in self.basis_data]
 
-        use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
+        use_jax = any(qp.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
         interface_args = [{"like": "autograd", "requires_grad": False}, {"like": "jax"}][use_jax]
         if alpha is None:
-            alpha = [qml.math.array(i[1], **interface_args) for i in self.basis_data]
+            alpha = [qp.math.array(i[1], **interface_args) for i in self.basis_data]
 
         if coeff is None:
-            coeff = [qml.math.array(i[2], **interface_args) for i in self.basis_data]
+            coeff = [qp.math.array(i[2], **interface_args) for i in self.basis_data]
 
             if normalize:
                 coeff = [
-                    qml.math.array(c * primitive_norm(l[i], alpha[i]), **interface_args)
+                    qp.math.array(c * primitive_norm(l[i], alpha[i]), **interface_args)
                     for i, c in enumerate(coeff)
                 ]
 
         if (
             len(
                 {
-                    qml.math.get_deep_interface(x)
+                    qp.math.get_deep_interface(x)
                     for x in [coordinates, alpha, coeff]
-                    if qml.math.get_deep_interface(x) != "numpy"
+                    if qp.math.get_deep_interface(x) != "numpy"
                 }
             )
             > 1
@@ -211,7 +211,7 @@ class Molecule:
 
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-        >>> mol = qml.qchem.Molecule(symbols, geometry)
+        >>> mol = qp.qchem.Molecule(symbols, geometry)
         >>> ao = mol.atomic_orbital(0)
         >>> ao(0.0, 0.0, 0.0)
         0.62824688
@@ -237,12 +237,12 @@ class Molecule:
                 array[float]: value of a basis function
             """
             c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
-            e = qml.math.exp(
-                qml.math.tensordot(
+            e = qp.math.exp(
+                qp.math.tensordot(
                     -alpha, (x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2, axes=0
                 )
             )
-            return c * qml.math.dot(coeff, e)
+            return c * qp.math.dot(coeff, e)
 
         return orbital
 
@@ -259,8 +259,8 @@ class Molecule:
 
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-        >>> mol = qml.qchem.Molecule(symbols, geometry)
-        >>> qml.qchem.scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> mol = qp.qchem.Molecule(symbols, geometry)
+        >>> qp.qchem.scf(mol)() # run scf to obtain the optimized molecular orbitals
         >>> mo = mol.molecular_orbital(1)
         >>> mo(0.0, 0.0, 0.0)
         0.01825128

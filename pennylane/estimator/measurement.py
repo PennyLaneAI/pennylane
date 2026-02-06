@@ -36,7 +36,7 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> qml.estimator.estimate_shots(coeffs)
+    >>> qp.estimator.estimate_shots(coeffs)
     419218
 
     .. details::
@@ -114,7 +114,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> qml.estimator.estimate_error(coeffs, shots=100000)
+    >>> qp.estimator.estimate_error(coeffs, shots=100000)
     np.float64(0.0032759684708248507)
 
     .. details::

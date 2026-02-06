@@ -92,7 +92,7 @@ class MPS(Operation):
 
     .. note::
 
-        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
+        The expected number of blocks can be obtained from ``qp.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
         the length of ``template_weights`` argument should match the number of blocks. Whenever either ``n_block_wires``
         is odd or ``offset`` is not :math:`\lfloor \text{n_block_wires}/2  \rfloor`, the template deviates from the maximally
         unbalanced tree architecture described in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
@@ -108,23 +108,23 @@ class MPS(Operation):
             import numpy as np
 
             def block(weights, wires):
-                qml.CNOT(wires=[wires[0],wires[1]])
-                qml.RY(weights[0], wires=wires[0])
-                qml.RY(weights[1], wires=wires[1])
+                qp.CNOT(wires=[wires[0],wires[1]])
+                qp.RY(weights[0], wires=wires[0])
+                qp.RY(weights[1], wires=wires[1])
 
             n_wires = 4
             n_block_wires = 2
             n_params_block = 2
-            n_blocks = qml.MPS.get_n_blocks(range(n_wires),n_block_wires)
+            n_blocks = qp.MPS.get_n_blocks(range(n_wires),n_block_wires)
             template_weights = [[0.1, -0.3]] * n_blocks
 
-            dev= qml.device('default.qubit',wires=range(n_wires))
-            @qml.qnode(dev)
+            dev= qp.device('default.qubit',wires=range(n_wires))
+            @qp.qnode(dev)
             def circuit(template_weights):
-                qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.Z(n_wires-1))
+                qp.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+                return qp.expval(qp.Z(n_wires-1))
 
-        >>> print(qml.draw(circuit, level='device')(template_weights))
+        >>> print(qp.draw(circuit, level='device')(template_weights))
         0: ─╭●──RY(0.10)──────────────────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
@@ -138,19 +138,19 @@ class MPS(Operation):
             import numpy as np
 
             def block(wires):
-                qml.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
+                qp.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
 
             n_wires = 8
             n_block_wires = 4
             n_params_block = 2
 
-            dev= qml.device('default.qubit',wires=n_wires)
-            @qml.qnode(dev)
+            dev= qp.device('default.qubit',wires=n_wires)
+            @qp.qnode(dev)
             def circuit():
-                qml.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = 1)
-                return qml.state()
+                qp.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = 1)
+                return qp.state()
 
-        >>> print(qml.draw(circuit, level='device')())
+        >>> print(qp.draw(circuit, level='device')())
             0: ─╭●─────────────┤ ╭State
             1: ─├●─╭●──────────┤ ├State
             2: ─├●─├●─╭●───────┤ ├State

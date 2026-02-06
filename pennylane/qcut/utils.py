@@ -100,23 +100,23 @@ def find_and_place_cuts(
     .. code-block:: python
 
         ops = [
-            qml.RX(0.1, wires=0),
-            qml.RY(0.2, wires=1),
-            qml.RX(0.3, wires="a"),
-            qml.RY(0.4, wires="b"),
-            qml.CNOT(wires=[0, 1]),
-            qml.WireCut(wires=1),
-            qml.CNOT(wires=["a", "b"]),
-            qml.CNOT(wires=[1, "a"]),
-            qml.CNOT(wires=[0, 1]),
-            qml.CNOT(wires=["a", "b"]),
-            qml.RX(0.5, wires="a"),
-            qml.RY(0.6, wires="b"),
+            qp.RX(0.1, wires=0),
+            qp.RY(0.2, wires=1),
+            qp.RX(0.3, wires="a"),
+            qp.RY(0.4, wires="b"),
+            qp.CNOT(wires=[0, 1]),
+            qp.WireCut(wires=1),
+            qp.CNOT(wires=["a", "b"]),
+            qp.CNOT(wires=[1, "a"]),
+            qp.CNOT(wires=[0, 1]),
+            qp.CNOT(wires=["a", "b"]),
+            qp.RX(0.5, wires="a"),
+            qp.RY(0.6, wires="b"),
         ]
-        measurements = [qml.expval(qml.X(0) @ qml.Y("a") @ qml.Z("b"))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.X(0) @ qp.Y("a") @ qp.Z("b"))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape, decimals=1))
+    >>> print(qp.drawer.tape_text(tape, decimals=1))
     0: ──RX(0.1)─╭●────────╭●──────────┤ ╭<X@Y@Z>
     1: ──RY(0.2)─╰X──//─╭●─╰X──────────┤ │
     a: ──RX(0.3)─╭●─────╰X─╭●──RX(0.5)─┤ ├<X@Y@Z>
@@ -125,8 +125,8 @@ def find_and_place_cuts(
     Since the existing :class:`~.WireCut` doesn't sufficiently fragment the circuit, we can find the
     remaining cuts using the default KaHyPar partitioner:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
-    >>> cut_graph = qml.qcut.find_and_place_cuts(
+    >>> graph = qp.qcut.tape_to_graph(tape)
+    >>> cut_graph = qp.qcut.find_and_place_cuts(
     ...     graph=graph,
     ...     num_fragments=2,
     ...     imbalance=0.5,
@@ -134,7 +134,7 @@ def find_and_place_cuts(
 
     Visualizing the newly-placed cut:
 
-    >>> print(qml.qcut.graph_to_tape(cut_graph).draw(decimals=1))
+    >>> print(qp.qcut.graph_to_tape(cut_graph).draw(decimals=1))
     0: ──RX(0.1)─╭●────────────╭●───────┤ ╭<X@Y@Z>
     1: ──RY(0.2)─╰X──//─╭●──//─╰X───────┤ │
     a: ──RX(0.3)─╭●─────╰X─╭●───RX(0.5)─┤ ├<X@Y@Z>
@@ -145,15 +145,15 @@ def find_and_place_cuts(
     into fragments. Or, alternatively, we can directly get such processed graph by passing
     ``replace_wire_cuts=True``:
 
-    >>> cut_graph = qml.qcut.find_and_place_cuts(
+    >>> cut_graph = qp.qcut.find_and_place_cuts(
     ...     graph=graph,
     ...     num_fragments=2,
     ...     imbalance=0.5,
     ...     replace_wire_cuts=True,
     ... )
-    >>> frags, comm_graph = qml.qcut.fragment_graph(cut_graph)
+    >>> frags, comm_graph = qp.qcut.fragment_graph(cut_graph)
     >>> for t in frags:
-    ...     print(qml.qcut.graph_to_tape(t).draw())
+    ...     print(qp.qcut.graph_to_tape(t).draw())
 
     .. code-block::
 
@@ -171,7 +171,7 @@ def find_and_place_cuts(
     simple cut strategy is to simply specify the the ``max_free_wires`` argument (or equivalently
     directly passing a :class:`pennylane.devices.Device` to the ``device`` argument):
 
-    >>> cut_strategy = qml.qcut.CutStrategy(max_free_wires=2)
+    >>> cut_strategy = qp.qcut.CutStrategy(max_free_wires=2)
     >>> cut_strategy.get_cut_kwargs(graph)
     [{'num_fragments': 2, 'imbalance': 0.2857142857142858},
      {'num_fragments': 3, 'imbalance': 0.2857142857142858},
@@ -191,11 +191,11 @@ def find_and_place_cuts(
     in order to search for the optimal cut. This is done by directly passing a
     :class:`~.CutStrategy` to :func:`~.find_and_place_cuts`:
 
-    >>> cut_graph = qml.qcut.find_and_place_cuts(
+    >>> cut_graph = qp.qcut.find_and_place_cuts(
             graph=graph,
             cut_strategy=cut_strategy,
         )
-    >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
+    >>> print(qp.qcut.graph_to_tape(cut_graph).draw())
     0: ──RX──//─╭●──//────────╭●──//────────┤ ╭<X@Y@Z>
     1: ──RY──//─╰X──//─╭●──//─╰X────────────┤ │
     a: ──RX──//─╭●──//─╰X──//─╭●──//──RX─//─┤ ├<X@Y@Z>
@@ -204,10 +204,10 @@ def find_and_place_cuts(
     As one can tell, quite a few cuts have to be made in order to execute the circuit on solely
     2-qubit devices. To verify, let's print the fragments:
 
-    >>> qml.qcut.replace_wire_cut_nodes(cut_graph)
-    >>> frags, comm_graph = qml.qcut.fragment_graph(cut_graph)
+    >>> qp.qcut.replace_wire_cut_nodes(cut_graph)
+    >>> frags, comm_graph = qp.qcut.fragment_graph(cut_graph)
     >>> for t in frags:
-    ...     print(qml.qcut.graph_to_tape(t).draw())
+    ...     print(qp.qcut.graph_to_tape(t).draw())
 
     .. code-block::
 
@@ -316,7 +316,7 @@ def replace_wire_cut_node(node: WireCut, graph):
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         node (WireCut): the  :class:`~.WireCut` node to be replaced with a :class:`~.MeasureNode`
@@ -329,20 +329,20 @@ def replace_wire_cut_node(node: WireCut, graph):
 
     .. code-block:: python
 
-        wire_cut = qml.WireCut(wires=0)
+        wire_cut = qp.WireCut(wires=0)
 
         ops = [
-            qml.RX(0.4, wires=0),
+            qp.RX(0.4, wires=0),
             wire_cut,
-            qml.RY(0.5, wires=0),
+            qp.RY(0.5, wires=0),
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove the wire cut node using:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
-    >>> qml.qcut.replace_wire_cut_node(wire_cut, graph)
+    >>> graph = qp.qcut.tape_to_graph(tape)
+    >>> qp.qcut.replace_wire_cut_node(wire_cut, graph)
     """
     node_obj = WrappedObj(node)
     predecessors = graph.pred[node_obj]
@@ -394,7 +394,7 @@ def replace_wire_cut_nodes(graph):
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         graph (nx.MultiDiGraph): The graph containing the :class:`~.WireCut` nodes
@@ -406,26 +406,26 @@ def replace_wire_cut_nodes(graph):
 
     .. code-block:: python
 
-        wire_cut_0 = qml.WireCut(wires=0)
-        wire_cut_1 = qml.WireCut(wires=1)
-        multi_wire_cut = qml.WireCut(wires=[0, 1])
+        wire_cut_0 = qp.WireCut(wires=0)
+        wire_cut_1 = qp.WireCut(wires=1)
+        multi_wire_cut = qp.WireCut(wires=[0, 1])
 
         ops = [
-            qml.RX(0.4, wires=0),
+            qp.RX(0.4, wires=0),
             wire_cut_0,
-            qml.RY(0.5, wires=0),
+            qp.RY(0.5, wires=0),
             wire_cut_1,
-            qml.CNOT(wires=[0, 1]),
+            qp.CNOT(wires=[0, 1]),
             multi_wire_cut,
-            qml.RZ(0.6, wires=1),
+            qp.RZ(0.6, wires=1),
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
     We can find the circuit graph and remove all the wire cut nodes using:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
-    >>> qml.qcut.replace_wire_cut_nodes(graph)
+    >>> graph = qp.qcut.tape_to_graph(tape)
+    >>> qp.qcut.replace_wire_cut_nodes(graph)
     """
     for op in list(graph.nodes):
         if isinstance(op.obj, WireCut):
@@ -451,14 +451,14 @@ def place_wire_cuts(graph, cut_edges: Sequence[tuple[Operation, Operation, Any]]
     .. code-block:: python
 
         ops = [
-            qml.RX(0.432, wires=0),
-            qml.RY(0.543, wires="a"),
-            qml.CNOT(wires=[0, "a"]),
+            qp.RX(0.432, wires=0),
+            qp.RY(0.543, wires="a"),
+            qp.CNOT(wires=[0, "a"]),
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape, decimals=3))
+    >>> print(qp.drawer.tape_text(tape, decimals=3))
     0: ──RX(0.432)─╭●─┤  <Z>
     a: ──RY(0.543)─╰X─┤
 
@@ -466,7 +466,7 @@ def place_wire_cuts(graph, cut_edges: Sequence[tuple[Operation, Operation, Any]]
     ``RY(0.543, wires=["a"])`` and ``CNOT(wires=[0, 'a'])`` operations after the tape is constructed,
     we can first find the edge in the graph:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
+    >>> graph = qp.qcut.tape_to_graph(tape)
     >>> op0, op1 = tape.operations[1], tape.operations[2]
     >>> cut_edges = [e for e in graph.edges if e[0].obj is op0 and e[1].obj is op1]
     >>> cut_edges
@@ -474,13 +474,13 @@ def place_wire_cuts(graph, cut_edges: Sequence[tuple[Operation, Operation, Any]]
 
     Then feed it to this function for placement:
 
-    >>> cut_graph = qml.qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+    >>> cut_graph = qp.qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
     >>> cut_graph
     <networkx.classes.multidigraph.MultiDiGraph at 0x7f7251ac1220>
 
     And visualize the cut by converting back to a tape:
 
-    >>> print(qml.qcut.graph_to_tape(cut_graph).draw(decimals=3))
+    >>> print(qp.qcut.graph_to_tape(cut_graph).draw(decimals=3))
     0: ──RX(0.432)─────╭●─┤  <Z>
     a: ──RY(0.543)──//─╰X─┤
     """
@@ -551,7 +551,7 @@ def fragment_graph(graph):
     .. note::
 
         This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         graph (nx.MultiDiGraph): directed multigraph containing measure and prepare
@@ -567,28 +567,28 @@ def fragment_graph(graph):
 
     .. code-block:: python
 
-        wire_cut_0 = qml.WireCut(wires=0)
-        wire_cut_1 = qml.WireCut(wires=1)
-        multi_wire_cut = qml.WireCut(wires=[0, 1])
+        wire_cut_0 = qp.WireCut(wires=0)
+        wire_cut_1 = qp.WireCut(wires=1)
+        multi_wire_cut = qp.WireCut(wires=[0, 1])
 
         ops = [
-            qml.RX(0.4, wires=0),
+            qp.RX(0.4, wires=0),
             wire_cut_0,
-            qml.RY(0.5, wires=0),
+            qp.RY(0.5, wires=0),
             wire_cut_1,
-            qml.CNOT(wires=[0, 1]),
+            qp.CNOT(wires=[0, 1]),
             multi_wire_cut,
-            qml.RZ(0.6, wires=1),
+            qp.RZ(0.6, wires=1),
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
     We can find the corresponding graph, remove all the wire cut nodes, and
     find the subgraphs and communication graph by using:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
-    >>> qml.qcut.replace_wire_cut_nodes(graph)
-    >>> qml.qcut.fragment_graph(graph)
+    >>> graph = qp.qcut.tape_to_graph(tape)
+    >>> qp.qcut.replace_wire_cut_nodes(graph)
+    >>> qp.qcut.fragment_graph(graph)
     ([<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e2820>,

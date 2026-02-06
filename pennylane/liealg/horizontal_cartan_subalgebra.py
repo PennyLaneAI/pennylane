@@ -113,12 +113,12 @@ def horizontal_cartan_subalgebra(
 
     A quick example computing a Cartan subalgebra of :math:`\mathfrak{su}(4)` using the Cartan involution :func:`~even_odd_involution`.
 
-    >>> g = list(qml.pauli.pauli_group(2)) # u(4)
+    >>> g = list(qp.pauli.pauli_group(2)) # u(4)
     >>> g = g[1:] # remove identity -> su(4)
     >>> g = [op.pauli_rep for op in g] # optional; turn to PauliSentence for convenience
-    >>> k, m = qml.liealg.cartan_decomp(g, qml.liealg.even_odd_involution)
+    >>> k, m = qp.liealg.cartan_decomp(g, qp.liealg.even_odd_involution)
     >>> g = k + m # re-order g to separate k and m
-    >>> newg, k, mtilde, a, new_adj = qml.liealg.horizontal_cartan_subalgebra(k, m)
+    >>> newg, k, mtilde, a, new_adj = qp.liealg.horizontal_cartan_subalgebra(k, m)
     >>> newg == k + mtilde + a
     True
     >>> a # doctest: +SKIP
@@ -126,7 +126,7 @@ def horizontal_cartan_subalgebra(
 
     We can confirm that these all commute with each other, as the CSA is Abelian (i.e., all operators commute).
 
-    >>> qml.liealg.check_abelian(a)
+    >>> qp.liealg.check_abelian(a)
     True
 
     We can opt-in to return what we call adjoint vectors of dimension :math:`|\mathfrak{g}|`, where each component corresponds to an entry in (the ordered) ``g``.
@@ -147,7 +147,7 @@ def horizontal_cartan_subalgebra(
 
     For convenience, we provide a helper function :func:`~adjvec_to_op` for conversion of the returned collections of adjoint vectors.
 
-    >>> a = qml.liealg.adjvec_to_op(np_a, g)
+    >>> a = qp.liealg.adjvec_to_op(np_a, g)
     >>> a # doctest: +SKIP
     [-1.0 * Z(0) @ Z(1), -1.0 * Y(0) @ Y(1), 1.0 * X(0) @ X(1)]
 
@@ -167,7 +167,7 @@ def horizontal_cartan_subalgebra(
         >>> gens = [X(i) @ X(i+1) for i in range(n-1)]
         >>> gens += [Y(i) @ Y(i+1) for i in range(n-1)]
         >>> gens += [Z(i) @ Z(i+1) for i in range(n-1)]
-        >>> g = qml.lie_closure(gens, matrix=True)
+        >>> g = qp.lie_closure(gens, matrix=True)
 
         Taking the Heisenberg Lie algebra, we can perform the Cartan decomposition. We take the :func:`~even_odd_involution` as a valid Cartan involution.
         The resulting vertical and horizontal subspaces :math:`\mathfrak{k}` and :math:`\mathfrak{m}` need to fulfill the commutation relations
@@ -183,7 +183,7 @@ def horizontal_cartan_subalgebra(
         all remaining operators from ``m``.
 
         >>> g = np.vstack([k, m]) # re-order g to separate k and m operators
-        >>> adj = qml.structure_constants(g, matrix=True) # compute adjoint representation of g
+        >>> adj = qp.structure_constants(g, matrix=True) # compute adjoint representation of g
 
         Finally, we can compute a Cartan subalgebra :math:`\mathfrak{a}`, a maximal Abelian subalgebra of :math:`\mathfrak{m}`.
 
@@ -211,7 +211,7 @@ def horizontal_cartan_subalgebra(
 
         >>> from pennylane.liealg import adjvec_to_op
         >>> a = adjvec_to_op(np_a, g)
-        >>> h_op = [qml.pauli_decompose(op).pauli_rep for op in a]
+        >>> h_op = [qp.pauli_decompose(op).pauli_rep for op in a]
         >>> h_op # doctest: +SKIP
         [-1.0 * Y(1) @ Y(2), -1.0 * Z(1) @ Z(2), 1.0 * X(1) @ X(2)]
 
@@ -309,7 +309,7 @@ def adjvec_to_op(adj_vecs, basis, is_orthogonal=True):
 
     >>> from pennylane.liealg import adjvec_to_op
     >>> c = np.array([[0.5, 0.3, 0.7]])
-    >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> basis = [qp.X(0), qp.Y(0), qp.Z(0)]
     >>> adjvec_to_op(c, basis)
     [0.5 * X(0) + 0.3 * Y(0) + 0.7 * Z(0)]
 
@@ -417,8 +417,8 @@ def op_to_adjvec(
     The basis can be numerical or operators.
 
     >>> from pennylane.liealg import op_to_adjvec
-    >>> op = qml.X(0) + 0.5 * qml.Y(0)
-    >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> op = qp.X(0) + 0.5 * qp.Y(0)
+    >>> basis = [qp.X(0), qp.Y(0), qp.Z(0)]
     >>> op_to_adjvec([op], basis)
     array([[1. , 0.5, 0. ]])
     >>> op_to_adjvec([op], [op.matrix() for op in basis])
@@ -488,14 +488,14 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     We choose a basis of a Lie algebra, compute its adjoint representation.
 
     >>> from pennylane.liealg import change_basis_ad_rep
-    >>> basis = [qml.X(0), qml.Y(0), qml.Z(0)]
-    >>> adj = qml.structure_constants(basis)
+    >>> basis = [qp.X(0), qp.Y(0), qp.Z(0)]
+    >>> adj = qp.structure_constants(basis)
 
     Now we change the basis and re-compute the adjoint representation in that new basis.
 
     >>> basis_change = np.array([[1., 1., 0.], [0., 1., 1.], [0., 1., 1.]])
-    >>> new_ops = [qml.sum(*[basis_change[i,j] * basis[j] for j in range(3)]) for i in range(3)]
-    >>> new_adj = qml.structure_constants(new_ops)
+    >>> new_ops = [qp.sum(*[basis_change[i,j] * basis[j] for j in range(3)]) for i in range(3)]
+    >>> new_adj = qp.structure_constants(new_ops)
 
     We confirm that instead of re-computing the adjoint representation (typically expensive), we can
     transform the old adjoint representation with the change of basis matrix.

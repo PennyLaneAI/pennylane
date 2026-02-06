@@ -317,17 +317,17 @@ class QuantumMonteCarlo(Operation):
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit", wires=(n + m + 1))
+            dev = qp.device("default.qubit", wires=(n + m + 1))
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.templates.QuantumMonteCarlo(
+                qp.templates.QuantumMonteCarlo(
                     probs,
                     func,
                     target_wires=target_wires,
                     estimation_wires=estimation_wires,
                 )
-                return qml.probs(estimation_wires)
+                return qp.probs(estimation_wires)
 
             phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
 

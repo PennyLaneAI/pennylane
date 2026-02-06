@@ -57,19 +57,19 @@ class ControlledSequence(SymbolicOp, Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires = 4)
+        dev = qp.device("default.qubit", wires = 4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
 
             for i in range(3):
-                qml.Hadamard(wires = i)
+                qp.Hadamard(wires = i)
 
-            qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+            qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
 
-            qml.adjoint(qml.QFT)(wires = range(3))
+            qp.adjoint(qp.QFT)(wires = range(3))
 
-            return qml.probs(wires = range(3))
+            return qp.probs(wires = range(3))
 
     >>> print(circuit()) # doctest: +SKIP
     [0.9206 0.0264 0.0073 0.0042 0.0036 0.0042 0.0073 0.0264]
@@ -168,15 +168,15 @@ class ControlledSequence(SymbolicOp, Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
-            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+            dev = qp.device("default.qubit")
+            op = qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 op.decomposition()
-                return qml.state()
+                return qp.state()
 
-        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
+        >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
         0: ─╭●────────────────────────────┤  State
         1: ─│─────────╭●──────────────────┤  State
         2: ─│─────────│─────────╭●────────┤  State
@@ -187,15 +187,15 @@ class ControlledSequence(SymbolicOp, Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
-            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+            dev = qp.device("default.qubit")
+            op = qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 op.compute_decomposition(base=op.base, control_wires=op.control, lazy=True)
-                return qml.state()
+                return qp.state()
 
-        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
+        >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
         0: ─╭(RX(0.25))⁴───────────────────────────┤  State
         1: ─│────────────╭(RX(0.25))²──────────────┤  State
         2: ─│────────────│────────────╭(RX(0.25))¹─┤  State

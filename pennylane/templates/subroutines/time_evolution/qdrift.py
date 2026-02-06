@@ -115,20 +115,20 @@ class QDrift(Operation):
     .. code-block:: python
 
         coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
+        ops = [qp.X(0), qp.Z(0)]
+        H = qp.dot(coeffs, ops)
 
-        dev = qml.device("default.qubit", wires=2)
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit", wires=2)
+        @qp.qnode(dev)
         def my_circ():
             # Prepare some state
-            qml.Hadamard(0)
+            qp.Hadamard(0)
 
             # Evolve according to H
-            qml.QDrift(H, time=1.2, n=10, seed=10)
+            qp.QDrift(H, time=1.2, n=10, seed=10)
 
             # Measure some quantity
-            return qml.probs()
+            return qp.probs()
 
     >>> my_circ()
     array([0.653..., 0.        , 0.346..., 0.        ])
@@ -148,33 +148,33 @@ class QDrift(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def my_circ(time):
                 # Prepare H:
-                H = qml.dot([0.2, -0.1], [qml.Y(0), qml.Z(1)])
+                H = qp.dot([0.2, -0.1], [qp.Y(0), qp.Z(1)])
 
                 # Prepare some state
-                qml.Hadamard(0)
+                qp.Hadamard(0)
 
                 # Evolve according to H
-                qml.QDrift(H, time, n=10, seed=10)
+                qp.QDrift(H, time, n=10, seed=10)
 
                 # Measure some quantity
-                return qml.expval(qml.Z(0) @ qml.Z(1))
+                return qp.expval(qp.Z(0) @ qp.Z(1))
 
 
-        >>> time = qml.numpy.array(1.23)
-        >>> print(qml.grad(my_circ)(time))
+        >>> time = qp.numpy.array(1.23)
+        >>> print(qp.grad(my_circ)(time))
         0.279...
 
         The error in the approximation of time evolution with the QDrift protocol is
         directly related to the number of samples used in the product. We provide a
         method to upper-bound the error:
 
-        >>> H = qml.dot([0.25, 0.75], [qml.X(0), qml.Z(0)])
-        >>> print(qml.QDrift.error(H, time=1.2, n=10))
+        >>> H = qp.dot([0.25, 0.75], [qp.X(0), qp.Z(0)])
+        >>> print(qp.QDrift.error(H, time=1.2, n=10))
         0.3661197552925645
 
     """
@@ -204,7 +204,7 @@ class QDrift(Operation):
 
         if len(ops) < 2:
             raise ValueError(
-                "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                "There should be at least 2 terms in the Hamiltonian. Otherwise use `qp.exp`"
             )
 
         if any(math.requires_grad(coeff) for coeff in coeffs):

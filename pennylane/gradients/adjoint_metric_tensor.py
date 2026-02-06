@@ -104,7 +104,7 @@ def adjoint_metric_tensor(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the metric tensor in the form of a tensor. Dimensions are ``(tape.num_params, tape.num_params)``.
 
     .. seealso:: :func:`~.metric_tensor` for hardware-compatible metric tensor computations.
@@ -115,21 +115,21 @@ def adjoint_metric_tensor(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="autograd")
         def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(weights[2], wires=1)
-            qml.RZ(weights[3], wires=0)
-            return qml.expval(qml.Z(0) @ qml.Z(1)), qml.expval(qml.Y(1))
+            qp.RX(weights[0], wires=0)
+            qp.RY(weights[1], wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.RZ(weights[2], wires=1)
+            qp.RZ(weights[3], wires=0)
+            return qp.expval(qp.Z(0) @ qp.Z(1)), qp.expval(qp.Y(1))
 
     We can use the ``adjoint_metric_tensor`` transform to generate a new function
     that returns the metric tensor of this QNode:
 
-    >>> mt_fn = qml.adjoint_metric_tensor(circuit)
+    >>> mt_fn = qp.adjoint_metric_tensor(circuit)
     >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
     >>> mt_fn(weights)
     tensor([[ 0.25  ,  0.    , -0.0497, -0.0497],
@@ -145,7 +145,7 @@ def adjoint_metric_tensor(
     >>> mt = mt_fn(weights)
     >>> time.process_time() - start_time
     0.019
-    >>> mt_fn_2 = qml.metric_tensor(circuit)
+    >>> mt_fn_2 = qp.metric_tensor(circuit)
     >>> start_time = time.process_time()
     >>> mt = mt_fn_2(weights)
     >>> time.process_time() - start_time

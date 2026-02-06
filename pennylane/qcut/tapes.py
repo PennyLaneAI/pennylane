@@ -38,7 +38,7 @@ def tape_to_graph(tape: QuantumScript):
     .. note::
 
         This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         tape (QuantumTape): tape to be converted into a directed multigraph
@@ -55,16 +55,16 @@ def tape_to_graph(tape: QuantumScript):
     .. code-block:: python
 
         ops = [
-            qml.RX(0.4, wires=0),
-            qml.RY(0.9, wires=0),
-            qml.CNOT(wires=[0, 1]),
+            qp.RX(0.4, wires=0),
+            qp.RY(0.9, wires=0),
+            qp.CNOT(wires=[0, 1]),
         ]
-        measurements = [qml.expval(qml.Z(1))]
-        tape = qml.tape.QuantumTape(ops,)
+        measurements = [qp.expval(qp.Z(1))]
+        tape = qp.tape.QuantumTape(ops,)
 
     Its corresponding circuit graph can be found using
 
-    >>> qml.qcut.tape_to_graph(tape)
+    >>> qp.qcut.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     from networkx import MultiDiGraph  # pylint: disable=import-outside-toplevel
@@ -112,7 +112,7 @@ def graph_to_tape(graph) -> QuantumScript:
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
@@ -127,21 +127,21 @@ def graph_to_tape(graph) -> QuantumScript:
     .. code-block:: python
 
         ops = [
-            qml.RX(0.4, wires=0),
-            qml.RY(0.5, wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.qcut.MeasureNode(wires=1),
-            qml.qcut.PrepareNode(wires=1),
-            qml.CNOT(wires=[1, 0]),
+            qp.RX(0.4, wires=0),
+            qp.RY(0.5, wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.qcut.MeasureNode(wires=1),
+            qp.qcut.PrepareNode(wires=1),
+            qp.CNOT(wires=[1, 0]),
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
     subsequently act on wire ``2`` instead of wire ``1``:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
-    >>> tape = qml.qcut.graph_to_tape(graph)
+    >>> graph = qp.qcut.tape_to_graph(tape)
+    >>> tape = qp.qcut.graph_to_tape(graph)
     >>> print(tape.draw())
     0: ──RX──────────╭●──────────────╭X─┤  <Z>
     1: ──RY──────────╰X──MeasureNode─│──┤
@@ -263,7 +263,7 @@ def expand_fragment_tape(
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         tape (QuantumTape): the fragment tape containing :class:`MeasureNode` and
@@ -282,17 +282,17 @@ def expand_fragment_tape(
     .. code-block:: python
 
         ops = [
-            qml.qcut.PrepareNode(wires=0),
-            qml.RX(0.5, wires=0),
-            qml.qcut.MeasureNode(wires=0),
+            qp.qcut.PrepareNode(wires=0),
+            qp.RX(0.5, wires=0),
+            qp.qcut.MeasureNode(wires=0),
         ]
-        tape = qml.tape.QuantumTape(ops)
+        tape = qp.tape.QuantumTape(ops)
 
     We can expand over the measurement and preparation nodes using:
 
-    >>> tapes, prep, meas = qml.qcut.expand_fragment_tape(tape)
+    >>> tapes, prep, meas = qp.qcut.expand_fragment_tape(tape)
     >>> for t in tapes:
-    ...     print(qml.drawer.tape_text(t, decimals=1))
+    ...     print(qp.drawer.tape_text(t, decimals=1))
     0: ──I──RX(0.5)─┤  <I>  <Z>
     0: ──I──RX(0.5)─┤  <X>
     0: ──I──RX(0.5)─┤  <Y>

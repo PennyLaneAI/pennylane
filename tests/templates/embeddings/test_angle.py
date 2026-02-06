@@ -25,13 +25,13 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 @pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    op = qml.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
-    qml.ops.functions.assert_valid(op)
+    op = qp.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
+    qp.ops.functions.assert_valid(op)
 
 
 def test_repr():
     """Test the custom repr for angle embedding."""
-    op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
+    op = qp.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
     expected = "AngleEmbedding([1 2 3], wires=[0, 1, 2], rotation=Z)"
     assert repr(op) == expected
 
@@ -39,8 +39,8 @@ def test_repr():
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
-    wires = qml.wires.Wires((0, 1, 2))
-    op = qml.AngleEmbedding(features=[1, 2, 3], wires=wires, rotation="Z")
+    wires = qp.wires.Wires((0, 1, 2))
+    op = qp.AngleEmbedding(features=[1, 2, 3], wires=wires, rotation="Z")
 
     data, metadata = op._flatten()
     assert data == op.data
@@ -49,7 +49,7 @@ def test_flatten_unflatten():
     assert metadata[1] == (("rotation", "Z"),)
 
     new_op = type(op)._unflatten(*op._flatten())
-    qml.assert_equal(op, new_op)
+    qp.assert_equal(op, new_op)
     assert op is not new_op
 
 
@@ -60,8 +60,8 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
-        op = qml.AngleEmbedding(features=features, wires=range(4))
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.AngleEmbedding(features=features, wires=range(4))
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == len(features)
         for gate in tape.operations:
@@ -73,22 +73,22 @@ class TestDecomposition:
 
         features = np.ones((5, 3))
 
-        op = qml.AngleEmbedding(features=features, wires=range(4))
+        op = qp.AngleEmbedding(features=features, wires=range(4))
         assert op.batch_size == 5
-        tape = qml.tape.QuantumScript(op.decomposition())
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 3
         for gate in tape.operations:
             assert gate.name == "RX"
             assert gate.batch_size == 5
-            assert qml.math.allclose(gate.parameters[0], np.ones(5))
+            assert qp.math.allclose(gate.parameters[0], np.ones(5))
 
     @pytest.mark.parametrize("rotation", ["X", "Y", "Z"])
     def test_rotations(self, rotation):
         """Checks the queue for the specified rotation settings."""
 
-        op = qml.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         for gate in tape.operations:
             assert gate.name == "R" + rotation
@@ -98,14 +98,14 @@ class TestDecomposition:
         """Checks the state produced using the rotation='X' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
-            qml.PauliX(wires=0)
-            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
-            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
+            qp.AngleEmbedding(features=x, wires=range(4), rotation="X")
+            qp.PauliX(wires=0)
+            qp.AngleEmbedding(features=x, wires=range(4), rotation="X")
+            return [qp.expval(qp.PauliZ(i)) for i in range(4)]
 
         res = circuit(x=features)
         target = [1, -1, 0, 1]
@@ -118,12 +118,12 @@ class TestDecomposition:
 
         features = [np.pi / 2, np.pi / 2, 0, np.pi / 2]
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.AngleEmbedding(features=x, wires=range(5))
-            return [qml.expval(qml.PauliZ(i)) for i in range(5)]
+            qp.AngleEmbedding(features=x, wires=range(5))
+            return [qp.expval(qp.PauliZ(i)) for i in range(5)]
 
         res = circuit(x=features)
         target = [0, 0, 1, 0, 1]
@@ -134,18 +134,18 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.AngleEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.AngleEmbedding(features, wires=range(3))
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.AngleEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.AngleEmbedding(features, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -162,8 +162,8 @@ class TestDecomposition:
     @pytest.mark.capture
     @pytest.mark.parametrize(("features", "wires", "rotation"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, rotation):
-        op = qml.AngleEmbedding(features, wires, rotation=rotation)
-        for rule in qml.list_decomps(qml.AngleEmbedding):
+        op = qp.AngleEmbedding(features, wires, rotation=rotation)
+        for rule in qp.list_decomps(qp.AngleEmbedding):
             _test_decomposition_rule(op, rule)
 
 
@@ -175,12 +175,12 @@ class TestInputs:
         rotation gates than features."""
 
         features = [0, 0, 1, 0]
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.AngleEmbedding(features=x, wires=range(3))
-            return qml.expval(qml.PauliZ(0))
+            qp.AngleEmbedding(features=x, wires=range(3))
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of"):
             circuit(x=features)
@@ -189,36 +189,36 @@ class TestInputs:
         """Verifies that exception is raised if the
         rotation strategy is unknown."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.AngleEmbedding(features=x, wires=range(1), rotation="A")
-            return qml.expval(qml.PauliZ(0))
+            qp.AngleEmbedding(features=x, wires=range(1), rotation="A")
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        template = qp.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.AngleEmbedding(features, range(3))
-    qml.CNOT(wires=[2, 1])
-    qml.CNOT(wires=[1, 0])
-    return qml.expval(qml.PauliZ(0))
+    qp.AngleEmbedding(features, range(3))
+    qp.CNOT(wires=[2, 1])
+    qp.CNOT(wires=[1, 0])
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(features):
-    qml.RX(features[0], wires=0)
-    qml.RX(features[1], wires=1)
-    qml.RX(features[2], wires=2)
-    qml.CNOT(wires=[2, 1])
-    qml.CNOT(wires=[1, 0])
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(features[0], wires=0)
+    qp.RX(features[1], wires=1)
+    qp.RX(features[2], wires=2)
+    qp.CNOT(wires=[2, 1])
+    qp.CNOT(wires=[1, 0])
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -230,18 +230,18 @@ class TestInterfaces:
 
         features = [1.0, 1.0, 1.0]
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tuple(features))
         res2 = circuit2(tuple(features))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd(self, tol):
@@ -249,19 +249,19 @@ class TestInterfaces:
 
         features = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(features)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -275,14 +275,14 @@ class TestInterfaces:
 
         features = jnp.array([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features)
@@ -301,14 +301,14 @@ class TestInterfaces:
 
         features = jnp.array([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features)
@@ -316,7 +316,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(features)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -326,14 +326,14 @@ class TestInterfaces:
 
         features = tf.Variable([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(features)
@@ -353,14 +353,14 @@ class TestInterfaces:
 
         features = torch.tensor([1.0, 1.0, 1.0], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(features)
         res.backward()

@@ -102,15 +102,15 @@ def for_loop(
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(n: int, x: float):
 
-            @qml.for_loop(0, n, 1)
+            @qp.for_loop(0, n, 1)
             def loop_rx(i, x):
                 # perform some work and update (some of) the arguments
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
 
                 # update the value of x for the next iteration
                 return jnp.sin(x)
@@ -118,7 +118,7 @@ def for_loop(
             # apply the for loop
             final_x = loop_rx(x)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     >>> circuit(7, 1.6)
     array(0.97926626)
@@ -127,7 +127,7 @@ def for_loop(
     :func:`~.qjit` decorator, the for loop will not be unrolled, and instead
     will be captured as-is during compilation and executed during runtime:
 
-    >>> qml.qjit(circuit)(7, 1.6)
+    >>> qp.qjit(circuit)(7, 1.6)
     Array(0.97926626, dtype=float64)
 
     .. note::
@@ -150,13 +150,13 @@ def for_loop(
 
             Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
             which captures the abstract computational graph and generates the abstract shapes.
-            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
+            The resulting JAXPR can then be evaluated using ``qp.capture.eval_jaxpr``:
 
             >>> jaxpr = jax.make_jaxpr(workflow)(arg)
-            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+            >>> qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         The following discussion applies to the experimental capture infrastructure, which can be
-        turned on by ``qml.capture.enable()``. See the ``capture`` module for more information.
+        turned on by ``qp.capture.enable()``. See the ``capture`` module for more information.
 
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
@@ -164,7 +164,7 @@ def for_loop(
         >>> import jax
         >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
-        >>> qml.capture.enable()
+        >>> qp.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
         If the needed mode is ``allow_array_resizing=True``, then this will require re-capturing
@@ -175,7 +175,7 @@ def for_loop(
 
         .. code-block:: python
 
-            @qml.for_loop(3, allow_array_resizing=True)
+            @qp.for_loop(3, allow_array_resizing=True)
             def f(i, x, y):
                 return jnp.hstack([x, y]), 2*y
 
@@ -193,7 +193,7 @@ def for_loop(
 
         .. code-block:: python
 
-            @qml.for_loop(3, allow_array_resizing=False)
+            @qp.for_loop(3, allow_array_resizing=False)
             def f(i, x, y):
                 return x * y, 2*y
 
@@ -209,7 +209,7 @@ def for_loop(
 
         .. code-block:: python
 
-            @qml.for_loop(3, allow_array_resizing=False)
+            @qp.for_loop(3, allow_array_resizing=False)
             def f(i, x, y):
                 x = jnp.hstack([x, y])
                 return x, 2*x
@@ -228,7 +228,7 @@ def for_loop(
         .. code-block:: python
 
             def w():
-                @qml.for_loop(3)
+                @qp.for_loop(3)
                 def f(i, x):
                     return jax.numpy.append(x, i)
 
@@ -410,9 +410,9 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             logger.exception(e, exc_info=True)
             warnings.warn(
                 (
-                    "Structured capture of qml.for_loop failed with error:"
+                    "Structured capture of qp.for_loop failed with error:"
                     f"\n\n{e}.\n\nFull error logged at exception level. "
-                    "Use qml.logging.enable_logging() to view."
+                    "Use qp.logging.enable_logging() to view."
                     "\nFalling back to unrolled Python for loop."
                 ),
                 CaptureWarning,

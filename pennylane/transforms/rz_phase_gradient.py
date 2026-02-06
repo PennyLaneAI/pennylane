@@ -50,10 +50,10 @@ def _rz_phase_gradient(
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
     binary_int = _binary_repr_int(phi, precision)
 
-    compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
-    target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+    compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
 
-    return qml.change_op_basis(compute_op, target_op, compute_op)
+    return qp.change_op_basis(compute_op, target_op, compute_op)
 
 
 @transform
@@ -109,7 +109,7 @@ def rz_phase_gradient(
             the precision of the angle :math:`\phi`.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -128,23 +128,23 @@ def rz_phase_gradient(
 
         def phase_gradient(wires):
             for i, w in enumerate(wires):
-                qml.H(w)
-                qml.PhaseShift(-np.pi/2**i, w)
+                qp.H(w)
+                qp.PhaseShift(-np.pi/2**i, w)
 
         @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,
         )
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def rz_circ(phi, wire):
             phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
-            qml.Hadamard(wire)  # transform rotation
-            qml.RZ(phi, wire)
-            qml.Hadamard(wire)  # transform rotation
+            qp.Hadamard(wire)  # transform rotation
+            qp.RZ(phi, wire)
+            qp.Hadamard(wire)  # transform rotation
 
-            return qml.probs(wire)
+            return qp.probs(wire)
 
 
     In this example we perform the rotation of an angle of :math:`\phi = (0.111)_2 2\pi`.
@@ -156,7 +156,7 @@ def rz_phase_gradient(
 
     Overall, the full circuit looks like the following:
 
-    >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
+    >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
       targ: ──H────────────╭(|Ψ⟩)@SemiAdder@(|Ψ⟩)──H─╭GlobalPhase(2.75)─┤  Probs
      ang_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
      ang_1: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
@@ -175,7 +175,7 @@ def rz_phase_gradient(
 
     This matches the expected result of just applying a simple ``RX`` gate:
 
-    >>> np.abs(qml.RX(phi, 0).matrix()[:, 0]) ** 2
+    >>> np.abs(qp.RX(phi, 0).matrix()[:, 0]) ** 2
     array([0.853..., 0.146...])
 
     """
@@ -190,7 +190,7 @@ def rz_phase_gradient(
     operations = []
     global_phases = []
     for op in tape.operations:
-        if isinstance(op, qml.RZ):
+        if isinstance(op, qp.RZ):
             wire = op.wires
             phi = op.parameters[0]
             global_phases.append(phi / 2)
@@ -207,7 +207,7 @@ def rz_phase_gradient(
         else:
             operations.append(op)
 
-    operations.append(qml.GlobalPhase(sum(global_phases)))
+    operations.append(qp.GlobalPhase(sum(global_phases)))
 
     new_tape = tape.copy(operations=operations)
 

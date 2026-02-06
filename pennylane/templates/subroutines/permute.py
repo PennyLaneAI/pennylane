@@ -49,13 +49,13 @@ class Permute(Operation):
 
         import pennylane as qp
 
-        dev = qml.device('default.qubit', wires=5)
+        dev = qp.device('default.qubit', wires=5)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def apply_perm():
             # Send contents of wire 4 to wire 0, of wire 2 to wire 1, etc.
-            qml.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
-            return qml.expval(qml.Z(0))
+            qp.templates.Permute([4, 2, 0, 1, 3], wires=dev.wires)
+            return qp.expval(qp.Z(0))
 
     See "Usage Details" for further examples.
 
@@ -69,14 +69,14 @@ class Permute(Operation):
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=4)
+            dev = qp.device('default.qubit', wires=4)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def apply_perm():
-                qml.Permute([3, 2, 0, 1], dev.wires)
-                return qml.expval(qml.Z(0))
+                qp.Permute([3, 2, 0, 1], dev.wires)
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(apply_perm, level="device")())
+        >>> print(qp.draw(apply_perm, level="device")())
         0: ─╭SWAP─────────────┤  <Z>
         1: ─│─────╭SWAP───────┤
         2: ─│─────╰SWAP─╭SWAP─┤
@@ -91,11 +91,11 @@ class Permute(Operation):
 
             import pennylane as qp
 
-            op = qml.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
-            tape = qml.tape.QuantumTape([op])
+            op = qp.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
+            tape = qp.tape.QuantumTape([op])
 
-        >>> [tape_expanded], _ = qml.transforms.decompose(tape, gate_set={qml.SWAP})
-        >>> print(qml.drawer.tape_text(tape_expanded, wire_order=range(5)))
+        >>> [tape_expanded], _ = qp.transforms.decompose(tape, gate_set={qp.SWAP})
+        >>> print(qp.drawer.tape_text(tape_expanded, wire_order=range(5)))
         0: ─╭SWAP───────────────────┤
         1: ─│─────╭SWAP─────────────┤
         2: ─│─────╰SWAP─╭SWAP───────┤
@@ -108,16 +108,16 @@ class Permute(Operation):
 
             wire_labels = [3, 2, "a", 0, "c"]
 
-            dev = qml.device('default.qubit', wires=wire_labels)
+            dev = qp.device('default.qubit', wires=wire_labels)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.Permute(["c", 3,"a",2,0], wires=wire_labels)
-                return qml.expval(qml.Z("c"))
+                qp.Permute(["c", 3,"a",2,0], wires=wire_labels)
+                return qp.expval(qp.Z("c"))
 
         The permuted circuit is:
 
-        >>> print(qml.draw(circuit, level="device")())
+        >>> print(qp.draw(circuit, level="device")())
         3: ─╭SWAP─────────────┤
         2: ─│─────╭SWAP───────┤
         0: ─│─────│─────╭SWAP─┤
@@ -130,17 +130,17 @@ class Permute(Operation):
 
             wire_labels = [3, 2, "a", 0, "c"]
 
-            dev = qml.device('default.qubit', wires=wire_labels)
+            dev = qp.device('default.qubit', wires=wire_labels)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 # Only permute the order of 3 of them
-                qml.Permute(["c", 2, 0], wires=[2, 0, "c"])
-                return qml.expval(qml.Z("c"))
+                qp.Permute(["c", 2, 0], wires=[2, 0, "c"])
+                return qp.expval(qp.Z("c"))
 
         will permute only the second, third, and fifth wires as follows:
 
-        >>> print(qml.draw(circuit, level="device", show_all_wires=True)())
+        >>> print(qp.draw(circuit, level="device", show_all_wires=True)())
         3: ─────────────┤
         2: ─╭SWAP───────┤
         a: ─│───────────┤

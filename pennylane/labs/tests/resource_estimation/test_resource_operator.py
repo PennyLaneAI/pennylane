@@ -66,7 +66,7 @@ class ResourceDummyAdjoint(ResourceOperator):
 class TestCompressedResourceOp:
     """Testing the methods and attributes of the CompressedResourceOp class"""
 
-    test_hamiltonian = qml.dot([1, -1, 0.5], [qml.X(0), qml.Y(1), qml.Z(0) @ qml.Z(1)])
+    test_hamiltonian = qp.dot([1, -1, 0.5], [qp.X(0), qp.Y(1), qp.Z(0) @ qp.Z(1)])
     compressed_ops_and_params_lst = (
         ("DummyX", ResourceDummyX, 1, {"num_wires": 1}, None),
         ("DummyQFT", ResourceDummyQFT, 5, {"num_wires": 5}, None),

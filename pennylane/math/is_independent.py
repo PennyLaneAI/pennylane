@@ -343,7 +343,7 @@ def is_independent(
 
         >>> x = np.array([0.2, 9.1, -3.2], requires_grad=True)
         >>> weights = np.array([1.1, -0.7, 1.8], requires_grad=True)
-        >>> qml.math.is_independent(lin, "autograd", (x,), {"weights": weights})
+        >>> qp.math.is_independent(lin, "autograd", (x,), {"weights": weights})
         False
 
     However, the Jacobian will not depend on ``x`` because ``lin`` is a
@@ -351,8 +351,8 @@ def is_independent(
 
     .. code-block:: pycon
 
-        >>> jac = qml.jacobian(lin)
-        >>> qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
+        >>> jac = qp.jacobian(lin)
+        >>> qp.math.is_independent(jac, "autograd", (x,), {"weights": weights})
         True
 
     Note that a function ``f = lambda x: 0.0 * x`` will be counted as *dependent* on ``x``

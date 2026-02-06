@@ -196,7 +196,7 @@ class DefaultClifford(Device):
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
-        tableau (bool): Determines what should be returned when the device's state is computed with :func:`qml.state <pennylane.state>`.
+        tableau (bool): Determines what should be returned when the device's state is computed with :func:`qp.state <pennylane.state>`.
             When ``True``, the device returns the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
@@ -213,15 +213,15 @@ class DefaultClifford(Device):
 
     .. code-block:: python
 
-        dev = qml.device("default.clifford", tableau=True)
+        dev = qp.device("default.clifford", tableau=True)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.CNOT(wires=[0, 1])
-            qml.X(1)
-            qml.ISWAP(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-            return qml.state()
+            qp.CNOT(wires=[0, 1])
+            qp.X(1)
+            qp.ISWAP(wires=[0, 1])
+            qp.Hadamard(wires=[0])
+            return qp.state()
 
     >>> circuit()
     array([[0, 1, 1, 0, 0],
@@ -236,9 +236,9 @@ class DefaultClifford(Device):
         num_qscripts = 5
 
         qscripts = [
-            qml.tape.QuantumScript(
-                [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
-                [qml.expval(qml.Z(0))]
+            qp.tape.QuantumScript(
+                [qp.Hadamard(wires=[0]), qp.CNOT(wires=[0, 1])],
+                [qp.expval(qp.Z(0))]
             )
         ] * num_qscripts
 
@@ -293,7 +293,7 @@ class DefaultClifford(Device):
         manually restrict users from doing so for any circuit, one can expect the underlying computation
         to reach its limit with ``20-24`` qubits on a typical consumer grade machine.
 
-        As long as number of qubits are below this limit, one can simply use the :func:`qml.probs <pennylane.probs>`
+        As long as number of qubits are below this limit, one can simply use the :func:`qp.probs <pennylane.probs>`
         function with its usual arguments to compute probabilities for the complete computational basis states.
         We test this for a circuit that prepares the ``n``-qubit Greenberger-Horne-Zeilinger (GHZ) state.
         This means that the probabilities for the basis states :math:`|0\rangle^{\otimes n}` and
@@ -303,33 +303,33 @@ class DefaultClifford(Device):
 
             import pennylane as qp
             import numpy as np
-            dev = qml.device("default.clifford")
+            dev = qp.device("default.clifford")
 
             num_wires = 3
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.Hadamard(wires=[0])
+                qp.Hadamard(wires=[0])
                 for idx in range(num_wires):
-                    qml.CNOT(wires=[idx, idx+1])
-                return qml.probs()
+                    qp.CNOT(wires=[idx, idx+1])
+                return qp.probs()
 
         >>> circuit()
         tensor([0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], requires_grad=True)
 
         Once above the limit (or even otherwise), one can obtain the probability
         of a single target basis state by computing the expectation value of the
-        corresponding projector using :mod:`qml.expval <pennylane.expval>` and
-        :mod:`qml.Projector <pennylane.Projector>`.
+        corresponding projector using :mod:`qp.expval <pennylane.expval>` and
+        :mod:`qp.Projector <pennylane.Projector>`.
 
         .. code-block:: python
 
             num_wires = 4
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(state):
-                qml.Hadamard(wires=[0])
+                qp.Hadamard(wires=[0])
                 for idx in range(num_wires):
-                    qml.CNOT(wires=[idx, idx+1])
-                return qml.expval(qml.Projector(state, wires=range(num_wires)))
+                    qp.CNOT(wires=[idx, idx+1])
+                return qp.expval(qp.Projector(state, wires=range(num_wires)))
 
         >>> basis_states = np.array([[0, 0, 0, 0], [0, 1, 0, 1], [1, 0, 1, 0]])
         >>> circuit(basis_states[0])
@@ -347,27 +347,27 @@ class DefaultClifford(Device):
         the following error channels that add Pauli noise, allowing for one to perform
         any sampling-based measurements.
 
-        - *Multi-qubit Pauli errors:* :mod:`qml.PauliError <pennylane.PauliError>`
-        - *Single-qubit depolarization errors:* :mod:`qml.DepolarizingChannel <pennylane.DepolarizingChannel>`
-        - *Single-qubit flip errors:* :mod:`qml.BitFlip <pennylane.BitFlip>` and :mod:`qml.PhaseFlip <pennylane.PhaseFlip>`
+        - *Multi-qubit Pauli errors:* :mod:`qp.PauliError <pennylane.PauliError>`
+        - *Single-qubit depolarization errors:* :mod:`qp.DepolarizingChannel <pennylane.DepolarizingChannel>`
+        - *Single-qubit flip errors:* :mod:`qp.BitFlip <pennylane.BitFlip>` and :mod:`qp.PhaseFlip <pennylane.PhaseFlip>`
 
         .. code-block:: python
 
             import pennylane as qp
             import numpy as np
 
-            dev = qml.device("default.clifford", seed=42)
+            dev = qp.device("default.clifford", seed=42)
 
             num_wires = 3
 
-            @qml.set_shots(shots=1024)
-            @qml.qnode(dev)
+            @qp.set_shots(shots=1024)
+            @qp.qnode(dev)
             def circuit():
-                qml.Hadamard(wires=[0])
+                qp.Hadamard(wires=[0])
                 for idx in range(num_wires):
-                    qml.CNOT(wires=[idx, idx+1])
-                qml.BitFlip(0.2, wires=[1])
-                return qml.counts()
+                    qp.CNOT(wires=[idx, idx+1])
+                qp.BitFlip(0.2, wires=[1])
+                return qp.counts()
 
         >>> circuit()
         {'0000': 417, '0100': 95, '1011': 104, '1111': 408}
@@ -543,8 +543,8 @@ class DefaultClifford(Device):
 
         This function assumes that all operations are Clifford.
 
-        >>> qs = qml.tape.QuantumScript([qml.Hadamard(wires=0)], [qml.expval(qml.Z(0)), qml.state()])
-        >>> qml.devices.DefaultClifford().simulate(qs)
+        >>> qs = qp.tape.QuantumScript([qp.Hadamard(wires=0)], [qp.expval(qp.Z(0)), qp.state()])
+        >>> qp.devices.DefaultClifford().simulate(qs)
         (array(0),
          array([[0, 1, 0],
                 [1, 0, 0]]))

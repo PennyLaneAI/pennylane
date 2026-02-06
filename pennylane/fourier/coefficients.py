@@ -86,17 +86,17 @@ def coefficients(
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=['a'])
+        dev = qp.device('default.qubit', wires=['a'])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights, inpt):
-            qml.RX(inpt[0], wires='a')
-            qml.Rot(*weights[0], wires='a')
+            qp.RX(inpt[0], wires='a')
+            qp.Rot(*weights[0], wires='a')
 
-            qml.RY(inpt[1], wires='a')
-            qml.Rot(*weights[1], wires='a')
+            qp.RY(inpt[1], wires='a')
+            qp.Rot(*weights[1], wires='a')
 
-            return qml.expval(qml.Z('a'))
+            return qp.expval(qp.Z('a'))
 
     .. note::
 
@@ -146,12 +146,12 @@ def coefficients(
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit', wires=2))
+        @qp.qnode(qp.device('default.qubit', wires=2))
         def circuit(inpt):
-            qml.RX(inpt[0], wires=0)
-            qml.RY(inpt[0], wires=1)
-            qml.CNOT(wires=[1, 0])
-            return qml.expval(qml.Z(0))
+            qp.RX(inpt[0], wires=0)
+            qp.RY(inpt[0], wires=1)
+            qp.CNOT(wires=[1, 0])
+            return qp.expval(qp.Z(0))
 
     One can work out by hand that the Fourier coefficients are :math:`c_0 = 0.5, c_1 = c_{-1} = 0,`
     and :math:`c_2 = c_{-2} = 0.25`. Suppose we would like only to obtain the coefficients

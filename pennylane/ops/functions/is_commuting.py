@@ -34,13 +34,13 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
 
     **Example**
 
-    >>> pauli_word_1 = qml.prod(qml.X("a"), qml.Y("b"))
-    >>> pauli_word_2 = qml.prod(qml.Z("a"), qml.Z("c"))
+    >>> pauli_word_1 = qp.prod(qp.X("a"), qp.Y("b"))
+    >>> pauli_word_2 = qp.prod(qp.Z("a"), qp.Z("c"))
     >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     False
 
-    >>> pauli_word_1 = qml.sum(qml.X('a') , qml.Y('b'))
-    >>> pauli_word_2 = qml.sum(qml.Z('c') , qml.X('a'))
+    >>> pauli_word_1 = qp.sum(qp.X('a') , qp.Y('b'))
+    >>> pauli_word_2 = qp.sum(qp.Z('c') , qp.X('a'))
     >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     True
     """
@@ -50,7 +50,7 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
 
     comm = pr1.commutator(pr2)
     comm.simplify()
-    return comm == qml.pauli.pauli_arithmetic.PauliSentence({})
+    return comm == qp.pauli.pauli_arithmetic.PauliSentence({})
 
 
 def _get_target_name(op):
@@ -74,7 +74,7 @@ def _get_target_name(op):
     }
     if op.name in _control_base_map:
         return _control_base_map[op.name]
-    if isinstance(op, qml.ops.op_math.Controlled):
+    if isinstance(op, qp.ops.op_math.Controlled):
         return op.base.name
     return op.name
 
@@ -90,7 +90,7 @@ def _check_mat_commutation(op1, op2):
     mat_12 = np.matmul(op1_mat, op2_mat)
     mat_21 = np.matmul(op2_mat, op1_mat)
 
-    return qml.math.allclose(mat_12, mat_21)
+    return qp.math.allclose(mat_12, mat_21)
 
 
 def _create_commute_function():
@@ -176,7 +176,7 @@ def intersection(wires1, wires2):
     Returns:
         bool: True if the two sets of wires are not disjoint and False if disjoint.
     """
-    return len(qml.wires.Wires.shared_wires([wires1, wires2])) != 0
+    return len(qp.wires.Wires.shared_wires([wires1, wires2])) != 0
 
 
 def check_commutation_two_non_simplified_crot(operation1, operation2):
@@ -190,10 +190,10 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
         bool: True if commutation, False otherwise.
     """
     # Two non simplified CRot
-    target_wires_1 = qml.wires.Wires(
+    target_wires_1 = qp.wires.Wires(
         [w for w in operation1.wires if w not in operation1.control_wires]
     )
-    target_wires_2 = qml.wires.Wires(
+    target_wires_2 = qp.wires.Wires(
         [w for w in operation2.wires if w not in operation2.control_wires]
     )
 
@@ -208,8 +208,8 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
 
     if target_target:
         return _check_mat_commutation(
-            qml.Rot(*operation1.data, wires=operation1.wires[1]),
-            qml.Rot(*operation2.data, wires=operation2.wires[1]),
+            qp.Rot(*operation1.data, wires=operation1.wires[1]),
+            qp.Rot(*operation2.data, wires=operation2.wires[1]),
         )
     return False
 
@@ -228,22 +228,22 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         bool: True if commutation, False otherwise, None if not two rotations.
     """
 
-    target_wires_1 = qml.wires.Wires(
+    target_wires_1 = qp.wires.Wires(
         [w for w in operation1.wires if w not in operation1.control_wires]
     )
-    target_wires_2 = qml.wires.Wires(
+    target_wires_2 = qp.wires.Wires(
         [w for w in operation2.wires if w not in operation2.control_wires]
     )
 
     if operation1.name == "CRot":
         if intersection(target_wires_1, operation2.wires):
-            op1_rot = qml.Rot(*operation1.data, wires=target_wires_1)
+            op1_rot = qp.Rot(*operation1.data, wires=target_wires_1)
             return _check_mat_commutation(op1_rot, operation2)
         return _commutes(operation2.name, "ctrl")
 
     if operation2.name == "CRot":
         if intersection(target_wires_2, operation1.wires):
-            op2_rot = qml.Rot(*operation2.data, wires=target_wires_2)
+            op2_rot = qp.Rot(*operation2.data, wires=target_wires_2)
             return _check_mat_commutation(op2_rot, operation1)
         return _commutes(operation1.name, "ctrl")
 
@@ -334,19 +334,19 @@ def is_commuting(operation1, operation2):
 
     **Example**
 
-    >>> qml.is_commuting(qml.X(0), qml.Z(0))
+    >>> qp.is_commuting(qp.X(0), qp.Z(0))
     False
     """
 
     # pylint: disable=too-many-return-statements
 
     if operation1.name in unsupported_operations or isinstance(
-        operation1, (qml.operation.CVOperation, qml.operation.Channel)
+        operation1, (qp.operation.CVOperation, qp.operation.Channel)
     ):
         raise QuantumFunctionError(f"Operation {operation1.name} not supported.")
 
     if operation2.name in unsupported_operations or isinstance(
-        operation2, (qml.operation.CVOperation, qml.operation.Channel)
+        operation2, (qp.operation.CVOperation, qp.operation.Channel)
     ):
         raise QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
@@ -358,9 +358,9 @@ def is_commuting(operation1, operation2):
         return True
 
     # Simplify the rotations if possible
-    with qml.QueuingManager.stop_recording():
-        operation1 = qml.simplify(operation1)
-        operation2 = qml.simplify(operation2)
+    with qp.QueuingManager.stop_recording():
+        operation1 = qp.simplify(operation1)
+        operation2 = qp.simplify(operation2)
 
     # Arithmetic non-disjoint operations only contain Pauli words
     _check_opmath_operations(operation1, operation2)
@@ -387,8 +387,8 @@ def is_commuting(operation1, operation2):
     op1_control_wires = getattr(operation1, "control_wires", {})
     op2_control_wires = getattr(operation2, "control_wires", {})
 
-    target_wires_1 = qml.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
-    target_wires_2 = qml.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
+    target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
+    target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
 
     if intersection(target_wires_1, target_wires_2) and not _commutes(ctrl_base_1, ctrl_base_2):
         return False

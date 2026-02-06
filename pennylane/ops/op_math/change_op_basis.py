@@ -45,7 +45,7 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
         compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
         uncompute_op (None | :class:`~.Operator`): An optional single operator or a product that applies quantum
-            operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
+            operations. ``None`` corresponds to ``uncompute_op=qp.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
@@ -60,25 +60,25 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
         import pennylane as qp
         from functools import partial
 
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
         def circuit():
-            qml.H(0)
-            qml.CNOT([1,2])
-            qml.ctrl(
-                qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
+            qp.H(0)
+            qp.CNOT([1,2])
+            qp.ctrl(
+                qp.change_op_basis(qp.QFT([1,2]), qp.PhaseAdder(1, x_wires=[1,2])),
                 control=0
             )
-            return qml.state()
+            return qp.state()
 
-        circuit2 = qml.transforms.decompose(circuit, max_expansion=1)
+        circuit2 = qp.transforms.decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
 
-    >>> print(qml.draw(circuit2)())
+    >>> print(qp.draw(circuit2)())
     0: ──H──────╭●────────────────┤  State
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
@@ -98,7 +98,7 @@ class ChangeOpBasis(CompositeOp):
         compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
         uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-            Default is uncompute_op=qml.adjoint(compute_op).
+            Default is uncompute_op=qp.adjoint(compute_op).
 
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.

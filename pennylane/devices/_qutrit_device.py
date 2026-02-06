@@ -156,8 +156,8 @@ class QutritDevice(QubitDevice):
         Raises:
             QuantumFunctionError: density matrix is currently unsupported on :class:`~.QutritDevice`
         """
-        # TODO: Add support for DensityMatrix return type. Currently, qml.math is hard coded to calculate this for qubit
-        # states (see `qml.math.reduced_dm()`), so it needs to be updated before DensityMatrix can be supported for qutrits.
+        # TODO: Add support for DensityMatrix return type. Currently, qp.math is hard coded to calculate this for qubit
+        # states (see `qp.math.reduced_dm()`), so it needs to be updated before DensityMatrix can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
         raise QuantumFunctionError(
             "Unsupported return type specified for observable density matrix"
@@ -176,8 +176,8 @@ class QutritDevice(QubitDevice):
         Raises:
             QuantumFunctionError: Von Neumann entropy is currently unsupported on :class:`~.QutritDevice`
         """
-        # TODO: Add support for VnEntropy return type. Currently, qml.math is hard coded to calculate this for qubit
-        # states (see `qml.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
+        # TODO: Add support for VnEntropy return type. Currently, qp.math is hard coded to calculate this for qubit
+        # states (see `qp.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
         raise QuantumFunctionError(
             "Unsupported return type specified for observable Von Neumann entropy"
@@ -200,8 +200,8 @@ class QutritDevice(QubitDevice):
         Raises:
             QuantumFunctionError: Mutual information is currently unsupported on :class:`~.QutritDevice`
         """
-        # TODO: Add support for MutualInfo return type. Currently, qml.math is hard coded to calculate this for qubit
-        # states (see `qml.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
+        # TODO: Add support for MutualInfo return type. Currently, qp.math is hard coded to calculate this for qubit
+        # states (see `qp.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
         raise QuantumFunctionError(
             "Unsupported return type specified for observable mutual information"

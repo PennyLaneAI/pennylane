@@ -42,11 +42,11 @@ def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
             # And Issue #5078
             # pragma: no cover
             if multi:  # pragma: no cover
-                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
+                shot_vjps.append(qp.gradients.compute_vjp_multi(d, j))
             else:
-                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
+                shot_vjps.append(qp.gradients.compute_vjp_single(d, j))
 
-        vjp = qml.math.sum(qml.math.stack(shot_vjps), 0)
+        vjp = qp.math.sum(qp.math.stack(shot_vjps), 0)
 
         vjps.extend(vjp)
 
@@ -137,7 +137,7 @@ def execute(
     for tape in tapes:
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = qp.math.get_trainable_indices(params)
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
         all_params += params
@@ -250,7 +250,7 @@ def execute(
 
             else:
                 # Need to compute the Jacobians on the backward pass (accumulation="backward")
-                if isinstance(gradient_fn, qml.transforms.core.Transform):
+                if isinstance(gradient_fn, qp.transforms.core.Transform):
                     # Gradient function is a gradient transform.
 
                     # Generate and execute the required gradient tapes
@@ -265,11 +265,11 @@ def execute(
                             dy = _res_restructured(dy, tapes)
 
                             new_tapes = set_parameters_on_copy(tapes, params_unwrapped)
-                            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            vjp_tapes, processing_fn = qp.gradients.batch_vjp(
                                 new_tapes,
                                 dy,
                                 gradient_fn,
-                                reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
+                                reduction=lambda vjps, x: vjps.extend(qp.math.unstack(x)),
                                 gradient_kwargs=gradient_kwargs,
                             )
 
@@ -284,7 +284,7 @@ def execute(
                     else:
                         dy = _res_restructured(dy, tapes)
 
-                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        vjp_tapes, processing_fn = qp.gradients.batch_vjp(
                             tapes,
                             dy,
                             gradient_fn,

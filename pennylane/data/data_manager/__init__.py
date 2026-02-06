@@ -273,13 +273,13 @@ def load(  # pylint: disable=too-many-arguments
 
     The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
 
-    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
+    >>> H2datasets = qp.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
     >>> print(H2datasets)
     [<Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>]
 
     .. note::
 
-        If not otherwise specified, ``qml.data.load`` will download the
+        If not otherwise specified, ``qp.data.load`` will download the
         default parameter value specified by the dataset.
 
         The default values for attributes are as follows:
@@ -291,7 +291,7 @@ def load(  # pylint: disable=too-many-arguments
     We can load datasets for multiple parameter values by providing a list of values instead of a single value.
     To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string 'full':
 
-    >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
+    >>> H2datasets = qp.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
     >>> print(H2datasets)
     [<Dataset = molname: H2, basis: STO-3G, bondlength: 0.5, attributes: ['basis', 'basis_rot_groupings', ...]>,
         <Dataset = molname: H2, basis: STO-3G, bondlength: 1.1, attributes: ['basis', 'basis_rot_groupings', ...]>,
@@ -305,7 +305,7 @@ def load(  # pylint: disable=too-many-arguments
     can download or load only the molecule and energy of a dataset as
     follows:
 
-    >>> part = qml.data.load(
+    >>> part = qp.data.load(
     ...     "qchem",
     ...     molname="H2",
     ...     basis="STO-3G",
@@ -319,14 +319,14 @@ def load(  # pylint: disable=too-many-arguments
     The loaded data items are fully compatible with PennyLane. We can
     therefore use them directly in a PennyLane circuit as follows:
 
-    >>> H2data = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
-    >>> dev = qml.device("default.qubit",wires=4)
-    >>> @qml.qnode(dev)
+    >>> H2data = qp.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)[0]
+    >>> dev = qp.device("default.qubit",wires=4)
+    >>> @qp.qnode(dev)
     ... def circuit():
-    ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
+    ...     qp.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
     ...     for op in H2data.vqe_gates:
-    ...         qml.apply(op)
-    ...     return qml.expval(H2data.hamiltonian)
+    ...         qp.apply(op)
+    ...     return qp.expval(H2data.hamiltonian)
     >>> print(circuit())
     -1.0791430411076344
     """
@@ -348,7 +348,7 @@ def load(  # pylint: disable=too-many-arguments
     if dataset_ids_and_urls == []:
         raise ValueError(
             "No datasets exist for the provided configuration.\n"
-            "Please check the available datasets by using the ``qml.data.list_datasets()`` function."
+            "Please check the available datasets by using the ``qp.data.list_datasets()`` function."
         )
 
     dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
@@ -399,7 +399,7 @@ def list_datasets() -> dict:
     Note that the results of calling this function may differ from this example as more datasets
     are added. For updates on available data see the `datasets website <https://pennylane.ai/datasets>`_.
 
-    >>> available_data = qml.data.list_datasets()
+    >>> available_data = qp.data.list_datasets()
     >>> available_data.keys()
     dict_keys(["qspin", "qchem"])
     >>> available_data["qchem"].keys()
@@ -490,7 +490,7 @@ def load_interactive():
 
     .. code-block :: pycon
 
-        >>> qml.data.load_interactive()
+        >>> qp.data.load_interactive()
         Please select the data name from the following:
             1: qspin
             2: qchem

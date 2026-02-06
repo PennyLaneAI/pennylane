@@ -38,9 +38,9 @@ def handle_recursion_error(func):
         except RecursionError as e:
             raise RuntimeError(
                 "Maximum recursion depth reached! This is likely due to nesting too many levels "
-                "of composite operators. Try setting lazy=False when calling qml.sum, qml.prod, "
-                "and qml.s_prod, or use the +, @, and * operators instead. Alternatively, you "
-                "can periodically call qml.simplify on your operators."
+                "of composite operators. Try setting lazy=False when calling qp.sum, qp.prod, "
+                "and qp.s_prod, or use the +, @, and * operators instead. Alternatively, you "
+                "can periodically call qp.simplify on your operators."
             ) from e
 
     return wrapper
@@ -72,17 +72,17 @@ class CompositeOp(Operator):
     def _unflatten(cls, data, metadata):
         return cls(*data)
 
-    _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
+    _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     def __init__(
         self, *operands: Operator, id=None, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
         self._name = self.__class__.__name__
-        if any(isinstance(op, (qml.ops.MidMeasure, qml.ops.PauliMeasure)) for op in operands):
+        if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         self.operands = operands
-        self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
+        self._wires = qp.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
@@ -315,7 +315,7 @@ class CompositeOp(Operator):
                 tmp_sum = self.__class__(*ops)
                 eigvecs = tmp_sum.eigendecomposition["eigvec"]
                 diag_gates.append(
-                    qml.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
+                    qp.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
                 )
         return diag_gates
 
@@ -336,7 +336,7 @@ class CompositeOp(Operator):
 
         **Example (using the Sum composite operator)**
 
-        >>> op = qml.S(0) + qml.X(0) + qml.Rot(1,2,3, wires=[1])
+        >>> op = qp.S(0) + qp.X(0) + qp.Rot(1,2,3, wires=[1])
         >>> op.label()
         '𝓗'
 
@@ -357,10 +357,10 @@ class CompositeOp(Operator):
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=qp.QueuingManager):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
-        if qml.QueuingManager.recording():
+        if qp.QueuingManager.recording():
             for op in self:
                 context.remove(op)
             context.append(self)

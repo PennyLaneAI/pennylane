@@ -150,7 +150,7 @@ class QutritDepolarizingChannel(Channel):
         **Example**
 
         >>> import pprint
-        >>> pprint.pprint(np.round(qml.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3))
+        >>> pprint.pprint(np.round(qp.QutritDepolarizingChannel.compute_kraus_matrices(0.5), 3))
         array([[[ 0.707+0.j   ,  0.   +0.j   ,  0.   +0.j   ],
                 [ 0.   +0.j   ,  0.707+0.j   ,  0.   +0.j   ],
                 [ 0.   +0.j   ,  0.   +0.j   ,  0.707+0.j   ]],
@@ -315,7 +315,7 @@ class QutritAmplitudeDamping(Channel):
         **Example**
 
         >>> from pprint import pprint
-        >>> pprint(qml.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25, 0.36))
+        >>> pprint(qp.QutritAmplitudeDamping.compute_kraus_matrices(0.5, 0.25, 0.36))
         [array([[1.        , 0.        , 0.        ],
                 [0.        , 0.70710678, 0.        ],
                 [0.        , 0.        , 0.6244998 ]]),
@@ -431,7 +431,7 @@ class TritFlip(Channel):
         **Example**
 
         >>> from pprint import pprint
-        >>> pprint(qml.TritFlip.compute_kraus_matrices(0.05, 0.01, 0.10))
+        >>> pprint(qp.TritFlip.compute_kraus_matrices(0.05, 0.01, 0.10))
         [array([[0.91651514, 0.        , 0.        ],
             [0.        , 0.91651514, 0.        ],
             [0.        , 0.        , 0.91651514]]),
@@ -521,8 +521,8 @@ class QutritChannel(Channel):
 
         **Example**
 
-        >>> K_list = qml.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
-        >>> res = qml.QutritChannel.compute_kraus_matrices(K_list)
+        >>> K_list = qp.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
+        >>> res = qp.QutritChannel.compute_kraus_matrices(K_list)
         >>> all(np.allclose(r, k) for r, k  in zip(res[0], K_list))
         True
         """

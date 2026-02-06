@@ -72,14 +72,14 @@ class OutMultiplier(Operation):
         output_wires = [6, 7, 8, 9]
         work_wires = [5, 10]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
+            qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+            return qp.sample(wires=output_wires)
 
     >>> print(circuit())
     [[0 0 1 0]]
@@ -118,15 +118,15 @@ class OutMultiplier(Operation):
             output_wires = [6, 7, 8, 9]
             work_wires = [5, 10]
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev, shots=1)
+            @qp.qnode(dev, shots=1)
             def circuit():
-                qml.BasisEmbedding(x, wires=x_wires)
-                qml.BasisEmbedding(y, wires=y_wires)
-                qml.BasisEmbedding(b, wires=output_wires)
-                qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-                return qml.sample(wires=output_wires)
+                qp.BasisEmbedding(x, wires=x_wires)
+                qp.BasisEmbedding(y, wires=y_wires)
+                qp.BasisEmbedding(b, wires=output_wires)
+                qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+                return qp.sample(wires=output_wires)
 
         >>> print(circuit())
         [[0 0 1 1]]
@@ -269,7 +269,7 @@ class OutMultiplier(Operation):
 
         **Example**
 
-        >>> qml.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
+        >>> qp.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         [(Adjoint(QFT(wires=[5, 6]))) @ (ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3])) @ QFT(wires=[5, 6])]
         """
         if mod != 2 ** len(output_wires):

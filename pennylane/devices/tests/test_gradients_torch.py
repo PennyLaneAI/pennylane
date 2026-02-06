@@ -35,10 +35,10 @@ class TestGradients:
         if diff_method == "hadamard":
             tol += 0.01
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
         x = torch.tensor(0.5, requires_grad=True)
         res = circuit(x)
@@ -59,12 +59,12 @@ class TestGradients:
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method="backprop", grad_on_execution=True)
+        @qp.qnode(dev, diff_method="backprop", grad_on_execution=True)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
         def cost_fn(x, y):
             res = circuit(x, y)
@@ -89,12 +89,12 @@ class TestGradients:
         dev = device(2)
         tol = tol(dev.shots)
 
-        @qml.qnode(dev, diff_method="parameter-shift", grad_on_execution=False)
+        @qp.qnode(dev, diff_method="parameter-shift", grad_on_execution=False)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hamiltonian([1, 1], [qml.Z(0), qml.Y(1)]))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Hamiltonian([1, 1], [qp.Z(0), qp.Y(1)]))
 
         res = circuit(a, b)
         res.backward()
@@ -111,12 +111,12 @@ class TestGradients:
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.probs(wires=[1])
 
         res = torch.autograd.functional.jacobian(circuit, (x, y))
 
@@ -150,12 +150,12 @@ class TestGradients:
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Z(0)), qp.probs(wires=[1])
 
         jac = torch.autograd.functional.jacobian(circuit, (x, y))
 
@@ -186,11 +186,11 @@ class TestGradients:
         dev = device(wires=wires)
         tol = tol(dev.shots)
 
-        @qml.qnode(dev, diff_method=diff_method, max_diff=2)
+        @qp.qnode(dev, diff_method=diff_method, max_diff=2)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            return qp.expval(qp.Z(0))
 
         x = torch.tensor([1.0, 2.0], requires_grad=True)
         res = circuit(x)

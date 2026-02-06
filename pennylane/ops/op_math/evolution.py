@@ -52,24 +52,24 @@ class Evolution(Exp):
     This symbolic operator can be used to make general rotation operators:
 
     >>> theta = np.array(1.23)
-    >>> op = Evolution(qml.X(0), 0.5 * theta)
-    >>> qml.math.allclose(op.matrix(), qml.RX(theta, wires=0).matrix())
+    >>> op = Evolution(qp.X(0), 0.5 * theta)
+    >>> qp.math.allclose(op.matrix(), qp.RX(theta, wires=0).matrix())
     True
 
     Or to define a time evolution operator for a time-independent Hamiltonian:
 
-    >>> H = qml.Hamiltonian([1, 1], [qml.Y(0), qml.X(1)])
+    >>> H = qp.Hamiltonian([1, 1], [qp.Y(0), qp.X(1)])
     >>> t = 10e-6
     >>> U = Evolution(H, t)
 
     If the base operator is Hermitian, then the gate can be used in a circuit,
     though it may not be supported by the device and may not be differentiable.
 
-    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    >>> @qp.qnode(qp.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     qml.ops.Evolution(qml.X(0), 0.5 * x)
-    ...     return qml.expval(qml.Z(0))
-    >>> print(qml.draw(circuit)(1.23))
+    ...     qp.ops.Evolution(qp.X(0), 0.5 * x)
+    ...     return qp.expval(qp.Z(0))
+    >>> print(qp.draw(circuit)(1.23))
     0: ──Exp(-0.61j X)─┤  <Z>
 
     """
@@ -115,7 +115,7 @@ class Evolution(Exp):
 
     def simplify(self):
         new_base = self.base.simplify()
-        if isinstance(new_base, qml.ops.op_math.SProd):
+        if isinstance(new_base, qp.ops.op_math.SProd):
             return Evolution(new_base.base, self.param * new_base.scalar)
         return Evolution(new_base, self.param)
 
@@ -124,7 +124,7 @@ class Evolution(Exp):
 
     @property
     def has_generator(self):
-        return not qml.math.real(self.coeff)
+        return not qp.math.real(self.coeff)
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
@@ -137,7 +137,7 @@ class Evolution(Exp):
 
         we get the generator
 
-        >>> U = qml.ops.op_math.Evolution(0.5 * qml.Y(0) + qml.Z(0) @ qml.X(1), 1)
+        >>> U = qp.ops.op_math.Evolution(0.5 * qp.Y(0) + qp.Z(0) @ qp.X(1), 1)
         >>> print(U)
         Evolution(-1j 0.5 * Y(0) + Z(0) @ X(1))
         >>> U.generator()
@@ -146,7 +146,7 @@ class Evolution(Exp):
         """
         if not self.base.is_verified_hermitian:
             warn(f"The base {self.base} may not be hermitian.")
-        if qml.math.real(self.coeff):
+        if qp.math.real(self.coeff):
             raise GeneratorUndefinedError(
                 f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(-ixG)."
                 f"The generator is not defined."

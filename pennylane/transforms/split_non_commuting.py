@@ -142,7 +142,7 @@ def split_non_commuting(
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
-        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        the transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         TypeError: if ``shot_dist`` is not a str or Callable or None.
@@ -161,18 +161,18 @@ def split_non_commuting(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.transforms.split_non_commuting
-        @qml.qnode(dev)
+        @qp.transforms.split_non_commuting
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=1)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=1)
             return [
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+                qp.expval(qp.X(0)),
+                qp.expval(qp.Y(1)),
+                qp.expval(qp.Z(0) @ qp.Z(1)),
+                qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
             ]
 
     Instead of decorating the QNode, we can also create a new function that yields the same
@@ -180,22 +180,22 @@ def split_non_commuting(
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=1)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=1)
             return [
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+                qp.expval(qp.X(0)),
+                qp.expval(qp.Y(1)),
+                qp.expval(qp.Z(0) @ qp.Z(1)),
+                qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
             ]
 
-        circuit = qml.transforms.split_non_commuting(circuit)
+        circuit = qp.transforms.split_non_commuting(circuit)
 
     Internally, the QNode is split into multiple circuits when executed:
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    >>> print(qp.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)─┤  <X> ╭<X@Z>
     1: ──RX(0.79)─┤      ╰<X@Z>
     <BLANKLINE>
@@ -226,7 +226,7 @@ def split_non_commuting(
 
     The ``grouping_strategy`` keyword argument can be used to specify the grouping strategy. By
     default, qwc grouping is used whenever possible, except when the circuit contains multiple
-    measurements that includes an expectation value of a ``qml.Hamiltonian``, in which case wires
+    measurements that includes an expectation value of a ``qp.Hamiltonian``, in which case wires
     grouping is used in case the Hamiltonian is very large, to save on classical runtime. To force
     qwc grouping in all cases, set ``grouping_strategy="qwc"``. Similarly, to force wires grouping,
     set ``grouping_strategy="wires"``:
@@ -235,21 +235,21 @@ def split_non_commuting(
 
         import functools
 
-        @qml.transforms.split_non_commuting(grouping_strategy="wires")
-        @qml.qnode(dev)
+        @qp.transforms.split_non_commuting(grouping_strategy="wires")
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=1)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=1)
             return [
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+                qp.expval(qp.X(0)),
+                qp.expval(qp.Y(1)),
+                qp.expval(qp.Z(0) @ qp.Z(1)),
+                qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
             ]
 
     In this case, four circuits are created as follows:
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    >>> print(qp.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)─┤  <X>
     1: ──RX(0.79)─┤  <Y>
     <BLANKLINE>
@@ -266,21 +266,21 @@ def split_non_commuting(
 
     .. code-block:: python
 
-        @qml.transforms.split_non_commuting(grouping_strategy=None)
-        @qml.qnode(dev)
+        @qp.transforms.split_non_commuting(grouping_strategy=None)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=1)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=1)
             return [
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+                qp.expval(qp.X(0)),
+                qp.expval(qp.Y(1)),
+                qp.expval(qp.Z(0) @ qp.Z(1)),
+                qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
             ]
 
     In this case, each observable is measured in a separate circuit execution.
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    >>> print(qp.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)─┤  <X>
     1: ──RX(0.79)─┤
     <BLANKLINE>
@@ -316,25 +316,25 @@ def split_non_commuting(
             import pennylane as qp
             from pennylane.transforms import split_non_commuting
 
-            ham = qml.Hamiltonian(
+            ham = qp.Hamiltonian(
                 coeffs=[10, 0.1, 20, 100, 0.2],
                 observables=[
-                    qml.X(0) @ qml.Y(1),
-                    qml.Z(0) @ qml.Z(2),
-                    qml.Y(1),
-                    qml.X(1) @ qml.X(2),
-                    qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+                    qp.X(0) @ qp.Y(1),
+                    qp.Z(0) @ qp.Z(2),
+                    qp.Y(1),
+                    qp.X(1) @ qp.X(2),
+                    qp.Z(0) @ qp.Z(1) @ qp.Z(2)
                 ]
             )
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
             @split_non_commuting(shot_dist="weighted")
-            @qml.qnode(dev, shots=10000)
+            @qp.qnode(dev, shots=10000)
             def circuit():
-                return qml.expval(ham)
+                return qp.expval(ham)
 
-            with qml.Tracker(dev) as tracker:
+            with qp.Tracker(dev) as tracker:
                 circuit()
 
         >>> print(tracker.history["shots"])
@@ -352,11 +352,11 @@ def split_non_commuting(
                 return np.round(total_shots * prob_shots)
 
             @split_non_commuting(shot_dist=my_shot_dist)
-            @qml.qnode(dev, shots=10000)
+            @qp.qnode(dev, shots=10000)
             def circuit():
-                return qml.expval(ham)
+                return qp.expval(ham)
 
-            with qml.Tracker(dev) as tracker:
+            with qp.Tracker(dev) as tracker:
                 circuit()
 
         >>> print(tracker.history["shots"])
@@ -370,13 +370,13 @@ def split_non_commuting(
         .. code-block:: python
 
             measurements = [
-                qml.expval(qml.Z(0) @ qml.Z(1)),
-                qml.expval(qml.X(0) @ qml.X(1)),
-                qml.expval(qml.Z(0)),
-                qml.expval(qml.X(0))
+                qp.expval(qp.Z(0) @ qp.Z(1)),
+                qp.expval(qp.X(0) @ qp.X(1)),
+                qp.expval(qp.Z(0)),
+                qp.expval(qp.X(0))
             ]
-            tape = qml.tape.QuantumScript(measurements=measurements)
-            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+            tape = qp.tape.QuantumScript(measurements=measurements)
+            tapes, processing_fn = qp.transforms.split_non_commuting(tape)
 
         Now ``tapes`` is a list of two tapes, each contains a group of commuting observables:
 
@@ -385,7 +385,7 @@ def split_non_commuting(
 
         The processing function becomes important as the order of the inputs has been modified.
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qp.device("default.qubit", wires=2)
         >>> result_batch = [dev.execute(t) for t in tapes]
         >>> result_batch
         [(np.float64(1.0), np.float64(1.0)), (np.float64(0.0), np.float64(0.0))]
@@ -395,20 +395,20 @@ def split_non_commuting(
         >>> processing_fn(result_batch)
         (np.float64(1.0), np.float64(0.0), np.float64(1.0), np.float64(0.0))
 
-        Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
-        ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
+        Measurements that accept both observables and ``wires`` so that e.g. ``qp.counts``,
+        ``qp.probs`` and ``qp.sample`` can also be used. When initialized using only ``wires``,
         these measurements are interpreted as measuring with respect to the observable
-        ``qml.Z(wires[0])@qml.Z(wires[1])@...@qml.Z(wires[len(wires)-1])``
+        ``qp.Z(wires[0])@qp.Z(wires[1])@...@qp.Z(wires[len(wires)-1])``
 
         .. code-block:: python
 
             measurements = [
-                qml.expval(qml.X(0)),
-                qml.probs(wires=[1]),
-                qml.probs(wires=[0, 1])
+                qp.expval(qp.X(0)),
+                qp.probs(wires=[1]),
+                qp.probs(wires=[0, 1])
             ]
-            tape = qml.tape.QuantumScript(measurements=measurements)
-            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+            tape = qp.tape.QuantumScript(measurements=measurements)
+            tapes, processing_fn = qp.transforms.split_non_commuting(tape)
 
         This results in two tapes, each with commuting measurements:
 
@@ -442,7 +442,7 @@ def split_non_commuting(
         and (
             (
                 grouping_strategy in ("default", "qwc")
-                and all(qml.pauli.is_pauli_word(o) for o in tape.measurements[0].obs.terms()[1])
+                and all(qp.pauli.is_pauli_word(o) for o in tape.measurements[0].obs.terms()[1])
             )
             or tape.measurements[0].obs.grouping_indices is not None
         )
@@ -470,7 +470,7 @@ def split_non_commuting(
         return tapes, fn
 
     if grouping_strategy == "wires" or any(
-        m.obs is not None and not qml.pauli.is_pauli_word(m.obs) for m in single_term_obs_mps
+        m.obs is not None and not qp.pauli.is_pauli_word(m.obs) for m in single_term_obs_mps
     ):
         # TODO: here we fall back to wire-based grouping if any of the observables in the tape
         #       is not a pauli word. As a result, adding a single measurement to a circuit could
@@ -484,7 +484,7 @@ def split_non_commuting(
 
 
 def _split_ham_with_grouping(
-    tape: qml.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
+    tape: qp.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
 ):
     """Split a tape measuring a single Sum and group commuting observables.
     It also assigns to each new tape the correct number of shots according to the
@@ -513,10 +513,10 @@ def _split_ham_with_grouping(
             obs = obs_list[idx]
             coeff = coeff_list[idx]
 
-            if isinstance(obs, qml.Identity):
+            if isinstance(obs, qp.Identity):
                 offset += coeff
             else:
-                mp = qml.expval(obs)
+                mp = qp.expval(obs)
                 if mp in single_term_obs_mps:
                     single_term_obs_mps[mp].coeffs[0] += coeff
                 else:
@@ -563,14 +563,14 @@ def _split_ham_with_grouping(
 
 
 def _split_using_qwc_grouping(
-    tape: qml.tape.QuantumScript,
+    tape: qp.tape.QuantumScript,
     single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]],
     offsets: list[TensorLike],
 ):
     """Split tapes using group_observables in the Pauli module.
 
     Args:
-        tape (~qml.tape.QuantumScript): The tape to be split.
+        tape (~qp.tape.QuantumScript): The tape to be split.
         single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
@@ -586,7 +586,7 @@ def _split_using_qwc_grouping(
     obs_list = [_mp_to_obs(m, tape) for m in measurements]
     index_groups = []
     if len(obs_list) > 0:
-        index_groups = qml.pauli.compute_partition_indices(obs_list)
+        index_groups = qp.pauli.compute_partition_indices(obs_list)
 
     # A dictionary for measurements of each unique single-term observable, mapped to the
     # indices of the original measurements it belongs to, its coefficients, the index of
@@ -632,14 +632,14 @@ def _split_using_qwc_grouping(
 
 
 def _split_using_wires_grouping(
-    tape: qml.tape.QuantumScript,
+    tape: qp.tape.QuantumScript,
     single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]],
     offsets: list[float | TensorLike],
 ):
     """Split tapes by grouping observables based on overlapping wires.
 
     Args:
-        tape (~qml.tape.QuantumScript): The tape to be split.
+        tape (~qp.tape.QuantumScript): The tape to be split.
         single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
@@ -676,7 +676,7 @@ def _split_using_wires_grouping(
         added_to_existing_group = False
         while not added_to_existing_group and group_idx < num_groups:
             wires = wires_for_each_group[group_idx]
-            if len(wires) != 0 and len(qml.wires.Wires.shared_wires([wires, smp.wires])) == 0:
+            if len(wires) != 0 and len(qp.wires.Wires.shared_wires([wires, smp.wires])) == 0:
                 mp_groups[group_idx].append(smp)
                 wires_for_each_group[group_idx] += smp.wires
                 single_term_obs_mps_grouped[smp] = SingleTermMP(
@@ -714,11 +714,11 @@ def _split_using_wires_grouping(
     return tapes, fn
 
 
-def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
+def _split_all_multi_term_obs_mps(tape: qp.tape.QuantumScript):
     """Splits all multi-term observables in a tape to measurements of single-term observables.
 
     Args:
-        tape (~qml.tape.QuantumScript): The tape with measurements to split.
+        tape (~qp.tape.QuantumScript): The tape with measurements to split.
 
     Returns:
         single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
@@ -742,18 +742,18 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
             # Break the observable into terms, and construct an ExpectationMP with each term.
             for c, o in zip(*obs.terms(), strict=True):
                 # If the observable is an identity, track it with a constant offset
-                if isinstance(o, qml.Identity):
+                if isinstance(o, qp.Identity):
                     offset += c
                 # If the single-term measurement already exists, it can be reused by all original
                 # measurements. In this case, add the existing single-term measurement to the list
                 # corresponding to this original measurement.
-                elif (sm := qml.expval(o)) in single_term_obs_mps:
+                elif (sm := qp.expval(o)) in single_term_obs_mps:
                     single_term_obs_mps[sm][0].append(mp_idx)
                     single_term_obs_mps[sm][1].append(c)
                 # Otherwise, add this new measurement to the list of single-term measurements.
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
-        elif isinstance(obs, qml.Identity):
+        elif isinstance(obs, qp.Identity):
             offset += 1
         else:
             if isinstance(obs, (SProd, Prod)):
@@ -884,8 +884,8 @@ def _sum_terms(
     """Sum results from measurements of multiple terms in a multi-term observable."""
     if (
         coeffs
-        and not qml.math.is_abstract(coeffs[0])
-        and not qml.math.is_abstract(offset)
+        and not qp.math.is_abstract(coeffs[0])
+        and not qp.math.is_abstract(offset)
         and coeffs == [1]
         and offset == 0
     ):
@@ -894,20 +894,20 @@ def _sum_terms(
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
     for c, r in zip(coeffs, res, strict=True):
-        if qml.math.get_interface(r) == "autograd":
-            r = qml.math.array(r)
+        if qp.math.get_interface(r) == "autograd":
+            r = qp.math.array(r)
         if isinstance(r, (list, tuple)):
-            r = qml.math.stack(r)
-        dot_products.append(qml.math.dot(c, qml.math.squeeze(r)))
+            r = qp.math.stack(r)
+        dot_products.append(qp.math.dot(c, qp.math.squeeze(r)))
     if len(dot_products) == 0:
-        return qml.math.ones(shape) * offset
-    summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-    if qml.math.get_interface(offset) == "autograd" and qml.math.requires_grad(summed_dot_products):
-        offset = qml.math.array(offset)
+        return qp.math.ones(shape) * offset
+    summed_dot_products = qp.math.sum(qp.math.stack(dot_products), axis=0)
+    if qp.math.get_interface(offset) == "autograd" and qp.math.requires_grad(summed_dot_products):
+        offset = qp.math.array(offset)
     return summed_dot_products + offset
 
 
-def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.operation.Operator:
+def _mp_to_obs(mp: MeasurementProcess, tape: qp.tape.QuantumScript) -> qp.operation.Operator:
     """Extract the observable from a measurement process.
 
     If the measurement process has an observable, return it. Otherwise, return a dummy
@@ -919,4 +919,4 @@ def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.oper
         return mp.obs
 
     obs_wires = mp.wires if mp.wires else tape.wires
-    return qml.prod(*(qml.Z(wire) for wire in obs_wires))
+    return qp.prod(*(qp.Z(wire) for wire in obs_wires))

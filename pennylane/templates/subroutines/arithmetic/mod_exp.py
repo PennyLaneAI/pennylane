@@ -69,14 +69,14 @@ class ModExp(Operation):
         output_wires = [2, 3, 4]
         work_wires = [5, 6, 7, 8, 9]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires = x_wires)
-            qml.BasisEmbedding(b, wires = output_wires)
-            qml.ModExp(x_wires, output_wires, base, mod, work_wires)
-            return qml.sample(wires = output_wires)
+            qp.BasisEmbedding(x, wires = x_wires)
+            qp.BasisEmbedding(b, wires = output_wires)
+            qp.ModExp(x_wires, output_wires, base, mod, work_wires)
+            return qp.sample(wires = output_wires)
 
     >>> print(circuit())
     [[0 0 1]]
@@ -230,7 +230,7 @@ class ModExp(Operation):
 
         **Example**
 
-        >>> qml.ModExp.compute_decomposition(x_wires=[0,1], output_wires=[2,3,4], base=3, mod=8, work_wires=[5,6,7,8,9])
+        >>> qp.ModExp.compute_decomposition(x_wires=[0,1], output_wires=[2,3,4], base=3, mod=8, work_wires=[5,6,7,8,9])
         [ControlledSequence(Multiplier(wires=[2, 3, 4, 5, 6, 7, 8, 9]), control=[0, 1])]
         """
 

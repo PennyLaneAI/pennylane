@@ -124,20 +124,20 @@ class QROM(Operation):
         # a list of bitstrings is defined
         bitstrings = ["010", "111", "110", "000"]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
 
             # the third index is encoded in the control wires [0, 1]
-            qml.BasisEmbedding(2, wires = [0,1])
+            qp.BasisEmbedding(2, wires = [0,1])
 
-            qml.QROM(bitstrings = bitstrings,
+            qp.QROM(bitstrings = bitstrings,
                     control_wires = [0,1],
                     target_wires = [2,3,4],
                     work_wires = [5,6,7])
 
-            return qml.sample(wires = [2,3,4])
+            return qp.sample(wires = [2,3,4])
 
     >>> print(circuit())
     [[1 1 0]]

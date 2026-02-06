@@ -89,7 +89,7 @@ class THermitian(Hermitian):
         **Example**
 
         >>> A = np.array([[6+0j, 1-2j, 0],[1+2j, -1, 0], [0, 0, 1]])
-        >>> qml.THermitian.compute_matrix(A)
+        >>> qp.THermitian.compute_matrix(A)
         array([[ 6.+0.j,  1.-2.j,  0.+0.j],
                [ 1.+2.j, -1.+0.j,  0.+0.j],
                [ 0.+0.j,  0.+0.j,  1.+0.j]])
@@ -110,7 +110,7 @@ class THermitian(Hermitian):
                 Hermitian observable
         """
         Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
+        Hmat = qp.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in THermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
@@ -142,7 +142,7 @@ class THermitian(Hermitian):
         >>> A = np.array([[-6, 2 + 1j, 0], [2 - 1j, 0, 0], [0, 0, 1]])
         >>> _, evecs = np.linalg.eigh(A)
         >>> from pprint import pprint
-        >>> pprint(qml.THermitian.compute_diagonalizing_gates(evecs, wires=[0]))
+        >>> pprint(qp.THermitian.compute_diagonalizing_gates(evecs, wires=[0]))
         [QutritUnitary(array([[-0.94915323+0.j        ,  0.2815786 +0.1407893j ,
                 -0.        +0.j        ],
             [ 0.31481445-0.j        ,  0.84894846+0.42447423j,
@@ -184,17 +184,17 @@ class GellMann(Operator):
 
     **Example:**
 
-    >>> dev = qml.device("default.qutrit", wires=2)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qutrit", wires=2)
+    >>> @qp.qnode(dev)
     ... def test_qnode():
-    ...     qml.TShift(wires=0)
-    ...     qml.TClock(wires=0)
-    ...     qml.TShift(wires=1)
-    ...     qml.TAdd(wires=[0, 1])
-    ...     return qml.expval(qml.GellMann(wires=0, index=1))
+    ...     qp.TShift(wires=0)
+    ...     qp.TClock(wires=0)
+    ...     qp.TShift(wires=1)
+    ...     qp.TAdd(wires=[0, 1])
+    ...     return qp.expval(qp.GellMann(wires=0, index=1))
     >>> print(test_qnode())
     0.0
-    >>> print(qml.draw(test_qnode)())
+    >>> print(qp.draw(test_qnode)())
     0: ──TShift──TClock─╭TAdd─┤  <GellMann(1)>
     1: ──TShift─────────╰TAdd─┤               
 
@@ -205,7 +205,7 @@ class GellMann(Operator):
     num_params = 0
     """int: Number of trainable parameters the operator depends on"""
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=qp.QueuingManager):
         """Append the operator to the Operator queue."""
         return self
 
@@ -282,7 +282,7 @@ class GellMann(Operator):
 
         **Example**
 
-        >>> qml.GellMann.compute_matrix(8)
+        >>> qp.GellMann.compute_matrix(8)
         array([[ 0.57735027+0.j,  0.        +0.j,  0.        +0.j],
                [ 0.        +0.j,  0.57735027+0.j,  0.        +0.j],
                [ 0.        +0.j,  0.        +0.j, -1.15470054+0.j]])
@@ -313,7 +313,7 @@ class GellMann(Operator):
 
         **Example**
 
-        >>> qml.GellMann.compute_eigvals(1)
+        >>> qp.GellMann.compute_eigvals(1)
         array([ 1, -1,  0])
         """
         if index != 8:
@@ -342,7 +342,7 @@ class GellMann(Operator):
 
         **Example**
 
-        >>> qml.GellMann.compute_diagonalizing_gates(wires=0, index=4)
+        >>> qp.GellMann.compute_diagonalizing_gates(wires=0, index=4)
         [QutritUnitary(array([[ 0.70710678-0.j,  0.        -0.j,  0.70710678-0.j],
                [ 0.70710678-0.j,  0.        -0.j, -0.70710678-0.j],
                [ 0.        -0.j,  1.        -0.j,  0.        -0.j]]), wires=[0])]

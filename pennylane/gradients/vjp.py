@@ -305,30 +305,30 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
                           [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
 
         ops = [
-            qml.RX(x[0, 0], wires=0),
-            qml.RY(x[0, 1], wires=1),
-            qml.RZ(x[0, 2], wires=0),
-            qml.CNOT(wires=[0, 1]),
-            qml.RX(x[1, 0], wires=1),
-            qml.RY(x[1, 1], wires=0),
-            qml.RZ(x[1, 2], wires=1)
+            qp.RX(x[0, 0], wires=0),
+            qp.RY(x[0, 1], wires=1),
+            qp.RZ(x[0, 2], wires=0),
+            qp.CNOT(wires=[0, 1]),
+            qp.RX(x[1, 0], wires=1),
+            qp.RY(x[1, 1], wires=0),
+            qp.RZ(x[1, 2], wires=1)
         ]
-        measurements = [qml.expval(qml.Z(0)), qml.probs(wires=1)]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0)), qp.probs(wires=1)]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
     We can use the ``vjp`` function to compute the vector-Jacobian product,
     given a gradient-output vector ``dy``:
 
     >>> dy = torch.tensor([1., 1., 1.], dtype=torch.float64)
-    >>> vjp_tapes, fn = qml.gradients.vjp(tape, dy, qml.gradients.param_shift)
+    >>> vjp_tapes, fn = qp.gradients.vjp(tape, dy, qp.gradients.param_shift)
 
     Note that ``dy`` has shape ``(3,)``, matching the output dimension of the tape
     (1 expectation and 2 probability values).
 
     Executing the VJP tapes, and applying the processing function:
 
-    >>> dev = qml.device("default.qubit")
-    >>> vjp = fn(qml.execute(vjp_tapes, dev, diff_method=qml.gradients.param_shift, interface="torch"))
+    >>> dev = qp.device("default.qubit")
+    >>> vjp = fn(qp.execute(vjp_tapes, dev, diff_method=qp.gradients.param_shift, interface="torch"))
     >>> vjp
     tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.5214e-16, -4.8217e-01,
              2.1329e-17], dtype=torch.float64, grad_fn=<SumBackward1>)
@@ -449,19 +449,19 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
         x = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
 
         ops = [
-            qml.RX(x[0, 0], wires=0),
-            qml.RY(x[0, 1], wires=1),
-            qml.RZ(x[0, 2], wires=0),
-            qml.CNOT(wires=[0, 1]),
-            qml.RX(x[1, 0], wires=1),
-            qml.RY(x[1, 1], wires=0),
-            qml.RZ(x[1, 2], wires=1)
+            qp.RX(x[0, 0], wires=0),
+            qp.RY(x[0, 1], wires=1),
+            qp.RZ(x[0, 2], wires=0),
+            qp.CNOT(wires=[0, 1]),
+            qp.RX(x[1, 0], wires=1),
+            qp.RY(x[1, 1], wires=0),
+            qp.RZ(x[1, 2], wires=1)
         ]
-        measurements1 = [qml.expval(qml.Z(0)), qml.probs(wires=1)]
-        tape1 = qml.tape.QuantumTape(ops, measurements1)
+        measurements1 = [qp.expval(qp.Z(0)), qp.probs(wires=1)]
+        tape1 = qp.tape.QuantumTape(ops, measurements1)
 
-        measurements2 = [qml.expval(qml.Z(0) @ qml.Z(1))]
-        tape2 = qml.tape.QuantumTape(ops, measurements2)
+        measurements2 = [qp.expval(qp.Z(0) @ qp.Z(1))]
+        tape2 = qp.tape.QuantumTape(ops, measurements2)
 
         tapes = [tape1, tape2]
 
@@ -472,7 +472,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
     >>> dys = [torch.tensor([1., 1., 1.], dtype=torch.float64),
     ...        torch.tensor([1.], dtype=torch.float64)]
-    >>> vjp_tapes, fn = qml.gradients.batch_vjp(tapes, dys, qml.gradients.param_shift)
+    >>> vjp_tapes, fn = qp.gradients.batch_vjp(tapes, dys, qp.gradients.param_shift)
 
     Note that each ``dy`` has shape matching the output dimension of the tape
     (``tape1`` has 1 expectation and 2 probability values --- 3 outputs --- and ``tape2``
@@ -480,8 +480,8 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
     Executing the VJP tapes, and applying the processing function:
 
-    >>> dev = qml.device("default.qubit")
-    >>> vjps = fn(qml.execute(vjp_tapes, dev, diff_method=qml.gradients.param_shift, interface="torch"))
+    >>> dev = qp.device("default.qubit")
+    >>> vjps = fn(qp.execute(vjp_tapes, dev, diff_method=qp.gradients.param_shift, interface="torch"))
     >>> vjps
     [tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.5214e-16, -4.8217e-01,
           2.1329e-17], dtype=torch.float64, grad_fn=<SumBackward1>),

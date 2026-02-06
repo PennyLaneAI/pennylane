@@ -45,7 +45,7 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     circuit = circuit.map_to_standard_wires()
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+    if len(circuit) > 0 and isinstance(circuit[0], qp.operation.StatePrepBase):
         prep = circuit[0]
 
     state = create_initial_state(
@@ -73,10 +73,10 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
         # We know they belong at the end because the circuit is in standard wire-order
         # Since it is a dm, we must pad it with 0s on the last row and last column
         current_axis = num_operated_wires + i + is_state_batched
-        state = qml.math.stack(
-            ([state] + [qml.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=current_axis
+        state = qp.math.stack(
+            ([state] + [qp.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=current_axis
         )
-        state = qml.math.stack(([state] + [qml.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=-1)
+        state = qp.math.stack(([state] + [qp.math.zeros_like(state)] * (QUDIT_DIM - 1)), axis=-1)
 
     return state, is_state_batched
 
@@ -141,7 +141,7 @@ def measure_final_state(  # pylint: disable=too-many-arguments
 
 
 def simulate(  # pylint: disable=too-many-arguments
-    circuit: qml.tape.QuantumScript,
+    circuit: qp.tape.QuantumScript,
     rng=None,
     prng_key=None,
     debugger=None,
@@ -172,7 +172,7 @@ def simulate(  # pylint: disable=too-many-arguments
 
     This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.TRX(1.2, wires=0)], [qml.expval(qml.GellMann(0, 3)), qml.probs(wires=(0,1))])
+    >>> qs = qp.tape.QuantumScript([qp.TRX(1.2, wires=0)], [qp.expval(qp.GellMann(0, 3)), qp.probs(wires=(0,1))])
     >>> simulate(qs)
     (0.36235775447667357,
     tensor([0.68117888, 0.        , 0.        , 0.31882112, 0.        , 0.        ], requires_grad=True))

@@ -42,7 +42,7 @@ def constant(scalar, time):
 
     The ``constant`` function can be used to create a parametrized Hamiltonian
 
-    >>> H = qml.pulse.constant * qml.X(0)
+    >>> H = qp.pulse.constant * qp.X(0)
 
     When calling the parametrized Hamiltonian, ``constant`` will always return the input parameter
 
@@ -61,12 +61,12 @@ def constant(scalar, time):
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params, t=2)
-            return qml.expval(qml.Z(0))
+            qp.evolve(H)(params, t=2)
+            return qp.expval(qp.Z(0))
 
 
     >>> params = jnp.array([5.0])
@@ -115,7 +115,7 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
         time = jnp.linspace(0, 10, 1000)
         windows = [(1, 7)]
 
-        windowed_f = qml.pulse.rect(f, windows=windows)
+        windowed_f = qp.pulse.rect(f, windows=windows)
 
         y1 = f(p, time)
         y2 = jax.vmap(windowed_f, (None, 0))(p, time)
@@ -136,7 +136,7 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
 
     ``rect`` can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
-    >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.X(0)
+    >>> H = qp.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qp.X(0)
 
     The resulting Hamiltonian will be non-zero only inside the window.
 
@@ -151,14 +151,14 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
     .. code-block:: python
 
         windows = [(1, 7), (9, 14)]
-        H = qml.pulse.rect(jnp.polyval, windows) * qml.X(0)
+        H = qp.pulse.rect(jnp.polyval, windows) * qp.X(0)
 
     When calling the :class:`.ParametrizedHamiltonian`, ``rect`` will evaluate the given function only
     inside the time windows, and otherwise return 0.
 
     One can also pass a scalar to the ``rect`` function
 
-    >>> H = qml.pulse.rect(10, (1, 7)) * qml.X(0)
+    >>> H = qp.pulse.rect(10, (1, 7)) * qp.X(0)
 
     In this case, ``rect`` will return the given scalar only when the time is inside the provided
     time windows
@@ -238,7 +238,7 @@ def pwc(timespan):
         params = jnp.array([1, 2, 3, 4, 5])
         time = jnp.linspace(0, 10, 1000)
         timespan=(2, 7)
-        y = qml.pulse.pwc(timespan)(params, time)
+        y = qp.pulse.pwc(timespan)(params, time)
         plt.plot(time, y, label=f"params={params}, timespan={timespan}")
         plt.legend()
         plt.show()
@@ -253,17 +253,17 @@ def pwc(timespan):
         As such, the above function returns ``5`` for a time slightly smaller than the final time in ``timespan``,
         but it returns ``0`` for the final time itself:
 
-        >>> qml.pulse.pwc(timespan)(params, 6.999999)
+        >>> qp.pulse.pwc(timespan)(params, 6.999999)
         Array(5., dtype=float32)
 
-        >>> qml.pulse.pwc(timespan)(params, 7.)
+        >>> qp.pulse.pwc(timespan)(params, 7.)
         Array(0., dtype=float32)
 
     **Example**
 
     >>> timespan = (2, 7)
-    >>> f1 = qml.pulse.pwc(timespan)
-    >>> H = f1 * qml.X(0)
+    >>> f1 = qp.pulse.pwc(timespan)
+    >>> H = f1 * qp.X(0)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piece-wise function, and select the constant corresponding
@@ -334,7 +334,7 @@ def pwc_from_function(timespan, num_bins):
         timespan = 10
         num_bins = 10
 
-        binned_function = qml.pulse.pwc_from_function(timespan, num_bins)(smooth_function)
+        binned_function = qp.pulse.pwc_from_function(timespan, num_bins)(smooth_function)
 
     >>> binned_function([2, 4], 3), smooth_function([2, 4], 3)  # t = 3
     (Array(10.666667, dtype=float32), 10)

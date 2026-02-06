@@ -40,7 +40,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]: The folded circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The folded circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     .. seealso:: :func:`~.pennylane.noise.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
@@ -58,23 +58,23 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
         x = np.arange(6)
 
-        @qml.qnode(qml.device('default.qubit'))
+        @qp.qnode(qp.device('default.qubit'))
         def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.RZ(x[2], wires=2)
-            qml.CNOT(wires=(0,1))
-            qml.CNOT(wires=(1,2))
-            qml.RX(x[3], wires=0)
-            qml.RY(x[4], wires=1)
-            qml.RZ(x[5], wires=2)
-            return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=1)
+            qp.RZ(x[2], wires=2)
+            qp.CNOT(wires=(0,1))
+            qp.CNOT(wires=(1,2))
+            qp.RX(x[3], wires=0)
+            qp.RY(x[4], wires=1)
+            qp.RZ(x[5], wires=2)
+            return qp.expval(qp.Z(0) @ qp.Z(1) @ qp.Z(2))
 
 
     Setting ``scale_factor=1`` does not affect the circuit:
 
-    >>> folded = qml.noise.fold_global(circuit, 1)
-    >>> print(qml.draw(folded)(x))
+    >>> folded = qp.noise.fold_global(circuit, 1)
+    >>> print(qp.draw(folded)(x))
     0: ──RX(0.00)─╭●──RX(3.00)───────────┤ ╭<Z@Z@Z>
     1: ──RY(1.00)─╰X─╭●─────────RY(4.00)─┤ ├<Z@Z@Z>
     2: ──RZ(2.00)────╰X─────────RZ(5.00)─┤ ╰<Z@Z@Z>
@@ -82,16 +82,16 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
     Setting ``scale_factor=2`` results in the partially folded circuit :math:`U (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)`
     with :math:`s = \lfloor \left(1 \mod 2 \right) d/2 \rfloor = 4` since the circuit is composed of :math:`d=8` gates.
 
-    >>> folded = qml.noise.fold_global(circuit, 2)
-    >>> print(qml.draw(folded)(x))
+    >>> folded = qp.noise.fold_global(circuit, 2)
+    >>> print(qp.draw(folded)(x))
     0: ──RX(0.00)─╭●──RX(3.00)──RX(3.00)†──RX(3.00)───────────────────┤ ╭<Z@Z@Z>
     1: ──RY(1.00)─╰X─╭●─────────RY(4.00)───RY(4.00)†─╭X†─╭●──RY(4.00)─┤ ├<Z@Z@Z>
     2: ──RZ(2.00)────╰X─────────RZ(5.00)───RZ(5.00)†─╰X†─╰X──RZ(5.00)─┤ ╰<Z@Z@Z>
 
     Setting ``scale_factor=3`` results in the folded circuit :math:`U (U^\dagger U)`.
 
-    >>> folded = qml.noise.fold_global(circuit, 3)
-    >>> print(qml.draw(folded, decimals=1)(x))
+    >>> folded = qp.noise.fold_global(circuit, 3)
+    >>> print(qp.draw(folded, decimals=1)(x))
     0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†───────────────╭X†────────RX(0.0)†──RX(0.0)─╭●──RX(3.0) ···
     1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭X†─╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────── ···
     2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────── ···
@@ -119,35 +119,35 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
             n_wires = 4
 
             # Describe noise
-            noise_gate = qml.DepolarizingChannel
+            noise_gate = qp.DepolarizingChannel
             noise_strength = 0.05
 
             # Load devices
-            dev_ideal = qml.device("default.mixed", wires=n_wires)
-            dev_noisy = qml.noise.insert(dev_ideal, noise_gate, noise_strength)
+            dev_ideal = qp.device("default.mixed", wires=n_wires)
+            dev_noisy = qp.noise.insert(dev_ideal, noise_gate, noise_strength)
 
             x = np.arange(6)
 
-            H = 1.*qml.X(0) @ qml.X(1) + 1.*qml.X(1) @ qml.X(2)
+            H = 1.*qp.X(0) @ qp.X(1) + 1.*qp.X(1) @ qp.X(2)
 
             def circuit(x):
-                qml.RY(x[0], wires=0)
-                qml.RY(x[1], wires=1)
-                qml.RY(x[2], wires=2)
-                qml.CNOT(wires=(0,1))
-                qml.CNOT(wires=(1,2))
-                qml.RY(x[3], wires=0)
-                qml.RY(x[4], wires=1)
-                qml.RY(x[5], wires=2)
-                return qml.expval(H)
+                qp.RY(x[0], wires=0)
+                qp.RY(x[1], wires=1)
+                qp.RY(x[2], wires=2)
+                qp.CNOT(wires=(0,1))
+                qp.CNOT(wires=(1,2))
+                qp.RY(x[3], wires=0)
+                qp.RY(x[4], wires=1)
+                qp.RY(x[5], wires=2)
+                return qp.expval(H)
 
-            qnode_ideal = qml.QNode(circuit, dev_ideal)
-            qnode_noisy = qml.QNode(circuit, dev_noisy)
+            qnode_ideal = qp.QNode(circuit, dev_ideal)
+            qnode_noisy = qp.QNode(circuit, dev_noisy)
 
         We can then create folded versions of the noisy qnode and execute them for different scaling factors.
 
         >>> scale_factors = [1., 2., 3.]
-        >>> folded_res = [qml.noise.fold_global(qnode_noisy, lambda_)(x) for lambda_ in scale_factors]
+        >>> folded_res = [qp.noise.fold_global(qnode_noisy, lambda_)(x) for lambda_ in scale_factors]
 
         We want to later compare the ZNE with the ideal result.
 
@@ -258,7 +258,7 @@ def poly_extrapolate(x, y, order):
     >>> x = np.linspace(1, 10, 5)
     >>> rng = np.random.default_rng(12345)
     >>> y = x**2 + x + 1 + 0.3 * rng.random(len(x))
-    >>> qml.noise.poly_extrapolate(x, y, 2)
+    >>> qp.noise.poly_extrapolate(x, y, 2)
     np.float64(0.97...)
 
     """
@@ -286,7 +286,7 @@ def richardson_extrapolate(x, y):
     >>> x = np.linspace(1, 10, 5)
     >>> rng = np.random.default_rng(12345)
     >>> y = x**2 + x + 1 + 0.3 * rng.random(len(x))
-    >>> qml.noise.richardson_extrapolate(x, y)
+    >>> qp.noise.richardson_extrapolate(x, y)
     np.float64(1.26...)
 
     """
@@ -316,7 +316,7 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     >>> x = np.linspace(1, 10, 5)
     >>> rng = np.random.default_rng(12345)
     >>> y = np.exp(-x) + rng.normal(scale=0.1, size=len(x))
-    >>> qml.noise.exponential_extrapolate(x, y)
+    >>> qp.noise.exponential_extrapolate(x, y)
     np.float64(1.015...)
 
     """
@@ -377,7 +377,7 @@ def mitigate_with_zne(
     Returns:
         qnode (QNode) or tuple[List[.QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the mitigated results in the form of a tensor of a tensor, a tuple, or a nested tuple depending
         upon the nesting structure of measurements in the original circuit.
 
@@ -390,13 +390,13 @@ def mitigate_with_zne(
 
         import pennylane as qp
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qp.device("default.mixed", wires=2)
 
-        fcond = qml.noise.wires_in(dev.wires)
-        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.05)
-        noise_model = qml.NoiseModel({fcond: noise})
+        fcond = qp.noise.wires_in(dev.wires)
+        noise = qp.noise.partial_wires(qp.AmplitudeDamping, 0.05)
+        noise_model = qp.NoiseModel({fcond: noise})
 
-        noisy_dev = qml.add_noise(dev, noise_model)
+        noisy_dev = qp.add_noise(dev, noise_model)
 
     .. note ::
 
@@ -420,21 +420,21 @@ def mitigate_with_zne(
         n_wires = 2
         n_layers = 2
 
-        shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
+        shapes = qp.SimplifiedTwoDesign.shape(n_layers, n_wires)
         rng = np.random.default_rng(12345)
         w1, w2 = [rng.random(s) for s in shapes]
 
-        @qml.noise.mitigate_with_zne(
+        @qp.noise.mitigate_with_zne(
             scale_factors=[1., 2., 3.],
             folding=fold_global,
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order' : 2},
         )
-        @qml.transforms.decompose(gate_set = ["RY", "CZ"])
+        @qp.transforms.decompose(gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
-            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
-            return qml.expval(qml.Z(0))
+            qp.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qp.expval(qp.Z(0))
 
     Executions of ``circuit`` will now be mitigated:
 
@@ -446,7 +446,7 @@ def mitigate_with_zne(
 
     This mitigated qnode can be differentiated like any other qnode.
 
-    >>> qml.grad(circuit)(qml.numpy.array(w1), qml.numpy.array(w2))
+    >>> qp.grad(circuit)(qp.numpy.array(w1), qp.numpy.array(w2))
     (array([-0.92625176,  0.28914607]), array([[[-1.01036246e+00,  2.99296508e-01]],
     <BLANKLINE>
            [[-6.93099601e-01, -7.92154137e-04]]]))

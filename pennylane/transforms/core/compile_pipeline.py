@@ -140,57 +140,57 @@ class CompilePipeline:
 
     .. code-block:: python
 
-        pipeline = qml.CompilePipeline(
-            qml.transforms.commute_controlled,
-            qml.transforms.cancel_inverses(recursive=True),
-            qml.transforms.merge_rotations,
+        pipeline = qp.CompilePipeline(
+            qp.transforms.commute_controlled,
+            qp.transforms.cancel_inverses(recursive=True),
+            qp.transforms.merge_rotations,
         )
 
         @pipeline
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(x, y):
-            qml.CNOT([1, 0])
-            qml.X(0)
-            qml.CNOT([1, 0])
-            qml.H(0)
-            qml.H(0)
-            qml.X(0)
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=0)
-            return qml.expval(qml.Z(1))
+            qp.CNOT([1, 0])
+            qp.X(0)
+            qp.CNOT([1, 0])
+            qp.H(0)
+            qp.H(0)
+            qp.X(0)
+            qp.RX(x, wires=0)
+            qp.RX(y, wires=0)
+            return qp.expval(qp.Z(1))
 
-    >>> print(qml.draw(circuit)(0.1, 0.2))
+    >>> print(qp.draw(circuit)(0.1, 0.2))
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
 
     Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
     example, the transforms can be added together with ``+``:
 
-    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+    >>> pipeline = qp.transforms.merge_rotations + qp.transforms.cancel_inverses(recursive=True)
     >>> pipeline
     CompilePipeline(merge_rotations, cancel_inverses)
 
     Or multiplied by a scalar via ``*``:
-    >>> pipeline += 2 * qml.transforms.commute_controlled
+    >>> pipeline += 2 * qp.transforms.commute_controlled
     >>> pipeline
     CompilePipeline(merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
 
     A compilation pipeline can also be easily modified using operations similar to Python lists, including
     ``insert``, ``append``, ``extend`` and ``pop``:
 
-    >>> pipeline.insert(0, qml.transforms.remove_barrier)
+    >>> pipeline.insert(0, qp.transforms.remove_barrier)
     >>> pipeline
     CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
 
     Additionally, multiple compilation pipelines can be concatenated:
 
-    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+    >>> another_pipeline = qp.transforms.decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
     >>> another_pipeline + pipeline
     CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
 
     We can create a new pipeline that will do multiple passes of the original with multiplication:
 
-    >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+    >>> original = qp.transforms.merge_rotations + qp.transforms.cancel_inverses
     >>> 2 * original
     CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
 
@@ -464,7 +464,7 @@ class CompilePipeline:
         """Add a transform to the end of the program.
 
         Note that this should be a function decorated with/called by
-        ``qml.transform``, and not a ``BoundTransform``.
+        ``qp.transform``, and not a ``BoundTransform``.
 
         Args:
             transform (Transform): The transform to add to the compile pipeline.
@@ -651,7 +651,7 @@ class CompilePipeline:
         self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
     ) -> jax.extend.core.ClosedJaxpr: ...
     @overload
-    def __call__(self, qnode: qml.QNode, *args, **kwargs) -> qml.QNode: ...
+    def __call__(self, qnode: qp.QNode, *args, **kwargs) -> qp.QNode: ...
     @overload
     def __call__(
         self, tape: QuantumScript | QuantumScriptBatch

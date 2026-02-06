@@ -49,25 +49,25 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     + -0.8270995 * a⁺(3) a(1)
     + 0.5 * a⁺(3) a(3)
     """
-    coeffs = qml.math.array([])
+    coeffs = qp.math.array([])
 
-    if not qml.math.allclose(constant, 0.0):
-        coeffs = qml.math.concatenate((coeffs, constant))
+    if not qp.math.allclose(constant, 0.0):
+        coeffs = qp.math.concatenate((coeffs, constant))
         operators = [[]]
     else:
         operators = []
 
     if one is not None:
-        indices_one = qml.math.argwhere(abs(one) >= cutoff)
+        indices_one = qp.math.argwhere(abs(one) >= cutoff)
         # up-up + down-down terms
         operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
-        coeffs_one = qml.math.tile(one[abs(one) >= cutoff], 2)
-        coeffs = qml.math.convert_like(coeffs, one)
-        coeffs = qml.math.concatenate((coeffs, coeffs_one))
+        coeffs_one = qp.math.tile(one[abs(one) >= cutoff], 2)
+        coeffs = qp.math.convert_like(coeffs, one)
+        coeffs = qp.math.concatenate((coeffs, coeffs_one))
         operators = operators + operators_one
 
     if two is not None:
-        indices_two = np.array(qml.math.argwhere(abs(two) >= cutoff))
+        indices_two = np.array(qp.math.argwhere(abs(two) >= cutoff))
         n = len(indices_two)
         operators_two = (
             [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
@@ -75,9 +75,9 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
             + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]  # down-up-up-down
             + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down
         )
-        coeffs_two = qml.math.tile(two[abs(two) >= cutoff], 4) / 2
+        coeffs_two = qp.math.tile(two[abs(two) >= cutoff], 4) / 2
 
-        coeffs = qml.math.concatenate((coeffs, coeffs_two))
+        coeffs = qp.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
     sentence = FermiSentence({FermiWord({}): constant[0]})
@@ -107,21 +107,21 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
 
     **Example**
 
-    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qp.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qp.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> print(qubit_observable(s))
     -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
     mapping = mapping.strip().lower()
     if mapping == "jordan_wigner":
-        h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
+        h = qp.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     elif mapping == "parity":
         qubits = len(o_ferm.wires)
-        h = qml.parity_transform(o_ferm, qubits, ps=True, tol=cutoff)
+        h = qp.parity_transform(o_ferm, qubits, ps=True, tol=cutoff)
     elif mapping == "bravyi_kitaev":
         qubits = len(o_ferm.wires)
-        h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
+        h = qp.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
     else:
         raise ValueError(
             f"The '{mapping}' transformation is not available."

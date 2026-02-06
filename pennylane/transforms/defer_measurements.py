@@ -38,11 +38,11 @@ from pennylane.wires import Wires
 
 def _check_tape_validity(tape: QuantumScript):
     """Helper function to check that the tape is valid."""
-    cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
+    cv_types = (qp.operation.CVOperation, qp.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) and op.name != "Identity" for op in tape.operations)
     obs_cv = any(
         isinstance(getattr(op, "obs", None), cv_types)
-        and not isinstance(getattr(op, "obs", None), qml.Identity)
+        and not isinstance(getattr(op, "obs", None), qp.Identity)
         for op in tape.measurements
     )
     if ops_cv or obs_cv:
@@ -54,14 +54,14 @@ def _check_tape_validity(tape: QuantumScript):
         ):
             raise ValueError(
                 f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
-                "when using qml.defer_measurements. Deferred measurements can occur "
+                "when using qp.defer_measurements. Deferred measurements can occur "
                 "automatically when using mid-circuit measurements on a device that does not "
                 "support them."
             )
 
         if mp.__class__.__name__ == "StateMP":
             raise ValueError(
-                "Cannot use StateMP as a measurement when using qml.defer_measurements. "
+                "Cannot use StateMP as a measurement when using qp.defer_measurements. "
                 "Deferred measurements can occur automatically when using mid-circuit "
                 "measurements on a device that does not support them."
             )
@@ -72,7 +72,7 @@ def _check_tape_validity(tape: QuantumScript):
     )
     if postselect_present and samples_present and tape.batch_size is not None:
         raise ValueError(
-            "Returning qml.sample is not supported when postselecting mid-circuit "
+            "Returning qp.sample is not supported when postselecting mid-circuit "
             "measurements with broadcasting"
         )
 
@@ -150,7 +150,7 @@ def _get_plxpr_defer_measurements():
             """
             self.state = {"cur_target": self._num_wires - 1, "used_wires": set()}
 
-        def _update_used_wires(self, wires: qml.wires.Wires, cur_target: int):
+        def _update_used_wires(self, wires: qp.wires.Wires, cur_target: int):
             """Update the state with the number of wires that have been used and validate that
             there is no overlap between the used circuit wires and the mid-circuit measurement
             target wires.
@@ -197,9 +197,9 @@ def _get_plxpr_defer_measurements():
             for branch, value in mv.items():
                 data[idx] = value
                 op = jax.tree_util.tree_unflatten(struct, data)
-                qml.ctrl(op, mv.wires, control_values=branch)
+                qp.ctrl(op, mv.wires, control_values=branch)
 
-        def interpret_operation(self, op: "qml.operation.Operator"):
+        def interpret_operation(self, op: "qp.operation.Operator"):
             """Interpret a PennyLane operation instance.
 
             Args:
@@ -232,7 +232,7 @@ def _get_plxpr_defer_measurements():
 
             return jax.tree_util.tree_unflatten(struct, data)
 
-        def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+        def interpret_measurement(self, measurement: "qp.measurement.MeasurementProcess"):
             """Interpret a measurement process instance.
 
             Args:
@@ -353,7 +353,7 @@ def _get_plxpr_defer_measurements():
             outvals = []
             for var in jaxpr.outvars:
                 outval = self.read(var)
-                if isinstance(outval, qml.operation.Operator):
+                if isinstance(outval, qp.operation.Operator):
                     outvals.append(self.interpret_operation(outval))
                 else:
                     outvals.append(outval)
@@ -377,14 +377,14 @@ def _get_plxpr_defer_measurements():
 
         cnot_wires = (wires, cur_target)
         if postselect is not None:
-            qml.Projector(jax.numpy.array([postselect]), wires=wires)
+            qp.Projector(jax.numpy.array([postselect]), wires=wires)
 
-        qml.CNOT(wires=cnot_wires)
+        qp.CNOT(wires=cnot_wires)
         if reset:
             if postselect is None:
-                qml.CNOT(wires=cnot_wires[::-1])
+                qp.CNOT(wires=cnot_wires[::-1])
             elif postselect == 1:
-                qml.PauliX(wires=wires)
+                qp.PauliX(wires=wires)
 
         self.state["cur_target"] -= 1
         return MeasurementValue([meas])
@@ -420,7 +420,7 @@ def _get_plxpr_defer_measurements():
                         work_wires=None,
                         n_consts=len(cur_consts),
                     )
-                    qml.cond(value, _f)(
+                    qp.cond(value, _f)(
                         *cur_consts,
                         *args,
                         *control_wires,
@@ -435,19 +435,19 @@ def _get_plxpr_defer_measurements():
 
         if not tkwargs.get("num_wires", None):
             raise ValueError(
-                "'num_wires' argument for qml.defer_measurements must be provided "
-                "when qml.capture.enabled() is True."
+                "'num_wires' argument for qp.defer_measurements must be provided "
+                "when qp.capture.enabled() is True."
             )
         if tkwargs.pop("reduce_postselected", False):
             warn(
-                "Cannot set 'reduce_postselected=True' with qml.capture.enabled() "
-                "when using qml.defer_measurements. Argument will be ignored.",
+                "Cannot set 'reduce_postselected=True' with qp.capture.enabled() "
+                "when using qp.defer_measurements. Argument will be ignored.",
                 UserWarning,
             )
         if tkwargs.pop("allow_postselect", False):
             warn(
-                "Cannot set 'allow_postselect=True' with qml.capture.enabled() "
-                "when using qml.defer_measurements. Argument will be ignored.",
+                "Cannot set 'allow_postselect=True' with qp.capture.enabled() "
+                "when using qp.defer_measurements. Argument will be ignored.",
                 UserWarning,
             )
 
@@ -529,7 +529,7 @@ def defer_measurements(
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
-            transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         ValueError: If any measurements with no wires or observable are present
@@ -545,25 +545,25 @@ def defer_measurements(
     .. code-block:: python
 
         def qfunc(par):
-            qml.RY(0.123, wires=0)
-            qml.Hadamard(wires=1)
-            m_0 = qml.measure(1)
-            qml.cond(m_0, qml.RY)(par, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RY(0.123, wires=0)
+            qp.Hadamard(wires=1)
+            m_0 = qp.measure(1)
+            qp.cond(m_0, qp.RY)(par, wires=0)
+            return qp.expval(qp.Z(0))
 
     The ``defer_measurements`` transform allows executing such quantum
     functions without having to perform mid-circuit measurements:
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> transformed_qfunc = qml.defer_measurements(qfunc)
-    >>> qnode = qml.QNode(transformed_qfunc, dev)
+    >>> dev = qp.device('default.qubit', wires=2)
+    >>> transformed_qfunc = qp.defer_measurements(qfunc)
+    >>> qnode = qp.QNode(transformed_qfunc, dev)
     >>> par = pnp.array(np.pi/2, requires_grad=True)
     >>> qnode(par)
     tensor(0.434..., requires_grad=True)
 
     We can also differentiate parameters passed to conditional operations:
 
-    >>> qml.grad(qnode)(par)
+    >>> qp.grad(qnode)(par)
     tensor(-0.496... requires_grad=True)
 
     Reusing and resetting measured wires will work as expected with the
@@ -571,17 +571,17 @@ def defer_measurements(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def func(x, y):
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            m_0 = qml.measure(1, reset=True)
+            qp.RY(x, wires=0)
+            qp.CNOT(wires=[0, 1])
+            m_0 = qp.measure(1, reset=True)
 
-            qml.cond(m_0, qml.RY)(y, wires=0)
-            qml.RX(np.pi/4, wires=1)
-            return qml.probs(wires=[0, 1])
+            qp.cond(m_0, qp.RY)(y, wires=0)
+            qp.RX(np.pi/4, wires=1)
+            return qp.probs(wires=[0, 1])
 
     Executing this QNode:
 
@@ -599,23 +599,23 @@ def defer_measurements(
 
         .. code-block:: python
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def node(x):
-                qml.RX(x, 0)
-                qml.RX(x, 1)
-                qml.RX(x, 2)
+                qp.RX(x, 0)
+                qp.RX(x, 1)
+                qp.RX(x, 2)
 
-                mcm0 = qml.measure(0, postselect=0, reset=False)
-                mcm1 = qml.measure(1, postselect=None, reset=True)
-                mcm2 = qml.measure(2, postselect=1, reset=False)
-                qml.cond(mcm0+mcm1+mcm2==1, qml.RX)(0.5, 3)
-                return qml.expval(qml.Z(0) @ qml.Z(3))
+                mcm0 = qp.measure(0, postselect=0, reset=False)
+                mcm1 = qp.measure(1, postselect=None, reset=True)
+                mcm2 = qp.measure(2, postselect=1, reset=False)
+                qp.cond(mcm0+mcm1+mcm2==1, qp.RX)(0.5, 3)
+                return qp.expval(qp.Z(0) @ qp.Z(3))
 
         Without the optimization, we find three gates controlled on the three measured
         qubits. They correspond to the combinations of controls that satisfy the condition
         ``mcm0+mcm1+mcm2==1``.
 
-        >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6)) # doctest: +SKIP
+        >>> print(qp.draw(qp.defer_measurements(node, reduce_postselected=False))(0.6)) # doctest: +SKIP
         0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────────────────────────────────┤ ╭<Z@Z>
         1: ──RX(0.60)─────────│──╭●─╭X───────────────────────────────────────┤ │
         2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|─╭○────────╭●────────╭○────────┤ │
@@ -625,7 +625,7 @@ def defer_measurements(
 
         If we do not explicitly deactivate the optimization, we obtain a much simpler circuit:
 
-        >>> print(qml.draw(qml.defer_measurements(node))(0.6))
+        >>> print(qp.draw(qp.defer_measurements(node))(0.6))
         0: ──RX(0.60)──|0⟩⟨0|─╭●─────────────────┤ ╭<Z@Z>
         1: ──RX(0.60)─────────│──╭●─╭X───────────┤ │
         2: ──RX(0.60)─────────│──│──│───|1⟩⟨1|───┤ │
@@ -638,7 +638,7 @@ def defer_measurements(
     .. details::
         :title: Deferred measurements with program capture
 
-        ``qml.defer_measurements`` can be applied to callables when program capture is enabled. To do so,
+        ``qp.defer_measurements`` can be applied to callables when program capture is enabled. To do so,
         the ``num_wires`` argument must be provided, which should be an integer corresponding to the total
         number of available wires. For ``m`` mid-circuit measurements, ``range(num_wires - m, num_wires)``
         will be the range of wires used to map mid-circuit measurements to ``CNOT`` gates.
@@ -654,12 +654,12 @@ def defer_measurements(
 
                 import jax
 
-                qml.capture.enable()
+                qp.capture.enable()
 
-                @qml.capture.expand_plxpr_transforms
-                @qml.defer_measurements(num_wires=1)
+                @qp.capture.expand_plxpr_transforms
+                @qp.defer_measurements(num_wires=1)
                 def f(n):
-                    qml.measure(n)
+                    qp.measure(n)
 
             >>> jax.make_jaxpr(f)(0)
             { lambda ; a:i...[]. let _:AbstractOperator() = CNOT[n_wires=2] a 0:i...[] in () }
@@ -692,16 +692,16 @@ def defer_measurements(
               import jax
               import jax.numpy as jnp
 
-              qml.capture.enable()
+              qp.capture.enable()
 
-              @qml.capture.expand_plxpr_transforms
-              @qml.defer_measurements(num_wires=10)
+              @qp.capture.expand_plxpr_transforms
+              @qp.defer_measurements(num_wires=10)
               def f():
-                  m0 = qml.measure(0)
+                  m0 = qp.measure(0)
 
                   phi = jnp.sin(jnp.pi * m0)
-                  qml.RX(phi, 0)
-                  return qml.expval(qml.PauliZ(0))
+                  qp.RX(phi, 0)
+                  return qp.expval(qp.PauliZ(0))
 
         >>> jax.make_jaxpr(f)() # doctest: +SKIP
         { lambda ; . let
@@ -725,7 +725,7 @@ def defer_measurements(
             g:AbstractOperator() = PauliZ[n_wires=1] 0:i32[]
             h:AbstractMeasurement(n_wires=None) = expval_obs g
         in (h,) }
-        >>> qml.capture.disable()
+        >>> qp.capture.disable()
 
         The above dummy example showcases how the transform is applied when the aforementioned
         features are used.
@@ -785,25 +785,25 @@ def defer_measurements(
 
             if op.postselect is not None:
                 with QueuingManager.stop_recording():
-                    new_operations.append(qml.Projector([op.postselect], wires=op.wires[0]))
+                    new_operations.append(qp.Projector([op.postselect], wires=op.wires[0]))
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
                 control_wires[op.id] = cur_wire
 
                 with QueuingManager.stop_recording():
-                    new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
+                    new_operations.append(qp.CNOT([op.wires[0], cur_wire]))
 
                 if op.reset:
                     with QueuingManager.stop_recording():
                         # No need to manually reset if postselecting on |0>
                         if op.postselect is None:
-                            new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
+                            new_operations.append(qp.CNOT([cur_wire, op.wires[0]]))
                         elif op.postselect == 1:
                             # We know that the measured wire will be in the |1> state if
                             # postselected |1>. So we can just apply a PauliX instead of
                             # a CNOT to reset
-                            new_operations.append(qml.X(op.wires[0]))
+                            new_operations.append(qp.X(op.wires[0]))
 
                 cur_wire += 1
             else:
@@ -819,13 +819,13 @@ def defer_measurements(
 
     for mp in tape.measurements:
         if mp.mv is not None:
-            # Update measurement value wires. We can't use `qml.map_wires` because the same
+            # Update measurement value wires. We can't use `qp.map_wires` because the same
             # wire can map to different control wires when multiple mid-circuit measurements
             # are made on the same wire. This mapping is determined by the id of the
             # MidMeasures. Thus, we need to manually map wires for each MidMeasure.
             if isinstance(mp.mv, MeasurementValue):
                 new_ms = [
-                    qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
+                    qp.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
                 ]
                 new_m = MeasurementValue(
                     new_ms, mp.mv.processing_fn if mp.mv.has_processing else None
@@ -834,7 +834,7 @@ def defer_measurements(
                 new_m = []
                 for val in mp.mv:
                     new_ms = [
-                        qml.map_wires(m, {m.wires[0]: control_wires[m.id]})
+                        qp.map_wires(m, {m.wires[0]: control_wires[m.id]})
                         for m in val.measurements
                     ]
                     new_m.append(
@@ -855,7 +855,7 @@ def defer_measurements(
 
     if is_postselecting and new_tape.batch_size is not None:
         # Split tapes if broadcasting with postselection
-        return qml.transforms.broadcast_expand(new_tape)
+        return qp.transforms.broadcast_expand(new_tape)
 
     return [new_tape], null_postprocessing
 

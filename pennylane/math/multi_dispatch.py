@@ -66,7 +66,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
     by the interface:
 
 
-    >>> @qml.math.multi_dispatch(argnum=[0, 1])
+    >>> @qp.math.multi_dispatch(argnum=[0, 1])
     ... def some_function(tensor1, tensor2, option, like):
     ...     # the interface string is stored in `like`.
     ...     ...
@@ -197,7 +197,7 @@ def block_diag(values, like=None):
     ...     torch.tensor([[1, 2, 3], [-1, -6, -3]]),
     ...     torch.tensor([[5]])
     ... ]
-    >>> qml.math.block_diag(t)
+    >>> qp.math.block_diag(t)
     tensor([[ 1,  2,  0,  0,  0,  0],
             [ 3,  4,  0,  0,  0,  0],
             [ 0,  0,  1,  2,  3,  0],
@@ -305,20 +305,20 @@ def diag(values, k=0, like=None):
     **Example**
 
     >>> x = [1., 2., tf.Variable(3.)]
-    >>> qml.math.diag(x)
+    >>> qp.math.diag(x)
     <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
     array([[1., 0., 0.],
            [0., 2., 0.],
            [0., 0., 3.]], dtype=float32)>
     >>> y = tf.Variable([0.65, 0.2, 0.1])
-    >>> qml.math.diag(y, k=-1)
+    >>> qp.math.diag(y, k=-1)
     <tf.Tensor: shape=(4, 4), dtype=float32, numpy=
     array([[0.  , 0.  , 0.  , 0.  ],
            [0.65, 0.  , 0.  , 0.  ],
            [0.  , 0.2 , 0.  , 0.  ],
            [0.  , 0.  , 0.1 , 0.  ]], dtype=float32)>
     >>> z = torch.tensor([0.1, 0.2])
-    >>> qml.math.diag(z, k=1)
+    >>> qp.math.diag(z, k=1)
     tensor([[0.0000, 0.1000, 0.0000],
             [0.0000, 0.0000, 0.2000],
             [0.0000, 0.0000, 0.0000]])
@@ -453,7 +453,7 @@ def get_trainable_indices(values, like=None):
 
     >>> from pennylane import numpy as np
     >>> def cost_fn(params):
-    ...     print("Trainable:", qml.math.get_trainable_indices(params))
+    ...     print("Trainable:", qp.math.get_trainable_indices(params))
     ...     return np.sum(np.sin(params[0] * params[1]))
     >>> values = [np.array([0.1, 0.2], requires_grad=True),
     ... np.array([0.5, 0.2], requires_grad=False)]
@@ -558,17 +558,17 @@ def einsum(indices, *operands, like=None, optimize=None):
 
     Trace of a matrix:
 
-    >>> qml.math.einsum('ii', a)
+    >>> qp.math.einsum('ii', a)
     60
 
     Extract the diagonal (requires explicit form):
 
-    >>> qml.math.einsum('ii->i', a)
+    >>> qp.math.einsum('ii->i', a)
     array([ 0,  6, 12, 18, 24])
 
     Sum over an axis (requires explicit form):
 
-    >>> qml.math.einsum('ij->i', a)
+    >>> qp.math.einsum('ij->i', a)
     array([ 10,  35,  60,  85, 110])
 
     Compute a matrix transpose, or reorder any number of axes:
@@ -697,7 +697,7 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
 
     >>> A = np.random.random((3,3))
     >>> B = np.random.random((3,3))
-    >>> qml.math.frobenius_inner_product(A, B)
+    >>> qp.math.frobenius_inner_product(A, B)
     3.091948202943376
     """
     A, B = np.coerce([A, B], like=like)
@@ -732,7 +732,7 @@ def scatter(indices, array, new_dims, like=None):
     >>> indices = np.array([4, 3, 1, 7])
     >>> updates = np.array([9, 10, 11, 12])
     >>> shape = 8
-    >>> qml.math.scatter(indices, updates, shape)
+    >>> qp.math.scatter(indices, updates, shape)
     array([ 0, 11,  0, 10,  9,  0,  0, 12])
     """
     return np.scatter(indices, array, new_dims, like=like)
@@ -766,7 +766,7 @@ def scatter_element_add(
     >>> tensor = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
     >>> index = (1, 2)
     >>> value = -3.1
-    >>> qml.math.scatter_element_add(tensor, index, value)
+    >>> qp.math.scatter_element_add(tensor, index, value)
     tensor([[ 0.1000,  0.2000,  0.3000],
             [ 0.4000,  0.5000, -2.5000]])
 
@@ -775,7 +775,7 @@ def scatter_element_add(
 
     >>> indices = [(1, 0), (2, 1)] # This will modify the entries (1, 2) and (0, 1)
     >>> values = torch.tensor([10, 20])
-    >>> qml.math.scatter_element_add(tensor, indices, values)
+    >>> qp.math.scatter_element_add(tensor, indices, values)
     tensor([[ 0.1000, 20.2000,  0.3000],
             [ 0.4000,  0.5000, 10.6000]])
     """

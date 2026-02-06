@@ -102,12 +102,12 @@ class QNSPSAOptimizer:
     For VQE/VQE-like problems, the objective function can be defined within a qnode:
 
     >>> num_qubits = 2
-    >>> dev = qml.device("default.qubit", wires=num_qubits)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=num_qubits)
+    >>> @qp.qnode(dev)
     ... def cost(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.CRY(params[1], wires=[0, 1])
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.CRY(params[1], wires=[0, 1])
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
     Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
     function of the optimizer.

@@ -47,7 +47,7 @@ class TestQutritDepolarizingChannel:
 
     def test_p_zero(self, tol):
         """Test p=0 gives correct Kraus matrices"""
-        op = qml.QutritDepolarizingChannel
+        op = qp.QutritDepolarizingChannel
         kraus_matrices = op(0, wires=0).kraus_matrices()
 
         assert len(kraus_matrices) == 9
@@ -57,7 +57,7 @@ class TestQutritDepolarizingChannel:
     def test_p_arbitrary(self, tol):
         """Test p=0.1 gives correct Kraus matrices"""
         p = 0.1
-        kraus_matrices = qml.QutritDepolarizingChannel(p, wires=0).kraus_matrices()
+        kraus_matrices = qp.QutritDepolarizingChannel(p, wires=0).kraus_matrices()
         expected_matrices = self.get_expected_kraus_matrices(p)
         for kraus_matrix, expected_matrix in zip(kraus_matrices, expected_matrices):
             assert np.allclose(kraus_matrix, expected_matrix, atol=tol, rtol=0)
@@ -65,22 +65,22 @@ class TestQutritDepolarizingChannel:
     def test_p_invalid_parameter(self):
         """Test that error is raised given an inappropriate p value."""
         with pytest.raises(ValueError, match="p must be in the interval"):
-            qml.QutritDepolarizingChannel(1.5, wires=0).kraus_matrices()
+            qp.QutritDepolarizingChannel(1.5, wires=0).kraus_matrices()
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_depolarizing(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
-        dev = qml.device("default.qutrit.mixed")
+        dev = qp.device("default.qutrit.mixed")
         prob = pnp.array(0.5, requires_grad=True)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(p):
-            qml.TRX(angle, wires=0, subspace=(0, 1))
-            qml.TRX(angle, wires=0, subspace=(1, 2))
-            qml.QutritDepolarizingChannel(p, wires=0)
-            return qml.expval(qml.GellMann(0, 3) + qml.GellMann(0, 8))
+            qp.TRX(angle, wires=0, subspace=(0, 1))
+            qp.TRX(angle, wires=0, subspace=(1, 2))
+            qp.QutritDepolarizingChannel(p, wires=0)
+            return qp.expval(qp.GellMann(0, 3) + qp.GellMann(0, 8))
 
         expected_errorless = (
             (np.sqrt(3) - 3) * (1 - np.cos(2 * angle)) / 24
@@ -90,7 +90,7 @@ class TestQutritDepolarizingChannel:
 
         assert np.allclose(circuit(prob), ((prob - (1 / 9)) / (8 / 9)) * expected_errorless)
 
-        gradient = np.squeeze(qml.grad(circuit)(prob))
+        gradient = np.squeeze(qp.grad(circuit)(prob))
         assert np.allclose(gradient, circuit(1) - circuit(0))
         assert np.allclose(gradient, -(9 / 8) * expected_errorless)
 
@@ -130,7 +130,7 @@ class TestQutritDepolarizingChannel:
     def test_kraus_jac_autograd(self):
         """Tests Jacobian of Kraus matrices using autograd."""
         p = pnp.array(0.43, requires_grad=True)
-        jac = qml.jacobian(self.kraus_fn_real)(p) + 1j * qml.jacobian(self.kraus_fn_imag)(p)
+        jac = qp.jacobian(self.kraus_fn_real)(p) + 1j * qp.jacobian(self.kraus_fn_imag)(p)
         assert math.allclose(jac, self.expected_jac_fn(p))
 
     @pytest.mark.torch
@@ -176,7 +176,7 @@ class TestQutritAmplitudeDamping:
 
     def test_gamma_zero(self, tol):
         """Test gamma_10=gamma_20=0 gives correct Kraus matrices"""
-        kraus_mats = qml.QutritAmplitudeDamping(0, 0, 0, wires=0).kraus_matrices()
+        kraus_mats = qp.QutritAmplitudeDamping(0, 0, 0, wires=0).kraus_matrices()
         assert np.allclose(kraus_mats[0], np.eye(3), atol=tol, rtol=0)
         for kraus_mat in kraus_mats[1:]:
             assert np.allclose(kraus_mat, np.zeros((3, 3)), atol=tol, rtol=0)
@@ -196,7 +196,7 @@ class TestQutritAmplitudeDamping:
         K_3[1, 2] = np.sqrt(gamma_21)
 
         expected = [K_0, K_1, K_2, K_3]
-        damping_channel = qml.QutritAmplitudeDamping(gamma_10, gamma_20, gamma_21, wires=0)
+        damping_channel = qp.QutritAmplitudeDamping(gamma_10, gamma_20, gamma_21, wires=0)
         assert np.allclose(damping_channel.kraus_matrices(), expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
@@ -233,7 +233,7 @@ class TestQutritAmplitudeDamping:
     @staticmethod
     def kraus_fn(gamma_10, gamma_20, gamma_21):
         """Gets the Kraus matrices of QutritAmplitudeDamping channel, used for differentiation."""
-        damping_channel = qml.QutritAmplitudeDamping(gamma_10, gamma_20, gamma_21, wires=0)
+        damping_channel = qp.QutritAmplitudeDamping(gamma_10, gamma_20, gamma_21, wires=0)
         return math.stack(damping_channel.kraus_matrices())
 
     @pytest.mark.autograd
@@ -243,7 +243,7 @@ class TestQutritAmplitudeDamping:
         gamma_20 = pnp.array(0.12, requires_grad=True)
         gamma_21 = pnp.array(0.35, requires_grad=True)
 
-        jac = qml.jacobian(self.kraus_fn)(gamma_10, gamma_20, gamma_21)
+        jac = qp.jacobian(self.kraus_fn)(gamma_10, gamma_20, gamma_21)
         assert math.allclose(jac, self.expected_jac_fn(gamma_10, gamma_20, gamma_21))
 
     @pytest.mark.torch
@@ -298,7 +298,7 @@ class TestTritFlip:
     )
     def test_ps_arbitrary(self, ps, tol):
         """Test that various values of p give correct Kraus matrices"""
-        kraus_mats = qml.TritFlip(*ps, wires=0).kraus_matrices()
+        kraus_mats = qp.TritFlip(*ps, wires=0).kraus_matrices()
 
         expected_K0 = np.sqrt(1 - sum(ps)) * np.eye(3)
         assert np.allclose(kraus_mats[0], expected_K0, atol=tol, rtol=0)
@@ -320,7 +320,7 @@ class TestTritFlip:
     def test_p_invalid_parameter(self, p_01, p_02, p_12):
         """Ensures that error is thrown when p_01, p_02, p_12, or their sum are outside [0,1]"""
         with pytest.raises(ValueError, match="must be in the interval"):
-            qml.TritFlip(p_01, p_02, p_12, wires=0).kraus_matrices()
+            qp.TritFlip(p_01, p_02, p_12, wires=0).kraus_matrices()
 
     @staticmethod
     def expected_jac_fn(p_01, p_02, p_12):
@@ -340,7 +340,7 @@ class TestTritFlip:
     @staticmethod
     def kraus_fn(p_01, p_02, p_12):
         """Gets a matrix of the Kraus matrices to be tested."""
-        return qml.math.stack(qml.TritFlip(p_01, p_02, p_12, wires=0).kraus_matrices())
+        return qp.math.stack(qp.TritFlip(p_01, p_02, p_12, wires=0).kraus_matrices())
 
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
@@ -349,8 +349,8 @@ class TestTritFlip:
         p_01 = pnp.array(0.14, requires_grad=True)
         p_02 = pnp.array(0.04, requires_grad=True)
         p_12 = pnp.array(0.23, requires_grad=True)
-        jac = qml.jacobian(self.kraus_fn)(p_01, p_02, p_12)
-        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
+        jac = qp.jacobian(self.kraus_fn)(p_01, p_02, p_12)
+        assert qp.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
 
     @pytest.mark.torch
     def test_kraus_jac_torch(self):
@@ -366,7 +366,7 @@ class TestTritFlip:
         jac = torch.autograd.functional.jacobian(self.kraus_fn, (p_01, p_02, p_12))
         expected_jac = self.expected_jac_fn(*ps)
         for j, exp in zip(jac, expected_jac):
-            assert qml.math.allclose(j.detach().numpy(), exp)
+            assert qp.math.allclose(j.detach().numpy(), exp)
 
     @pytest.mark.tf
     def test_kraus_jac_tf(self):
@@ -379,7 +379,7 @@ class TestTritFlip:
         with tf.GradientTape() as tape:
             out = self.kraus_fn(p_01, p_02, p_12)
         jac = tape.jacobian(out, (p_01, p_02, p_12))
-        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
+        assert qp.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -390,7 +390,7 @@ class TestTritFlip:
         p_02 = jax.numpy.array(0.04)
         p_12 = jax.numpy.array(0.23)
         jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(p_01, p_02, p_12)
-        assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
+        assert qp.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
 
 
 class TestQutritChannel:
@@ -398,8 +398,8 @@ class TestQutritChannel:
 
     def test_input_correctly_handled(self, tol):
         """Test that Kraus matrices are correctly processed"""
-        K_list = qml.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
-        out = qml.QutritChannel(K_list, wires=0).kraus_matrices()
+        K_list = qp.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
+        out = qp.QutritChannel(K_list, wires=0).kraus_matrices()
 
         assert np.allclose(out, K_list, atol=tol, rtol=0)
 
@@ -409,25 +409,25 @@ class TestQutritChannel:
         with pytest.raises(
             ValueError, match="Only channels with the same input and output Hilbert space"
         ):
-            qml.QutritChannel(K_list, wires=0)
+            qp.QutritChannel(K_list, wires=0)
 
     def test_kraus_matrices_are_of_same_shape(self):
         """Tests that the given Kraus matrices are of same shape"""
         K_list = [np.eye(3), np.eye(4)]
         with pytest.raises(ValueError, match="All Kraus matrices must have the same shape."):
-            qml.QutritChannel(K_list, wires=0)
+            qp.QutritChannel(K_list, wires=0)
 
     def test_kraus_matrices_are_dimensions(self):
         """Tests that the given Kraus matrices are of right dimension i.e (9,9)"""
         K_list = [np.eye(3), np.eye(3)]
         with pytest.raises(ValueError, match=r"Shape of all Kraus matrices must be \(9,9\)."):
-            qml.QutritChannel(K_list, wires=[0, 1])
+            qp.QutritChannel(K_list, wires=[0, 1])
 
     def test_kraus_matrices_are_trace_preserved(self):
         """Tests that the channel represents a trace-preserving map"""
         K_list = [0.75 * np.eye(3), 0.35j * np.eye(3)]
         with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
-            qml.QutritChannel(K_list, wires=0)
+            qp.QutritChannel(K_list, wires=0)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
     def test_integrations(self, diff_method):
@@ -438,40 +438,40 @@ class TestQutritChannel:
             np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
         ]
 
-        dev = qml.device("default.qutrit.mixed", wires=1)
+        dev = qp.device("default.qutrit.mixed", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def func():
-            qml.QutritChannel(kraus, 0)
-            return qml.expval(qml.GellMann(wires=0, index=1))
+            qp.QutritChannel(kraus, 0)
+            return qp.expval(qp.GellMann(wires=0, index=1))
 
         func()
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
     def test_integration_grad(self, diff_method):
         """Test integration with grad"""
-        dev = qml.device("default.qutrit.mixed", wires=1)
+        dev = qp.device("default.qutrit.mixed", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def func(p):
-            kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
-            qml.QutritChannel(kraus, 0)
-            return qml.expval(qml.GellMann(wires=0, index=1))
+            kraus = qp.QutritDepolarizingChannel.compute_kraus_matrices(p)
+            qp.QutritChannel(kraus, 0)
+            return qp.expval(qp.GellMann(wires=0, index=1))
 
-        qml.grad(func)(0.5)
+        qp.grad(func)(0.5)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
     def test_integration_jacobian(self, diff_method):
         """Test integration with grad"""
-        dev = qml.device("default.qutrit.mixed", wires=1)
+        dev = qp.device("default.qutrit.mixed", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def func(p):
-            kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
-            qml.QutritChannel(kraus, 0)
-            return qml.expval(qml.GellMann(wires=0, index=1))
+            kraus = qp.QutritDepolarizingChannel.compute_kraus_matrices(p)
+            qp.QutritChannel(kraus, 0)
+            return qp.expval(qp.GellMann(wires=0, index=1))
 
-        qml.jacobian(func)(0.5)
+        qp.jacobian(func)(0.5)
 
     def test_flatten(self):
         """Test flatten method returns kraus matrices and wires"""
@@ -481,10 +481,10 @@ class TestQutritChannel:
             np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
         ]
 
-        qutrit_channel = qml.QutritChannel(kraus, 1, id="test")
+        qutrit_channel = qp.QutritChannel(kraus, 1, id="test")
         data, metadata = qutrit_channel._flatten()  # pylint: disable=protected-access
-        new_op = qml.QutritChannel._unflatten(data, metadata)  # pylint: disable=protected-access
-        qml.assert_equal(qutrit_channel, new_op)
+        new_op = qp.QutritChannel._unflatten(data, metadata)  # pylint: disable=protected-access
+        qp.assert_equal(qutrit_channel, new_op)
 
         assert np.allclose(kraus, data)
-        assert metadata == (qml.wires.Wires(1), ())
+        assert metadata == (qp.wires.Wires(1), ())

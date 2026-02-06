@@ -55,7 +55,7 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
-        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        the transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
@@ -68,21 +68,21 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
 
         import pennylane.transforms.zx as zx
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @zx.optimize_t_count
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.T(0)
-            qml.CNOT([0, 1])
-            qml.S(0)
-            qml.T(0)
-            qml.T(1)
-            qml.CNOT([0, 2])
-            qml.T(1)
-            return qml.state()
+            qp.T(0)
+            qp.CNOT([0, 1])
+            qp.S(0)
+            qp.T(0)
+            qp.T(1)
+            qp.CNOT([0, 2])
+            qp.T(1)
+            return qp.state()
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──Z─╭●────╭●─┤  State
     1: ────╰X──S─│──┤  State
     2: ──────────╰X─┤  State
@@ -98,7 +98,7 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
         pyzx_circ = pyzx.full_optimize(pyzx_circ)
     except TypeError as e:
         raise TypeError(
-            "The input circuit must be a Clifford + T circuit. Consider using `qml.clifford_t_decomposition` first."
+            "The input circuit must be a Clifford + T circuit. Consider using `qp.clifford_t_decomposition` first."
         ) from e
 
     qscript = from_zx(pyzx_circ.to_graph())

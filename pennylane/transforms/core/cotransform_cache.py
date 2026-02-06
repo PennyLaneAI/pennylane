@@ -16,7 +16,7 @@ This submodule contains the CotransformCache for handling the classical cotransf
 """
 from functools import partial
 
-import pennylane as qp  # for qml.workflow.construct_tape
+import pennylane as qp  # for qp.workflow.construct_tape
 from pennylane import math
 from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError
@@ -84,7 +84,7 @@ def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None,
     While differentiating this again for each tape in the batch may be less efficient than desireable for large batches,
     it cleanly works with all interfaces.
     """
-    tape = qml.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
+    tape = qp.workflow.construct_tape(qnode, level=0)(*args, **kwargs)
     tapes, _ = program((tape,))
     return math.stack(tapes[tape_idx].get_parameters(trainable_only=True))
 
@@ -95,9 +95,9 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     of Jax in order to mark trainable parameters.
 
     Args:
-        qnode(qml.QNode): the quantum node.
+        qnode(qp.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-        program(qml.CompilePipeline): the compile pipeline to be applied on the tape.
+        program(qp.CompilePipeline): the compile pipeline to be applied on the tape.
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
@@ -116,7 +116,7 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
             for i, arg in enumerate(args)
         ]
         with jax.core.set_current_trace(trace):
-            tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
+            tape = qp.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
             tapes, _ = program((tape,))
 
     return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
@@ -170,17 +170,17 @@ class CotransformCache:
 
         .. code-block:: python
 
-            @qml.gradients.param_shift
-            @qml.transforms.split_non_commuting
-            @qml.qnode(qml.device('default.qubit'))
+            @qp.gradients.param_shift
+            @qp.transforms.split_non_commuting
+            @qp.qnode(qp.device('default.qubit'))
             def c(x, y):
-                qml.RX(2*x, 0)
-                qml.RY(x*y, 0)
-                return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+                qp.RX(2*x, 0)
+                qp.RY(x*y, 0)
+                return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
 
 
             ps_container = c.transform_program[-1]
-            x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
+            x, y = qp.numpy.array(0.5), qp.numpy.array(3.0)
 
             cc = CotransformCache(c, (x, y), {})
 
@@ -205,15 +205,15 @@ class CotransformCache:
 
         .. code-block:: python
 
-            @qml.transforms.split_non_commuting
-            @qml.qnode(qml.device('default.qubit'))
+            @qp.transforms.split_non_commuting
+            @qp.qnode(qp.device('default.qubit'))
             def c(x, y):
-                qml.RX(x[0], 0)
-                qml.RX(y, 0)
-                qml.RY(x[1], 0)
-                return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+                qp.RX(x[0], 0)
+                qp.RX(y, 0)
+                qp.RY(x[1], 0)
+                return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
 
-            c = qml.gradients.param_shift(c, argnums=[0])
+            c = qp.gradients.param_shift(c, argnums=[0])
 
             ps_container = c.transform_program[-1]
             x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)

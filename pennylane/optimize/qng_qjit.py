@@ -26,7 +26,7 @@ except ModuleNotFoundError:
 
 
 class QNGOptimizerQJIT:
-    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the :class:`~.QNGOptimizer`,
+    r"""Optax-like and ``jax.jit``/``qp.qjit``-compatible implementation of the :class:`~.QNGOptimizer`,
     a step- and parameter-dependent learning rate optimizer, leveraging a reparameterization of
     the optimization space based on the Fubini-Study metric tensor.
 
@@ -63,24 +63,24 @@ class QNGOptimizerQJIT:
 
     Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
     To make the optimization faster, the entire workflow can be just-in-time compiled using
-    the ``qml.qjit`` decorator:
+    the ``qp.qjit`` decorator:
 
     .. code-block:: python
 
         import pennylane as qp
         import jax.numpy as jnp
 
-        @qml.qjit(autograph=True)
+        @qp.qjit(autograph=True)
         def workflow():
-            dev = qml.device("lightning.qubit", wires=2)
+            dev = qp.device("lightning.qubit", wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(params):
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=1)
-                return qml.expval(qml.Z(0) + qml.X(1))
+                qp.RX(params[0], wires=0)
+                qp.RY(params[1], wires=1)
+                return qp.expval(qp.Z(0) + qp.X(1))
 
-            opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+            opt = qp.QNGOptimizerQJIT(stepsize=0.2)
 
             params = jnp.array([0.1, 0.2])
             state = opt.init(params)
@@ -92,8 +92,8 @@ class QNGOptimizerQJIT:
     >>> workflow()
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
-    Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit`` with ``autograph`` enabled.
-    Using ``qml.qjit`` on the whole workflow with ``autograph`` not enabled may lead to a substantial increase
+    Make sure you are using the ``lightning.qubit`` device along with ``qp.qjit`` with ``autograph`` enabled.
+    Using ``qp.qjit`` on the whole workflow with ``autograph`` not enabled may lead to a substantial increase
     in compilation time and no runtime benefits.
 
     The ``jax.jit`` decorator should not be used on the entire workflow.
@@ -108,15 +108,15 @@ class QNGOptimizerQJIT:
         import jax
         from functools import partial
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            return qml.expval(qml.Z(0) + qml.X(1))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=1)
+            return qp.expval(qp.Z(0) + qp.X(1))
 
-        opt = qml.QNGOptimizerQJIT(stepsize=0.2)
+        opt = qp.QNGOptimizerQJIT(stepsize=0.2)
         step = jax.jit(partial(opt.step, circuit))
 
         params = jnp.array([0.1, 0.2])
@@ -191,7 +191,7 @@ class QNGOptimizerQJIT:
     @staticmethod
     def _get_grad(qnode, params, **kwargs):
         """Return the gradient of the QNode objective function at the given point. The method is implemented to dispatch
-        to Catalyst when it is required (e.g. when using ``qml.qjit``) or to fall back to Jax otherwise.
+        to Catalyst when it is required (e.g. when using ``qp.qjit``) or to fall back to Jax otherwise.
 
         Raise an ``ModuleNotFoundError`` if the required package is not installed.
         """
@@ -206,7 +206,7 @@ class QNGOptimizerQJIT:
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
         """Return the value and the gradient of the QNode objective function at the given point. The method is implemented
-        to dispatch to Catalyst when it is required (e.g. when using ``qml.qjit``) or to fall back to Jax otherwise.
+        to dispatch to Catalyst when it is required (e.g. when using ``qp.qjit``) or to fall back to Jax otherwise.
 
         Raise an ``ModuleNotFoundError`` if the required package is not installed.
         """

@@ -397,17 +397,17 @@ def tape_mpl(
     .. code-block:: python
 
         ops = [
-            qml.QFT(wires=(0,1,2,3)),
-            qml.IsingXX(1.234, wires=(0,2)),
-            qml.Toffoli(wires=(0,1,2)),
-            qml.CSWAP(wires=(0,2,3)),
-            qml.RX(1.2345, wires=0),
-            qml.CRZ(1.2345, wires=(3,0))
+            qp.QFT(wires=(0,1,2,3)),
+            qp.IsingXX(1.234, wires=(0,2)),
+            qp.Toffoli(wires=(0,1,2)),
+            qp.CSWAP(wires=(0,2,3)),
+            qp.RX(1.2345, wires=0),
+            qp.CRZ(1.2345, wires=(3,0))
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-        fig, ax = qml.drawer.tape_mpl(tape)
+        fig, ax = qp.drawer.tape_mpl(tape)
         fig.show()
 
     .. figure:: ../../_static/tape_mpl/default.png
@@ -425,11 +425,11 @@ def tape_mpl(
 
     .. code-block:: python
 
-        ops = [qml.RX(1.23456, wires=0), qml.Rot(1.2345,2.3456, 3.456, wires=0)]
-        measurements = [qml.expval(qml.Z(0))]
-        tape2 = qml.tape.QuantumTape(ops, measurements)
+        ops = [qp.RX(1.23456, wires=0), qp.Rot(1.2345,2.3456, 3.456, wires=0)]
+        measurements = [qp.expval(qp.Z(0))]
+        tape2 = qp.tape.QuantumTape(ops, measurements)
 
-        fig, ax = qml.drawer.tape_mpl(tape2, decimals=2)
+        fig, ax = qp.drawer.tape_mpl(tape2, decimals=2)
 
     .. figure:: ../../_static/tape_mpl/decimals.png
         :align: center
@@ -442,7 +442,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = qml.drawer.tape_mpl(tape, wire_order=[3,2,1,0])
+        fig, ax = qp.drawer.tape_mpl(tape, wire_order=[3,2,1,0])
 
     .. figure:: ../../_static/tape_mpl/wire_order.png
             :align: center
@@ -454,7 +454,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = qml.drawer.tape_mpl(tape, wire_order=["aux"], show_all_wires=True)
+        fig, ax = qp.drawer.tape_mpl(tape, wire_order=["aux"], show_all_wires=True)
 
     .. figure:: ../../_static/tape_mpl/show_all_wires.png
             :align: center
@@ -470,7 +470,7 @@ def tape_mpl(
 
         import matplotlib.pyplot as plt
 
-        fig, ax = qml.drawer.tape_mpl(tape)
+        fig, ax = qp.drawer.tape_mpl(tape)
         fig.suptitle("My Circuit", fontsize="xx-large")
 
         options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
@@ -488,13 +488,13 @@ def tape_mpl(
     **Formatting:**
 
     PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
-    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+    All available styles can be determined by evaluating ``qp.drawer.available_styles()``.
     Any available string can then be passed via the kwarg ``style`` to change the settings for
     that plot. This will not affect style settings for subsequent matplotlib plots.
 
     .. code-block:: python
 
-        fig, ax = qml.drawer.tape_mpl(tape, style='sketch')
+        fig, ax = qp.drawer.tape_mpl(tape, style='sketch')
 
     .. figure:: ../../_static/tape_mpl/sketch_style.png
             :align: center
@@ -504,7 +504,7 @@ def tape_mpl(
     You can also control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
     For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-    ``plt.rcParams``, ``qml.drawer.tape_mpl`` must be run with ``style="rcParams"``:
+    ``plt.rcParams``, ``qp.drawer.tape_mpl`` must be run with ``style="rcParams"``:
 
     .. code-block:: python
 
@@ -518,7 +518,7 @@ def tape_mpl(
         plt.rcParams['lines.linewidth'] = 5
         plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-        fig, ax = qml.drawer.tape_mpl(tape, style="rcParams")
+        fig, ax = qp.drawer.tape_mpl(tape, style="rcParams")
 
     .. figure:: ../../_static/tape_mpl/rcparams.png
             :align: center
@@ -531,7 +531,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = qml.drawer.tape_mpl(tape, wire_options={'color':'teal', 'linewidth': 5},
+        fig, ax = qp.drawer.tape_mpl(tape, wire_options={'color':'teal', 'linewidth': 5},
                     label_options={'size': 20})
 
     .. figure:: ../../_static/tape_mpl/wires_labels.png
@@ -549,7 +549,7 @@ def tape_mpl(
             'linewidth': 5, # all wires but wire 2 will be bold
             2: {'color': 'orange', 'linestyle': '--'}, # wire 2 will be orange and dashed
         }
-        fig, ax = qml.drawer.tape_mpl(tape, wire_options=wire_options)
+        fig, ax = qp.drawer.tape_mpl(tape, wire_options=wire_options)
 
     .. figure:: ../../_static/tape_mpl/per_wire_options.png
             :align: center

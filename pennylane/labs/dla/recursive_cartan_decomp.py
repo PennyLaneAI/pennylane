@@ -145,7 +145,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     by :math:`i`. Also note that :func:`~.pauli.pauli_group` returns the identity as the first
     element, which is not part of the special unitary algebra of traceless matrices.
 
-    >>> g = [qml.matrix(op, wire_order=range(2)) for op in qml.pauli.pauli_group(2)] # u(4)
+    >>> g = [qp.matrix(op, wire_order=range(2)) for op in qp.pauli.pauli_group(2)] # u(4)
     >>> g = g[1:] # Remove identity: u(4) -> su(4)
 
     Now we can apply Cartan decompositions of type AI and DIII in sequence:
@@ -179,7 +179,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
     ...     partial(BD, wire=1),
     ...     partial(DIII, wire=2),
     ... ]
-    >>> g = [qml.matrix(op, wire_order=range(4)) for op in qml.pauli.pauli_group(4)] # u(16)
+    >>> g = [qp.matrix(op, wire_order=range(4)) for op in qp.pauli.pauli_group(4)] # u(16)
     >>> decompositions = recursive_cartan_decomp(g, chain)
     Iteration 0:  256 ---AII--->  136, 120
     Iteration 1:  136 ----CI--->   64,  72
@@ -212,7 +212,7 @@ def recursive_cartan_decomp(g, chain, validate=True, verbose=True):
         split the subalgebra from the previous step but keeps it intact and returns a
         zero-dimensional horizontal space. For example:
 
-        >>> g = [qml.matrix(op, wire_order=range(2)) for op in qml.pauli.pauli_group(2)] # u(4)
+        >>> g = [qp.matrix(op, wire_order=range(2)) for op in qp.pauli.pauli_group(2)] # u(4)
         >>> chain = [AI, DIII, AII]
         >>> decompositions = recursive_cartan_decomp(g, chain)
         Iteration 0:   16 -----AI---->    6,  10

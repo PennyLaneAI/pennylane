@@ -56,21 +56,21 @@ def cond_measure(
         from pennylane.ftqc import cond_measure, diagonalize_mcms, measure_x, measure_y
         from functools import partial
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         @diagonalize_mcms
-        @qml.set_shots(shots=1_000)
-        @qml.qnode(dev, mcm_method="one-shot")
+        @qp.set_shots(shots=1_000)
+        @qp.qnode(dev, mcm_method="one-shot")
         def qnode(x, y):
-            qml.RY(x, 0)
-            qml.Hadamard(1)
+            qp.RY(x, 0)
+            qp.Hadamard(1)
 
-            m0 = qml.measure(0)
+            m0 = qp.measure(0)
             m2 = cond_measure(m0, measure_x, measure_y)(1)
 
-            qml.Hadamard(2)
-            qml.cond(m2 == 0, qml.RY)(y, wires=2)
-            return qml.expval(qml.X(2))
+            qp.Hadamard(2)
+            qp.cond(m2 == 0, qp.RY)(y, wires=2)
+            return qp.expval(qp.X(2))
 
 
     >>> print(qnode(np.pi/3, np.pi/2)) # doctest: +SKIP
@@ -79,7 +79,7 @@ def cond_measure(
     .. note::
 
         If the first argument of ``cond_measure`` is a measurement value (e.g., ``m_0``
-        in ``qml.cond(m_0, measure_x, measure_y)``), then ``m_0 == 1`` is considered
+        in ``qp.cond(m_0, measure_x, measure_y)``), then ``m_0 == 1`` is considered
         internally.
 
     .. warning::

@@ -511,17 +511,17 @@ class CircuitGraph:
         **Examples**
 
 
-        >>> dev = qml.device('default.qubit', wires=3)
+        >>> dev = qp.device('default.qubit', wires=3)
         >>> def circuit_measure_max_once():
-        ...     return qml.expval(qml.X(0))
-        >>> qnode = qml.QNode(circuit_measure_max_once, dev)
-        >>> tape = qml.workflow.construct_tape(qnode)()
+        ...     return qp.expval(qp.X(0))
+        >>> qnode = qp.QNode(circuit_measure_max_once, dev)
+        >>> tape = qp.workflow.construct_tape(qnode)()
         >>> print(tape.graph.max_simultaneous_measurements)
         1
         >>> def circuit_measure_max_twice():
-        ...     return qml.expval(qml.X(0)), qml.probs(wires=0)
-        >>> qnode = qml.QNode(circuit_measure_max_twice, dev)
-        >>> tape = qml.workflow.construct_tape(qnode)()
+        ...     return qp.expval(qp.X(0)), qp.probs(wires=0)
+        >>> qnode = qp.QNode(circuit_measure_max_twice, dev)
+        >>> tape = qp.workflow.construct_tape(qnode)()
         >>> print(tape.graph.max_simultaneous_measurements)
         2
 
@@ -535,4 +535,4 @@ class CircuitGraph:
 
         a = np.array(all_wires)
         _, counts = np.unique(a, return_counts=True)
-        return counts.max() if counts.size != 0 else 1  # qml.state() will result in an empty array
+        return counts.max() if counts.size != 0 else 1  # qp.state() will result in an empty array

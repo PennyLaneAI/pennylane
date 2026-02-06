@@ -211,27 +211,27 @@ class ParticleConservingU1(Operation):
 
             # Build the electronic Hamiltonian
             symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+            h, qubits = qp.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
-            ref_state = qml.qchem.hf_state(electrons, qubits)
+            ref_state = qp.qchem.hf_state(electrons, qubits)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qp.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(qml.ParticleConservingU1, init_state=ref_state, wires=dev.wires)
+            ansatz = partial(qp.ParticleConservingU1, init_state=ref_state, wires=dev.wires)
 
             # Define the cost function
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def cost_fn(params):
                 ansatz(params)
-                return qml.expval(h)
+                return qp.expval(h)
 
             # Compute the expectation value of 'h'
             layers = 2
-            shape = qml.ParticleConservingU1.shape(layers, qubits)
+            shape = qp.ParticleConservingU1.shape(layers, qubits)
             rng = np.random.default_rng(seed=1234)
             params = rng.random(shape)
         
@@ -246,7 +246,7 @@ class ParticleConservingU1(Operation):
 
         .. code-block:: python
 
-            shape = qml.ParticleConservingU1.shape(n_layers=2, n_wires=2)
+            shape = qp.ParticleConservingU1.shape(n_layers=2, n_wires=2)
             params = np.random.random(size=shape)
     """
 
@@ -313,7 +313,7 @@ class ParticleConservingU1(Operation):
         **Example**
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
-        >>> ops = qml.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        >>> ops = qp.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
         [BasisEmbedding(array([0, 1]), wires=['a', 'b']),

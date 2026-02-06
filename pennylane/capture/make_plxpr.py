@@ -58,17 +58,17 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
 
     .. code-block:: python
 
-        qml.capture.enable()
+        qp.capture.enable()
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(x):
-            qml.RX(x, 0)
-            qml.Hadamard(0)
-            return qml.expval(qml.X(0))
+            qp.RX(x, 0)
+            qp.Hadamard(0)
+            return qp.expval(qp.X(0))
 
-        plxpr = qml.capture.make_plxpr(circ)(1.2)
+        plxpr = qp.capture.make_plxpr(circ)(1.2)
 
 
     >>> print(plxpr)
@@ -112,14 +112,14 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
 
         For this function, capture doesn't work without autograph:
 
-        >>> plxpr_fn = qml.capture.make_plxpr(fn, autograph=False)
+        >>> plxpr_fn = qp.capture.make_plxpr(fn, autograph=False)
         >>> plxpr = plxpr_fn(3)
         TracerBoolConversionError: Attempted boolean conversion of traced array with shape bool[].
 
         With AutoGraph, the control flow is automatically converted to the native PennyLane control
         flow implementation, and succeeds:
 
-        >>> plxpr_fn = qml.capture.make_plxpr(fn)
+        >>> plxpr_fn = qp.capture.make_plxpr(fn)
         >>> plxpr = plxpr_fn(3)
         >>> plxpr
         { lambda ; a:i64[]. let
@@ -141,10 +141,10 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
 
     """
     assert has_jax
-    if not qml.capture.enabled():
+    if not qp.capture.enabled():
         raise RuntimeError(
             "Capturing PLxPR with ``make_plxpr`` requires PennyLane capture to be enabled. "
-            "You can enable capture with ``qml.capture.enable()``"
+            "You can enable capture with ``qp.capture.enable()``"
         )
 
     if autograph:

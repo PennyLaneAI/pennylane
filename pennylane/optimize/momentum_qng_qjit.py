@@ -19,7 +19,7 @@ from .qng_qjit import QNGOptimizerQJIT
 
 
 class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
-    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the :class:`~.MomentumQNGOptimizer`,
+    r"""Optax-like and ``jax.jit``/``qp.qjit``-compatible implementation of the :class:`~.MomentumQNGOptimizer`,
     a generalized Quantum Natural Gradient (QNG) optimizer considering a discrete-time Langevin equation
     with QNG force.
 
@@ -64,26 +64,26 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
         import pennylane as qp
         import jax.numpy as jnp
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            return qml.expval(qml.Z(0) + qml.X(1))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=1)
+            return qp.expval(qp.Z(0) + qp.X(1))
 
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+        opt = qp.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
 
-        @qml.qjit
+        @qp.qjit
         def update_step_qjit(i, args):
             params, state = args
             return opt.step(circuit, params, state)
 
-        @qml.qjit
+        @qp.qjit
         def optimization_qjit(params, iters):
             state = opt.init(params)
             args = (params, state)
-            params, state = qml.for_loop(iters)(update_step_qjit)(args)
+            params, state = qp.for_loop(iters)(update_step_qjit)(args)
             return params
 
     >>> params = jnp.array([0.1, 0.2])
@@ -91,7 +91,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     >>> optimization_qjit(params=params, iters=iters)
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
-    Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit``.
+    Make sure you are using the ``lightning.qubit`` device along with ``qp.qjit``.
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):

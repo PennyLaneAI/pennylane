@@ -37,7 +37,7 @@ namespace = {
     "qml": qml,
     "np": base_numpy,
     "sp": base_scipy,
-    "pnp": qml.numpy,
+    "pnp": qp.numpy,
     "jax": jax,
     "torch": torch,
     "jnp": getattr(jax, "numpy", None),
@@ -50,8 +50,8 @@ def reset_pennylane_state(namespace):
     A teardown function for Sybil to reset PennyLane's global state
     after testing a document.
     """
-    qml.capture.disable()
-    qml.decomposition.disable_graph()
+    qp.capture.disable()
+    qp.decomposition.disable_graph()
     jax.config.update("jax_dynamic_shapes", False)
     # jax.config.update("jax_enable_x64", False)
 

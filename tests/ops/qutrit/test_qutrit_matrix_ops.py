@@ -40,9 +40,9 @@ class TestQutritUnitary:
 
     def test_qutrit_unitary_noninteger_pow(self):
         """Test QutritUnitary raised to a non-integer power raises an error."""
-        op = qml.QutritUnitary(U_thadamard_01, wires="a")
+        op = qp.QutritUnitary(U_thadamard_01, wires="a")
 
-        with pytest.raises(qml.operation.PowUndefinedError):
+        with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.123)
 
     def test_qutrit_unitary_noninteger_pow_broadcasted(self):
@@ -54,24 +54,24 @@ class TestQutritUnitary:
             ]
         )
 
-        op = qml.QutritUnitary(U, wires="a")
+        op = qp.QutritUnitary(U, wires="a")
 
-        with pytest.raises(qml.operation.PowUndefinedError):
+        with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.123)
 
     @pytest.mark.parametrize("n", (1, 3, -1, -3))
     def test_qutrit_unitary_pow(self, n):
         """Test qutrit unitary raised to an integer power."""
-        op = qml.QutritUnitary(U_thadamard_01, wires="a")
+        op = qp.QutritUnitary(U_thadamard_01, wires="a")
         new_ops = op.pow(n)
 
         assert len(new_ops) == 1
         assert new_ops[0].wires == op.wires
 
-        mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
-        new_mat = qml.matrix(new_ops[0])
+        mat_to_pow = qp.math.linalg.matrix_power(qp.matrix(op), n)
+        new_mat = qp.matrix(new_ops[0])
 
-        assert qml.math.allclose(mat_to_pow, new_mat)
+        assert qp.math.allclose(mat_to_pow, new_mat)
 
     @pytest.mark.parametrize("n", (1, 3, -1, -3))
     def test_qutrit_unitary_pow_broadcasted(self, n):
@@ -83,16 +83,16 @@ class TestQutritUnitary:
             ]
         )
 
-        op = qml.QutritUnitary(U, wires="a")
+        op = qp.QutritUnitary(U, wires="a")
         new_ops = op.pow(n)
 
         assert len(new_ops) == 1
         assert new_ops[0].wires == op.wires
 
-        mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
-        new_mat = qml.matrix(new_ops[0])
+        mat_to_pow = qp.math.linalg.matrix_power(qp.matrix(op), n)
+        new_mat = qp.matrix(new_ops[0])
 
-        assert qml.math.allclose(mat_to_pow, new_mat)
+        assert qp.math.allclose(mat_to_pow, new_mat)
 
     interface_and_decomp_data = [
         (U_thadamard_01, 1),
@@ -110,35 +110,35 @@ class TestQutritUnitary:
         """Test that the unitary operator produces the correct output and
         catches incorrect input with autograd."""
 
-        out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
+        out = qp.QutritUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, np.ndarray)
 
         # verify equivalent to input state
-        assert qml.math.allclose(out, U)
+        assert qp.math.allclose(out, U)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U.copy()
         U3[0, 0] += 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QutritUnitary(U3, wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
+            qp.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
 
         # verify adjoint behaves correctly
-        op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
+        op = qp.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
         expected = (
             np.conj(np.transpose(U)) if len(np.shape(U)) == 2 else np.conj(np.swapaxes(U, -2, -1))
         )
-        assert qml.math.allclose(mat, expected)
+        assert qp.math.allclose(mat, expected)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
@@ -151,33 +151,33 @@ class TestQutritUnitary:
             np.conj(np.transpose(U)) if len(np.shape(U)) == 2 else np.conj(np.swapaxes(U, -2, -1))
         )
         U = torch.tensor(U)
-        out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
+        out = qp.QutritUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, torch.Tensor)
 
         # verify equivalent to input state
-        assert qml.math.allclose(out, U)
+        assert qp.math.allclose(out, U)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U.detach().clone()
         U3[0, 0] += 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QutritUnitary(U3, wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
+            qp.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
 
         # verify adjoint behaves correctly
-        op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
+        op = qp.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
         expected = torch.tensor(U_adjoint)
-        assert qml.math.allclose(mat, expected)
+        assert qp.math.allclose(mat, expected)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
@@ -190,32 +190,32 @@ class TestQutritUnitary:
             np.conj(np.transpose(U)) if len(np.shape(U)) == 2 else np.conj(np.swapaxes(U, -2, -1))
         )
         U = tf.Variable(U)
-        out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
+        out = qp.QutritUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, tf.Variable)
 
         # verify equivalent to input state
-        assert qml.math.allclose(out, U)
+        assert qp.math.allclose(out, U)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = tf.Variable(U + 0.5)
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QutritUnitary(U3, wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
+            qp.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
 
         # verify adjoint behaves correctly
-        op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
+        op = qp.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
         expected = tf.Variable(U_adjoint)
-        assert qml.math.allclose(mat, expected)
+        assert qp.math.allclose(mat, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
@@ -225,36 +225,36 @@ class TestQutritUnitary:
         from jax import numpy as jnp
 
         U = jnp.array(U)
-        out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
+        out = qp.QutritUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, jnp.ndarray)
 
         # verify equivalent to input state
-        assert qml.math.allclose(out, U)
+        assert qp.math.allclose(out, U)
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U + 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QutritUnitary(U3, wires=range(num_wires)).matrix()
+            qp.QutritUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
+            qp.QutritUnitary(U, wires=range(num_wires + 1)).matrix()
 
         # verify adjoint behaves correctly
-        op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
+        op = qp.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
         expected = (
             jnp.conj(jnp.transpose(U))
             if len(jnp.shape(U)) == 2
             else jnp.conj(jnp.swapaxes(U, -2, -1))
         )
-        assert qml.math.allclose(mat, expected)
+        assert qp.math.allclose(mat, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
@@ -264,22 +264,22 @@ class TestQutritUnitary:
         from jax import numpy as jnp
 
         U = jnp.array(U)
-        f = lambda m: qml.QutritUnitary(m, wires=range(num_wires)).matrix()
+        f = lambda m: qp.QutritUnitary(m, wires=range(num_wires)).matrix()
         out = jax.jit(f)(U)
-        assert qml.math.allclose(out, qml.QutritUnitary(U, wires=range(num_wires)).matrix())
+        assert qp.math.allclose(out, qp.QutritUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.parametrize("U, num_wires", interface_and_decomp_data)
     def test_qutrit_unitary_decomposition_error(self, U, num_wires):
         """Tests that QutritUnitary is not decomposed and throws error"""
         with pytest.raises(DecompositionUndefinedError):
-            qml.QutritUnitary.compute_decomposition(U, wires=range(num_wires))
+            qp.QutritUnitary.compute_decomposition(U, wires=range(num_wires))
 
     def test_matrix_representation(self):
         """Test that the matrix representation is defined correctly"""
         U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]]) * 0.5
 
-        res_static = qml.QutritUnitary.compute_matrix(U)
-        res_dynamic = qml.QutritUnitary(U, wires=0).matrix()
+        res_static = qp.QutritUnitary.compute_matrix(U)
+        res_dynamic = qp.QutritUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected)
         assert np.allclose(res_dynamic, expected)
@@ -290,8 +290,8 @@ class TestQutritUnitary:
         U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]]) * 0.5
         U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
 
-        res_static = qml.QutritUnitary.compute_matrix(U)
-        res_dynamic = qml.QutritUnitary(U, wires=0).matrix()
+        res_static = qp.QutritUnitary.compute_matrix(U)
+        res_dynamic = qp.QutritUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected)
         assert np.allclose(res_dynamic, expected)
@@ -299,12 +299,12 @@ class TestQutritUnitary:
     def test_controlled(self):
         """Test QutritUnitary's controlled method."""
         U = U_thadamard_01
-        base = qml.QutritUnitary(U, wires=0)
+        base = qp.QutritUnitary(U, wires=0)
 
-        expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
+        expected = qp.ControlledQutritUnitary(U, control_wires="a", wires=0)
 
         out = base._controlled("a")
-        qml.assert_equal(out, expected)
+        qp.assert_equal(out, expected)
 
 
 class TestControlledQutritUnitary:
@@ -313,18 +313,18 @@ class TestControlledQutritUnitary:
     def test_no_control(self):
         """Test if ControlledQutritUnitary raises an error if control wires are not specified"""
         with pytest.raises(ValueError, match="Must specify control wires"):
-            qml.ControlledQutritUnitary(U_thadamard_01, wires=2)
+            qp.ControlledQutritUnitary(U_thadamard_01, wires=2)
 
     def test_shared_control(self):
         """Test if ControlledQutritUnitary raises an error if control wires are shared with wires"""
         with pytest.raises(ValueError, match="The control wires must be different from the wires"):
-            qml.ControlledQutritUnitary(U_thadamard_01, control_wires=[0, 2], wires=2)
+            qp.ControlledQutritUnitary(U_thadamard_01, control_wires=[0, 2], wires=2)
 
     def test_wrong_shape(self):
         """Test if ControlledQutritUnitary raises a ValueError if a unitary of shape inconsistent
         with wires is provided"""
         with pytest.raises(ValueError, match=r"Input unitary must be of shape \(3, 3\)"):
-            qml.ControlledQutritUnitary(np.eye(9), control_wires=[0, 1], wires=2).matrix()
+            qp.ControlledQutritUnitary(np.eye(9), control_wires=[0, 1], wires=2).matrix()
 
     def test_arbitrary_multiqutrit(self):
         """Test if ControlledQutritUnitary applies correctly for a 2-qutrit unitary with 2-qutrit
@@ -358,21 +358,21 @@ class TestControlledQutritUnitary:
         all_swap = swap4 @ swap3 @ swap2 @ swap1
         U_matrix = all_swap.T @ U_matrix @ all_swap
 
-        dev = qml.device("default.qutrit", wires=4)
+        dev = qp.device("default.qutrit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def f1():
-            qml.QutritUnitary(U1, wires=range(4))
-            qml.ControlledQutritUnitary(U, control_wires=control_wires, wires=target_wires)
-            qml.QutritUnitary(U2, wires=range(4))
-            return qml.state()
+            qp.QutritUnitary(U1, wires=range(4))
+            qp.ControlledQutritUnitary(U, control_wires=control_wires, wires=target_wires)
+            qp.QutritUnitary(U2, wires=range(4))
+            return qp.state()
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def f2():
-            qml.QutritUnitary(U1, wires=range(4))
-            qml.QutritUnitary(U_matrix, wires=range(4))
-            qml.QutritUnitary(U2, wires=range(4))
-            return qml.state()
+            qp.QutritUnitary(U1, wires=range(4))
+            qp.QutritUnitary(U_matrix, wires=range(4))
+            qp.QutritUnitary(U2, wires=range(4))
+            return qp.state()
 
         state_1 = f1()
         state_2 = f2()
@@ -395,7 +395,7 @@ class TestControlledQutritUnitary:
         target_wires = Wires(wires)
 
         with pytest.raises(ValueError, match=expected_error_message):
-            qml.ControlledQutritUnitary(
+            qp.ControlledQutritUnitary(
                 U_thadamard_01,
                 control_wires=control_wires,
                 wires=target_wires,
@@ -427,7 +427,7 @@ class TestControlledQutritUnitary:
         control values."""
         target_wires = Wires(wires)
 
-        dev = qml.device("default.qutrit", wires=len(control_wires + target_wires))
+        dev = qp.device("default.qutrit", wires=len(control_wires + target_wires))
 
         # Pick a random unitary
         U = unitary_group.rvs(3 ** len(target_wires), random_state=1967)
@@ -439,7 +439,7 @@ class TestControlledQutritUnitary:
         dev._state = starting_state.reshape([3] * len(control_wires + target_wires))
         dev.apply(
             [
-                qml.ControlledQutritUnitary(
+                qp.ControlledQutritUnitary(
                     U,
                     control_wires=control_wires,
                     wires=target_wires,
@@ -459,14 +459,14 @@ class TestControlledQutritUnitary:
 
         ops = []
         for wire in one_locations:
-            ops.append(qml.TShift(wires=control_wires[wire]))
+            ops.append(qp.TShift(wires=control_wires[wire]))
 
         for wire in zero_locations:
-            ops.append(qml.TShift(wires=control_wires[wire]))
-            ops.append(qml.TShift(wires=control_wires[wire]))
+            ops.append(qp.TShift(wires=control_wires[wire]))
+            ops.append(qp.TShift(wires=control_wires[wire]))
 
         ops.append(
-            qml.ControlledQutritUnitary(
+            qp.ControlledQutritUnitary(
                 U,
                 control_wires=control_wires,
                 wires=target_wires,
@@ -474,11 +474,11 @@ class TestControlledQutritUnitary:
         )
 
         for wire in zero_locations:
-            ops.append(qml.TShift(wires=control_wires[wire]))
+            ops.append(qp.TShift(wires=control_wires[wire]))
 
         for wire in one_locations:
-            ops.append(qml.TShift(wires=control_wires[wire]))
-            ops.append(qml.TShift(wires=control_wires[wire]))
+            ops.append(qp.TShift(wires=control_wires[wire]))
+            ops.append(qp.TShift(wires=control_wires[wire]))
 
         dev.apply(ops)
 
@@ -487,8 +487,8 @@ class TestControlledQutritUnitary:
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         U = np.array(unitary_group.rvs(3, random_state=10))
-        res_static = qml.ControlledQutritUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
-        res_dynamic = qml.ControlledQutritUnitary(U, control_wires=[1], wires=0).matrix()
+        res_static = qp.ControlledQutritUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
+        res_dynamic = qp.ControlledQutritUnitary(U, control_wires=[1], wires=0).matrix()
         expected = np.eye(9, dtype=np.complex128)
         expected[6:9, 6:9] = U
 
@@ -502,8 +502,8 @@ class TestControlledQutritUnitary:
         U3 = unitary_group.rvs(3, random_state=10)
         U = np.array([U1, U2, U3])
 
-        res_static = qml.ControlledQutritUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
-        res_dynamic = qml.ControlledQutritUnitary(U, control_wires=[1], wires=0).matrix()
+        res_static = qp.ControlledQutritUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
+        res_dynamic = qp.ControlledQutritUnitary(U, control_wires=[1], wires=0).matrix()
         expected = np.array([np.eye(9), np.eye(9), np.eye(9)], dtype=np.complex128)
         expected[0, 6:, 6:] = U1
         expected[1, 6:, 6:] = U2
@@ -513,15 +513,15 @@ class TestControlledQutritUnitary:
 
     def test_no_decomp(self):
         """Test that ControlledQutritUnitary raises a DecompositionUndefinedError."""
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
-            qml.ControlledQutritUnitary(U_thadamard_01, wires=0, control_wires=1).decomposition()
+        with pytest.raises(qp.operation.DecompositionUndefinedError):
+            qp.ControlledQutritUnitary(U_thadamard_01, wires=0, control_wires=1).decomposition()
 
     @pytest.mark.parametrize("n", (2, -1, -2))
     def test_pow(self, n):
         """Tests the metadata and unitary for a ControlledQutritUnitary raised to a power."""
         U1 = unitary_group.rvs(3, random_state=10)
 
-        op = qml.ControlledQutritUnitary(
+        op = qp.ControlledQutritUnitary(
             U1, control_wires=("b", "c"), wires="a", control_values="01"
         )
 
@@ -532,8 +532,8 @@ class TestControlledQutritUnitary:
         assert pow_ops[0].control_wires == op.control_wires
         assert pow_ops[0].control_values == op.control_values
 
-        op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
-        assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
+        op_mat_to_pow = qp.math.linalg.matrix_power(op.data[0], n)
+        assert qp.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
 
     @pytest.mark.parametrize("n", (2, -1, -2))
     def test_pow_broadcasted(self, n):
@@ -545,7 +545,7 @@ class TestControlledQutritUnitary:
             axes=0,
         )
 
-        op = qml.ControlledQutritUnitary(
+        op = qp.ControlledQutritUnitary(
             U1, control_wires=("b", "c"), wires="a", control_values="01"
         )
 
@@ -556,16 +556,16 @@ class TestControlledQutritUnitary:
         assert pow_ops[0].control_wires == op.control_wires
         assert pow_ops[0].control_values == op.control_values
 
-        op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
-        assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
+        op_mat_to_pow = qp.math.linalg.matrix_power(op.data[0], n)
+        assert qp.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
 
     def test_noninteger_pow(self):
         """Test that a ControlledQutritUnitary raised to a non-integer power raises an error."""
         U1 = unitary_group.rvs(3, random_state=10)
 
-        op = qml.ControlledQutritUnitary(U1, control_wires=("b", "c"), wires="a")
+        op = qp.ControlledQutritUnitary(U1, control_wires=("b", "c"), wires="a")
 
-        with pytest.raises(qml.operation.PowUndefinedError):
+        with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.12)
 
     def test_noninteger_pow_broadcasted(self):
@@ -573,9 +573,9 @@ class TestControlledQutritUnitary:
         U1 = unitary_group.rvs(3, random_state=10)
         U = np.array([U1, U1, U1])
 
-        op = qml.ControlledQutritUnitary(U, control_wires=("b", "c"), wires="a")
+        op = qp.ControlledQutritUnitary(U, control_wires=("b", "c"), wires="a")
 
-        with pytest.raises(qml.operation.PowUndefinedError):
+        with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.12)
 
     def test_controlled(self):
@@ -583,44 +583,44 @@ class TestControlledQutritUnitary:
 
         U = TSWAP
 
-        original = qml.ControlledQutritUnitary(U, control_wires=(0, 1), wires=[4, 2])
-        expected = qml.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
+        original = qp.ControlledQutritUnitary(U, control_wires=(0, 1), wires=[4, 2])
+        expected = qp.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
 
         out = original._controlled("a")
-        qml.assert_equal(out, expected)
+        qp.assert_equal(out, expected)
 
-        original = qml.ControlledQutritUnitary(
+        original = qp.ControlledQutritUnitary(
             U, control_wires=(0, 1), wires=[4, 2], control_values="01"
         )
-        expected = qml.ControlledQutritUnitary(
+        expected = qp.ControlledQutritUnitary(
             U, control_wires=(0, 1, "a"), wires=[4, 2], control_values="012"
         )
 
         out = original._controlled("a")
-        qml.assert_equal(out, expected)
+        qp.assert_equal(out, expected)
 
     def test_adjoint(self):
         """Tests the metadata and unitary for an adjoint ControlledQutritUnitary operation."""
         U1 = unitary_group.rvs(3, random_state=10)
 
-        op = qml.ControlledQutritUnitary(
+        op = qp.ControlledQutritUnitary(
             U1, control_wires=("b", "c"), wires="a", control_values="01"
         )
 
         adjoint_op = op.adjoint()
-        assert isinstance(adjoint_op, qml.ControlledQutritUnitary)
+        assert isinstance(adjoint_op, qp.ControlledQutritUnitary)
 
         assert adjoint_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert adjoint_op.control_wires == op.control_wires
         assert adjoint_op.control_values == op.control_values
 
         adjoint_mat = op.data[0].T.conj()
-        assert qml.math.allclose(adjoint_op.data[0], adjoint_mat)
+        assert qp.math.allclose(adjoint_op.data[0], adjoint_mat)
 
 
 label_data = [
-    (U_thadamard_01, qml.QutritUnitary(U_thadamard_01, wires=0)),
-    (U_thadamard_01, qml.ControlledQutritUnitary(U_thadamard_01, control_wires=0, wires=1)),
+    (U_thadamard_01, qp.QutritUnitary(U_thadamard_01, wires=0)),
+    (U_thadamard_01, qp.ControlledQutritUnitary(U_thadamard_01, control_wires=0, wires=1)),
 ]
 
 
@@ -644,7 +644,7 @@ class TestUnitaryLabels:
         should be added to cache."""
         cache = {"matrices": []}
         assert op.label(cache=cache) == "U\n(M0)"
-        assert qml.math.allclose(cache["matrices"][0], mat)
+        assert qp.math.allclose(cache["matrices"][0], mat)
 
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
@@ -653,7 +653,7 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U\n(M1)"
 
         assert len(cache["matrices"]) == 2
-        assert qml.math.allclose(cache["matrices"][1], mat)
+        assert qp.math.allclose(cache["matrices"][1], mat)
 
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
@@ -670,11 +670,11 @@ class TestInterfaceMatricesLabel:
     def check_interface(self, mat):
         """Interface independent helper method."""
 
-        op = qml.QutritUnitary(mat, wires=0)
+        op = qp.QutritUnitary(mat, wires=0)
 
         cache = {"matrices": []}
         assert op.label(cache=cache) == "U\n(M0)"
-        assert qml.math.allclose(cache["matrices"][0], mat)
+        assert qp.math.allclose(cache["matrices"][0], mat)
 
         cache = {"matrices": [0, mat, 0]}
         assert op.label(cache=cache) == "U\n(M1)"
@@ -711,8 +711,8 @@ class TestInterfaceMatricesLabel:
 
 
 control_data = [
-    (qml.QutritUnitary(U_thadamard_01, wires=0), Wires([])),
-    (qml.ControlledQutritUnitary(U_thadamard_01, control_wires=0, wires=1), Wires([0])),
+    (qp.QutritUnitary(U_thadamard_01, wires=0), Wires([])),
+    (qp.ControlledQutritUnitary(U_thadamard_01, control_wires=0, wires=1), Wires([0])),
 ]
 
 

@@ -99,12 +99,12 @@ class IQPEmbedding(Operation):
 
             import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=3)
+            dev = qp.device('default.qubit', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features):
-                qml.IQPEmbedding(features, wires=range(3))
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3))
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -114,10 +114,10 @@ class IQPEmbedding(Operation):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features):
-                qml.IQPEmbedding(features, wires=range(3), n_repeats=4)
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3), n_repeats=4)
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -132,10 +132,10 @@ class IQPEmbedding(Operation):
 
             pattern = [[1, 2], [0, 2], [1, 0]]
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features):
-                qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3), pattern=pattern)
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
 
@@ -148,10 +148,10 @@ class IQPEmbedding(Operation):
             pattern1 = [[1, 2], [0, 2], [1, 0]]
             pattern2 = [[1, 0], [0, 2], [1, 2]]  # a reshuffling of pattern1
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(features, pattern):
-                qml.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
-                return [qml.expval(qml.Z(w)) for w in range(3)]
+                qp.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
+                return [qp.expval(qp.Z(w)) for w in range(3)]
 
             res1 = circuit([1., 2., 3.], pattern=pattern1)
             res2 = circuit([1., 2., 3.], pattern=pattern2)
@@ -246,7 +246,7 @@ class IQPEmbedding(Operation):
 
         >>> features = torch.tensor([1., 2., 3.])
         >>> pattern = [(0, 1), (0, 2), (1, 2)]
-        >>> qml.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern)
+        >>> qp.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern)
         [H(0), RZ(tensor(1.), wires=[0]),
          H(1), RZ(tensor(2.), wires=[1]),
          H(2), RZ(tensor(3.), wires=[2]),

@@ -92,7 +92,7 @@ def enable_logging(config_file: str = "log_config.toml"):
 
     **Example**
 
-    >>> qml.logging.enable_logging()
+    >>> qp.logging.enable_logging()
     """
     _add_trace_level()
     _configure_logging(config_file)

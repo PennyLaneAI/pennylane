@@ -67,8 +67,8 @@ class ParametrizedHamiltonian:
         f1 = lambda p, t: p[0] * jnp.sin(p[1] * t)
         f2 = lambda p, t: p * t
         coeffs = [2., f1, f2]
-        observables =  [qml.X(0), qml.Y(0), qml.Z(0)]
-        H = qml.dot(coeffs, observables)
+        observables =  [qp.X(0), qp.Y(0), qp.Z(0)]
+        H = qp.dot(coeffs, observables)
 
     The resulting object can be passed parameters, and will return an :class:`~.Operator` representing the
     ``ParametrizedHamiltonian`` with the specified parameters. Note that parameters must be passed in the order
@@ -115,7 +115,7 @@ class ParametrizedHamiltonian:
             def f2(p, t):
                 return p * jnp.cos(t)
 
-            H = 2 * qml.X(0) + f1 * qml.Y(0) + f2 * qml.Z(0)
+            H = 2 * qp.X(0) + f1 * qp.Y(0) + f2 * qp.Z(0)
 
         .. note::
             Whichever method is used for initializing a :class:`~.ParametrizedHamiltonian`, the terms defined with fixed
@@ -199,12 +199,12 @@ class ParametrizedHamiltonian:
         .. code-block:: python3
 
             coeffs = [lambda p, t: jnp.sin(p*t) for _ in range(2)]
-            ops = [qml.X(0), qml.Y(1)]
-            H1 = qml.dot(coeffs, ops)
+            ops = [qp.X(0), qp.Y(1)]
+            H1 = qp.dot(coeffs, ops)
 
             def f1(p, t): return t + p
             def f2(p, t): return p[0] * jnp.sin(p[1] * t**2)
-            H2 = f1 * qml.Y(0) + f2 * qml.X(1)
+            H2 = f1 * qp.Y(0) + f2 * qp.X(1)
 
             params1 = [2., 3.]
             params2 = [4., [5., 6.]]

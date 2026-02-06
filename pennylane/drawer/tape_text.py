@@ -251,20 +251,20 @@ def tape_text(
     .. code-block:: python
 
         ops = [
-            qml.QFT(wires=(0, 1, 2)),
-            qml.RX(1.234, wires=0),
-            qml.RY(1.234, wires=1),
-            qml.RZ(1.234, wires=2),
-            qml.Toffoli(wires=(0, 1, "aux"))
+            qp.QFT(wires=(0, 1, 2)),
+            qp.RX(1.234, wires=0),
+            qp.RY(1.234, wires=1),
+            qp.RZ(1.234, wires=2),
+            qp.Toffoli(wires=(0, 1, "aux"))
         ]
         measurements = [
-            qml.expval(qml.Z("aux")),
-            qml.var(qml.Z(0) @ qml.Z(1)),
-            qml.probs(wires=(0, 1, 2, "aux"))
+            qp.expval(qp.Z("aux")),
+            qp.var(qp.Z(0) @ qp.Z(1)),
+            qp.probs(wires=(0, 1, 2, "aux"))
         ]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape))
+    >>> print(qp.drawer.tape_text(tape))
       0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
       1: ─├QFT──RY─├●─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ─│──┤           ├Probs
@@ -276,7 +276,7 @@ def tape_text(
     By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
     are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
-    >>> print(qml.drawer.tape_text(tape, decimals=2))
+    >>> print(qp.drawer.tape_text(tape, decimals=2))
       0: ─╭QFT──RX(1.23)─╭●─┤ ╭Var[Z@Z] ╭Probs
       1: ─├QFT──RY(1.23)─├●─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
@@ -288,11 +288,11 @@ def tape_text(
     .. code-block:: python
 
         rng = np.random.default_rng(seed=42)
-        shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
+        shape = qp.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
         params = rng.random(shape)
-        op = qml.StronglyEntanglingLayers(params, wires=range(5))
-        tape2 = qml.tape.QuantumScript(op.decomposition())
-        print(qml.drawer.tape_text(tape2, max_length=60))
+        op = qp.StronglyEntanglingLayers(params, wires=range(5))
+        tape2 = qp.tape.QuantumScript(op.decomposition())
+        print(qp.drawer.tape_text(tape2, max_length=60))
 
 
     .. code-block:: none
@@ -313,7 +313,7 @@ def tape_text(
     The ``wire_order`` keyword specifies the order of the wires from
     top to bottom:
 
-    >>> print(qml.drawer.tape_text(tape, wire_order=["aux", 2, 1, 0]))
+    >>> print(qp.drawer.tape_text(tape, wire_order=["aux", 2, 1, 0]))
     aux: ──────────╭X─┤  <Z>      ╭Probs
       2: ─╭QFT──RZ─│──┤           ├Probs
       1: ─├QFT──RY─├●─┤ ╭Var[Z@Z] ├Probs
@@ -321,7 +321,7 @@ def tape_text(
 
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
-    >>> print(qml.drawer.tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
+    >>> print(qp.drawer.tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
       a: ─────────────┤
       b: ─────────────┤
     aux: ──────────╭X─┤  <Z>      ╭Probs
@@ -336,13 +336,13 @@ def tape_text(
     .. code-block:: python
 
         ops = [
-            qml.QubitUnitary(np.eye(2), wires=0),
-            qml.QubitUnitary(np.eye(2), wires=1)
+            qp.QubitUnitary(np.eye(2), wires=0),
+            qp.QubitUnitary(np.eye(2), wires=1)
         ]
-        measurements = [qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Hermitian(np.eye(4), wires=(0,1)))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-    >>> print(qml.drawer.tape_text(tape))
+    >>> print(qp.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -359,7 +359,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(qml.drawer.tape_text(tape, cache=cache))
+    >>> print(qp.drawer.tape_text(tape, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
@@ -390,12 +390,12 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            with qml.tape.QuantumTape() as tape_inner:
-                qml.X(0)
+        with qp.tape.QuantumTape() as tape:
+            with qp.tape.QuantumTape() as tape_inner:
+                qp.X(0)
 
         cache = {'tape_offset': 3}
-        print(qml.drawer.tape_text(tape, cache=cache))
+        print(qp.drawer.tape_text(tape, cache=cache))
         print("New tape offset: ", cache['tape_offset'])
 
 

@@ -877,7 +877,7 @@ class FockState(CVOperation):
 
         **Example:**
 
-        >>> qml.FockState(7, wires=0).label()
+        >>> qp.FockState(7, wires=0).label()
         '|7⟩'
 
         """
@@ -913,14 +913,14 @@ class FockStateVector(CVOperation):
 
         .. code-block::
 
-            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=4)
+            dev_fock = qp.device("strawberryfields.fock", wires=4, cutoff_dim=4)
 
             state = np.array([0, 0, 1, 0])
 
-            @qml.qnode(dev_fock)
+            @qp.qnode(dev_fock)
             def circuit():
-                qml.FockStateVector(state, wires=0)
-                return qml.expval(qml.NumberOperator(wires=0))
+                qp.FockStateVector(state, wires=0)
+                return qp.expval(qp.NumberOperator(wires=0))
 
         For multiple modes, the input is the tensor product of single mode
         kets. For example, given a set of :math:`M` single mode vectors of
@@ -931,7 +931,7 @@ class FockStateVector(CVOperation):
             used_wires = [0, 3]
             cutoff_dim = 5
 
-            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
+            dev_fock = qp.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
 
             state_1 = np.array([0, 1, 0, 0, 0])
             state_2 = np.array([0, 0, 0, 1, 0])
@@ -940,10 +940,10 @@ class FockStateVector(CVOperation):
                 (cutoff_dim, ) * len(used_wires)
             )
 
-            @qml.qnode(dev_fock)
+            @qp.qnode(dev_fock)
             def circuit():
-                qml.FockStateVector(combined_state, wires=used_wires)
-                return qml.expval(qml.NumberOperator(wires=0))
+                qp.FockStateVector(combined_state, wires=used_wires)
+                return qp.expval(qp.NumberOperator(wires=0))
 
     """
 
@@ -968,7 +968,7 @@ class FockStateVector(CVOperation):
 
         **Example:**
 
-        >>> qml.FockStateVector([1,2,3], wires=(0,1,2)).label()
+        >>> qp.FockStateVector([1,2,3], wires=(0,1,2)).label()
         '|123⟩'
 
         """
@@ -1111,7 +1111,7 @@ class TensorN(CVObservable):
 
         Example for multiple modes:
 
-        >>> cv_obs = qml.TensorN(wires=[0, 1])
+        >>> cv_obs = qp.TensorN(wires=[0, 1])
         >>> cv_obs
         TensorN(wires=[0, 1])
         >>> cv_obs.ev_order is None
@@ -1119,7 +1119,7 @@ class TensorN(CVObservable):
 
         Example for a single mode (yields a :class:`~.NumberOperator`):
 
-        >>> cv_obs = qml.TensorN(wires=[1])
+        >>> cv_obs = qp.TensorN(wires=[1])
         >>> cv_obs
         NumberOperator(wires=[1])
         >>> cv_obs.ev_order
@@ -1268,7 +1268,7 @@ class QuadOperator(CVObservable):
 
         **Example:**
 
-        >>> op = qml.QuadOperator(1.234, wires=0)
+        >>> op = qp.QuadOperator(1.234, wires=0)
         >>> op.label()
         'cos(φ)x\n+sin(φ)p'
         >>> op.label(decimals=2)
@@ -1399,7 +1399,7 @@ class FockStateProjector(CVObservable):
 
         **Example:**
 
-        >>> qml.FockStateProjector([1,2,3], wires=(0,1,2)).label()
+        >>> qp.FockStateProjector([1,2,3], wires=(0,1,2)).label()
         '|123⟩⟨123|'
 
         """

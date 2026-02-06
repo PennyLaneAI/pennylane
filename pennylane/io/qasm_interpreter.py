@@ -649,7 +649,7 @@ class QasmInterpreter:
     @visit.register(ast.BranchingStatement)
     def visit_branching_statement(self, node: ast.BranchingStatement, context: Context):
         """
-        Registers a branching statement. Like switches, uses qml.cond.
+        Registers a branching statement. Like switches, uses qp.cond.
 
         Args:
             node (BranchingStatement): the branch QASMNode.

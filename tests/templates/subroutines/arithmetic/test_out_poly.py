@@ -62,19 +62,19 @@ def f_test(x, y, z):
 @pytest.mark.jax
 def test_standard_validity_OutPoly():
     """Check the operation using the assert_valid function."""
-    wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
+    wires = qp.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
 
-    op = qml.OutPoly(
+    op = qp.OutPoly(
         f_test,
         input_registers=[wires["x"], wires["y"], wires["z"]],
         output_wires=wires["output"],
     )
 
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestOutPoly:
-    """Test the qml.OutPoly template."""
+    """Test the qp.OutPoly template."""
 
     @pytest.mark.parametrize(
         ("polynomial_function", "input_registers", "output_wires", "mod", "work_wires"),
@@ -91,21 +91,21 @@ class TestOutPoly:
         """Test the correctness of the OutPoly template output."""
 
         x_wires, y_wires = input_registers
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
 
-            qml.BasisEmbedding(2, wires=x_wires)
-            qml.BasisEmbedding(1, wires=y_wires)
-            qml.OutPoly(
+            qp.BasisEmbedding(2, wires=x_wires)
+            qp.BasisEmbedding(1, wires=y_wires)
+            qp.OutPoly(
                 polynomial_function,
                 input_registers=input_registers,
                 output_wires=output_wires,
                 mod=mod,
                 work_wires=work_wires,
             )
-            return qml.probs(wires=output_wires)
+            return qp.probs(wires=output_wires)
 
         if mod is None:
             mod = int(2 ** len(output_wires))
@@ -133,7 +133,7 @@ class TestOutPoly:
 
         with pytest.raises(ValueError, match=msg_match):
             if y_wires:
-                qml.OutPoly(
+                qp.OutPoly(
                     lambda x, y: 3 * x**3 - 3 * y,
                     input_registers=input_registers,
                     output_wires=output_wires,
@@ -141,7 +141,7 @@ class TestOutPoly:
                     work_wires=work_wires,
                 )
             else:
-                qml.OutPoly(
+                qp.OutPoly(
                     lambda x, y: 3 * x**3 - 3 * y,
                     input_registers=[x_wires],
                     output_wires=output_wires,
@@ -151,21 +151,21 @@ class TestOutPoly:
 
     def test_non_integer_coeffs(self):
         """Test that an error is raised if the coefficient of the polynomial are not integer"""
-        reg = qml.registers({"x_wires": 3, "y_wires": 3, "output_wires": 4})
+        reg = qp.registers({"x_wires": 3, "y_wires": 3, "output_wires": 4})
 
         def f(x, y):
             return 2.5 * x + 2 * y
 
-        @qml.qnode(qml.device("default.qubit"), shots=1)
+        @qp.qnode(qp.device("default.qubit"), shots=1)
         def circuit():
 
-            qml.OutPoly(
+            qp.OutPoly(
                 f,
                 input_registers=(reg["x_wires"], reg["y_wires"]),
                 output_wires=reg["output_wires"],
             )
 
-            return qml.sample(wires=reg["output_wires"])
+            return qp.sample(wires=reg["output_wires"])
 
         with pytest.raises(AssertionError, match="The polynomial function must"):
             circuit()
@@ -177,18 +177,18 @@ class TestOutPoly:
             return x + y
 
         expected_decomposition = [
-            qml.QFT(wires=[3]),
-            qml.ctrl(qml.PhaseAdder(1, x_wires=[3]), control=[2]),
-            qml.ctrl(qml.PhaseAdder(1, x_wires=[3]), control=[1]),
-            qml.adjoint(qml.QFT(wires=[3])),
+            qp.QFT(wires=[3]),
+            qp.ctrl(qp.PhaseAdder(1, x_wires=[3]), control=[2]),
+            qp.ctrl(qp.PhaseAdder(1, x_wires=[3]), control=[1]),
+            qp.adjoint(qp.QFT(wires=[3])),
         ]
 
-        ops = qml.OutPoly(
+        ops = qp.OutPoly(
             polynomial_function, input_registers=[[0, 1], [2]], output_wires=[3]
         ).decomposition()
 
         for op1, op2 in zip(expected_decomposition, ops):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         ("polynomial_function", "input_registers", "output_wires"),
@@ -199,29 +199,29 @@ class TestOutPoly:
     )
     def test_decomposition_new(self, polynomial_function, input_registers, output_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.OutPoly(polynomial_function, input_registers, output_wires)
-        for rule in qml.list_decomps(qml.OutPoly):
+        op = qp.OutPoly(polynomial_function, input_registers, output_wires)
+        for rule in qp.list_decomps(qp.OutPoly):
             _test_decomposition_rule(op, rule)
 
     def test_compute_decomposition_no_coeffs_list(self):
         """Test that coeffs list is an optional argnument to compute_decomposition."""
 
-        decomp = qml.OutPoly.compute_decomposition(
+        decomp = qp.OutPoly.compute_decomposition(
             lambda x, y: x + y, input_registers=[[0, 1], [2, 3]], output_wires=[4, 5], mod=4
         )
 
-        pa2 = qml.PhaseAdder(k=2, mod=4, x_wires=[4, 5])
-        pa1 = qml.PhaseAdder(k=1, mod=4, x_wires=[4, 5])
+        pa2 = qp.PhaseAdder(k=2, mod=4, x_wires=[4, 5])
+        pa1 = qp.PhaseAdder(k=1, mod=4, x_wires=[4, 5])
         expected = [
-            qml.QFT(wires=[4, 5]),
-            qml.ctrl(pa1, [3]),
-            qml.ctrl(pa2, 2),
-            qml.ctrl(pa1, 1),
-            qml.ctrl(pa2, 0),
-            qml.adjoint(qml.QFT(wires=[4, 5])),
+            qp.QFT(wires=[4, 5]),
+            qp.ctrl(pa1, [3]),
+            qp.ctrl(pa2, 2),
+            qp.ctrl(pa1, 1),
+            qp.ctrl(pa2, 0),
+            qp.adjoint(qp.QFT(wires=[4, 5])),
         ]
         for op1, op2 in zip(decomp, expected):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
@@ -229,30 +229,30 @@ class TestOutPoly:
 
         import jax
 
-        wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
+        wires = qp.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
 
         def f(x, y, z):
             return x**2 + y * x * z**5 - z**3 + 3
 
-        dev = qml.device("default.qubit", wires=14)
+        dev = qp.device("default.qubit", wires=14)
 
         @jax.jit
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
             # loading values for x, y and z
-            qml.BasisEmbedding(1, wires=wires["x"])
-            qml.BasisEmbedding(2, wires=wires["y"])
-            qml.BasisEmbedding(3, wires=wires["z"])
+            qp.BasisEmbedding(1, wires=wires["x"])
+            qp.BasisEmbedding(2, wires=wires["y"])
+            qp.BasisEmbedding(3, wires=wires["z"])
 
             # applying the polynomial
-            qml.OutPoly(
+            qp.OutPoly(
                 f,
                 input_registers=[wires["x"], wires["y"], wires["z"]],
                 output_wires=wires["output"],
                 mod=6,
                 work_wires=wires["aux"],
             )
-            return qml.sample(wires=wires["output"])
+            return qp.sample(wires=wires["output"])
 
         assert np.allclose(circuit(), [0, 0, 1])

@@ -173,7 +173,7 @@ def spsa_grad(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -182,14 +182,14 @@ def spsa_grad(
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
     objects:
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.RY(params[1], wires=0)
+    ...     qp.RX(params[2], wires=0)
+    ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.gradients.spsa_grad(circuit)(params)
+    >>> qp.gradients.spsa_grad(circuit)(params)
     (tensor([ 0.18488771, -0.18488771, -0.18488771], requires_grad=True),
      tensor([-0.33357922,  0.33357922,  0.33357922], requires_grad=True))
 
@@ -206,13 +206,13 @@ def spsa_grad(
         can be controlled with the keyword argument ``num_directions``. For the QNode above,
         a more precise gradient estimation from ``num_directions=20`` directions yields
 
-        >>> qml.gradients.spsa_grad(circuit, num_directions=20)(params)
+        >>> qp.gradients.spsa_grad(circuit, num_directions=20)(params)
         (tensor([-0.53976776, -0.34385475, -0.46106048], requires_grad=True),
          tensor([0.97386303, 0.62039169, 0.83185731], requires_grad=True))
 
         We may compare this to the more precise values obtained from finite differences:
 
-        >>> qml.gradients.finite_diff(circuit)(params)
+        >>> qp.gradients.finite_diff(circuit)(params)
         (tensor([-0.38751724, -0.18884792, -0.38355708], requires_grad=True),
          tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
 
@@ -228,10 +228,10 @@ def spsa_grad(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
-        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
-        >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
+        >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
+        >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(0))]
+        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> gradient_tapes, fn = qp.gradients.spsa_grad(tape)
         >>> gradient_tapes
         [<QuantumScript: wires=[0], params=3>, <QuantumScript: wires=[0], params=3>]
 
@@ -242,20 +242,20 @@ def spsa_grad(
         Note that ``argnum`` refers to the index of a parameter within the list of trainable
         parameters. For example, if we have:
 
-        >>> tape = qml.tape.QuantumScript(
-        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.Z(0))],
+        >>> tape = qp.tape.QuantumScript(
+        ...     [qp.RX(1.2, wires=0), qp.RY(2.3, wires=0), qp.RZ(3.4, wires=0)],
+        ...     [qp.expval(qp.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qml.gradients.spsa_grad(tape, argnum=1)
+        >>> qp.gradients.spsa_grad(tape, argnum=1)
 
         The code above will differentiate the third parameter rather than the second.
 
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
-        >>> dev = qml.device("default.qubit")
-        >>> fn(qml.execute(gradient_tapes, dev, None))
+        >>> dev = qp.device("default.qubit")
+        >>> fn(qp.execute(gradient_tapes, dev, None))
         ((tensor(0.18488771, requires_grad=True),
           tensor(-0.18488771, requires_grad=True),
           tensor(-0.18488771, requires_grad=True)),
@@ -266,16 +266,16 @@ def spsa_grad(
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit")
-        >>> @qml.set_shots(shots=shots)
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device("default.qubit")
+        >>> @qp.set_shots(shots=shots)
+        >>> @qp.qnode(dev)
         ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+        ...     qp.RX(params[0], wires=0)
+        ...     qp.RY(params[1], wires=0)
+        ...     qp.RX(params[2], wires=0)
+        ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.spsa_grad(circuit, h=1e-2)(params)
+        >>> qp.gradients.spsa_grad(circuit, h=1e-2)(params)
         ((array([ 10.,  10., -10.]), array([-18., -18.,  18.])),
          (array([-5., -5.,  5.]), array([ 8.9,  8.9, -8.9])),
          (array([ 1.5,  1.5, -1.5]), array([-2.667, -2.667,  2.667])))

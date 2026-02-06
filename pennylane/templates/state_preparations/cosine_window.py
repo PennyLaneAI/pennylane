@@ -53,11 +53,11 @@ class CosineWindow(StatePrepBase):
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qubit', wires=2)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.CosineWindow(wires=range(2))
-    ...     return qml.probs()
+    ...     qp.CosineWindow(wires=range(2))
+    ...     return qp.probs()
     >>> print(example_circuit()) # doctest: +SKIP
     [1.8747e-33 2.5000e-01 5.0000e-01 2.5000e-01]
 
@@ -79,12 +79,12 @@ class CosineWindow(StatePrepBase):
 
         decomp_ops = []
 
-        decomp_ops.append(qml.Hadamard(wires=wires[-1]))
-        decomp_ops.append(qml.RZ(np.pi, wires=wires[-1]))
-        decomp_ops.append(qml.adjoint(qml.QFT)(wires=wires))
+        decomp_ops.append(qp.Hadamard(wires=wires[-1]))
+        decomp_ops.append(qp.RZ(np.pi, wires=wires[-1]))
+        decomp_ops.append(qp.adjoint(qp.QFT)(wires=wires))
 
         for ind, wire in enumerate(wires):
-            decomp_ops.append(qml.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire))
+            decomp_ops.append(qp.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire))
 
         return decomp_ops
 
@@ -146,26 +146,26 @@ class CosineWindow(StatePrepBase):
 
 def _cosine_window_resources(num_wires):
     return {
-        resource_rep(qml.Hadamard): 1,
-        resource_rep(qml.RZ): 1,
-        adjoint_resource_rep(qml.QFT, {"num_wires": num_wires}): 1,
-        resource_rep(qml.PhaseShift): num_wires,
+        resource_rep(qp.Hadamard): 1,
+        resource_rep(qp.RZ): 1,
+        adjoint_resource_rep(qp.QFT, {"num_wires": num_wires}): 1,
+        resource_rep(qp.PhaseShift): num_wires,
     }
 
 
 @register_resources(_cosine_window_resources)
 def _cosine_window_decomposition(wires):
-    qml.Hadamard(wires=wires[-1])
-    qml.RZ(np.pi, wires=wires[-1])
-    qml.adjoint(qml.QFT)(wires=wires)
+    qp.Hadamard(wires=wires[-1])
+    qp.RZ(np.pi, wires=wires[-1])
+    qp.adjoint(qp.QFT)(wires=wires)
 
     if capture.enabled():
-        wires = qml.math.array(wires, like="jax")
+        wires = qp.math.array(wires, like="jax")
 
     @for_loop(len(wires))
     def wires_loop(ind):
         wire = wires[ind]
-        qml.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire)
+        qp.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire)
 
     wires_loop()  # pylint: disable=no-value-for-parameter
 

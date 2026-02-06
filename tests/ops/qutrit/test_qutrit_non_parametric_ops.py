@@ -24,14 +24,14 @@ import pennylane as qp
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
-    (qml.TShift, TSHIFT, None),
-    (qml.TClock, TCLOCK, None),
-    (qml.TAdd, TADD, None),
-    (qml.TSWAP, TSWAP, None),
-    (qml.THadamard, TH, None),
-    (qml.THadamard, np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), (0, 1)),
-    (qml.THadamard, np.array([[1, 0, 1], [0, np.sqrt(2), 0], [1, 0, -1]]) / np.sqrt(2), (0, 2)),
-    (qml.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), (1, 2)),
+    (qp.TShift, TSHIFT, None),
+    (qp.TClock, TCLOCK, None),
+    (qp.TAdd, TADD, None),
+    (qp.TSWAP, TSWAP, None),
+    (qp.THadamard, TH, None),
+    (qp.THadamard, np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), (0, 1)),
+    (qp.THadamard, np.array([[1, 0, 1], [0, np.sqrt(2), 0], [1, 0, -1]]) / np.sqrt(2), (0, 2)),
+    (qp.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), (1, 2)),
 ]
 
 
@@ -66,48 +66,48 @@ class TestOperations:
 class TestEigenval:
     def test_tshift_eigenval(self):
         """Tests that the TShift eigenvalue matches the numpy eigenvalues of the TShift matrix"""
-        op = qml.TShift(wires=0)
+        op = qp.TShift(wires=0)
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
 
     def test_tclock_eigenval(self):
         """Tests that the TClock eigenvalue matches the numpy eigenvalues of the TClock matrix"""
-        op = qml.TClock(wires=0)
+        op = qp.TClock(wires=0)
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
 
     def test_tadd_eigenval(self):
         """Tests that the TAdd eigenvalue matches the numpy eigenvalues of the TAdd matrix"""
-        op = qml.TAdd(wires=[0, 1])
+        op = qp.TAdd(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
 
     def test_tswap_eigenval(self):
         """Tests that the TSWAP eigenvalue matches the numpy eigenvalues of the TSWAP matrix"""
-        op = qml.TSWAP(wires=[0, 1])
+        op = qp.TSWAP(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
 
 
 period_three_ops = [
-    qml.TShift(wires=0),
-    qml.TClock(wires=0),
-    qml.TAdd(wires=[0, 1]),
+    qp.TShift(wires=0),
+    qp.TClock(wires=0),
+    qp.TAdd(wires=[0, 1]),
 ]
 
 period_two_ops = [
-    qml.TSWAP(wires=[0, 1]),
-    qml.THadamard(wires=0, subspace=(0, 1)),
-    qml.THadamard(wires=0, subspace=(0, 2)),
-    qml.THadamard(wires=0, subspace=(1, 2)),
+    qp.TSWAP(wires=[0, 1]),
+    qp.THadamard(wires=0, subspace=(0, 1)),
+    qp.THadamard(wires=0, subspace=(0, 2)),
+    qp.THadamard(wires=0, subspace=(1, 2)),
 ]
 
 no_pow_method_ops = [
-    qml.THadamard(wires=0, subspace=None),
+    qp.THadamard(wires=0, subspace=None),
 ]
 
 
@@ -129,14 +129,14 @@ class TestPowMethod:
         raised to a power that is 1+multiple of three.
         """
         # When raising to power == 1 mod 3
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op_pow_1 = op.pow(1 + offset)
 
         assert len(q.queue) == 1
         assert len(op_pow_1) == 1
 
         assert q.queue[0] is op_pow_1[0]
-        qml.assert_equal(op_pow_1[0], op)
+        qp.assert_equal(op_pow_1[0], op)
 
     @pytest.mark.parametrize("op", period_three_ops)
     @pytest.mark.parametrize("offset", (-6, -3, 0, 3, 6))
@@ -145,7 +145,7 @@ class TestPowMethod:
         raised to a power that is 2+multiple of three.
         """
         # When raising to power == 2 mod 3
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op_pow_2 = op.pow(2 + offset)
 
         assert len(q.queue) == 2
@@ -153,13 +153,13 @@ class TestPowMethod:
 
         assert q.queue[0] is op_pow_2[0]
         assert q.queue[1] is op_pow_2[1]
-        qml.assert_equal(op_pow_2[0], op)
-        qml.assert_equal(op_pow_2[1], op)
+        qp.assert_equal(op_pow_2[0], op)
+        qp.assert_equal(op_pow_2[1], op)
 
     @pytest.mark.parametrize("op", period_three_ops + period_two_ops)
     def test_period_two_three_noninteger_power(self, op):
         """Test that ops with a period of 2 or 3 raised to a non-integer power raise an error"""
-        with pytest.raises(qml.operation.PowUndefinedError):
+        with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(1.234)
 
     @pytest.mark.parametrize("offset", [0, 2, -2, 4, -4])
@@ -169,7 +169,7 @@ class TestPowMethod:
         integer powers"""
 
         assert len(op.pow(0 + offset)) == 0
-        qml.assert_equal(op.pow(1 + offset)[0], op)
+        qp.assert_equal(op.pow(1 + offset)[0], op)
 
     @pytest.mark.parametrize("op", no_pow_method_ops)
     def test_no_pow_ops(self, op):
@@ -182,17 +182,17 @@ class TestPowMethod:
         pows = [0.1, -2.5]
 
         for pow in pows:
-            with pytest.raises(qml.operation.PowUndefinedError):
+            with pytest.raises(qp.operation.PowUndefinedError):
                 op.pow(pow)
 
 
 label_data = [
-    (qml.TShift(0), "TShift"),
-    (qml.TClock(0), "TClock"),
-    (qml.TAdd([0, 1]), "TAdd"),
-    (qml.TSWAP([0, 1]), "TSWAP"),
-    (qml.THadamard(0), "TH"),
-    (qml.THadamard(0, subspace=(0, 1)), "TH"),
+    (qp.TShift(0), "TShift"),
+    (qp.TClock(0), "TClock"),
+    (qp.TAdd([0, 1]), "TAdd"),
+    (qp.TSWAP([0, 1]), "TSWAP"),
+    (qp.THadamard(0), "TH"),
+    (qp.THadamard(0, subspace=(0, 1)), "TH"),
 ]
 
 
@@ -203,11 +203,11 @@ def test_label_method(op, label):
 
 
 control_data = [
-    (qml.TShift(0), Wires([])),
-    (qml.TClock(0), Wires([])),
-    (qml.TAdd([0, 1]), Wires([0])),
-    (qml.TSWAP([0, 1]), Wires([])),
-    (qml.THadamard(wires=0), Wires([])),
+    (qp.TShift(0), Wires([])),
+    (qp.TClock(0), Wires([])),
+    (qp.TAdd([0, 1]), Wires([0])),
+    (qp.TSWAP([0, 1]), Wires([])),
+    (qp.THadamard(wires=0), Wires([])),
 ]
 
 
@@ -219,17 +219,17 @@ def test_control_wires(op, control_wires):
 
 
 no_adjoint_ops = [  # ops that are not their own inverses
-    qml.TShift(wires=0),
-    qml.TClock(wires=0),
-    qml.TAdd(wires=[0, 1]),
-    qml.THadamard(wires=0, subspace=None),
+    qp.TShift(wires=0),
+    qp.TClock(wires=0),
+    qp.TAdd(wires=[0, 1]),
+    qp.THadamard(wires=0, subspace=None),
 ]
 
 involution_ops = [  # ops that are their own inverses
-    qml.TSWAP(wires=[0, 1]),
-    qml.THadamard(wires=0, subspace=(0, 1)),
-    qml.THadamard(wires=0, subspace=(0, 2)),
-    qml.THadamard(wires=0, subspace=(1, 2)),
+    qp.TSWAP(wires=[0, 1]),
+    qp.THadamard(wires=0, subspace=(0, 1)),
+    qp.THadamard(wires=0, subspace=(0, 2)),
+    qp.THadamard(wires=0, subspace=(1, 2)),
 ]
 
 
@@ -238,7 +238,7 @@ def test_adjoint_method(op):
     """Assert that ops that are not their own inverses do not have a defined adjoint."""
     assert not op.has_adjoint
 
-    with pytest.raises(qml.operation.AdjointUndefinedError):
+    with pytest.raises(qp.operation.AdjointUndefinedError):
         op.adjoint()
 
 
@@ -248,5 +248,5 @@ def test_adjoint_method_involution(op):
     assert op.has_adjoint
 
     adj_op = op.adjoint()
-    qml.assert_equal(adj_op, op)
+    qp.assert_equal(adj_op, op)
     assert adj_op is not op

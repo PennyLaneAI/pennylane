@@ -131,25 +131,25 @@ class kUpCCGSD(Operation):
             # Build the electronic Hamiltonian
             symbols = ["H", "H"]
             coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
-            H, wires = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+            H, wires = qp.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
-            ref_state = qml.qchem.hf_state(electrons, wires)
+            ref_state = qp.qchem.hf_state(electrons, wires)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=wires)
+            dev = qp.device('default.qubit', wires=wires)
 
             # Define the ansatz
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def ansatz(weights):
-                qml.kUpCCGSD(weights, wires=[0, 1, 2, 3],
+                qp.kUpCCGSD(weights, wires=[0, 1, 2, 3],
                                 k=1, delta_sz=0, init_state=ref_state)
-                return qml.expval(H)
+                return qp.expval(H)
 
             # Get the shape of the weights for this template
             layers = 1
-            shape = qml.kUpCCGSD.shape(k=layers,
+            shape = qp.kUpCCGSD.shape(k=layers,
                                 n_wires=wires, delta_sz=0)
 
             # Initialize the weight tensors
@@ -157,7 +157,7 @@ class kUpCCGSD(Operation):
             weights = np.random.random(size=shape)
 
             # Define the optimizer
-            opt = qml.GradientDescentOptimizer(stepsize=0.4)
+            opt = qp.GradientDescentOptimizer(stepsize=0.4)
 
             # Store the values of the cost function
             energy = [ansatz(weights)]
@@ -202,7 +202,7 @@ class kUpCCGSD(Operation):
 
         .. code-block:: python
 
-            shape = qml.kUpCCGSD.shape(k=2, n_wires=4, delta_sz=0)
+            shape = qp.kUpCCGSD.shape(k=2, n_wires=4, delta_sz=0)
             weights = np.random.random(size=shape)
 
         >>> weights.shape

@@ -65,12 +65,12 @@ class MomentumQNGOptimizer(QNGOptimizer):
     Consider an objective function realized as a :class:`~.QNode` that returns the
     expectation value of a Hamiltonian.
 
-    >>> dev = qml.device("default.qubit", wires=(0, 1, "aux"))
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=(0, 1, "aux"))
+    >>> @qp.qnode(dev)
     ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     return qml.expval(qml.X(0))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.RY(params[1], wires=0)
+    ...     return qp.expval(qp.X(0))
 
     Once constructed, the cost function can be passed directly to the
     optimizer's :meth:`~.step` function. In addition to the standard learning
@@ -78,8 +78,8 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     >>> eta = 0.01
     >>> rho = 0.93
-    >>> init_params = qml.numpy.array([0.5, 0.23], requires_grad=True)
-    >>> opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
+    >>> init_params = qp.numpy.array([0.5, 0.23], requires_grad=True)
+    >>> opt = qp.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
     tensor([0.50437193, 0.18562052], requires_grad=True)
@@ -98,7 +98,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
-        See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
+        See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qp.qjit``-compatible implementation.
 
     """
 

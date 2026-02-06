@@ -58,7 +58,7 @@ def cartan_decomp(
     >>> from pennylane import X, Z
     >>> from pennylane.liealg import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
-    >>> g = qml.lie_closure(generators)
+    >>> g = qp.lie_closure(generators)
     >>> g
     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 
@@ -115,9 +115,9 @@ def check_commutation_relation(
     **Example**
 
     >>> from pennylane.liealg import check_commutation_relation
-    >>> ops1 = [qml.X(0)]
-    >>> ops2 = [qml.Y(0)]
-    >>> vspace1 = [qml.X(0), qml.Y(0)]
+    >>> ops1 = [qp.X(0)]
+    >>> ops2 = [qp.Y(0)]
+    >>> vspace1 = [qp.X(0), qp.Y(0)]
 
     Because :math:`[X_0, Y_0] = 2i Z_0`, the commutators do not map to the selected vector space.
 
@@ -126,7 +126,7 @@ def check_commutation_relation(
 
     Instead, we need the full :math:`\mathfrak{su}(2)` space.
 
-    >>> vspace2 = [qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> vspace2 = [qp.X(0), qp.Y(0), qp.Z(0)]
     >>> check_commutation_relation(ops1, ops2, vspace2)
     True
     """
@@ -145,7 +145,7 @@ def check_commutation_relation(
     any_tensors = any((ops1_is_tensor, ops2_is_tensor, vspace_is_tensor))
     if not all_tensors and any_tensors:
         raise TypeError(
-            "All inputs `ops1`, `ops2` and `vspace` to qml.liealg.check_commutation_relation need to either be iterables of operators or matrices."
+            "All inputs `ops1`, `ops2` and `vspace` to qp.liealg.check_commutation_relation need to either be iterables of operators or matrices."
         )
 
     if all_tensors:
@@ -230,7 +230,7 @@ def check_cartan_decomp(
     >>> from pennylane import X, Z
     >>> from pennylane.liealg import concurrence_involution, even_odd_involution, cartan_decomp
     >>> generators = [X(0) @ X(1), Z(0), Z(1)]
-    >>> g = qml.lie_closure(generators)
+    >>> g = qp.lie_closure(generators)
     >>> g
     [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), Y(0) @ Y(1)]
 

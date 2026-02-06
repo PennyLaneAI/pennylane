@@ -95,18 +95,18 @@ class CommutingEvolution(Operation):
             import pennylane as qp
 
             n_wires = 2
-            dev = qml.device('default.qubit', wires=n_wires)
+            dev = qp.device('default.qubit', wires=n_wires)
 
             coeffs = [1, -1]
-            obs = [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.X(1)]
-            hamiltonian = qml.Hamiltonian(coeffs, obs)
+            obs = [qp.X(0) @ qp.Y(1), qp.Y(0) @ qp.X(1)]
+            hamiltonian = qp.Hamiltonian(coeffs, obs)
             frequencies = (2, 4)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(time):
-                qml.X(0)
-                qml.CommutingEvolution(hamiltonian, time, frequencies)
-                return qml.expval(qml.Z(0))
+                qp.X(0)
+                qp.CommutingEvolution(hamiltonian, time, frequencies)
+                return qp.expval(qp.Z(0))
 
         >>> circuit(1)
         np.float64(0.653...)

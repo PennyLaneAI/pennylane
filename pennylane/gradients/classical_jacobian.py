@@ -45,20 +45,20 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     Consider the following QNode:
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     ... def circuit(weights):
-    ...     qml.RX(weights[0], wires=0)
-    ...     qml.RY(0.2 * weights[0], wires=1)
-    ...     qml.RY(2.5, wires=0)
-    ...     qml.RZ(weights[1] ** 2, wires=1)
-    ...     qml.RX(weights[2], wires=1)
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
+    ...     qp.RX(weights[0], wires=0)
+    ...     qp.RY(0.2 * weights[0], wires=1)
+    ...     qp.RY(2.5, wires=0)
+    ...     qp.RZ(weights[1] ** 2, wires=1)
+    ...     qp.RX(weights[2], wires=1)
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
     We can use this transform to extract the relationship :math:`f: \mathbb{R}^n \rightarrow
     \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
     a given value of the QNode arguments:
 
-    >>> cjac_fn = qml.gradients.classical_jacobian(circuit)
+    >>> cjac_fn = qp.gradients.classical_jacobian(circuit)
     >>> weights = np.array([1., 1., 0.6], requires_grad=True)
     >>> cjac = cjac_fn(weights)
     >>> print(cjac)
@@ -123,14 +123,14 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     **Example with ``argnum``**
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     ... def circuit(x, y, z):
-    ...     qml.RX(qml.math.sin(x), wires=0)
-    ...     qml.CNOT(wires=[0, 1])
-    ...     qml.RY(y ** 2, wires=1)
-    ...     qml.RZ(1 / z, wires=1)
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
-    >>> jac_fn = qml.gradients.classical_jacobian(circuit, argnum=[1, 2])
+    ...     qp.RX(qp.math.sin(x), wires=0)
+    ...     qp.CNOT(wires=[0, 1])
+    ...     qp.RY(y ** 2, wires=1)
+    ...     qp.RZ(1 / z, wires=1)
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
+    >>> jac_fn = qp.gradients.classical_jacobian(circuit, argnum=[1, 2])
     >>> x, y, z = np.array([0.1, -2.5, 0.71])
     >>> jac_fn(x, y, z)
     (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))

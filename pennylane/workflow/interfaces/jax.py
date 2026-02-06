@@ -78,7 +78,7 @@ For example, if we replace the definition of ``f_and_jvp`` from above with one t
 
     def bad_f_and_jvp(primals, tangents):
         x = primals[0]
-        dx = qml.math.unwrap(tangents[0]) # This line breaks tracing
+        dx = qp.math.unwrap(tangents[0]) # This line breaks tracing
         return x**2, 2*x*dx
 
 >>> bad_f = jax.custom_jvp(f)
@@ -97,7 +97,7 @@ But if we used the VJP instead:
 .. code-block:: python
 
     def f_bwd(residual, dy):
-        dy = qml.math.unwrap(dy)
+        dy = qp.math.unwrap(dy)
         return (dy*2*residual,)
 
 We would be able to calculate the gradient without error.
@@ -157,7 +157,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-ExecuteFn = Callable[[QuantumScriptBatch], qml.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
 
 
 @dataclasses.dataclass
@@ -191,7 +191,7 @@ def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     )
 
 
-def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
+def _to_jax(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
@@ -202,7 +202,7 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
         return result
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
-    return result if qml.math.get_interface(result) == "jax" else jnp.array(result)
+    return result if qp.math.get_interface(result) == "jax" else jnp.array(result)
 
 
 def _execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:

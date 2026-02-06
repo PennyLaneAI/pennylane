@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the :class:`~pennylane.data.Dataset` base class, and `qml.data.Attribute` class
+Contains the :class:`~pennylane.data.Dataset` base class, and `qp.data.Attribute` class
 for declaratively defining dataset classes.
 """
 
@@ -78,13 +78,13 @@ def field(
 
     .. code-block:: python
 
-        class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", identifiers=["mass", "force_constant"]):
+        class QuantumOscillator(qp.data.Dataset, data_name="quantum_oscillator", identifiers=["mass", "force_constant"]):
             \"""Dataset describing a quantum oscillator.\"""
 
-            mass: float = qml.data.field(doc = "The mass of the particle")
-            force_constant: float = qml.data.field(doc = "The force constant of the oscillator")
-            hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
-            energy_levels: np.ndarray = qml.data.field(doc = "The first 1000 energy levels of the system")
+            mass: float = qp.data.field(doc = "The mass of the particle")
+            force_constant: float = qp.data.field(doc = "The force constant of the oscillator")
+            hamiltonian: qp.Hamiltonian = qp.data.field(doc = "The hamiltonian of the particle")
+            energy_levels: np.ndarray = qp.data.field(doc = "The first 1000 energy levels of the system")
 
     The ``data_name`` keyword argument specifies a category or descriptive name for the dataset type, and the ``identifiers``
     keyword argument specifies fields that function as parameters, i.e., they determine the behaviour
@@ -96,7 +96,7 @@ def field(
     >>> dataset = QuantumOscillator(
     ...     mass=1,
     ...     force_constant=0.5,
-    ...     hamiltonian=qml.X(0),
+    ...     hamiltonian=qp.X(0),
     ...     energy_levels=np.array([0.1, 0.2])
     ... )
     >>> dataset.attr_info["mass"]["doc"]

@@ -43,7 +43,7 @@ except ImportError:
 @lru_cache
 def _get_jacobian_prim():
     """Create a primitive for gradient computations.
-    This primitive is used when capturing ``qml.grad``.
+    This primitive is used when capturing ``qp.grad``.
     """
     if not has_jax:  # pragma: no cover
         return None
@@ -257,7 +257,7 @@ class grad:
         self._argnums = argnums if argnums is not None else argnum
         if argnum is not None:
             warnings.warn(
-                "argnum in qml.grad has been renamed to argnums to match jax and catalyst.",
+                "argnum in qp.grad has been renamed to argnums to match jax and catalyst.",
                 PennyLaneDeprecationWarning,
             )
 
@@ -475,14 +475,14 @@ class jacobian:
         import pennylane as qp
         from pennylane import numpy as np
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0, 0, 0], wires=0)
-            qml.RY(weights[0, 0, 1], wires=1)
-            qml.RZ(weights[1, 0, 2], wires=0)
-            return qml.probs()
+            qp.RX(weights[0, 0, 0], wires=0)
+            qp.RY(weights[0, 0, 1], wires=1)
+            qp.RZ(weights[1, 0, 2], wires=0)
+            return qp.probs()
 
         weights = np.array([[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True)
 
@@ -490,7 +490,7 @@ class jacobian:
     the probability of each 2-wire basis state, of which there are ``2**num_wires`` = 4.
     Therefore, the Jacobian of this QNode will be a single array with shape ``(4, 2, 1, 3)``:
 
-    >>> qml.jacobian(circuit)(weights).shape
+    >>> qp.jacobian(circuit)(weights).shape
     (4, 2, 1, 3)
 
     On the other hand, consider the following QNode for the same circuit
@@ -498,12 +498,12 @@ class jacobian:
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y, z):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.RZ(z, wires=0)
-            return qml.probs()
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.RZ(z, wires=0)
+            return qp.probs()
 
         x = np.array(0.2, requires_grad=True)
         y = np.array(0.9, requires_grad=True)
@@ -513,7 +513,7 @@ class jacobian:
     the 4 basis states. Consequently, its Jacobian will be a three-tuple of
     arrays with the shape ``(4,)``:
 
-    >>> jac = qml.jacobian(circuit)(x, y, z)
+    >>> jac = qp.jacobian(circuit)(x, y, z)
     >>> type(jac)
     <class 'tuple'>
     >>> for sub_jac in jac:
@@ -526,27 +526,27 @@ class jacobian:
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x[0], wires=0)
-            qml.RY(y[0, 3], wires=1)
-            qml.RX(x[1], wires=2)
-            return qml.probs()
+            qp.RX(x[0], wires=0)
+            qp.RY(y[0, 3], wires=1)
+            qp.RX(x[1], wires=2)
+            return qp.probs()
 
         x = np.array([0.1, 0.5], requires_grad=True)
         y = np.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
 
-    If we do not provide ``argnums``, ``qml.jacobian`` will correctly identify both,
+    If we do not provide ``argnums``, ``qp.jacobian`` will correctly identify both,
     ``x`` and ``y``, as trainable function arguments:
 
-    >>> jac = qml.jacobian(circuit)(x, y)
+    >>> jac = qp.jacobian(circuit)(x, y)
     >>> print(type(jac), len(jac))
     <class 'tuple'> 2
-    >>> qml.math.shape(jac[0])
+    >>> qp.math.shape(jac[0])
     (8, 2)
-    >>> qml.math.shape(jac[1])
+    >>> qp.math.shape(jac[1])
     (8, 2, 4)
 
     As we can see, there are two entries in the output, one Jacobian for each
@@ -557,10 +557,10 @@ class jacobian:
     Instead, we may choose the output to contain only one of the two
     entries by providing an iterable as ``argnums``:
 
-    >>> jac = qml.jacobian(circuit, argnums=[1])(x, y)
+    >>> jac = qp.jacobian(circuit, argnums=[1])(x, y)
     >>> print(type(jac), len(jac))
     <class 'tuple'> 1
-    >>> qml.math.shape(jac)
+    >>> qp.math.shape(jac)
     (1, 8, 2, 4)
 
     Here we included the size of the tuple in the shape analysis, corresponding to the
@@ -569,10 +569,10 @@ class jacobian:
     Finally, we may want to receive the single entry above directly, not as a tuple
     with a single entry. This is done by providing a single integer as ``argnums``
 
-    >>> jac = qml.jacobian(circuit, argnums=1)(x, y)
+    >>> jac = qp.jacobian(circuit, argnums=1)(x, y)
     >>> print(type(jac), len(jac))
     <class 'numpy.ndarray'> 8
-    >>> qml.math.shape(jac)
+    >>> qp.math.shape(jac)
     (8, 2, 4)
 
     As expected, the tuple was unpacked and we directly received the Jacobian of the
@@ -582,17 +582,17 @@ class jacobian:
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
+        @qp.qjit
         def workflow(x):
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RX(np.pi * x[0], wires=0)
-                qml.RY(x[1], wires=0)
-                return qml.probs()
+                qp.RX(np.pi * x[0], wires=0)
+                qp.RY(x[1], wires=0)
+                return qp.probs()
 
-            g = qml.jacobian(circuit)
+            g = qp.jacobian(circuit)
             return g(x)
 
     >>> workflow(np.array([2.0, 1.0]))
@@ -604,15 +604,15 @@ class jacobian:
 
     .. code-block:: python
 
-        @qml.qjit
+        @qp.qjit
         def workflow(x):
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RX(np.pi * x[0], wires=0)
-                qml.RY(x[1], wires=0)
-                return qml.probs()
+                qp.RX(np.pi * x[0], wires=0)
+                qp.RY(x[1], wires=0)
+                return qp.probs()
 
-            g = qml.jacobian(circuit, method="fd", h=0.3)
+            g = qp.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
     >>> workflow(np.array([2.0, 1.0]))
@@ -626,7 +626,7 @@ class jacobian:
         self._func = func
         if argnum is not None:
             warnings.warn(
-                "argnum in qml.jacobian has been renamed to argnums to match jax and catalyst.",
+                "argnum in qp.jacobian has been renamed to argnums to match jax and catalyst.",
                 PennyLaneDeprecationWarning,
             )
         self._argnums = argnums if argnums is not None else argnum

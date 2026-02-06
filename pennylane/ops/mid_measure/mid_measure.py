@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.measure measurement.
+This module contains the qp.measure measurement.
 """
 
 import uuid
@@ -29,7 +29,7 @@ from .measurement_value import MeasurementValue
 
 
 def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int | None = None):
-    """Concrete implementation of qml.measure"""
+    """Concrete implementation of qp.measure"""
     wires = Wires(wires)
     if len(wires) > 1:
         raise QuantumFunctionError(
@@ -75,7 +75,7 @@ def _create_mid_measure_primitive():
 def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
     r"""Function to make mid-circuit measurement predicates mutually exclusive.
 
-    The ``conditions`` are predicates to the ``if`` and ``elif`` branches of ``qml.cond``.
+    The ``conditions`` are predicates to the ``if`` and ``elif`` branches of ``qp.cond``.
     This function updates all the ``MeasurementValue``\ s in ``conditions`` such that
     reconciling the correct branch is never ambiguous.
 
@@ -216,16 +216,16 @@ def measure(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def func(x, y):
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            m_0 = qml.measure(1)
+            qp.RY(x, wires=0)
+            qp.CNOT(wires=[0, 1])
+            m_0 = qp.measure(1)
 
-            qml.cond(m_0, qml.RY)(y, wires=0)
-            return qml.probs(wires=[0])
+            qp.cond(m_0, qp.RY)(y, wires=0)
+            return qp.probs(wires=[0])
 
     Executing this QNode:
 
@@ -238,13 +238,13 @@ def measure(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def func():
-            qml.X(1)
-            m_0 = qml.measure(1, reset=True)
-            return qml.probs(wires=[1])
+            qp.X(1)
+            m_0 = qp.measure(1, reset=True)
+            return qp.probs(wires=[1])
 
     Executing this QNode:
 
@@ -268,22 +268,22 @@ def measure(
     .. Note ::
 
         Computational basis measurements are performed using the 0, 1 convention rather than the ±1 convention.
-        So, for example, ``expval(qml.measure(0))`` and ``expval(qml.Z(0))`` will give different answers.
+        So, for example, ``expval(qp.measure(0))`` and ``expval(qp.Z(0))`` will give different answers.
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=1234)
+        dev = qp.device("default.qubit", seed=1234)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            m0 = qml.measure(1)
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            m0 = qp.measure(1)
             return (
-                qml.sample(m0), qml.expval(m0), qml.var(m0), qml.probs(op=m0), qml.counts(op=m0),
+                qp.sample(m0), qp.expval(m0), qp.var(m0), qp.probs(op=m0), qp.counts(op=m0),
             )
 
-    >>> qml.set_shots(circuit, shots=1000)(1.0, 2.0)
+    >>> qp.set_shots(circuit, shots=1000)(1.0, 2.0)
         (array([0, 1, 0, ... 1, 0, 1]), np.float64(0.713), np.float64(0.2046...), array([0.287, 0.713]), {0.0: np.int64(287), 1.0: np.int64(713)})
 
     .. details::
@@ -295,19 +295,19 @@ def measure(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", seed=1234)
+            dev = qp.device("default.qubit", seed=1234)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def func(x):
-                qml.RX(x, wires=0)
-                m0 = qml.measure(0, postselect=1)
-                qml.cond(m0, qml.X)(wires=1)
-                return qml.sample(wires=1)
+                qp.RX(x, wires=0)
+                m0 = qp.measure(0, postselect=1)
+                qp.cond(m0, qp.X)(wires=1)
+                return qp.sample(wires=1)
 
         By postselecting on ``1``, we only consider the ``1`` measurement outcome on wire 0. So, the probability of
         measuring ``1`` on wire 1 after postselection should also be 1. Executing this QNode with 10 shots:
 
-        >>> qml.set_shots(func, 10)(np.pi / 2)
+        >>> qp.set_shots(func, 10)(np.pi / 2)
         array([[1],
             [1],
             [1],
@@ -323,32 +323,32 @@ def measure(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def func(x):
-                qml.RX(x, wires=0)
-                m0 = qml.measure(0, postselect=1)
-                qml.cond(m0, qml.X)(wires=1)
-                return qml.probs(wires=1)
+                qp.RX(x, wires=0)
+                m0 = qp.measure(0, postselect=1)
+                qp.cond(m0, qp.X)(wires=1)
+                return qp.probs(wires=1)
 
         >>> func(0.0)
         array([nan, nan])
 
-        In the case of ``qml.sample`` and `mcm_method="deferred"`, an empty array will be returned:
+        In the case of ``qp.sample`` and `mcm_method="deferred"`, an empty array will be returned:
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev, mcm_method="deferred")
+            @qp.qnode(dev, mcm_method="deferred")
             def func(x):
-                qml.RX(x, wires=0)
-                m0 = qml.measure(0, postselect=1)
-                qml.cond(m0, qml.X)(wires=1)
-                return qml.sample(wires=[0, 1])
+                qp.RX(x, wires=0)
+                m0 = qp.measure(0, postselect=1)
+                qp.cond(m0, qp.X)(wires=1)
+                return qp.sample(wires=[0, 1])
 
-        >>> qml.set_shots(func, shots=[10, 10])(0.0)
+        >>> qp.set_shots(func, shots=[10, 10])(0.0)
         (array([], shape=(0, 2), dtype=int64), array([], shape=(0, 2), dtype=int64))
 
         .. note::
@@ -361,12 +361,12 @@ def measure(
             All measurements are supported when using postselection. However, postselection on a zero probability
             state can cause some measurements to break:
 
-            * With finite shots, one must be careful when measuring ``qml.probs`` or ``qml.counts``, as these
+            * With finite shots, one must be careful when measuring ``qp.probs`` or ``qp.counts``, as these
               measurements will raise errors if there are no valid samples after postselection. This will occur
               with postselection states that have zero or close to zero probability.
 
-            * With analytic execution, ``qml.mutual_info`` will raise errors when using any interfaces except
-              ``jax``, and ``qml.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
+            * With analytic execution, ``qp.mutual_info`` will raise errors when using any interfaces except
+              ``jax``, and ``qp.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
               postselection state has zero probability.
 
             * When using JIT, ``QNode``'s may have unexpected behaviour when postselection on a zero

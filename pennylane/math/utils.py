@@ -370,7 +370,7 @@ def is_abstract(tensor, like=None):
 
         def function(x):
             print("Value:", x)
-            print("Abstract:", qml.math.is_abstract(x))
+            print("Abstract:", qp.math.is_abstract(x))
             return jnp.sum(x ** 2)
 
     When we execute it, we see that the tensor is not abstract; it has known value:
@@ -401,7 +401,7 @@ def is_abstract(tensor, like=None):
 
         def function(x):
             print("Value:", x)
-            print("Abstract:", qml.math.is_abstract(x))
+            print("Abstract:", qp.math.is_abstract(x))
             return tf.reduce_sum(x ** 2)
 
     >>> x = tf.Variable([0.5, 0.1])
@@ -610,7 +610,7 @@ def binary_finite_reduced_row_echelon(binary_matrix):
     >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
     ...                           [1, 0, 1, 0, 0, 0, 1, 0],
     ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
-    >>> qml.math.binary_finite_reduced_row_echelon(binary_matrix)
+    >>> qp.math.binary_finite_reduced_row_echelon(binary_matrix)
     array([[1, 0, 0, 0, 0, 1, 0, 0],
            [0, 0, 1, 0, 0, 1, 1, 0],
            [0, 0, 0, 1, 1, 0, 0, 1]])

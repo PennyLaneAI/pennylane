@@ -240,7 +240,7 @@ def _conditional_broadcast_expand(tape):
 def no_counts(tape):
     """Throws an error on counts measurements."""
     if any(isinstance(mp, CountsMP) for mp in tape.measurements):
-        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+        raise NotImplementedError("The JAX-JIT interface doesn't support qp.counts.")
     return (tape,), null_postprocessing
 
 
@@ -387,14 +387,14 @@ class DefaultQubit(Device):
         n_wires = 10
         num_qscripts = 5
 
-        shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
-        rng = qml.numpy.random.default_rng(seed=42)
+        shape = qp.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        rng = qp.numpy.random.default_rng(seed=42)
 
         qscripts = []
         for i in range(num_qscripts):
             params = rng.random(shape)
-            op = qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            qs = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
+            op = qp.StronglyEntanglingLayers(params, wires=range(n_wires))
+            qs = qp.tape.QuantumScript([op], [qp.expval(qp.Z(0))])
             qscripts.append(qs)
 
     >>> dev = DefaultQubit()
@@ -422,7 +422,7 @@ class DefaultQubit(Device):
 
         @jax.jit
         def f(x):
-            qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+            qs = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.Z(0))])
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)

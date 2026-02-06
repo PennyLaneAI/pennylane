@@ -34,7 +34,7 @@ def find_next_gate(wires, op_list):
     next_gate_idx = None
 
     for op_idx, op in enumerate(op_list):
-        if any(qml.math.is_abstract(w) for w in op.wires):
+        if any(qp.math.is_abstract(w) for w in op.wires):
             break
         if len(Wires.shared_wires([wires, op.wires])) > 0:
             next_gate_idx = op_idx
@@ -50,38 +50,38 @@ def _try_no_fuse(angles_1, angles_2):
     # TensorFlow's coercion rules between Python/NumPy objects and TF objects.
     _sum = angles_1 + angles_2
     # moveaxis required for batched inputs
-    phi1, theta1, omega1 = qml.math.moveaxis(qml.math.cast_like(angles_1, _sum), -1, 0)
-    phi2, theta2, omega2 = qml.math.moveaxis(qml.math.cast_like(angles_2, _sum), -1, 0)
+    phi1, theta1, omega1 = qp.math.moveaxis(qp.math.cast_like(angles_1, _sum), -1, 0)
+    phi2, theta2, omega2 = qp.math.moveaxis(qp.math.cast_like(angles_2, _sum), -1, 0)
 
-    if qml.math.allclose(omega1 + phi2, 0.0):
-        return qml.math.stack([phi1, theta1 + theta2, omega2])
-    if qml.math.allclose(theta1, 0.0):
+    if qp.math.allclose(omega1 + phi2, 0.0):
+        return qp.math.stack([phi1, theta1 + theta2, omega2])
+    if qp.math.allclose(theta1, 0.0):
         # No Y rotation in first Rot
-        if qml.math.allclose(theta2, 0.0):
+        if qp.math.allclose(theta2, 0.0):
             # Z rotations only
-            zero = qml.math.zeros_like(phi1) + qml.math.zeros_like(phi2)
-            return qml.math.stack([phi1 + omega1 + phi2 + omega2, zero, zero])
-        return qml.math.stack([phi1 + omega1 + phi2, theta2, omega2])
-    if qml.math.allclose(theta2, 0.0):
+            zero = qp.math.zeros_like(phi1) + qp.math.zeros_like(phi2)
+            return qp.math.stack([phi1 + omega1 + phi2 + omega2, zero, zero])
+        return qp.math.stack([phi1 + omega1 + phi2, theta2, omega2])
+    if qp.math.allclose(theta2, 0.0):
         # No Y rotation in second Rot
-        return qml.math.stack([phi1, theta1, omega1 + phi2 + omega2])
+        return qp.math.stack([phi1, theta1, omega1 + phi2 + omega2])
     return None
 
 
 def fuse_rot_angles(angles_1, angles_2):
     r"""Compute the set of rotation angles that is equivalent to performing
-    two successive ``qml.Rot`` operations.
+    two successive ``qp.Rot`` operations.
 
-    The ``qml.Rot`` operation represents the most general single-qubit operation.
+    The ``qp.Rot`` operation represents the most general single-qubit operation.
     Two such operations can be fused into a new operation, however the angular dependence
     is non-trivial.
 
     Args:
-        angles_1 (tensor_like): A set of three angles for the first ``qml.Rot`` operation.
-        angles_2 (tensor_like): A set of three angles for the second ``qml.Rot`` operation.
+        angles_1 (tensor_like): A set of three angles for the first ``qp.Rot`` operation.
+        angles_2 (tensor_like): A set of three angles for the second ``qp.Rot`` operation.
 
     Returns:
-        tensor_like: Rotation angles for a single ``qml.Rot`` operation that
+        tensor_like: Rotation angles for a single ``qp.Rot`` operation that
         implements the same operation as the two sets of input angles.
 
     This function supports broadcasting/batching as long as the two inputs are standard
@@ -106,44 +106,44 @@ def fuse_rot_angles(angles_1, angles_2):
     See the documentation of :func:`~.pennylane.transforms.single_qubit_fusion` for a
     mathematical derivation of this function.
     """
-    angles_1 = qml.math.asarray(angles_1)
-    angles_2 = qml.math.asarray(angles_2)
+    angles_1 = qp.math.asarray(angles_1)
+    angles_2 = qp.math.asarray(angles_2)
 
     if not (
-        qml.math.is_abstract(angles_1)
-        or qml.math.is_abstract(angles_2)
-        or qml.math.requires_grad(angles_1)
-        or qml.math.requires_grad(angles_2)
+        qp.math.is_abstract(angles_1)
+        or qp.math.is_abstract(angles_2)
+        or qp.math.requires_grad(angles_1)
+        or qp.math.requires_grad(angles_2)
     ):
         fused_angles = _try_no_fuse(angles_1, angles_2)
         if fused_angles is not None:
             return fused_angles
 
     # moveaxis required for batched inputs
-    angles_1 = qml.math.moveaxis(angles_1, -1, 0)
-    angles_2 = qml.math.moveaxis(angles_2, -1, 0)
+    angles_1 = qp.math.moveaxis(angles_1, -1, 0)
+    angles_2 = qp.math.moveaxis(angles_2, -1, 0)
     phi1, theta1, omega1 = angles_1[0], angles_1[1], angles_1[2]
     phi2, theta2, omega2 = angles_2[0], angles_2[1], angles_2[2]
-    c1, c2 = qml.math.cos(theta1 / 2), qml.math.cos(theta2 / 2)
-    s1, s2 = qml.math.sin(theta1 / 2), qml.math.sin(theta2 / 2)
+    c1, c2 = qp.math.cos(theta1 / 2), qp.math.cos(theta2 / 2)
+    s1, s2 = qp.math.sin(theta1 / 2), qp.math.sin(theta2 / 2)
 
-    mag = qml.math.sqrt(
-        c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qml.math.cos(omega1 + phi2)
+    mag = qp.math.sqrt(
+        c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qp.math.cos(omega1 + phi2)
     )
-    theta_f = 2 * qml.math.arccos(mag)
+    theta_f = 2 * qp.math.arccos(mag)
 
     alpha1, beta1 = (phi1 + omega1) / 2, (phi1 - omega1) / 2
     alpha2, beta2 = (phi2 + omega2) / 2, (phi2 - omega2) / 2
 
-    alpha_arg1 = -c1 * c2 * qml.math.sin(alpha1 + alpha2) - s1 * s2 * qml.math.sin(beta2 - beta1)
-    alpha_arg2 = c1 * c2 * qml.math.cos(alpha1 + alpha2) - s1 * s2 * qml.math.cos(beta2 - beta1)
-    alpha_f = -1 * qml.math.arctan2(alpha_arg1, alpha_arg2)
+    alpha_arg1 = -c1 * c2 * qp.math.sin(alpha1 + alpha2) - s1 * s2 * qp.math.sin(beta2 - beta1)
+    alpha_arg2 = c1 * c2 * qp.math.cos(alpha1 + alpha2) - s1 * s2 * qp.math.cos(beta2 - beta1)
+    alpha_f = -1 * qp.math.arctan2(alpha_arg1, alpha_arg2)
 
-    beta_arg1 = -c1 * s2 * qml.math.sin(alpha1 + beta2) + s1 * c2 * qml.math.sin(alpha2 - beta1)
-    beta_arg2 = c1 * s2 * qml.math.cos(alpha1 + beta2) + s1 * c2 * qml.math.cos(alpha2 - beta1)
-    beta_f = -1 * qml.math.arctan2(beta_arg1, beta_arg2)
+    beta_arg1 = -c1 * s2 * qp.math.sin(alpha1 + beta2) + s1 * c2 * qp.math.sin(alpha2 - beta1)
+    beta_arg2 = c1 * s2 * qp.math.cos(alpha1 + beta2) + s1 * c2 * qp.math.cos(alpha2 - beta1)
+    beta_f = -1 * qp.math.arctan2(beta_arg1, beta_arg2)
 
-    return qml.math.stack([alpha_f + beta_f, theta_f, alpha_f - beta_f], axis=-1)
+    return qp.math.stack([alpha_f + beta_f, theta_f, alpha_f - beta_f], axis=-1)
 
 
 def _fuse_global_phases(operations):

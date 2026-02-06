@@ -27,8 +27,8 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
     features = (0.0, 1.0, 2.0)
 
-    op = qml.IQPEmbedding(features, wires=(0, 1, 2))
-    qml.ops.functions.assert_valid(op)
+    op = qp.IQPEmbedding(features, wires=(0, 1, 2))
+    qp.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -50,8 +50,8 @@ class TestDecomposition:
 
         features = list(range(n_wires))
 
-        op = qml.IQPEmbedding(features, wires=range(n_wires))
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.IQPEmbedding(features, wires=range(n_wires))
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         j = 0
         for i, gate in enumerate(tape.operations):
@@ -67,9 +67,9 @@ class TestDecomposition:
 
         features = np.arange(n_wires * 3).reshape((3, n_wires))
 
-        op = qml.IQPEmbedding(features, wires=range(n_wires))
+        op = qp.IQPEmbedding(features, wires=range(n_wires))
         assert op.batch_size == 3
-        tape = qml.tape.QuantumScript(op.decomposition())
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         j = 0
         for i, gate in enumerate(tape.operations):
@@ -88,8 +88,8 @@ class TestDecomposition:
         expected_names = self.QUEUES[2][1] + self.QUEUES[2][1]
         expected_wires = self.QUEUES[2][2] + self.QUEUES[2][2]
 
-        op = qml.IQPEmbedding(features, wires=range(3), n_repeats=2)
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.IQPEmbedding(features, wires=range(3), n_repeats=2)
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -113,8 +113,8 @@ class TestDecomposition:
         ]
         expected_wires = [[0], [0], [1], [1], [2], [2], *pattern]
 
-        op = qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.IQPEmbedding(features, wires=range(3), pattern=pattern)
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -124,18 +124,18 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.IQPEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.IQPEmbedding(features, wires=range(3))
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.IQPEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.IQPEmbedding(features, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -152,9 +152,9 @@ class TestDecomposition:
     @pytest.mark.capture
     @pytest.mark.parametrize(("features", "wires", "num_repeats", "pattern"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, num_repeats, pattern):
-        op = qml.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern, id=None)
+        op = qp.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern, id=None)
 
-        for rule in qml.list_decomps(qml.IQPEmbedding):
+        for rule in qp.list_decomps(qp.IQPEmbedding):
             _test_decomposition_rule(op, rule)
 
 
@@ -167,12 +167,12 @@ class TestInputs:
     def test_exception_wrong_number_of_features(self, features):
         """Verifies that an exception is raised if 'features' has the wrong trailing dimension."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(f=None):
-            qml.IQPEmbedding(features=f, wires=range(3))
-            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+            qp.IQPEmbedding(features=f, wires=range(3))
+            return [qp.expval(qp.PauliZ(w)) for w in range(3)]
 
         with pytest.raises(ValueError, match="Features must be of length"):
             circuit(f=features)
@@ -181,12 +181,12 @@ class TestInputs:
     def test_exception_wrong_ndim(self, shape):
         """Verifies that an exception is raised if 'features' has the wrong number of dimensions."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(f=None):
-            qml.IQPEmbedding(features=f, wires=range(3))
-            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+            qp.IQPEmbedding(features=f, wires=range(3))
+            return [qp.expval(qp.PauliZ(w)) for w in range(3)]
 
         features = np.ones(shape)
 
@@ -195,31 +195,31 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.IQPEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        template = qp.IQPEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.IQPEmbedding(features, range(2))
-    return qml.expval(qml.PauliZ(0))
+    qp.IQPEmbedding(features, range(2))
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed_lists(features):
-    qml.Hadamard(wires=0)
-    qml.RZ(features[0], wires=0)
-    qml.Hadamard(wires=1)
-    qml.RZ(features[1], wires=1)
-    qml.MultiRZ(features[0] * features[1], wires=[0, 1])
-    return qml.expval(qml.PauliZ(0))
+    qp.Hadamard(wires=0)
+    qp.RZ(features[0], wires=0)
+    qp.Hadamard(wires=1)
+    qp.RZ(features[1], wires=1)
+    qp.MultiRZ(features[0] * features[1], wires=[0, 1])
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(features):
-    qml.Hadamard(wires=0)
-    qml.RZ(features[..., 0], wires=0)
-    qml.Hadamard(wires=1)
-    qml.RZ(features[..., 1], wires=1)
-    qml.MultiRZ(features[..., 0] * features[..., 1], wires=[0, 1])
-    return qml.expval(qml.PauliZ(0))
+    qp.Hadamard(wires=0)
+    qp.RZ(features[..., 0], wires=0)
+    qp.Hadamard(wires=1)
+    qp.RZ(features[..., 1], wires=1)
+    qp.MultiRZ(features[..., 0] * features[..., 1], wires=[0, 1])
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -233,21 +233,21 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol, features):
         """Tests common iterables as inputs."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         res = circuit(features)
         if isinstance(features[0], np.ndarray):
-            circuit2 = qml.QNode(circuit_decomposed, dev)
+            circuit2 = qp.QNode(circuit_decomposed, dev)
             features = np.array(features)  # circuit_decomposed does not work with broadcasting
         else:
-            circuit2 = qml.QNode(circuit_decomposed_lists, dev)
+            circuit2 = qp.QNode(circuit_decomposed_lists, dev)
 
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tuple(features))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
@@ -256,19 +256,19 @@ class TestInterfaces:
 
         features = pnp.array(features, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.jacobian(circuit)
+        grad_fn = qp.jacobian(circuit)
         grads = grad_fn(features)
 
-        grad_fn2 = qml.jacobian(circuit2)
+        grad_fn2 = qp.jacobian(circuit2)
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -283,14 +283,14 @@ class TestInterfaces:
 
         features = jnp.array(features)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.jacobian(circuit)
         grads = grad_fn(features)
@@ -310,14 +310,14 @@ class TestInterfaces:
 
         features = jnp.array(features)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.jacobian(circuit)
         grads = grad_fn(features)
@@ -325,7 +325,7 @@ class TestInterfaces:
         grad_fn2 = jax.jacobian(circuit2)
         grads2 = grad_fn2(features)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
@@ -336,14 +336,14 @@ class TestInterfaces:
 
         features = tf.Variable(features)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(features)
@@ -364,14 +364,14 @@ class TestInterfaces:
 
         features = torch.tensor(features, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grads = torch.autograd.functional.jacobian(circuit, features)
 

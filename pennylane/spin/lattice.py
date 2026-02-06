@@ -334,7 +334,7 @@ class Lattice:
         ...         [(0, 3), ("YY", 0.2)],
         ...         [(0, 4), ("XY", 0.3)],
         ...     ]
-        >>> lattice = qml.spin.Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+        >>> lattice = qp.spin.Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
         >>> from pprint import pprint
         >>> pprint(lattice.edges)
         [(0, 1, ('XX', 0.1)),
@@ -464,7 +464,7 @@ def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order
     >>> shape = 'square'
     >>> n_cells = [2, 2]
     >>> boundary_condition = [True, False]
-    >>> lattice = qml.spin.generate_lattice(shape, n_cells, boundary_condition)
+    >>> lattice = qp.spin.generate_lattice(shape, n_cells, boundary_condition)
     >>> lattice.edges
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
 

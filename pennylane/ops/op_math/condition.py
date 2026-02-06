@@ -36,7 +36,7 @@ def _add_abstract_shapes(f):
 
     >>> jax.config.update("jax_dynamic_shapes", True)  # doctest: +SKIP
     >>> jax.config.update("jax_enable_x64", True)
-    >>> @qml.capture.FlatFn
+    >>> @qp.capture.FlatFn
     ... def f(x):
     ...     return x + 1
     >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
@@ -97,7 +97,7 @@ class Conditional(SymbolicOp, Operation):
     """A Conditional Operation.
 
     Unless you are a Pennylane plugin developer, **you should NOT directly use this class**,
-    instead, use the :func:`qml.cond <.cond>` function.
+    instead, use the :func:`qp.cond <.cond>` function.
 
     The ``Conditional`` class is a container class that defines an operation
     that should be applied relative to a single measurement value.
@@ -107,7 +107,7 @@ class Conditional(SymbolicOp, Operation):
     will apply the :func:`defer_measurements` transform.
 
     Args:
-        expr (qml.ops.MeasurementValue): the measurement outcome value to consider
+        expr (qp.ops.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
@@ -184,7 +184,7 @@ class CondCallable:
     .. code-block:: python
 
         def f(x):
-            @qml.cond(x > 0)
+            @qp.cond(x > 0)
             def conditional(y):
                 return y ** 2
 
@@ -274,10 +274,10 @@ class CondCallable:
     def __call_capture_disabled(self, *args, **kwargs):
 
         # dequeue operators passed to args
-        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         for l in leaves:
             if isinstance(l, Operator):
-                qml.QueuingManager.remove(l)
+                qp.QueuingManager.remove(l)
 
         # python fallback
         for pred, branch_fn in zip(self.preds, self.branch_fns):
@@ -304,7 +304,7 @@ class CondCallable:
         consts = []
         consts_slices = []
 
-        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
 
         for pred, fn in branches:
             if (pred_shape := math.shape(pred)) != ():
@@ -337,14 +337,14 @@ class CondCallable:
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-        if qml.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
+        if qp.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
 
 
 def cond(
-    condition: Union["qml.ops.MeasurementValue", bool],
+    condition: Union["qp.ops.MeasurementValue", bool],
     true_fn: Callable | None = None,
     false_fn: Callable | None = None,
     elifs: Sequence = (),
@@ -385,7 +385,7 @@ def cond(
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[qml.ops.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
+        condition (Union[qp.ops.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
@@ -403,19 +403,19 @@ def cond(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def qnode(x, y):
-            qml.Hadamard(0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
+            qp.Hadamard(0)
+            m_0 = qp.measure(0)
+            qp.cond(m_0, qp.RY)(x, wires=1)
 
-            qml.Hadamard(2)
-            qml.RY(-np.pi/2, wires=[2])
-            m_1 = qml.measure(2)
-            qml.cond(m_1 == 0, qml.RX)(y, wires=1)
-            return qml.expval(qml.Z(1))
+            qp.Hadamard(2)
+            qp.RY(-np.pi/2, wires=[2])
+            m_1 = qp.measure(2)
+            qp.cond(m_1 == 0, qp.RX)(y, wires=1)
+            return qp.expval(qp.Z(1))
 
     >>> first_par = np.array(0.3)
     >>> sec_par = np.array(1.23)
@@ -425,7 +425,7 @@ def cond(
     .. note::
 
         If the first argument of ``cond`` is a measurement value (e.g., ``m_0``
-        in ``qml.cond(m_0, qml.RY)``), then ``m_0 == 1`` is considered
+        in ``qp.cond(m_0, qp.RY)``), then ``m_0 == 1`` is considered
         internally.
 
     .. warning::
@@ -440,20 +440,20 @@ def cond(
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(x: float):
             def ansatz_true():
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
 
             def ansatz_false():
-                qml.RY(x, wires=0)
+                qp.RY(x, wires=0)
 
-            qml.cond(x > 1.4, ansatz_true, ansatz_false)()
+            qp.cond(x > 1.4, ansatz_true, ansatz_false)()
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         ansatz_true = circuit(1.4)
         ansatz_false = circuit(1.6)
@@ -467,21 +467,21 @@ def cond(
 
     .. code-block:: python
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(x):
 
             def true_fn():
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
 
             def elif_fn():
-                qml.RY(x, wires=0)
+                qp.RY(x, wires=0)
 
             def false_fn():
-                qml.RX(x ** 2, wires=0)
+                qp.RX(x ** 2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
-            return qml.expval(qml.Z(0))
+            qp.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
+            return qp.expval(qp.Z(0))
 
     >>> circuit(1.2)
     Array(0.13042371, dtype=float64)
@@ -490,7 +490,7 @@ def cond(
 
         If the above syntax is used with a ``QNode`` that is not decorated with
         :func:`~pennylane.qjit` and none of the predicates contain mid-circuit measurements,
-        ``qml.cond`` will fall back to using native Python ``if``-``elif``-``else`` blocks.
+        ``qp.cond`` will fall back to using native Python ``if``-``elif``-``else`` blocks.
 
     .. details::
         :title: Usage Details
@@ -501,18 +501,18 @@ def cond(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
             def qfunc(par, wires):
-                qml.Hadamard(wires[0])
-                qml.RY(par, wires[0])
+                qp.Hadamard(wires[0])
+                qp.RY(par, wires[0])
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def qnode(x):
-                qml.Hadamard(0)
-                m_0 = qml.measure(0)
-                qml.cond(m_0, qfunc)(x, wires=[1])
-                return qml.expval(qml.Z(1))
+                qp.Hadamard(0)
+                m_0 = qp.measure(0)
+                qp.cond(m_0, qfunc)(x, wires=[1])
+                return qp.expval(qp.Z(1))
 
         >>> par = np.array(0.3)
         >>> qnode(par)
@@ -530,13 +530,13 @@ def cond(
                 second_term = (2 ** np.arange(len(mcms))) @ mcms
                 return (1 - first_term) * (second_term > 3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def qnode(x):
                 ...
-                mcms = [qml.measure(w) for w in range(4)]
-                qml.cond(cond_fn(mcms), qml.RX)(x, wires=4)
+                mcms = [qp.measure(w) for w in range(4)]
+                qp.cond(cond_fn(mcms), qp.RX)(x, wires=4)
                 ...
-                return qml.expval(qml.Z(1))
+                return qp.expval(qp.Z(1))
 
         **Passing two quantum functions**
 
@@ -550,22 +550,22 @@ def cond(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
             def qfunc1(x, wires):
-                qml.Hadamard(wires[0])
-                qml.RY(x, wires[0])
+                qp.Hadamard(wires[0])
+                qp.RY(x, wires[0])
 
             def qfunc2(x, wires):
-                qml.Hadamard(wires[0])
-                qml.RZ(x, wires[0])
+                qp.Hadamard(wires[0])
+                qp.RZ(x, wires[0])
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def qnode1(x):
-                qml.Hadamard(0)
-                m_0 = qml.measure(0)
-                qml.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
-                return qml.expval(qml.Z(1))
+                qp.Hadamard(0)
+                m_0 = qp.measure(0)
+                qp.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
+                return qp.expval(qp.Z(1))
 
         >>> par = np.array(0.3)
         >>> qnode1(par)
@@ -577,41 +577,41 @@ def cond(
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def qnode2(x):
-                qml.Hadamard(0)
-                m_0 = qml.measure(0)
-                qml.cond(m_0, qfunc1)(x, wires=[1])
-                qml.cond(~m_0, qfunc2)(x, wires=[1])
-                return qml.expval(qml.Z(1))
+                qp.Hadamard(0)
+                m_0 = qp.measure(0)
+                qp.cond(m_0, qfunc1)(x, wires=[1])
+                qp.cond(~m_0, qfunc2)(x, wires=[1])
+                return qp.expval(qp.Z(1))
 
         >>> qnode2(par)
         np.float64(-0.14776...)
 
         **Quantum functions with different signatures**
 
-        It may be that the two quantum functions passed to ``qml.cond`` have
+        It may be that the two quantum functions passed to ``qp.cond`` have
         different signatures. In such a case, ``lambda`` functions taking no
         arguments can be used with Python closure:
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
             def qfunc1(x, wire):
-                qml.Hadamard(wire)
-                qml.RY(x, wire)
+                qp.Hadamard(wire)
+                qp.RY(x, wire)
 
             def qfunc2(x, y, z, wire):
-                qml.Hadamard(wire)
-                qml.Rot(x, y, z, wire)
+                qp.Hadamard(wire)
+                qp.Rot(x, y, z, wire)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def qnode(a, x, y, z):
-                qml.Hadamard(0)
-                m_0 = qml.measure(0)
-                qml.cond(m_0, lambda: qfunc1(a, wire=1), lambda: qfunc2(x, y, z, wire=1))()
-                return qml.expval(qml.Z(1))
+                qp.Hadamard(0)
+                m_0 = qp.measure(0)
+                qp.cond(m_0, lambda: qfunc1(a, wire=1), lambda: qfunc2(x, y, z, wire=1))()
+                return qp.expval(qp.Z(1))
 
         >>> par = np.array(0.3)
         >>> x = np.array(1.2)
@@ -640,9 +640,9 @@ def cond(
 
         return cond_func
 
-    if not isinstance(condition, qml.ops.MeasurementValue):
+    if not isinstance(condition, qp.ops.MeasurementValue):
         # The condition is not a mid-circuit measurement. This will also work
-        # when the condition is a mid-circuit measurement but qml.capture.enabled()
+        # when the condition is a mid-circuit measurement but qp.capture.enabled()
         if true_fn is None:
             return lambda fn: CondCallable(condition, fn)
 
@@ -652,13 +652,13 @@ def cond(
         raise TypeError(
             "cond missing 1 required positional argument: 'true_fn'.\n"
             "Note that if the conditional includes a mid-circuit measurement, "
-            "qml.cond cannot be used as a decorator.\n"
-            "Instead, please use the form qml.cond(condition, true_fn, false_fn)."
+            "qp.cond cannot be used as a decorator.\n"
+            "Instead, please use the form qp.cond(condition, true_fn, false_fn)."
         )
 
     if elifs:
         raise ConditionalTransformError(
-            "'elif' branches are not supported when not using @qjit and with qml.capture.disabled()\n"
+            "'elif' branches are not supported when not using @qjit and with qp.capture.disabled()\n"
             "if the conditional includes mid-circuit measurements."
         )
 
@@ -684,19 +684,19 @@ def cond(
                     QueuingManager.remove(op)
 
             # 1. Apply true_fn conditionally
-            qscript = qml.tape.make_qscript(true_fn)(*args, **kwargs)
+            qscript = qp.tape.make_qscript(true_fn)(*args, **kwargs)
 
             if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
 
             for op in qscript.operations:
-                if isinstance(op, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
+                if isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
                     raise ConditionalTransformError(with_meas_err)
                 Conditional(condition, op)
 
             if false_fn is not None:
                 # 2. Apply false_fn conditionally
-                else_qscript = qml.tape.make_qscript(false_fn)(*args, **kwargs)
+                else_qscript = qp.tape.make_qscript(false_fn)(*args, **kwargs)
 
                 if else_qscript.measurements:
                     raise ConditionalTransformError(with_meas_err)
@@ -704,7 +704,7 @@ def cond(
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
-                    if isinstance(op, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
+                    if isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
                         raise ConditionalTransformError(with_meas_err)
                     Conditional(inverted_condition, op)
 
@@ -786,7 +786,7 @@ def _get_cond_qfunc_prim():
     cond_prim = QmlPrimitive("cond")
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
-    qml.capture.register_custom_staging_rule(
+    qp.capture.register_custom_staging_rule(
         cond_prim, lambda params: params["jaxpr_branches"][0].outvars
     )
 
@@ -806,22 +806,22 @@ def _get_cond_qfunc_prim():
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.
         mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, qml.ops.MeasurementValue)
+            pred for pred in conditions[:-1] if isinstance(pred, qp.ops.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions) - 1:
                 raise ConditionalTransformError(
-                    "Cannot use qml.cond with a combination of mid-circuit measurements "
+                    "Cannot use qp.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
-            conditions = qml.measurements.get_mcm_predicates(mcm_conditions)
+            conditions = qp.measurements.get_mcm_predicates(mcm_conditions)
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]
-            if isinstance(pred, qml.ops.MeasurementValue):
+            if isinstance(pred, qp.ops.MeasurementValue):
 
-                with qml.queuing.AnnotatedQueue() as q:
-                    out = qml.capture.eval_jaxpr(jaxpr, consts, *args)
+                with qp.queuing.AnnotatedQueue() as q:
+                    out = qp.capture.eval_jaxpr(jaxpr, consts, *args)
                 if len(out) != 0:
                     raise ConditionalTransformError(
                         "Only quantum functions without return values can be applied "
@@ -830,7 +830,7 @@ def _get_cond_qfunc_prim():
                 for wrapped_op in q:
                     Conditional(pred, wrapped_op.obj)
             elif pred:
-                return qml.capture.eval_jaxpr(jaxpr, consts, *args)
+                return qp.capture.eval_jaxpr(jaxpr, consts, *args)
 
         return ()
 

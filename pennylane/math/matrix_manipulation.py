@@ -95,7 +95,7 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
 
     >>> from scipy import sparse
     >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
-    >>> qml.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
+    >>> qp.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
     array([[0., 1., 0., 0.],
            [1., 0., 0., 0.],
            [0., 0., 0., 1.],

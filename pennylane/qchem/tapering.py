@@ -87,7 +87,7 @@ def symmetry_generators(h):
 
     >>> symbols = ["H", "H"]
     >>> coordinates = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+    >>> H, qubits = qp.qchem.molecular_hamiltonian(symbols, coordinates)
     >>> t = symmetry_generators(H)
     >>> t
     [Z(0) @ Z(1), Z(0) @ Z(2), Z(0) @ Z(3)]
@@ -118,7 +118,7 @@ def symmetry_generators(h):
             x, z = op
             tau[idx] = pauli_map[f"{x}{z}"]
 
-        ham = qml.pauli.PauliSentence({qml.pauli.PauliWord(tau): 1.0})
+        ham = qp.pauli.PauliSentence({qp.pauli.PauliWord(tau): 1.0})
         ham = ham.operation(h.wires)
         generators.append(ham)
 
@@ -141,9 +141,9 @@ def paulix_ops(generators, num_qubits):
 
     **Example**
 
-    >>> generators = [qml.Hamiltonian([1.0], [qml.Z(0) @ qml.Z(1)]),
-    ...               qml.Hamiltonian([1.0], [qml.Z(0) @ qml.Z(2)]),
-    ...               qml.Hamiltonian([1.0], [qml.Z(0) @ qml.Z(3)])]
+    >>> generators = [qp.Hamiltonian([1.0], [qp.Z(0) @ qp.Z(1)]),
+    ...               qp.Hamiltonian([1.0], [qp.Z(0) @ qp.Z(2)]),
+    ...               qp.Hamiltonian([1.0], [qp.Z(0) @ qp.Z(3)])]
     >>> paulix_ops(generators, 4)
     [X(1), X(2), X(3)]
     """
@@ -162,7 +162,7 @@ def paulix_ops(generators, num_qubits):
             if bmatrow[col] and np.array_equal(
                 bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
             ):
-                paulixops.append(qml.X(col))
+                paulixops.append(qp.X(col))
                 break
 
     return paulixops
@@ -183,11 +183,11 @@ def clifford(generators, paulixops):
 
     **Example**
 
-    >>> t1 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZZII')])
-    >>> t2 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIZI')])
-    >>> t3 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIIZ')])
+    >>> t1 = qp.Hamiltonian([1.0], [qp.pauli.string_to_pauli_word('ZZII')])
+    >>> t2 = qp.Hamiltonian([1.0], [qp.pauli.string_to_pauli_word('ZIZI')])
+    >>> t3 = qp.Hamiltonian([1.0], [qp.pauli.string_to_pauli_word('ZIIZ')])
     >>> generators = [t1, t2, t3]
-    >>> paulixops = [qml.X(1), qml.X(2), qml.X(3)]
+    >>> paulixops = [qp.X(1), qp.X(2), qp.X(3)]
     >>> u = clifford(generators, paulixops)
     >>> print(u)
       (0.3535533905932737) [Z1 Z2 X3]
@@ -220,7 +220,7 @@ def _split_pauli_sentence(pl_sentence, max_size=15000):
     """
     it, length = iter(pl_sentence), len(pl_sentence)
     for _ in range(0, length, max_size):
-        yield qml.pauli.PauliSentence({k: pl_sentence[k] for k in itertools.islice(it, max_size)})
+        yield qp.pauli.PauliSentence({k: pl_sentence[k] for k in itertools.islice(it, max_size)})
 
 
 def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
@@ -239,7 +239,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     u = clifford(generators, paulixops)
     ps_u = pauli_sentence(u)  # cast to pauli sentence
 
-    ts_ps = qml.pauli.PauliSentence()
+    ts_ps = qp.pauli.PauliSentence()
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
         ts_ps += ps_u @ ps @ ps_u  # helps restrict the peak memory usage for u @ h @ u
 
@@ -252,34 +252,34 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     wires_ord = list(range(len(wires_tap)))
     wiremap_tap = dict(zip(wires_tap, wires_ord, strict=True))
 
-    obs, val = [], qml.math.ones(len(ts_ps))
+    obs, val = [], qp.math.ones(len(ts_ps))
     for i, pw in enumerate(ts_ps.keys()):
         for idx, w in enumerate(paulix_wires):
             if pw[w] == "X":
                 val[i] *= paulix_sector[idx]
 
         obs.append(
-            qml.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}).operation(
+            qp.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}).operation(
                 wire_order=wires_ord
             )
         )
 
-    interface = qml.math.get_deep_interface(list(ps_h.values()))
-    coeffs = qml.math.multiply(val, qml.math.array(list(ts_ps.values()), like=interface))
+    interface = qp.math.get_deep_interface(list(ps_h.values()))
+    coeffs = qp.math.multiply(val, qp.math.array(list(ts_ps.values()), like=interface))
 
-    if interface == "jax" and qml.math.is_abstract(coeffs):
-        tapered_ham = qml.sum(
-            *(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True))
+    if interface == "jax" and qp.math.is_abstract(coeffs):
+        tapered_ham = qp.sum(
+            *(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True))
         )
     else:
-        if qml.math.all(qml.math.abs(qml.math.imag(coeffs)) <= 1e-8):
-            coeffs = qml.math.real(coeffs)
-        tapered_ham = qml.simplify(0.0 * qml.Identity(wires=wires_ord) + qml.dot(coeffs, obs))
+        if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= 1e-8):
+            coeffs = qp.math.real(coeffs)
+        tapered_ham = qp.simplify(0.0 * qp.Identity(wires=wires_ord) + qp.dot(coeffs, obs))
 
     # If simplified Hamiltonian is missing wires due to simplification,
     # then add wires manually for consistency
     if set(wires_ord) != tapered_ham.wires.toset():
-        return 0.0 * qml.Identity(wires=wires_ord) + tapered_ham
+        return 0.0 * qp.Identity(wires=wires_ord) + tapered_ham
 
     return tapered_ham
 
@@ -305,8 +305,8 @@ def taper(h, generators, paulixops, paulix_sector):
 
     >>> symbols = ["H", "H"]
     >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-    >>> generators = qml.qchem.symmetry_generators(H)
+    >>> H, qubits = qp.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qp.qchem.symmetry_generators(H)
     >>> paulixops = paulix_ops(generators, 4)
     >>> paulix_sector = [1, -1, -1]
     >>> H_tapered = taper(H, generators, paulixops, paulix_sector)
@@ -351,9 +351,9 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     >>> symbols = ["H", "H"]
     >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-    >>> generators = qml.qchem.symmetry_generators(H)
-    >>> qml.qchem.optimal_sector(H, generators, 2)
+    >>> H, qubits = qp.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qp.qchem.symmetry_generators(H)
+    >>> qp.qchem.optimal_sector(H, generators, 2)
         [1, -1, -1]
     """
 
@@ -406,12 +406,12 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
     >>> symbols = ['He', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=1)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, charge=1)
+    >>> H, n_qubits = qp.qchem.molecular_hamiltonian(symbols, geometry, charge=1)
     >>> n_elec = mol.n_electrons
-    >>> generators = qml.qchem.symmetry_generators(H)
-    >>> paulixops = qml.qchem.paulix_ops(generators, 4)
-    >>> paulix_sector = qml.qchem.optimal_sector(H, generators, n_elec)
+    >>> generators = qp.qchem.symmetry_generators(H)
+    >>> paulixops = qp.qchem.paulix_ops(generators, 4)
+    >>> paulix_sector = qp.qchem.optimal_sector(H, generators, n_elec)
     >>> taper_hf(generators, paulixops, paulix_sector, n_elec, n_qubits)
     tensor([1, 1], requires_grad=True)
     """
@@ -422,7 +422,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     ferm_ps = PauliSentence({PauliWord({0: "I"}): 1.0})
     for idx, bit in enumerate(hf):
         if bit:
-            ps = qml.jordan_wigner(qml.FermiC(idx), ps=True)
+            ps = qp.jordan_wigner(qp.FermiC(idx), ps=True)
         else:
             ps = PauliSentence({PauliWord({idx: "I"}): 1.0})
         ferm_ps @= ps
@@ -469,11 +469,11 @@ def _build_callables(operation, op_wires=None, op_gen=None):
 
     **Example**
 
-    >>> gen_fn = lambda wires: qml.Hamiltonian(
+    >>> gen_fn = lambda wires: qp.Hamiltonian(
     ...        [0.25, -0.25],
-    ...        [qml.X(wires[0]) @ qml.Y(wires[1]),
-    ...         qml.Y(wires[0]) @ qml.X(wires[1])])
-    >>> _build_callables(qml.SingleExcitation, op_wires=[0, 2], op_gen=gen_fn)
+    ...        [qp.X(wires[0]) @ qp.Y(wires[1]),
+    ...         qp.Y(wires[0]) @ qp.X(wires[1])])
+    >>> _build_callables(qp.SingleExcitation, op_wires=[0, 2], op_gen=gen_fn)
     (SingleExcitation(1.0, wires=[0, 2]),
     <Hamiltonian: terms=2, wires=[0, 2]>)
     """
@@ -512,14 +512,14 @@ def _build_generator(operation, wire_order, op_gen=None):
         ValueError: optional argument `op_gen` either is not a valid generator of the operation or is not a
             :class:`~.pennylane.Hamiltonian`, :class:`~.PauliSentence`, or an arithmetic operator
     **Example**
-    >>> _build_generator(qml.SingleExcitation, [0, 1], op_wires=[0, 2])
+    >>> _build_generator(qp.SingleExcitation, [0, 1], op_wires=[0, 2])
       (-0.25) [Y0 X1]
     + (0.25) [X0 Y1]
     """
     if op_gen is None:
         if operation.num_params < 1:  # Non-parametrized gates
-            gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
-            op_gen = qml.pauli_decompose(
+            gen_mat = 1j * scipy.linalg.logm(qp.matrix(operation, wire_order=wire_order))
+            op_gen = qp.pauli_decompose(
                 gen_mat, wire_order=wire_order, hide_identity=True, pauli=True
             )
             op_gen.simplify()
@@ -528,12 +528,12 @@ def _build_generator(operation, wire_order, op_gen=None):
             try:
                 op_gen = operation.generator().pauli_rep
 
-            except (ValueError, qml.operation.GeneratorUndefinedError) as exc:
+            except (ValueError, qp.operation.GeneratorUndefinedError) as exc:
                 raise NotImplementedError(
                     f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
                 ) from exc
     else:  # check that user-provided generator is correct
-        if not isinstance(op_gen, (qml.ops.LinearCombination, PauliSentence)) and not isinstance(
+        if not isinstance(op_gen, (qp.ops.LinearCombination, PauliSentence)) and not isinstance(
             getattr(op_gen, "pauli_rep", None), PauliSentence
         ):
             raise ValueError(
@@ -546,8 +546,8 @@ def _build_generator(operation, wire_order, op_gen=None):
                 lambda i, j: i * j, operation.parameters
             )  # coeffs from operation
 
-        mat1 = scipy.linalg.expm(1j * qml.matrix(op_gen, wire_order=wire_order) * coeffs)
-        mat2 = qml.matrix(operation, wire_order=wire_order)
+        mat1 = scipy.linalg.expm(1j * qp.matrix(op_gen, wire_order=wire_order) * coeffs)
+        mat2 = qp.matrix(operation, wire_order=wire_order)
         phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
             np.nonzero(np.round(mat1, 10))
         ]
@@ -599,19 +599,19 @@ def taper_operation(
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
-    >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
+    >>> tap_op = qchem.taper_operation(qp.SingleExcitation, generators, paulixops,
     ...                                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
     >>> tap_op(3.14159)
     [Exp(1.5707949999999993j PauliY), Exp(0j Identity)]
 
     The obtained tapered operation function can then be used within a :class:`~.pennylane.QNode`:
 
-    >>> dev = qml.device('default.qubit', wires=[0, 1])
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qubit', wires=[0, 1])
+    >>> @qp.qnode(dev)
     ... def circuit(params):
     ...     tap_op(params[0])
-    ...     return qml.expval(qml.Z(0)@qml.Z(1))
-    >>> drawer = qml.draw(circuit, show_all_wires=True)
+    ...     return qp.expval(qp.Z(0)@qp.Z(1))
+    >>> drawer = qp.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
     0: ──Exp(0.00+1.57j Y)─┤ ╭<Z@Z>
     1: ────────────────────┤ ╰<Z@Z>
@@ -620,21 +620,21 @@ def taper_operation(
         :title: Usage Details
         :href: usage-taper-operation
 
-        ``qml.taper_operation`` can also be used with the quantum operations, in which case one does not need to specify ``op_wires`` args:
+        ``qp.taper_operation`` can also be used with the quantum operations, in which case one does not need to specify ``op_wires`` args:
 
-        >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators,
+        >>> qchem.taper_operation(qp.SingleExcitation(3.14159, wires=[0, 2]), generators,
         ...                       paulixops, paulix_sector, wire_order=H.wires)
         [Exp(1.570795j PauliY)]
 
         Moreover, it can also be used within a :class:`~.pennylane.QNode` directly:
 
-        >>> dev = qml.device('default.qubit', wires=[0, 1])
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device('default.qubit', wires=[0, 1])
+        >>> @qp.qnode(dev)
         ... def circuit(params):
-        ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
+        ...     qchem.taper_operation(qp.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
         ...                           generators, paulixops, paulix_sector, H.wires)
-        ...     return qml.expval(qml.Z(0)@qml.Z(1))
-        >>> drawer = qml.draw(circuit, show_all_wires=True)
+        ...     return qp.expval(qp.Z(0)@qp.Z(1))
+        >>> drawer = qp.draw(circuit, show_all_wires=True)
         >>> print(drawer(params=[3.14159]))
         0: ─╭Exp(-0.00-0.79j X@Y)─╭Exp(-0.00-0.79j Y@X)─┤ ╭<Z@Z>
         1: ─╰Exp(-0.00-0.79j X@Y)─╰Exp(-0.00-0.79j Y@X)─┤ ╰<Z@Z>
@@ -643,12 +643,12 @@ def taper_operation(
         via the ``op_gen`` argument. The generator can be passed as a :class:`~.pennylane.Hamiltonian`, :class:`~.PauliSentence` or any
         arithmetic operator:
 
-        >>> op_fun = qml.QubitUnitary(np.array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
+        >>> op_fun = qp.QubitUnitary(np.array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
         ...                                     [0.+0.j, 0.+0.j, 0.-1.j, 0.+0.j],
         ...                                     [0.+0.j, 0.-1.j, 0.+0.j, 0.+0.j],
         ...                                     [0.-1.j, 0.+0.j, 0.+0.j, 0.+0.j]]), wires=[0, 2])
-        >>> op_gen = qml.Hamiltonian([-0.5 * np.pi],
-        ...                          [qml.X(0) @ qml.X(2)])
+        >>> op_gen = qp.Hamiltonian([-0.5 * np.pi],
+        ...                          [qp.X(0) @ qp.X(2)])
         >>> qchem.taper_operation(op_fun, generators, paulixops, paulix_sector,
         ...                       wire_order=H.wires, op_gen=op_gen)
         [Exp(1.5707963267948957j PauliX)]
@@ -656,11 +656,11 @@ def taper_operation(
         Alternatively, generators can also be specified as a function which returns :class:`~.pennylane.Hamiltonian`
         or an arithmetic operator, and uses ``wires`` as its only required keyword argument:
 
-        >>> op_gen = lambda wires: qml.Hamiltonian(
+        >>> op_gen = lambda wires: qp.Hamiltonian(
         ...     [0.25, -0.25],
-        ...     [qml.X(wires[0]) @ qml.Y(wires[1]),
-        ...      qml.Y(wires[0]) @ qml.X(wires[1])])
-        >>> qchem.taper_operation(qml.SingleExcitation, generators, paulixops, paulix_sector,
+        ...     [qp.X(wires[0]) @ qp.Y(wires[1]),
+        ...      qp.Y(wires[0]) @ qp.X(wires[1])])
+        >>> qchem.taper_operation(qp.SingleExcitation, generators, paulixops, paulix_sector,
         ...                       wire_order=H.wires, op_wires=[0, 2], op_gen=op_gen)(3.14159)
         [Exp(1.570795j PauliY)]
 
@@ -700,36 +700,36 @@ def taper_operation(
     op_gen = _build_generator(operation, wire_order, op_gen=op_gen)
 
     # Performing commutation check for pauli sentences
-    # TODO: replace when qml.is_commuting supports Pauli words and sentences
+    # TODO: replace when qp.is_commuting supports Pauli words and sentences
     def _is_commuting(ps1, ps2):
         commutator = ps1.commutator(ps2)
         commutator.simplify()
         return commutator == PauliSentence({})
 
     # Obtain the tapered generator for the operation
-    with qml.QueuingManager.stop_recording():
+    with qp.QueuingManager.stop_recording():
         # Get pauli rep for symmetery generators
         ps_gen = list(map(lambda x: x.pauli_rep, generators))
 
         gen_tapered = PauliSentence({})
-        if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qml.math.allclose(
+        if all(_is_commuting(sym, op_gen) for sym in ps_gen) and not qp.math.allclose(
             list(op_gen.values()), 0.0, rtol=1e-8
         ):
-            gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
+            gen_tapered = qp.taper(op_gen, generators, paulixops, paulix_sector)
             gen_tapered = pauli_sentence(gen_tapered)
         gen_tapered.simplify()
 
     def _tapered_op(params):
         r"""Applies the tapered operation for the specified parameter value whenever
         queing context is active, otherwise returns it as a list."""
-        if qml.QueuingManager.recording():
-            qml.QueuingManager.remove(operation)
+        if qp.QueuingManager.recording():
+            qp.QueuingManager.remove(operation)
             for op, coeff in gen_tapered.items():
-                qml.exp(op.operation(), 1j * params * coeff)
+                qp.exp(op.operation(), 1j * params * coeff)
         else:
             ops_tapered = []
             for op, coeff in gen_tapered.items():
-                ops_tapered.append(qml.exp(op.operation(), 1j * params * coeff))
+                ops_tapered.append(qp.exp(op.operation(), 1j * params * coeff))
             return ops_tapered
 
     # if operation was a callable, return the functional form that accepts new parameters

@@ -28,16 +28,16 @@ from pennylane.ops.op_math import Prod
 def get_tape(angles, wires):
     """Auxiliary function to generate a tape with the operator given some angles"""
 
-    return qml.tape.QuantumScript(
+    return qp.tape.QuantumScript(
         [
-            qml.SelectPauliRot(
+            qp.SelectPauliRot(
                 angles,
                 control_wires=wires["control"],
                 target_wire=wires["target"],
                 rot_axis="Y",
             )
         ],
-        [qml.state()],
+        [qp.state()],
     )
 
 
@@ -47,16 +47,16 @@ class TestSelectPauliRot:
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
-        wires = qml.registers({"control_wires": 3, "target_wire": 1})
+        wires = qp.registers({"control_wires": 3, "target_wire": 1})
 
-        op = qml.SelectPauliRot(
-            angles=qml.math.random.RandomState(8).random(8),
+        op = qp.SelectPauliRot(
+            angles=qp.math.random.RandomState(8).random(8),
             control_wires=wires["control_wires"],
             target_wire=wires["target_wire"],
             rot_axis="X",
         )
 
-        qml.ops.functions.assert_valid(op)
+        qp.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("angles", "rot_axis", "target_wire", "msg_match"),
@@ -84,10 +84,10 @@ class TestSelectPauliRot:
     def test_SelectPauliRot_error(self, angles, rot_axis, target_wire, msg_match):
         """Test that proper errors are raised for SelectPauliRot"""
 
-        wires = qml.registers({"control_wires": 2})
+        wires = qp.registers({"control_wires": 2})
 
         with pytest.raises(ValueError, match=msg_match):
-            qml.SelectPauliRot(
+            qp.SelectPauliRot(
                 angles=angles,
                 control_wires=wires["control_wires"],
                 target_wire=target_wire,
@@ -107,24 +107,24 @@ class TestSelectPauliRot:
         This is done by comparing the results with the naive Select(Rotation) decomposition
         """
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        gate = {"Z": qml.RZ, "Y": qml.RY, "X": qml.RX}
+        gate = {"Z": qp.RZ, "Y": qp.RY, "X": qp.RX}
 
         # Check that applying the SelectPauliRot and adjoint(Select) to a state,
         # does not modify the state
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.SelectPauliRot(
+                qp.Hadamard(0),
+                qp.Hadamard(1),
+                qp.SelectPauliRot(
                     angles, control_wires=[0, 1, 2], target_wire=3, rot_axis=rot_axis
                 ),
-                qml.Select([gate[rot_axis](-angle, 3) for angle in angles], control=[0, 1, 2]),
-                qml.Hadamard(0),
-                qml.Hadamard(1),
+                qp.Select([gate[rot_axis](-angle, 3) for angle in angles], control=[0, 1, 2]),
+                qp.Hadamard(0),
+                qp.Hadamard(1),
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
@@ -142,10 +142,10 @@ class TestSelectPauliRot:
         np.random.seed(seed)
         shape = (2**n,) if batch_dim is None else (batch_dim, 2**n)
         x = np.random.random(shape)
-        decomposition = qml.SelectPauliRot.compute_decomposition(
+        decomposition = qp.SelectPauliRot.compute_decomposition(
             x, control_wires=range(n), target_wire=n, rot_axis=axis
         )
-        decomposition_2 = qml.SelectPauliRot(
+        decomposition_2 = qp.SelectPauliRot(
             x, control_wires=range(n), target_wire=n, rot_axis=axis
         ).decomposition()
 
@@ -180,8 +180,8 @@ class TestSelectPauliRot:
         """Tests that the decomposition of SelectPauliRot is correct with the new system."""
 
         angles = np.random.random((2**n,))
-        op = qml.SelectPauliRot(angles, control_wires=range(n), target_wire=n, rot_axis=axis)
-        for rule in qml.list_decomps("SelectPauliRot"):
+        op = qp.SelectPauliRot(angles, control_wires=range(n), target_wire=n, rot_axis=axis)
+        for rule in qp.list_decomps("SelectPauliRot"):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
@@ -192,8 +192,8 @@ class TestSelectPauliRot:
 
         angles = [1, 2, 3, 4]
 
-        wires = qml.registers({"control": 2, "target": 1})
-        dev = qml.device("default.qubit", wires=3)
+        wires = qp.registers({"control": 2, "target": 1})
+        dev = qp.device("default.qubit", wires=3)
 
         qs = get_tape(jnp.array(angles), wires)
 
@@ -207,7 +207,7 @@ class TestSelectPauliRot:
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_jax)
+        assert qp.math.allclose(output, output_jax)
 
     @pytest.mark.torch
     def test_interface_torch(self):
@@ -217,21 +217,21 @@ class TestSelectPauliRot:
 
         angles = [1, 2, 3, 4]
 
-        wires = qml.registers({"control": 2, "target": 1})
-        dev = qml.device("default.qubit", wires=3)
+        wires = qp.registers({"control": 2, "target": 1})
+        dev = qp.device("default.qubit", wires=3)
 
         qs = get_tape(torch.tensor(angles, dtype=torch.float64), wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
-        output_torch = qml.execute(tape[0], dev, interface="torch")[0]
+        output_torch = qp.execute(tape[0], dev, interface="torch")[0]
         qs = get_tape(angles, wires)
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_torch)
+        assert qp.math.allclose(output, output_torch)
 
     @pytest.mark.tf
     def test_interface_tf(self):
@@ -241,8 +241,8 @@ class TestSelectPauliRot:
 
         angles = [1, 2, 3, 4]
 
-        wires = qml.registers({"control": 2, "target": 1})
-        dev = qml.device("default.qubit", wires=3)
+        wires = qp.registers({"control": 2, "target": 1})
+        dev = qp.device("default.qubit", wires=3)
 
         qs = get_tape(tf.Variable(angles), wires)
 
@@ -256,7 +256,7 @@ class TestSelectPauliRot:
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_tf)
+        assert qp.math.allclose(output, output_tf)
 
     @pytest.mark.jax
     def test_jax_jit(self):
@@ -267,21 +267,21 @@ class TestSelectPauliRot:
 
         angles = jnp.array([1.0, 2.0, 3.0, 4.0])
 
-        wires = qml.registers({"control": 2, "target": 1})
-        dev = qml.device("default.qubit", wires=3)
+        wires = qp.registers({"control": 2, "target": 1})
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(angles):
-            qml.SelectPauliRot(
+            qp.SelectPauliRot(
                 angles,
                 control_wires=wires["control"],
                 target_wire=wires["target"],
                 rot_axis="Y",
             )
-            return qml.state()
+            return qp.state()
 
         expected_output = circuit(angles)
         generated_output = jax.jit(circuit)(angles)
 
         assert np.allclose(expected_output, generated_output)
-        assert qml.math.get_interface(generated_output) == "jax"
+        assert qp.math.get_interface(generated_output) == "jax"

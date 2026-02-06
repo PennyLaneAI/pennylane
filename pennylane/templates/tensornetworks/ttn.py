@@ -108,7 +108,7 @@ class TTN(Operation):
         To avoid using ragged arrays, all block parameters should have the same dimension.
 
         The length of the ``template_weights`` argument should match the number of blocks.
-        The expected number of blocks can be obtained from ``qml.TTN.get_n_blocks(wires, n_block_wires)``.
+        The expected number of blocks can be obtained from ``qp.TTN.get_n_blocks(wires, n_block_wires)``.
 
         This example demonstrates the use of ``TTN`` for a simple block.
 
@@ -118,23 +118,23 @@ class TTN(Operation):
             import numpy as np
 
             def block(weights, wires):
-                qml.CNOT(wires=[wires[0],wires[1]])
-                qml.RY(weights[0], wires=wires[0])
-                qml.RY(weights[1], wires=wires[1])
+                qp.CNOT(wires=[wires[0],wires[1]])
+                qp.RY(weights[0], wires=wires[0])
+                qp.RY(weights[1], wires=wires[1])
 
             n_wires = 4
             n_block_wires = 2
             n_params_block = 2
-            n_blocks = qml.TTN.get_n_blocks(range(n_wires),n_block_wires)
+            n_blocks = qp.TTN.get_n_blocks(range(n_wires),n_block_wires)
             template_weights = [[0.1,-0.3]]*n_blocks
 
-            dev= qml.device('default.qubit',wires=range(n_wires))
-            @qml.qnode(dev)
+            dev= qp.device('default.qubit',wires=range(n_wires))
+            @qp.qnode(dev)
             def circuit(template_weights):
-                qml.TTN(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.Z(n_wires-1))
+                qp.TTN(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+                return qp.expval(qp.Z(n_wires-1))
 
-        >>> print(qml.draw(circuit, level='device')(template_weights))
+        >>> print(qp.draw(circuit, level='device')(template_weights))
         0: ─╭●──RY(0.10)────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)──┤
         2: ─╭●──RY(0.10)──│─────────────┤

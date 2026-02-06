@@ -225,7 +225,7 @@ def cycle_mixer(graph: nx_DiGraph | rx.PyDiGraph) -> Operator:
         graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
 
     Returns:
-        qml.Hamiltonian: the cycle-mixer Hamiltonian
+        qp.Hamiltonian: the cycle-mixer Hamiltonian
     """
     import networkx as nx  # pylint: disable=import-outside-toplevel
 
@@ -258,7 +258,7 @@ def _partial_cycle_mixer(graph: nx_DiGraph | rx.PyDiGraph, edge: tuple) -> Opera
         edge (tuple): a fixed edge
 
     Returns:
-        qml.Hamiltonian: the partial cycle-mixer Hamiltonian
+        qp.Hamiltonian: the partial cycle-mixer Hamiltonian
     """
     import networkx as nx  # pylint: disable=import-outside-toplevel
 
@@ -381,7 +381,7 @@ def loss_hamiltonian(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph) -> Operator:
         graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the graph specifying possible edges
 
     Returns:
-        qml.Hamiltonian: the loss Hamiltonian
+        qp.Hamiltonian: the loss Hamiltonian
 
     Raises:
         ValueError: if the graph contains self-loops
@@ -437,10 +437,10 @@ def _square_hamiltonian_terms(
 
     Args:
         coeffs (Iterable[float]): coeffients of the input Hamiltonian
-        ops (Iterable[qml.operation.Operator]): observables of the input Hamiltonian
+        ops (Iterable[qp.operation.Operator]): observables of the input Hamiltonian
 
     Returns:
-        Tuple[List[float], List[qml.operation.Operator]]: The list of coefficients and list of observables
+        Tuple[List[float], List[qp.operation.Operator]]: The list of coefficients and list of observables
         of the squared Hamiltonian.
     """
     squared_coeffs, squared_ops = [], []
@@ -494,7 +494,7 @@ def out_flow_constraint(graph: nx_DiGraph | rx.PyDiGraph) -> Operator:
         graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
 
     Returns:
-        qml.Hamiltonian: the out flow constraint Hamiltonian
+        qp.Hamiltonian: the out flow constraint Hamiltonian
 
     Raises:
         ValueError: if the input graph is not directed
@@ -547,7 +547,7 @@ def net_flow_constraint(graph: nx_DiGraph | rx.PyDiGraph) -> Operator:
         graph (nx.DiGraph or rx.PyDiGraph): the directed graph specifying possible edges
 
     Returns:
-        qml.Hamiltonian: the net-flow constraint Hamiltonian
+        qp.Hamiltonian: the net-flow constraint Hamiltonian
 
     Raises:
         ValueError: if the input graph is not directed
@@ -588,7 +588,7 @@ def _inner_out_flow_constraint_hamiltonian(graph: nx_DiGraph | rx.PyDiGraph, nod
         node: a fixed node
 
     Returns:
-        qml.Hamiltonian: The inner part of the out-flow constraint Hamiltonian.
+        qp.Hamiltonian: The inner part of the out-flow constraint Hamiltonian.
     """
     import networkx as nx  # pylint: disable=import-outside-toplevel
 
@@ -659,7 +659,7 @@ def _inner_net_flow_constraint_hamiltonian(graph: nx_DiGraph | rx.PyDiGraph, nod
         node: a fixed node
 
     Returns:
-        qml.Hamiltonian: The inner part of the net-flow constraint Hamiltonian.
+        qp.Hamiltonian: The inner part of the net-flow constraint Hamiltonian.
     """
     import networkx as nx  # pylint: disable=import-outside-toplevel
 

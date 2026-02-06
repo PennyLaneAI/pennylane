@@ -80,7 +80,7 @@ class CVNeuralNetLayers(Operation):
 
             def circuit():
               CVNeuralNetLayers(*weights, wires=[0, 1])
-              return qml.expval(qml.QuadX(0))
+              return qp.expval(qp.QuadX(0))
 
     """
 
@@ -186,7 +186,7 @@ class CVNeuralNetLayers(Operation):
         >>> a = torch.tensor([[0.1, 0.2]])
         >>> phi_a = torch.tensor([[-1.1, 0.2]])
         >>> k = torch.tensor([[0.1, 0.2]])
-        >>> qml.CVNeuralNetLayers.compute_decomposition(theta_1, phi_1, varphi_1, r, phi_r, theta_2,
+        >>> qp.CVNeuralNetLayers.compute_decomposition(theta_1, phi_1, varphi_1, r, phi_r, theta_2,
         ...                                             phi_2, varphi_2, a, phi_a, k, wires=["a", "b"])
         [Interferometer(tensor([0.4000]), tensor([-0.3000]), tensor([1.7000, 0.1000]), wires=['a', 'b']),
         Squeezing(tensor(-1.), tensor(0.2000), wires=['a']),

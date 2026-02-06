@@ -35,7 +35,7 @@ class LinearCombination(Sum):
 
     .. note::
 
-        ``qml.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
+        ``qp.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
 
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
@@ -58,31 +58,31 @@ class LinearCombination(Sum):
     as well as the list of observables:
 
     >>> coeffs = [0.2, -0.543]
-    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
-    >>> H = qml.ops.LinearCombination(coeffs, obs)
+    >>> obs = [qp.X(0) @ qp.Z(1), qp.Z(0) @ qp.Hadamard(2)]
+    >>> H = qp.ops.LinearCombination(coeffs, obs)
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
-    The same ``LinearCombination`` can be created using the ``qml.Hamiltonian`` alias:
+    The same ``LinearCombination`` can be created using the ``qp.Hamiltonian`` alias:
 
-    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> H = qp.Hamiltonian(coeffs, obs)
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     The coefficients can be a trainable tensor, for example:
 
-    >>> coeffs = qml.numpy.array([0.2, -0.543], requires_grad=True)
-    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
-    >>> H = qml.ops.LinearCombination(coeffs, obs)
+    >>> coeffs = qp.numpy.array([0.2, -0.543], requires_grad=True)
+    >>> obs = [qp.X(0) @ qp.Z(1), qp.Z(0) @ qp.Hadamard(2)]
+    >>> H = qp.ops.LinearCombination(coeffs, obs)
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     A ``LinearCombination`` can store information on which commuting observables should be measured together in
     a circuit:
 
-    >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
+    >>> obs = [qp.X(0), qp.X(1), qp.Z(0)]
     >>> coeffs = np.array([1., 2., 3.])
-    >>> H = qml.ops.LinearCombination(coeffs, obs, grouping_type='qwc')
+    >>> H = qp.ops.LinearCombination(coeffs, obs, grouping_type='qwc')
     >>> H.grouping_indices
     ((0, 1), (2,))
 
@@ -134,7 +134,7 @@ class LinearCombination(Sum):
             raise ValueError(
                 "observables must be an Iterable of Operator's, and not an Operator itself."
             )
-        if qml.math.shape(coeffs)[0] != len(observables):
+        if qp.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid LinearCombination; "
                 "number of coefficients and operators does not match."
@@ -148,7 +148,7 @@ class LinearCombination(Sum):
 
         self._hyperparameters = {"ops": self._ops}
 
-        with qml.QueuingManager.stop_recording():
+        with qp.QueuingManager.stop_recording():
             # type.__call__ valid when capture is enabled and creating an instance
             operands = tuple(type.__call__(SProd, c, op) for c, op in zip(coeffs, observables))
 
@@ -166,7 +166,7 @@ class LinearCombination(Sum):
         """PauliSentence representation of the Sum of operations."""
 
         if all(pauli_reps := [op.pauli_rep for op in observables]):
-            new_rep = qml.pauli.PauliSentence()
+            new_rep = qp.pauli.PauliSentence()
             for c, ps in zip(coeffs, pauli_reps):
                 for pw, coeff in ps.items():
                     new_rep[pw] += coeff * c
@@ -204,8 +204,8 @@ class LinearCombination(Sum):
         **Example**
 
         >>> coeffs = [1., 2., 3.]
-        >>> ops = [qml.X(0), qml.X(0) @ qml.X(1), qml.X(1) @ qml.X(2)]
-        >>> op = qml.ops.LinearCombination(coeffs, ops)
+        >>> ops = [qp.X(0), qp.X(0) @ qp.X(1), qp.X(1) @ qp.X(2)]
+        >>> op = qp.ops.LinearCombination(coeffs, ops)
         >>> op.terms()
         ([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(1) @ X(2)])
 
@@ -236,13 +236,13 @@ class LinearCombination(Sum):
 
             import pennylane as qp
 
-            a = qml.X(0)
-            b = qml.prod(qml.X(0), qml.X(1))
-            c = qml.Z(0)
+            a = qp.X(0)
+            b = qp.prod(qp.X(0), qp.X(1))
+            c = qp.Z(0)
             obs = [a, b, c]
             coeffs = [1.0, 2.0, 3.0]
 
-            op = qml.ops.LinearCombination(coeffs, obs)
+            op = qp.ops.LinearCombination(coeffs, obs)
 
         >>> op.grouping_indices is None
         True
@@ -255,7 +255,7 @@ class LinearCombination(Sum):
 
         _, ops = self.terms()
 
-        self._grouping_indices = qml.pauli.compute_partition_indices(
+        self._grouping_indices = qp.pauli.compute_partition_indices(
             ops, grouping_type=grouping_type, method=method
         )
 
@@ -273,7 +273,7 @@ class LinearCombination(Sum):
         return "LinearCombination"
 
     @staticmethod
-    @qml.QueuingManager.stop_recording()
+    @qp.QueuingManager.stop_recording()
     def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
@@ -302,7 +302,7 @@ class LinearCombination(Sum):
         if len(ops) == 1:
             return coeffs, [ops[0].simplify()], pr
 
-        op_as_sum = qml.dot(coeffs, ops)
+        op_as_sum = qp.dot(coeffs, ops)
         op_as_sum = op_as_sum.simplify(cutoff)
         new_coeffs, new_ops = op_as_sum.terms()
         return new_coeffs, new_ops, pr
@@ -316,7 +316,7 @@ class LinearCombination(Sum):
         if isinstance(other, LinearCombination):
             coeffs1 = self.coeffs
             ops1 = self.ops
-            shared_wires = qml.wires.Wires.shared_wires([self.wires, other.wires])
+            shared_wires = qp.wires.Wires.shared_wires([self.wires, other.wires])
             if len(shared_wires) > 0:
                 raise ValueError(
                     "LinearCombinations can only be multiplied together if they act on "
@@ -326,10 +326,10 @@ class LinearCombination(Sum):
             coeffs2 = other.coeffs
             ops2 = other.ops
 
-            coeffs = qml.math.kron(coeffs1, coeffs2)
+            coeffs = qp.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
-            terms = [qml.prod(t[0], t[1], lazy=False) for t in ops_list]
-            return qml.ops.LinearCombination(coeffs, terms)
+            terms = [qp.prod(t[0], t[1], lazy=False) for t in ops_list]
+            return qp.ops.LinearCombination(coeffs, terms)
 
         if isinstance(other, Operator):
             if other.arithmetic_depth == 0:
@@ -341,7 +341,7 @@ class LinearCombination(Sum):
                 else:
                     new_pr = None
                 return LinearCombination(self.coeffs, new_ops, _pauli_rep=new_pr)
-            return qml.prod(self, other)
+            return qp.prod(self, other)
 
         return NotImplemented
 
@@ -354,27 +354,27 @@ class LinearCombination(Sum):
             return self
 
         if isinstance(H, LinearCombination):
-            coeffs = qml.math.concatenate([self_coeffs, H.coeffs], axis=0)
+            coeffs = qp.math.concatenate([self_coeffs, H.coeffs], axis=0)
             ops.extend(H.ops)
             if (pr1 := self.pauli_rep) is not None and (pr2 := H.pauli_rep) is not None:
                 _pauli_rep = pr1 + pr2
             else:
                 _pauli_rep = None
-            return qml.ops.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
+            return qp.ops.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
 
         if isinstance(H, Operator):
-            coeffs = qml.math.concatenate(
-                [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
+            coeffs = qp.math.concatenate(
+                [self_coeffs, qp.math.cast_like([1.0], self_coeffs)], axis=0
             )
             ops.append(H)
 
-            return qml.ops.LinearCombination(coeffs, ops)
+            return qp.ops.LinearCombination(coeffs, ops)
         return NotImplemented
 
     def __sub__(self, H: Operator) -> Operator:
         r"""The subtraction operation between a LinearCombination and an Operator."""
         if isinstance(H, Operator):
-            return self + qml.s_prod(-1.0, H, lazy=False)
+            return self + qp.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
     __radd__ = __add__
@@ -383,16 +383,16 @@ class LinearCombination(Sum):
         r"""The scalar multiplication operation between a scalar and a LinearCombination."""
         if isinstance(a, (int, float, complex)):
             self_coeffs = self.coeffs
-            coeffs = qml.math.multiply(a, self_coeffs)
-            return qml.ops.LinearCombination(coeffs, self.ops)
+            coeffs = qp.math.multiply(a, self_coeffs)
+            return qp.ops.LinearCombination(coeffs, self.ops)
 
         return NotImplemented
 
     __rmul__ = __mul__
 
-    def queue(self, context: qml.QueuingManager | qml.queuing.AnnotatedQueue = qml.QueuingManager):
-        """Queues a ``qml.ops.LinearCombination`` instance"""
-        if qml.QueuingManager.recording():
+    def queue(self, context: qp.QueuingManager | qp.queuing.AnnotatedQueue = qp.QueuingManager):
+        """Queues a ``qp.ops.LinearCombination`` instance"""
+        if qp.QueuingManager.recording():
             for o in self.ops:
                 context.remove(o)
             context.append(self)
@@ -411,12 +411,12 @@ class LinearCombination(Sum):
         for ops in self.overlapping_ops:
             if len(ops) == 1:
                 eigvals.append(
-                    qml.math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                    qp.math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
                 )
             else:
                 tmp_composite = Sum(*ops)  # only change compared to CompositeOp.eigvals()
                 eigvals.append(
-                    qml.math.expand_vector(
+                    qp.math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],
                         list(tmp_composite.wires),
                         list(self.wires),
@@ -424,7 +424,7 @@ class LinearCombination(Sum):
                 )
 
         return self._math_op(
-            qml.math.asarray(eigvals, like=qml.math.get_deep_interface(eigvals)), axis=0
+            qp.math.asarray(eigvals, like=qp.math.get_deep_interface(eigvals)), axis=0
         )
 
     def diagonalizing_gates(self):
@@ -452,8 +452,8 @@ class LinearCombination(Sum):
                 tmp_sum = Sum(*ops)  # only change compared to CompositeOp.diagonalizing_gates()
                 eigvecs = tmp_sum.eigendecomposition["eigvec"]
                 diag_gates.append(
-                    qml.QubitUnitary(
-                        qml.math.transpose(qml.math.conj(eigvecs)), wires=tmp_sum.wires
+                    qp.QubitUnitary(
+                        qp.math.transpose(qp.math.conj(eigvecs)), wires=tmp_sum.wires
                     )
                 )
         return diag_gates
@@ -494,7 +494,7 @@ class Hamiltonian:
 
     .. note::
 
-        ``qml.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
+        ``qp.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
@@ -510,28 +510,28 @@ class Hamiltonian:
 
     **Example:**
 
-    ``qml.Hamiltonian`` takes in a list of coefficients and a list of operators.
+    ``qp.Hamiltonian`` takes in a list of coefficients and a list of operators.
 
     >>> coeffs = [0.2, -0.543]
-    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> obs = [qp.X(0) @ qp.Z(1), qp.Z(0) @ qp.Hadamard(2)]
+    >>> H = qp.Hamiltonian(coeffs, obs)
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     The coefficients can be a trainable tensor, for example:
 
-    >>> coeffs = qml.numpy.array([0.2, -0.543], requires_grad=True)
-    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> coeffs = qp.numpy.array([0.2, -0.543], requires_grad=True)
+    >>> obs = [qp.X(0) @ qp.Z(1), qp.Z(0) @ qp.Hadamard(2)]
+    >>> H = qp.Hamiltonian(coeffs, obs)
     >>> print(H)
     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
-    A ``qml.Hamiltonian`` stores information on which commuting observables should be measured
+    A ``qp.Hamiltonian`` stores information on which commuting observables should be measured
     together in a circuit:
 
-    >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
+    >>> obs = [qp.X(0), qp.X(1), qp.Z(0)]
     >>> coeffs = np.array([1., 2., 3.])
-    >>> H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+    >>> H = qp.Hamiltonian(coeffs, obs, grouping_type='qwc')
     >>> H.grouping_indices
     ((0, 1), (2,))
 
@@ -544,10 +544,10 @@ class Hamiltonian:
     >>> grouped_obs
     [[X(0), X(1)], [Z(0)]]
 
-    Devices that evaluate a ``qml.Hamiltonian`` expectation by splitting it into its local
+    Devices that evaluate a ``qp.Hamiltonian`` expectation by splitting it into its local
     observables can use this information to reduce the number of circuits evaluated.
 
-    Note that one can compute the ``grouping_indices`` for an already initialized ``qml.Hamiltonian``
+    Note that one can compute the ``grouping_indices`` for an already initialized ``qp.Hamiltonian``
     by using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
 
     """

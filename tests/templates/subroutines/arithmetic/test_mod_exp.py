@@ -30,14 +30,14 @@ def test_standard_validity_ModExp():
     x_wires = [0, 1, 2, 3]
     output_wires = [4, 5, 6, 7]
     work_wires = [8, 9, 10, 11, 12, 13]
-    op = qml.ModExp(
+    op = qp.ModExp(
         x_wires=x_wires, output_wires=output_wires, base=base, mod=mod, work_wires=work_wires
     )
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestModExp:
-    """Test the qml.ModExp template."""
+    """Test the qp.ModExp template."""
 
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "base", "mod", "work_wires", "x", "k"),
@@ -61,15 +61,15 @@ class TestModExp:
         self, x_wires, output_wires, base, mod, work_wires, x, k
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the ModExp template output."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit(x, k):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(k, wires=output_wires)
-            qml.ModExp(x_wires, output_wires, base, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(k, wires=output_wires)
+            qp.ModExp(x_wires, output_wires, base, mod, work_wires)
+            return qp.sample(wires=output_wires)
 
         if mod is None:
             mod = 2 ** len(output_wires)
@@ -146,13 +146,13 @@ class TestModExp:
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.ModExp(x_wires, output_wires, base, mod, work_wires)
+            qp.ModExp(x_wires, output_wires, base, mod, work_wires)
 
     def test_check_base_and_mod_are_coprime(self):
         """Test that an error is raised when base and mod are not coprime"""
 
         with pytest.raises(ValueError, match="base has no inverse modulo mod"):
-            qml.ModExp(
+            qp.ModExp(
                 x_wires=[0, 1, 2],
                 output_wires=[3, 4, 5],
                 base=8,
@@ -169,18 +169,18 @@ class TestModExp:
             7,
             [9, 10, 11, 12, 13],
         )
-        adder_decomposition = qml.ModExp(
+        adder_decomposition = qp.ModExp(
             x_wires, output_wires, base, mod, work_wires
         ).compute_decomposition(x_wires, output_wires, base, mod, work_wires)
         op_list = []
         op_list.append(
-            qml.ControlledSequence(
-                qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires
+            qp.ControlledSequence(
+                qp.Multiplier(base, output_wires, mod, work_wires), control=x_wires
             )
         )
 
         for op1, op2 in zip(adder_decomposition, op_list):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""
@@ -191,8 +191,8 @@ class TestModExp:
             7,
             [9, 10, 11, 12, 13],
         )
-        op = qml.ModExp(x_wires, output_wires, base, mod, work_wires)
-        for rule in qml.list_decomps(qml.ModExp):
+        op = qp.ModExp(x_wires, output_wires, base, mod, work_wires)
+        for rule in qp.list_decomps(qp.ModExp):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
@@ -210,16 +210,16 @@ class TestModExp:
         base = 3
         output_wires = [3, 4, 5]
         work_wires = [11, 10, 12, 13, 14]
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
-            qml.BasisEmbedding([0, 0, 1], wires=output_wires)
-            qml.ModExp(x_wires, output_wires, base, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            qp.BasisEmbedding(x_list, wires=x_wires)
+            qp.BasisEmbedding([0, 0, 1], wires=output_wires)
+            qp.ModExp(x_wires, output_wires, base, mod, work_wires)
+            return qp.sample(wires=output_wires)
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(

@@ -67,30 +67,30 @@ def cost_layer(gamma, hamiltonian):
             from pennylane import qaoa
             import pennylane as qp
 
-            cost_h = qml.Hamiltonian([1, 1], [qml.Z(0), qml.Z(0) @ qml.Z(1)])
+            cost_h = qp.Hamiltonian([1, 1], [qp.Z(0), qp.Z(0) @ qp.Z(1)])
 
         We can then pass it into ``qaoa.cost_layer``, within a quantum circuit:
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=2)
+            dev = qp.device('default.qubit', wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(gamma):
 
                 for i in range(2):
-                    qml.Hadamard(wires=i)
+                    qp.Hadamard(wires=i)
 
                 qaoa.cost_layer(gamma, cost_h)
 
-                return [qml.expval(qml.Z(i)) for i in range(2)]
+                return [qp.expval(qp.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
-        >>> print(qml.draw(circuit)(0.5))
+        >>> print(qp.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, level="device")(0.5))
+        >>> print(qp.draw(circuit, level="device")(0.5))
         0: ──H──RZ(1.00)─╭RZZ(1.00)─┤  <Z>
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
@@ -125,30 +125,30 @@ def mixer_layer(alpha, hamiltonian):
             from pennylane import qaoa
             import pennylane as qp
 
-            mixer_h = qml.Hamiltonian([1, 1], [qml.X(0), qml.X(0) @ qml.X(1)])
+            mixer_h = qp.Hamiltonian([1, 1], [qp.X(0), qp.X(0) @ qp.X(1)])
 
         We can then pass it into ``qaoa.mixer_layer``, within a quantum circuit:
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=2)
+            dev = qp.device('default.qubit', wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(alpha):
 
                 for i in range(2):
-                    qml.Hadamard(wires=i)
+                    qp.Hadamard(wires=i)
 
                 qaoa.mixer_layer(alpha, mixer_h)
 
-                return [qml.expval(qml.Z(i)) for i in range(2)]
+                return [qp.expval(qp.Z(i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
-        >>> print(qml.draw(circuit)(0.5))
+        >>> print(qp.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, level="device")(0.5))
+        >>> print(qp.draw(circuit, level="device")(0.5))
         0: ──H──RX(1.00)─╭RXX(1.00)─┤  <Z>
         1: ──H───────────╰RXX(1.00)─┤  <Z>
 

@@ -53,7 +53,7 @@ observables = {
 }
 
 
-def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+def observable_stopping_condition(obs: qp.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by DefaultQutritMixed."""
     if obs.name in {"Prod", "Sum"}:
         return all(observable_stopping_condition(observable) for observable in obs.operands)
@@ -65,21 +65,21 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     return obs.name in observables
 
 
-def stopping_condition(op: qml.operation.Operator) -> bool:
+def stopping_condition(op: qp.operation.Operator) -> bool:
     """Specify whether an Operator object is supported by the device."""
     expected_set = DefaultQutrit.operations | {"Snapshot"} | channels
     return op.name in expected_set
 
 
-def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+def accepted_sample_measurement(m: qp.measurements.MeasurementProcess) -> bool:
     """Specifies whether a measurement is accepted when sampling."""
-    return isinstance(m, qml.measurements.SampleMeasurement)
+    return isinstance(m, qp.measurements.SampleMeasurement)
 
 
-@qml.transform
+@qp.transform
 def warn_readout_error_state(
-    tape: qml.tape.QuantumTape,
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    tape: qp.tape.QuantumTape,
+) -> tuple[Sequence[qp.tape.QuantumTape], Callable]:
     """If a measurement in the QNode is an analytic state or density_matrix, and a readout error
     parameter is defined, warn that readout error will not be applied.
 
@@ -92,7 +92,7 @@ def warn_readout_error_state(
     """
     if not tape.shots:
         for m in tape.measurements:
-            if isinstance(m, qml.measurements.StateMP):
+            if isinstance(m, qp.measurements.StateMP):
                 warnings.warn(f"Measurement {m} is not affected by readout error.")
 
     return (tape,), null_postprocessing
@@ -117,18 +117,18 @@ def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs
     measure_funcs = []
     if readout_relaxation_probs is not None:
         try:
-            with qml.queuing.QueuingManager.stop_recording():
-                qml.QutritAmplitudeDamping(*readout_relaxation_probs, wires=0)
+            with qp.queuing.QueuingManager.stop_recording():
+                qp.QutritAmplitudeDamping(*readout_relaxation_probs, wires=0)
         except Exception as e:
             raise DeviceError("Applying damping readout error results in error.") from e
-        measure_funcs.append(partial(qml.QutritAmplitudeDamping, *readout_relaxation_probs))
+        measure_funcs.append(partial(qp.QutritAmplitudeDamping, *readout_relaxation_probs))
     if readout_misclassification_probs is not None:
         try:
-            with qml.queuing.QueuingManager.stop_recording():
-                qml.TritFlip(*readout_misclassification_probs, wires=0)
+            with qp.queuing.QueuingManager.stop_recording():
+                qp.TritFlip(*readout_misclassification_probs, wires=0)
         except Exception as e:
             raise DeviceError("Applying trit flip readout error results in error.") from e
-        measure_funcs.append(partial(qml.TritFlip, *readout_misclassification_probs))
+        measure_funcs.append(partial(qp.TritFlip, *readout_misclassification_probs))
 
     return None if len(measure_funcs) == 0 else measure_funcs
 
@@ -168,8 +168,8 @@ class DefaultQutritMixed(Device):
         qscripts = []
         for i in range(num_qscripts):
             unitary = scipy.stats.unitary_group(dim=3**n_wires, seed=(42 + i)).rvs()
-            op = qml.QutritUnitary(unitary, wires=range(n_wires))
-            qs = qml.tape.QuantumScript([op], [qml.expval(qml.GellMann(0, 3))])
+            op = qp.QutritUnitary(unitary, wires=range(n_wires))
+            qs = qp.tape.QuantumScript([op], [qp.expval(qp.GellMann(0, 3))])
             qscripts.append(qs)
 
     >>> dev = DefaultQutritMixed()
@@ -197,7 +197,7 @@ class DefaultQutritMixed(Device):
 
         @jax.jit
         def f(x):
-            qs = qml.tape.QuantumScript([qml.TRX(x, 0)], [qml.expval(qml.GellMann(0, 3))])
+            qs = qp.tape.QuantumScript([qp.TRX(x, 0)], [qp.expval(qp.GellMann(0, 3))])
             program, execution_config = dev.preprocess()
             new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
@@ -267,7 +267,7 @@ class DefaultQutritMixed(Device):
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        if qml.math.get_interface(seed) == "jax":
+        if qp.math.get_interface(seed) == "jax":
             self._prng_key = seed
             self._rng = np.random.default_rng(None)
         else:

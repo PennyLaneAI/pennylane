@@ -123,12 +123,12 @@ class QNGOptimizer(GradientDescentOptimizer):
     For VQE/VQE-like problems, the objective function for the optimizer can be
     realized as a :class:`~.QNode` that returns the expectation value of a Hamiltonian.
 
-    >>> dev = qml.device("default.qubit", wires=(0, 1, "aux"))
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=(0, 1, "aux"))
+    >>> @qp.qnode(dev)
     ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     return qml.expval(qml.X(0) + qml.X(1))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.RY(params[1], wires=0)
+    ...     return qp.expval(qp.X(0) + qp.X(1))
 
     Once constructed, the cost function can be passed directly to the
     optimizer's :meth:`~.step` function:
@@ -136,7 +136,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> from pennylane import numpy as np
     >>> eta = 0.01
     >>> init_params = np.array([0.011, 0.012])
-    >>> opt = qml.QNGOptimizer(eta)
+    >>> opt = qp.QNGOptimizer(eta)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
@@ -145,7 +145,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     via the ``metric_tensor_fn`` keyword argument. For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
-    >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit)
+    >>> adj_metric_tensor = qp.adjoint_metric_tensor(circuit)
     >>> opt.step(circuit, init_params, metric_tensor_fn=adj_metric_tensor)
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
@@ -162,7 +162,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         See the `quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`_
         for more details on the Fubini-Study metric tensor and this optimization class.
 
-        See :class:`~.QNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
+        See :class:`~.QNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qp.qjit``-compatible implementation.
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):

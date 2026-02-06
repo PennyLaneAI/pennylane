@@ -41,25 +41,25 @@ def commutation_dag(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the commutation DAG.
 
     **Example**
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qp.device("default.qubit")
 
     .. code-block:: python
 
-        @qml.qnode(device=dev)
+        @qp.qnode(device=dev)
         def circuit(x, y, z):
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=0)
-            qml.CNOT(wires=[1, 2])
-            qml.RY(y, wires=1)
-            qml.Hadamard(wires=2)
-            qml.CRZ(z, wires=[2, 0])
-            qml.RY(-y, wires=1)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, wires=0)
+            qp.RX(y, wires=0)
+            qp.CNOT(wires=[1, 2])
+            qp.RY(y, wires=1)
+            qp.Hadamard(wires=2)
+            qp.CRZ(z, wires=[2, 0])
+            qp.RY(-y, wires=1)
+            return qp.expval(qp.Z(0))
 
     The commutation dag can be returned by using the following code:
 
@@ -180,7 +180,7 @@ class CommutationDAGNode:
 class CommutationDAG:
     r"""Class to represent a quantum circuit as a directed acyclic graph (DAG). This class is useful to build the
     commutation DAG and set up all nodes attributes. The construction of the DAG should be used through the
-    transform :class:`qml.transforms.commutation_dag`.
+    transform :class:`qp.transforms.commutation_dag`.
 
     Args:
         tape (.QuantumTape): PennyLane quantum tape representing a quantum circuit.
@@ -204,12 +204,12 @@ class CommutationDAG:
         wires_map = OrderedDict(zip(tape.wires, consecutive_wires, strict=True))
 
         for operation in tape.operations:
-            operation = qml.map_wires(operation, wire_map=wires_map)
+            operation = qp.map_wires(operation, wire_map=wires_map)
             self.add_node(operation)
 
         self._add_successors()
 
-        self.observables = [qml.map_wires(obs, wire_map=wires_map) for obs in tape.observables]
+        self.observables = [qp.map_wires(obs, wire_map=wires_map) for obs in tape.observables]
 
     def _add_node(self, node):
         self.node_id += 1
@@ -220,7 +220,7 @@ class CommutationDAG:
         """Add the operation as a node in the DAG and updates the edges.
 
         Args:
-            operation (qml.operation): PennyLane quantum operation to add to the DAG.
+            operation (qp.operation): PennyLane quantum operation to add to the DAG.
         """
         target_wires = [w for w in operation.wires if w not in operation.control_wires]
 
@@ -429,7 +429,7 @@ class CommutationDAG:
             self.get_node(current_node_id).reachable = True
 
         for prev_node_id in range(max_node_id - 1, -1, -1):
-            if self.get_node(prev_node_id).reachable and not qml.is_commuting(
+            if self.get_node(prev_node_id).reachable and not qp.is_commuting(
                 self.get_node(prev_node_id).op, max_node
             ):
                 self.add_edge(prev_node_id, max_node_id)

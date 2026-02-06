@@ -99,7 +99,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             if not enabled_graph() and (fixed_decomps or alt_decomps):
                 raise TypeError(
                     "The keyword arguments fixed_decomps and alt_decomps are only available with "
-                    "the new experimental graph-based decomposition system. Use qml.decomposition.enable_graph() "
+                    "the new experimental graph-based decomposition system. Use qp.decomposition.enable_graph() "
                     "to enable the new system."
                 )
 
@@ -366,7 +366,7 @@ def decompose(
 
     .. note::
 
-        When ``qml.decomposition.enable_graph()`` is present, this transform takes advantage of the
+        When ``qp.decomposition.enable_graph()`` is present, this transform takes advantage of the
         new graph-based decomposition algorithm that allows for more flexible and resource-efficient
         decompositions towards any target gate set. The keyword arguments ``fixed_decomps`` and
         ``alt_decomps`` are only functional with this toggle present.
@@ -383,7 +383,7 @@ def decompose(
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized (only available when the new graph-based
             decomposition system is enabled). If ``None``, the gate set is considered to be
-            all operations in ``qml.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
+            all operations in ``qp.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
             for this list.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
@@ -411,7 +411,7 @@ def decompose(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
-        The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+        The decomposed circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
     .. note::
 
@@ -419,13 +419,13 @@ def decompose(
         with no defined decomposition is encountered during decomposition, it will be left in the
         circuit even if it does not belong in the target gate set. In this case, a ``UserWarning``
         will be raised. To suppress this warning, simply add the operator to the gate set.
-        When ``qml.decomposition.enabled_graph()``, PennyLane errors out with a ``DecompositionError``.
+        When ``qp.decomposition.enabled_graph()``, PennyLane errors out with a ``DecompositionError``.
 
     .. seealso::
 
         For decomposing into Clifford + T, check out :func:`~.pennylane.clifford_t_decomposition`.
 
-        :func:`qml.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` is a
+        :func:`qp.devices.preprocess.decompose <.pennylane.devices.preprocess.decompose>` is a
         transform that is intended for device developers. This function will decompose a quantum
         circuit into a set of basis gates available on a specific device architecture.
 
@@ -433,12 +433,12 @@ def decompose(
 
     Consider the following tape:
 
-    >>> ops = [qml.IsingXX(1.2, wires=(0,1))]
-    >>> tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.Z(0))])
+    >>> ops = [qp.IsingXX(1.2, wires=(0,1))]
+    >>> tape = qp.tape.QuantumScript(ops, measurements=[qp.expval(qp.Z(0))])
 
     You can decompose the circuit into a set of gates:
 
-    >>> batch, fn = qml.transforms.decompose(tape, gate_set={qml.CNOT, qml.RX})
+    >>> batch, fn = qp.transforms.decompose(tape, gate_set={qp.CNOT, qp.RX})
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]), RX(1.2, wires=[0]), CNOT(wires=[0, 1]), expval(Z(0))]
 
@@ -446,16 +446,16 @@ def decompose(
 
     .. code-block:: python
 
-        @qml.transforms.decompose(gate_set={qml.Toffoli, "RX", "RZ"})
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.decompose(gate_set={qp.Toffoli, "RX", "RZ"})
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.Hadamard(wires=[0])
-            qml.Toffoli(wires=[0,1,2])
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=[0])
+            qp.Toffoli(wires=[0,1,2])
+            return qp.expval(qp.Z(0))
 
     Since the Hadamard gate is not defined in our gate set, it will be decomposed into rotations:
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
     1: ───────────────────────────────├●─┤
     2: ───────────────────────────────╰X─┤
@@ -466,16 +466,16 @@ def decompose(
 
     .. code-block:: python
 
-        @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.Hadamard(wires=[0])
-            qml.Toffoli(wires=[0,1,2])
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=[0])
+            qp.Toffoli(wires=[0,1,2])
+            return qp.expval(qp.Z(0))
 
     The circuit will be decomposed into single or two-qubit operators,
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
     1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
     2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
@@ -490,27 +490,27 @@ def decompose(
 
         phase = 1
         target_wires = [0]
-        unitary = qml.RX(phase, wires=0).matrix()
+        unitary = qp.RX(phase, wires=0).matrix()
         n_estimation_wires = 3
         estimation_wires = range(1, n_estimation_wires + 1)
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
             # Start in the |+> eigenstate of the unitary
-            qml.Hadamard(wires=target_wires)
-            qml.QuantumPhaseEstimation(
+            qp.Hadamard(wires=target_wires)
+            qp.QuantumPhaseEstimation(
                 unitary,
                 target_wires=target_wires,
                 estimation_wires=estimation_wires,
             )
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=0))())
+    >>> print(qp.draw(qp.transforms.decompose(circuit, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
     1: ──H─╰●──────│───────│───────╭QFT†─┤
     2: ──H─────────╰●──────│───────├QFT†─┤
@@ -520,7 +520,7 @@ def decompose(
     [[0.877...+0.j         0.        -0.479...j]
      [0.        -0.479...j 0.877...+0.j        ]]
 
-    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms.decompose(circuit, max_expansion=2))())
     0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
     1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
     2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
@@ -540,7 +540,7 @@ def decompose(
         :title: Integration with the Graph-Based Decomposition System
 
         This transform takes advantage of the new graph-based decomposition algorithm when
-        ``qml.decomposition.enable_graph()`` is present, which allows for more flexible
+        ``qp.decomposition.enable_graph()`` is present, which allows for more flexible
         decompositions towards any target gate set. For example, the current system does not
         guarantee a decomposition to the desired target gate set:
 
@@ -548,11 +548,11 @@ def decompose(
 
             import pennylane as qp
 
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.CRX(0.5, wires=[0, 1])
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.CRX(0.5, wires=[0, 1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
-            [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+            tape = qp.tape.QuantumScript.from_queue(q)
+            [new_tape], _ = qp.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 
         >>> from pprint import pprint
         >>> pprint(new_tape.operations)
@@ -565,8 +565,8 @@ def decompose(
 
         With the new system enabled, the transform produces the expected outcome.
 
-        >>> qml.decomposition.enable_graph()
-        >>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+        >>> qp.decomposition.enable_graph()
+        >>> [new_tape], _ = qp.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
         >>> new_tape.operations
         [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
@@ -576,32 +576,32 @@ def decompose(
 
         .. code-block:: python
 
-            @qml.transforms.decompose(
-                gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100}
+            @qp.transforms.decompose(
+                gate_set={qp.Toffoli: 1.23, qp.RX: 4.56, qp.CZ: 0.01, qp.H: 420, qp.CRZ: 100}
             )
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit():
-                qml.CRX(0.1, wires=[0, 1])
-                qml.Toffoli(wires=[0, 1, 2])
-                return qml.expval(qml.Z(0))
+                qp.CRX(0.1, wires=[0, 1])
+                qp.Toffoli(wires=[0, 1, 2])
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qp.draw(circuit)())
         0: ───────────╭●────────────╭●─╭●─┤  <Z>
         1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤
         2: ────────────────────────────╰X─┤
 
         .. code-block:: python
 
-            @qml.transforms.decompose(
-                gate_set={qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1}
+            @qp.transforms.decompose(
+                gate_set={qp.Toffoli: 1.23, qp.RX: 4.56, qp.CZ: 0.01, qp.H: 0.1, qp.CRZ: 0.1}
             )
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit():
-                qml.CRX(0.1, wires=[0, 1])
-                qml.Toffoli(wires=[0, 1, 2])
-                return qml.expval(qml.Z(0))
+                qp.CRX(0.1, wires=[0, 1])
+                qp.Toffoli(wires=[0, 1, 2])
+                return qp.expval(qp.Z(0))
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qp.draw(circuit)())
         0: ────╭●───────────╭●─┤  <Z>
         1: ──H─╰RZ(0.10)──H─├●─┤
         2: ─────────────────╰X─┤
@@ -622,21 +622,21 @@ def decompose(
         needs to be decomposed. In short, the ``gate_set`` is specified in terms of operator types,
         whereas the ``stopping_condition`` is specified in terms of operator instances.
 
-        Here is an example of using ``stopping_condition`` to not decompose a ``qml.QubitUnitary``
+        Here is an example of using ``stopping_condition`` to not decompose a ``qp.QubitUnitary``
         instance if it's equivalent to the identity matrix.
 
         .. code-block:: python
 
             import pennylane as qp
 
-            qml.decomposition.enable_graph()
+            qp.decomposition.enable_graph()
 
             # Prepare a unitary matrix that we want to decompose
-            U = qml.matrix(qml.Rot(0.1, 0.2, 0.3, wires=0) @ qml.Identity(wires=1))
+            U = qp.matrix(qp.Rot(0.1, 0.2, 0.3, wires=0) @ qp.Identity(wires=1))
 
             def stopping_condition(op):
 
-                if isinstance(op, qml.QubitUnitary):
+                if isinstance(op, qp.QubitUnitary):
                     identity = math.eye(2 ** len(op.wires))
                     return math.allclose(op.matrix(), identity)
 
@@ -647,16 +647,16 @@ def decompose(
 
         .. code-block:: python
 
-            @qml.transforms.decompose(
-                gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
+            @qp.transforms.decompose(
+                gate_set={qp.RZ, qp.RY, qp.GlobalPhase, qp.CNOT},
                 stopping_condition=stopping_condition,
             )
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit():
-                qml.QubitUnitary(U, wires=[0, 1])
-                return qml.expval(qml.PauliZ(0))
+                qp.QubitUnitary(U, wires=[0, 1])
+                return qp.expval(qp.PauliZ(0))
 
-        >>> print(qml.draw(circuit)())
+        >>> print(qp.draw(circuit)())
         0: ──RZ(0.10)──RY(0.20)──RZ(0.30)─┤  <Z>
         1: ──U(M0)────────────────────────┤
         <BLANKLINE>
@@ -669,61 +669,61 @@ def decompose(
 
         **Customizing Decompositions**
 
-        The new system also enables specifying custom decomposition rules. When ``qml.decomposition.enable_graph()``
+        The new system also enables specifying custom decomposition rules. When ``qp.decomposition.enable_graph()``
         is present, this transform accepts two additional keyword arguments: ``fixed_decomps`` and
         ``alt_decomps``. The user can define custom decomposition rules as quantum functions decorated
-        with ``@qml.register_resources``, and provide them to the transform via these arguments.
+        with ``@qp.register_resources``, and provide them to the transform via these arguments.
 
-        .. seealso:: :func:`qml.register_resources <pennylane.register_resources>`
+        .. seealso:: :func:`qp.register_resources <pennylane.register_resources>`
 
         The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
         certain operators, whereas the ``alt_decomps`` is used to provide alternative decomposition rules
         for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
-        In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
-        gates; when it comes to ``qml.CNOT``, the system will choose the most efficient decomposition rule
-        among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qml.CNOT``.
+        In the following example, ``isingxx_decomp`` will always be used to decompose ``qp.IsingXX``
+        gates; when it comes to ``qp.CNOT``, the system will choose the most efficient decomposition rule
+        among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qp.CNOT``.
 
         .. code-block:: python
 
             import pennylane as qp
 
-            qml.decomposition.enable_graph()
+            qp.decomposition.enable_graph()
 
-            @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
+            @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
             def isingxx_decomp(phi, wires, **__):
-                qml.CNOT(wires=wires)
-                qml.RX(phi, wires=[wires[0]])
-                qml.CNOT(wires=wires)
+                qp.CNOT(wires=wires)
+                qp.RX(phi, wires=[wires[0]])
+                qp.CNOT(wires=wires)
 
-            @qml.register_resources({qml.H: 2, qml.CZ: 1})
+            @qp.register_resources({qp.H: 2, qp.CZ: 1})
             def my_cnot1(wires, **__):
-                qml.H(wires=wires[1])
-                qml.CZ(wires=wires)
-                qml.H(wires=wires[1])
+                qp.H(wires=wires[1])
+                qp.CZ(wires=wires)
+                qp.H(wires=wires[1])
 
-            @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+            @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
             def my_cnot2(wires, **__):
-                qml.RY(np.pi/2, wires[1])
-                qml.Z(wires[1])
-                qml.CZ(wires=wires)
-                qml.RY(np.pi/2, wires[1])
-                qml.Z(wires[1])
+                qp.RY(np.pi/2, wires[1])
+                qp.Z(wires[1])
+                qp.CZ(wires=wires)
+                qp.RY(np.pi/2, wires[1])
+                qp.Z(wires[1])
 
-            @qml.transforms.decompose(
+            @qp.transforms.decompose(
                 gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
-                alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
-                fixed_decomps={qml.IsingXX: isingxx_decomp},
+                alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
+                fixed_decomps={qp.IsingXX: isingxx_decomp},
             )
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit():
-                qml.CNOT(wires=[0, 1])
-                qml.IsingXX(0.5, wires=[0, 1])
-                return qml.state()
+                qp.CNOT(wires=[0, 1])
+                qp.IsingXX(0.5, wires=[0, 1])
+                return qp.state()
 
-        >>> qml.specs(circuit)()["resources"].gate_types
+        >>> qp.specs(circuit)()["resources"].gate_types
         {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
-        >>> qml.decomposition.disable_graph()
+        >>> qp.decomposition.disable_graph()
 
         **Degenerate Graph Solutions**
 
@@ -732,16 +732,16 @@ def decompose(
         normally an issue, except for in cases where graph decompositions are being used with
         ``qjit`` and intermediate gates include operations that are non-executable by Catalyst.
         An example of such a gate is the ``PauliRot`` operation. If an intermediate decomposition is
-        chosen that includes a ``qml.PauliRot`` instance, Catalyst cannot execute the program. If
+        chosen that includes a ``qp.PauliRot`` instance, Catalyst cannot execute the program. If
         this behaviour is encountered, this can be counteracted by adding a prohibitively large
-        penalty to the graph solution should it encounter a ``qml.PauliRot`` instance (e.g.,
-        ``qml.transforms.decomopose(..., gate_set={..., qml.PauliRot: 100_000})``).
+        penalty to the graph solution should it encounter a ``qp.PauliRot`` instance (e.g.,
+        ``qp.transforms.decomopose(..., gate_set={..., qp.PauliRot: 100_000})``).
     """
 
     if not enabled_graph() and (fixed_decomps or alt_decomps):
         raise TypeError(
             "The keyword arguments fixed_decomps and alt_decomps are only available with the new "
-            "experimental graph-based decomposition system. Use qml.decomposition.enable_graph() "
+            "experimental graph-based decomposition system. Use qp.decomposition.enable_graph() "
             "to enable the new system."
         )
 
@@ -857,7 +857,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
     elif enabled_graph() and isinstance(op, GlobalPhase):
         warnings.warn(
-            "With qml.decomposition.enabled_graph(), GlobalPhase is not assumed to have a "
+            "With qp.decomposition.enabled_graph(), GlobalPhase is not assumed to have a "
             "decomposition. To disable this warning, add GlobalPhase to the gate set, or "
             "assign a decomposition rule to GlobalPhase via the fixed_decomps keyword "
             "argument. To make GlobalPhase decompose to nothing, you can import null_decomp "
@@ -969,7 +969,7 @@ def _(gate_set: NoneType):  # pylint: disable=unused-argument
     if enabled_graph():
         raise TypeError(
             "The gate_set argument is required when the graph-based decomposition system "
-            "is enabled via qml.decomposition.enable_graph()"
+            "is enabled via qp.decomposition.enable_graph()"
         )
 
     return gate_set, gate_set_contains

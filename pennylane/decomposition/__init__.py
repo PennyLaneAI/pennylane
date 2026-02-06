@@ -35,13 +35,13 @@ By default, this system is disabled.
     ~disable_graph
     ~enabled_graph
 
->>> qml.decomposition.enabled_graph()
+>>> qp.decomposition.enabled_graph()
 False
->>> qml.decomposition.enable_graph()
->>> qml.decomposition.enabled_graph()
+>>> qp.decomposition.enable_graph()
+>>> qp.decomposition.enabled_graph()
 True
->>> qml.decomposition.disable_graph()
->>> qml.decomposition.enabled_graph()
+>>> qp.decomposition.disable_graph()
+>>> qp.decomposition.enabled_graph()
 False
 
 .. _decomps_rules:
@@ -73,11 +73,11 @@ must declare its resource requirements using the ``register_resources`` decorato
 
 .. code-block:: python
 
-    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot(wires):
-        qml.H(wires=wires[1])
-        qml.CZ(wires=wires)
-        qml.H(wires=wires[1])
+        qp.H(wires=wires[1])
+        qp.CZ(wires=wires)
+        qp.H(wires=wires[1])
 
 .. _decomps_management:
 
@@ -107,11 +107,11 @@ guarantee a decomposition to the desired target gate set:
 
 .. code-block:: python
 
-    with qml.queuing.AnnotatedQueue() as q:
-        qml.CRX(0.5, wires=[0, 1])
+    with qp.queuing.AnnotatedQueue() as q:
+        qp.CRX(0.5, wires=[0, 1])
 
-    tape = qml.tape.QuantumScript.from_queue(q)
-    [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+    tape = qp.tape.QuantumScript.from_queue(q)
+    [new_tape], _ = qp.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 
 >>> new_tape.operations
 [RZ(1.5707963267948966, wires=[1]),
@@ -123,8 +123,8 @@ guarantee a decomposition to the desired target gate set:
 
 With the new system enabled, the transform produces the expected outcome.
 
->>> qml.decomposition.enable_graph()
->>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+>>> qp.decomposition.enable_graph()
+>>> [new_tape], _ = qp.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 >>> new_tape.operations
 [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
@@ -140,46 +140,46 @@ to the transform via these arguments.
 certain operators, whereas ``alt_decomps`` is used to provide alternative decomposition rules
 for operators that may be chosen if they lead to a more resource-efficient decomposition.
 
-In the following example, ``isingxx_decomp`` will always be used to decompose ``qml.IsingXX``
-gates; when it comes to ``qml.CNOT``, the system will choose the most efficient decomposition rule
-among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qml.CNOT``.
+In the following example, ``isingxx_decomp`` will always be used to decompose ``qp.IsingXX``
+gates; when it comes to ``qp.CNOT``, the system will choose the most efficient decomposition rule
+among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qp.CNOT``.
 
 .. code-block:: python
 
-    qml.decomposition.enable_graph()
+    qp.decomposition.enable_graph()
 
-    @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
+    @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
     def isingxx_decomp(phi, wires, **__):
-        qml.CNOT(wires=wires)
-        qml.RX(phi, wires=[wires[0]])
-        qml.CNOT(wires=wires)
+        qp.CNOT(wires=wires)
+        qp.RX(phi, wires=[wires[0]])
+        qp.CNOT(wires=wires)
 
-    @qml.register_resources({qml.H: 2, qml.CZ: 1})
+    @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot1(wires, **__):
-        qml.H(wires=wires[1])
-        qml.CZ(wires=wires)
-        qml.H(wires=wires[1])
+        qp.H(wires=wires[1])
+        qp.CZ(wires=wires)
+        qp.H(wires=wires[1])
 
-    @qml.register_resources({qml.RY: 2, qml.CZ: 1, qml.Z: 2})
+    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
     def my_cnot2(wires, **__):
-        qml.RY(np.pi/2, wires[1])
-        qml.Z(wires[1])
-        qml.CZ(wires=wires)
-        qml.RY(np.pi/2, wires[1])
-        qml.Z(wires[1])
+        qp.RY(np.pi/2, wires[1])
+        qp.Z(wires[1])
+        qp.CZ(wires=wires)
+        qp.RY(np.pi/2, wires[1])
+        qp.Z(wires[1])
 
-    @qml.transforms.decompose(
+    @qp.transforms.decompose(
         gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
-        alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
-        fixed_decomps={qml.IsingXX: isingxx_decomp},
+        alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
+        fixed_decomps={qp.IsingXX: isingxx_decomp},
     )
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def circuit():
-        qml.CNOT(wires=[0, 1])
-        qml.IsingXX(0.5, wires=[0, 1])
-        return qml.state()
+        qp.CNOT(wires=[0, 1])
+        qp.IsingXX(0.5, wires=[0, 1])
+        return qp.state()
 
->>> qml.specs(circuit)()["resources"].gate_types
+>>> qp.specs(circuit)()["resources"].gate_types
 defaultdict(int, {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3})
 
 To register alternative decomposition rules under an operator to be used globally, use
@@ -201,14 +201,14 @@ operator towards a target gate set.
 
 .. code-block:: python
 
-    op = qml.CRX(0.5, wires=[0, 1])
+    op = qp.CRX(0.5, wires=[0, 1])
     graph = DecompositionGraph(
         operations=[op],
         gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
     )
     solution = graph.solve()
 
->>> with qml.queuing.AnnotatedQueue() as q:
+>>> with qp.queuing.AnnotatedQueue() as q:
 ...     solution.decomposition(op)(0.5, wires=[0, 1])
 >>> q.queue
 [RZ(1.5707963267948966, wires=[1]),

@@ -35,7 +35,7 @@ from .decompositions.controlled_decompositions import (
 def _is_single_qubit_special_unitary(op):
     mat = op.matrix()
     det = mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
-    return qml.math.allclose(det, 1)
+    return qp.math.allclose(det, 1)
 
 
 def decompose_mcx(
@@ -48,9 +48,9 @@ def decompose_mcx(
 
     n_ctrl_wires, n_work_wires = len(control_wires), len(work_wires)
     if n_ctrl_wires == 1:
-        return [qml.CNOT(wires=control_wires + Wires(target_wire))]
+        return [qp.CNOT(wires=control_wires + Wires(target_wire))]
     if n_ctrl_wires == 2:
-        return qml.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
+        return qp.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
 
     if n_work_wires >= n_ctrl_wires - 2:
         # Lemma 7.2 of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_
@@ -67,8 +67,8 @@ def decompose_mcx(
         )
 
     # Lemma 7.5
-    with qml.QueuingManager.stop_recording():
-        op = qml.X(target_wire)
+    with qp.QueuingManager.stop_recording():
+        op = qp.X(target_wire)
     return _decompose_multicontrolled_unitary(op, control_wires)
 
 
@@ -100,27 +100,27 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
     Number of gates in decomposition are: O(len(control_wires)^2)
     """
     if len(control_wires) == 1:
-        with qml.QueuingManager.stop_recording():
-            powered_op = qml.pow(op, power, lazy=True)
+        with qp.QueuingManager.stop_recording():
+            powered_op = qp.pow(op, power, lazy=True)
         return ctrl_decomp_zyz(powered_op, control_wires)
 
-    with qml.QueuingManager.stop_recording():
+    with qp.QueuingManager.stop_recording():
         cnots = decompose_mcx(
             control_wires=control_wires[:-1],
             target_wire=control_wires[-1],
             work_wires=work_wires + target_wire,
             work_wire_type="borrowed",
         )
-    with qml.QueuingManager.stop_recording():
-        powered_op = qml.pow(op, 0.5 * power, lazy=True)
-        powered_op_adj = qml.adjoint(powered_op, lazy=True)
+    with qp.QueuingManager.stop_recording():
+        powered_op = qp.pow(op, 0.5 * power, lazy=True)
+        powered_op_adj = qp.adjoint(powered_op, lazy=True)
 
-    if qml.QueuingManager.recording():
+    if qp.QueuingManager.recording():
         decomposition = [
             *ctrl_decomp_zyz(powered_op, control_wires[-1]),
-            *(qml.apply(o) for o in cnots),
+            *(qp.apply(o) for o in cnots),
             *ctrl_decomp_zyz(powered_op_adj, control_wires[-1]),
-            *(qml.apply(o) for o in cnots),
+            *(qp.apply(o) for o in cnots),
             *_decompose_recursive(
                 op, 0.5 * power, control_wires[:-1], target_wire, control_wires[-1] + work_wires
             ),
@@ -143,13 +143,13 @@ def _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires,
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
 
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
         _mcx_many_workers(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
-    if qml.QueuingManager.recording():
+    if qp.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            qml.apply(op)
+            qp.apply(op)
 
     return q.queue
 
@@ -167,10 +167,10 @@ def _decompose_mcx_with_one_worker_b95(control_wires, target_wire, work_wire):
     second_part = control_wires[partition:]
 
     gates = [
-        qml.ctrl(qml.X(work_wire), control=first_part, work_wires=second_part + target_wire),
-        qml.ctrl(qml.X(target_wire), control=second_part + work_wire, work_wires=first_part),
-        qml.ctrl(qml.X(work_wire), control=first_part, work_wires=second_part + target_wire),
-        qml.ctrl(qml.X(target_wire), control=second_part + work_wire, work_wires=first_part),
+        qp.ctrl(qp.X(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qp.ctrl(qp.X(target_wire), control=second_part + work_wire, work_wires=first_part),
+        qp.ctrl(qp.X(work_wire), control=first_part, work_wires=second_part + target_wire),
+        qp.ctrl(qp.X(target_wire), control=second_part + work_wire, work_wires=first_part),
     ]
 
     return gates
@@ -202,13 +202,13 @@ def _decompose_mcx_with_one_worker_kg24(
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
         _mcx_one_worker(wires=wires, work_wires=[work_wire], work_wire_type=work_wire_type)
 
-    if qml.QueuingManager.recording():
+    if qp.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            qml.apply(op)
+            qp.apply(op)
 
     return q.queue
 
@@ -242,12 +242,12 @@ def _decompose_mcx_with_two_workers_old(
     if len(work_wires) < 2:
         raise ValueError("At least 2 work wires are needed for this decomposition.")
 
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
         _mcx_two_workers(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
-    if qml.QueuingManager.recording():
+    if qp.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            qml.apply(op)
+            qp.apply(op)
 
     return q.queue

@@ -61,7 +61,7 @@ def set_item(
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
-    if qml.math.is_abstract(target):
+    if qp.math.is_abstract(target):
         target = target.at[index].set(x)
     else:
         target[index] = x
@@ -88,7 +88,7 @@ def update_item_with_op(
     if op == "sub":
         x = -x
 
-    if qml.math.is_abstract(target):
+    if qp.math.is_abstract(target):
         if isinstance(index, slice):
             target = getattr(target.at[index.start : index.stop : index.step], gast_op_map[op])(x)
         else:
@@ -128,7 +128,7 @@ def if_stmt(
     # and want to restore the initial state before entering each branch.
     init_state = get_state()
 
-    @qml.cond(pred)
+    @qp.cond(pred)
     def functional_cond():
         set_state(init_state)
         true_fn()
@@ -224,7 +224,7 @@ def _call_pennylane_for(
     init_iter_args = get_state()
     _assert_iteration_inputs(init_iter_args, symbol_names)
 
-    @qml.for_loop(start, stop, step)
+    @qp.for_loop(start, stop, step)
     def functional_for(i, *iter_args):
         # Assign tracers to the iteration variables identified by AutoGraph (iter_args in mlir).
         set_state(iter_args)
@@ -352,7 +352,7 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         set_state(old)
         return res
 
-    @qml.while_loop(test)
+    @qp.while_loop(test)
     def functional_while(iter_args):
         set_state(iter_args)
         loop_body()
@@ -378,7 +378,7 @@ def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
 
     values = [arg() if callable(arg) else arg for arg in args]
 
-    if any(qml.math.is_abstract(val) for val in values):
+    if any(qp.math.is_abstract(val) for val in values):
         result = jax_fn(*values)
     else:
         result = python_fn(*values)
@@ -459,28 +459,28 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
 
     # TODO: eliminate the need for patching by improving the autograph interface
     with Patcher(
-        (ag_api, "_TRANSPILER", qml.capture.autograph.transformer.TRANSFORMER),
+        (ag_api, "_TRANSPILER", qp.capture.autograph.transformer.TRANSFORMER),
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
         # HOTFIX: pass through calls of known PennyLane wrapper functions
         if fn in (
-            qml.adjoint,
-            qml.ctrl,
-            qml.grad,
-            qml.jacobian,
-            qml.vjp,
-            qml.jvp,
+            qp.adjoint,
+            qp.ctrl,
+            qp.grad,
+            qp.jacobian,
+            qp.vjp,
+            qp.jvp,
         ):
             if not args:
                 raise ValueError(f"{fn.__name__} requires at least one argument")
 
-            is_abstract_operator = qml.math.is_abstract(args[0]) and isinstance(
-                args[0].aval, qml.capture.primitives.AbstractOperator
+            is_abstract_operator = qp.math.is_abstract(args[0]) and isinstance(
+                args[0].aval, qp.capture.primitives.AbstractOperator
             )
             # If first argument is already an operator, pass it through directly
-            if isinstance(args[0], qml.operation.Operator) or (
-                is_abstract_operator and fn in {qml.adjoint, qml.ctrl}
+            if isinstance(args[0], qp.operation.Operator) or (
+                is_abstract_operator and fn in {qp.adjoint, qp.ctrl}
             ):
                 return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
 
@@ -502,7 +502,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             )
 
         # For QNode calls, we employ a wrapper to forward the quantum function call to autograph
-        if isinstance(fn, qml.QNode):
+        if isinstance(fn, qp.QNode):
 
             @functools.wraps(fn.func)
             def qnode_call_wrapper():

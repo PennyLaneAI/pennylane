@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines qml.jvp
+Defines qp.jvp
 """
 
 import warnings
@@ -70,13 +70,13 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
 
     .. code-block:: python
 
-        @qml.qjit
+        @qp.qjit
         def jvp(params, tangent):
           def f(x):
               y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
               return jnp.stack(y)
 
-          return qml.jvp(f, [params], [tangent])
+          return qp.jvp(f, [params], [tangent])
 
     >>> x = jnp.array([0.1, 0.2])
     >>> tangent = jnp.array([0.3, 0.6])
@@ -91,16 +91,16 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
 
     .. code-block:: python
 
-        @qml.qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(n, params):
-            qml.RX(params[n, 0], wires=n)
-            qml.RY(params[n, 1], wires=n)
-            return qml.expval(qml.Z(1))
+            qp.RX(params[n, 0], wires=n)
+            qp.RY(params[n, 1], wires=n)
+            return qp.expval(qp.Z(1))
 
-        @qml.qjit
+        @qp.qjit
         def workflow(primals, tangents):
-            return qml.jvp(circuit, [1, primals], [tangents], argnums=[1])
+            return qp.jvp(circuit, [1, primals], [tangents], argnums=[1])
 
     >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
     >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
@@ -111,7 +111,7 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None, *, argnum=None):
     argnums = argnums if argnums is not None else argnum
     if argnum is not None:
         warnings.warn(
-            "argnum in qml.jvp has been renamed to argnums to match jax and catalyst.",
+            "argnum in qp.jvp has been renamed to argnums to match jax and catalyst.",
             PennyLaneDeprecationWarning,
         )
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.is_unitary function.
+This module contains the qp.is_unitary function.
 """
 import pennylane as qp
 from pennylane.operation import Operator
@@ -36,14 +36,14 @@ def is_unitary(op: Operator):
 
     **Example**
 
-    >>> op = qml.RX(0.54, wires=0)
-    >>> qml.is_unitary(op)
+    >>> op = qp.RX(0.54, wires=0)
+    >>> qp.is_unitary(op)
     True
     >>> op2 = op + op
-    >>> qml.is_unitary(op2)
+    >>> qp.is_unitary(op2)
     False
     """
-    identity_mat = qml.math.eye(2 ** len(op.wires))
-    adj_op = qml.adjoint(op)
-    op_prod_adjoint_matrix = qml.matrix(qml.prod(op, adj_op))
-    return qml.math.allclose(op_prod_adjoint_matrix, identity_mat)
+    identity_mat = qp.math.eye(2 ** len(op.wires))
+    adj_op = qp.adjoint(op)
+    op_prod_adjoint_matrix = qp.matrix(qp.prod(op, adj_op))
+    return qp.math.allclose(op_prod_adjoint_matrix, identity_mat)

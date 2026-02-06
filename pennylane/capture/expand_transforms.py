@@ -62,23 +62,23 @@ def expand_plxpr_transforms(f: Callable) -> Callable:
 
     **Example**
 
-    In the below example, we can see that the ``qml.transforms.cancel_inverses`` transform has been
+    In the below example, we can see that the ``qp.transforms.cancel_inverses`` transform has been
     applied to a function. However, the resulting program representation leaves the
     ``cancel_inverses`` transform as a primitive without actually transforming the program.
 
     .. code-block:: python
 
-        qml.capture.enable()
+        qp.capture.enable()
 
-        @qml.transforms.cancel_inverses
+        @qp.transforms.cancel_inverses
         def circuit():
-            qml.X(0)
-            qml.S(1)
-            qml.X(0)
-            qml.adjoint(qml.S(1))
-            return qml.expval(qml.Z(1))
+            qp.X(0)
+            qp.S(1)
+            qp.X(0)
+            qp.adjoint(qp.S(1))
+            return qp.expval(qp.Z(1))
 
-    >>> qml.capture.make_plxpr(circuit)()
+    >>> qp.capture.make_plxpr(circuit)()
     { lambda ; . let
         a:AbstractMeasurement(n_wires=None) = cancel_inverses_transform[
         args_slice=slice(0, 0, None)
@@ -99,8 +99,8 @@ def expand_plxpr_transforms(f: Callable) -> Callable:
 
     To apply the transform, we can use ``expand_plxpr_transforms`` as follows:
 
-    >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
-    >>> qml.capture.make_plxpr(transformed_circuit)()
+    >>> transformed_circuit = qp.capture.expand_plxpr_transforms(circuit)
+    >>> qp.capture.make_plxpr(transformed_circuit)()
     { lambda ; . let
         a:AbstractOperator() = PauliZ[n_wires=1] 1
         b:AbstractMeasurement(n_wires=None) = expval_obs a

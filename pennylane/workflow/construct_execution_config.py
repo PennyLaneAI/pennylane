@@ -36,16 +36,16 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
         resolve (bool): Whether or not to validate and fill in undetermined values like `"best"`. Defaults to ``True``.
 
     Returns:
-        config (qml.devices.ExecutionConfig): the execution configuration
+        config (qp.devices.ExecutionConfig): the execution configuration
 
     **Example**
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
     First, let's import ``pprint`` to make it easier to read the execution configuration objects.
 
@@ -55,7 +55,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
     ``resolve=False``. This will leave properties like ``gradient_method`` and ``interface``
     in their unrefined state (e.g. ``"best"`` or ``"auto"`` respectively).
 
-    >>> config = qml.workflow.construct_execution_config(circuit, resolve=False)(1)
+    >>> config = qp.workflow.construct_execution_config(circuit, resolve=False)(1)
     >>> pprint(config)
     ExecutionConfig(grad_on_execution=None,
                     use_device_gradient=None,
@@ -72,7 +72,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
     Specifying ``resolve=True`` will then resolve these properties appropriately for the
     given ``QNode`` configuration that was provided,
 
-    >>> resolved_config = qml.workflow.construct_execution_config(circuit, resolve=True)(1)
+    >>> resolved_config = qp.workflow.construct_execution_config(circuit, resolve=True)(1)
     >>> pprint(resolved_config)
     ExecutionConfig(grad_on_execution=False,
                     use_device_gradient=True,
@@ -89,7 +89,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
 
     @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
-        mcm_config = qml.devices.MCMConfig(
+        mcm_config = qp.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
         )
@@ -100,7 +100,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
         elif grad_on_execution == "best":
             grad_on_execution = None
 
-        config = qml.devices.ExecutionConfig(
+        config = qp.devices.ExecutionConfig(
             interface=qnode.interface,
             gradient_method=qnode.diff_method,
             grad_on_execution=grad_on_execution,
@@ -117,7 +117,7 @@ def construct_execution_config(qnode: QNode, resolve: bool | None = True) -> Exe
                     **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
                 }
             shots = qnode._get_shots(kwargs)  # pylint: disable=protected-access
-            tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+            tape = qp.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
             batch, _ = qnode.transform_program((tape,))
             config = _resolve_execution_config(config, qnode.device, batch)
 

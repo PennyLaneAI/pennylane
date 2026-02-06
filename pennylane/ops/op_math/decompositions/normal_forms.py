@@ -35,8 +35,8 @@ def _clifford_keys_unwired() -> list:
         list[tuple[~pennylane.operation.Operation]]: Clifford gate sequences.
     """
     # fmt: off
-    I, X, Y, Z = qml.I, qml.X, qml.Y, qml.Z
-    H, S, Sd = qml.H, qml.S, qml.adjoint(qml.S)
+    I, X, Y, Z = qp.I, qp.X, qp.Y, qp.Z
+    H, S, Sd = qp.H, qp.S, qp.adjoint(qp.S)
 
     return [
         (I,), (H,), (S,), (X,), (Y,), (Z,), (Sd,),
@@ -96,8 +96,8 @@ def _clifford_group_to_SO3() -> dict:
 def _clifford_gates_to_SU2() -> dict:
     r"""Returns a dictionary mapping single-qubit Clifford group elements to their corresponding SU(2) matrices
     and global phase scaled by :math:`\pi^{-1}`."""
-    I, X, Y, Z = qml.I(0), qml.X(0), qml.Y(0), qml.Z(0)
-    H, S, Sd = qml.H(0), qml.S(0), qml.adjoint(qml.S(0))
+    I, X, Y, Z = qp.I(0), qp.X(0), qp.Y(0), qp.Z(0)
+    H, S, Sd = qp.H(0), qp.S(0), qp.adjoint(qp.S(0))
     return {
         I: (DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1)), 0.0),
         H: (-DyadicMatrix(ZOmega(b=1), ZOmega(b=1), ZOmega(b=1), ZOmega(b=-1), k=1), 0.5),
@@ -137,25 +137,25 @@ def _parity_transforms() -> dict:
         "C": (
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1))),
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1))),
-            (qml.I(0),),
+            (qp.I(0),),
             0.0,
         ),  # Identity is used as a placeholder to represent arbitrary Clifford group element.
         "T": (
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(c=1))),
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(a=-1))),
-            (qml.T(0),),
+            (qp.T(0),),
             0.0,
         ),
         "HT": (
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(c=1), ZOmega(d=1), ZOmega(c=-1), k=1)),
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(d=1), ZOmega(a=-1), ZOmega(a=1), k=1)),
-            (qml.H(0), qml.T(0)),
+            (qp.H(0), qp.T(0)),
             1.5,
         ),
         "SHT": (
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(c=1), ZOmega(b=1), ZOmega(a=-1), k=1)),
             SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(b=-1), ZOmega(a=-1), ZOmega(c=1), k=1)),
-            (qml.S(0), qml.H(0), qml.T(0)),
+            (qp.S(0), qp.H(0), qp.T(0)),
             1.25,
         ),
     }
@@ -181,7 +181,7 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
             Since JAX arrays are static, we need to specify the maximum size of the output array.
 
     Returns:
-        Tuple[qml.operation.Operator, float] | tuple[tuple[int, tuple[int, ...], int], float]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms and acquired global phase.
+        Tuple[qp.operation.Operator, float] | tuple[tuple[int, tuple[int, ...], int], float]: The decomposition of the SO(3) matrix into Matsumoto-Amano normal forms and acquired global phase.
     """
     parity_transforms = _parity_transforms()
     clifford_so3s = _clifford_group_to_SO3()
@@ -223,7 +223,7 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
     # Extract the global phase from the decomposition from the
     # tracked elements (`a` and `c`) of the Dyadic matrix.
     su2mat = op.matrix
-    g_angle = -qml.math.angle(complex(su2mat.a) / complex(a) * _SQRT2 ** (k - su2mat.k))
+    g_angle = -qp.math.angle(complex(su2mat.a) / complex(a) * _SQRT2 ** (k - su2mat.k))
     g_phase = g_angle / PI - g_phase
 
     if not compressed:
@@ -234,7 +234,7 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
             "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
         )  # pragma: no cover
 
-    t_bit = jnp.int32(int(decomposition[0] == qml.T(0)))
+    t_bit = jnp.int32(int(decomposition[0] == qp.T(0)))
     c_bit = jnp.int32(max(0, cl_index))
     syllable_sequence = jnp.array(rep_bits[t_bit:], dtype=jnp.int32)
 

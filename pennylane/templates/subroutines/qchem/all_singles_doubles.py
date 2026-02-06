@@ -107,20 +107,20 @@ class AllSinglesDoubles(Operation):
             qubits = 4
 
             # Define the HF state
-            hf_state = qml.qchem.hf_state(electrons, qubits)
+            hf_state = qp.qchem.hf_state(electrons, qubits)
 
             # Generate all single and double excitations
-            singles, doubles = qml.qchem.excitations(electrons, qubits)
+            singles, doubles = qp.qchem.excitations(electrons, qubits)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qp.device('default.qubit', wires=qubits)
 
             wires = range(qubits)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights, hf_state, singles, doubles):
-                qml.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
-                return qml.expval(qml.Z(0))
+                qp.templates.AllSinglesDoubles(weights, wires, hf_state, singles, doubles)
+                return qp.expval(qp.Z(0))
 
             # Evaluate the QNode for a given set of parameters
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))

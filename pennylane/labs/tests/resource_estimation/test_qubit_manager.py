@@ -188,7 +188,7 @@ class TestAllocWires:
 
     def test_init_recording(self):
         """Test that the AllocWires class is instantiated as expected when there is active recording."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             ops = [AllocWires(2), AllocWires(4)]
         assert q.queue == ops
 
@@ -222,7 +222,7 @@ class TestFreeWires:
 
     def test_init_recording(self):
         """Test that the FreeWires class is instantiated as expected when there is active recording."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             ops = [FreeWires(2), FreeWires(4), FreeWires(8)]
 
         assert q.queue == ops

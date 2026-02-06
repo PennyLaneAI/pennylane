@@ -22,7 +22,7 @@ using ``jax.pure_callback``.
 For example:
 
 >>> def f(x):
-...     return qml.math.unwrap(x)
+...     return qp.math.unwrap(x)
 >>> x = jax.numpy.array(1.0)
 >>> jax.jit(f)(x)
 Traceback (most recent call last):
@@ -56,7 +56,7 @@ from .jax import _NonPytreeWrapper
 Zero = jax.custom_derivatives.SymbolicZero
 
 
-def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
+def _to_jax(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, and numpy arrays
@@ -95,7 +95,7 @@ def _jax_dtype(m_type):
     return jnp.dtype(m_type)
 
 
-def _get_counts_shape(mp: "qml.measurements.CountsMP", num_device_wires=0):
+def _get_counts_shape(mp: "qp.measurements.CountsMP", num_device_wires=0):
     num_wires = len(mp.wires) if mp.wires else num_device_wires
     outcome_counts = {}
     binary_pattern = "{0:0" + str(num_wires) + "b}"
@@ -106,7 +106,7 @@ def _get_counts_shape(mp: "qml.measurements.CountsMP", num_device_wires=0):
     return outcome_counts
 
 
-def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.Device"):
+def _result_shape_dtype_struct(tape: "qp.tape.QuantumScript", device: "qp.devices.Device"):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
 
@@ -114,7 +114,7 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devi
 
     def struct(mp, shots):
         # depends on num_device_wires and tape.batch_size from closure
-        if isinstance(mp, qml.measurements.CountsMP):
+        if isinstance(mp, qp.measurements.CountsMP):
             counts_shape = _get_counts_shape(mp, num_device_wires=num_device_wires)
             if tape.batch_size:
                 return tuple(counts_shape for _ in range(tape.batch_size))
@@ -135,19 +135,19 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devi
     return tuple(shape) if tape.shots.has_partitioned_shots else shape[0]
 
 
-def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.Device"):
+def _jac_shape_dtype_struct(tape: "qp.tape.QuantumScript", device: "qp.devices.Device"):
     """The shape of a jacobian for a single tape given a device.
 
     Args:
         tape (QuantumTape): the tape who's output we want to determine
         device (Device): the device used to execute the tape.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.X(0)), qml.probs(0)])
-    >>> dev = qml.devices.DefaultQubit()
+    >>> tape = qp.tape.QuantumScript([qp.RX(1.0, wires=0)], [qp.expval(qp.X(0)), qp.probs(0)])
+    >>> dev = qp.devices.DefaultQubit()
     >>> _jac_shape_dtype_struct(tape, dev)
     (ShapeDtypeStruct(shape=(), dtype=float64),
     ShapeDtypeStruct(shape=(2,), dtype=float64))
-    >>> tapes, fn = qml.gradients.param_shift(tape)
+    >>> tapes, fn = qp.gradients.param_shift(tape)
     >>> fn(dev.execute(tapes))
     (array(0.), array([-0.42...,  0.42...]))
     """
@@ -180,7 +180,7 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
     # first order way of determining native parameter broadcasting support
     # will be inaccurate when inclusion of broadcast_expand depends on ExecutionConfig values (like adjoint)
     device_supports_vectorization = (
-        qml.transforms.broadcast_expand not in device.preprocess_transforms()
+        qp.transforms.broadcast_expand not in device.preprocess_transforms()
     )
 
     vmap_method = "legacy_vectorized" if device_supports_vectorization else "sequential"
@@ -267,13 +267,13 @@ def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
     """
 
     if any(
-        isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes)
+        isinstance(m, qp.measurements.CountsMP) and not (m.all_outcomes)
         for t in tapes
         for m in t.measurements
     ):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
-        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+        raise NotImplementedError("The JAX-JIT interface doesn't support qp.counts.")
 
     parameters = tuple(tuple(t.get_parameters(trainable_only=False)) for t in tapes)
 
@@ -297,13 +297,13 @@ def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
 
     """
     if any(
-        isinstance(m, qml.measurements.CountsMP) and not (m.all_outcomes)
+        isinstance(m, qp.measurements.CountsMP) and not (m.all_outcomes)
         for t in tapes
         for m in t.measurements
     ):
         # Obtaining information about the shape of the Counts measurements is
         # not implemented and is required for the callback logic
-        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+        raise NotImplementedError("The JAX-JIT interface doesn't support qp.counts.")
 
     parameters = tuple(tuple(t.get_parameters()) for t in tapes)
 

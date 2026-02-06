@@ -27,15 +27,15 @@ from pennylane import numpy as pnp
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     feature_vector = [1.0, 2.0, 3.0]
-    op = qml.SqueezingEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
+    op = qp.SqueezingEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
     # Skip differentiation and capture because it's a CV op.
-    qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
 
 
 def test_flatten_unflatten_methods():
     """Test the _flatten and _unflatten methods."""
     feature_vector = [1, 2, 3]
-    op = qml.SqueezingEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
+    op = qp.SqueezingEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
     data, metadata = op._flatten()
     assert op.data == data
 
@@ -43,7 +43,7 @@ def test_flatten_unflatten_methods():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    qml.assert_equal(new_op, op)
+    qp.assert_equal(new_op, op)
     assert new_op is not op
     assert new_op._name == "SqueezingEmbedding"  # make sure initialized
 
@@ -55,8 +55,8 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
-        op = qml.SqueezingEmbedding(features=features, wires=range(3))
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.SqueezingEmbedding(features=features, wires=range(3))
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == len(features)
         for idx, gate in enumerate(tape.operations):
@@ -68,12 +68,12 @@ class TestDecomposition:
 
         features = np.array([1.2, 0.3])
         n_wires = 2
-        dev = qml.device("default.gaussian", wires=n_wires)
+        dev = qp.device("default.gaussian", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="amplitude", c=1)
-            return qml.expval(qml.NumberOperator(wires=0))
+            qp.SqueezingEmbedding(features=x, wires=range(n_wires), method="amplitude", c=1)
+            return qp.expval(qp.NumberOperator(wires=0))
 
         # TODO: come up with better test case
         assert np.allclose(circuit(x=features), 2.2784, atol=0.001)
@@ -83,14 +83,14 @@ class TestDecomposition:
 
         features = np.array([1.2, 0.3])
         n_wires = 2
-        dev = qml.device("default.gaussian", wires=n_wires)
+        dev = qp.device("default.gaussian", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase", c=1)
-            qml.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
-            qml.SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method="phase", c=1)
-            return qml.expval(qml.NumberOperator(wires=0))
+            qp.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase", c=1)
+            qp.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
+            qp.SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method="phase", c=1)
+            return qp.expval(qp.NumberOperator(wires=0))
 
         # TODO: come up with better test case
         assert np.allclose(circuit(x=features), 12.86036, atol=0.001)
@@ -99,18 +99,18 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
 
-        dev = qml.device("default.gaussian", wires=3)
-        dev2 = qml.device("default.gaussian", wires=["z", "a", "k"])
+        dev = qp.device("default.gaussian", wires=3)
+        dev2 = qp.device("default.gaussian", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.SqueezingEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            qp.SqueezingEmbedding(features, wires=range(3))
+            return qp.expval(qp.Identity(0))
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.SqueezingEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            qp.SqueezingEmbedding(features, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z"))
 
         circuit()
         circuit2()
@@ -126,12 +126,12 @@ class TestInputs:
         """Verifies that an exception is thrown if number of subsystems wrong."""
 
         n_wires = 2
-        dev = qml.device("default.gaussian", wires=n_wires)
+        dev = qp.device("default.gaussian", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase")
-            return [qml.expval(qml.QuadX(i)) for i in range(n_wires)]
+            qp.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase")
+            return [qp.expval(qp.QuadX(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be of"):
             circuit(x=[0.2, 0.3, 0.4])
@@ -140,12 +140,12 @@ class TestInputs:
         """Verifies that an exception is thrown if the method is unknown."""
 
         n_wires = 2
-        dev = qml.device("default.gaussian", wires=n_wires)
+        dev = qp.device("default.gaussian", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="A")
-            return [qml.expval(qml.QuadX(i)) for i in range(n_wires)]
+            qp.SqueezingEmbedding(features=x, wires=range(n_wires), method="A")
+            return [qp.expval(qp.QuadX(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
             circuit(x=[1, 2])
@@ -154,36 +154,36 @@ class TestInputs:
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
         n_subsystems = 2
-        dev = qml.device("default.gaussian", wires=n_subsystems)
+        dev = qp.device("default.gaussian", wires=n_subsystems)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.SqueezingEmbedding(features=x, wires=[0, 1])
-            return qml.expval(qml.QuadX(0))
+            qp.SqueezingEmbedding(features=x, wires=[0, 1])
+            return qp.expval(qp.QuadX(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(x=[[1], [0]])
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.SqueezingEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        template = qp.SqueezingEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.SqueezingEmbedding(features, range(3))
-    qml.Beamsplitter(0.5, 0, wires=[2, 1])
-    qml.Beamsplitter(0.5, 0, wires=[1, 0])
-    return qml.expval(qml.QuadX(0))
+    qp.SqueezingEmbedding(features, range(3))
+    qp.Beamsplitter(0.5, 0, wires=[2, 1])
+    qp.Beamsplitter(0.5, 0, wires=[1, 0])
+    return qp.expval(qp.QuadX(0))
 
 
 def circuit_decomposed(features):
-    qml.Squeezing(features[0], 0.1, wires=0)
-    qml.Squeezing(features[1], 0.1, wires=1)
-    qml.Squeezing(features[2], 0.1, wires=2)
-    qml.Beamsplitter(0.5, 0, wires=[2, 1])
-    qml.Beamsplitter(0.5, 0, wires=[1, 0])
-    return qml.expval(qml.QuadX(0))
+    qp.Squeezing(features[0], 0.1, wires=0)
+    qp.Squeezing(features[1], 0.1, wires=1)
+    qp.Squeezing(features[2], 0.1, wires=2)
+    qp.Beamsplitter(0.5, 0, wires=[2, 1])
+    qp.Beamsplitter(0.5, 0, wires=[1, 0])
+    return qp.expval(qp.QuadX(0))
 
 
 class TestInterfaces:
@@ -195,18 +195,18 @@ class TestInterfaces:
 
         features = [1.0, 1.0, 1.0]
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qp.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tuple(features))
         res2 = circuit2(tuple(features))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd(self, tol):
@@ -214,19 +214,19 @@ class TestInterfaces:
 
         features = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qp.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(features)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -240,14 +240,14 @@ class TestInterfaces:
 
         features = jnp.array([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qp.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features)
@@ -266,14 +266,14 @@ class TestInterfaces:
 
         features = jnp.array([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qp.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features)
@@ -281,7 +281,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(features)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -291,14 +291,14 @@ class TestInterfaces:
 
         features = tf.Variable([1.0, 1.0, 1.0])
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qp.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(features)
@@ -318,14 +318,14 @@ class TestInterfaces:
 
         features = torch.tensor([1.0, 1.0, 1.0], requires_grad=True)
 
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qp.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(features)
         res.backward()

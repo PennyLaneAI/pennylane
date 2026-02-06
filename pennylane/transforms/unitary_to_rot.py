@@ -54,10 +54,10 @@ def _get_plxpr_unitary_to_rot():
 
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
-            if isinstance(op, qml.QubitUnitary):
+            if isinstance(op, qp.QubitUnitary):
                 ops = []
-                with qml.capture.pause():
-                    matrix_shape = qml.math.shape(op.parameters[0])
+                with qp.capture.pause():
+                    matrix_shape = qp.math.shape(op.parameters[0])
                     if matrix_shape == (2, 2):
                         ops = one_qubit_decomposition(op.parameters[0], op.wires[0])
                     elif matrix_shape == (4, 4):
@@ -109,7 +109,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -128,14 +128,14 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     .. code-block:: python
 
         def qfunc():
-            qml.QubitUnitary(U, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.QubitUnitary(U, wires=0)
+            return qp.expval(qp.Z(0))
 
     The original circuit is:
 
-    >>> dev = qml.device('default.qubit', wires=1)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
+    >>> dev = qp.device('default.qubit', wires=1)
+    >>> qnode = qp.QNode(qfunc, dev)
+    >>> print(qp.draw(qnode)())
     0: ──U(M0)─┤  <Z>
     M0 =
     [[-0.171...+0.5856...j -0.693...-0.383...j]
@@ -144,8 +144,8 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     We can use the transform to decompose the gate:
 
     >>> transformed_qfunc = unitary_to_rot(qfunc)
-    >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
-    >>> print(qml.draw(transformed_qnode)())
+    >>> transformed_qnode = qp.QNode(transformed_qfunc, dev)
+    >>> print(qp.draw(transformed_qnode)())
     0: ──RZ(11.22)──RY(1.83)──RZ(11.96)─┤  <Z>
 
 
@@ -164,17 +164,17 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             U = scipy.stats.unitary_group.rvs(4, random_state=12345)
 
             def circuit(angles):
-                qml.QubitUnitary(U, wires=["a", "b"])
-                qml.RX(angles[0], wires="a")
-                qml.RY(angles[1], wires="b")
-                qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.Z("a"))
+                qp.QubitUnitary(U, wires=["a", "b"])
+                qp.RX(angles[0], wires="a")
+                qp.RY(angles[1], wires="b")
+                qp.CNOT(wires=["b", "a"])
+                return qp.expval(qp.Z("a"))
 
-            dev = qml.device('default.qubit', wires=["a", "b"])
-            transformed_qfunc = qml.transforms.unitary_to_rot(circuit)
-            transformed_qnode = qml.QNode(transformed_qfunc, dev)
+            dev = qp.device('default.qubit', wires=["a", "b"])
+            transformed_qfunc = qp.transforms.unitary_to_rot(circuit)
+            transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
-        >>> g = qml.grad(transformed_qnode)
+        >>> g = qp.grad(transformed_qnode)
         >>> params = pnp.array([0.2, 0.3], requires_grad=True)
         >>> g(params)
         array([ 0.342..., -0.077...])
@@ -195,23 +195,23 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
                 U = np.kron(Z_mat, X_mat)
 
-                qml.Hadamard(wires="a")
+                qp.Hadamard(wires="a")
 
                 # U depends on the input parameters
-                qml.QubitUnitary(U, wires=["a", "b"])
+                qp.QubitUnitary(U, wires=["a", "b"])
 
-                qml.CNOT(wires=["b", "a"])
-                return qml.expval(qml.X("a"))
+                qp.CNOT(wires=["b", "a"])
+                return qp.expval(qp.X("a"))
     """
     operations = []
     for op in tape.operations:
-        if isinstance(op, qml.QubitUnitary):
+        if isinstance(op, qp.QubitUnitary):
             # Single-qubit unitary operations
-            if qml.math.shape(op.parameters[0]) == (2, 2):
+            if qp.math.shape(op.parameters[0]) == (2, 2):
                 with QueuingManager.stop_recording():
                     operations.extend(one_qubit_decomposition(op.parameters[0], op.wires[0]))
             # Two-qubit unitary operations
-            elif qml.math.shape(op.parameters[0]) == (4, 4):
+            elif qp.math.shape(op.parameters[0]) == (4, 4):
                 with QueuingManager.stop_recording():
                     operations.extend(two_qubit_decomposition(op.parameters[0], op.wires))
             else:

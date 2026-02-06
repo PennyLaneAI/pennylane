@@ -103,32 +103,32 @@ class GateFabric(Operation):
             # Build the electronic Hamiltonian
             symbols = ["H", "H"]
             coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
-            H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+            H, qubits = qp.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
-            ref_state = qml.qchem.hf_state(electrons, qubits)
+            ref_state = qp.qchem.hf_state(electrons, qubits)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qp.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def ansatz(weights):
-                qml.GateFabric(weights, wires=[0,1,2,3],
+                qp.GateFabric(weights, wires=[0,1,2,3],
                             init_state=ref_state, include_pi=True)
-                return qml.expval(H)
+                return qp.expval(H)
 
             # Get the shape of the weights for this template
             layers = 2
-            shape = qml.GateFabric.shape(n_layers=layers, n_wires=qubits)
+            shape = qp.GateFabric.shape(n_layers=layers, n_wires=qubits)
 
             # Initialize the weight tensors
             np.random.seed(42)
             weights = np.random.random(size=shape)
 
             # Define the optimizer
-            opt = qml.GradientDescentOptimizer(stepsize=0.4)
+            opt = qp.GradientDescentOptimizer(stepsize=0.4)
 
             # Store the values of the cost function
             energy = [ansatz(weights)]
@@ -273,7 +273,7 @@ class GateFabric(Operation):
         **Example**
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
-        >>> qml.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
+        >>> qp.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
         [BasisEmbedding(array([0, 1, 0, 1]), wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
 
         """

@@ -46,7 +46,7 @@ def trace_inner_product(
     **Example**
 
     >>> from pennylane.pauli import trace_inner_product
-    >>> trace_inner_product(qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0))
+    >>> trace_inner_product(qp.X(0) + qp.Y(0), qp.Y(0) + qp.Z(0))
     1.0
 
     If both operators are arrays, a leading batch dimension is broadcasted.
@@ -71,10 +71,10 @@ def trace_inner_product(
         the input ``A`` is not conjugated when operators are used. To get correct results, we can either use
         the matrix representation or manually conjugate the operator.
 
-        >>> A = qml.X(0) - 1j * qml.Y(0)
-        >>> Ad = qml.X(0) + 1j * qml.Y(0)
-        >>> B = qml.X(0) + 1j * qml.Y(0)
-        >>> print(trace_inner_product(Ad, B) == trace_inner_product(qml.matrix(A), qml.matrix(B)))
+        >>> A = qp.X(0) - 1j * qp.Y(0)
+        >>> Ad = qp.X(0) + 1j * qp.Y(0)
+        >>> B = qp.X(0) + 1j * qp.Y(0)
+        >>> print(trace_inner_product(Ad, B) == trace_inner_product(qp.matrix(A), qp.matrix(B)))
         True
 
     """
@@ -85,17 +85,17 @@ def trace_inner_product(
     if isinstance(A, Iterable) and isinstance(B, Iterable):
 
         if isinstance(A, (list, tuple)):
-            interface_A = qml.math.get_interface(A[0])
-            A = qml.math.stack(A, like=interface_A)
+            interface_A = qp.math.get_interface(A[0])
+            A = qp.math.stack(A, like=interface_A)
 
         if isinstance(B, (list, tuple)):
-            interface_B = qml.math.get_interface(B[0])
-            B = qml.math.stack(B, like=interface_B)
+            interface_B = qp.math.get_interface(B[0])
+            B = qp.math.stack(B, like=interface_B)
 
         # tr(A^dagger @ B) = (A^dagger)_ij B_ji = A^*_ji B_ji
         return (
-            qml.math.tensordot(qml.math.conj(A), B, axes=[[-2, -1], [-2, -1]])
-            / qml.math.shape(A)[-1]
+            qp.math.tensordot(qp.math.conj(A), B, axes=[[-2, -1], [-2, -1]])
+            / qp.math.shape(A)[-1]
         )
 
     raise NotImplementedError(

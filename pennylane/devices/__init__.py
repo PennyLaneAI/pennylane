@@ -113,13 +113,13 @@ to handle a single circuit. See the documentation for each modifier for more det
 
     @simulator_tracking
     @single_tape_support
-    class MyDevice(qml.devices.Device):
+    class MyDevice(qp.devices.Device):
 
         def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
->>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
+>>> tape = qp.tape.QuantumTape([qp.S(0)], [qp.expval(qp.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out

@@ -110,12 +110,12 @@ class Interferometer(CVOperation):
 
         .. code-block:: python
 
-            dev = qml.device('default.gaussian', wires=4)
+            dev = qp.device('default.gaussian', wires=4)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(params):
-                qml.Interferometer(*params, wires=range(4))
-                return qml.expval(qml.Identity(0))
+                qp.Interferometer(*params, wires=range(4))
+                return qp.expval(qp.Identity(0))
 
             shapes = [[6, ], [6, ], [4, ]]
             params = []
@@ -124,7 +124,7 @@ class Interferometer(CVOperation):
 
         Using these random parameters, the resulting circuit is:
 
-        >>> print(qml.draw(circuit, level="device")(params))
+        >>> print(qp.draw(circuit, level="device")(params))
         0: ─╭BS(0.23,0.60)────────────────╭BS(0.68,0.94)──R(0.67)────────────────┤  <I>
         1: ─╰BS(0.23,0.60)─╭BS(0.80,0.67)─╰BS(0.68,0.94)─╭BS(0.33,0.95)──R(0.10)─┤
         2: ─╭BS(0.32,0.19)─╰BS(0.80,0.67)─╭BS(0.39,0.25)─╰BS(0.33,0.95)──R(0.44)─┤
@@ -134,17 +134,17 @@ class Interferometer(CVOperation):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(params):
-                qml.Interferometer(*params, wires=range(4), mesh='triangular', beamsplitter='clements')
-                return qml.expval(qml.Identity(0))
+                qp.Interferometer(*params, wires=range(4), mesh='triangular', beamsplitter='clements')
+                return qp.expval(qp.Identity(0))
 
             shapes = [[6, ], [6, ], [4, ]]
             params = []
             for shape in shapes:
                 params.append(np.random.random(shape))
 
-            print(qml.draw(circuit, level="device")(params))
+            print(qp.draw(circuit, level="device")(params))
 
         .. code-block::
 

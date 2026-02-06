@@ -211,7 +211,7 @@ def finite_diff_jvp(
     ...     return 2 * x * y, x**2
     >>> args = (0.5, 1.2)
     >>> tangents = (1.0, 1.0)
-    >>> results, dresults = qml.gradients.finite_diff_jvp(f, args, tangents)
+    >>> results, dresults = qp.gradients.finite_diff_jvp(f, args, tangents)
     >>> results
     (1.2, 0.25)
     >>> dresults
@@ -352,7 +352,7 @@ def finite_diff(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -361,15 +361,15 @@ def finite_diff(
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
-    >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, interface="autograd", diff_method="finite-diff")
+    >>> dev = qp.device("default.qubit")
+    >>> @qp.qnode(dev, interface="autograd", diff_method="finite-diff")
     ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.Z(0))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.RY(params[1], wires=0)
+    ...     qp.RX(params[2], wires=0)
+    ...     return qp.expval(qp.Z(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
+    >>> qp.jacobian(circuit)(params)
     array([-0.38751725, -0.18884792, -0.38355708])
 
     When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
@@ -378,13 +378,13 @@ def finite_diff(
     post-processing.
 
     >>> import jax
-    >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, interface="jax", diff_method="finite-diff")
+    >>> dev = qp.device("default.qubit")
+    >>> @qp.qnode(dev, interface="jax", diff_method="finite-diff")
     ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.RY(params[1], wires=0)
+    ...     qp.RX(params[2], wires=0)
+    ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
@@ -399,14 +399,14 @@ def finite_diff(
         as the ``diff_method`` argument of the QNode decorator, and differentiating with your
         preferred machine learning framework.
 
-        >>> @qml.qnode(dev)
+        >>> @qp.qnode(dev)
         ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+        ...     qp.RX(params[0], wires=0)
+        ...     qp.RY(params[1], wires=0)
+        ...     qp.RX(params[2], wires=0)
+        ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.finite_diff(circuit)(params)
+        >>> qp.gradients.finite_diff(circuit)(params)
         (tensor([-0.38751724, -0.18884792, -0.38355708], requires_grad=True),
          tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
 
@@ -415,10 +415,10 @@ def finite_diff(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> ops = [qml.RX(p, wires=0) for p in params]
-        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
-        >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
+        >>> ops = [qp.RX(p, wires=0) for p in params]
+        >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(0))]
+        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> gradient_tapes, fn = qp.gradients.finite_diff(tape)
         >>> gradient_tapes
         [<QuantumTape: wires=[0], params=3>,
          <QuantumScript: wires=[0], params=3>,
@@ -431,19 +431,19 @@ def finite_diff(
         Note that ``argnum`` refers to the index of a parameter within the list of trainable
         parameters. For example, if we have:
 
-        >>> tape = qml.tape.QuantumScript(
-        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.Z(0))],
+        >>> tape = qp.tape.QuantumScript(
+        ...     [qp.RX(1.2, wires=0), qp.RY(2.3, wires=0), qp.RZ(3.4, wires=0)],
+        ...     [qp.expval(qp.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qml.gradients.finite_diff(tape, argnum=1)
+        >>> qp.gradients.finite_diff(tape, argnum=1)
 
         The code above will differentiate the third parameter rather than the second.
 
         The output tapes can then be evaluated and post-processed to retrieve the gradient:
 
-        >>> dev = qml.device("default.qubit")
-        >>> fn(qml.execute(gradient_tapes, dev, None))
+        >>> dev = qp.device("default.qubit")
+        >>> fn(qp.execute(gradient_tapes, dev, None))
         ((tensor(-0.56464251, requires_grad=True),
           tensor(-0.56464251, requires_grad=True),
           tensor(-0.56464251, requires_grad=True)),
@@ -454,16 +454,16 @@ def finite_diff(
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit")
-        >>> @qml.set_shots(shots=shots)
-        ... @qml.qnode(dev)
+        >>> dev = qp.device("default.qubit")
+        >>> @qp.set_shots(shots=shots)
+        ... @qp.qnode(dev)
         ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+        ...     qp.RX(params[0], wires=0)
+        ...     qp.RY(params[1], wires=0)
+        ...     qp.RX(params[2], wires=0)
+        ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.finite_diff(circuit, h=0.1)(params)
+        >>> qp.gradients.finite_diff(circuit, h=0.1)(params)
         ((array([-2., -2.,  0.]), array([3.6, 3.6, 0. ])),
          (array([1. , 0.2, 0.4]), array([-1.78 , -0.34 , -0.688])),
          (array([-0.9 , -0.22, -0.48]), array([1.5498 , 0.3938 , 0.84672])))

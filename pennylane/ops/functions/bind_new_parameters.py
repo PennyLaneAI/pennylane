@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.bind_new_parameters function.
+This module contains the qp.bind_new_parameters function.
 """
 # pylint:disable=missing-function-docstring
 

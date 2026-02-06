@@ -125,10 +125,10 @@ def factorize(
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
     ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> core, one, two = qp.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist notation
-    >>> factors, cores, leaves = qml.qchem.factorize(two, 1e-5, 1e-5)
+    >>> factors, cores, leaves = qp.qchem.factorize(two, 1e-5, 1e-5)
     >>> print(factors)
     [[[-1.06723440e-01  6.42958741e-15]
       [ 7.71977824e-15  1.04898533e-01]]
@@ -232,13 +232,13 @@ def factorize(
         - Compute the orthonormal matrices :math:`U` and the symmetric matrices :math:`Z`
           from the retained eigenvalues and eigenvectors to get the core and leaf tensors.
     """
-    shape = qml.math.shape(two_electron)
+    shape = qp.math.shape(two_electron)
 
     if len(shape) != 4 or len(set(shape)) != 1:
         raise ValueError("The two-electron repulsion tensor must have a (N x N x N x N) shape.")
 
-    two = qml.math.reshape(two_electron, (shape[0] * shape[1], -1))
-    interface = qml.math.get_interface(two_electron)
+    two = qp.math.reshape(two_electron, (shape[0] * shape[1], -1))
+    interface = qp.math.get_interface(two_electron)
 
     if not compressed:
         _explicit_df_func = (
@@ -249,8 +249,8 @@ def factorize(
         # compute the core tensors and leaf tensors from the factors' eigendecomposition
         core_tensors, leaf_tensors = [], []
         for f_eigval, f_eigvec in zip(f_eigvals, f_eigvecs, strict=True):
-            fidx = qml.math.where(qml.math.abs(f_eigval) > tol_eigval)[0]
-            core_tensors.append(qml.math.einsum("i,j->ij", f_eigval[fidx], f_eigval[fidx]))
+            fidx = qp.math.where(qp.math.abs(f_eigval) > tol_eigval)[0]
+            core_tensors.append(qp.math.einsum("i,j->ij", f_eigval[fidx], f_eigval[fidx]))
             leaf_tensors.append(f_eigvec[:, fidx])
 
         if np.sum([len(v) for v in core_tensors]) == 0:
@@ -286,15 +286,15 @@ def factorize(
                 num_factors=num_factors,
             )
             # compute the core and orbital rotation tensors from the factors
-            core_matrices = qml.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
+            core_matrices = qp.math.einsum("ti,tj->tij", f_eigvals, f_eigvals)
             asym_matrices = [sp.linalg.logm(f_eigvec).real for f_eigvec in f_eigvecs]
             init_params = {"X": asym_matrices, "Z": core_matrices}
-            num_factors = qml.math.shape(core_matrices)[0]
+            num_factors = qp.math.shape(core_matrices)[0]
 
         if init_params is not None:
             init_params = {
-                "X": qml.math.array(init_params["X"], like="jax"),
-                "Z": qml.math.array(init_params["Z"], like="jax"),
+                "X": qp.math.array(init_params["X"], like="jax"),
+                "Z": qp.math.array(init_params["Z"], like="jax"),
             }
 
         core_tensors, leaf_tensors = _double_factorization_compressed(
@@ -304,7 +304,7 @@ def factorize(
         # Since core_tensors are symmetric but not constrained to be rank-one,
         # factors are computed by using their Schur decompositions.
         upr_tri, unitary = jsp.linalg.schur(core_tensors)
-        factors = qml.math.array(
+        factors = qp.math.array(
             jnp.einsum(
                 "tpk,tqk,tki->tpqi",
                 leaf_tensors,
@@ -313,8 +313,8 @@ def factorize(
             ),  # einsum contraction for them: "tpqi, trsi -> pqrs"
             like=interface,
         )
-        core_tensors = qml.math.array(core_tensors, like=interface)
-        leaf_tensors = qml.math.array(leaf_tensors, like=interface)
+        core_tensors = qp.math.array(core_tensors, like=interface)
+        leaf_tensors = qp.math.array(leaf_tensors, like=interface)
 
     return factors, core_tensors, leaf_tensors
 
@@ -337,19 +337,19 @@ def _double_factorization_eigen(two, tol_factor=1.0e-10, shape=None, interface=N
         symmetric matrices (factors) approximating the two-electron integral tensor, truncated
         eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
     """
-    eigvals_r, eigvecs_r = qml.math.linalg.eigh(two)
-    eigvals_r = qml.math.array([val for val in eigvals_r if abs(val) > tol_factor])
+    eigvals_r, eigvecs_r = qp.math.linalg.eigh(two)
+    eigvals_r = qp.math.array([val for val in eigvals_r if abs(val) > tol_factor])
 
     eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
     if eigvals_r.size == 0:
         raise ValueError(
             "All factors are discarded. Consider decreasing the first threshold error."
         )
-    vectors = eigvecs_r @ qml.math.diag(qml.math.sqrt(eigvals_r))
+    vectors = eigvecs_r @ qp.math.diag(qp.math.sqrt(eigvals_r))
 
     n, r = shape[0], len(eigvals_r)
-    factors = qml.math.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)], like=interface)
-    feigvals, feigvecs = qml.math.linalg.eigh(factors)
+    factors = qp.math.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)], like=interface)
+    feigvals, feigvecs = qp.math.linalg.eigh(factors)
     return factors, feigvals, feigvecs
 
 
@@ -377,25 +377,25 @@ def _double_factorization_cholesky(
     if num_factors is None:
         num_factors = n2
 
-    cholesky_vecs = qml.math.zeros((n2, num_factors), like=interface)
-    cholesky_diag = qml.math.array(qml.math.diagonal(two).real, like=interface)
+    cholesky_vecs = qp.math.zeros((n2, num_factors), like=interface)
+    cholesky_diag = qp.math.array(qp.math.diagonal(two).real, like=interface)
 
     for idx in range(num_factors):
-        if (max_err := qml.math.max(cholesky_diag)) < tol_factor:
+        if (max_err := qp.math.max(cholesky_diag)) < tol_factor:
             cholesky_vecs = cholesky_vecs[:, :idx]
             break
 
-        max_idx = qml.math.argmax(cholesky_diag)
+        max_idx = qp.math.argmax(cholesky_diag)
         cholesky_mat = cholesky_vecs[:, :idx]
         cholesky_vec = (
-            two[:, max_idx] - cholesky_mat @ qml.math.conjugate(cholesky_mat[max_idx])
-        ) / qml.math.sqrt(max_err)
+            two[:, max_idx] - cholesky_mat @ qp.math.conjugate(cholesky_mat[max_idx])
+        ) / qp.math.sqrt(max_err)
 
         cholesky_vecs[:, idx] = cholesky_vec
-        cholesky_diag -= qml.math.abs(cholesky_vec) ** 2
+        cholesky_diag -= qp.math.abs(cholesky_vec) ** 2
 
     factors = cholesky_vecs.T.reshape(-1, shape[0], shape[0])
-    feigvals, feigvecs = qml.math.linalg.eigh(factors)
+    feigvals, feigvecs = qp.math.linalg.eigh(factors)
     return factors, feigvals, feigvecs
 
 
@@ -542,8 +542,8 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
     ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> core, one, two = qp.qchem.electron_integrals(mol)()
     >>> coeffs, ops, unitaries = basis_rotation(one, two, tol_factor=1.0e-5)
     >>> print(coeffs)
     [array([-2.59579282,  0.84064649,  0.84064649,  0.45724992,  0.45724992]),
@@ -644,7 +644,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
 
     ops_t = 0.0
     for p in range(num_orbitals):
-        ops_t += 0.5 * t_eigvals[p] * (qml.Identity(p) - qml.Z(p))
+        ops_t += 0.5 * t_eigvals[p] * (qp.Identity(p) - qp.Z(p))
 
     ops_l = []
     for idx in range(len(factors)):
@@ -655,10 +655,10 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
                     core_tensors[idx][p // 2, q // 2]
                     * 0.25
                     * (
-                        qml.Identity(p)
-                        - qml.Z(p)
-                        - qml.Z(q)
-                        + (qml.Identity(p) if p == q else (qml.Z(p) @ qml.Z(q)))
+                        qp.Identity(p)
+                        - qp.Z(p)
+                        - qp.Z(q)
+                        + (qp.Identity(p) if p == q else (qp.Z(p) @ qp.Z(q)))
                     )
                 )
         ops_l.append(ops_l_)
@@ -697,9 +697,9 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
     ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> qml.qchem.factorization._chemist_transform(two_body_tensor=two, spatial_basis=True)
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> core, one, two = qp.qchem.electron_integrals(mol)()
+    >>> qp.qchem.factorization._chemist_transform(two_body_tensor=two, spatial_basis=True)
     (tensor([[-0.427983, -0.      ],
              [-0.      , -0.439431]], requires_grad=True),
     tensor([[[[0.337378, 0.      ],
@@ -795,10 +795,10 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", 
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = qml.numpy.array([[0.0, 0.0, 0.0],
+    >>> geometry = qp.numpy.array([[0.0, 0.0, 0.0],
     ...                             [1.398397361, 0.0, 0.0]], requires_grad=False)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name="STO-3G")
-    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> mol = qp.qchem.Molecule(symbols, geometry, basis_name="STO-3G")
+    >>> core, one, two = qp.qchem.electron_integrals(mol)()
     >>> ctwo = np.swapaxes(two, 1, 3)
     >>> s_core, s_one, s_two = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
     >>> print(s_two)

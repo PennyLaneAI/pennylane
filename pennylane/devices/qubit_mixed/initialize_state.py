@@ -20,8 +20,8 @@ from pennylane import math
 
 
 def create_initial_state(
-    wires: qml.wires.Wires | Iterable,
-    prep_operation: qml.operation.StatePrepBase | qml.QubitDensityMatrix | None = None,
+    wires: qp.wires.Wires | Iterable,
+    prep_operation: qp.operation.StatePrepBase | qp.QubitDensityMatrix | None = None,
     like: str = None,
 ):
     r"""
@@ -48,7 +48,7 @@ def create_initial_state(
     # Dev Note: batch 1 and batch None are different cases. We need to carefully treat them
     # or there will be issue e.g. https://github.com/PennyLaneAI/pennylane/issues/7220
     is_state_batched = True
-    if isinstance(prep_operation, qml.QubitDensityMatrix):
+    if isinstance(prep_operation, qp.QubitDensityMatrix):
         density_matrix = prep_operation.data
     else:  # Use pure state prep
         pure_state = prep_operation.state_vector(wire_order=list(wires))

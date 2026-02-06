@@ -91,7 +91,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import pennylane as qp
 from pennylane.tape import QuantumScriptBatch
 
-ExecuteFn = Callable[[QuantumScriptBatch], qml.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -101,7 +101,7 @@ logger.addHandler(logging.NullHandler())
 def autograd_execute(
     tapes: QuantumScriptBatch,
     execute_fn: ExecuteFn,
-    jpc: qml.workflow.jacobian_products.JacobianProductCalculator,
+    jpc: qp.workflow.jacobian_products.JacobianProductCalculator,
     device=None,
 ):
     """Execute a batch of tapes with Autograd parameters on a device.
@@ -119,14 +119,14 @@ def autograd_execute(
     **Example:**
 
     >>> from pennylane.workflow.jacobian_products import DeviceDerivatives
-    >>> execute_fn = qml.device('default.qubit').execute
-    >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
-    >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)
+    >>> execute_fn = qp.device('default.qubit').execute
+    >>> config = qp.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
+    >>> jpc = DeviceDerivatives(qp.device('default.qubit'), config)
     >>> def f(x):
-    ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+    ...     tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.Z(0))])
     ...     batch = (tape, )
     ...     return autograd_execute(batch, execute_fn, jpc)
-    >>> print(qml.grad(f)(qml.numpy.array(0.1)))
+    >>> print(qp.grad(f)(qp.numpy.array(0.1)))
     -0.0998...
 
     """
@@ -136,7 +136,7 @@ def autograd_execute(
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = qp.math.get_trainable_indices(params)
 
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
@@ -144,7 +144,7 @@ def autograd_execute(
     return _execute(parameters, tuple(tapes), execute_fn, jpc)
 
 
-def _to_autograd(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
+def _to_autograd(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
     """Converts an arbitrary result batch to one with autograd arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
@@ -209,7 +209,7 @@ def vjp(
         parameter values and output gradient dy"""
         vjps = jpc.compute_vjp(tapes, dy)
         return tuple(
-            qml.math.to_numpy(v, max_depth=1) if isinstance(v, ArrayBox) else v for v in vjps
+            qp.math.to_numpy(v, max_depth=1) if isinstance(v, ArrayBox) else v for v in vjps
         )
 
     return grad_fn

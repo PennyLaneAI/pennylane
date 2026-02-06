@@ -22,7 +22,7 @@ from .utils import QUDIT_DIM
 
 
 def create_initial_state(
-    wires: qml.wires.Wires | Iterable,
+    wires: qp.wires.Wires | Iterable,
     prep_operation: StatePrepBase | None = None,
     like: str = None,
 ):
@@ -48,7 +48,7 @@ def create_initial_state(
 
     # TODO: add instance for prep_operations as added
 
-    return qml.math.asarray(rho, like=like)
+    return qp.math.asarray(rho, like=like)
 
 
 def _apply_state_vector(state, num_wires):  # function is easy to abstract for qudit
@@ -66,8 +66,8 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
     """
 
     # Initialize the entire set of wires with the state
-    rho = qml.math.outer(state, qml.math.conj(state))
-    return qml.math.reshape(rho, [QUDIT_DIM] * 2 * num_wires)
+    rho = qp.math.outer(state, qp.math.conj(state))
+    return qp.math.reshape(rho, [QUDIT_DIM] * 2 * num_wires)
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
@@ -82,6 +82,6 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
         representing the density matrix of the basis state, where ``QUDIT_DIM`` is
         the dimension of the system.
     """
-    rho = qml.math.zeros((QUDIT_DIM**num_wires, QUDIT_DIM**num_wires))
+    rho = qp.math.zeros((QUDIT_DIM**num_wires, QUDIT_DIM**num_wires))
     rho[index, index] = 1
-    return qml.math.reshape(rho, [QUDIT_DIM] * (2 * num_wires))
+    return qp.math.reshape(rho, [QUDIT_DIM] * (2 * num_wires))

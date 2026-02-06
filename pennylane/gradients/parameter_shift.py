@@ -385,7 +385,7 @@ def expval_param_shift(
 
         if op.name == "LinearCombination":
             warnings.warn(
-                "Please use qml.gradients.split_to_single_terms so that the ML framework "
+                "Please use qp.gradients.split_to_single_terms so that the ML framework "
                 "can compute the gradients of the coefficients.",
                 UserWarning,
             )
@@ -858,7 +858,7 @@ def param_shift(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -927,16 +927,16 @@ def param_shift(
 
         from pennylane import numpy as np
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.RX(params[2], wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            qp.RX(params[2], wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
+    >>> qp.jacobian(circuit)(params)
     array([-0.3875172 , -0.18884787, -0.38355704])
 
     When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
@@ -948,13 +948,13 @@ def param_shift(
 
         import jax
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.RX(params[2], wires=0)
-            return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            qp.RX(params[2], wires=0)
+            return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
 
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
@@ -986,7 +986,7 @@ def param_shift(
         In addition, operations with trainable parameters are required to support broadcasting.
         One way to check this is through the ``supports_broadcasting`` attribute:
 
-        >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+        >>> qp.RX in qp.ops.qubit.attributes.supports_broadcasting
         True
 
     .. details::
@@ -998,14 +998,14 @@ def param_shift(
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(params):
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=0)
-                qml.RX(params[2], wires=0)
-                return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+                qp.RX(params[0], wires=0)
+                qp.RY(params[1], wires=0)
+                qp.RX(params[2], wires=0)
+                return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
 
-        >>> qml.gradients.param_shift(circuit)(params)
+        >>> qp.gradients.param_shift(circuit)(params)
         (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64),
          Array([0.69916862, 0.34072424, 0.69202359], dtype=float64))
 
@@ -1014,10 +1014,10 @@ def param_shift(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
-        >>> measurements = [qml.expval(qml.Z(0)), qml.var(qml.Z(0))]
-        >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
+        >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
+        >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(0))]
+        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> gradient_tapes, fn = qp.gradients.param_shift(tape)
         >>> gradient_tapes
         [<QuantumScript: wires=[0], params=3>,
          <QuantumScript: wires=[0], params=3>,
@@ -1033,20 +1033,20 @@ def param_shift(
         Note that ``argnum`` refers to the index of a parameter within the list of trainable
         parameters. For example, if we have:
 
-        >>> tape = qml.tape.QuantumScript(
-        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.Z(0))],
+        >>> tape = qp.tape.QuantumScript(
+        ...     [qp.RX(1.2, wires=0), qp.RY(2.3, wires=0), qp.RZ(3.4, wires=0)],
+        ...     [qp.expval(qp.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qml.gradients.param_shift(tape, argnum=1)
+        >>> qp.gradients.param_shift(tape, argnum=1)
 
         The code above will differentiate the third parameter rather than the second.
 
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
-        >>> dev = qml.device("default.qubit")
-        >>> fn(qml.execute(gradient_tapes, dev, None))
+        >>> dev = qp.device("default.qubit")
+        >>> fn(qp.execute(gradient_tapes, dev, None))
         ((Array(-0.3875172, dtype=float64),
           Array(-0.18884787, dtype=float64),
           Array(-0.38355704, dtype=float64)),
@@ -1059,18 +1059,18 @@ def param_shift(
         .. code-block:: python
 
             shots = (10, 100, 1000)
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.set_shots(shots=shots)
-            @qml.qnode(dev)
+            @qp.set_shots(shots=shots)
+            @qp.qnode(dev)
             def circuit(params):
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=0)
-                qml.RX(params[2], wires=0)
-                return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
+                qp.RX(params[0], wires=0)
+                qp.RY(params[1], wires=0)
+                qp.RX(params[2], wires=0)
+                return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
 
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.param_shift(circuit)(params)
+        >>> qp.gradients.param_shift(circuit)(params)
         ((array([-0.2, -0.1, -0.4]), array([0.4, 0.2, 0.8])),
          (array([-0.4 , -0.24, -0.43]), array([0.672 , 0.4032, 0.7224])),
          (array([-0.399, -0.179, -0.387]), array([0.722988, 0.324348, 0.701244])))
@@ -1082,10 +1082,10 @@ def param_shift(
         broadcasted tapes:
 
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
-        >>> measurements = [qml.expval(qml.Z(0))]
-        >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
+        >>> measurements = [qp.expval(qp.Z(0))]
+        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> gradient_tapes, fn = qp.gradients.param_shift(tape, broadcast=True)
         >>> len(gradient_tapes)
         3
         >>> [t.batch_size for t in gradient_tapes]
@@ -1093,7 +1093,7 @@ def param_shift(
 
         The postprocessing function will know that broadcasting is used and handle the results accordingly:
 
-        >>> fn(qml.execute(gradient_tapes, dev, None))
+        >>> fn(qp.execute(gradient_tapes, dev, None))
         (tensor(-0.3875172, requires_grad=True),
          tensor(-0.18884787, requires_grad=True),
          tensor(-0.38355704, requires_grad=True))
@@ -1103,18 +1103,18 @@ def param_shift(
         .. code-block:: python
 
             import timeit
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit(params):
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=0)
-                qml.RX(params[2], wires=0)
-                return qml.expval(qml.Z(0))
+                qp.RX(params[0], wires=0)
+                qp.RY(params[1], wires=0)
+                qp.RX(params[2], wires=0)
+                return qp.expval(qp.Z(0))
 
         >>> number = 100
-        >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(params)"
+        >>> serial_call = "qp.gradients.param_shift(circuit, broadcast=False)(params)"
         >>> timeit.timeit(serial_call, globals=globals(), number=number) / number
         0.020183045039993887
-        >>> broadcasted_call = "qml.gradients.param_shift(circuit, broadcast=True)(params)"
+        >>> broadcasted_call = "qp.gradients.param_shift(circuit, broadcast=True)(params)"
         >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
         0.01244492811998498
 

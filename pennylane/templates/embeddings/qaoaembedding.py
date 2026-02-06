@@ -94,12 +94,12 @@ class QAOAEmbedding(Operation):
 
             import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=2)
+            dev = qp.device('default.qubit', wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights, f=None):
-                qml.QAOAEmbedding(features=f, weights=weights, wires=range(2))
-                return qml.expval(qml.Z(0))
+                qp.QAOAEmbedding(features=f, weights=weights, wires=range(2))
+                return qp.expval(qp.Z(0))
 
             features = [1., 2.]
             layer1 = [0.1, -0.3, 1.5]
@@ -116,7 +116,7 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            shape = qml.QAOAEmbedding.shape(n_layers=2, n_wires=2)
+            shape = qp.QAOAEmbedding.shape(n_layers=2, n_wires=2)
             weights = np.random.random(shape)
 
         **Training the embedding**
@@ -126,7 +126,7 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            opt = qml.GradientDescentOptimizer()
+            opt = qp.GradientDescentOptimizer()
             for i in range(10):
                 weights = opt.step(lambda w : circuit(w, f=features), weights)
                 print("Step ", i, " weights = ", weights)
@@ -140,16 +140,16 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit2(weights, features):
-                qml.QAOAEmbedding(features=features, weights=weights, wires=range(2))
-                return qml.expval(qml.Z(0))
+                qp.QAOAEmbedding(features=features, weights=weights, wires=range(2))
+                return qp.expval(qp.Z(0))
 
 
-            features = qml.numpy.array([1., 2.])
-            weights = qml.numpy.array([[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]])
+            features = qp.numpy.array([1., 2.])
+            weights = qp.numpy.array([[0.1, -0.3, 1.5], [3.1, 0.2, -2.8]])
 
-            opt = qml.GradientDescentOptimizer()
+            opt = qp.GradientDescentOptimizer()
             for i in range(10):
                 weights, features = opt.step(circuit2, weights, features)
                 print("Step ", i, "\n weights = ", weights, "\n features = ", features,"\n")
@@ -161,10 +161,10 @@ class QAOAEmbedding(Operation):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(weights, f=None):
-                qml.QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
-                return qml.expval(qml.Z(0))
+                qp.QAOAEmbedding(features=f, weights=weights, wires=range(2), local_field='Z')
+                return qp.expval(qp.Z(0))
 
         Choosing ``'Z'`` fields implements a QAOAEmbedding where the second Hamiltonian is a
         1-dimensional Ising model.
@@ -255,7 +255,7 @@ class QAOAEmbedding(Operation):
 
         >>> features = torch.tensor([1., 2.])
         >>> weights = torch.tensor([[0.1, -0.3, 1.3], [0.9, -0.2, -2.1]])
-        >>> qml.QAOAEmbedding.compute_decomposition(features, weights, wires=["a", "b"], local_field=qml.RY)
+        >>> qp.QAOAEmbedding.compute_decomposition(features, weights, wires=["a", "b"], local_field=qp.RY)
         [RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
         MultiRZ(tensor(0.1000), wires=['a', 'b']), RY(tensor(-0.3000), wires=['a']), RY(tensor(1.3000), wires=['b']),
         RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),

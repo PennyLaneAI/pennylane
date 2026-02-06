@@ -98,9 +98,9 @@ are callables. The callables defining the parametrized coefficients must have th
     f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
 
     # defining the operations for the three terms in the Hamiltonian
-    XX = qml.X(0) @ qml.X(1)
-    YY = qml.Y(0) @ qml.Y(1)
-    ZZ = qml.Z(0) @ qml.Z(1)
+    XX = qp.X(0) @ qp.X(1)
+    YY = qp.Y(0) @ qp.Y(1)
+    ZZ = qp.Z(0) @ qp.Z(1)
 
 
 
@@ -115,7 +115,7 @@ and operators:
     # Option 2
     coeffs = [2, f1, f2]
     ops = [XX, YY, ZZ]
-    H2 =  qml.dot(coeffs, ops)
+    H2 =  qp.dot(coeffs, ops)
 
 
 .. warning::
@@ -184,8 +184,8 @@ can be created using the :func:`~.pennylane.evolve` function:
     from jax import numpy as jnp
 
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
-    H = 2 * qml.X(0) + f1 * qml.Y(1)
-    ev = qml.evolve(H)
+    H = 2 * qp.X(0) + f1 * qp.Y(1)
+    ev = qp.evolve(H)
 
 >>> ev
 ParametrizedEvolution(wires=[0, 1])
@@ -210,13 +210,13 @@ The parameters can be updated by calling the :class:`~.ParametrizedEvolution` ag
 Additional options with regards to how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
 along with the parameters, as keyword arguments:
 
->>> qml.evolve(H)(params=[1.2], t=[0, 4], atol=1e-6, mxstep=1)
+>>> qp.evolve(H)(params=[1.2], t=[0, 4], atol=1e-6, mxstep=1)
 ParametrizedEvolution(Array(1.2, dtype=float32, weak_type=True), wires=[0, 1])
 
 The available keyword arguments can be found in in :class:`~.ParametrizedEvolution`. If not specified, they
 will default to predetermined values.
 
-Using qml.evolve in a QNode
+Using qp.evolve in a QNode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The :class:`~.ParametrizedEvolution` can be implemented in a QNode. We will evolve the
@@ -227,7 +227,7 @@ following :class:`~.ParametrizedHamiltonian`:
         from jax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
-        H = f1 * qml.Y(0)
+        H = f1 * qp.Y(0)
 
 
 Now we can execute the evolution of this Hamiltonian in a QNode and compute its gradient:
@@ -238,13 +238,13 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
     jax.config.update("jax_enable_x64", True)
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
     @jax.jit
-    @qml.qnode(dev, interface="jax")
+    @qp.qnode(dev, interface="jax")
     def circuit(params):
-        qml.evolve(H)(params, t=[0, 10])
-        return qml.expval(qml.Z(0))
+        qp.evolve(H)(params, t=[0, 10])
+        return qp.expval(qp.Z(0))
 
 >>> params = [1.2]
 >>> circuit(params)
@@ -261,7 +261,7 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 .. warning::
     To find the simultaneous evolution of the two operators, it is important that they are included
     in the same :func:`~.pennylane.evolve`. For two non-commuting :class:`~.ParametrizedHamiltonian`'s, applying
-    ``qml.evolve(H1)(params, t=[0, 10])`` followed by ``qml.evolve(H2)(params, t=[0, 10])`` will **not**
+    ``qp.evolve(H1)(params, t=[0, 10])`` followed by ``qp.evolve(H2)(params, t=[0, 10])`` will **not**
     apply the two pulses simultaneously, despite the overlapping time window. Instead, they will be evolved
     over the same timespan, but without taking into account how the evolution of ``H1`` affects ``H2``.
 

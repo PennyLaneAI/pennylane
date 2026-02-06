@@ -47,8 +47,8 @@ class Adjoint(ResourceOperator):
 
     The adjoint operation can be constructed like this:
 
-        >>> qft = qml.estimator.QFT(num_wires=3)
-        >>> adj_qft = qml.estimator.Adjoint(qft)
+        >>> qft = qp.estimator.QFT(num_wires=3)
+        >>> adj_qft = qp.estimator.Adjoint(qft)
 
     We can see how the resources differ by choosing a suitable gateset and estimating resources:
 

@@ -120,7 +120,7 @@ def _localization_unitary(qmat):
     nmodes = qmat.shape[2]
     num_params = nmodes * (nmodes - 1) // 2
 
-    rng = qml.math.random.default_rng(1000)
+    rng = qp.math.random.default_rng(1000)
     params = 2 * np.pi * rng.random(num_params)
 
     qnormalized = _normalize_q(qmat)
@@ -219,7 +219,7 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     ...                     [[ 5.75393451e-17,  5.37047963e-01,  4.41957355e-01],
     ...                      [ 6.53049347e-17, -5.37050348e-01,  4.41959740e-01],
     ...                      [-5.49709883e-17,  7.49851221e-08, -2.77912798e-02]]])
-    >>> freqs_loc, vecs_loc, uloc = qml.qchem.localize_normal_modes(freqs, vectors)
+    >>> freqs_loc, vecs_loc, uloc = qp.qchem.localize_normal_modes(freqs, vectors)
     >>> freqs_loc
     array([1332.62013257, 2296.73453455, 2296.73460655])
 

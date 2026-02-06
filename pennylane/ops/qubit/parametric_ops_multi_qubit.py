@@ -106,14 +106,14 @@ class MultiRZ(Operation):
 
         **Example**
 
-        >>> qml.MultiRZ.compute_matrix(torch.tensor(0.1), 2)
+        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), 2)
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
                dtype=torch.complex128)
         """
-        eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
+        eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
         if (
             math.get_interface(theta) == "tensorflow"
@@ -127,8 +127,8 @@ class MultiRZ(Operation):
         diags = math.exp(math.outer(-0.5j * theta, eigs))
         return diags[:, :, np.newaxis] * math.cast_like(math.eye(2**num_wires, like=diags), diags)
 
-    def generator(self) -> "qml.Hamiltonian":
-        return qml.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
+    def generator(self) -> "qp.Hamiltonian":
+        return qp.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
     @staticmethod
     def compute_eigvals(theta: TensorLike, num_wires: int) -> TensorLike:
@@ -155,12 +155,12 @@ class MultiRZ(Operation):
 
         **Example**
 
-        >>> qml.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
+        >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
                 0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
                dtype=torch.complex128)
         """
-        eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
+        eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
         if (
             math.get_interface(theta) == "tensorflow"
@@ -193,13 +193,13 @@ class MultiRZ(Operation):
 
         **Example:**
 
-        >>> qml.MultiRZ.compute_decomposition(1.2, wires=(0,1))
+        >>> qp.MultiRZ.compute_decomposition(1.2, wires=(0,1))
         [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
 
         """
-        ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
+        ops = [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
         ops.append(RZ(theta, wires=wires[0]))
-        ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
+        ops += [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
 
         return ops
 
@@ -217,28 +217,28 @@ class MultiRZ(Operation):
         theta = self.data[0] % (4 * np.pi)
 
         if _can_replace(theta, 0):
-            return qml.Identity(wires=self.wires[0])
+            return qp.Identity(wires=self.wires[0])
 
         return MultiRZ(theta, wires=self.wires)
 
 
 def _multi_rz_decomposition_resources(num_wires):
-    return {qml.RZ: 1, qml.CNOT: 2 * (num_wires - 1)}
+    return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
-    @qml.for_loop(len(wires) - 1, 0, -1)
+    @qp.for_loop(len(wires) - 1, 0, -1)
     def _pre_cnot(i):
-        qml.CNOT(wires=(wires[i], wires[i - 1]))
+        qp.CNOT(wires=(wires[i], wires[i - 1]))
 
-    @qml.for_loop(1, len(wires), 1)
+    @qp.for_loop(1, len(wires), 1)
     def _post_cnot(i):
-        qml.CNOT(wires=(wires[i], wires[i - 1]))
+        qp.CNOT(wires=(wires[i], wires[i - 1]))
 
     _pre_cnot()  # pylint: disable=no-value-for-parameter
-    qml.RZ(theta, wires=wires[0])
+    qp.RZ(theta, wires=wires[0])
     _post_cnot()  # pylint: disable=no-value-for-parameter
 
 
@@ -277,11 +277,11 @@ class PauliRot(Operation):
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=1)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qubit', wires=1)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.PauliRot(0.5, 'X',  wires=0)
-    ...     return qml.expval(qml.Z(0))
+    ...     qp.PauliRot(0.5, 'X',  wires=0)
+    ...     return qp.expval(qp.Z(0))
     >>> print(example_circuit())
     0.8775825618903724
     """
@@ -365,7 +365,7 @@ class PauliRot(Operation):
 
         **Example:**
 
-        >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
+        >>> op = qp.PauliRot(0.1, "XYY", wires=(0,1,2))
         >>> op.label()
         'RXYY'
         >>> op.label(decimals=2)
@@ -419,7 +419,7 @@ class PauliRot(Operation):
 
         **Example**
 
-        >>> qml.PauliRot.compute_matrix(0.5, 'X')
+        >>> qp.PauliRot.compute_matrix(0.5, 'X')
         array([[0.96891242+0.j        , 0.        -0.24740396j],
                [0.        -0.24740396j, 0.96891242+0.j        ]])
         """
@@ -438,7 +438,7 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
-            return qml.GlobalPhase.compute_matrix(0.5 * theta, n_wires=len(pauli_word))
+            return qp.GlobalPhase.compute_matrix(0.5 * theta, n_wires=len(pauli_word))
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -469,12 +469,12 @@ class PauliRot(Operation):
             list(range(len(pauli_word))),
         )
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
         pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
 
-        return qml.Hamiltonian(
-            [-0.5], [qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)]
+        return qp.Hamiltonian(
+            [-0.5], [qp.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)]
         )
 
     @staticmethod
@@ -498,7 +498,7 @@ class PauliRot(Operation):
 
         **Example**
 
-        >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
+        >>> qp.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
         tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
         if (
@@ -508,7 +508,7 @@ class PauliRot(Operation):
 
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
-            return qml.GlobalPhase.compute_eigvals(0.5 * theta, n_wires=len(pauli_word))
+            return qp.GlobalPhase.compute_eigvals(0.5 * theta, n_wires=len(pauli_word))
 
         return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
@@ -533,7 +533,7 @@ class PauliRot(Operation):
 
         **Example:**
 
-        >>> qml.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
+        >>> qp.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
         [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
 
         """
@@ -542,7 +542,7 @@ class PauliRot(Operation):
 
         # Check for identity and do nothing
         if set(pauli_word) == {"I"}:
-            return [qml.GlobalPhase(phi=theta / 2)]
+            return [qp.GlobalPhase(phi=theta / 2)]
 
         active_wires, active_gates = zip(
             *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
@@ -573,12 +573,12 @@ class PauliRot(Operation):
 
 def _pauli_rot_resources(pauli_word):
     if set(pauli_word) == {"I"}:
-        return {qml.GlobalPhase: 1}
+        return {qp.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
     return {
-        qml.Hadamard: 2 * pauli_word.count("X"),
-        qml.RX: 2 * pauli_word.count("Y"),
-        qml.resource_rep(qml.MultiRZ, num_wires=num_active_wires): 1,
+        qp.Hadamard: 2 * pauli_word.count("X"),
+        qp.RX: 2 * pauli_word.count("Y"),
+        qp.resource_rep(qp.MultiRZ, num_wires=num_active_wires): 1,
     }
 
 
@@ -586,22 +586,22 @@ def _pauli_rot_resources(pauli_word):
 @disable_autograph
 def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
     if set(pauli_word) == {"I"}:
-        qml.GlobalPhase(theta / 2)
+        qp.GlobalPhase(theta / 2)
         return
     active_wires, active_gates = zip(
         *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
     )
     for wire, gate in zip(active_wires, active_gates):
         if gate == "X":
-            qml.Hadamard(wires=[wire])
+            qp.Hadamard(wires=[wire])
         elif gate == "Y":
-            qml.RX(np.pi / 2, wires=[wire])
-    qml.MultiRZ(theta, wires=list(active_wires))
+            qp.RX(np.pi / 2, wires=[wire])
+    qp.MultiRZ(theta, wires=list(active_wires))
     for wire, gate in zip(active_wires, active_gates):
         if gate == "X":
-            qml.Hadamard(wires=[wire])
+            qp.Hadamard(wires=[wire])
         elif gate == "Y":
-            qml.RX(-np.pi / 2, wires=[wire])
+            qp.RX(-np.pi / 2, wires=[wire])
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
@@ -644,21 +644,21 @@ class PCPhase(Operation):
 
     We can define a circuit using :class:`~.PCPhase` as follows:
 
-    >>> op_3 = qml.PCPhase(0.27, dim = 3, wires=range(3))
+    >>> op_3 = qp.PCPhase(0.27, dim = 3, wires=range(3))
 
     The resulting operation applies a complex phase :math:`e^{0.27i}` to the first :math:`dim = 3`
     basis vectors and :math:`e^{-0.27i}` to the remaining basis vectors, as we can see from
     the diagonal of the matrix for this circuit.
 
-    >>> print(np.round(np.diag(qml.matrix(op_3)),2))
+    >>> print(np.round(np.diag(qp.matrix(op_3)),2))
     [0.96+0.27j 0.96+0.27j 0.96+0.27j 0.96-0.27j 0.96-0.27j 0.96-0.27j
      0.96-0.27j 0.96-0.27j]
 
     We can also choose a different ``dim`` value to apply the phase shift to a different set of
     basis vectors as follows:
 
-    >>> op_7 = qml.PCPhase(1.23, dim=7, wires=[1, 2, 3])
-    >>> print(np.round(np.diag(qml.matrix(op_7)),2))
+    >>> op_7 = qp.PCPhase(1.23, dim=7, wires=[1, 2, 3])
+    >>> print(np.round(np.diag(qp.matrix(op_7)),2))
     [0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j 0.33+0.94j
      0.33+0.94j 0.33-0.94j]
 
@@ -666,8 +666,8 @@ class PCPhase(Operation):
     operations which share the same control values on common control wires, and Pauli-X operations,
     possibly complemented by a global phase.
 
-    >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
-    >>> print(qml.draw(op_13.decomposition)())
+    >>> op_13 = qp.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
+    >>> print(qp.draw(op_13.decomposition)())
     1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
     2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
     3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
@@ -675,8 +675,8 @@ class PCPhase(Operation):
 
     If ``dim`` is a power of two, a single (multi-controlled) ``PhaseShift`` gate is sufficient:
 
-    >>> op_16 = qml.PCPhase(1.23, dim=16, wires=range(6))
-    >>> print(qml.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
+    >>> op_16 = qp.PCPhase(1.23, dim=16, wires=range(6))
+    >>> print(qp.draw(op_16.decomposition, wire_order=range(6), show_all_wires=True)())
     0: ────╭○───────────╭GlobalPhase(1.23)─┤  
     1: ──X─╰Rϕ(2.46)──X─├GlobalPhase(1.23)─┤  
     2: ─────────────────├GlobalPhase(1.23)─┤  
@@ -697,7 +697,7 @@ class PCPhase(Operation):
 
     resource_keys = {"num_wires", "dim"}
 
-    def generator(self) -> "qml.Hermitian":
+    def generator(self) -> "qp.Hermitian":
         r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
         The operator reads
 
@@ -709,7 +709,7 @@ class PCPhase(Operation):
         Correspondingly, the generator is
         :math:`2\Pi - \mathbb{I}_N=\text{diag}(\underset{d\text{ times}}{\underbrace{1, \dots, 1}},\underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}})`:
 
-        >>> qml.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
+        >>> qp.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
         Hermitian(array([[ 1,  0,  0,  0],
            [ 0,  1,  0,  0],
            [ 0,  0,  1,  0],
@@ -717,7 +717,7 @@ class PCPhase(Operation):
         """
         dim, N = self.hyperparameters["dimension"]
         mat = np.diag([1] * dim + [-1] * (N - dim))
-        return qml.Hermitian(mat, wires=self.wires)
+        return qp.Hermitian(mat, wires=self.wires)
 
     def _flatten(self) -> FlatPytree:
         hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
@@ -813,8 +813,8 @@ class PCPhase(Operation):
         potentially complemented with (non-controlled) Pauli-X gates and/or a global phase.
         For example, for ``dim=13`` on four qubits:
 
-        >>> op_13 = qml.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
-        >>> print(qml.draw(op_13.decomposition)())
+        >>> op_13 = qp.PCPhase(1.23, dim=13, wires=[1, 2, 3, 4])
+        >>> print(qp.draw(op_13.decomposition)())
         1: ─╭●─────────╭●───────────╭GlobalPhase(-1.23)─┤  
         2: ─╰Rϕ(-2.46)─├●───────────├GlobalPhase(-1.23)─┤  
         3: ────────────├○───────────├GlobalPhase(-1.23)─┤  
@@ -827,7 +827,7 @@ class PCPhase(Operation):
         Consider the projector-controlled phase gate on :math:`n=4` qubits and with
         :math:`d=\texttt{dim}=3`, i.e,
 
-        >>> op_3 = qml.PCPhase(1.23, dim=3, wires=[0, 1, 2, 3])
+        >>> op_3 = qp.PCPhase(1.23, dim=3, wires=[0, 1, 2, 3])
 
         It acts on :math:`N=2^n=16`-dimensional vectors and is described by
 
@@ -867,8 +867,8 @@ class PCPhase(Operation):
         qubit :math:`1` before and after the operation to apply the phase to the :math:`|0\rangle`
         state instead.
         Thus, we conclude this first step by applying the gates
-        ``qml.X(1)``, ``qml.ctrl(qml.PhaseShift(2 * phi, 1), control=[0], control_values=[0])``,
-        and ``qml.X(1)``.
+        ``qp.X(1)``, ``qp.ctrl(qp.PhaseShift(2 * phi, 1), control=[0], control_values=[0])``,
+        and ``qp.X(1)``.
 
         Next, we implement the second term in the projector decomposition, applying a phase
         to a single computational basis state. This requires us to fully control a phase shift
@@ -880,10 +880,10 @@ class PCPhase(Operation):
         we don't need to flip the target bit as we did before. However, given the negative sign
         in the projector decomposition, we need to multiply the phase with :math:`-1`.
         Overall, we apply the gate
-        ``qml.ctrl(qml.PhaseShift(-2 * phi, 3), control=[0, 1, 2], control_values=[0, 0, 1])``,
+        ``qp.ctrl(qp.PhaseShift(-2 * phi, 3), control=[0, 1, 2], control_values=[0, 0, 1])``,
         which concludes the decomposition, now reading:
 
-        >>> print(qml.draw(op_3.decomposition)())
+        >>> print(qp.draw(op_3.decomposition)())
         0: ────╭○───────────╭○─────────╭GlobalPhase(1.23)─┤  
         1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤  
         2: ─────────────────├●─────────├GlobalPhase(1.23)─┤  
@@ -917,7 +917,7 @@ class PCPhase(Operation):
         dim, _ = self.hyperparameters["dimension"]
 
         if _can_replace(phi, 0):
-            return qml.Identity(wires=self.wires[0])
+            return qp.Identity(wires=self.wires[0])
 
         return PCPhase(phi, dim=dim, wires=self.wires)
 
@@ -933,16 +933,16 @@ class PCPhase(Operation):
 
 def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, n_work_wires):
     if n_control_wires == 0:
-        return {qml.PhaseShift: 1}
+        return {qp.PhaseShift: 1}
     return {
         controlled_resource_rep(
-            qml.PhaseShift,
+            qp.PhaseShift,
             {},
             num_control_wires=n_control_wires,
             num_zero_control_values=n_zero_control_values,
             num_work_wires=n_work_wires,
         ): 1,
-        qml.X: 2 * (1 - subspace),
+        qp.X: 2 * (1 - subspace),
     }
 
 
@@ -992,8 +992,8 @@ def _ctrl_phase_shift(
         # If there are no control wires, we are dealing with the very first phase shift of
         # the decomposition, which should be adding projectors. So subspace should have been 0.
         assert len(control_wires) > 0
-        qml.ctrl(
-            qml.PhaseShift(phi, wires=target_wire),
+        qp.ctrl(
+            qp.PhaseShift(phi, wires=target_wire),
             control=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -1002,17 +1002,17 @@ def _ctrl_phase_shift(
 
     if len(control_wires) == 0:
         # Flip angle for phase_shift(subspace=0) = phase_shift(subspace=1)*global_phase
-        qml.PhaseShift(-phi, wires=target_wire)
+        qp.PhaseShift(-phi, wires=target_wire)
         return -phi
 
-    qml.X(target_wire)
-    qml.ctrl(
-        qml.PhaseShift(phi, wires=target_wire),
+    qp.X(target_wire)
+    qp.ctrl(
+        qp.PhaseShift(phi, wires=target_wire),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
     )
-    qml.X(target_wire)
+    qp.X(target_wire)
     return 0.0
 
 
@@ -1049,7 +1049,7 @@ def _decompose_pcphase_resource(num_wires, dim):
         if not next_cval:
             n_zero_control_values += 1
 
-    gate_count[qml.GlobalPhase] += 1
+    gate_count[qp.GlobalPhase] += 1
     return dict(gate_count)
 
 
@@ -1106,7 +1106,7 @@ def _decompose_pcphase(phi, wires, dimension):
             next_cval = not next_cval
         control_values.append(next_cval)
 
-    qml.GlobalPhase(global_phase)
+    qp.GlobalPhase(global_phase)
 
 
 add_decomps(PCPhase, _decompose_pcphase)
@@ -1157,8 +1157,8 @@ class IsingXX(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self) -> "qml.Hamiltonian":
-        return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
+    def generator(self) -> "qp.Hamiltonian":
+        return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
@@ -1184,7 +1184,7 @@ class IsingXX(Operation):
 
         **Example**
 
-        >>> qml.IsingXX.compute_matrix(torch.tensor(0.5))
+        >>> qp.IsingXX.compute_matrix(torch.tensor(0.5))
         tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j],
                 [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
@@ -1229,14 +1229,14 @@ class IsingXX(Operation):
 
         **Example:**
 
-        >>> qml.IsingXX.compute_decomposition(1.23, wires=(0,1))
+        >>> qp.IsingXX.compute_decomposition(1.23, wires=(0,1))
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
         decomp_ops = [
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             RX(phi, wires=[wires[0]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
         ]
         return decomp_ops
 
@@ -1251,29 +1251,29 @@ class IsingXX(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if _can_replace(phi, 0):
-            return qml.Identity(wires=self.wires[0])
+            return qp.Identity(wires=self.wires[0])
 
         return IsingXX(phi, wires=self.wires)
 
 
 def _isingxx_to_cnot_rx_cnot_resources():
-    return {qml.CNOT: 2, qml.RX: 1}
+    return {qp.CNOT: 2, qp.RX: 1}
 
 
 @register_resources(_isingxx_to_cnot_rx_cnot_resources)
 def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qml.CNOT(wires=wires)
-    qml.RX(phi, wires=[wires[0]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
+    qp.RX(phi, wires=[wires[0]])
+    qp.CNOT(wires=wires)
 
 
 def _isingxx_to_ppr_resource():
-    return {resource_rep(qml.PauliRot, pauli_word="XX"): 1}
+    return {resource_rep(qp.PauliRot, pauli_word="XX"): 1}
 
 
 @register_resources(_isingxx_to_ppr_resource)
 def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
-    qml.PauliRot(phi, "XX", wires=wires)
+    qp.PauliRot(phi, "XX", wires=wires)
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot, _isingxx_to_ppr)
@@ -1326,8 +1326,8 @@ class IsingYY(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self) -> "qml.Hamiltonian":
-        return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
+    def generator(self) -> "qp.Hamiltonian":
+        return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
@@ -1354,14 +1354,14 @@ class IsingYY(Operation):
 
         **Example:**
 
-        >>> qml.IsingYY.compute_decomposition(1.23, wires=(0,1))
+        >>> qp.IsingYY.compute_decomposition(1.23, wires=(0,1))
         [CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1])]
 
         """
         return [
-            qml.CY(wires=wires),
+            qp.CY(wires=wires),
             RY(phi, wires=[wires[0]]),
-            qml.CY(wires=wires),
+            qp.CY(wires=wires),
         ]
 
     @staticmethod
@@ -1382,7 +1382,7 @@ class IsingYY(Operation):
 
         **Example**
 
-        >>> qml.IsingYY.compute_matrix(torch.tensor(0.5))
+        >>> qp.IsingYY.compute_matrix(torch.tensor(0.5))
         tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.2474j],
                 [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
@@ -1427,29 +1427,29 @@ class IsingYY(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if _can_replace(phi, 0):
-            return qml.Identity(wires=self.wires[0])
+            return qp.Identity(wires=self.wires[0])
 
         return IsingYY(phi, wires=self.wires)
 
 
 def _isingyy_to_cy_ry_cy_resources():
-    return {qml.CY: 2, RY: 1}
+    return {qp.CY: 2, RY: 1}
 
 
 @register_resources(_isingyy_to_cy_ry_cy_resources)
 def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
-    qml.CY(wires=wires)
+    qp.CY(wires=wires)
     RY(phi, wires=[wires[0]])
-    qml.CY(wires=wires)
+    qp.CY(wires=wires)
 
 
 def _isingyy_to_ppr_resource():
-    return {resource_rep(qml.PauliRot, pauli_word="YY"): 1}
+    return {resource_rep(qp.PauliRot, pauli_word="YY"): 1}
 
 
 @register_resources(_isingyy_to_ppr_resource)
 def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
-    qml.PauliRot(phi, "YY", wires=wires)
+    qp.PauliRot(phi, "YY", wires=wires)
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy, _isingyy_to_ppr)
@@ -1503,8 +1503,8 @@ class IsingZZ(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self) -> "qml.Hamiltonian":
-        return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
+    def generator(self) -> "qp.Hamiltonian":
+        return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
@@ -1531,14 +1531,14 @@ class IsingZZ(Operation):
 
         **Example:**
 
-        >>> qml.IsingZZ.compute_decomposition(1.23, wires=[0, 1])
+        >>> qp.IsingZZ.compute_decomposition(1.23, wires=[0, 1])
         [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """
         return [
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             RZ(phi, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
         ]
 
     @staticmethod
@@ -1559,7 +1559,7 @@ class IsingZZ(Operation):
 
         **Example**
 
-        >>> qml.IsingZZ.compute_matrix(torch.tensor(0.5))
+        >>> qp.IsingZZ.compute_matrix(torch.tensor(0.5))
         tensor([[0.9689-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
@@ -1608,7 +1608,7 @@ class IsingZZ(Operation):
 
         **Example**
 
-        >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
+        >>> qp.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
         if (
@@ -1635,29 +1635,29 @@ class IsingZZ(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if _can_replace(phi, 0):
-            return qml.Identity(wires=self.wires[0])
+            return qp.Identity(wires=self.wires[0])
 
         return IsingZZ(phi, wires=self.wires)
 
 
 def _isingzz_to_cnot_rz_cnot_resources():
-    return {qml.CNOT: 2, RZ: 1}
+    return {qp.CNOT: 2, RZ: 1}
 
 
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)
 def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
     RZ(phi, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
 
 
 def _isingzz_to_ppr_resource():
-    return {resource_rep(qml.PauliRot, pauli_word="ZZ"): 1}
+    return {resource_rep(qp.PauliRot, pauli_word="ZZ"): 1}
 
 
 @register_resources(_isingzz_to_ppr_resource)
 def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
-    qml.PauliRot(phi, "ZZ", wires=wires)
+    qp.PauliRot(phi, "ZZ", wires=wires)
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
@@ -1721,13 +1721,13 @@ class IsingXY(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
 
-        return qml.Hamiltonian(
+        return qp.Hamiltonian(
             [0.25, 0.25],
             [
-                qml.X(wires=self.wires[0]) @ qml.X(wires=self.wires[1]),
-                qml.Y(wires=self.wires[0]) @ qml.Y(wires=self.wires[1]),
+                qp.X(wires=self.wires[0]) @ qp.X(wires=self.wires[1]),
+                qp.Y(wires=self.wires[0]) @ qp.Y(wires=self.wires[1]),
             ],
         )
 
@@ -1756,16 +1756,16 @@ class IsingXY(Operation):
 
         **Example:**
 
-        >>> qml.IsingXY.compute_decomposition(1.23, wires=(0,1))
+        >>> qp.IsingXY.compute_decomposition(1.23, wires=(0,1))
         [H(0), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), H(0)]
 
         """
         return [
             Hadamard(wires=[wires[0]]),
-            qml.CY(wires=wires),
+            qp.CY(wires=wires),
             RY(phi / 2, wires=[wires[0]]),
             RX(-phi / 2, wires=[wires[1]]),
-            qml.CY(wires=wires),
+            qp.CY(wires=wires),
             Hadamard(wires=[wires[0]]),
         ]
 
@@ -1787,7 +1787,7 @@ class IsingXY(Operation):
 
         **Example**
 
-        >>> qml.IsingXY.compute_matrix(0.5)
+        >>> qp.IsingXY.compute_matrix(0.5)
         array([[1.        +0.j        , 0.        +0.j        ,        0.        +0.j        , 0.        +0.j        ],
                [0.        +0.j        , 0.96891242+0.j        ,        0.        +0.24740396j, 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.24740396j,        0.96891242+0.j        , 0.        +0.j        ],
@@ -1846,7 +1846,7 @@ class IsingXY(Operation):
 
         **Example**
 
-        >>> qml.IsingXY.compute_eigvals(0.5)
+        >>> qp.IsingXY.compute_eigvals(0.5)
         array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
         if (
@@ -1871,22 +1871,22 @@ class IsingXY(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if _can_replace(phi, 0):
-            return qml.Identity(wires=self.wires[0])
+            return qp.Identity(wires=self.wires[0])
 
         return IsingXY(phi, wires=self.wires)
 
 
 def _isingxy_to_h_cy_resources():
-    return {Hadamard: 2, qml.CY: 2, RY: 1, RX: 1}
+    return {Hadamard: 2, qp.CY: 2, RY: 1, RX: 1}
 
 
 @register_resources(_isingxy_to_h_cy_resources)
 def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
     Hadamard(wires=[wires[0]])
-    qml.CY(wires=wires)
+    qp.CY(wires=wires)
     RY(phi / 2, wires=[wires[0]])
     RX(-phi / 2, wires=[wires[1]])
-    qml.CY(wires=wires)
+    qp.CY(wires=wires)
     Hadamard(wires=[wires[0]])
 
 
@@ -1958,14 +1958,14 @@ class PSWAP(Operation):
 
         **Example:**
 
-        >>> qml.PSWAP.compute_decomposition(1.23, wires=(0,1))
+        >>> qp.PSWAP.compute_decomposition(1.23, wires=(0,1))
         [SWAP(wires=[0, 1]), CNOT(wires=[0, 1]), PhaseShift(1.23, wires=[1]), CNOT(wires=[0, 1])]
         """
         return [
-            qml.SWAP(wires=wires),
-            qml.CNOT(wires=wires),
+            qp.SWAP(wires=wires),
+            qp.CNOT(wires=wires),
             PhaseShift(phi, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
         ]
 
     @staticmethod
@@ -1986,7 +1986,7 @@ class PSWAP(Operation):
 
         **Example**
 
-        >>> qml.PSWAP.compute_matrix(0.5)
+        >>> qp.PSWAP.compute_matrix(0.5)
         array([[1.        +0.j        , 0.        +0.j        ,
                 0.        +0.j        , 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,
@@ -2039,7 +2039,7 @@ class PSWAP(Operation):
 
         **Example**
 
-        >>> qml.PSWAP.compute_eigvals(0.5)
+        >>> qp.PSWAP.compute_eigvals(0.5)
         array([ 1.        +0.j        ,  1.        +0.j        ,
                -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
@@ -2060,38 +2060,38 @@ class PSWAP(Operation):
         phi = self.data[0] % (2 * np.pi)
 
         if _can_replace(phi, 0):
-            return qml.SWAP(wires=self.wires)
+            return qp.SWAP(wires=self.wires)
 
         return PSWAP(phi, wires=self.wires)
 
 
 def _pswap_to_swap_cnot_phaseshift_cnot_resources():
-    return {qml.SWAP: 1, qml.CNOT: 2, PhaseShift: 1}
+    return {qp.SWAP: 1, qp.CNOT: 2, PhaseShift: 1}
 
 
 @register_resources(_pswap_to_swap_cnot_phaseshift_cnot_resources)
 def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qml.SWAP(wires=wires)
-    qml.CNOT(wires=wires)
+    qp.SWAP(wires=wires)
+    qp.CNOT(wires=wires)
     PhaseShift(phi, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
 
 
 def _pswap_to_ppr_resources():
     return {
-        resource_rep(qml.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="ZZ"): 1,
-        qml.GlobalPhase: 1,
+        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
+        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
+        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
+        qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_pswap_to_ppr_resources)
 def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(-np.pi / 2, pauli_word="YY", wires=wires)
-    qml.PauliRot(-np.pi / 2, pauli_word="XX", wires=wires)
-    qml.PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
-    qml.GlobalPhase(np.pi / 4 - phi / 2)
+    qp.PauliRot(-np.pi / 2, pauli_word="YY", wires=wires)
+    qp.PauliRot(-np.pi / 2, pauli_word="XX", wires=wires)
+    qp.PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
+    qp.GlobalPhase(np.pi / 4 - phi / 2)
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
@@ -2140,8 +2140,8 @@ class CPhaseShift00(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self) -> "qml.Projector":
-        return qml.Projector(np.array([0, 0]), wires=self.wires)
+    def generator(self) -> "qp.Projector":
+        return qp.Projector(np.array([0, 0]), wires=self.wires)
 
     resource_keys = set()
 
@@ -2177,7 +2177,7 @@ class CPhaseShift00(Operation):
 
         **Example**
 
-        >>> qml.CPhaseShift00.compute_matrix(torch.tensor(0.5))
+        >>> qp.CPhaseShift00.compute_matrix(torch.tensor(0.5))
         tensor([[0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
@@ -2228,7 +2228,7 @@ class CPhaseShift00(Operation):
 
         **Example**
 
-        >>> qml.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
+        >>> qp.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
         if (
@@ -2259,7 +2259,7 @@ class CPhaseShift00(Operation):
 
         **Example:**
 
-        >>> qml.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
+        >>> qp.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
         [X(0),
         X(1),
         PhaseShift(0.617, wires=[0]),
@@ -2276,9 +2276,9 @@ class CPhaseShift00(Operation):
             PauliX(wires[1]),
             PhaseShift(phi / 2, wires=[wires[0]]),
             PhaseShift(phi / 2, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             PhaseShift(-phi / 2, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             PauliX(wires[1]),
             PauliX(wires[0]),
         ]
@@ -2301,7 +2301,7 @@ class CPhaseShift00(Operation):
 
 
 def _cphaseshift00_resources():
-    return {PauliX: 4, PhaseShift: 3, qml.CNOT: 2}
+    return {PauliX: 4, PhaseShift: 3, qp.CNOT: 2}
 
 
 @register_resources(_cphaseshift00_resources)
@@ -2310,9 +2310,9 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[1])
     PhaseShift(phi / 2, wires=[wires[0]])
     PhaseShift(phi / 2, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
     PhaseShift(-phi / 2, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
     PauliX(wires[1])
     PauliX(wires[0])
 
@@ -2364,8 +2364,8 @@ class CPhaseShift01(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self) -> "qml.Projector":
-        return qml.Projector(np.array([0, 1]), wires=self.wires)
+    def generator(self) -> "qp.Projector":
+        return qp.Projector(np.array([0, 1]), wires=self.wires)
 
     resource_keys = set()
 
@@ -2401,7 +2401,7 @@ class CPhaseShift01(Operation):
 
         **Example**
 
-        >>> qml.CPhaseShift01.compute_matrix(torch.tensor(0.5))
+        >>> qp.CPhaseShift01.compute_matrix(torch.tensor(0.5))
         tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
@@ -2452,7 +2452,7 @@ class CPhaseShift01(Operation):
 
         **Example**
 
-        >>> qml.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
+        >>> qp.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
         if (
@@ -2480,7 +2480,7 @@ class CPhaseShift01(Operation):
 
         **Example:**
 
-        >>> qml.CPhaseShift01.compute_decomposition(1.234, wires=(0,1))
+        >>> qp.CPhaseShift01.compute_decomposition(1.234, wires=(0,1))
         [X(0),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
@@ -2494,9 +2494,9 @@ class CPhaseShift01(Operation):
             PauliX(wires[0]),
             PhaseShift(phi / 2, wires=[wires[0]]),
             PhaseShift(phi / 2, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             PhaseShift(-phi / 2, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             PauliX(wires[0]),
         ]
         return decomp_ops
@@ -2518,7 +2518,7 @@ class CPhaseShift01(Operation):
 
 
 def _cphaseshift01_resources():
-    return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
+    return {PauliX: 2, PhaseShift: 3, qp.CNOT: 2}
 
 
 @register_resources(_cphaseshift01_resources)
@@ -2526,9 +2526,9 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[0])
     PhaseShift(phi / 2, wires=[wires[0]])
     PhaseShift(phi / 2, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
     PhaseShift(-phi / 2, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
     PauliX(wires[0])
 
 
@@ -2578,8 +2578,8 @@ class CPhaseShift10(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def generator(self) -> "qml.Projector":
-        return qml.Projector(np.array([1, 0]), wires=self.wires)
+    def generator(self) -> "qp.Projector":
+        return qp.Projector(np.array([1, 0]), wires=self.wires)
 
     resource_keys = set()
 
@@ -2615,7 +2615,7 @@ class CPhaseShift10(Operation):
 
         **Example**
 
-        >>> qml.CPhaseShift10.compute_matrix(torch.tensor(0.5))
+        >>> qp.CPhaseShift10.compute_matrix(torch.tensor(0.5))
         tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j],
@@ -2666,7 +2666,7 @@ class CPhaseShift10(Operation):
 
         **Example**
 
-        >>> qml.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
+        >>> qp.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
         if (
@@ -2694,7 +2694,7 @@ class CPhaseShift10(Operation):
 
         **Example:**
 
-        >>> qml.CPhaseShift10.compute_decomposition(1.234, wires=(0,1))
+        >>> qp.CPhaseShift10.compute_decomposition(1.234, wires=(0,1))
         [X(1),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
@@ -2708,9 +2708,9 @@ class CPhaseShift10(Operation):
             PauliX(wires[1]),
             PhaseShift(phi / 2, wires=[wires[0]]),
             PhaseShift(phi / 2, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             PhaseShift(-phi / 2, wires=[wires[1]]),
-            qml.CNOT(wires=wires),
+            qp.CNOT(wires=wires),
             PauliX(wires[1]),
         ]
         return decomp_ops
@@ -2727,7 +2727,7 @@ class CPhaseShift10(Operation):
 
 
 def _cphaseshift10_resources():
-    return {PauliX: 2, PhaseShift: 3, qml.CNOT: 2}
+    return {PauliX: 2, PhaseShift: 3, qp.CNOT: 2}
 
 
 @register_resources(_cphaseshift10_resources)
@@ -2735,9 +2735,9 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[1])
     PhaseShift(phi / 2, wires=[wires[0]])
     PhaseShift(phi / 2, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
     PhaseShift(-phi / 2, wires=[wires[1]])
-    qml.CNOT(wires=wires)
+    qp.CNOT(wires=wires)
     PauliX(wires[1])
 
 

@@ -83,9 +83,9 @@ Creating a Dataset
 
 To create a new dataset in-memory, initialize a new :class:`~.Dataset` with the desired attributes:
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
->>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
->>> dataset = qml.data.Dataset(
+>>> hamiltonian = qp.Hamiltonian([1., 1.], [qp.Z(0), qp.Z(1)])
+>>> eigvals, eigvecs = np.linalg.eigh(qp.matrix(hamiltonian))
+>>> dataset = qp.data.Dataset(
 ...   hamiltonian = hamiltonian,
 ...   eigen = {"eigvals": eigvals, "eigvecs": eigvecs}
 ... )
@@ -146,12 +146,12 @@ Attribute Metadata
 Dataset attributes can also contain additional metadata, such as docstrings. The :func:`~.data.attribute`
 function can be used to attach metadata on assignment or initialization.
 
->>> hamiltonian = qml.Hamiltonian([1., 1.], [qml.Z(0), qml.Z(1)])
->>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(hamiltonian))
->>> dataset = qml.data.Dataset(hamiltonian = qml.data.attribute(
+>>> hamiltonian = qp.Hamiltonian([1., 1.], [qp.Z(0), qp.Z(1)])
+>>> eigvals, eigvecs = np.linalg.eigh(qp.matrix(hamiltonian))
+>>> dataset = qp.data.Dataset(hamiltonian = qp.data.attribute(
 ...     hamiltonian,
 ...     doc="The hamiltonian of the system"))
->>> dataset.eigen = qml.data.attribute(
+>>> dataset.eigen = qp.data.attribute(
 ...     {"eigvals": eigvals, "eigvecs": eigvecs},
 ...     doc="Eigenvalues and eigenvectors of the hamiltonian")
 
@@ -174,13 +174,13 @@ their associated type and documentation:
 
 .. code-block:: python
 
-    class QuantumOscillator(qml.data.Dataset, data_name="quantum_oscillator", identifiers=["mass", "force_constant"]):
+    class QuantumOscillator(qp.data.Dataset, data_name="quantum_oscillator", identifiers=["mass", "force_constant"]):
         \"""Dataset describing a quantum oscillator.\"""
 
-        mass: float = qml.data.field(doc = "The mass of the particle")
-        force_constant: float = qml.data.field(doc = "The force constant of the oscillator")
-        hamiltonian: qml.Hamiltonian = qml.data.field(doc = "The hamiltonian of the particle")
-        energy_levels: np.ndarray = qml.data.field(doc = "The first 1000 energy levels of the system")
+        mass: float = qp.data.field(doc = "The mass of the particle")
+        force_constant: float = qp.data.field(doc = "The force constant of the oscillator")
+        hamiltonian: qp.Hamiltonian = qp.data.field(doc = "The hamiltonian of the particle")
+        energy_levels: np.ndarray = qp.data.field(doc = "The first 1000 energy levels of the system")
 
 The ``data_name`` keyword specifies a category or descriptive name for the dataset type, and the ``identifiers``
 keyword to the class is used to specify fields that function as parameters, i.e they determine the behaviour
@@ -192,7 +192,7 @@ definition:
 >>> dataset = QuantumOscillator(
 ...     mass=1,
 ...     force_constant=0.5,
-...     hamiltonian=qml.X(0),
+...     hamiltonian=qp.X(0),
 ...     energy_levels=np.array([0.1, 0.2])
 ... )
 >>> dataset.attr_info["mass"]["doc"]

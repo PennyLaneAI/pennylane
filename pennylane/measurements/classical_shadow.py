@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.classical_shadow measurement.
+This module contains the qp.classical_shadow measurement.
 """
 import copy
 from collections.abc import Iterable, Sequence
@@ -618,17 +618,17 @@ def shadow_expval(H, k=1, seed=None) -> ShadowExpvalMP:
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.X(1)])
+        H = qp.Hamiltonian([1., 1.], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.X(1)])
 
-        dev = qml.device("default.qubit", wires=range(2))
+        dev = qp.device("default.qubit", wires=range(2))
 
-        @qml.set_shots(shots=10000)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=10000)
+        @qp.qnode(dev)
         def circuit(x, obs):
-            qml.Hadamard(0)
-            qml.CNOT((0,1))
-            qml.RX(x, wires=0)
-            return qml.shadow_expval(obs)
+            qp.Hadamard(0)
+            qp.CNOT((0,1))
+            qp.RX(x, wires=0)
+            return qp.shadow_expval(obs)
 
         x = np.array(0.5, requires_grad=True)
 
@@ -636,16 +636,16 @@ def shadow_expval(H, k=1, seed=None) -> ShadowExpvalMP:
 
     >>> circuit(x, H)
     array(1.8774)
-    >>> qml.grad(circuit)(x, H)
+    >>> qp.grad(circuit)(x, H)
     -0.44999999999999984
 
     In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
-    >>> Hs = [H, qml.X(0), qml.Y(0), qml.Z(0)]
+    >>> Hs = [H, qp.X(0), qp.Y(0), qp.Z(0)]
     >>> circuit(x, Hs)
     array([ 1.881 , -0.0312, -0.0027, -0.0087])
-    >>> qml.jacobian(circuit)(x, Hs)
+    >>> qp.jacobian(circuit)(x, Hs)
     array([-0.4518,  0.0174, -0.0216, -0.0063])
     """
     seed = seed or np.random.randint(2**30)
@@ -688,14 +688,14 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(shots=5)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=5)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.classical_shadow(wires=[0, 1])
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.classical_shadow(wires=[0, 1])
 
     Executing this QNode produces the sampled bits and the Pauli measurements used:
 
@@ -738,14 +738,14 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            ops = [qml.Hadamard(wires=0), qml.CNOT(wires=(0,1))]
-            measurements = [qml.classical_shadow(wires=(0,1))]
-            tape = qml.tape.QuantumTape(ops, measurements, shots=5)
+            ops = [qp.Hadamard(wires=0), qp.CNOT(wires=(0,1))]
+            measurements = [qp.classical_shadow(wires=(0,1))]
+            tape = qp.tape.QuantumTape(ops, measurements, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
+        >>> bits1, recipes1 = qp.execute([tape], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qp.execute([tape], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         True
         >>> np.all(bits1 == bits2)
@@ -756,16 +756,16 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            measurements1 = [qml.classical_shadow(wires=(0,1), seed=10)]
-            tape1 = qml.tape.QuantumTape(ops, measurements1, shots=5)
+            measurements1 = [qp.classical_shadow(wires=(0,1), seed=10)]
+            tape1 = qp.tape.QuantumTape(ops, measurements1, shots=5)
 
-            measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
-            tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
+            measurements2 = [qp.classical_shadow(wires=(0,1), seed=15)]
+            tape2 = qp.tape.QuantumTape(ops, measurements2, shots=5)
 
-        >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
-        >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
+        >>> bits1, recipes1 = qp.execute([tape1], device=dev, diff_method=None)[0]
+        >>> bits2, recipes2 = qp.execute([tape2], device=dev, diff_method=None)[0]
         >>> np.all(recipes1 == recipes2)
         False
         >>> np.all(bits1 == bits2)

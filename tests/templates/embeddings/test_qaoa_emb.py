@@ -32,8 +32,8 @@ def test_standard_validity():
     layer2 = [3.1, 0.2, -2.8]
     weights = [layer1, layer2]
 
-    op = qml.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
-    qml.ops.functions.assert_valid(op)
+    op = qp.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
+    qp.ops.functions.assert_valid(op)
 
 
 # pylint: disable=protected-access
@@ -44,12 +44,12 @@ def test_flatten_unflatten():
     layer2 = [3.1, 0.2, -2.8]
     weights = [layer1, layer2]
 
-    op = qml.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
+    op = qp.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
     _, metadata = op._flatten()
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    qml.assert_equal(op, new_op)
+    qp.assert_equal(op, new_op)
 
 
 class TestDecomposition:
@@ -77,8 +77,8 @@ class TestDecomposition:
         features = list(range(n_wires))
         weights = np.zeros(shape=weight_shape)
 
-        op = qml.QAOAEmbedding(features, weights, wires=range(n_wires))
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.QAOAEmbedding(features, weights, wires=range(n_wires))
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -94,9 +94,9 @@ class TestDecomposition:
         broadcasted_weights = np.zeros(shape=(n_broadcast,) + weight_shape)
 
         # Only broadcast features
-        op = qml.QAOAEmbedding(broadcasted_features, weights, wires=range(n_wires))
+        op = qp.QAOAEmbedding(broadcasted_features, weights, wires=range(n_wires))
         assert op.batch_size == n_broadcast
-        tape = qml.tape.QuantumScript(op.decomposition())
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -106,9 +106,9 @@ class TestDecomposition:
                 assert gate.batch_size is None
 
         # Only broadcast weights
-        op = qml.QAOAEmbedding(features, broadcasted_weights, wires=range(n_wires))
+        op = qp.QAOAEmbedding(features, broadcasted_weights, wires=range(n_wires))
         assert op.batch_size == n_broadcast
-        tape = qml.tape.QuantumScript(op.decomposition())
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -118,9 +118,9 @@ class TestDecomposition:
                 assert gate.batch_size == n_broadcast
 
         # Broadcast weights and features
-        op = qml.QAOAEmbedding(broadcasted_features, broadcasted_weights, wires=range(n_wires))
+        op = qp.QAOAEmbedding(broadcasted_features, broadcasted_weights, wires=range(n_wires))
         assert op.batch_size == n_broadcast
-        tape = qml.tape.QuantumScript(op.decomposition())
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -135,8 +135,8 @@ class TestDecomposition:
         features = list(range(2))
         weights = np.zeros(shape=(1, 3))
 
-        op = qml.QAOAEmbedding(features, weights, wires=range(2), local_field=local_field)
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.QAOAEmbedding(features, weights, wires=range(2), local_field=local_field)
+        tape = qp.tape.QuantumScript(op.decomposition())
         gate_names = [gate.name for gate in tape.operations]
 
         assert gate_names[3] == get_name[local_field]
@@ -148,12 +148,12 @@ class TestDecomposition:
 
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="A")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+            qp.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="A")
+            return [qp.expval(qp.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
             circuit(x=[1])
@@ -172,10 +172,10 @@ class TestDecomposition:
 
         weights = np.zeros(shape=shp)
 
-        @qml.qnode(qubit_device)
+        @qp.qnode(qubit_device)
         def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+            qp.QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
+            return [qp.expval(qp.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
         target = [1, -1, 0, 1, 1]
@@ -190,12 +190,12 @@ class TestDecomposition:
         """Checks the output if the features and entangler weights are nonzero,
         which makes the circuit only depend on the ZZ gate."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(2))
-            return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+            qp.QAOAEmbedding(features=x, weights=weights, wires=range(2))
+            return [qp.expval(qp.PauliZ(i)) for i in range(2)]
 
         res = circuit(x=[np.pi / 2, np.pi / 2])
 
@@ -212,12 +212,12 @@ class TestDecomposition:
     def test_state_more_qubits_than_features(self, n_wires, features, weights, target, tol):
         """Checks the state is correct if there are more qubits than features."""
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="Z")
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+            qp.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field="Z")
+            return [qp.expval(qp.PauliZ(i)) for i in range(n_wires)]
 
         res = circuit(x=features)
         assert np.allclose(res, target, atol=tol, rtol=0)
@@ -227,18 +227,18 @@ class TestDecomposition:
         weights = np.random.random(size=(1, 6))
         features = np.random.random(size=(3,))
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QAOAEmbedding(features, weights, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.QAOAEmbedding(features, weights, wires=range(3))
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.QAOAEmbedding(features, weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.QAOAEmbedding(features, weights, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -254,8 +254,8 @@ class TestDecomposition:
     @pytest.mark.capture
     @pytest.mark.parametrize(("features", "weights", "wires", "local_field"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, weights, wires, local_field):
-        op = qml.QAOAEmbedding(features, weights, wires, local_field=local_field)
-        for rule in qml.list_decomps(qml.QAOAEmbedding):
+        op = qp.QAOAEmbedding(features, weights, wires, local_field=local_field)
+        for rule in qp.list_decomps(qp.QAOAEmbedding):
             _test_decomposition_rule(op, rule)
 
 
@@ -265,12 +265,12 @@ class TestInputs:
     @pytest.mark.parametrize(
         "local_field, expected",
         (
-            ("X", qml.RX),
-            ("Y", qml.RY),
-            ("Z", qml.RZ),
-            (qml.RX, qml.RX),
-            (qml.RY, qml.RY),
-            (qml.RZ, qml.RZ),
+            ("X", qp.RX),
+            ("Y", qp.RY),
+            ("Z", qp.RZ),
+            (qp.RX, qp.RX),
+            (qp.RY, qp.RY),
+            (qp.RZ, qp.RZ),
         ),
     )
     def test_local_field_options(self, local_field, expected):
@@ -279,7 +279,7 @@ class TestInputs:
         features = [0]
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
-        op = qml.QAOAEmbedding(
+        op = qp.QAOAEmbedding(
             features=features, weights=weights, wires=range(n_wires), local_field=local_field
         )
 
@@ -294,12 +294,12 @@ class TestInputs:
         features = [0, 0, 0, 0]
         n_wires = 1
         weights = np.zeros(shape=(1, 2 * n_wires))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+            qp.QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
+            return [qp.expval(qp.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be of "):
             circuit(x=features)
@@ -310,12 +310,12 @@ class TestInputs:
         n_wires = 1
         weights = np.zeros(shape=(1, 1))
         features = np.zeros(shape=shape)
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QAOAEmbedding(features, weights, wires=range(n_wires))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+            qp.QAOAEmbedding(features, weights, wires=range(n_wires))
+            return [qp.expval(qp.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit()
@@ -331,12 +331,12 @@ class TestInputs:
     def test_exception_wrong_weight_shape(self, weights, n_wires):
         """Verifies that exception is raised if the shape of weights is incorrect."""
         features = np.zeros(shape=(n_wires,))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QAOAEmbedding(features, weights, wires=range(n_wires))
-            return qml.expval(qml.PauliZ(0))
+            qp.QAOAEmbedding(features, weights, wires=range(n_wires))
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
             circuit()
@@ -351,12 +351,12 @@ class TestInputs:
     def test_exception_wrong_weight_ndim(self, weights, n_wires):
         """Verifies that exception is raised if the shape of weights is incorrect."""
         features = np.zeros(shape=(n_wires,))
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QAOAEmbedding(features, weights, wires=range(n_wires))
-            return qml.expval(qml.PauliZ(0))
+            qp.QAOAEmbedding(features, weights, wires=range(n_wires))
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights must be a two-dimensional tensor or three"):
             circuit()
@@ -375,29 +375,29 @@ class TestInputs:
     def test_shape(self, n_layers, n_wires, n_broadcast, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.QAOAEmbedding.shape(n_layers, n_wires, n_broadcast)
+        shape = qp.QAOAEmbedding.shape(n_layers, n_wires, n_broadcast)
         assert shape == expected_shape
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.QAOAEmbedding(np.array([0]), weights=np.array([[0]]), wires=[0], id="a")
+        template = qp.QAOAEmbedding(np.array([0]), weights=np.array([[0]]), wires=[0], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features, weights):
-    qml.QAOAEmbedding(features, weights, range(2))
-    return qml.expval(qml.PauliZ(0))
+    qp.QAOAEmbedding(features, weights, range(2))
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(features, weights):
-    qml.RX(features[0], wires=0)
-    qml.RX(features[1], wires=1)
-    qml.MultiRZ(weights[0, 0], wires=[0, 1])
-    qml.RY(weights[0, 1], wires=0)
-    qml.RY(weights[0, 2], wires=1)
-    qml.RX(features[0], wires=0)
-    qml.RX(features[1], wires=1)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(features[0], wires=0)
+    qp.RX(features[1], wires=1)
+    qp.MultiRZ(weights[0, 0], wires=[0, 1])
+    qp.RY(weights[0, 1], wires=0)
+    qp.RY(weights[0, 2], wires=1)
+    qp.RX(features[0], wires=0)
+    qp.RX(features[1], wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -414,19 +414,19 @@ class TestInterfaces:
         weights = np.random.random(size=(1, 3))
         weights = pnp.array(weights, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features, weights)
         res2 = circuit2(features, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(features, weights)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(features, weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -442,14 +442,14 @@ class TestInterfaces:
         features = jnp.array(np.random.random(size=(2,)))
         weights = jnp.array(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features, weights)
         res2 = circuit2(features, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features, weights)
@@ -470,14 +470,14 @@ class TestInterfaces:
         features = jnp.array(np.random.random(size=(2,)))
         weights = jnp.array(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(features, weights)
         res2 = circuit2(features, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features, weights)
@@ -485,7 +485,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(features, weights)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -496,14 +496,14 @@ class TestInterfaces:
         features = tf.Variable(np.random.random(size=(2,)))
         weights = tf.Variable(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features, weights)
         res2 = circuit2(features, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(features, weights)
@@ -525,14 +525,14 @@ class TestInterfaces:
         features = torch.tensor(np.random.random(size=(2,)), requires_grad=True)
         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features, weights)
         res2 = circuit2(features, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(features, weights)
         res.backward()

@@ -69,12 +69,12 @@ def polarity(
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit', wires=2)
+        @qp.qnode(dev)
         def circuit(x1, x2):
-            qml.templates.AngleEmbedding(x1, wires=dev.wires)
-            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-            return qml.probs(wires=dev.wires)
+            qp.templates.AngleEmbedding(x1, wires=dev.wires)
+            qp.adjoint(qp.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qp.probs(wires=dev.wires)
 
         kernel = lambda x1, x2: circuit(x1, x2)[0]
 
@@ -84,7 +84,7 @@ def polarity(
     >>> rng = np.random.default_rng(seed=1234)
     >>> X = rng.random((4, 2))
     >>> Y = np.array([-1, -1, 1, 1])
-    >>> qml.kernels.polarity(X, Y, kernel)
+    >>> qp.kernels.polarity(X, Y, kernel)
     np.float64(0.2196...)
     """
     # pylint: disable=too-many-arguments
@@ -146,12 +146,12 @@ def target_alignment(
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit', wires=2)
+        @qp.qnode(dev)
         def circuit(x1, x2):
-            qml.templates.AngleEmbedding(x1, wires=dev.wires)
-            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-            return qml.probs(wires=dev.wires)
+            qp.templates.AngleEmbedding(x1, wires=dev.wires)
+            qp.adjoint(qp.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qp.probs(wires=dev.wires)
 
         kernel = lambda x1, x2: circuit(x1, x2)[0]
 
@@ -161,14 +161,14 @@ def target_alignment(
     >>> rng = np.random.default_rng(seed=1234)
     >>> X = rng.random((4, 2))
     >>> Y = np.array([-1, -1, 1, 1])
-    >>> qml.kernels.target_alignment(X, Y, kernel)
+    >>> qp.kernels.target_alignment(X, Y, kernel)
     np.float64(0.0582...)
 
     We can see that this is equivalent to using ``normalize=True`` in
     ``polarity``:
 
-    >>> target_alignment = qml.kernels.target_alignment(X, Y, kernel)
-    >>> normalized_polarity = qml.kernels.polarity(X, Y, kernel, normalize=True)
+    >>> target_alignment = qp.kernels.target_alignment(X, Y, kernel)
+    >>> normalized_polarity = qp.kernels.polarity(X, Y, kernel, normalize=True)
     >>> print(np.isclose(target_alignment, normalized_polarity))
     True
     """

@@ -99,8 +99,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
 
             res = []
             for prev_op in previous_ops_on_wires:
-                with qml.capture.pause():
-                    rot = qml.Rot(*prev_op.single_qubit_rot_angles(), wires=prev_op.wires)
+                with qp.capture.pause():
+                    rot = qp.Rot(*prev_op.single_qubit_rot_angles(), wires=prev_op.wires)
                 res.append(super().interpret_operation(rot))
 
             res.append(super().interpret_operation(op))
@@ -142,8 +142,8 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
                     rtol=0,
                 )
             ):
-                with qml.capture.pause():
-                    new_rot = qml.Rot(*cumulative_angles, wires=op.wires)
+                with qp.capture.pause():
+                    new_rot = qp.Rot(*cumulative_angles, wires=op.wires)
                 self.previous_ops[op_wire] = new_rot
             else:
                 del self.previous_ops[op_wire]
@@ -284,25 +284,25 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], Callable]:
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=1)
+    >>> dev = qp.device('default.qubit', wires=1)
 
     You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
 
-        @qml.transforms.single_qubit_fusion
-        @qml.qnode(device=dev)
+        @qp.transforms.single_qubit_fusion
+        @qp.qnode(device=dev)
         def qfunc(r1, r2):
-            qml.Hadamard(wires=0)
-            qml.Rot(*r1, wires=0)
-            qml.Rot(*r2, wires=0)
-            qml.RZ(r1[0], wires=0)
-            qml.RZ(r2[0], wires=0)
-            return qml.expval(qml.X(0))
+            qp.Hadamard(wires=0)
+            qp.Rot(*r1, wires=0)
+            qp.Rot(*r2, wires=0)
+            qp.RZ(r1[0], wires=0)
+            qp.RZ(r2[0], wires=0)
+            return qp.expval(qp.X(0))
 
     The single qubit gates are fused before execution.
 
@@ -336,25 +336,25 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         .. code-block:: python
 
             def qfunc(r1, r2):
-                qml.Hadamard(wires=0)
-                qml.Rot(*r1, wires=0)
-                qml.Rot(*r2, wires=0)
-                qml.RZ(r1[0], wires=0)
-                qml.RZ(r2[0], wires=0)
-                return qml.expval(qml.X(0))
+                qp.Hadamard(wires=0)
+                qp.Rot(*r1, wires=0)
+                qp.Rot(*r2, wires=0)
+                qp.RZ(r1[0], wires=0)
+                qp.RZ(r2[0], wires=0)
+                return qp.expval(qp.X(0))
 
         The circuit before optimization:
 
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+        >>> qnode = qp.QNode(qfunc, dev)
+        >>> print(qp.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
         0: ──H──Rot(0.10,0.20,0.30)──Rot(0.40,0.50,0.60)──RZ(0.10)──RZ(0.40)─┤  <X>
 
         Full single-qubit gate fusion allows us to collapse this entire sequence into a
-        single ``qml.Rot`` rotation gate.
+        single ``qp.Rot`` rotation gate.
 
-        >>> optimized_qfunc = qml.transforms.single_qubit_fusion(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+        >>> optimized_qfunc = qp.transforms.single_qubit_fusion(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
         0: ──Rot(3.57,2.09,2.05)──GlobalPhase(-1.57)─┤  <X>
 
     .. details::
@@ -573,7 +573,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         list_copy.pop(0)
 
     if math.is_abstract(global_phase) or not math.allclose(global_phase, 0):
-        new_operations.append(qml.GlobalPhase(-global_phase))
+        new_operations.append(qp.GlobalPhase(-global_phase))
     new_tape = tape.copy(operations=new_operations)
 
     def null_postprocessing(results):

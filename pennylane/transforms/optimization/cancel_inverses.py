@@ -337,31 +337,31 @@ def cancel_inverses(
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-            The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     **Example**
 
     You can apply the cancel inverses transform directly on :class:`~.QNode`.
 
-    >>> dev = qml.device('default.qubit', wires=3)
+    >>> dev = qp.device('default.qubit', wires=3)
 
     .. code-block:: python
 
-        @qml.transforms.cancel_inverses
-        @qml.qnode(device=dev)
+        @qp.transforms.cancel_inverses
+        @qp.qnode(device=dev)
         def circuit(x, y, z):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=0)
-            qml.RX(x, wires=2)
-            qml.RY(y, wires=1)
-            qml.X(1)
-            qml.RZ(z, wires=0)
-            qml.RX(y, wires=2)
-            qml.CNOT(wires=[0, 2])
-            qml.X(1)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=0)
+            qp.RX(x, wires=2)
+            qp.RY(y, wires=1)
+            qp.X(1)
+            qp.RZ(z, wires=0)
+            qp.RX(y, wires=2)
+            qp.CNOT(wires=[0, 2])
+            qp.X(1)
+            return qp.expval(qp.Z(0))
 
     >>> print(circuit(0.1, 0.2, 0.3))
     1.0
@@ -374,22 +374,22 @@ def cancel_inverses(
         .. code-block:: python
 
             def qfunc(x, y, z):
-                qml.Hadamard(wires=0)
-                qml.Hadamard(wires=1)
-                qml.Hadamard(wires=0)
-                qml.RX(x, wires=2)
-                qml.RY(y, wires=1)
-                qml.X(1)
-                qml.RZ(z, wires=0)
-                qml.RX(y, wires=2)
-                qml.CNOT(wires=[0, 2])
-                qml.X(1)
-                return qml.expval(qml.Z(0))
+                qp.Hadamard(wires=0)
+                qp.Hadamard(wires=1)
+                qp.Hadamard(wires=0)
+                qp.RX(x, wires=2)
+                qp.RY(y, wires=1)
+                qp.X(1)
+                qp.RZ(z, wires=0)
+                qp.RX(y, wires=2)
+                qp.CNOT(wires=[0, 2])
+                qp.X(1)
+                return qp.expval(qp.Z(0))
 
         The circuit before optimization:
 
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)(1, 2, 3))
+        >>> qnode = qp.QNode(qfunc, dev)
+        >>> print(qp.draw(qnode)(1, 2, 3))
         0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
         1: ──H─────────RY(2.00)──X────────│───X─┤
         2: ──RX(1.00)──RX(2.00)───────────╰X────┤
@@ -399,9 +399,9 @@ def cancel_inverses(
         second qubit that should cancel. We can obtain a simplified circuit by running
         the ``cancel_inverses`` transform:
 
-        >>> optimized_qfunc = qml.transforms.cancel_inverses(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+        >>> optimized_qfunc = qp.transforms.cancel_inverses(qfunc)
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)(1, 2, 3))
         0: ──RZ(3.00)───────────╭●─┤  <Z>
         1: ──H─────────RY(2.00)─│──┤
         2: ──RX(1.00)──RX(2.00)─╰X─┤

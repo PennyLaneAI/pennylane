@@ -145,13 +145,13 @@ class TestFuncToUnitary:
         M = 2**wires
         r = func_to_unitary(self.func, M)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def apply_r(input_state):
-            qml.StatePrep(input_state, wires=range(wires))
-            qml.QubitUnitary(r, wires=range(wires + 1))
-            return qml.probs(wires)
+            qp.StatePrep(input_state, wires=range(wires))
+            qp.QubitUnitary(r, wires=range(wires + 1))
+            return qp.probs(wires)
 
         for i, state in enumerate(np.eye(M)):
             p = apply_r(state)[1]
@@ -267,7 +267,7 @@ class TestQuantumMonteCarlo:
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
         # Skip capture test because the _unflatten method of QMC is not compatible with capture
-        qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
 
     DECOMP_PARAMS = [
         (np.ones(4) / 4, Wires(range(3)), Wires(range(3, 5))),
@@ -278,7 +278,7 @@ class TestQuantumMonteCarlo:
     @pytest.mark.parametrize(("p", "target_wires", "estimation_wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, p, target_wires, estimation_wires):
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        for rule in qml.list_decomps(QuantumMonteCarlo):
+        for rule in qp.list_decomps(QuantumMonteCarlo):
             _test_decomposition_rule(op, rule)
 
     def test_non_flat(self):
@@ -312,13 +312,13 @@ class TestQuantumMonteCarlo:
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        tape = qml.tape.QuantumScript(op.decomposition())
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         # Do expansion in two steps to avoid also decomposing the first QubitUnitary
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        queue_after_qpe = qml.tape.QuantumScript(tape.operations[2:]).expand().operations
+        queue_after_qpe = qp.tape.QuantumScript(tape.operations[2:]).expand().operations
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)
@@ -333,10 +333,10 @@ class TestQuantumMonteCarlo:
 
         Q = make_Q(A, R)
 
-        with qml.queuing.AnnotatedQueue() as q_qpe_tape:
-            qml.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
+        with qp.queuing.AnnotatedQueue() as q_qpe_tape:
+            qp.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
-        qpe_tape = qml.tape.QuantumScript.from_queue(q_qpe_tape)
+        qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
         qpe_tape = qpe_tape.expand()
 
         assert len(queue_after_qpe) == len(qpe_tape.operations)
@@ -371,14 +371,14 @@ class TestQuantumMonteCarlo:
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.QuantumMonteCarlo(
+                qp.QuantumMonteCarlo(
                     probs, func, target_wires=target_wires, estimation_wires=estimation_wires
                 )
-                return qml.probs(estimation_wires)
+                return qp.probs(estimation_wires)
 
             phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
             mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
@@ -422,15 +422,15 @@ class TestQuantumMonteCarlo:
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
             @jax.jit
-            @qml.qnode(dev, interface="jax")
+            @qp.qnode(dev, interface="jax")
             def circuit():
-                qml.QuantumMonteCarlo(
+                qp.QuantumMonteCarlo(
                     probs, func, target_wires=target_wires, estimation_wires=estimation_wires
                 )
-                return qml.probs(estimation_wires)
+                return qp.probs(estimation_wires)
 
             phase_estimated = jnp.argmax(circuit()[: int(N / 2)]) / N
             mu_estimated = (1 - jnp.cos(np.pi * phase_estimated)) / 2
@@ -467,14 +467,14 @@ class TestQuantumMonteCarlo:
         target_wires = [0, "a", -1.1, -10, "bbb", 1000]
         estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
 
-        dev = qml.device("default.qubit", wires=target_wires + estimation_wires)
+        dev = qp.device("default.qubit", wires=target_wires + estimation_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QuantumMonteCarlo(
+            qp.QuantumMonteCarlo(
                 probs, func, target_wires=target_wires, estimation_wires=estimation_wires
             )
-            return qml.probs(estimation_wires)
+            return qp.probs(estimation_wires)
 
         phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
         mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
@@ -494,7 +494,7 @@ class TestQuantumMonteCarlo:
         target_wires = [0, "a", -1.1, -10, "bbb", 1000]
         estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
 
-        template = qml.QuantumMonteCarlo(
+        template = qp.QuantumMonteCarlo(
             probs, func, target_wires=target_wires, estimation_wires=estimation_wires, id="a"
         )
 

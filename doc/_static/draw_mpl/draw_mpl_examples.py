@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file generates the images used in docstrings for``qml.transforms.draw.draw_mpl``.
+This file generates the images used in docstrings for``qp.transforms.draw.draw_mpl``.
 This makes it easier to keep docstrings up to date with the latest styling.
 
 It is not intended to be used in any Continuous Integration, but save time and hassle
@@ -37,11 +37,11 @@ def main_example(circuit):
 
 
 def decimals(dev):
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit2(x, y):
-        qml.RX(x, wires=0)
-        qml.Rot(*y, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(x, wires=0)
+        qp.Rot(*y, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     fig, ax = draw_mpl(circuit2, decimals=2)(1.23456, [1.2345, 2.3456, 3.456])
 
@@ -94,20 +94,20 @@ def rcparams(circuit):
     plt.rcParams["lines.linewidth"] = 5
     plt.rcParams["figure.facecolor"] = "ghostwhite"
 
-    fig, ax = qml.draw_mpl(circuit, style="rcParams")(1.2345, 1.2345)
+    fig, ax = qp.draw_mpl(circuit, style="rcParams")(1.2345, 1.2345)
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
-    qml.drawer.use_style("black_white")
+    qp.drawer.use_style("black_white")
 
 
 def use_style(circuit):
 
-    fig, ax = qml.draw_mpl(circuit, style="sketch")(1.2345, 1.2345)
+    fig, ax = qp.draw_mpl(circuit, style="sketch")(1.2345, 1.2345)
 
     plt.savefig(folder / "sketch_style.png")
     plt.close()
-    qml.drawer.use_style("black_white")
+    qp.drawer.use_style("black_white")
 
 
 def wires_labels(circuit):
@@ -120,9 +120,9 @@ def wires_labels(circuit):
 
 def mid_measure():
     def circuit():
-        m0 = qml.measure(0)
-        qml.Hadamard(1)
-        qml.cond(m0, qml.PauliZ)(1)
+        m0 = qp.measure(0)
+        qp.Hadamard(1)
+        qp.cond(m0, qp.PauliZ)(1)
 
     _ = draw_mpl(circuit)()
     plt.savefig(folder / "mid_measure.png")
@@ -131,24 +131,24 @@ def mid_measure():
 def max_length():
     def circuit():
         for _ in range(10):
-            qml.X(0)
-        return qml.expval(qml.Z(0))
+            qp.X(0)
+        return qp.expval(qp.Z(0))
 
     figs_and_axes = draw_mpl(circuit, max_length=5)()
     figs_and_axes[0][0].savefig(folder / "max_length1.png")
     figs_and_axes[1][0].savefig(folder / "max_length2.png")
 
-@qml.transforms.merge_rotations
-@qml.transforms.cancel_inverses
-@qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+@qp.transforms.merge_rotations
+@qp.transforms.cancel_inverses
+@qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
 def _levels_circ():
-    qml.RandomLayers([[1.0, 20]], wires=(0, 1))
-    qml.Permute([2, 1, 0], wires=(0, 1, 2))
-    qml.PauliX(0)
-    qml.PauliX(0)
-    qml.RX(0.1, wires=0)
-    qml.RX(-0.1, wires=0)
-    return qml.expval(qml.PauliX(0))
+    qp.RandomLayers([[1.0, 20]], wires=(0, 1))
+    qp.Permute([2, 1, 0], wires=(0, 1, 2))
+    qp.PauliX(0)
+    qp.PauliX(0)
+    qp.RX(0.1, wires=0)
+    qp.RX(-0.1, wires=0)
+    return qp.expval(qp.PauliX(0))
 
 
 def levels():
@@ -160,20 +160,20 @@ def levels():
 
 if __name__ == "__main__":
 
-    dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+    dev = qp.device('lightning.qubit', wires=(0,1,2,3))
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x, z):
-        qml.QFT(wires=(0,1,2,3))
-        qml.IsingXX(1.234, wires=(0,2))
-        qml.Toffoli(wires=(0,1,2))
-        mcm = qml.measure(1)
-        mcm_out = qml.measure(2)
-        qml.CSWAP(wires=(0,2,3))
-        qml.RX(x, wires=0)
-        qml.cond(mcm, qml.RY)(np.pi / 4, wires=3)
-        qml.CRZ(z, wires=(3,0))
-        return qml.expval(qml.Z(0)), qml.probs(op=mcm_out)
+        qp.QFT(wires=(0,1,2,3))
+        qp.IsingXX(1.234, wires=(0,2))
+        qp.Toffoli(wires=(0,1,2))
+        mcm = qp.measure(1)
+        mcm_out = qp.measure(2)
+        qp.CSWAP(wires=(0,2,3))
+        qp.RX(x, wires=0)
+        qp.cond(mcm, qp.RY)(np.pi / 4, wires=3)
+        qp.CRZ(z, wires=(3,0))
+        return qp.expval(qp.Z(0)), qp.probs(op=mcm_out)
 
 
     main_example(circuit)

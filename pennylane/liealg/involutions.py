@@ -580,7 +580,7 @@ def even_odd_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
 
     The function also works with dense matrix representations.
 
-    >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
+    >>> ops_m = [qp.matrix(op, wire_order=range(3)) for op in ops]
     >>> [even_odd_involution(op_m) for op_m in ops_m]
     [True, False, True]
 
@@ -656,7 +656,7 @@ def concurrence_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
 
     The function also works with dense matrix representations.
 
-    >>> ops_m = [qml.matrix(op, wire_order=range(3)) for op in ops]
+    >>> ops_m = [qp.matrix(op, wire_order=range(3)) for op in ops]
     >>> [even_odd_involution(op_m) for op_m in ops_m]
     [True, False, True, False]
 

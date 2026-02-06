@@ -63,7 +63,7 @@ class MultiRZ(ResourceOperator):
     >>> multi_rz = qre.MultiRZ(num_wires=3)
     >>> gate_set = {"CNOT", "RZ"}
     >>>
-    >>> print(qml.estimator.estimate(multi_rz, gate_set))
+    >>> print(qp.estimator.estimate(multi_rz, gate_set))
     --- Resources: ---
      Total wires: 3
         algorithmic wires: 3

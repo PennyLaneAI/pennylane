@@ -70,16 +70,16 @@ class QROMStatePreparation(Operation):
 
         probs_vector = np.array([0.5, 0., 0.25, 0.25])
 
-        dev = qml.device("default.qubit", wires = 6)
+        dev = qp.device("default.qubit", wires = 6)
 
-        wires = qml.registers({"work_wires": 1, "prec_wires": 3, "state_wires": 2})
+        wires = qp.registers({"work_wires": 1, "prec_wires": 3, "state_wires": 2})
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QROMStatePreparation(
+            qp.QROMStatePreparation(
                 np.sqrt(probs_vector), wires["state_wires"], wires["prec_wires"], wires["work_wires"]
             )
-            return qml.probs(wires["state_wires"])
+            return qp.probs(wires["state_wires"])
 
     .. code-block:: pycon
 
@@ -105,22 +105,22 @@ class QROMStatePreparation(Operation):
         self, state_vector, wires, precision_wires, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
-        n_amplitudes = qml.math.shape(state_vector)[0]
+        n_amplitudes = qp.math.shape(state_vector)[0]
         if n_amplitudes != 2 ** len(Wires(wires)):
             raise ValueError(
                 f"State vectors must be of length {2 ** len(wires)}; vector has length {n_amplitudes}."
             )
 
-        norm = qml.math.linalg.norm(state_vector)
-        if not qml.math.allclose(norm, 1.0, atol=1e-3):
+        norm = qp.math.linalg.norm(state_vector)
+        if not qp.math.allclose(norm, 1.0, atol=1e-3):
             raise ValueError(
                 f"Input state vectors must have a norm 1.0, the vector has squared norm {norm}"
             )
 
         self.state_vector = state_vector
-        self.hyperparameters["input_wires"] = qml.wires.Wires(wires)
-        self.hyperparameters["precision_wires"] = qml.wires.Wires(precision_wires)
-        self.hyperparameters["work_wires"] = qml.wires.Wires(
+        self.hyperparameters["input_wires"] = qp.wires.Wires(wires)
+        self.hyperparameters["precision_wires"] = qp.wires.Wires(precision_wires)
+        self.hyperparameters["work_wires"] = qp.wires.Wires(
             () if work_wires is None else work_wires
         )
 
@@ -184,39 +184,39 @@ class QROMStatePreparation(Operation):
             list: List of decomposition operations.
         """
 
-        probs = qml.math.abs(state_vector) ** 2
-        phases = qml.math.angle(state_vector) % (2 * np.pi)
+        probs = qp.math.abs(state_vector) ** 2
+        phases = qp.math.angle(state_vector) % (2 * np.pi)
         eps = 1e-15  # Small constant to avoid division by zero
 
         decomp_ops = []
-        num_iterations = int(qml.math.log2(qml.math.shape(probs)[0]))
+        num_iterations = int(qp.math.log2(qp.math.shape(probs)[0]))
         rotation_angles = [2 ** (-ind - 1) for ind in range(len(precision_wires))]
 
         for i in range(num_iterations):
 
-            probs_aux = qml.math.reshape(probs, [1, -1])
+            probs_aux = qp.math.reshape(probs, [1, -1])
 
             # Calculation of the numerator and denominator of the function f(x) (Eq.5 [arXiv:quant-ph/0208112])
             for itx in range(i + 1):
-                probs_denominator = qml.math.sum(probs_aux, axis=1)
-                probs_aux = qml.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
-                probs_numerator = qml.math.sum(probs_aux, axis=1)[::2]
+                probs_denominator = qp.math.sum(probs_aux, axis=1)
+                probs_aux = qp.math.reshape(probs_aux, [int(2 ** (itx + 1)), -1])
+                probs_numerator = qp.math.sum(probs_aux, axis=1)[::2]
 
             # Compute the binary representations of the angles θi
             thetas_binary = [
                 _float_to_binary(
                     2
-                    * qml.math.arccos(
-                        qml.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
+                    * qp.math.arccos(
+                        qp.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
                     )
                     / np.pi,
                     len(precision_wires),
                 )
-                for j in range(qml.math.shape(probs_numerator)[0])
+                for j in range(qp.math.shape(probs_numerator)[0])
             ]
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
-                qml.QROM(
+                qp.QROM(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
@@ -227,11 +227,11 @@ class QROMStatePreparation(Operation):
 
             # Turn binary representation into proper rotation
             for ind, wire in enumerate(precision_wires):
-                decomp_ops.append(qml.CRY(np.pi * rotation_angles[ind], wires=[wire, wires[i]]))
+                decomp_ops.append(qp.CRY(np.pi * rotation_angles[ind], wires=[wire, wires[i]]))
 
             # Clean wires used to store the theta values
             decomp_ops.append(
-                qml.adjoint(qml.QROM)(
+                qp.adjoint(qp.QROM)(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
@@ -240,7 +240,7 @@ class QROMStatePreparation(Operation):
                 )
             )
 
-        if not qml.math.allclose(phases, 0.0):
+        if not qp.math.allclose(phases, 0.0):
             # Compute the binary representations of the phases
 
             thetas_binary = [
@@ -249,7 +249,7 @@ class QROMStatePreparation(Operation):
 
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
-                qml.QROM(
+                qp.QROM(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
@@ -260,8 +260,8 @@ class QROMStatePreparation(Operation):
 
             for ind, wire in enumerate(precision_wires):
                 decomp_ops.append(
-                    qml.ctrl(
-                        qml.GlobalPhase(
+                    qp.ctrl(
+                        qp.GlobalPhase(
                             (2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]
                         ),
                         control=wire,
@@ -269,7 +269,7 @@ class QROMStatePreparation(Operation):
                 )
 
             decomp_ops.append(
-                qml.adjoint(qml.QROM)(
+                qp.adjoint(qp.QROM)(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,

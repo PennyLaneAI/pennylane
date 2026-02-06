@@ -32,11 +32,11 @@ def test_standard_validity_OutMultiplier():
     output_wires = [6, 7, 8, 9]
     work_wires = [5, 10]
     op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestOutMultiplier:
-    """Test the qml.OutMultiplier template."""
+    """Test the qp.OutMultiplier template."""
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "x", "y"),
@@ -101,15 +101,15 @@ class TestOutMultiplier:
         self, x_wires, y_wires, output_wires, mod, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutMultiplier template output."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            return qp.sample(wires=output_wires)
 
         if mod is None:
             mod = 2 ** len(output_wires)
@@ -231,19 +231,19 @@ class TestOutMultiplier:
         else:
             qft_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT(wires=qft_output_wires))
+        op_list.append(qp.QFT(wires=qft_output_wires))
         op_list.append(
-            qml.ControlledSequence(
-                qml.ControlledSequence(
-                    qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+            qp.ControlledSequence(
+                qp.ControlledSequence(
+                    qp.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
                 ),
                 control=y_wires,
             )
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_output_wires))
+        op_list.append(qp.adjoint(qp.QFT)(wires=qft_output_wires))
 
         for op1, op2 in zip(multiplier_decomposition, op_list):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
@@ -256,14 +256,14 @@ class TestOutMultiplier:
         self, x_wires, y_wires, output_wires, mod, work_wires
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-        for rule in qml.list_decomps(qml.OutMultiplier):
+        op = qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+        for rule in qp.list_decomps(qp.OutMultiplier):
             _test_decomposition_rule(op, rule)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
-        wires = qml.OutMultiplier(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
-        assert wires == qml.wires.Wires([1, 2, 3, 4, 5, 6])
+        wires = qp.OutMultiplier(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
+        assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
     @pytest.mark.jax
     def test_jit_compatible(self):
@@ -281,16 +281,16 @@ class TestOutMultiplier:
         y_wires = [2, 3]
         output_wires = [6, 7, 8, 9]
         work_wires = [5, 10]
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
-            qml.BasisEmbedding(y_list, wires=y_wires)
+            qp.BasisEmbedding(x_list, wires=x_wires)
+            qp.BasisEmbedding(y_list, wires=y_wires)
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            return qp.sample(wires=output_wires)
 
         # pylint: disable=bad-reversed-sequence
         out = circuit()[0, :]

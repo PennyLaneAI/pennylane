@@ -77,7 +77,7 @@ class AmplitudeDamping(Channel):
 
         **Example**
 
-        >>> qml.AmplitudeDamping.compute_kraus_matrices(0.5)
+        >>> qp.AmplitudeDamping.compute_kraus_matrices(0.5)
         [array([[1.        , 0.        ],
                 [0.        , 0.70710678]]),
          array([[0.        , 0.70710678],
@@ -160,7 +160,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
         **Example**
 
-        >>> qml.GeneralizedAmplitudeDamping.compute_kraus_matrices(0.3, 0.6)
+        >>> qp.GeneralizedAmplitudeDamping.compute_kraus_matrices(0.3, 0.6)
         [array([[0.63245553, 0.        ], [0.        , 0.52915026]]),
          array([[0.        , 0.34641016], [0.        , 0.        ]]),
          array([[0.64807407, 0.        ], [0.        , 0.77459667]]),
@@ -238,7 +238,7 @@ class PhaseDamping(Channel):
 
         **Example**
 
-        >>> qml.PhaseDamping.compute_kraus_matrices(0.5)
+        >>> qp.PhaseDamping.compute_kraus_matrices(0.5)
         [array([[1.        , 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.        ], [0.        , 0.70710678]])]
         """
@@ -325,7 +325,7 @@ class DepolarizingChannel(Channel):
 
         **Example**
 
-        >>> qml.DepolarizingChannel.compute_kraus_matrices(0.5)
+        >>> qp.DepolarizingChannel.compute_kraus_matrices(0.5)
         [array([[0.70710678+0.j, 0.        +0.j],
                 [0.        +0.j, 0.70710678+0.j]]),
          array([[0.        +0.j, 0.40824829+0.j],
@@ -405,7 +405,7 @@ class BitFlip(Channel):
 
         **Example**
 
-        >>> qml.BitFlip.compute_kraus_matrices(0.5)
+        >>> qp.BitFlip.compute_kraus_matrices(0.5)
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
@@ -488,7 +488,7 @@ class ResetError(Channel):
 
         **Example**
 
-        >>> qml.ResetError.compute_kraus_matrices(0.2, 0.3)
+        >>> qp.ResetError.compute_kraus_matrices(0.2, 0.3)
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.4472136, 0.       ], [0.       , 0.       ]]),
          array([[0.       , 0.4472136], [0.       , 0.       ]]),
@@ -631,7 +631,7 @@ class PauliError(Channel):
 
         **Example**
 
-        >>> qml.PauliError.compute_kraus_matrices(0.5, "X")
+        >>> qp.PauliError.compute_kraus_matrices(0.5, "X")
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
@@ -713,7 +713,7 @@ class PhaseFlip(Channel):
 
         **Example**
 
-        >>> qml.PhaseFlip.compute_kraus_matrices(0.5)
+        >>> qp.PhaseFlip.compute_kraus_matrices(0.5)
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[ 0.70710678,  0.        ], [ 0.        , -0.70710678]])]
         """
@@ -794,8 +794,8 @@ class QubitChannel(Channel):
 
         **Example**
 
-        >>> K_list = qml.PhaseFlip(0.5, wires=0).kraus_matrices()
-        >>> res = qml.QubitChannel.compute_kraus_matrices(K_list)[0]
+        >>> K_list = qp.PhaseFlip(0.5, wires=0).kraus_matrices()
+        >>> res = qp.QubitChannel.compute_kraus_matrices(K_list)[0]
         >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
         True
         """
@@ -915,7 +915,7 @@ class ThermalRelaxationError(Channel):
 
         **Example**
 
-        >>> qml.ThermalRelaxationError.compute_kraus_matrices(0.1, 1.2, 1.3, 0.1)
+        >>> qp.ThermalRelaxationError.compute_kraus_matrices(0.1, 1.2, 1.3, 0.1)
         [array([[0.        , 0.        ],
                 [0.08941789, 0.        ]]),
          array([[0.        , 0.26825366],

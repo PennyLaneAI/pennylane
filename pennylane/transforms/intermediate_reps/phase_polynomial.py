@@ -53,15 +53,15 @@ def phase_polynomial(
         import pennylane as qp
 
         def circuit():
-            qml.CNOT((1, 0))
-            qml.RZ(1, 0)
-            qml.CNOT((2, 0))
-            qml.RZ(2, 0)
-            qml.CNOT((0, 1))
-            qml.CNOT((3, 1))
-            qml.RZ(3, 1)
+            qp.CNOT((1, 0))
+            qp.RZ(1, 0)
+            qp.CNOT((2, 0))
+            qp.RZ(2, 0)
+            qp.CNOT((0, 1))
+            qp.CNOT((3, 1))
+            qp.RZ(3, 1)
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ─╭X──RZ(1.00)─╭X──RZ(2.00)─╭●──────────────┤
     1: ─╰●───────────│────────────╰X─╭X──RZ(3.00)─┤
     2: ──────────────╰●──────────────│────────────┤
@@ -96,12 +96,12 @@ def phase_polynomial(
             input = np.array([1, 1, 1, 1]) # computational basis state
 
             def comp_basis_to_wf(basis_state):
-                basis_state = qml.BasisState(np.array(basis_state), range(4))
+                basis_state = qp.BasisState(np.array(basis_state), range(4))
                 return basis_state.state_vector().reshape(-1)
 
             input_wf = comp_basis_to_wf(input)
-            tape = qml.tape.make_qscript(circuit)()
-            output_wf = qml.matrix(tape, wire_order=range(4)) @ input_wf
+            tape = qp.tape.make_qscript(circuit)()
+            output_wf = qp.matrix(tape, wire_order=range(4)) @ input_wf
 
         The output wavefunction is given by :math:`e^{2i} |1 1 1 1\rangle`, which we can confirm:
 

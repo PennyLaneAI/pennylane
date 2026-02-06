@@ -60,24 +60,24 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     **Example:**
 
     >>> from pennylane.ops.op_math import ctrl_decomp_bisect
-    >>> op = qml.T(0) # uses OD algorithm
-    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
+    >>> op = qp.T(0) # uses OD algorithm
+    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─╭GlobalPhase(-0.39)─┤
     1: ─├●────────│──────────├●────────│──────────├●──────────────────┤
     2: ─├●────────│──────────├●────────│──────────├●──────────────────┤
     3: ─╰●────────│──────────╰●────────│──────────├●──────────────────┤
     4: ───────────├●───────────────────├●─────────├●──────────────────┤
     5: ───────────╰●───────────────────╰●─────────╰●──────────────────┤
-    >>> op = qml.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
-    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
+    >>> op = qp.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
+    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
     1: ────├●────────│──────────├●────────│─────────────┤
     2: ────├●────────│──────────├●────────│─────────────┤
     3: ────╰●────────│──────────╰●────────│─────────────┤
     4: ──────────────├●───────────────────├●────────────┤
     5: ──────────────╰●───────────────────╰●────────────┤
-    >>> op = qml.Hadamard(0) # uses general algorithm
-    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
+    >>> op = qp.Hadamard(0) # uses general algorithm
+    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)† ···
     1: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
     2: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
@@ -137,28 +137,28 @@ def ctrl_decomp_zyz(
 
     **Example**
 
-    We can create a controlled operation using ``qml.ctrl``, or by creating the
-    decomposed controlled version using ``qml.ctrl_decomp_zyz``.
+    We can create a controlled operation using ``qp.ctrl``, or by creating the
+    decomposed controlled version using ``qp.ctrl_decomp_zyz``.
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def expected_circuit(op):
-            qml.Hadamard(wires=0)
-            qml.ctrl(op, [0])
-            return qml.probs()
+            qp.Hadamard(wires=0)
+            qp.ctrl(op, [0])
+            return qp.probs()
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def decomp_circuit(op):
-            qml.Hadamard(wires=0)
-            qml.ops.ctrl_decomp_zyz(op, [0])
-            return qml.probs()
+            qp.Hadamard(wires=0)
+            qp.ops.ctrl_decomp_zyz(op, [0])
+            return qp.probs()
 
     Measurements on both circuits will give us the same results:
 
-    >>> op = qml.RX(0.123, wires=1)
+    >>> op = qp.RX(0.123, wires=1)
     >>> expected_circuit(op)
     array([0.5       , 0.        , 0.498..., 0.001...])
 
@@ -424,8 +424,8 @@ def _mcx_many_workers_resource(num_control_wires, work_wire_type, **__):
     if work_wire_type == "borrowed":
         return {ops.Toffoli: 4 * (num_control_wires - 2)}
     return {
-        qml.TemporaryAND: num_control_wires - 2,
-        adjoint_resource_rep(qml.TemporaryAND): num_control_wires - 2,
+        qp.TemporaryAND: num_control_wires - 2,
+        adjoint_resource_rep(qp.TemporaryAND): num_control_wires - 2,
         ops.Toffoli: 1,
     }
 
@@ -443,8 +443,8 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     if work_wire_type == "borrowed":
         up_gate = down_gate = ops.Toffoli
     else:
-        down_gate = qml.TemporaryAND
-        up_gate = ops.adjoint(qml.TemporaryAND)
+        down_gate = qp.TemporaryAND
+        up_gate = ops.adjoint(qp.TemporaryAND)
 
     @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
@@ -521,8 +521,8 @@ def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
         return {
             ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
             ops.X: n_ccx - 3 if is_small_mcx else n_ccx - 5,
-            qml.TemporaryAND: n_temporary_ccx_pairs,
-            adjoint_resource_rep(qml.TemporaryAND): n_temporary_ccx_pairs,
+            qp.TemporaryAND: n_temporary_ccx_pairs,
+            adjoint_resource_rep(qp.TemporaryAND): n_temporary_ccx_pairs,
         }
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
@@ -547,7 +547,7 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
     # (less than 6 controls)
     work0, *work1 = work_wires
     # First use the work wire to prepare the first two control wires as conditionally clean.
-    left_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.TemporaryAND
+    left_elbow = ops.Toffoli if work_wire_type == "borrowed" else qp.TemporaryAND
     left_elbow([wires[0], wires[1], work0])
 
     middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
@@ -568,7 +568,7 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
-    right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.adjoint(qml.TemporaryAND)
+    right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qp.adjoint(qp.TemporaryAND)
     right_elbow([wires[0], wires[1], work0])
 
     if work_wire_type == "borrowed":
@@ -632,8 +632,8 @@ def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
         n_ccx = 2 * num_control_wires - 5
         return {
             ops.Toffoli: n_ccx,
-            qml.TemporaryAND: 1,
-            adjoint_resource_rep(qml.TemporaryAND): 1,
+            qp.TemporaryAND: 1,
+            adjoint_resource_rep(qp.TemporaryAND): 1,
             ops.X: n_ccx - 1,
         }
     # Otherwise, we assume the work wire is borrowed
@@ -666,7 +666,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         ops.Toffoli([wires[0], wires[1], work_wires[0]])
     else:
         _skip_toggle_detection = True
-        qml.TemporaryAND([wires[0], wires[1], work_wires[0]])
+        qp.TemporaryAND([wires[0], wires[1], work_wires[0]])
 
     final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
@@ -675,7 +675,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
     if work_wire_type == "borrowed":
         ops.Toffoli([wires[0], wires[1], work_wires[0]])
     else:
-        ops.adjoint(qml.TemporaryAND([wires[0], wires[1], work_wires[0]]))
+        ops.adjoint(qp.TemporaryAND([wires[0], wires[1], work_wires[0]]))
 
     if not _skip_toggle_detection:
         # Perform toggle-detection unless skipped explicitly. By default, toggle detection

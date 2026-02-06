@@ -112,15 +112,15 @@ compiled in the first call.
 
 .. code-block:: python
 
-    dev = qml.device("lightning.qubit", wires=2)
+    dev = qp.device("lightning.qubit", wires=2)
 
-    @qml.qjit
-    @qml.qnode(dev)
+    @qp.qjit
+    @qp.qnode(dev)
     def circuit(theta):
-        qml.Hadamard(wires=0)
-        qml.RX(theta, wires=1)
-        qml.CNOT(wires=[0,1])
-        return qml.expval(qml.Z(1))
+        qp.Hadamard(wires=0)
+        qp.RX(theta, wires=1)
+        qp.CNOT(wires=[0,1])
+        return qp.expval(qp.Z(1))
 
 >>> circuit(0.5)  # the first call, compilation occurs here
 array(0.)
@@ -134,13 +134,13 @@ can occur 'ahead of time' when the function is decorated.
 
     from jax.core import ShapedArray
 
-    @qml.qjit  # compilation happens at definition
-    @qml.qnode(dev)
+    @qp.qjit  # compilation happens at definition
+    @qp.qnode(dev)
     def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
         theta = jnp.abs(x)
-        qml.RY(theta, wires=0)
-        qml.Rot(z[0], z[1], z[2], wires=0)
-        return qml.state()
+        qp.RY(theta, wires=0)
+        qp.Rot(z[0], z[1], z[2], wires=0)
+        return qp.state()
 
 >>> circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))  # calls precompiled function
 array([0.75634905-0.52801002j, 0. +0.j,
@@ -153,16 +153,16 @@ rather than in Python at compile time. You can enable this feature via the
 
 .. code-block:: python
 
-    @qml.qjit(autograph=True)
-    @qml.qnode(dev)
+    @qp.qjit(autograph=True)
+    @qp.qnode(dev)
     def circuit(x: int):
 
         if x < 5:
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
         else:
-            qml.T(wires=0)
+            qp.T(wires=0)
 
-        return qml.expval(qml.Z(0))
+        return qp.expval(qp.Z(0))
 
 >>> circuit(3)
 array(0.)
@@ -218,11 +218,11 @@ For example:
 
 .. code-block:: python
 
-    @qml.qjit(compiler="catalyst")
+    @qp.qjit(compiler="catalyst")
     def function(x, y):
         ...
 
-    @qml.qjit(compiler="compiler_name")
+    @qp.qjit(compiler="compiler_name")
     def function(x, y):
         ...
 
@@ -230,11 +230,11 @@ In order to support applying the ``qjit`` decorator with and without arguments,
 
 .. code-block:: python
 
-    @qml.qjit
+    @qp.qjit
     def function(x, y):
         ...
 
-    @qml.qjit(verbose=True, additional_args, ...)
+    @qp.qjit(verbose=True, additional_args, ...)
     def function(x, y):
         ...
 

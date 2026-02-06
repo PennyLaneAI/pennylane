@@ -47,18 +47,18 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
 
     .. code-block:: python
 
-        @qml.set_shots(10)
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.set_shots(10)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(x):
-            qml.RandomLayers([[1.0, 2.0]], wires=(0,1))
-            qml.RX(x, wires=0)
-            qml.RX(-x, wires=0)
-            qml.SWAP((0,1))
-            qml.X(0)
-            qml.X(0)
-            return qml.expval(qml.X(0) + qml.Y(0))
+            qp.RandomLayers([[1.0, 2.0]], wires=(0,1))
+            qp.RX(x, wires=0)
+            qp.RX(-x, wires=0)
+            qp.SWAP((0,1))
+            qp.X(0)
+            qp.X(0)
+            return qp.expval(qp.X(0) + qp.Y(0))
 
-    >>> tape = qml.workflow.construct_tape(circuit)(0.5)
+    >>> tape = qp.workflow.construct_tape(circuit)(0.5)
     >>> from pprint import pprint
     >>> pprint(tape.circuit)
     [RandomLayers(array([[1., 2.]]), wires=[0, 1]), RX(0.5, wires=[0]), RX(-0.5, wires=[0]), SWAP(wires=[0, 1]), X(0), X(0), expval(X(0) + Y(0))]
@@ -70,7 +70,7 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
 
         if len(batch) > 1:
             raise ValueError(
-                "Level requested corresponds to more than one tape. Please use `qml.workflow.construct_batch` instead for this level."
+                "Level requested corresponds to more than one tape. Please use `qp.workflow.construct_batch` instead for this level."
             )
 
         return batch[0]

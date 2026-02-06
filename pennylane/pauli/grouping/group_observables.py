@@ -412,7 +412,7 @@ def compute_partition_indices(
     **Example**
 
     >>> from pennylane.pauli import compute_partition_indices
-    >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+    >>> observables = [qp.X(0) @ qp.Z(1), qp.Z(0), qp.X(1)]
     >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
     ((0,), (1, 2))
     """
@@ -438,7 +438,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
     This option is much less efficient so should be avoided.
     """
 
-    with qml.QueuingManager.stop_recording():
+    with qp.QueuingManager.stop_recording():
         obs_groups = group_observables(observables, grouping_type=grouping_type, method="rlf")
 
     observables = copy(observables)
@@ -450,7 +450,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for ind, observable in enumerate(observables):
-                if qml.pauli.are_identical_pauli_words(pauli_word, observable):
+                if qp.pauli.are_identical_pauli_words(pauli_word, observable):
                     indices_this_group.append(available_indices[ind])
                     # delete this observable and its index, so it cannot be found again
                     observables.pop(ind)
@@ -462,7 +462,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
 
 
 def group_observables(
-    observables: list["qml.operation.Operator"],
+    observables: list["qp.operation.Operator"],
     coefficients: TensorLike | None = None,
     grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
     method: Literal["lf", "rlf", "dsatur", "gis"] = "lf",
@@ -505,7 +505,7 @@ def group_observables(
     **Example**
 
     >>> from pennylane.pauli import group_observables
-    >>> obs = [qml.Y(0), qml.X(0) @ qml.X(1), qml.Z(1)]
+    >>> obs = [qp.Y(0), qp.X(0) @ qp.X(1), qp.Z(1)]
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
     >>> obs_groupings
@@ -514,7 +514,7 @@ def group_observables(
     [[np.float64(1.43), np.float64(4.21)], [np.float64(0.97)]]
     """
 
-    if coefficients is not None and qml.math.shape(coefficients)[0] != len(observables):
+    if coefficients is not None and qp.math.shape(coefficients)[0] != len(observables):
         raise IndexError("The coefficients list must be the same length as the observables list.")
 
     # Separate observables based on whether they have wires or not.
@@ -559,13 +559,13 @@ def _partition_coeffs(partitioned_paulis, observables, coefficients):
     """
 
     partitioned_coeffs = [
-        qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
+        qp.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
     ]
 
     observables = copy(observables)
     # we cannot delete elements from the coefficients tensor, so we
     # use a proxy list memorising the indices for this logic
-    coeff_indices = list(range(qml.math.shape(coefficients)[0]))
+    coeff_indices = list(range(qp.math.shape(coefficients)[0]))
     for i, partition in enumerate(partitioned_paulis):
         indices = []
         for pauli_word in partition:
@@ -578,7 +578,7 @@ def _partition_coeffs(partitioned_paulis, observables, coefficients):
                     break
 
         # add a tensor of coefficients to the grouped coefficients
-        partitioned_coeffs[i] = qml.math.take(coefficients, indices, axis=0)
+        partitioned_coeffs[i] = qp.math.take(coefficients, indices, axis=0)
 
     # make sure the output is of the same format as the input
     # for these two frequent cases

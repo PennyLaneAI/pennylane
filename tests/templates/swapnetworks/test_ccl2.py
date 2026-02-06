@@ -26,16 +26,16 @@ def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
 
     def acquaintances(index, *_, use_CNOT=True, **__):
-        return qml.CNOT(index) if use_CNOT else qml.CZ(index)
+        return qp.CNOT(index) if use_CNOT else qp.CZ(index)
 
     weights = np.array([0.5, 0.6, 0.7])
-    wires = qml.wires.Wires((0, 1, 2))
+    wires = qp.wires.Wires((0, 1, 2))
 
-    op = qml.templates.TwoLocalSwapNetwork(
+    op = qp.templates.TwoLocalSwapNetwork(
         wires, acquaintances, weights, fermionic=True, shift=False, use_CNOT=False
     )
     data, metadata = op._flatten()
-    assert qml.math.allclose(data[0], weights)
+    assert qp.math.allclose(data[0], weights)
     assert metadata[0] == wires
     assert metadata[1] == (
         ("acquaintances", acquaintances),
@@ -48,7 +48,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    qml.assert_equal(new_op, op)
+    qp.assert_equal(new_op, op)
     assert new_op is not op
 
 
@@ -60,10 +60,10 @@ class TestDecomposition:
         ("wires", "acquaintances", "weights", "fermionic", "shift"),
         [
             (4, None, None, True, False),
-            (5, lambda index, wires, param: qml.Identity(index), None, True, False),
-            (5, lambda index, wires, param: qml.CNOT(index), None, False, False),
-            (6, lambda index, wires, param: qml.CRX(param, index), np.random.rand(15), True, False),
-            (6, lambda index, wires, param: qml.CRY(param, index), np.random.rand(15), True, True),
+            (5, lambda index, wires, param: qp.Identity(index), None, True, False),
+            (5, lambda index, wires, param: qp.CNOT(index), None, False, False),
+            (6, lambda index, wires, param: qp.CRX(param, index), np.random.rand(15), True, False),
+            (6, lambda index, wires, param: qp.CRY(param, index), np.random.rand(15), True, True),
         ],
     )
     def test_ccl2_operations(self, wires, acquaintances, weights, fermionic, shift):
@@ -77,7 +77,7 @@ class TestDecomposition:
             [[i, i + 1] for i in wire_order[(layer + shift) % 2 : -1 : 2]] for layer in range(wires)
         ]
 
-        op = qml.templates.TwoLocalSwapNetwork(
+        op = qp.templates.TwoLocalSwapNetwork(
             wire_order, acquaintances, weights, fermionic=fermionic, shift=shift
         )
         queue = op.decomposition()
@@ -99,36 +99,36 @@ class TestDecomposition:
             for pair in pairs:
                 if ac_op and ac_op([0, 1], [0, 1], 0.0):
                     gate_order.append(ac_op(pair, pair, next(itrweights, 0.0)))
-                sw_op = qml.FermionicSWAP(np.pi, pair) if fermionic else qml.SWAP(pair)
+                sw_op = qp.FermionicSWAP(np.pi, pair) if fermionic else qp.SWAP(pair)
                 gate_order.append(sw_op)
 
         for op1, op2 in zip(queue, gate_order):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     def test_custom_wire_labels(self, tol=1e-8):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
         def acquaintances(index, *_, **___):
-            return qml.CNOT(index)
+            return qp.CNOT(index)
 
         weights = np.random.random(size=10)
 
-        dev = qml.device("default.qubit", wires=5)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k", "e", "y"])
+        dev = qp.device("default.qubit", wires=5)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k", "e", "y"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.templates.TwoLocalSwapNetwork(
+            qp.templates.TwoLocalSwapNetwork(
                 dev.wires, acquaintances, weights, fermionic=True, shift=False
             )
-            return qml.state()
+            return qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.templates.TwoLocalSwapNetwork(
+            qp.templates.TwoLocalSwapNetwork(
                 dev2.wires, acquaintances, weights, fermionic=True, shift=False
             )
-            return qml.state()
+            return qp.state()
 
         assert np.allclose(circuit(), circuit2(), atol=tol, rtol=0)
 
@@ -141,33 +141,33 @@ class TestDecomposition:
                 False,
                 True,
                 False,
-                qml.math.array([0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0]),
+                qp.math.array([0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0]),
             ),
             (
                 3,
-                lambda index, wires, param: qml.CNOT(index),
+                lambda index, wires, param: qp.CNOT(index),
                 False,
                 True,
                 False,
-                qml.math.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+                qp.math.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
             ),
             (
                 4,
-                lambda index, wires, param: qml.CNOT(index),
+                lambda index, wires, param: qp.CNOT(index),
                 False,
                 False,
                 False,
-                qml.math.array(
+                qp.math.array(
                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
                 ),
             ),
             (
                 4,
-                lambda index, wires, param: qml.CRX(param, index),
+                lambda index, wires, param: qp.CRX(param, index),
                 True,
                 True,
                 False,
-                qml.math.array(
+                qp.math.array(
                     [
                         0.0,
                         -0.5j,
@@ -195,25 +195,25 @@ class TestDecomposition:
 
         wires = range(num_wires)
 
-        shape = qml.templates.TwoLocalSwapNetwork.shape(num_wires)
-        weights = np.pi / 2 * qml.math.ones(shape) if weights else None
+        shape = qp.templates.TwoLocalSwapNetwork.shape(num_wires)
+        weights = np.pi / 2 * qp.math.ones(shape) if weights else None
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(wires=[0])
-            qml.PauliX(wires=[2])
-            qml.templates.TwoLocalSwapNetwork(wires, acquaintances, weights, fermionic, shift)
-            return qml.state()
+            qp.PauliX(wires=[0])
+            qp.PauliX(wires=[2])
+            qp.templates.TwoLocalSwapNetwork(wires, acquaintances, weights, fermionic, shift)
+            return qp.state()
 
-        assert qml.math.allclose(circuit(), exp_state, atol=1e-8)
+        assert qp.math.allclose(circuit(), exp_state, atol=1e-8)
 
     def test_decomposition_exception_not_enough_qubits(self):
         """Test that the decomposition function warns if there are not enough qubits."""
 
         with pytest.raises(ValueError, match="TwoLocalSwapNetwork requires at least 2 wires"):
-            qml.templates.TwoLocalSwapNetwork.compute_decomposition(
+            qp.templates.TwoLocalSwapNetwork.compute_decomposition(
                 weights=None,
                 wires=range(1),
                 acquaintances=None,
@@ -236,7 +236,7 @@ class TestInputs:
             ),
             (
                 6,
-                qml.CNOT(wires=[0, 1]),
+                qp.CNOT(wires=[0, 1]),
                 np.random.rand(18),
                 True,
                 False,
@@ -244,7 +244,7 @@ class TestInputs:
             ),
             (
                 6,
-                lambda index, wires, param: qml.CRX(param, index),
+                lambda index, wires, param: qp.CRX(param, index),
                 np.random.rand(12),
                 True,
                 False,
@@ -256,14 +256,14 @@ class TestInputs:
         """Test that TwoLocalSwapNetwork throws an exception if the parameters have illegal
         shapes, types or values."""
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.templates.TwoLocalSwapNetwork(
+            qp.templates.TwoLocalSwapNetwork(
                 dev.wires, acquaintances, weights, fermionic=fermionic, shift=shift
             )
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
@@ -271,7 +271,7 @@ class TestInputs:
     def test_ccl2_warnings(self):
         """Test that TwoLocalSwapNetwork throws correct warnings"""
         with pytest.warns(UserWarning, match="Weights are being provided without acquaintances"):
-            qml.templates.TwoLocalSwapNetwork(
+            qp.templates.TwoLocalSwapNetwork(
                 wires=range(4),
                 acquaintances=None,
                 weights=np.array([1]),
@@ -281,7 +281,7 @@ class TestInputs:
 
     def test_id(self):
         """Test that the id attribute can be set."""
-        template = qml.templates.TwoLocalSwapNetwork(
+        template = qp.templates.TwoLocalSwapNetwork(
             wires=range(4),
             acquaintances=None,
             weights=None,
@@ -307,31 +307,31 @@ class TestAttributes:
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor."""
 
-        shape = qml.templates.TwoLocalSwapNetwork.shape(n_wires)
+        shape = qp.templates.TwoLocalSwapNetwork.shape(n_wires)
         assert shape == expected_shape
 
     def test_shape_exception_not_enough_qubits(self):
         """Test that the shape function warns if there are not enough qubits."""
 
         with pytest.raises(ValueError, match="TwoLocalSwapNetwork requires at least 2 wires"):
-            qml.templates.TwoLocalSwapNetwork.shape(n_wires=1)
+            qp.templates.TwoLocalSwapNetwork.shape(n_wires=1)
 
 
 def circuit_template(weights):
-    qml.templates.TwoLocalSwapNetwork(
+    qp.templates.TwoLocalSwapNetwork(
         wires=range(4),
-        acquaintances=lambda index, wires, param: qml.CRX(param, index),
+        acquaintances=lambda index, wires, param: qp.CRX(param, index),
         weights=weights,
         fermionic=True,
         shift=False,
     )
-    return qml.expval(qml.PauliZ(0))
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(weights):
     for idx, pair in enumerate([[0, 1], [2, 3], [1, 2], [0, 1], [2, 3], [1, 2]]):
-        qml.CRX(weights[idx], wires=pair)
-    return qml.expval(qml.PauliZ(0))
+        qp.CRX(weights[idx], wires=pair)
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -341,41 +341,41 @@ class TestInterfaces:
     def test_list_and_tuples(self, tol):
         """Test common iterables as inputs."""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         weights = [0.55, 0.72, 0.6, 0.54, 0.42, 0.65]
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         weights_tuple = (0.55, 0.72, 0.6, 0.54, 0.42, 0.65)
         res = circuit(weights_tuple)
         res2 = circuit2(weights_tuple)
 
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd(self, tol):
         """Test the autograd interface."""
 
-        weights = qml.numpy.random.random(size=(6), requires_grad=True)
+        weights = qp.numpy.random.random(size=(6), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(weights)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
@@ -389,14 +389,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=6))
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -415,14 +415,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=6))
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -430,7 +430,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -440,14 +440,14 @@ class TestInterfaces:
 
         weights = tf.Variable(np.random.random(size=6))
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(weights)
@@ -467,14 +467,14 @@ class TestInterfaces:
 
         weights = torch.tensor(np.random.random(size=6), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(weights)
         res.backward()
@@ -494,12 +494,12 @@ class TestGradient:
     def test_ps_rule_gradient(self, tol):
         """Test parameter-shift rule gradient."""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        backprop_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="backprop"))
-        ps_rule_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="parameter-shift"))
+        backprop_grad = qp.grad(qp.QNode(circuit_template, dev, diff_method="backprop"))
+        ps_rule_grad = qp.grad(qp.QNode(circuit_template, dev, diff_method="parameter-shift"))
 
-        weights = qml.numpy.array([0.55, 0.72, 0.6, 0.54, 0.42, 0.65], requires_grad=True)
+        weights = qp.numpy.array([0.55, 0.72, 0.6, 0.54, 0.42, 0.65], requires_grad=True)
         res = backprop_grad(weights)
         res2 = ps_rule_grad(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)

@@ -37,7 +37,7 @@ class Test_map_to_resource_op:
 
     def test_map_to_resource_op_raises_not_implemented_error(self):
         """Test that a NotImplementedError is raised for a valid Operation."""
-        operation = Operation(qml.wires.Wires([4]))
+        operation = Operation(qp.wires.Wires([4]))
         with pytest.raises(
             NotImplementedError, match="Operation doesn't have a resource equivalent"
         ):
@@ -46,45 +46,45 @@ class Test_map_to_resource_op:
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
-            (qml.Identity(0), re_ops.ResourceIdentity()),
+            (qp.Identity(0), re_ops.ResourceIdentity()),
             # Single-Qubit Gates
-            (qml.Hadamard(0), re_ops.ResourceHadamard()),
-            (qml.S(0), re_ops.ResourceS()),
-            (qml.T(0), re_ops.ResourceT()),
-            (qml.PauliX(0), re_ops.ResourceX()),
-            (qml.PauliY(0), re_ops.ResourceY()),
-            (qml.PauliZ(0), re_ops.ResourceZ()),
-            (qml.PhaseShift(0.1, wires=0), re_ops.ResourcePhaseShift()),
-            (qml.Rot(0.1, 0.2, 0.3, wires=0), re_ops.ResourceRot()),
-            (qml.RX(0.1, wires=0), re_ops.ResourceRX()),
-            (qml.RY(0.1, wires=0), re_ops.ResourceRY()),
-            (qml.RZ(0.1, wires=0), re_ops.ResourceRZ()),
+            (qp.Hadamard(0), re_ops.ResourceHadamard()),
+            (qp.S(0), re_ops.ResourceS()),
+            (qp.T(0), re_ops.ResourceT()),
+            (qp.PauliX(0), re_ops.ResourceX()),
+            (qp.PauliY(0), re_ops.ResourceY()),
+            (qp.PauliZ(0), re_ops.ResourceZ()),
+            (qp.PhaseShift(0.1, wires=0), re_ops.ResourcePhaseShift()),
+            (qp.Rot(0.1, 0.2, 0.3, wires=0), re_ops.ResourceRot()),
+            (qp.RX(0.1, wires=0), re_ops.ResourceRX()),
+            (qp.RY(0.1, wires=0), re_ops.ResourceRY()),
+            (qp.RZ(0.1, wires=0), re_ops.ResourceRZ()),
             # Two-Qubit Gates
-            (qml.SWAP(wires=(0, 1)), re_ops.ResourceSWAP()),
-            (qml.IsingXX(0.1, wires=(0, 1)), re_ops.ResourceIsingXX()),
-            (qml.IsingYY(0.1, wires=(0, 1)), re_ops.ResourceIsingYY()),
-            (qml.IsingXY(0.1, wires=(0, 1)), re_ops.ResourceIsingXY()),
-            (qml.IsingZZ(0.1, wires=(0, 1)), re_ops.ResourceIsingZZ()),
-            (qml.PSWAP(0.1, wires=(0, 1)), re_ops.ResourcePSWAP()),
-            (qml.SingleExcitation(0.1, wires=(0, 1)), re_ops.ResourceSingleExcitation()),
-            (qml.CH(wires=(0, 1)), re_ops.ResourceCH()),
-            (qml.CNOT(wires=(0, 1)), re_ops.ResourceCNOT()),
-            (qml.ControlledPhaseShift(0.1, wires=(0, 1)), re_ops.ResourceControlledPhaseShift()),
-            (qml.CRot(0.1, 0.2, 0.3, wires=(0, 1)), re_ops.ResourceCRot()),
-            (qml.CRX(0.1, wires=(0, 1)), re_ops.ResourceCRX()),
-            (qml.CRY(0.1, wires=(0, 1)), re_ops.ResourceCRY()),
-            (qml.CRZ(0.1, wires=(0, 1)), re_ops.ResourceCRZ()),
-            (qml.CY(wires=(0, 1)), re_ops.ResourceCY()),
-            (qml.CZ(wires=(0, 1)), re_ops.ResourceCZ()),
+            (qp.SWAP(wires=(0, 1)), re_ops.ResourceSWAP()),
+            (qp.IsingXX(0.1, wires=(0, 1)), re_ops.ResourceIsingXX()),
+            (qp.IsingYY(0.1, wires=(0, 1)), re_ops.ResourceIsingYY()),
+            (qp.IsingXY(0.1, wires=(0, 1)), re_ops.ResourceIsingXY()),
+            (qp.IsingZZ(0.1, wires=(0, 1)), re_ops.ResourceIsingZZ()),
+            (qp.PSWAP(0.1, wires=(0, 1)), re_ops.ResourcePSWAP()),
+            (qp.SingleExcitation(0.1, wires=(0, 1)), re_ops.ResourceSingleExcitation()),
+            (qp.CH(wires=(0, 1)), re_ops.ResourceCH()),
+            (qp.CNOT(wires=(0, 1)), re_ops.ResourceCNOT()),
+            (qp.ControlledPhaseShift(0.1, wires=(0, 1)), re_ops.ResourceControlledPhaseShift()),
+            (qp.CRot(0.1, 0.2, 0.3, wires=(0, 1)), re_ops.ResourceCRot()),
+            (qp.CRX(0.1, wires=(0, 1)), re_ops.ResourceCRX()),
+            (qp.CRY(0.1, wires=(0, 1)), re_ops.ResourceCRY()),
+            (qp.CRZ(0.1, wires=(0, 1)), re_ops.ResourceCRZ()),
+            (qp.CY(wires=(0, 1)), re_ops.ResourceCY()),
+            (qp.CZ(wires=(0, 1)), re_ops.ResourceCZ()),
             # Three-Qubit Gates
-            (qml.CCZ(wires=(0, 1, 2)), re_ops.ResourceCCZ()),
-            (qml.CSWAP(wires=(0, 1, 2)), re_ops.ResourceCSWAP()),
-            (qml.Toffoli(wires=(0, 1, 2)), re_ops.ResourceToffoli()),
+            (qp.CCZ(wires=(0, 1, 2)), re_ops.ResourceCCZ()),
+            (qp.CSWAP(wires=(0, 1, 2)), re_ops.ResourceCSWAP()),
+            (qp.Toffoli(wires=(0, 1, 2)), re_ops.ResourceToffoli()),
             # Multi-Qubit Gates
-            (qml.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.ResourceMultiRZ(num_wires=3)),
-            (qml.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.ResourcePauliRot("XYZ")),
+            (qp.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.ResourceMultiRZ(num_wires=3)),
+            (qp.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.ResourcePauliRot("XYZ")),
             (
-                qml.MultiControlledX(wires=[0, 1, 2]),
+                qp.MultiControlledX(wires=[0, 1, 2]),
                 re_ops.ResourceMultiControlledX(num_ctrl_wires=2, num_ctrl_values=0),
             ),
             # Custom/Template Gates
@@ -104,7 +104,7 @@ class Test_map_to_resource_op:
                 re_temps.ResourceOutMultiplier(a_num_qubits=2, b_num_qubits=1),
             ),
             (
-                qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
+                qp.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
                 re_temps.ResourceSemiAdder(max_register_size=3),
             ),
             (qtemps.QFT(wires=[0, 1, 2]), re_temps.ResourceQFT(num_wires=3)),
@@ -117,7 +117,7 @@ class Test_map_to_resource_op:
                 re_temps.ResourceBasisRotation(dim_N=4),
             ),
             (
-                qtemps.Select([qml.PauliX(2), qml.PauliY(2)], control=[0, 1]),
+                qtemps.Select([qp.PauliX(2), qp.PauliY(2)], control=[0, 1]),
                 re_temps.ResourceSelect(select_ops=[re_ops.ResourceX(), re_ops.ResourceY()]),
             ),
             (
@@ -142,7 +142,7 @@ class Test_map_to_resource_op:
                 ),
             ),
             (
-                qml.QubitUnitary(np.eye(2), wires=0),
+                qp.QubitUnitary(np.eye(2), wires=0),
                 re_temps.ResourceQubitUnitary(num_wires=1, precision=None),
             ),
             (
@@ -157,12 +157,12 @@ class Test_map_to_resource_op:
                 ),
             ),
             (
-                qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+                qp.QuantumPhaseEstimation(qp.PauliZ(2), estimation_wires=[0, 1]),
                 re_temps.ResourceQPE(base=re_ops.ResourceZ(), num_estimation_wires=2),
             ),
             (
-                qml.TrotterProduct(
-                    qml.dot([0.25, 0.75], [qml.X(0), qml.Z(0)]),
+                qp.TrotterProduct(
+                    qp.dot([0.25, 0.75], [qp.X(0), qp.Z(0)]),
                     time=1.0,
                     n=10,
                     order=2,
@@ -174,7 +174,7 @@ class Test_map_to_resource_op:
                 ),
             ),
             (
-                qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
+                qp.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
                 re_temps.ResourceIntegerComparator(value=5, register_size=3, geq=False),
             ),
             (

@@ -47,14 +47,14 @@ def s_prod(scalar, operator, lazy=True, id=None):
 
         This operator supports a batched base, a batched coefficient and a combination of both:
 
-        >>> op = qml.s_prod(scalar=4, operator=qml.RX([1, 2, 3], wires=0))
-        >>> qml.matrix(op).shape
+        >>> op = qp.s_prod(scalar=4, operator=qp.RX([1, 2, 3], wires=0))
+        >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qml.s_prod(scalar=[1, 2, 3], operator=qml.RX(1, wires=0))
-        >>> qml.matrix(op).shape
+        >>> op = qp.s_prod(scalar=[1, 2, 3], operator=qp.RX(1, wires=0))
+        >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qml.s_prod(scalar=[4, 5, 6], operator=qml.RX([1, 2, 3], wires=0))
-        >>> qml.matrix(op).shape
+        >>> op = qp.s_prod(scalar=[4, 5, 6], operator=qp.RX([1, 2, 3], wires=0))
+        >>> qp.matrix(op).shape
         (3, 2, 2)
 
         But it doesn't support batching of operators.
@@ -63,7 +63,7 @@ def s_prod(scalar, operator, lazy=True, id=None):
 
     **Example**
 
-    >>> sprod_op = s_prod(2.0, qml.X(0))
+    >>> sprod_op = s_prod(2.0, qp.X(0))
     >>> sprod_op
     2.0 * X(0)
     >>> sprod_op.matrix()
@@ -96,10 +96,10 @@ class SProd(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sprod_op = SProd(1.23, qml.X(0))
+    >>> sprod_op = SProd(1.23, qp.X(0))
     >>> sprod_op
     1.23 * X(0)
-    >>> qml.matrix(sprod_op)
+    >>> qp.matrix(sprod_op)
     array([[0.  , 1.23],
            [1.23, 0.  ]])
     >>> sprod_op.terms()
@@ -113,15 +113,15 @@ class SProd(ScalarSymbolicOp):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=1)
+            dev = qp.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, diff_method="best")
+            @qp.qnode(dev, diff_method="best")
             def circuit(scalar, theta):
-                qml.RX(theta, wires=0)
-                return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
+                qp.RX(theta, wires=0)
+                return qp.expval(qp.s_prod(scalar, qp.Hadamard(wires=0)))
 
         >>> scalar, theta = (1.2, 3.4)
-        >>> qml.grad(circuit, argnums=[0,1])(scalar, theta)
+        >>> qp.grad(circuit, argnums=[0,1])(scalar, theta)
         (array(-0.6836...), array(0.2168...))
 
     """
@@ -135,7 +135,7 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: qml.typing.TensorLike, base: Operator, id=None, _pauli_rep=None):
+    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, id=None, _pauli_rep=None):
         super().__init__(base=base, scalar=scalar, id=id)
 
         if _pauli_rep:
@@ -145,14 +145,14 @@ class SProd(ScalarSymbolicOp):
         ):
 
             pr = {pw: math.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
-            self._pauli_rep = qml.pauli.PauliSentence(pr)
+            self._pauli_rep = qp.pauli.PauliSentence(pr)
         else:
             self._pauli_rep = None
 
     @handle_recursion_error
     def __repr__(self):
         """Constructor-call-like representation."""
-        if isinstance(self.base, qml.ops.CompositeOp):
+        if isinstance(self.base, qp.ops.CompositeOp):
             return f"{self.scalar} * ({self.base})"
         return f"{self.scalar} * {self.base}"
 
@@ -306,7 +306,7 @@ class SProd(ScalarSymbolicOp):
         Returns:
             The adjointed operation.
         """
-        return SProd(scalar=math.conjugate(self.scalar), base=qml.adjoint(self.base))
+        return SProd(scalar=math.conjugate(self.scalar), base=qp.adjoint(self.base))
 
     # pylint: disable=too-many-return-statements
     @handle_recursion_error
@@ -347,7 +347,7 @@ class SProd(ScalarSymbolicOp):
             raise DecompositionUndefinedError(
                 "Decompositins of SProd are only defined for scalars with norm 1."
             )
-        ops = [qml.GlobalPhase(-math.angle(self.scalar)), self.base]
+        ops = [qp.GlobalPhase(-math.angle(self.scalar)), self.base]
         if QueuingManager.recording():
-            qml.apply(self.base)
+            qp.apply(self.base)
         return ops

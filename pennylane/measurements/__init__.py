@@ -79,7 +79,7 @@ measurement process must be a real scalar value for it to be differentiable.
 
 Working with mid-circuit measurements
 -------------------------------------
-Mid-circuit measurements can be made using :func:`qml.measure`. The measurement value is returned by ``qml.measure``
+Mid-circuit measurements can be made using :func:`qp.measure`. The measurement value is returned by ``qp.measure``
 and can be used as a condition for classical control. Moreover, multiple measurement values can be combined
 using arithmetic operators for more complex conditioning:
 
@@ -87,39 +87,39 @@ using arithmetic operators for more complex conditioning:
 
     import pennylane as qp
 
-    dev = qml.device("default.qubit", wires=3)
+    dev = qp.device("default.qubit", wires=3)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circ(x, y):
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=1)
+        qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
 
-        m0 = qml.measure(0)
-        m1 = qml.measure(1)
-        qml.cond(~m0 & m1 == 0, qml.X)(wires=2)
-        return qml.expval(qml.Z(2))
+        m0 = qp.measure(0)
+        m1 = qp.measure(1)
+        qp.cond(~m0 & m1 == 0, qp.X)(wires=2)
+        return qp.expval(qp.Z(2))
 
 Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
-reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.
+reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qp.measure`` to ``True``.
 
 Users can also collect statistics on mid-circuit measurements along with other terminal measurements. Currently,
-``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. ``qml.probs``,
-``qml.sample``, and ``qml.counts`` support sequences of measurement values, ``qml.expval`` and ``qml.var`` do not.
-Statistics of arithmetic combinations of measurement values are supported by all but ``qml.probs``, and only as
+``qp.expval``, ``qp.probs``, ``qp.sample``, ``qp.counts``, and ``qp.var`` are supported. ``qp.probs``,
+``qp.sample``, and ``qp.counts`` support sequences of measurement values, ``qp.expval`` and ``qp.var`` do not.
+Statistics of arithmetic combinations of measurement values are supported by all but ``qp.probs``, and only as
 long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is not supported.
 
 .. code-block:: python
 
     import pennylane as qp
 
-    dev = qml.device("default.qubit", wires=3)
+    dev = qp.device("default.qubit", wires=3)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circ(x, y):
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=1)
-        m0 = qml.measure(1)
-        return qml.expval(qml.Z(0)), qml.sample(m0)
+        qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
+        m0 = qp.measure(1)
+        return qp.expval(qp.Z(0)), qp.sample(m0)
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
@@ -148,7 +148,7 @@ obtained of a given state:
             super().__init__(wires=wires)
 
         def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
-            counts_mp = qml.counts(wires=self._wires)
+            counts_mp = qp.counts(wires=self._wires)
             counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
             return float(counts.get(self.state, 0))
 
@@ -172,12 +172,12 @@ so that we can verify our results mathematically.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.set_shots(shots=10000)
-    @qml.qnode(dev)
+    @qp.set_shots(shots=10000)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RX(x, wires=0)
+        qp.RX(x, wires=0)
         return CountState(state="1")
 
 The quantum state before the measurement will be:
@@ -207,8 +207,8 @@ The gradient of the measurement process is
 
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
->>> x = qml.numpy.array(1.23, requires_grad=True)
->>> qml.grad(circuit)(x)
+>>> x = qp.numpy.array(1.23, requires_grad=True)
+>>> qp.grad(circuit)(x)
 4715.000000000001
 
 .. note::
@@ -225,8 +225,8 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     ``MeasurementProcess._flatten`` and ``MeasurementProcess._unflatten`` need to be overwritten if the measurement has additional
     metadata, such as ``seed`` or ``all_outcomes``.
 
-    >>> H = 2.0 * qml.X(0)
-    >>> mp = qml.expval(H)
+    >>> H = 2.0 * qp.X(0)
+    >>> mp = qp.expval(H)
     >>> mp._flatten()
     ((2.0 * X(0), None), (('wires', None),))
     >>> type(mp)._unflatten(*mp._flatten())
@@ -313,7 +313,7 @@ def __getattr__(name):
     if name == "find_post_processed_mcms":
         # warnings.warn(
         #    "find_post_processed_mcms has been moved from the measurements module to"
-        #    "qml.devices.qubit.simulate._find_post_processed_mcms"
+        #    "qp.devices.qubit.simulate._find_post_processed_mcms"
         #    "if you need this logic, we recommend code duplication, as it is being made private."
         #    PennyLaneDeprecationWarning,
         # )

@@ -65,62 +65,62 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
-    The ``qml.batch_partial`` decorator allows us to create a partial callable
+    The ``qp.batch_partial`` decorator allows us to create a partial callable
     object that wraps the QNode. For example,
 
-    >>> y = qml.numpy.array(0.2)
-    >>> batched_partial_circuit = qml.batch_partial(circuit, y=y)
+    >>> y = qp.numpy.array(0.2)
+    >>> batched_partial_circuit = qp.batch_partial(circuit, y=y)
 
     The unevaluated arguments of the resulting function must now have a batch
     dimension, and the output of the function also has a batch dimension:
 
     >>> batch_size = 4
-    >>> x = qml.numpy.linspace(0.1, 0.5, batch_size)
+    >>> x = qp.numpy.linspace(0.1, 0.5, batch_size)
     >>> batched_partial_circuit(x)
     tensor([0.975..., 0.953..., 0.914..., 0.860...], requires_grad=True)
 
     Jacobians can be computed for the arguments of the wrapper function, but
-    not for any pre-supplied argument passed to ``qml.batch_partial``:
+    not for any pre-supplied argument passed to ``qp.batch_partial``:
 
-    >>> qml.jacobian(batched_partial_circuit)(x) # doctest: +SKIP
+    >>> qp.jacobian(batched_partial_circuit)(x) # doctest: +SKIP
     array([[-0.0978434 ,  0.        ,  0.        ,  0.        ],
            [ 0.        , -0.22661276,  0.        ,  0.        ],
            [ 0.        ,  0.        , -0.35135943,  0.        ],
            [ 0.        ,  0.        ,  0.        , -0.46986895]])
 
-    The same ``qml.batch_partial`` function can also be used to replace arguments
+    The same ``qp.batch_partial`` function can also be used to replace arguments
     of a QNode with functions, and calling the wrapper would evaluate
     those functions and pass the results into the QNode. For example,
 
-    >>> x = qml.numpy.array(0.1)
+    >>> x = qp.numpy.array(0.1)
     >>> y_fn = lambda y0: y0 * 0.2 + 0.3
-    >>> batched_lambda_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": y_fn})
+    >>> batched_lambda_circuit = qp.batch_partial(circuit, x=x, preprocess={"y": y_fn})
 
     The wrapped function ``batched_lambda_circuit`` also expects arguments to
     have an initial batch dimension:
 
     >>> batch_size = 4
-    >>> y0 = qml.numpy.linspace(0.5, 2, batch_size)
+    >>> y0 = qp.numpy.linspace(0.5, 2, batch_size)
     >>> batched_lambda_circuit(y0)
     tensor([0.916..., 0.873..., 0.821..., 0.761...], requires_grad=True)
 
     Jacobians can be computed in this scenario as well:
 
-    >>> qml.jacobian(batched_lambda_circuit)(y0) # doctest: +SKIP
+    >>> qp.jacobian(batched_lambda_circuit)(y0) # doctest: +SKIP
     array([[-0.07749457,  0.        ,  0.        ,  0.        ],
            [ 0.        , -0.09540608,  0.        ,  0.        ],
            [ 0.        ,  0.        , -0.11236432,  0.        ],
            [ 0.        ,  0.        ,  0.        , -0.12819986]])
     """
-    qnode = qml.batch_params(qnode, all_operations=all_operations)
+    qnode = qp.batch_params(qnode, all_operations=all_operations)
 
     preprocess = {} if preprocess is None else preprocess
 
@@ -134,7 +134,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     for key, val in partial_kwargs.items():
         try:
             # check if the value is a tensor
-            if qml.math.asarray(val).dtype != object:
+            if qp.math.asarray(val).dtype != object:
                 to_stack.append(key)
         except ImportError:
             # autoray can't find a backend for val, so it cannot be stacked
@@ -165,23 +165,23 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
             )
 
         # get the batch dimension (we don't have to check if all arguments
-        # have the same batch dim since that's done in qml.batch_params)
+        # have the same batch dim since that's done in qp.batch_params)
         try:
             if args:
-                batch_dim = qml.math.shape(args[0])[0]
+                batch_dim = qp.math.shape(args[0])[0]
             else:
-                batch_dim = qml.math.shape(list(kwargs.values())[0])[0]
+                batch_dim = qp.math.shape(list(kwargs.values())[0])[0]
         except IndexError:
             raise ValueError("Parameter with batch dimension must be provided") from None
 
         for key, val in preprocess.items():
-            unstacked_args = (qml.math.unstack(arg) for arg in args)
-            val = qml.math.stack([val(*a) for a in zip(*unstacked_args, strict=True)])
+            unstacked_args = (qp.math.unstack(arg) for arg in args)
+            val = qp.math.stack([val(*a) for a in zip(*unstacked_args, strict=True)])
             kwargs[key] = val
 
         for key, val in partial_kwargs.items():
             if key in to_stack:
-                kwargs[key] = qml.math.stack([val] * batch_dim)
+                kwargs[key] = qp.math.stack([val] * batch_dim)
             else:
                 kwargs[key] = val
         if is_partial:

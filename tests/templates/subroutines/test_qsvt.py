@@ -38,17 +38,17 @@ from pennylane.templates.subroutines.qsvt import (
 
 def qfunc(A):
     """Used to test queuing in the next test."""
-    return qml.RX(A[0][0], wires=0)
+    return qp.RX(A[0][0], wires=0)
 
 
 def qfunc2(A):
     """Used to test queuing in the next test."""
-    return qml.prod(qml.PauliX(wires=0), qml.RZ(A[0][0], wires=0))
+    return qp.prod(qp.PauliX(wires=0), qp.RZ(A[0][0], wires=0))
 
 
 def lst_phis(phis):
     """Used to test queuing in the next test."""
-    return [qml.PCPhase(i, 2, wires=[0, 1]) for i in phis]
+    return [qp.PCPhase(i, 2, wires=[0, 1]) for i in phis]
 
 
 def generate_polynomial_coeffs(degree, parity=None):
@@ -78,72 +78,72 @@ def generate_polynomial_coeffs(degree, parity=None):
 
 
 class TestQSVT:
-    """Test the qml.QSVT template."""
+    """Test the qp.QSVT template."""
 
     @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
-        projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
-        op = qml.QSVT(qml.PauliX(wires=0), projectors)
-        qml.ops.functions.assert_valid(op)
+        projectors = [qp.PCPhase(0.2, dim=1, wires=0), qp.PCPhase(0.3, dim=1, wires=0)]
+        op = qp.QSVT(qp.PauliX(wires=0), projectors)
+        qp.ops.functions.assert_valid(op)
 
     def test_init_error(self):
         """Test that an error is raised if a non-operation object is passed
         for the block-encoding."""
         with pytest.raises(ValueError, match="Input block encoding must be an Operator"):
-            qml.QSVT(1.23, [qml.Identity(wires=0)])
+            qp.QSVT(1.23, [qp.Identity(wires=0)])
 
     @pytest.mark.parametrize(
         ("U_A", "lst_projectors", "wires", "operations"),
         [
             (
-                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+                qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.5, dim=2, wires=[0, 1])],
                 [0, 1],
                 [
-                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
-                    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qp.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                    qp.PCPhase(0.5, dim=2, wires=[0, 1]),
                 ],
             ),
             (
-                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+                qp.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.3, dim=2, wires=[0, 1])],
                 [0, 1],
                 [
-                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
-                    qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
-                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
+                    qp.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qp.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                    qp.PCPhase(0.3, dim=2, wires=[0, 1]),
                 ],
             ),
             (
-                qml.Hadamard(wires=0),
-                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+                qp.Hadamard(wires=0),
+                [qp.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
                 [0],
                 [
-                    qml.RZ(-2.46, wires=0),
-                    qml.Hadamard(0),
-                    qml.RZ(1, wires=0),
-                    qml.Hadamard(0),
-                    qml.RZ(-8, wires=0),
+                    qp.RZ(-2.46, wires=0),
+                    qp.Hadamard(0),
+                    qp.RZ(1, wires=0),
+                    qp.Hadamard(0),
+                    qp.RZ(-8, wires=0),
                 ],
             ),
         ],
     )
     def test_output(self, U_A, lst_projectors, wires, operations):
-        """Test that qml.QSVT produces the intended measurements."""
-        dev = qml.device("default.qubit", wires=len(wires))
+        """Test that qp.QSVT produces the intended measurements."""
+        dev = qp.device("default.qubit", wires=len(wires))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.QSVT(U_A, lst_projectors)
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.QSVT(U_A, lst_projectors)
+            return qp.expval(qp.PauliZ(wires=0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_correct():
             for op in operations:
-                qml.apply(op)
-            return qml.expval(qml.PauliZ(wires=0))
+                qp.apply(op)
+            return qp.expval(qp.PauliZ(wires=0))
 
         assert np.isclose(circuit(), circuit_correct())
 
@@ -151,29 +151,29 @@ class TestQSVT:
         ("U_A", "lst_projectors", "results"),
         [
             (
-                qml.BlockEncode(0.1, wires=0),
-                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
+                qp.BlockEncode(0.1, wires=0),
+                [qp.PCPhase(0.2, dim=1, wires=0), qp.PCPhase(0.3, dim=1, wires=0)],
                 [
-                    qml.PCPhase(0.2, dim=2, wires=[0]),
-                    qml.BlockEncode(np.array([[0.1]]), wires=[0]),
-                    qml.PCPhase(0.3, dim=2, wires=[0]),
+                    qp.PCPhase(0.2, dim=2, wires=[0]),
+                    qp.BlockEncode(np.array([[0.1]]), wires=[0]),
+                    qp.PCPhase(0.3, dim=2, wires=[0]),
                 ],
             ),
             (
-                qml.PauliZ(wires=0),
-                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
+                qp.PauliZ(wires=0),
+                [qp.RZ(0.1, wires=0), qp.RY(0.2, wires=0), qp.RZ(0.3, wires=1)],
                 [
-                    qml.RZ(0.1, wires=[0]),
-                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
-                    qml.RZ(0.3, wires=[1]),
+                    qp.RZ(0.1, wires=[0]),
+                    qp.change_op_basis(qp.PauliZ(wires=[0]), qp.RY(0.2, wires=[0])),
+                    qp.RZ(0.3, wires=[1]),
                 ],
             ),
         ],
     )
     def test_queuing_ops(self, U_A, lst_projectors, results):
-        """Test that qml.QSVT queues operations in the correct order."""
-        with qml.tape.QuantumTape() as tape:
-            qml.QSVT(U_A, lst_projectors)
+        """Test that qp.QSVT queues operations in the correct order."""
+        with qp.tape.QuantumTape() as tape:
+            qp.QSVT(U_A, lst_projectors)
 
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
@@ -183,112 +183,112 @@ class TestQSVT:
         ("U_A", "lst_projectors", "results"),
         [
             (
-                qml.PauliX(wires=0),
-                [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
+                qp.PauliX(wires=0),
+                [qp.PCPhase(0.2, dim=1, wires=0), qp.PCPhase(0.3, dim=1, wires=0)],
                 [
-                    qml.PCPhase(0.2, dim=1, wires=[0]),
-                    qml.PauliX(wires=0),
-                    qml.PCPhase(0.3, dim=1, wires=[0]),
+                    qp.PCPhase(0.2, dim=1, wires=[0]),
+                    qp.PauliX(wires=0),
+                    qp.PCPhase(0.3, dim=1, wires=[0]),
                 ],
             ),
             (
-                qml.PauliZ(wires=0),
-                [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
+                qp.PauliZ(wires=0),
+                [qp.RZ(0.1, wires=0), qp.RY(0.2, wires=0), qp.RZ(0.3, wires=1)],
                 [
-                    qml.RZ(0.1, wires=[0]),
-                    qml.change_op_basis(qml.PauliZ(wires=[0]), qml.RY(0.2, wires=[0])),
-                    qml.RZ(0.3, wires=[1]),
+                    qp.RZ(0.1, wires=[0]),
+                    qp.change_op_basis(qp.PauliZ(wires=[0]), qp.RY(0.2, wires=[0])),
+                    qp.RZ(0.3, wires=[1]),
                 ],
             ),
         ],
     )
     def test_queuing_ops_defined_in_circuit(self, U_A, lst_projectors, results):
-        """Test that qml.QSVT queues operations correctly."""
+        """Test that qp.QSVT queues operations correctly."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QSVT(U_A, lst_projectors)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.QSVT(U_A, lst_projectors)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QSVT.compute_decomposition(UA=U_A, projectors=lst_projectors)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.QSVT.compute_decomposition(UA=U_A, projectors=lst_projectors)
 
-        tape2 = qml.tape.QuantumScript.from_queue(q)
+        tape2 = qp.tape.QuantumScript.from_queue(q)
 
         for expected, val1, val2 in zip(results, tape.expand().operations, tape2.operations):
-            qml.assert_equal(expected, val1)
-            qml.assert_equal(expected, val2)
+            qp.assert_equal(expected, val1)
+            qp.assert_equal(expected, val2)
 
     def test_decomposition_queues_its_contents(self):
         """Test that the decomposition method queues the decomposition in the correct order."""
-        lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
-        op = qml.QSVT(qml.PauliX(wires=0), lst_projectors)
-        with qml.queuing.AnnotatedQueue() as q:
+        lst_projectors = [qp.PCPhase(0.2, dim=1, wires=0), qp.PCPhase(0.3, dim=1, wires=0)]
+        op = qp.QSVT(qp.PauliX(wires=0), lst_projectors)
+        with qp.queuing.AnnotatedQueue() as q:
             decomp = op.decomposition()
 
-        ops, _ = qml.queuing.process_queue(q)
+        ops, _ = qp.queuing.process_queue(q)
         for op1, op2 in zip(ops, decomp):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
         ("UA", "projectors"),
         [
             (
-                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+                qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.5, dim=2, wires=[0, 1])],
             ),
             (
-                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+                qp.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.3, dim=2, wires=[0, 1])],
             ),
             (
-                qml.Hadamard(wires=0),
-                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+                qp.Hadamard(wires=0),
+                [qp.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
             ),
         ],
     )
     def test_decomposition_new(self, UA, projectors):
         """Test the decomposition of the QSVT template."""
-        op = qml.QSVT(UA, projectors)
-        for rule in qml.list_decomps(qml.QSVT):
+        op = qp.QSVT(UA, projectors)
+        for rule in qp.list_decomps(qp.QSVT):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("UA", "projectors"),
         [
             (
-                qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
+                qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.5, dim=2, wires=[0, 1])],
             ),
             (
-                qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
-                [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
+                qp.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                [qp.PCPhase(0.5, dim=2, wires=[0, 1]), qp.PCPhase(0.3, dim=2, wires=[0, 1])],
             ),
             (
-                qml.Hadamard(wires=0),
-                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+                qp.Hadamard(wires=0),
+                [qp.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
             ),
         ],
     )
     def test_decomposition(self, UA, projectors):
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QSVT.compute_decomposition(UA=UA, projectors=projectors)
-        tape = qml.tape.QuantumScript.from_queue(q)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.QSVT.compute_decomposition(UA=UA, projectors=projectors)
+        tape = qp.tape.QuantumScript.from_queue(q)
 
         # Tests that the decomposition produces the right matrix
-        op_matrix = qml.QSVT.compute_matrix(UA=UA, projectors=projectors)
-        decomp_matrix = qml.matrix(tape, wire_order=tape.wires)
-        assert qml.math.allclose(
+        op_matrix = qp.QSVT.compute_matrix(UA=UA, projectors=projectors)
+        decomp_matrix = qp.matrix(tape, wire_order=tape.wires)
+        assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
 
     def test_wire_order(self):
         """Test that the wire order is preserved."""
 
-        op1 = qml.GroverOperator(wires=[0, 3])
-        op2 = qml.QFT(wires=[2, 1])
-        qsvt_wires = qml.QSVT(op2, [op1]).wires
+        op1 = qp.GroverOperator(wires=[0, 3])
+        op2 = qp.QFT(wires=[2, 1])
+        qsvt_wires = qp.QSVT(op2, [op1]).wires
         assert qsvt_wires == op1.wires + op2.wires
 
     @pytest.mark.parametrize(
@@ -300,9 +300,9 @@ class TestQSVT:
                 np.array([[0.1, 0.2], [0.3, 0.4]]),
                 np.array([0.2, 0.3]),
                 [
-                    qml.PCPhase(0.2, dim=2, wires=[0]),
-                    qml.RX(0.1, wires=[0]),
-                    qml.PCPhase(0.3, dim=2, wires=[0]),
+                    qp.PCPhase(0.2, dim=2, wires=[0]),
+                    qp.RX(0.1, wires=[0]),
+                    qp.PCPhase(0.3, dim=2, wires=[0]),
                 ],
             ),
             (
@@ -311,18 +311,18 @@ class TestQSVT:
                 np.array([[0.1, 0.2], [0.3, 0.4]]),
                 np.array([0.1, 0.2]),
                 [
-                    qml.PCPhase(0.1, dim=2, wires=[0]),
-                    qml.prod(qml.PauliX(wires=0), qml.RZ(0.1, wires=0)),
-                    qml.PCPhase(0.2, dim=2, wires=[0]),
+                    qp.PCPhase(0.1, dim=2, wires=[0]),
+                    qp.prod(qp.PauliX(wires=0), qp.RZ(0.1, wires=0)),
+                    qp.PCPhase(0.2, dim=2, wires=[0]),
                 ],
             ),
         ],
     )
     def test_queuing_callables(self, quantum_function, phi_func, A, phis, results):
-        """Test that qml.QSVT queues operations correctly when a function is called"""
+        """Test that qp.QSVT queues operations correctly when a function is called"""
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QSVT(quantum_function(A), phi_func(phis))
+        with qp.tape.QuantumTape() as tape:
+            qp.QSVT(quantum_function(A), phi_func(phis))
 
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
@@ -337,21 +337,21 @@ class TestQSVT:
         """Test that the qsvt function matrix is correct for torch."""
         import torch
 
-        angles = qml.poly_to_angles(poly, "QSVT")
-        default_matrix = qml.matrix(
-            qml.qsvt(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
+        angles = qp.poly_to_angles(poly, "QSVT")
+        default_matrix = qp.matrix(
+            qp.qsvt(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
         )
 
         input_matrix = torch.tensor(input_matrix, dtype=float)
         angles = torch.tensor(angles, dtype=float)
 
-        op = qml.QSVT(
-            qml.BlockEncode(input_matrix, wires),
-            [qml.PCPhase(phi, 2, wires) for phi in angles],
+        op = qp.QSVT(
+            qp.BlockEncode(input_matrix, wires),
+            [qp.PCPhase(phi, 2, wires) for phi in angles],
         )
 
-        assert np.allclose(qml.matrix(op), default_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "torch"
+        assert np.allclose(qp.matrix(op), default_matrix)
+        assert qp.math.get_interface(qp.matrix(op)) == "torch"
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -362,21 +362,21 @@ class TestQSVT:
         """Test that the qsvt function matrix is correct for jax."""
         import jax.numpy as jnp
 
-        angles = qml.poly_to_angles(poly, "QSVT")
-        default_matrix = qml.matrix(
-            qml.qsvt(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
+        angles = qp.poly_to_angles(poly, "QSVT")
+        default_matrix = qp.matrix(
+            qp.qsvt(input_matrix, poly, encoding_wires=wires, block_encoding="embedding")
         )
 
         input_matrix = jnp.array(input_matrix)
         angles = jnp.array(angles)
 
-        op = qml.QSVT(
-            qml.BlockEncode(input_matrix, wires),
-            [qml.PCPhase(phi, 2, wires) for phi in angles],
+        op = qp.QSVT(
+            qp.BlockEncode(input_matrix, wires),
+            [qp.PCPhase(phi, 2, wires) for phi in angles],
         )
 
-        assert np.allclose(qml.matrix(op), default_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "jax"
+        assert np.allclose(qp.matrix(op), default_matrix)
+        assert qp.math.get_interface(qp.matrix(op)) == "jax"
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -394,21 +394,21 @@ class TestQSVT:
         import jax
 
         def identity_and_qsvt(angles):
-            qml.Identity(wires=wires[0])
-            qml.QSVT(
-                qml.BlockEncode(input_matrix, wires=wires),
+            qp.Identity(wires=wires[0])
+            qp.QSVT(
+                qp.BlockEncode(input_matrix, wires=wires),
                 [
-                    qml.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
+                    qp.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
                     for i in range(len(angles))
                 ],
             )
 
         @jax.jit
         def get_matrix_with_identity(angles):
-            return qml.matrix(identity_and_qsvt, wire_order=wires)(angles)
+            return qp.matrix(identity_and_qsvt, wire_order=wires)(angles)
 
-        angles = qml.poly_to_angles(poly, "QSVT")
-        matrix = qml.matrix(qml.qsvt(input_matrix, poly, wires, "embedding"))
+        angles = qp.poly_to_angles(poly, "QSVT")
+        matrix = qp.matrix(qp.qsvt(input_matrix, poly, wires, "embedding"))
         matrix_with_identity = get_matrix_with_identity(angles)
 
         assert np.allclose(matrix, matrix_with_identity)
@@ -422,19 +422,19 @@ class TestQSVT:
         """Test that the qsvt function matrix is correct for tensorflow."""
         import tensorflow as tf
 
-        angles = qml.poly_to_angles(poly, "QSVT")
-        default_matrix = qml.matrix(qml.qsvt(input_matrix, poly, wires, "embedding"))
+        angles = qp.poly_to_angles(poly, "QSVT")
+        default_matrix = qp.matrix(qp.qsvt(input_matrix, poly, wires, "embedding"))
 
         input_matrix = tf.Variable(input_matrix)
         angles = tf.Variable(angles)
 
-        op = qml.QSVT(
-            qml.BlockEncode(input_matrix, wires),
-            [qml.PCPhase(phi, 2, wires) for phi in angles],
+        op = qp.QSVT(
+            qp.BlockEncode(input_matrix, wires),
+            [qp.PCPhase(phi, 2, wires) for phi in angles],
         )
 
-        assert np.allclose(qml.matrix(op), default_matrix)
-        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
+        assert np.allclose(qp.matrix(op), default_matrix)
+        assert qp.math.get_interface(qp.matrix(op)) == "tensorflow"
 
     @pytest.mark.parametrize(
         ("A", "phis"),
@@ -446,21 +446,21 @@ class TestQSVT:
         ],
     )
     def test_QSVT_grad(self, A, phis):
-        """Test that qml.grad results are the same as finite difference results"""
+        """Test that qp.grad results are the same as finite difference results"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circuit(A, phis):
-            qml.QSVT(
-                qml.BlockEncode(A, wires=[0, 1]),
-                [qml.PCPhase(phi, 2, wires=[0, 1]) for phi in phis],
+            qp.QSVT(
+                qp.BlockEncode(A, wires=[0, 1]),
+                [qp.PCPhase(phi, 2, wires=[0, 1]) for phi in phis],
             )
-            return qml.expval(qml.PauliZ(wires=0))
+            return qp.expval(qp.PauliZ(wires=0))
 
         A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
         phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
         y = circuit(A, phis)
 
-        mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
+        mat_grad_results, phi_grad_results = qp.grad(circuit)(A, phis)
 
         diff = 1e-8
 
@@ -485,22 +485,22 @@ class TestQSVT:
 
     def test_label(self):
         """Test that the label method returns the correct string label"""
-        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)])
+        op = qp.QSVT(qp.Hadamard(0), [qp.Identity(0)])
         assert op.label() == "QSVT"
         assert op.label(base_label="custom_label") == "custom_label"
 
     def test_data(self):
         """Test that the data property gets and sets the correct values"""
-        op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        op = qp.QSVT(qp.RX(1, wires=0), [qp.RY(2, wires=0), qp.RZ(3, wires=0)])
         assert op.data == (1, 2, 3)
         op.data = [4, 5, 6]
         assert op.data == (4, 5, 6)
 
     def test_copy(self):
         """Test that a QSVT operator can be copied."""
-        orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
+        orig_op = qp.QSVT(qp.RX(1, wires=0), [qp.RY(2, wires=0), qp.RZ(3, wires=0)])
         copy_op = copy(orig_op)
-        qml.assert_equal(orig_op, copy_op)
+        qp.assert_equal(orig_op, copy_op)
 
         # Ensure the (nested) operations are copied instead of aliased.
         assert orig_op is not copy_op
@@ -524,7 +524,7 @@ phase_angle_data = (
 
 
 class Testqsvt:
-    """Test the qml.qsvt function."""
+    """Test the qp.qsvt function."""
 
     @pytest.mark.parametrize(
         ("A", "poly", "block_encoding", "encoding_wires"),
@@ -562,43 +562,43 @@ class Testqsvt:
         ],
     )
     def test_matrix_input(self, A, poly, encoding_wires, block_encoding):
-        """Test that qml.qsvt produces the correct output when A is a matrix."""
-        dev = qml.device("default.qubit", wires=encoding_wires)
+        """Test that qp.qsvt produces the correct output when A is a matrix."""
+        dev = qp.device("default.qubit", wires=encoding_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.qsvt(A, poly, encoding_wires, block_encoding)
-            return qml.state()
+            qp.qsvt(A, poly, encoding_wires, block_encoding)
+            return qp.state()
 
-        A_matrix = qml.math.atleast_2d(A)
+        A_matrix = qp.math.atleast_2d(A)
         # Calculation of the polynomial transformation on the input matrix
         expected = sum(coef * matrix_power(A_matrix, i) for i, coef in enumerate(poly))
 
-        assert np.allclose(qml.matrix(circuit)()[: len(A_matrix), : len(A_matrix)].real, expected)
+        assert np.allclose(qp.matrix(circuit)()[: len(A_matrix), : len(A_matrix)].real, expected)
 
     @pytest.mark.parametrize(
         ("A", "poly", "block_encoding", "encoding_wires"),
         [
             (
-                qml.Z(1) + qml.X(1),
+                qp.Z(1) + qp.X(1),
                 [0.2, 0, 0.3],
                 "prepselprep",
                 [0],
             ),
             (
-                qml.Z(2) + qml.X(2) - 0.2 * qml.X(3) @ qml.Z(2),
+                qp.Z(2) + qp.X(2) - 0.2 * qp.X(3) @ qp.Z(2),
                 [0, -0.2, 0, 0.5],
                 "prepselprep",
                 [0, 1],
             ),
             (
-                qml.Z(1) + qml.X(1),
+                qp.Z(1) + qp.X(1),
                 [0.2, 0, 0.3],
                 "qubitization",
                 [0],
             ),
             (
-                qml.Z(2) + qml.X(2) - 0.2 * qml.X(3) @ qml.Z(2),
+                qp.Z(2) + qp.X(2) - 0.2 * qp.X(3) @ qp.Z(2),
                 [0, -0.2, 0, 0.5],
                 "qubitization",
                 [0, 1],
@@ -606,24 +606,24 @@ class Testqsvt:
         ],
     )
     def test_ham_input(self, A, poly, encoding_wires, block_encoding):
-        """Test that qml.qsvt produces the correct output when A is a hamiltonian."""
+        """Test that qp.qsvt produces the correct output when A is a hamiltonian."""
 
         coeffs = A.terms()[0]
         coeffs /= np.linalg.norm(coeffs, 1)
 
-        A = qml.dot(coeffs, A.terms()[1])
-        A_matrix = qml.matrix(A)
-        dev = qml.device("default.qubit", wires=encoding_wires + A.wires)
+        A = qp.dot(coeffs, A.terms()[1])
+        A_matrix = qp.matrix(A)
+        dev = qp.device("default.qubit", wires=encoding_wires + A.wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.qsvt(A, poly, encoding_wires, block_encoding)
-            return qml.state()
+            qp.qsvt(A, poly, encoding_wires, block_encoding)
+            return qp.state()
 
         # Calculation of the polynomial transformation on the input matrix
         expected = sum(coef * matrix_power(A_matrix, i) for i, coef in enumerate(poly))
 
-        assert np.allclose(qml.matrix(circuit)()[: len(A_matrix), : len(A_matrix)].real, expected)
+        assert np.allclose(qp.matrix(circuit)()[: len(A_matrix), : len(A_matrix)].real, expected)
 
     @pytest.mark.parametrize(
         ("A", "poly", "block_encoding", "encoding_wires", "msg_match"),
@@ -642,8 +642,8 @@ class Testqsvt:
                 [0, 1],
                 "The subnormalization factor should be lower than 1",
             ),
-            (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "fable", [1], "block_encoding should take"),
-            (qml.Z(0) - qml.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
+            (qp.Z(0) - qp.X(0), [0.3, 0, 0.4], "fable", [1], "block_encoding should take"),
+            (qp.Z(0) - qp.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
         ],
     )
     def test_raise_error(
@@ -653,7 +653,7 @@ class Testqsvt:
 
         with pytest.raises(ValueError, match=msg_match):
 
-            qml.qsvt(A, poly, encoding_wires=encoding_wires, block_encoding=block_encoding)
+            qp.qsvt(A, poly, encoding_wires=encoding_wires, block_encoding=block_encoding)
 
     @pytest.mark.torch
     def test_qsvt_torch(self):
@@ -663,14 +663,14 @@ class Testqsvt:
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
 
-        default_op = qml.qsvt(A, poly, [0, 1, 2], "embedding")
-        default_matrix = torch.tensor(qml.matrix(default_op))
+        default_op = qp.qsvt(A, poly, [0, 1, 2], "embedding")
+        default_matrix = torch.tensor(qp.matrix(default_op))
 
-        torch_op = qml.qsvt(torch.tensor(A), torch.tensor(poly), [0, 1, 2], "embedding")
-        torch_matrix = qml.matrix(torch_op)
+        torch_op = qp.qsvt(torch.tensor(A), torch.tensor(poly), [0, 1, 2], "embedding")
+        torch_matrix = qp.matrix(torch_op)
 
-        assert qml.math.allclose(default_matrix, torch_matrix, atol=1e-6)
-        assert qml.math.get_interface(torch_matrix) == "torch"
+        assert qp.math.allclose(default_matrix, torch_matrix, atol=1e-6)
+        assert qp.math.get_interface(torch_matrix) == "torch"
 
     @pytest.mark.jax
     def test_qsvt_jax(self):
@@ -680,14 +680,14 @@ class Testqsvt:
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
 
-        default_op = qml.qsvt(A, poly, [0, 1, 2], "embedding")
-        default_matrix = jnp.array(qml.matrix(default_op))
+        default_op = qp.qsvt(A, poly, [0, 1, 2], "embedding")
+        default_matrix = jnp.array(qp.matrix(default_op))
 
-        jax_op = qml.qsvt(jnp.array(A), jnp.array(poly), [0, 1, 2], "embedding")
-        jax_matrix = qml.matrix(jax_op)
+        jax_op = qp.qsvt(jnp.array(A), jnp.array(poly), [0, 1, 2], "embedding")
+        jax_matrix = qp.matrix(jax_op)
 
-        assert qml.math.allclose(default_matrix, jax_matrix, atol=1e-6)
-        assert qml.math.get_interface(jax_matrix) == "jax"
+        assert qp.math.allclose(default_matrix, jax_matrix, atol=1e-6)
+        assert qp.math.get_interface(jax_matrix) == "jax"
 
     @pytest.mark.tf
     def test_qsvt_tensorflow(self):
@@ -697,33 +697,33 @@ class Testqsvt:
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
 
-        default_op = qml.qsvt(A, poly, [0, 1, 2], "embedding")
-        default_matrix = qml.matrix(default_op)
+        default_op = qp.qsvt(A, poly, [0, 1, 2], "embedding")
+        default_matrix = qp.matrix(default_op)
 
-        tf_op = qml.qsvt(tf.Variable(A), poly, [0, 1, 2], "embedding")
-        tf_matrix = qml.matrix(tf_op)
+        tf_op = qp.qsvt(tf.Variable(A), poly, [0, 1, 2], "embedding")
+        tf_matrix = qp.matrix(tf_op)
 
-        assert qml.math.allclose(default_matrix, tf_matrix, atol=1e-6)
-        assert qml.math.get_interface(tf_matrix) == "tensorflow"
+        assert qp.math.allclose(default_matrix, tf_matrix, atol=1e-6)
+        assert qp.math.get_interface(tf_matrix) == "tensorflow"
 
     @pytest.mark.jax
     def test_qsvt_grad(self):
-        """Test that the qsvt function generates the correct output with qml.grad and jax.grad."""
+        """Test that the qsvt function generates the correct output with qp.grad and jax.grad."""
         import jax
         import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(A):
-            qml.qsvt(A, poly, [0, 1, 2], "embedding")
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.qsvt(A, poly, [0, 1, 2], "embedding")
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
-        assert np.allclose(qml.grad(circuit)(np.array(A)), jax.grad(circuit)(jnp.array(A)))
-        assert not np.allclose(qml.grad(circuit)(np.array(A)), 0.0)
+        assert np.allclose(qp.grad(circuit)(np.array(A)), jax.grad(circuit)(jnp.array(A)))
+        assert not np.allclose(qp.grad(circuit)(np.array(A)), 0.0)
 
     @pytest.mark.jax
     def test_qsvt_jit(self):
@@ -738,12 +738,12 @@ class Testqsvt:
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(A):
-            qml.qsvt(A, poly, [0, 1, 2], "embedding")
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.qsvt(A, poly, [0, 1, 2], "embedding")
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
         not_jitted_output = circuit(jnp.array(A))
 
@@ -791,14 +791,14 @@ class TestRootFindingSolver:
     def test_transform_angles(self, angles):
         """Test the transform_angles function"""
 
-        new_angles = qml.transform_angles(angles, "QSP", "QSVT")
-        assert np.allclose(angles, qml.transform_angles(new_angles, "QSVT", "QSP"))
+        new_angles = qp.transform_angles(angles, "QSP", "QSVT")
+        assert np.allclose(angles, qp.transform_angles(new_angles, "QSVT", "QSP"))
 
-        new_angles = qml.transform_angles(angles, "QSVT", "QSP")
-        assert np.allclose(angles, qml.transform_angles(new_angles, "QSP", "QSVT"))
+        new_angles = qp.transform_angles(angles, "QSVT", "QSP")
+        assert np.allclose(angles, qp.transform_angles(new_angles, "QSP", "QSVT"))
 
         with pytest.raises(AssertionError, match="Invalid conversion"):
-            _ = qml.transform_angles(angles, "QFT", "QSVT")
+            _ = qp.transform_angles(angles, "QFT", "QSVT")
 
     @pytest.mark.parametrize(
         "poly",
@@ -819,20 +819,20 @@ class TestRootFindingSolver:
     def test_correctness_QSP_angles_finding(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
+        angles = qp.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit_qsp():
-            qml.RX(2 * angles[0], wires=0)
+            qp.RX(2 * angles[0], wires=0)
             for angle in angles[1:]:
-                qml.RZ(-2 * np.arccos(x), wires=0)
-                qml.RX(2 * angle, wires=0)
+                qp.RZ(-2 * np.arccos(x), wires=0)
+                qp.RX(2 * angle, wires=0)
 
-            return qml.state()
+            return qp.state()
 
-        output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
+        output = qp.matrix(circuit_qsp, wire_order=[0])()[0, 0]
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
@@ -856,20 +856,20 @@ class TestRootFindingSolver:
     def test_correctness_QSP_angles_finding_with_jax(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
+        angles = qp.poly_to_angles(list(poly), "QSP", angle_solver=angle_solver)
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit_qsp():
-            qml.RX(2 * angles[0], wires=0)
+            qp.RX(2 * angles[0], wires=0)
             for angle in angles[1:]:
-                qml.RZ(-2 * np.arccos(x), wires=0)
-                qml.RX(2 * angle, wires=0)
+                qp.RZ(-2 * np.arccos(x), wires=0)
+                qp.RX(2 * angle, wires=0)
 
-            return qml.state()
+            return qp.state()
 
-        output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
+        output = qp.matrix(circuit_qsp, wire_order=[0])()[0, 0]
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
@@ -892,21 +892,21 @@ class TestRootFindingSolver:
     def test_correctness_QSVT_angles(self, poly, angle_solver):
         """Tests that angles generate desired poly"""
 
-        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
+        angles = qp.poly_to_angles(list(poly), "QSVT", angle_solver=angle_solver)
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 
-        block_encoding = qml.RX(-2 * np.arccos(x), wires=0)
-        projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in angles]
+        block_encoding = qp.RX(-2 * np.arccos(x), wires=0)
+        projectors = [qp.PCPhase(angle, dim=1, wires=0) for angle in angles]
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit_qsvt():
-            qml.QSVT(block_encoding, projectors)
-            return qml.state()
+            qp.QSVT(block_encoding, projectors)
+            return qp.state()
 
-        output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+        output = qp.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
-        assert qml.math.isclose(output.real, expected.real)
+        assert qp.math.isclose(output.real, expected.real)
 
     @pytest.mark.parametrize(
         ("poly", "routine", "angle_solver", "msg_match"),
@@ -959,7 +959,7 @@ class TestRootFindingSolver:
         """Test that proper errors are raised"""
 
         with pytest.raises(AssertionError, match=msg_match):
-            _ = qml.poly_to_angles(poly, routine, angle_solver)
+            _ = qp.poly_to_angles(poly, routine, angle_solver)
 
 
 class TestIterativeSolver:
@@ -1007,7 +1007,7 @@ class TestIterativeSolver:
             )
         )
 
-        assert qml.math.isclose(
+        assert qp.math.isclose(
             _qsp_iterate_broadcast(phis, x_point, None),
             _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
             atol=tolerance,
@@ -1044,13 +1044,13 @@ class TestIterativeSolver:
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
     def test_z_rotation(self, angle):
         """Test internal function _z_rotation"""
-        assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
+        assert np.allclose(_z_rotation(angle, None), qp.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     def test_qsp_iterate(self, phi):
         """Test internal function _qsp_iterate"""
         mtx = _qsp_iterate(0.0, phi, None)
-        ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
+        ref = qp.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
     @pytest.mark.jax
@@ -1065,14 +1065,14 @@ class TestIterativeSolver:
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
         qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
-        ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
+        ref = qp.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
     def test_W_of_x(self, x):
         """Test internal function _W_of_x"""
         mtx = _W_of_x(x, None)
-        ref = qml.RX.compute_matrix(-2 * np.arccos(x))
+        ref = qp.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
     def test_immutable_input(self):
@@ -1080,7 +1080,7 @@ class TestIterativeSolver:
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         poly_copy = poly.copy()
-        qml.poly_to_angles(poly, "QSVT")
+        qp.poly_to_angles(poly, "QSVT")
 
         assert len(poly) == len(poly_copy)
         assert np.allclose(poly, poly_copy)
@@ -1089,12 +1089,12 @@ class TestIterativeSolver:
         """Test `poly_to_angles` works with numpy"""
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
-        angles = qml.poly_to_angles(poly, "QSVT")
+        angles = qp.poly_to_angles(poly, "QSVT")
 
         poly_numpy = np.array(poly)
-        angles_numpy = qml.poly_to_angles(poly_numpy, "QSVT")
+        angles_numpy = qp.poly_to_angles(poly_numpy, "QSVT")
 
-        assert qml.math.allclose(angles, angles_numpy)
+        assert qp.math.allclose(angles, angles_numpy)
 
     @pytest.mark.jax
     def test_interface_jax(self):
@@ -1103,12 +1103,12 @@ class TestIterativeSolver:
         import jax
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
-        angles = qml.poly_to_angles(poly, "QSVT")
+        angles = qp.poly_to_angles(poly, "QSVT")
 
         poly_jax = jax.numpy.array(poly)
-        angles_jax = qml.poly_to_angles(poly_jax, "QSVT")
+        angles_jax = qp.poly_to_angles(poly_jax, "QSVT")
 
-        assert qml.math.allclose(angles, angles_jax)
+        assert qp.math.allclose(angles, angles_jax)
 
     @pytest.mark.torch
     def test_interface_torch(self):
@@ -1117,12 +1117,12 @@ class TestIterativeSolver:
         import torch
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
-        angles = qml.poly_to_angles(poly, "QSVT")
+        angles = qp.poly_to_angles(poly, "QSVT")
 
         poly_torch = torch.tensor(poly)
-        angles_torch = qml.poly_to_angles(poly_torch, "QSVT")
+        angles_torch = qp.poly_to_angles(poly_torch, "QSVT")
 
-        assert qml.math.allclose(angles, angles_torch)
+        assert qp.math.allclose(angles, angles_torch)
 
     @pytest.mark.tf
     def test_interface_tf(self):
@@ -1131,9 +1131,9 @@ class TestIterativeSolver:
         import tensorflow as tf
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
-        angles = qml.poly_to_angles(poly, "QSVT")
+        angles = qp.poly_to_angles(poly, "QSVT")
 
         poly_tf = tf.Variable(poly)
-        angles_tf = qml.poly_to_angles(poly_tf, "QSVT")
+        angles_tf = qp.poly_to_angles(poly_tf, "QSVT")
 
-        assert qml.math.allclose(angles, angles_tf)
+        assert qp.math.allclose(angles, angles_tf)

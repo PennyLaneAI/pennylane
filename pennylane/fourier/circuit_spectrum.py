@@ -59,7 +59,7 @@ def circuit_spectrum(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will return a dictionary with the input-encoding gate ``id`` as keys and their frequency spectra as values.
 
 
@@ -106,23 +106,23 @@ def circuit_spectrum(
 
         n_layers = 2
         n_qubits = 3
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qp.device("default.qubit", wires=n_qubits)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, w):
             for l in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x[i], wires=i, id="x"+str(i))
-                    qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
-            qml.RZ(x[0], wires=0, id="x0")
-            return qml.expval(qml.Z(0))
+                    qp.RX(x[i], wires=i, id="x"+str(i))
+                    qp.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
+            qp.RZ(x[0], wires=0, id="x0")
+            return qp.expval(qp.Z(0))
 
         x = np.array([1, 2, 3])
         rng = np.random.default_rng(seed=42)
         w = rng.random((n_layers, n_qubits, 3))
-        res = qml.fourier.circuit_spectrum(circuit)(x, w)
+        res = qp.fourier.circuit_spectrum(circuit)(x, w)
 
-    >>> print(qml.draw(circuit)(x, w))
+    >>> print(qp.draw(circuit)(x, w))
     0: ──RX(1.00,"x0")──Rot(0.77,0.44,0.86)──RX(1.00,"x0")──Rot(0.45,0.37,0.93)──RZ(1.00,"x0")─┤  <Z>
     1: ──RX(2.00,"x1")──Rot(0.70,0.09,0.98)──RX(2.00,"x1")──Rot(0.64,0.82,0.44)────────────────┤
     2: ──RX(3.00,"x2")──Rot(0.76,0.79,0.13)──RX(3.00,"x2")──Rot(0.23,0.55,0.06)────────────────┤
@@ -144,17 +144,17 @@ def circuit_spectrum(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[0], wires=0, id="x0")
-            qml.RX(x[1], wires=0, id="x1")
-            return qml.expval(qml.Z(0))
+            qp.RX(x[0], wires=0, id="x0")
+            qp.PhaseShift(x[0], wires=0, id="x0")
+            qp.RX(x[1], wires=0, id="x1")
+            return qp.expval(qp.Z(0))
 
         x = np.array([1, 2])
-        res = qml.fourier.circuit_spectrum(circuit, encoding_gates=["x0"])(x)
+        res = qp.fourier.circuit_spectrum(circuit, encoding_gates=["x0"])(x)
 
     >>> for inp, freqs in res.items():
     ...     print(f"{inp}: {freqs}")
@@ -169,16 +169,16 @@ def circuit_spectrum(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[1], wires=0, id="x1")
-            return qml.expval(qml.Z(0))
+            qp.RX(x[0], wires=0, id="x0")
+            qp.PhaseShift(x[1], wires=0, id="x1")
+            return qp.expval(qp.Z(0))
 
         x = torch.tensor([1, 2])
-        res = qml.fourier.circuit_spectrum(circuit)(x)
+        res = qp.fourier.circuit_spectrum(circuit)(x)
 
     >>> for inp, freqs in res.items():
     ...     print(f"{inp}: {freqs}")

@@ -77,10 +77,10 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = qml.qchem.vibrational_pes(mol, optimize=False)
-    >>> integrals = qml.qchem.vibrational.christiansen_integrals(pes, n_states = 4)
-    >>> print(qml.qchem.christiansen_bosonic(integrals[0]))
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> pes = qp.qchem.vibrational_pes(mol, optimize=False)
+    >>> integrals = qp.qchem.vibrational.christiansen_integrals(pes, n_states = 4)
+    >>> print(qp.qchem.christiansen_bosonic(integrals[0]))
     0.010354801267111937 * b⁺(0) b(0)
     + 0.0019394049410426685 * b⁺(0) b(1)
     + 0.00046435758469677135 * b⁺(0) b(2)
@@ -260,9 +260,9 @@ def christiansen_hamiltonian(pes, n_states=16, cubic=False, wire_map=None, tol=1
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = qml.qchem.vibrational_pes(mol, optimize=False)
-    >>> qml.qchem.vibrational.christiansen_hamiltonian(pes, n_states = 4)
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> pes = qp.qchem.vibrational_pes(mol, optimize=False)
+    >>> qp.qchem.vibrational.christiansen_hamiltonian(pes, n_states = 4)
     (
         0.08527499987546708 * I(0)
       + -0.0051774006335491545 * Z(0)
@@ -363,9 +363,9 @@ def christiansen_dipole(pes, n_states=16):
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = qml.qchem.vibrational_pes(mol, optimize=False, dipole_level=3, cubic=True)
-    >>> dipole = qml.qchem.vibrational.christiansen_dipole(pes, n_states = 4)
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
+    >>> pes = qp.qchem.vibrational_pes(mol, optimize=False, dipole_level=3, cubic=True)
+    >>> dipole = qp.qchem.vibrational.christiansen_dipole(pes, n_states = 4)
     >>> dipole[2]
     (
         (-0.005512522132269153+0j) * I(0)

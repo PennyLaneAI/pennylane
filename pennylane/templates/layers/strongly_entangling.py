@@ -63,14 +63,14 @@ class StronglyEntanglingLayers(Operation):
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=4)
+            dev = qp.device('default.qubit', wires=4)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(parameters):
-                qml.StronglyEntanglingLayers(weights=parameters, wires=range(4))
-                return qml.expval(qml.Z(0))
+                qp.StronglyEntanglingLayers(weights=parameters, wires=range(4))
+                return qp.expval(qp.Z(0))
 
-            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+            shape = qp.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
             rng = np.random.default_rng(12345)
             weights = rng.random(size=shape)
 
@@ -78,7 +78,7 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, level="device")(weights))
+        >>> print(qp.draw(circuit, level="device")(weights))
         0: ──Rot(0.23,0.32,0.80)─╭●───────╭X──Rot(0.67,0.10,0.44)─╭●────╭X────┤  <Z>
         1: ──Rot(0.68,0.39,0.33)─╰X─╭●────│───Rot(0.89,0.70,0.33)─│──╭●─│──╭X─┤
         2: ──Rot(0.60,0.19,0.67)────╰X─╭●─│───Rot(0.73,0.22,0.08)─╰X─│──╰●─│──┤
@@ -102,20 +102,20 @@ class StronglyEntanglingLayers(Operation):
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=4)
+            dev = qp.device('default.qubit', wires=4)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(parameters):
-                qml.StronglyEntanglingLayers(weights=parameters, wires=range(4), ranges=[2, 3], imprimitive=qml.ops.CZ)
-                return qml.expval(qml.Z(0))
+                qp.StronglyEntanglingLayers(weights=parameters, wires=range(4), ranges=[2, 3], imprimitive=qp.ops.CZ)
+                return qp.expval(qp.Z(0))
 
-            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+            shape = qp.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
             rng = np.random.default_rng(12345)
             weights = rng.random(size=shape)
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, level="device")(weights))
+        >>> print(qp.draw(circuit, level="device")(weights))
         0: ──Rot(0.23,0.32,0.80)─╭●────╭Z──Rot(0.67,0.10,0.44)──────────────────────╭●─╭Z───────┤  <Z>
         1: ──Rot(0.68,0.39,0.33)─│──╭●─│──╭Z────────────────────Rot(0.89,0.70,0.33)─│──╰●─╭Z────┤
         2: ──Rot(0.60,0.19,0.67)─╰Z─│──╰●─│─────────────────────Rot(0.73,0.22,0.08)─│─────╰●─╭Z─┤
@@ -127,12 +127,12 @@ class StronglyEntanglingLayers(Operation):
         **Parameter shape**
 
         The expected shape for the weight tensor can be computed with the static method
-        :meth:`~.qml.StronglyEntanglingLayers.shape` and used when creating randomly
+        :meth:`~.qp.StronglyEntanglingLayers.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+            shape = qp.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
     """
@@ -211,7 +211,7 @@ class StronglyEntanglingLayers(Operation):
 
         >>> weights = torch.tensor([[[-0.2, 0.1, -0.4], [1.2, -2., -0.4]]])
         >>> ranges = (1,)
-        >>> ops = qml.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=ranges, imprimitive=qml.CNOT)
+        >>> ops = qp.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=ranges, imprimitive=qp.CNOT)
         >>> from pprint import pprint
         >>> pprint(ops)
         [Rot(tensor(-0.2000), tensor(0.1000), tensor(-0.4000), wires=['a']),

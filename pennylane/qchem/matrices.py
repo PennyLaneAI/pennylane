@@ -58,7 +58,7 @@ def mol_density_matrix(n_electron, c):
     >>> mol_density_matrix(n_electron, c)
     array([[0.30061941, 0.30061941], [0.30061941, 0.30061941]])
     """
-    p = qml.math.dot(c[:, : n_electron // 2], qml.math.conjugate(c[:, : n_electron // 2]).T)
+    p = qp.math.dot(c[:, : n_electron // 2], qp.math.conjugate(c[:, : n_electron // 2]).T)
     return p
 
 
@@ -77,7 +77,7 @@ def overlap_matrix(basis_functions):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> overlap_matrix(mol.basis_set)(*args)
     array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
@@ -93,22 +93,22 @@ def overlap_matrix(basis_functions):
             array[array[float]]: the overlap matrix
         """
         n = len(basis_functions)
-        matrix = qml.math.eye(n)
+        matrix = qp.math.eye(n)
 
         for (i, a), (j, b) in it.combinations(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
                 args_ab.extend(
                     (
-                        qml.math.array([arg[i], arg[j]], like="jax")
-                        if qml.math.get_deep_interface(arg) == "jax"
+                        qp.math.array([arg[i], arg[j]], like="jax")
+                        if qp.math.get_deep_interface(arg) == "jax"
                         else [arg[i], arg[j]]
                     )
                     for arg in args
                 )
             integral = overlap_integral(a, b, normalize=False)(*args_ab)
 
-            o = qml.math.zeros((n, n))
+            o = qp.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -134,7 +134,7 @@ def moment_matrix(basis_functions, order, idx):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> order, idx = 1, 0
     >>> moment_matrix(mol.basis_set, order, idx)(*args)
@@ -151,22 +151,22 @@ def moment_matrix(basis_functions, order, idx):
             array[array[float]]: the multipole moment matrix
         """
         n = len(basis_functions)
-        matrix = qml.math.zeros((n, n))
+        matrix = qp.math.zeros((n, n))
 
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
                 args_ab.extend(
                     (
-                        qml.math.array([arg[i], arg[j]], like="jax")
-                        if qml.math.get_deep_interface(arg) == "jax"
+                        qp.math.array([arg[i], arg[j]], like="jax")
+                        if qp.math.get_deep_interface(arg) == "jax"
                         else [arg[i], arg[j]]
                     )
                     for arg in args
                 )
             integral = moment_integral(a, b, order, idx, normalize=False)(*args_ab)
 
-            o = qml.math.zeros((n, n))
+            o = qp.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -190,7 +190,7 @@ def kinetic_matrix(basis_functions):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> kinetic_matrix(mol.basis_set)(*args)
     array([[0.76003189, 0.38325367], [0.38325367, 0.76003189]])
@@ -206,21 +206,21 @@ def kinetic_matrix(basis_functions):
             array[array[float]]: the kinetic matrix
         """
         n = len(basis_functions)
-        matrix = qml.math.zeros((n, n))
+        matrix = qp.math.zeros((n, n))
 
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
                 args_ab.extend(
                     (
-                        qml.math.array([arg[i], arg[j]], like="jax")
-                        if qml.math.get_deep_interface(arg) == "jax"
+                        qp.math.array([arg[i], arg[j]], like="jax")
+                        if qp.math.get_deep_interface(arg) == "jax"
                         else [arg[i], arg[j]]
                     )
                     for arg in args
                 )
             integral = kinetic_integral(a, b, normalize=False)(*args_ab)
-            o = qml.math.zeros((n, n))
+            o = qp.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -247,7 +247,7 @@ def attraction_matrix(basis_functions, charges, r):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-2.03852057, -1.60241667], [-1.60241667, -2.03852057]])
@@ -263,7 +263,7 @@ def attraction_matrix(basis_functions, charges, r):
             array[array[float]]: the electron-nuclear attraction matrix
         """
         n = len(basis_functions)
-        matrix = qml.math.zeros((n, n))
+        matrix = qp.math.zeros((n, n))
 
         requires_grad = _check_requires_grad(r, False, args, 0)
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
@@ -273,8 +273,8 @@ def attraction_matrix(basis_functions, charges, r):
                 if requires_grad:
                     args_ab.extend(
                         (
-                            qml.math.array([arg[i], arg[j]], like="jax")
-                            if qml.math.get_deep_interface(arg) == "jax"
+                            qp.math.array([arg[i], arg[j]], like="jax")
+                            if qp.math.get_deep_interface(arg) == "jax"
                             else [arg[i], arg[j]]
                         )
                         for arg in args[1:]
@@ -282,8 +282,8 @@ def attraction_matrix(basis_functions, charges, r):
                 else:
                     args_ab.extend(
                         (
-                            qml.math.array([arg[i], arg[j]], like="jax")
-                            if qml.math.get_deep_interface(arg) == "jax"
+                            qp.math.array([arg[i], arg[j]], like="jax")
+                            if qp.math.get_deep_interface(arg) == "jax"
                             else [arg[i], arg[j]]
                         )
                         for arg in args
@@ -302,7 +302,7 @@ def attraction_matrix(basis_functions, charges, r):
                         integral - charges[k] * attraction_integral(c, a, b, normalize=False)()
                     )
 
-            o = qml.math.zeros((n, n))
+            o = qp.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -327,7 +327,7 @@ def repulsion_tensor(basis_functions):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> repulsion_tensor(mol.basis_set)(*args)
     array([[[[0.77460595, 0.56886144], [0.56886144, 0.65017747]],
@@ -349,17 +349,17 @@ def repulsion_tensor(basis_functions):
             array[array[float]]: the electron repulsion tensor
         """
         n = len(basis_functions)
-        tensor = qml.math.zeros((n, n, n, n))
-        e_calc = qml.math.full((n, n, n, n), np.nan)
+        tensor = qp.math.zeros((n, n, n, n))
+        e_calc = qp.math.full((n, n, n, n), np.nan)
 
         for (i, a), (j, b), (k, c), (l, d) in it.product(enumerate(basis_functions), repeat=4):
-            if qml.math.isnan(e_calc[(i, j, k, l)]):
+            if qp.math.isnan(e_calc[(i, j, k, l)]):
                 args_abcd = []
                 if args:
                     args_abcd.extend(
                         (
-                            qml.math.array([arg[i], arg[j], arg[k], arg[l]], like="jax")
-                            if qml.math.get_deep_interface(arg) == "jax"
+                            qp.math.array([arg[i], arg[j], arg[k], arg[l]], like="jax")
+                            if qp.math.get_deep_interface(arg) == "jax"
                             else [arg[i], arg[j], arg[k], arg[l]]
                         )
                         for arg in args
@@ -377,7 +377,7 @@ def repulsion_tensor(basis_functions):
                     (k, l, j, i),
                 ]
 
-                o = qml.math.zeros((n, n, n, n))
+                o = qp.math.zeros((n, n, n, n))
                 for perm in permutations:
                     o[perm] = 1.0
                     e_calc[perm] = 1.0
@@ -406,7 +406,7 @@ def core_matrix(basis_functions, charges, r):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]])

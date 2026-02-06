@@ -56,11 +56,11 @@ class QutritBasisState(StatePrepBase):
 
     **Example**
 
-    >>> dev = qml.device('default.qutrit', wires=2)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qutrit', wires=2)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.QutritBasisState(np.array([2, 2]), wires=range(2))
-    ...     return qml.state()
+    ...     qp.QutritBasisState(np.array([2, 2]), wires=range(2))
+    ...     return qp.state()
     >>> print(example_circuit())
     [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
@@ -89,7 +89,7 @@ class QutritBasisState(StatePrepBase):
 
         **Example:**
 
-        >>> qml.QutritBasisState.compute_decomposition([1,0], wires=(0,1))
+        >>> qp.QutritBasisState.compute_decomposition([1,0], wires=(0,1))
         [QutritBasisStatePreparation(array([1, 0]), wires=[0, 1])]
 
         """

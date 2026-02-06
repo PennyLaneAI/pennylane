@@ -60,7 +60,7 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
-        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        the transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
@@ -71,21 +71,21 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
         import pennylane.transforms.zx as zx
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @zx.reduce_non_clifford
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.T(0)
-            qml.Hadamard(0)
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            qml.T(0)
-            qml.RX(x, 1)
-            qml.RX(y, 1)
-            return qml.state()
+            qp.T(0)
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            qp.T(0)
+            qp.RX(x, 1)
+            qp.RX(y, 1)
+            return qp.state()
 
-    >>> print(qml.draw(circuit)(3.2, -2.2))
+    >>> print(qp.draw(circuit)(3.2, -2.2))
     0: ──S─╭●─────────────────┤  State
     1: ────╰X──H──RZ(1.00)──H─┤  State
 

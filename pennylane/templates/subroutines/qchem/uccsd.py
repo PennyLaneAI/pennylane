@@ -140,31 +140,31 @@ class UCCSD(Operation):
             charge = 1
 
             # Build the electronic Hamiltonian
-            H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=charge)
+            H, qubits = qp.qchem.molecular_hamiltonian(symbols, geometry, charge=charge)
 
             # Define the HF state
-            hf_state = qml.qchem.hf_state(electrons, qubits)
+            hf_state = qp.qchem.hf_state(electrons, qubits)
 
             # Generate single and double excitations
-            singles, doubles = qml.qchem.excitations(electrons, qubits)
+            singles, doubles = qp.qchem.excitations(electrons, qubits)
 
             # Map excitations to the wires the UCCSD circuit will act on
-            s_wires, d_wires = qml.qchem.excitations_to_wires(singles, doubles)
+            s_wires, d_wires = qp.qchem.excitations_to_wires(singles, doubles)
 
             # Define the device
-            dev = qml.device("default.qubit", wires=qubits)
+            dev = qp.device("default.qubit", wires=qubits)
 
             # Define the qnode
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(params, wires, s_wires, d_wires, hf_state):
-                qml.UCCSD(params, wires, s_wires, d_wires, hf_state)
-                return qml.expval(H)
+                qp.UCCSD(params, wires, s_wires, d_wires, hf_state)
+                return qp.expval(H)
 
             # Define the initial values of the circuit parameters
             params = np.zeros(len(singles) + len(doubles))
 
             # Define the optimizer
-            optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
+            optimizer = qp.GradientDescentOptimizer(stepsize=0.5)
 
             # Optimize the circuit parameters and compute the energy
             for n in range(21):

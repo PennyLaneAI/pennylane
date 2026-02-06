@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.is_hermitian function.
+This module contains the qp.is_hermitian function.
 """
 from __future__ import annotations
 
@@ -44,11 +44,11 @@ def is_hermitian(op: Operator):
 
     **Example**
 
-    >>> op = qml.X(0)
-    >>> qml.is_hermitian(op)
+    >>> op = qp.X(0)
+    >>> qp.is_hermitian(op)
     True
-    >>> op2 = qml.RX(0.54, wires=0)
-    >>> qml.is_hermitian(op2)
+    >>> op2 = qp.RX(0.54, wires=0)
+    >>> qp.is_hermitian(op2)
     False
     """
     if op.is_verified_hermitian:

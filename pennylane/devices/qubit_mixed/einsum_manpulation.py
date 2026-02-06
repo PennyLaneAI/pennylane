@@ -22,7 +22,7 @@ alphabet_array = math.array(list(alphabet))
 
 
 def get_einsum_mapping(
-    op: qml.operation.Operator,
+    op: qp.operation.Operator,
     state,
     is_state_batched: bool = False,
 ):

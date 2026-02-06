@@ -110,7 +110,7 @@ def transmon_interaction(
     .. code-block::
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
-        H = qml.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
+        H = qp.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
 
     The resulting :class:`~.HardwareHamiltonian:` consists of ``4`` coupling terms and ``6`` qubits
     because there are six different wire indices in ``connections``.
@@ -125,7 +125,7 @@ def transmon_interaction(
 
         qubit_freqs = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
         couplings= [1., 2., 3., 4.]
-        H = qml.pulse.transmon_interaction(qubit_freq=qubit_freqs,
+        H = qp.pulse.transmon_interaction(qubit_freq=qubit_freqs,
                                            connections=connections,
                                            coupling=couplings,
                                            wires=range(6))
@@ -140,7 +140,7 @@ def transmon_interaction(
             "Currently only supporting qubits. Qutrits and qudits are planned in the future."
         )
 
-    # if wires is None and qml.math.ndim(omega) == 0:
+    # if wires is None and qp.math.ndim(omega) == 0:
     #     raise ValueError(
     #         f"Cannot instantiate wires automatically. Either need specific wires or a list of omega."
     #         f"Received wires {wires} and omega of type {type(omega)}"
@@ -190,7 +190,7 @@ def transmon_interaction(
 
     # TODO Qudit support. Currently not supported but will be in the future.
     # if d>2:
-    #     if qml.math.ndim(anharmonicity)==0:
+    #     if qp.math.ndim(anharmonicity)==0:
     #         anharmonicity = [anharmonicity] * n_wires
     #     if len(anharmonicity) != n_wires:
     #         raise ValueError(f"Number of qubit anharmonicities anharmonicity = {anharmonicity} does not match the provided wires = {wires}")
@@ -324,7 +324,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
         freq = 0
 
-        H = qml.pulse.transmon_drive(amp, phase, freq, 0)
+        H = qp.pulse.transmon_drive(amp, phase, freq, 0)
 
         t = 0.
         A = 1.
@@ -359,23 +359,23 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         qubit_freqs = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
         g = [0.02, 0.05]
-        H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
+        H = qp.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
         def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
-        freq = qml.pulse.constant  # Parametrized constant frequency
+        freq = qp.pulse.constant  # Parametrized constant frequency
         phase = 0.0
         time = 5
 
         for q in range(3):
-            H += qml.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
+            H += qp.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
 
-        dev = qml.device("default.qubit", wires=range(3))
+        dev = qp.device("default.qubit", wires=range(3))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(H)(params, time)
-            return qml.expval(qml.Z(0) + qml.Z(1) + qml.Z(2))
+            qp.evolve(H)(params, time)
+            return qp.expval(qp.Z(0) + qp.Z(1) + qp.Z(2))
 
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction

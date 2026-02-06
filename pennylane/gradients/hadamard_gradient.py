@@ -128,7 +128,7 @@ def hadamard_grad(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
         Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a
         nested tuple depending upon the nesting structure of measurements in the original circuit.
 
@@ -159,13 +159,13 @@ def hadamard_grad(
     to use during autodifferentiation:
 
     >>> import jax
-    >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
+    >>> dev = qp.device("default.qubit")
+    >>> @qp.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
     ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.Z(0)), qml.probs(wires=0)
+    ...     qp.RX(params[0], wires=0)
+    ...     qp.RY(params[1], wires=0)
+    ...     qp.RX(params[2], wires=0)
+    ...     return qp.expval(qp.Z(0)), qp.probs(wires=0)
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     (Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64), Array([[-0.1937586 , -0.09442393, -0.19177853],
@@ -178,13 +178,13 @@ def hadamard_grad(
 
         .. code-block:: pycon
 
-            >>> dev = qml.device('default.qubit')
-            >>> @qml.qnode(dev)
+            >>> dev = qp.device('default.qubit')
+            >>> @qp.qnode(dev)
             ... def circuit(x):
-            ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x )
-            ...     return qml.expval(qml.Z(0))
+            ...     qp.evolve(qp.X(0) @ qp.X(1) + qp.Z(0) @ qp.Z(1) + qp.H(0), x )
+            ...     return qp.expval(qp.Z(0))
             ...
-            >>> print( qml.draw(qml.gradients.hadamard_grad(circuit, aux_wire=2))(qml.numpy.array(0.5)) )
+            >>> print( qp.draw(qp.gradients.hadamard_grad(circuit, aux_wire=2))(qp.numpy.array(0.5)) )
             0: ─╭Exp(-0.50j 𝓗)─╭X────┤ ╭<Z@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
             2: ──H─────────────╰●──H─┤ ╰<Z@Y>
@@ -206,15 +206,15 @@ def hadamard_grad(
         as the ``diff_method`` argument of the QNode decorator, and differentiating with your
         preferred machine learning framework.
 
-        >>> dev = qml.device("default.qubit")
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device("default.qubit")
+        >>> @qp.qnode(dev)
         ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.Z(0))
-        >>> params = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.hadamard_grad(circuit, mode="auto", aux_wire=1)(params)
+        ...     qp.RX(params[0], wires=0)
+        ...     qp.RY(params[1], wires=0)
+        ...     qp.RX(params[2], wires=0)
+        ...     return qp.expval(qp.Z(0))
+        >>> params = qp.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qp.gradients.hadamard_grad(circuit, mode="auto", aux_wire=1)(params)
         tensor([-0.3875172 , -0.18884787, -0.38355704], requires_grad=True)
 
         This quantum gradient transform can also be applied to low-level
@@ -222,10 +222,10 @@ def hadamard_grad(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
-        >>> measurements = [qml.expval(qml.Z(0))]
-        >>> tape = qml.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape, mode="auto", aux_wire=1)
+        >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
+        >>> measurements = [qp.expval(qp.Z(0))]
+        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> gradient_tapes, fn = qp.gradients.hadamard_grad(tape, mode="auto", aux_wire=1)
         >>> gradient_tapes
         [<QuantumScript: wires=[0, 1], params=3>,
          <QuantumScript: wires=[0, 1], params=3>,
@@ -237,31 +237,31 @@ def hadamard_grad(
         Note that ``argnum`` refers to the index of a parameter within the list of trainable
         parameters. For example, if we have:
 
-        >>> tape = qml.tape.QuantumScript(
-        ...     [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-        ...     [qml.expval(qml.Z(0))],
+        >>> tape = qp.tape.QuantumScript(
+        ...     [qp.RX(1.2, wires=0), qp.RY(2.3, wires=0), qp.RZ(3.4, wires=0)],
+        ...     [qp.expval(qp.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qml.gradients.hadamard_grad(tape, argnum=1, mode="auto", aux_wire=1)  # doctest: +SKIP
+        >>> qp.gradients.hadamard_grad(tape, argnum=1, mode="auto", aux_wire=1)  # doctest: +SKIP
 
         The code above will differentiate the third parameter rather than the second.
 
         The output tapes can then be evaluated and post-processed to retrieve the gradient:
 
-        >>> dev = qml.device("default.qubit")
-        >>> fn(qml.execute(gradient_tapes, dev, None))
+        >>> dev = qp.device("default.qubit")
+        >>> fn(qp.execute(gradient_tapes, dev, None))
         [np.float64(-0.3875172020222171), np.float64(-0.18884787122715604), np.float64(-0.38355704238148114)]
 
         This transform can be registered directly as the quantum gradient transform
         to use during autodifferentiation:
 
-        >>> dev = qml.device("default.qubit")
-        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
+        >>> dev = qp.device("default.qubit")
+        >>> @qp.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
         ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.Z(0))
+        ...     qp.RX(params[0], wires=0)
+        ...     qp.RY(params[1], wires=0)
+        ...     qp.RX(params[2], wires=0)
+        ...     return qp.expval(qp.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
@@ -269,14 +269,14 @@ def hadamard_grad(
         If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
 
         >>> dev_wires = ("a", "c")
-        >>> dev = qml.device("default.qubit", wires=dev_wires)
+        >>> dev = qp.device("default.qubit", wires=dev_wires)
         >>> gradient_kwargs = {"aux_wire": "c"}
-        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs=gradient_kwargs)
+        >>> @qp.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs=gradient_kwargs)
         >>> def circuit(params):
-        ...    qml.RX(params[0], wires="a")
-        ...    qml.RY(params[1], wires="a")
-        ...    qml.RX(params[2], wires="a")
-        ...    return qml.expval(qml.Z("a"))
+        ...    qp.RX(params[0], wires="a")
+        ...    qp.RY(params[1], wires="a")
+        ...    qp.RX(params[2], wires="a")
+        ...    return qp.expval(qp.Z("a"))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
@@ -295,14 +295,14 @@ def hadamard_grad(
 
         .. code-block:: pycon
 
-            >>> dev = qml.device('default.qubit')
-            >>> @qml.qnode(dev)
+            >>> dev = qp.device('default.qubit')
+            >>> @qp.qnode(dev)
             ... def circuit(x):
-            ...     qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
-            ...     return qml.expval(qml.Z(0))
+            ...     qp.evolve(qp.X(0) @ qp.X(1) + qp.Z(0) @ qp.Z(1) + qp.H(0), x)
+            ...     return qp.expval(qp.Z(0))
             ...
-            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed', aux_wire=2)
-            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            >>> grad = qp.gradients.hadamard_grad(circuit, mode='reversed', aux_wire=2)
+            >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<(-1.00*𝓗)@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ ├<(-1.00*𝓗)@Y>
             2: ──H─────────────╰●──H─┤ ╰<(-1.00*𝓗)@Y>
@@ -314,8 +314,8 @@ def hadamard_grad(
 
         .. code-block:: pycon
 
-            >>> grad = qml.gradients.hadamard_grad(circuit, mode='direct')
-            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            >>> grad = qp.gradients.hadamard_grad(circuit, mode='direct')
+            >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤
             <BLANKLINE>
@@ -348,8 +348,8 @@ def hadamard_grad(
 
         .. code-block:: pycon
 
-            >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
-            >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+            >>> grad = qp.gradients.hadamard_grad(circuit, mode='reversed-direct')
+            >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤ ╭<-1.00*𝓗>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤ ╰<-1.00*𝓗>
             <BLANKLINE>
@@ -377,21 +377,21 @@ def hadamard_grad(
         most efficient choice. We don't supply an auxilliary wire, so we are choosing between ``direct``
         and ``reversed-direct`` modes.
 
-        >>> dev = qml.device('default.qubit')
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device('default.qubit')
+        >>> @qp.qnode(dev)
         ... def circuit(x):
-        ...     qml.evolve(qml.X(0) @ qml.X(1), x)
-        ...     return qml.expval(qml.Z(0) @ qml.Z(1) + qml.Y(0))
-        >>> grad = qml.gradients.hadamard_grad(circuit, mode='auto')
-        >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+        ...     qp.evolve(qp.X(0) @ qp.X(1), x)
+        ...     return qp.expval(qp.Z(0) @ qp.Z(1) + qp.Y(0))
+        >>> grad = qp.gradients.hadamard_grad(circuit, mode='auto')
+        >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
         0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j X@X)─┤ ╭<𝓗>
         1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j X@X)─┤ ╰<𝓗>
         <BLANKLINE>
         0: ─╭Exp(-0.50j X@X)─╭Exp(0.79j X@X)─┤ ╭<𝓗>
         1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j X@X)─┤ ╰<𝓗>
 
-        >>> grad = qml.gradients.hadamard_grad(circuit, mode='reversed-direct')
-        >>> print(qml.draw(grad)(qml.numpy.array(0.5)))
+        >>> grad = qp.gradients.hadamard_grad(circuit, mode='reversed-direct')
+        >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
         0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j Z@Z)─┤ ╭<-1.00*X@X>
         1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j Z@Z)─┤ ╰<-1.00*X@X>
         <BLANKLINE>
@@ -675,7 +675,7 @@ def _get_pauli_terms(op):
     if id_pw in pauli_rep:
         del pauli_rep[PauliWord({})]
 
-    # qml.PauliZ has no defined terms() behavior
+    # qp.PauliZ has no defined terms() behavior
     return (
         pauli_rep.operation().terms()
         if isinstance(pauli_rep.operation(), ops.op_math.Sum)

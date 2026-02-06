@@ -36,7 +36,7 @@ logger.addHandler(logging.NullHandler())
 # tolerance for numerical errors
 tolerance = 1e-10
 
-OMEGA = qml.math.exp(2 * np.pi * 1j / 3)
+OMEGA = qp.math.exp(2 * np.pi * 1j / 3)
 
 
 def _get_slice(index, axis, num_axes):
@@ -121,26 +121,26 @@ class DefaultQutrit(QutritDevice):
         "QutritBasisState",
     }
 
-    # Identity is supported as an observable for qml.state() to work correctly. However, any
-    # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
+    # Identity is supported as an observable for qp.state() to work correctly. However, any
+    # measurement types that rely on eigenvalue decomposition will not work with qp.Identity
     observables = {"THermitian", "GellMann", "Identity", "Prod"}
 
-    # Static methods to use qml.math to allow for backprop differentiation
-    _reshape = staticmethod(qml.math.reshape)
-    _flatten = staticmethod(qml.math.flatten)
-    _transpose = staticmethod(qml.math.transpose)
-    _dot = staticmethod(qml.math.dot)
-    _stack = staticmethod(qml.math.stack)
-    _conj = staticmethod(qml.math.conj)
-    _roll = staticmethod(qml.math.roll)
-    _cast = staticmethod(qml.math.cast)
-    _tensordot = staticmethod(qml.math.tensordot)
-    _real = staticmethod(qml.math.real)
-    _imag = staticmethod(qml.math.imag)
+    # Static methods to use qp.math to allow for backprop differentiation
+    _reshape = staticmethod(qp.math.reshape)
+    _flatten = staticmethod(qp.math.flatten)
+    _transpose = staticmethod(qp.math.transpose)
+    _dot = staticmethod(qp.math.dot)
+    _stack = staticmethod(qp.math.stack)
+    _conj = staticmethod(qp.math.conj)
+    _roll = staticmethod(qp.math.roll)
+    _cast = staticmethod(qp.math.cast)
+    _tensordot = staticmethod(qp.math.tensordot)
+    _real = staticmethod(qp.math.real)
+    _imag = staticmethod(qp.math.imag)
 
     @staticmethod
     def _reduce_sum(array, axes):
-        return qml.math.sum(array, tuple(axes))
+        return qp.math.sum(array, tuple(axes))
 
     @staticmethod
     def _asarray(array, dtype=None):
@@ -148,7 +148,7 @@ class DefaultQutrit(QutritDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
-        res = qml.math.cast(array, dtype=dtype)
+        res = qp.math.cast(array, dtype=dtype)
         return res
 
     @debug_logger_init
@@ -210,12 +210,12 @@ class DefaultQutrit(QutritDevice):
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
         for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, qml.QutritBasisState):
+            if i > 0 and isinstance(operation, qp.QutritBasisState):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other operations have already been applied "
                     f"on a {self.short_name} device."
                 )
-            if isinstance(operation, qml.QutritBasisState):
+            if isinstance(operation, qp.QutritBasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             else:
                 self._state = self._apply_operation(self._state, operation)
@@ -251,8 +251,8 @@ class DefaultQutrit(QutritDevice):
 
         # get computational basis state number
         basis_states = 3 ** (self.num_wires - 1 - np.array(device_wires))
-        basis_states = qml.math.convert_like(basis_states, state)
-        num = int(qml.math.dot(state, basis_states))
+        basis_states = qp.math.convert_like(basis_states, state)
+        num = int(qp.math.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 
@@ -273,7 +273,7 @@ class DefaultQutrit(QutritDevice):
         if operation.name in self._apply_ops:  # pylint: disable=no-else-return
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.name](state, axes)
-        elif isinstance(operation, qml.ops.Adjoint) and operation.base.name in self._apply_ops:
+        elif isinstance(operation, qp.ops.Adjoint) and operation.base.name in self._apply_ops:
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base.name](state, axes, inverse=True)
 

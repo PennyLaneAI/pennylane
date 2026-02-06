@@ -182,7 +182,7 @@ def _transform_observable(obs, Z, device_wires):
         A = A + A.T
 
     # TODO: if the A matrix corresponds to a known observable in PennyLane,
-    # for example qml.QuadX, qml.QuadP, qml.NumberOperator, we should return that
+    # for example qp.QuadX, qp.QuadP, qp.NumberOperator, we should return that
     # instead. This will allow for greater device compatibility.
     return PolyXP(A, wires=device_wires)
 
@@ -582,7 +582,7 @@ def param_shift_cv(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -620,29 +620,29 @@ def param_shift_cv(
 
       .. code-block:: python
 
-          @qml.qnode(dev)
+          @qp.qnode(dev)
           def circuit(weights):
               # Non-differentiable Fock operations
-              qml.FockState(np.array(2, requires_grad=False), wires=0)
-              qml.Kerr(np.array(0.654, requires_grad=False), wires=1)
+              qp.FockState(np.array(2, requires_grad=False), wires=0)
+              qp.Kerr(np.array(0.654, requires_grad=False), wires=1)
 
               # differentiable Gaussian operations
-              qml.Displacement(weights[0], weights[1], wires=0)
-              qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
+              qp.Displacement(weights[0], weights[1], wires=0)
+              qp.Beamsplitter(weights[2], weights[3], wires=[0, 1])
 
-              return qml.expval(qml.NumberOperator(0))
+              return qp.expval(qp.NumberOperator(0))
 
     * If a Fock operation succeeds a Gaussian operation, the Fock operation must
       not contribute to any measurements. For example, the following is allowed:
 
       .. code-block:: python
 
-          @qml.qnode(dev)
+          @qp.qnode(dev)
           def circuit(weights):
-              qml.Displacement(weights[0], weights[1], wires=0)
-              qml.Beamsplitter(weights[2], weights[3], wires=[0, 1])
-              qml.Kerr(np.array(0.654, requires_grad=False), wires=1)  # there is no measurement on wire 1
-              return qml.expval(qml.NumberOperator(0))
+              qp.Displacement(weights[0], weights[1], wires=0)
+              qp.Beamsplitter(weights[2], weights[3], wires=[0, 1])
+              qp.Kerr(np.array(0.654, requires_grad=False), wires=1)  # there is no measurement on wire 1
+              return qp.expval(qp.NumberOperator(0))
 
     If any of the above constraints are not followed, the tape cannot be differentiated
     via the CV parameter-shift rule. Please use numerical differentiation instead.
@@ -652,14 +652,14 @@ def param_shift_cv(
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
-    >>> dev = qml.device("default.gaussian", wires=2)
-    >>> @qml.qnode(dev, diff_method="parameter-shift")
+    >>> dev = qp.device("default.gaussian", wires=2)
+    >>> @qp.qnode(dev, diff_method="parameter-shift")
     ... def circuit(params):
-    ...     qml.Squeezing(params[0], params[1], wires=[0])
-    ...     qml.Squeezing(params[2], params[3], wires=[0])
-    ...     return qml.expval(qml.NumberOperator(0))
+    ...     qp.Squeezing(params[0], params[1], wires=[0])
+    ...     qp.Squeezing(params[2], params[3], wires=[0])
+    ...     return qp.expval(qp.NumberOperator(0))
     >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
+    >>> qp.jacobian(circuit)(params)
     array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
 
     .. details::
@@ -669,13 +669,13 @@ def param_shift_cv(
         However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
         of the QNode decorator, and differentiating with your preferred machine learning framework.
 
-        >>> @qml.qnode(dev)
+        >>> @qp.qnode(dev)
         ... def circuit(params):
-        ...     qml.Squeezing(params[0], params[1], wires=[0])
-        ...     qml.Squeezing(params[2], params[3], wires=[0])
-        ...     return qml.expval(qml.NumberOperator(0))
+        ...     qp.Squeezing(params[0], params[1], wires=[0])
+        ...     qp.Squeezing(params[2], params[3], wires=[0])
+        ...     return qp.expval(qp.NumberOperator(0))
         >>> params = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
-        >>> qml.gradients.param_shift_cv(circuit, dev)(params)
+        >>> qp.gradients.param_shift_cv(circuit, dev)(params)
         tensor([[ 0.87516064,  0.01273285,  0.88334834, -0.01273285]], requires_grad=True)
 
         This quantum gradient transform can also be applied to low-level
@@ -684,9 +684,9 @@ def param_shift_cv(
         function, which together define the gradient are directly returned:
 
         >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-        >>> ops = [qml.Squeezing(r0, phi0, wires=0), qml.Squeezing(r1, phi1, wires=0)]
-        >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.NumberOperator(0))])
-        >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        >>> ops = [qp.Squeezing(r0, phi0, wires=0), qp.Squeezing(r1, phi1, wires=0)]
+        >>> tape = qp.tape.QuantumTape(ops, [qp.expval(qp.NumberOperator(0))])
+        >>> gradient_tapes, fn = qp.gradients.param_shift_cv(tape, dev)
         >>> gradient_tapes
         [<QuantumTape: wires=[0], params=4>,
          <QuantumTape: wires=[0], params=4>,
@@ -699,8 +699,8 @@ def param_shift_cv(
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
-        >>> dev = qml.device("default.gaussian", wires=2)
-        >>> fn(qml.execute(gradient_tapes, dev, None))
+        >>> dev = qp.device("default.gaussian", wires=2)
+        >>> fn(qp.execute(gradient_tapes, dev, None))
         (-0.32487113372219933,
          -0.4054074025310772,
          -0.8704985300843778,

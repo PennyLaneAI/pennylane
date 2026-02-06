@@ -43,7 +43,7 @@ def _validate_computational_basis_sampling(tape):
 
     measurements = tape.measurements
     n_meas = len(measurements)
-    n_mcms = sum(qml.transforms.is_mcm(op) for op in tape.operations)
+    n_mcms = sum(qp.transforms.is_mcm(op) for op in tape.operations)
     non_comp_basis_sampling_obs = []
     comp_basis_sampling_obs = []
     comp_basis_indices = []
@@ -56,17 +56,17 @@ def _validate_computational_basis_sampling(tape):
 
     if non_comp_basis_sampling_obs:
         all_wires = []
-        empty_wires = qml.wires.Wires([])
+        empty_wires = qp.wires.Wires([])
         for idx, (cb_obs, global_idx) in enumerate(
             zip(comp_basis_sampling_obs, comp_basis_indices)
         ):
             if global_idx < n_meas - n_mcms:
                 if cb_obs.wires == empty_wires:
-                    all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
+                    all_wires = qp.wires.Wires.all_wires([m.wires for m in measurements])
                     break
                 all_wires.append(cb_obs.wires)
             if idx == len(comp_basis_sampling_obs) - 1:
-                all_wires = qml.wires.Wires.all_wires(all_wires)
+                all_wires = qp.wires.Wires.all_wires(all_wires)
 
         # This happens when a MeasurementRegisterMP is the only computational basis state measurement
         if all_wires == empty_wires:
@@ -76,14 +76,14 @@ def _validate_computational_basis_sampling(tape):
             QueuingManager.stop_recording()
         ):  # stop recording operations - the constructed operator is just aux
             pauliz_for_cb_obs = (
-                qml.Z(all_wires)
+                qp.Z(all_wires)
                 if len(all_wires) == 1
-                else qml.ops.Prod(*[qml.Z(w) for w in all_wires])
+                else qp.ops.Prod(*[qp.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
-            # Cover e.g., qml.probs(wires=wires) case by checking obs attr
-            if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
+            # Cover e.g., qp.probs(wires=wires) case by checking obs attr
+            if obs.obs is not None and not qp.pauli.utils.are_pauli_words_qwc(
                 [obs.obs, pauliz_for_cb_obs]
             ):
                 raise QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
@@ -98,7 +98,7 @@ def rotations_and_diagonal_measurements(tape):
         QueuingManager.stop_recording()
     ):  # stop recording operations to active context when computing qwc groupings
         try:
-            rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
+            rotations, diag_obs = qp.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
         except (TypeError, ValueError) as e:
             if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
                 raise QuantumFunctionError(
@@ -145,9 +145,9 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     Tapes can be constructed by directly providing operations and measurements:
 
-    >>> ops = [qml.BasisState([1, 0], wires=[0, 1]), qml.S(0), qml.T(1)]
-    >>> measurements = [qml.state()]
-    >>> tape = qml.tape.QuantumTape(ops, measurements)
+    >>> ops = [qp.BasisState([1, 0], wires=[0, 1]), qp.S(0), qp.T(1)]
+    >>> measurements = [qp.state()]
+    >>> tape = qp.tape.QuantumTape(ops, measurements)
     >>> tape.circuit
     [BasisState(array([1, 0]), wires=[0, 1]), S(0), T(1), state(wires=[])]
 
@@ -155,25 +155,25 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires=0)
-            qml.CNOT(wires=[0, 'a'])
-            qml.RX(0.133, wires='a')
-            qml.expval(qml.Z(0))
+        with qp.tape.QuantumTape() as tape:
+            qp.RX(0.432, wires=0)
+            qp.RY(0.543, wires=0)
+            qp.CNOT(wires=[0, 'a'])
+            qp.RX(0.133, wires='a')
+            qp.expval(qp.Z(0))
 
     A ``QuantumTape`` can also be constructed directly from an :class:`~.AnnotatedQueue`:
 
     .. code-block:: python
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires=0)
-            qml.CNOT(wires=[0, 'a'])
-            qml.RX(0.133, wires='a')
-            qml.expval(qml.Z(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(0.432, wires=0)
+            qp.RY(0.543, wires=0)
+            qp.CNOT(wires=[0, 'a'])
+            qp.RX(0.133, wires='a')
+            qp.expval(qp.Z(0))
 
-        tape = qml.tape.QuantumTape.from_queue(q)
+        tape = qp.tape.QuantumTape.from_queue(q)
 
     Once constructed, the tape may act as a quantum circuit and information
     about the quantum circuit can be queried:
@@ -219,8 +219,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Once constructed, the quantum tape can be executed directly on a supported
     device via the :func:`~.pennylane.execute` function:
 
-    >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-    >>> qml.execute([tape], dev, diff_method=None)
+    >>> dev = qp.device("default.qubit", wires=[0, 'a'])
+    >>> qp.execute([tape], dev, diff_method=None)
     (np.float64(0.7775069381227451),)
 
     A new tape can be created by passing new parameters along with the indices
@@ -237,10 +237,10 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape1:
-            with qml.QueuingManager.stop_recording():
-                with qml.tape.QuantumTape() as tape2:
-                    qml.RX(0.123, wires=0)
+        with qp.tape.QuantumTape() as tape1:
+            with qp.QueuingManager.stop_recording():
+                with qp.tape.QuantumTape() as tape2:
+                    qp.RX(0.123, wires=0)
 
     Here, tape2 records the RX gate, but tape1 doesn't record tape2.
 

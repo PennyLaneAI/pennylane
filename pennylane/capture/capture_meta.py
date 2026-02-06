@@ -41,12 +41,12 @@ class CaptureMeta(type):
 
     .. code-block::
 
-        qml.capture.enable()
+        qp.capture.enable()
 
         class AbstractMyObj(jax.core.AbstractValue):
             pass
 
-        class MyObj(metaclass=qml.capture.CaptureMeta):
+        class MyObj(metaclass=qp.capture.CaptureMeta):
 
             primitive = jax.extend.core.Primitive("MyObj")
 

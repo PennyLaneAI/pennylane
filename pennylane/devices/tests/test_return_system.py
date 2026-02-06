@@ -25,8 +25,8 @@ wires = [2, 3, 4]
 
 def qubit_ansatz(x):
     """Qfunc ansatz"""
-    qml.Hadamard(wires=[0])
-    qml.CRX(x, wires=[0, 1])
+    qp.Hadamard(wires=[0])
+    qp.CRX(x, wires=[0, 1])
 
 
 class TestIntegrationMultipleReturns:
@@ -42,15 +42,15 @@ class TestIntegrationMultipleReturns:
         if hasattr(dev, "observables") and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
-        obs1 = qml.Projector([0], wires=0)
-        obs2 = qml.Z(1)
+        obs1 = qp.Projector([0], wires=0)
+        obs2 = qp.Z(1)
         func = qubit_ansatz
 
         def circuit(x):
             func(x)
-            return qml.expval(obs1), qml.expval(obs2)
+            return qp.expval(obs1), qp.expval(obs2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -69,15 +69,15 @@ class TestIntegrationMultipleReturns:
         if hasattr(dev, "observables") and "Projector" not in dev.observables:
             pytest.skip("Skipped because device does not support the Projector observable.")
 
-        obs1 = qml.Projector([0], wires=0)
-        obs2 = qml.Z(1)
+        obs1 = qp.Projector([0], wires=0)
+        obs2 = qp.Z(1)
         func = qubit_ansatz
 
         def circuit(x):
             func(x)
-            return qml.var(obs1), qml.var(obs2)
+            return qp.var(obs1), qp.var(obs2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -95,9 +95,9 @@ class TestIntegrationMultipleReturns:
 
         def circuit(x):
             qubit_ansatz(x)
-            return qml.probs(op=qml.Z(0)), qml.probs(op=qml.Y(1))
+            return qp.probs(op=qp.Z(0)), qp.probs(op=qp.Y(1))
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -117,13 +117,13 @@ class TestIntegrationMultipleReturns:
         def circuit(x):
             qubit_ansatz(x)
             return (
-                qml.probs(wires=0),
-                qml.expval(qml.Z(0)),
-                qml.probs(op=qml.Y(1)),
-                qml.expval(qml.Y(1)),
+                qp.probs(wires=0),
+                qp.expval(qp.Z(0)),
+                qp.probs(op=qp.Y(1)),
+                qp.expval(qp.Y(1)),
             )
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)

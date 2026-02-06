@@ -49,12 +49,12 @@ class AmplitudeEmbedding(StatePrep):
 
             import pennylane as qp
 
-            dev = qml.device('default.qubit', wires=2)
+            dev = qp.device('default.qubit', wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2))
+                return qp.state()
 
             state = circuit(f=[1/2, 1/2, 1/2, 1/2])
 
@@ -75,10 +75,10 @@ class AmplitudeEmbedding(StatePrep):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+                return qp.state()
 
             state = circuit(f=[15, 15, 15, 15])
 
@@ -94,10 +94,10 @@ class AmplitudeEmbedding(StatePrep):
 
             from math import sqrt
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(f=None):
-                qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
-                return qml.state()
+                qp.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
+                return qp.state()
 
             state = circuit(f=[1/sqrt(2), 1/sqrt(2)])
 

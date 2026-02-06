@@ -87,8 +87,8 @@ def pause():
     """Temporarily stop program capture.
 
     >>> def f():
-    ...     with qml.capture.pause():
-    ...         qml.X(0)
+    ...     with qp.capture.pause():
+    ...         qp.X(0)
     ...     return 2
     >>> jax.make_jaxpr(f)()
     { lambda ; . let  in (2,) }

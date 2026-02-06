@@ -61,7 +61,7 @@ ar.register_function("builtins", "logical_xor", lambda x, y: x ^ y)
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
-# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+# qp.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
 ar.register_function("scipy", "coerce", lambda x: x)
 ar.register_function("scipy", "array", lambda x: x)
@@ -200,7 +200,7 @@ ar.register_function("builtins", "gamma", lambda x: _i("scipy").special.gamma(x)
 ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 
 # When dispatching to autograd, ensure that autoray will instead call
-# qml.numpy rather than autograd.numpy, to take into account our autograd modification.
+# qp.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
 ar.register_function("autograd", "ndim", lambda x: _i("autograd").numpy.ndim(x))

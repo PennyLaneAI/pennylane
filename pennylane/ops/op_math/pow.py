@@ -56,19 +56,19 @@ def pow(base, z=1, lazy=True, id=None):
 
         This operator supports a batched base, a batched coefficient and a combination of both:
 
-        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=4)
-        >>> qml.matrix(op).shape
+        >>> op = qp.pow(qp.RX([1, 2, 3], wires=0), z=4)
+        >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qml.pow(qml.RX(1, wires=0), z=[1, 2, 3])
-        >>> qml.matrix(op).shape
+        >>> op = qp.pow(qp.RX(1, wires=0), z=[1, 2, 3])
+        >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=[4, 5, 6])
-        >>> qml.matrix(op).shape
+        >>> op = qp.pow(qp.RX([1, 2, 3], wires=0), z=[4, 5, 6])
+        >>> qp.matrix(op).shape
         (3, 2, 2)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
+        >>> op = qp.pow([qp.RX(1, wires=0), qp.RX(2, wires=0)], z=4)
         Traceback (most recent call last):
             ...
         AttributeError: 'list' object has no attribute 'name'
@@ -77,13 +77,13 @@ def pow(base, z=1, lazy=True, id=None):
 
     **Example**
 
-    >>> qml.pow(qml.X(0), 0.5)
+    >>> qp.pow(qp.X(0), 0.5)
     X(0)**0.5
-    >>> qml.pow(qml.X(0), 0.5, lazy=False)
+    >>> qp.pow(qp.X(0), 0.5, lazy=False)
     SX(0)
-    >>> qml.pow(qml.X(0), 0.1, lazy=False)
+    >>> qp.pow(qp.X(0), 0.1, lazy=False)
     X(0)**0.1
-    >>> qml.pow(qml.X(0), 2, lazy=False)
+    >>> qp.pow(qp.X(0), 2, lazy=False)
     I(0)
 
     Lazy behaviour can also be accessed via ``op ** z``.
@@ -98,11 +98,11 @@ def pow(base, z=1, lazy=True, id=None):
 
     num_ops = len(pow_ops)
     if num_ops == 0:
-        pow_op = qml.Identity(base.wires, id=id)
+        pow_op = qp.Identity(base.wires, id=id)
     elif num_ops == 1:
         pow_op = pow_ops[0]
     else:
-        pow_op = qml.prod(*pow_ops)
+        pow_op = qp.prod(*pow_ops)
     QueuingManager.remove(base)
 
     return pow_op
@@ -117,16 +117,16 @@ class Pow(ScalarSymbolicOp):
 
     **Example**
 
-    >>> sqrt_x = Pow(qml.X(0), 0.5)
+    >>> sqrt_x = Pow(qp.X(0), 0.5)
     >>> sqrt_x.decomposition()
     [SX(0)]
-    >>> qml.matrix(sqrt_x)
+    >>> qp.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
            [0.5-0.5j, 0.5+0.5j]])
-    >>> qml.matrix(qml.SX(0))
+    >>> qp.matrix(qp.SX(0))
     array([[0.5+0.5j, 0.5-0.5j],
            [0.5-0.5j, 0.5+0.5j]])
-    >>> qml.matrix(Pow(qml.T(0), 1.234))
+    >>> qp.matrix(Pow(qp.T(0), 1.234))
     array([[1.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.56...+0.8244...j]])
 
@@ -155,7 +155,7 @@ class Pow(ScalarSymbolicOp):
         True
         >>> isinstance(Pow(op, z), type(Pow(op, z)))
         True
-        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is PowOperation
+        >>> Pow(qp.RX(1.2, wires=0), 0.5).__class__ is PowOperation
         True
 
         """
@@ -230,13 +230,13 @@ class Pow(ScalarSymbolicOp):
     def _matrix(scalar, mat):
         if isinstance(scalar, int):
             if (
-                qml.math.get_deep_interface(mat) == "tensorflow"
+                qp.math.get_deep_interface(mat) == "tensorflow"
             ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
                 # is not differentiable. So we use a custom implementation of matrix power for integer
                 # exponents below.
                 if scalar == 0:
-                    # Used instead of qml.math.eye for tracing derivatives
+                    # Used instead of qp.math.eye for tracing derivatives
                     return mat @ qmlmath.linalg.inv(mat)
                 if scalar > 0:
                     out = mat
@@ -276,7 +276,7 @@ class Pow(ScalarSymbolicOp):
             return False
         except Exception as e:
             # some pow methods cant handle a batched z
-            if qml.math.ndim(self.z) != 0:
+            if qp.math.ndim(self.z) != 0:
                 return False
             raise e
         return True
@@ -380,7 +380,7 @@ class Pow(ScalarSymbolicOp):
 
         """
         if isinstance(self.z, int):
-            return Pow(base=qml.adjoint(self.base), z=self.z)
+            return Pow(base=qp.adjoint(self.base), z=self.z)
         raise AdjointUndefinedError(
             "The adjoint of Pow operators only is well-defined for integer powers."
         )
@@ -391,14 +391,14 @@ class Pow(ScalarSymbolicOp):
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
-        base = self.base if qml.capture.enabled() else self.base.simplify()
+        base = self.base if qp.capture.enabled() else self.base.simplify()
         try:
             ops = base.pow(z=self.z)
             if not ops:
-                return qml.Identity(self.wires)
-            if not qml.capture.enabled():
+                return qp.Identity(self.wires)
+            if not qp.capture.enabled():
                 ops = [op.simplify() for op in ops]
-            return qml.prod(*ops) if len(ops) > 1 else ops[0]
+            return qp.prod(*ops) if len(ops) > 1 else ops[0]
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
 

@@ -22,25 +22,25 @@ import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@qml.prod
+@qp.prod
 def hadamards(wires):
     for wire in wires:
-        qml.Hadamard(wires=wire)
+        qp.Hadamard(wires=wire)
 
 
 @pytest.mark.jax
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
-    op = qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0])
-    qml.ops.functions.assert_valid(op)
+    op = qp.Reflection(qp.Hadamard(wires=0), 0.5, reflection_wires=[0])
+    qp.ops.functions.assert_valid(op)
 
 
 @pytest.mark.parametrize(
     ("prod", "reflection_wires"),
     [
-        (qml.QFT([0, 1, 4]), [0, 1, 2]),
-        (qml.QFT([0, 1, 2]), [3]),
-        (qml.QFT([0, 1, 2]), [0, 1, 2, 3]),
+        (qp.QFT([0, 1, 4]), [0, 1, 2]),
+        (qp.QFT([0, 1, 2]), [3]),
+        (qp.QFT([0, 1, 2]), [0, 1, 2, 3]),
     ],
 )
 def test_reflection_wires(prod, reflection_wires):
@@ -48,32 +48,32 @@ def test_reflection_wires(prod, reflection_wires):
     with pytest.raises(
         ValueError, match="The reflection wires must be a subset of the operation wires."
     ):
-        qml.Reflection(prod, 0.5, reflection_wires=reflection_wires)
+        qp.Reflection(prod, 0.5, reflection_wires=reflection_wires)
 
 
 @pytest.mark.parametrize(
     ("op", "expected"),
     [
         (
-            qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0]),
+            qp.Reflection(qp.Hadamard(wires=0), 0.5, reflection_wires=[0]),
             [
-                qml.GlobalPhase(np.pi),
-                qml.adjoint(qml.Hadamard(0)),
-                qml.PauliX(wires=[0]),
-                qml.PhaseShift(0.5, wires=[0]),
-                qml.PauliX(wires=[0]),
-                qml.Hadamard(0),
+                qp.GlobalPhase(np.pi),
+                qp.adjoint(qp.Hadamard(0)),
+                qp.PauliX(wires=[0]),
+                qp.PhaseShift(0.5, wires=[0]),
+                qp.PauliX(wires=[0]),
+                qp.Hadamard(0),
             ],
         ),
         (
-            qml.Reflection(qml.QFT(wires=[0, 1]), 0.5),
+            qp.Reflection(qp.QFT(wires=[0, 1]), 0.5),
             [
-                qml.GlobalPhase(np.pi),
-                qml.adjoint(qml.QFT(wires=[0, 1])),
-                qml.PauliX(wires=[1]),
-                qml.ctrl(qml.PhaseShift(0.5, wires=[1]), control=0, control_values=[0]),
-                qml.PauliX(wires=[1]),
-                qml.QFT(wires=[0, 1]),
+                qp.GlobalPhase(np.pi),
+                qp.adjoint(qp.QFT(wires=[0, 1])),
+                qp.PauliX(wires=[1]),
+                qp.ctrl(qp.PhaseShift(0.5, wires=[1]), control=0, control_values=[0]),
+                qp.PauliX(wires=[1]),
+                qp.QFT(wires=[0, 1]),
             ],
         ),
     ],
@@ -87,21 +87,21 @@ def test_decomposition(op, expected):
 @pytest.mark.parametrize(
     ("op"),
     [
-        qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0]),
-        qml.Reflection(qml.QFT(wires=[0, 1]), 0.5),
+        qp.Reflection(qp.Hadamard(wires=0), 0.5, reflection_wires=[0]),
+        qp.Reflection(qp.QFT(wires=[0, 1]), 0.5),
     ],
 )
 def test_decomposition_new(op):
     """Tests the decomposition rule implemented with the new system."""
-    for rule in qml.list_decomps(qml.Reflection):
+    for rule in qp.list_decomps(qp.Reflection):
         _test_decomposition_rule(op, rule)
 
 
 def test_default_values():
     """Test that the default values are correct"""
 
-    U = qml.QFT(wires=[0, 1, 4])
-    op = qml.Reflection(U)
+    U = qp.QFT(wires=[0, 1, 4])
+    op = qp.Reflection(U)
 
     assert op.alpha == np.pi
     assert op.reflection_wires == U.wires
@@ -111,8 +111,8 @@ def test_default_values():
 def test_grover_as_reflection(n_wires):
     """Test that the GroverOperator can be used as a Reflection operator"""
 
-    grover_matrix = qml.matrix(qml.GroverOperator(wires=range(n_wires)))
-    reflection_matrix = qml.matrix(qml.Reflection(hadamards(wires=range(n_wires))))
+    grover_matrix = qp.matrix(qp.GroverOperator(wires=range(n_wires)))
+    reflection_matrix = qp.matrix(qp.Reflection(hadamards(wires=range(n_wires))))
 
     assert np.allclose(grover_matrix, reflection_matrix)
 
@@ -123,12 +123,12 @@ class TestIntegration:
     @staticmethod
     def circuit(alpha):
         """Test circuit"""
-        qml.RY(1.2, wires=0)
-        qml.RY(-1.4, wires=1)
-        qml.RX(-2, wires=0)
-        qml.CRX(1, wires=[0, 1])
-        qml.Reflection(hadamards(range(3)), alpha)
-        return qml.probs(wires=range(3))
+        qp.RY(1.2, wires=0)
+        qp.RY(-1.4, wires=1)
+        qp.RX(-2, wires=0)
+        qp.CRX(1, wires=[0, 1])
+        qp.Reflection(hadamards(range(3)), alpha)
+        return qp.probs(wires=range(3))
 
     x = np.array(0.25)
 
@@ -161,8 +161,8 @@ class TestIntegration:
 
     def test_qnode_numpy(self):
         """Test that the QNode executes with Numpy."""
-        dev = qml.device("default.qubit")
-        qnode = qml.QNode(self.circuit, dev, interface=None)
+        dev = qp.device("default.qubit")
+        qnode = qp.QNode(self.circuit, dev, interface=None)
 
         res = qnode(self.x)
         assert res.shape == (8,)
@@ -170,8 +170,8 @@ class TestIntegration:
 
     def test_lightning_qubit(self):
         """Test that the QNode executes with the Lightning Qubit simulator."""
-        dev = qml.device("lightning.qubit", wires=3)
-        qnode = qml.QNode(self.circuit, dev)
+        dev = qp.device("lightning.qubit", wires=3)
+        qnode = qp.QNode(self.circuit, dev)
 
         res = qnode(self.x)
         assert res.shape == (8,)
@@ -184,19 +184,19 @@ class TestIntegration:
     def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit", wires=3, seed=seed)
+        dev = qp.device("default.qubit", wires=3, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
         )
 
-        x = qml.numpy.array(self.x, requires_grad=True)
+        x = qp.numpy.array(self.x, requires_grad=True)
         res = qnode(x)
-        assert qml.math.shape(res) == (8,)
+        assert qp.math.shape(res) == (8,)
 
         assert np.allclose(res, self.exp_result, atol=0.005)
 
-        res = qml.jacobian(qnode)(x)
+        res = qp.jacobian(qnode)(x)
         assert np.shape(res) == (8,)
 
         assert np.allclose(res, self.exp_jac, atol=0.005)
@@ -222,18 +222,18 @@ class TestIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", seed=seed)
+        dev = qp.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
         )
         if use_jit:
             qnode = jax.jit(qnode)
 
         x = jax.numpy.array(self.x)
         res = qnode(x)
-        assert qml.math.shape(res) == (8,)
+        assert qp.math.shape(res) == (8,)
 
         assert np.allclose(res, self.exp_result, atol=0.005)
 
@@ -254,23 +254,23 @@ class TestIntegration:
 
         import torch
 
-        dev = qml.device("default.qubit", seed=seed)
+        dev = qp.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
         )
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
-        assert qml.math.shape(res) == (8,)
+        assert qp.math.shape(res) == (8,)
 
-        assert qml.math.allclose(res, self.exp_result, atol=0.005)
+        assert qp.math.allclose(res, self.exp_result, atol=0.005)
 
         jac = torch.autograd.functional.jacobian(qnode, x)
-        assert qml.math.shape(jac) == (8,)
+        assert qp.math.shape(jac) == (8,)
 
-        assert qml.math.allclose(jac, self.exp_jac, atol=0.005)
+        assert qp.math.allclose(jac, self.exp_jac, atol=0.005)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -280,56 +280,56 @@ class TestIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", seed=seed)
+        dev = qp.device("default.qubit", seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
         )
 
         x = tf.Variable(self.x)
         with tf.GradientTape() as tape:
             res = qnode(x)
 
-        assert qml.math.shape(res) == (8,)
-        assert qml.math.allclose(res, self.exp_result, atol=0.002)
+        assert qp.math.shape(res) == (8,)
+        assert qp.math.allclose(res, self.exp_result, atol=0.002)
 
         jac = tape.gradient(res, x)
-        assert qml.math.shape(jac) == (8,)
+        assert qp.math.shape(jac) == (8,)
 
 
 def test_correct_queueing():
     """Test that the Reflection operator is correctly queued in the circuit"""
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit1():
-        qml.Hadamard(wires=0)
-        qml.RY(2, wires=0)
-        qml.CRY(1, wires=[0, 1])
-        qml.Reflection(U=qml.Hadamard(wires=0), alpha=2.0)
-        return qml.state()
+        qp.Hadamard(wires=0)
+        qp.RY(2, wires=0)
+        qp.CRY(1, wires=[0, 1])
+        qp.Reflection(U=qp.Hadamard(wires=0), alpha=2.0)
+        return qp.state()
 
-    @qml.prod
+    @qp.prod
     def generator(wires):
-        qml.Hadamard(wires=wires)
+        qp.Hadamard(wires=wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit2():
         generator(wires=0)
-        qml.RY(2, wires=0)
-        qml.CRY(1, wires=[0, 1])
-        qml.Reflection(U=generator(wires=0), alpha=2.0)
-        return qml.state()
+        qp.RY(2, wires=0)
+        qp.CRY(1, wires=[0, 1])
+        qp.Reflection(U=generator(wires=0), alpha=2.0)
+        return qp.state()
 
     U = generator(0)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit3():
         generator(wires=0)
-        qml.RY(2, wires=0)
-        qml.CRY(1, wires=[0, 1])
-        qml.Reflection(U=U, alpha=2.0)
-        return qml.state()
+        qp.RY(2, wires=0)
+        qp.CRY(1, wires=[0, 1])
+        qp.Reflection(U=U, alpha=2.0)
+        return qp.state()
 
     assert np.allclose(circuit1(), circuit2())
     assert np.allclose(circuit1(), circuit3())
@@ -341,13 +341,13 @@ def test_correct_queueing():
 def test_correct_reflection(state):
     """Test that the Reflection operator is correctly applied to the state."""
 
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.StatePrep(state, wires=0)
-        qml.Reflection(U=qml.Hadamard(wires=0))
-        return qml.state()
+        qp.StatePrep(state, wires=0)
+        qp.Reflection(U=qp.Hadamard(wires=0))
+        return qp.state()
 
     output = circuit()
     expected = np.array(output[::-1])

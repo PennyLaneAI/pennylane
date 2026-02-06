@@ -103,7 +103,7 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
 
 @_get_op_call_graph.register
 def _(op: qtemps.subroutines.TrotterizedQfunc):
-    """Call graph for qml.trotterize"""
+    """Call graph for qp.trotterize"""
 
     # From ResourceTrotterizedQfunc
     n = op.hyperparameters["n"]
@@ -842,7 +842,7 @@ def bloq_registers(bloq: "qt.Bloq"):
     >>> from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
     >>> from qualtran.bloqs.basic_gates import ZPowGate
     >>> textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
-    >>> qml.bloq_registers(textbook_qpe_small)
+    >>> qp.bloq_registers(textbook_qpe_small)
     {'q': Wires([0]), 'qpe_reg': Wires([1, 2, 3])}
     """
 
@@ -861,7 +861,7 @@ def bloq_registers(bloq: "qt.Bloq"):
 
 
 def _get_named_registers(regs):
-    """Returns a ``qml.registers`` object associated with the named registers in the bloq"""
+    """Returns a ``qp.registers`` object associated with the named registers in the bloq"""
 
     temp_register_dict = {reg.name: reg.total_bits() for reg in regs}
 
@@ -918,31 +918,31 @@ class FromBloq(Operation):
 
     **Example**
 
-    This example shows how to use ``qml.FromBloq``:
+    This example shows how to use ``qp.FromBloq``:
 
     >>> from qualtran.bloqs.basic_gates import CNOT
-    >>> qualtran_cnot = qml.FromBloq(CNOT(), wires=[0, 1])
+    >>> qualtran_cnot = qp.FromBloq(CNOT(), wires=[0, 1])
     >>> qualtran_cnot.matrix()
     array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
        [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
        [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
        [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
 
-    This example shows how to use ``qml.FromBloq`` inside a device:
+    This example shows how to use ``qp.FromBloq`` inside a device:
 
     >>> from qualtran.bloqs.basic_gates import CNOT
-    >>> dev = qml.device("default.qubit") # Execute on device
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit") # Execute on device
+    >>> @qp.qnode(dev)
     ... def circuit():
-    ...     qml.FromBloq(CNOT(), wires=[0, 1])
-    ...     return qml.state()
+    ...     qp.FromBloq(CNOT(), wires=[0, 1])
+    ...     return qp.state()
     >>> circuit()
     array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
 
     .. details::
         :title: Advanced Example
 
-        This example shows how to use ``qml.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
+        This example shows how to use ``qp.FromBloq`` to implement a textbook Quantum Phase Estimation Bloq inside a device:
 
         .. code-block::
 
@@ -964,22 +964,22 @@ class FromBloq(Operation):
             textbook_qpe = TextbookQPE(trott_unitary, RectangularWindowState(3))
 
             # Execute on device
-            dev = qml.device("default.qubit")
-            @qml.qnode(dev)
+            dev = qp.device("default.qubit")
+            @qp.qnode(dev)
             def circuit():
-                qml.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
-                return qml.probs(wires=[5, 6, 7])
+                qp.FromBloq(textbook_qpe, wires=range(textbook_qpe.signature.n_qubits()))
+                return qp.probs(wires=[5, 6, 7])
 
             circuit()
 
     .. details::
         :title: Usage Details
 
-        The decomposition of a ``Bloq`` wrapped in ``qml.FromBloq`` may use more wires than expected.
+        The decomposition of a ``Bloq`` wrapped in ``qp.FromBloq`` may use more wires than expected.
         For example, when we wrap Qualtran's ``CZPowGate``, we get
 
         >>> from qualtran.bloqs.basic_gates import CZPowGate
-        >>> qml.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
+        >>> qp.FromBloq(CZPowGate(0.468, eps=1e-11), wires=[0, 1]).decomposition()
         [FromBloq(And, wires=Wires([0, 1, 'alloc_free_2'])),
         FromBloq(Z**0.468, wires=Wires(['alloc_free_2'])),
         FromBloq(And†, wires=Wires([0, 1, 'alloc_free_2']))]
@@ -1232,13 +1232,13 @@ class ToBloq(Bloq):
 
     **Example**
 
-    This example shows how to use ``qml.ToBloq``:
+    This example shows how to use ``qp.ToBloq``:
 
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
-    >>> op = qml.QuantumPhaseEstimation(
-    ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
+    >>> op = qp.QuantumPhaseEstimation(
+    ...     qp.RX(0.2, wires=[0]), estimation_wires=[1, 2]
     ... )
-    >>> op_as_bloq = qml.ToBloq(op)
+    >>> op_as_bloq = qp.ToBloq(op)
     >>> graph, sigma = op_as_bloq.call_graph(generalize_rotation_angle)
     >>> sigma
     {Hadamard(): 4,
@@ -1466,13 +1466,13 @@ def to_bloq(
 
     **Example**
 
-    This example shows how to use ``qml.to_bloq``:
+    This example shows how to use ``qp.to_bloq``:
 
     >>> from qualtran.resource_counting.generalizers import generalize_rotation_angle
-    >>> op = qml.QuantumPhaseEstimation(
-    ...     qml.RX(0.2, wires=[0]), estimation_wires=[1, 2]
+    >>> op = qp.QuantumPhaseEstimation(
+    ...     qp.RX(0.2, wires=[0]), estimation_wires=[1, 2]
     ... )
-    >>> op_as_bloq = qml.to_bloq(op)
+    >>> op_as_bloq = qp.to_bloq(op)
     >>> graph, sigma = op_as_bloq.call_graph(generalize_rotation_angle)
     >>> sigma
     {Allocate(dtype=QFxp(bitsize=2, num_frac=2, signed=False), dirty=False): 1,
@@ -1487,11 +1487,11 @@ def to_bloq(
         :title: Usage Details
 
         Some PennyLane operators don't have a direct equivalent in Qualtran. For example, in Qualtran, there
-        are many varieties of Quantum Phase Estimation. When ``qml.to_bloq`` is called on
+        are many varieties of Quantum Phase Estimation. When ``qp.to_bloq`` is called on
         :class:`~pennylane.QuantumPhaseEstimation`, a smart default is chosen.
 
-        >>> qml.to_bloq(qml.QuantumPhaseEstimation(
-        ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        >>> qp.to_bloq(qp.QuantumPhaseEstimation(
+        ...     unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
         ... ))
         TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=RectangularWindowState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
 
@@ -1502,8 +1502,8 @@ def to_bloq(
         from PennyLane or from the :mod:`~.estimator` module, set ``call_graph`` to either
         ``'decomposition'`` or ``'estimator'`` respectively.
 
-        >>> qml.to_bloq(qml.QuantumPhaseEstimation(
-        ...     unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        >>> qp.to_bloq(qp.QuantumPhaseEstimation(
+        ...     unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
         ... ), map_ops=False)
         ToBloq(QuantumPhaseEstimation)
 
@@ -1514,16 +1514,16 @@ def to_bloq(
 
         >>> from qualtran.bloqs.phase_estimation import TextbookQPE
         >>> from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
-        >>> op = qml.QuantumPhaseEstimation(
-        ...         unitary=qml.RX(0.1, wires=0), estimation_wires=range(1, 5)
+        >>> op = qp.QuantumPhaseEstimation(
+        ...         unitary=qp.RX(0.1, wires=0), estimation_wires=range(1, 5)
         ...     )
         >>> custom_mapping = {
         ...     op : TextbookQPE(
-        ...         unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
+        ...         unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
         ...         ctrl_state_prep=LPResourceState(4),
         ...     )
         ... }
-        >>> qml.to_bloq(op, custom_mapping=custom_mapping)
+        >>> qp.to_bloq(op, custom_mapping=custom_mapping)
         TextbookQPE(unitary=Rx(angle=0.1, eps=1e-11), ctrl_state_prep=LPResourceState(bitsize=4), qft_inv=Adjoint(subbloq=QFTTextBook(bitsize=4, with_reverse=True)))
 
     """

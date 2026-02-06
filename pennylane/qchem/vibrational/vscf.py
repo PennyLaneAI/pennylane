@@ -412,7 +412,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
     ...                 [0.00233724, 0.02958449, 0.00675431, 0.0021936],
     ...                 [0.0007408,  0.00675431, 0.0506012,  0.01280986],
     ...                 [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
-    >>> qml.qchem.vscf_integrals(h_integrals=[h1], modals=[4,4,4])
+    >>> qp.qchem.vscf_integrals(h_integrals=[h1], modals=[4,4,4])
     ([array([[[ 9.36124041e-03, -4.20128342e-19,  3.25260652e-19,
             1.08420217e-18],
             [-9.21571847e-19,  2.77803512e-02, -3.46944695e-18,

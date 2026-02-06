@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file generates the images used in docstrings for``qml.circuit_drawer.tape_mpl``.
+This file generates the images used in docstrings for``qp.circuit_drawer.tape_mpl``.
 This makes it easier to keep docstrings up to date with the latest styling.
 
 It is not intended to be used in any Continuous Integration, but save time and hassle
@@ -39,10 +39,10 @@ def default(tape):
 
 def decimals():
 
-    with qml.tape.QuantumTape() as tape2:
-        qml.RX(1.23456, wires=0)
-        qml.Rot(1.2345, 2.3456, 3.456, wires=0)
-        qml.expval(qml.PauliZ(0))
+    with qp.tape.QuantumTape() as tape2:
+        qp.RX(1.23456, wires=0)
+        qp.Rot(1.2345, 2.3456, 3.456, wires=0)
+        qp.expval(qp.PauliZ(0))
 
     fig, ax = tape_mpl(tape2, decimals=2)
     plt.savefig(folder / "decimals.png")
@@ -126,12 +126,12 @@ def postprocessing(tape):
 
 
 def mid_measure():
-    with qml.queuing.AnnotatedQueue() as q:
-        m0 = qml.measure(0)
-        qml.Hadamard(1)
-        qml.cond(m0, qml.PauliZ)(1)
+    with qp.queuing.AnnotatedQueue() as q:
+        m0 = qp.measure(0)
+        qp.Hadamard(1)
+        qp.cond(m0, qp.PauliZ)(1)
 
-    circuit = qml.tape.QuantumScript.from_queue(q)
+    circuit = qp.tape.QuantumScript.from_queue(q)
     _ = tape_mpl(circuit)
     plt.savefig(folder / "mid_measure.png")
     plt.close()
@@ -139,14 +139,14 @@ def mid_measure():
 
 if __name__ == "__main__":
 
-    with qml.tape.QuantumTape() as tape:
-        qml.QFT(wires=(0, 1, 2, 3))
-        qml.IsingXX(1.234, wires=(0, 2))
-        qml.Toffoli(wires=(0, 1, 2))
-        qml.CSWAP(wires=(0, 2, 3))
-        qml.RX(1.2345, wires=0)
-        qml.CRZ(1.2345, wires=(3, 0))
-        qml.expval(qml.PauliZ(0))
+    with qp.tape.QuantumTape() as tape:
+        qp.QFT(wires=(0, 1, 2, 3))
+        qp.IsingXX(1.234, wires=(0, 2))
+        qp.Toffoli(wires=(0, 1, 2))
+        qp.CSWAP(wires=(0, 2, 3))
+        qp.RX(1.2345, wires=0)
+        qp.CRZ(1.2345, wires=(3, 0))
+        qp.expval(qp.PauliZ(0))
 
     default(tape)
     decimals()

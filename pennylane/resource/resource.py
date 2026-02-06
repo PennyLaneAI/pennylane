@@ -615,7 +615,7 @@ def add_in_series(r1: Resources, r2: Resources) -> Resources:
 
         Now we print their sum.
 
-        >>> print(qml.resource.add_in_series(r1, r2))
+        >>> print(qp.resource.add_in_series(r1, r2))
         num_wires: 3
         num_gates: 4
         depth: 3
@@ -682,7 +682,7 @@ def add_in_parallel(r1: Resources, r2: Resources) -> Resources:
 
         Now we print their sum.
 
-        >>> print(qml.resource.add_in_parallel(r1, r2))
+        >>> print(qp.resource.add_in_parallel(r1, r2))
         num_wires: 5
         num_gates: 4
         depth: 2
@@ -741,7 +741,7 @@ def mul_in_series(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_series(resources, 2))
+        >>> print(qp.resource.mul_in_series(resources, 2))
         num_wires: 2
         num_gates: 4
         depth: 4
@@ -799,7 +799,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
 
         Now we print the product.
 
-        >>> print(qml.resource.mul_in_parallel(resources, 2))
+        >>> print(qp.resource.mul_in_parallel(resources, 2))
         num_wires: 4
         num_gates: 4
         depth: 2
@@ -866,7 +866,7 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
         Now we print the result of the substitution.
 
-        >>> res = qml.resource.substitute(initial_resources, gate_info, replacement)
+        >>> res = qp.resource.substitute(initial_resources, gate_info, replacement)
         >>> print(res)
         num_wires: 2
         num_gates: 15

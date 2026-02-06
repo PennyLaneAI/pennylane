@@ -82,7 +82,7 @@ def dipole_integrals(mol, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> constants, integrals = dipole_integrals(mol)(*args)
     >>> print(integrals)
@@ -107,18 +107,18 @@ def dipole_integrals(mol, core=None, active=None):
         _, coeffs, _, _, _ = scf(mol)(*args)
 
         # x, y, z components
-        d_x = qml.math.einsum(
+        d_x = qp.math.einsum(
             "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 0)(*args), coeffs
         )
-        d_y = qml.math.einsum(
+        d_y = qp.math.einsum(
             "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 1)(*args), coeffs
         )
-        d_z = qml.math.einsum(
+        d_z = qp.math.einsum(
             "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2)(*args), coeffs
         )
 
         # x, y, z components (core orbitals contribution)
-        core_x, core_y, core_z = qml.math.array([0]), qml.math.array([0]), qml.math.array([0])
+        core_x, core_y, core_z = qp.math.array([0]), qp.math.array([0]), qp.math.array([0])
 
         if core is None and active is None:
             return (core_x, core_y, core_z), (d_x, d_y, d_z)
@@ -128,9 +128,9 @@ def dipole_integrals(mol, core=None, active=None):
             core_y = core_y + 2 * d_y[i][i]
             core_z = core_z + 2 * d_z[i][i]
 
-        d_x = d_x[qml.math.ix_(active, active)]
-        d_y = d_y[qml.math.ix_(active, active)]
-        d_z = d_z[qml.math.ix_(active, active)]
+        d_x = d_x[qp.math.ix_(active, active)]
+        d_y = d_y[qp.math.ix_(active, active)]
+        d_z = d_z[qp.math.ix_(active, active)]
 
         return (core_x, core_y, core_z), (d_x, d_y, d_z)
 
@@ -187,7 +187,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> fermionic_dipole(mol)(*args)[2]
     -0.4999999988651487 * a⁺(0) a(0)
@@ -212,7 +212,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
         """
         constants, integrals = dipole_integrals(mol, core, active)(*args)
 
-        nd = [qml.math.array([0]), qml.math.array([0]), qml.math.array([0])]
+        nd = [qp.math.array([0]), qp.math.array([0]), qp.math.array([0])]
         for i, s in enumerate(mol.symbols):  # nuclear contributions
             nd[0] = nd[0] + atomic_numbers[s] * mol.coordinates[i][0]
             nd[1] = nd[1] + atomic_numbers[s] * mol.coordinates[i][1]
@@ -289,7 +289,7 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None, mapping="jordan_w
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> dipole_moment(mol)(*args)[2].ops
     [I(0),
@@ -404,8 +404,8 @@ def molecular_dipole(
 
     >>> symbols = ["H", "H", "H"]
     >>> coordinates = np.array([[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]])
-    >>> mol = qml.qchem.Molecule(symbols, coordinates, charge=1)
-    >>> dipole_obs = qml.qchem.molecular_dipole(mol, method="openfermion")
+    >>> mol = qp.qchem.Molecule(symbols, coordinates, charge=1)
+    >>> dipole_obs = qp.qchem.molecular_dipole(mol, method="openfermion")
     >>> dipole_obs[0] # x-component of D
     (
         0.4781123173263876 * Z(0)
@@ -443,11 +443,11 @@ def molecular_dipole(
     symbols = molecule.symbols
     coordinates = molecule.coordinates
 
-    if qml.math.shape(coordinates)[0] == len(symbols) * 3:
-        geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
+    if qp.math.shape(coordinates)[0] == len(symbols) * 3:
+        geometry_dhf = qp.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
-        geometry_dhf = qml.numpy.array(coordinates)
+        geometry_dhf = qp.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
     else:
         raise ValueError(
@@ -459,15 +459,15 @@ def molecular_dipole(
             "Open-shell systems are not supported. Change the charge or spin multiplicity of the molecule."
         )
 
-    core, active = qml.qchem.active_space(
+    core, active = qp.qchem.active_space(
         molecule.n_electrons, molecule.n_orbitals, molecule.mult, active_electrons, active_orbitals
     )
 
     if method == "dhf":
 
-        if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
+        if args is None and isinstance(geometry_dhf, qp.numpy.tensor):
             geometry_dhf.requires_grad = False
-        mol = qml.qchem.Molecule(
+        mol = qp.qchem.Molecule(
             symbols,
             geometry_dhf,
             charge=molecule.charge,
@@ -480,22 +480,22 @@ def molecular_dipole(
 
         requires_grad = args is not None
         dip = (
-            qml.qchem.dipole_moment(mol, cutoff=cutoff, core=core, active=active, mapping=mapping)(
+            qp.qchem.dipole_moment(mol, cutoff=cutoff, core=core, active=active, mapping=mapping)(
                 *(args or [])
             )
             if requires_grad
-            else qml.qchem.dipole_moment(
+            else qp.qchem.dipole_moment(
                 mol, cutoff=cutoff, core=core, active=active, mapping=mapping
             )()
         )
         if wires:
-            wires_new = qml.qchem.convert._process_wires(wires)
+            wires_new = qp.qchem.convert._process_wires(wires)
             wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
-            dip = [qml.map_wires(op, wires_map) for op in dip]
+            dip = [qp.map_wires(op, wires_map) for op in dip]
 
         return dip
 
-    dip = qml.qchem.dipole_of(
+    dip = qp.qchem.dipole_of(
         symbols,
         geometry_hf,
         molecule.name,

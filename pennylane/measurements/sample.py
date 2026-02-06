@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.sample measurement.
+This module contains the qp.sample measurement.
 """
 from collections.abc import Sequence
 
@@ -212,30 +212,30 @@ def sample(
         specialized, error-prone handling for finite-shot results.
         For the QNode:
 
-        >>> @qml.qnode(qml.device('default.qubit'))
+        >>> @qp.qnode(qp.device('default.qubit'))
         ... def circuit(wires):
-        ...     return qml.sample(wires=wires)
+        ...     return qp.sample(wires=wires)
 
         We previously squeezed out singleton dimensions like:
 
-        >>> qml.set_shots(circuit, 1)(wires=1)
+        >>> qp.set_shots(circuit, 1)(wires=1)
         array(0)
-        >>> qml.set_shots(circuit, 2)(0)
+        >>> qp.set_shots(circuit, 2)(0)
         array([0, 0])
-        >>> qml.set_shots(circuit, 1)((0,1))
+        >>> qp.set_shots(circuit, 1)((0,1))
         array([0, 0])
 
         With v0.42 and newer, the above circuit will **always** return an array of shape ``(shots, num_wires)``.
 
-        >>> qml.set_shots(circuit, 1)(wires=1)
+        >>> qp.set_shots(circuit, 1)(wires=1)
         array([[0]])
-        >>> qml.set_shots(circuit, 2)(0)
+        >>> qp.set_shots(circuit, 2)(0)
         array([[0],
         [0]])
-        >>> qml.set_shots(circuit, 1)((0,1))
+        >>> qp.set_shots(circuit, 1)((0,1))
         array([[0, 0]])
 
-        Previous behavior can be recovered by applying ``qml.math.squeeze(result)`` to the array.
+        Previous behavior can be recovered by applying ``qp.math.squeeze(result)`` to the array.
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
@@ -250,48 +250,48 @@ def sample(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.set_shots(shots=10)
-            @qml.qnode(dev, diff_method="parameter-shift")
+            @qp.set_shots(shots=10)
+            @qp.qnode(dev, diff_method="parameter-shift")
             def circuit(angle):
-                qml.RX(angle, wires=0)
-                return qml.sample(qml.PauliX(0))
+                qp.RX(angle, wires=0)
+                return qp.sample(qp.PauliX(0))
 
-            angle = qml.numpy.array(0.1)
-            res = qml.jacobian(circuit)(angle)
+            angle = qp.numpy.array(0.1)
+            res = qp.jacobian(circuit)(angle)
 
         Consider using :func:`~pennylane.expval` and a sequence of single shots, like this:
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.set_shots(shots=[(1, 10)])
-            @qml.qnode(dev, diff_method="parameter-shift")
+            @qp.set_shots(shots=[(1, 10)])
+            @qp.qnode(dev, diff_method="parameter-shift")
             def circuit(angle):
-                qml.RX(angle, wires=0)
-                return qml.expval(qml.PauliX(0))
+                qp.RX(angle, wires=0)
+                return qp.expval(qp.PauliX(0))
 
             def cost(angle):
-                return qml.math.hstack(circuit(angle))
+                return qp.math.hstack(circuit(angle))
 
-            angle = qml.numpy.array(0.1)
-            res = qml.jacobian(cost)(angle)
+            angle = qp.numpy.array(0.1)
+            res = qp.jacobian(cost)(angle)
 
     **Example**
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.Y(0))
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(qp.Y(0))
 
     Executing this QNode:
 
@@ -305,15 +305,15 @@ def sample(
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(shots=4)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=4)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample()
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.sample()
 
     Executing this QNode:
 
@@ -340,11 +340,11 @@ def sample(
 
             .. code-block:: python3
 
-                @qml.set_shots(1000000)
-                @qml.qnode(qml.device("default.qubit", wires=1), interface="jax")
+                @qp.set_shots(1000000)
+                @qp.qnode(qp.device("default.qubit", wires=1), interface="jax")
                 def circuit():
-                    qml.Hadamard(0)
-                    return qml.sample(dtype="int8")
+                    qp.Hadamard(0)
+                    return qp.sample(dtype="int8")
 
             Executing this QNode, we get:
 
@@ -358,11 +358,11 @@ def sample(
 
             .. code-block:: python3
 
-                @qml.set_shots(1000000)
-                @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
+                @qp.set_shots(1000000)
+                @qp.qnode(qp.device("default.qubit", wires=1), interface="torch")
                 def circuit():
-                    qml.Hadamard(0)
-                    return qml.sample(qml.Z(0), dtype="float32")
+                    qp.Hadamard(0)
+                    return qp.sample(qp.Z(0), dtype="float32")
 
             Executing this QNode, we get:
 

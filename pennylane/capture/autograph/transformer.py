@@ -52,7 +52,7 @@ class PennyLaneTransformer(PyToPy):
         # way to handle these in the future.
         # We may also need to check how this interacts with other common function decorators.
         fn = obj
-        if isinstance(obj, qml.QNode):
+        if isinstance(obj, qp.QNode):
             fn = obj.func
         elif inspect.isfunction(fn) or inspect.ismethod(fn):
             pass
@@ -80,13 +80,13 @@ class PennyLaneTransformer(PyToPy):
                 # py3.14: "Lambda(...) is not supported"
                 if "Lambda" in str(e) and "while_loop" in inspect.getsource(fn):
                     raise AutoGraphError(
-                        "AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`."
+                        "AutoGraph currently does not support lambda functions as a loop condition for `qp.while_loop`."
                         " Please define the condition using a named function rather than a lambda function."
                     ) from e
 
         new_obj = new_fn
 
-        if isinstance(obj, qml.QNode):
+        if isinstance(obj, qp.QNode):
             new_obj = copy.copy(obj)
             new_obj.func = new_fn
 
@@ -212,7 +212,7 @@ def run_autograph(fn):
     new_fn, module, source_map = TRANSFORMER.transform(fn, user_context)
 
     # needed for autograph_source when examining a converted QNode
-    if isinstance(new_fn, qml.QNode):
+    if isinstance(new_fn, qp.QNode):
         new_fn.func.ag_unconverted = fn.func
 
     new_fn.ag_module = module
@@ -292,7 +292,7 @@ def autograph_source(fn):
         return inspect.getsource(fn)
 
     # Unwrap known objects to get the function actually transformed by autograph.
-    if isinstance(fn, qml.QNode):
+    if isinstance(fn, qp.QNode):
         fn = fn.func
 
     if TRANSFORMER.has_cache(fn):
@@ -334,7 +334,7 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
         from jax import make_jaxpr
         from pennylane.capture.autograph import disable_autograph, run_autograph
 
-        qml.capture.enable()
+        qp.capture.enable()
 
         def f(x):
             if x > 1:

@@ -108,7 +108,7 @@ def apply_controlled_Q(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will perform control on :math:`\mathcal{Q}` unitary.
 
     Raises:
@@ -117,7 +117,7 @@ def apply_controlled_Q(
     operations = tape.operations.copy()
     updated_operations = []
 
-    with qml.queuing.QueuingManager.stop_recording():
+    with qp.queuing.QueuingManager.stop_recording():
         op_inv = [adjoint(copy(op)) for op in reversed(operations)]
 
         wires = Wires(wires)
@@ -185,7 +185,7 @@ def quantum_monte_carlo(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will perform the quantum Monte Carlo estimation.
 
 
@@ -316,16 +316,16 @@ def quantum_monte_carlo(
             target_wire = m
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qml.device("default.qubit", wires=(n + m + 1))
+            dev = qp.device("default.qubit", wires=(n + m + 1))
 
             def fn():
-                qml.templates.MottonenStatePreparation(np.sqrt(probs), wires=a_wires)
-                r_unitary(qml.RY, r_rotations, control_wires=a_wires[::-1], target_wire=target_wire)
+                qp.templates.MottonenStatePreparation(np.sqrt(probs), wires=a_wires)
+                r_unitary(qp.RY, r_rotations, control_wires=a_wires[::-1], target_wire=target_wire)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def qmc():
-                qml.quantum_monte_carlo(fn, wires, target_wire, estimation_wires)()
-                return qml.probs(estimation_wires)
+                qp.quantum_monte_carlo(fn, wires, target_wire, estimation_wires)()
+                return qp.probs(estimation_wires)
 
             phase_estimated = np.argmax(qmc()[:int(N / 2)]) / N
 
@@ -337,7 +337,7 @@ def quantum_monte_carlo(
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        >>> specs = qml.specs(qmc, level="device")()
+        >>> specs = qp.specs(qmc, level="device")()
         >>> from pprint import pprint
         >>> pprint(specs)
         CircuitSpecs(device_name='default.qubit',
@@ -370,7 +370,7 @@ def quantum_monte_carlo(
         raise ValueError("No wires can be shared between the wires and estimation_wires registers")
 
     updated_operations = []
-    with qml.queuing.QueuingManager.stop_recording():
+    with qp.queuing.QueuingManager.stop_recording():
         updated_operations.extend(operations)
         for i, control_wire in enumerate(estimation_wires):
             updated_operations.append(Hadamard(control_wire))

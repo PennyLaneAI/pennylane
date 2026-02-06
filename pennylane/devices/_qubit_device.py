@@ -352,7 +352,7 @@ class QubitDevice(Device):
             r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             # This will likely be required:
-            # if qml.math.get_interface(*r) == "jax":
+            # if qp.math.get_interface(*r) == "jax":
             #     r = r[0]
 
             if single_measurement:
@@ -497,7 +497,7 @@ class QubitDevice(Device):
         instances. Useful properties include :attr:`~.Operation.name`,
         :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
 
-        >>> op = qml.RX(0.2, wires=[0])
+        >>> op = qp.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
         >>> op.wires # returns a Wires object representing the wires that the operation acts on
@@ -603,7 +603,7 @@ class QubitDevice(Device):
 
             For example, consider the following device:
 
-            >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+            >>> dev = qp.device("my_device", shots=[5, (10, 3), 100])
 
             This device will execute QNodes using 135 shots, however
             measurement statistics will be **course grained** across these 135
@@ -1443,12 +1443,12 @@ class QubitDevice(Device):
 
             >>> from pennylane import numpy as np
             >>> num_wires = 2
-            >>> dev = qml.device("default.mixed", wires=num_wires)
-            >>> mp = qml.counts()
+            >>> dev = qp.device("default.mixed", wires=num_wires)
+            >>> mp = qp.counts()
             >>> samples = np.array([[0, 0], [0, 0], [1, 0]])
             >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '10': 1}
-            >>> mp = qml.counts(all_outcomes=True)
+            >>> mp = qp.counts(all_outcomes=True)
             >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '01': 0, '10': 1, '11': 0}
 
@@ -1456,12 +1456,12 @@ class QubitDevice(Device):
 
              .. code-block:: python3
 
-                dev = qml.device("default.qubit", wires=2, shots=4)
+                dev = qp.device("default.qubit", wires=2, shots=4)
 
-                @qml.qnode(dev)
+                @qp.qnode(dev)
                 def circuit(x):
-                    qml.RX(x, wires=0)
-                    return qml.counts(all_outcomes=True)
+                    qp.RX(x, wires=0)
+                    return qp.counts(all_outcomes=True)
 
         """
 

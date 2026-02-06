@@ -101,7 +101,7 @@ def _get_op_occupied_wires(op, wire_map, bit_map):
     *_, base = unwrap_controls(op)
 
     if len(op.wires) == 0 or isinstance(base, (GlobalPhase, Identity)):
-        # if no wires, then it acts on all wires. For example qml.state and qml.sample or
+        # if no wires, then it acts on all wires. For example qp.state and qp.sample or
         # (controlled) GlobalPhase or (controlled) Identity
         mapped_wires = set(wire_map.values())
         return mapped_wires
@@ -138,10 +138,10 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
     From the start, the function cares about the locations the operation altered
     during a drawing, not just the wires the operation acts on. An "occupied" wire
     refers to a wire that will be altered in the drawing of an operation.
-    Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qml.CNOT(wires=(0,2))``
+    Assuming wire ``1`` is between ``0`` and ``2`` in the ordering, ``qp.CNOT(wires=(0,2))``
     will also "occupy" wire ``1``.  In this scenario, an operation on wire ``1``, like
-    ``qml.X(1)``, will not be pushed to the left
-    of the ``qml.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
+    ``qp.X(1)``, will not be pushed to the left
+    of the ``qp.CNOT(wires=(0,2))`` gate, but be blocked by the occupied wire. This preserves
     ordering and makes placement more intuitive.
 
     The ``wire_order`` keyword argument used by user facing functions like :func:`~.draw` maps position

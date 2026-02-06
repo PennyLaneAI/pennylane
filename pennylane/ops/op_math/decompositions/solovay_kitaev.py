@@ -34,14 +34,14 @@ def _SU2_transform(matrix):
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        factor = qml.math.linalg.det(matrix)
+        factor = qp.math.linalg.det(matrix)
 
     # We put the phase first in [0, \pi] and then convert it to [0, \pi)
-    gphase = qml.math.mod(qml.math.angle(factor), 2 * math.pi) / 2
-    rphase = (-1) ** qml.math.isclose(gphase, math.pi)
+    gphase = qp.math.mod(qp.math.angle(factor), 2 * math.pi) / 2
+    rphase = (-1) ** qp.math.isclose(gphase, math.pi)
 
     # Get the final matrix form using the phase information
-    s2_mat = rphase * matrix * qml.math.exp(-1j * qml.math.cast_like(gphase, 1j))
+    s2_mat = rphase * matrix * qp.math.exp(-1j * qp.math.cast_like(gphase, 1j))
     return s2_mat, gphase if rphase == 1 else 0.0
 
 
@@ -52,12 +52,12 @@ def _quaternion_transform(matrix):
     :math:`\alpha_0\mathbb{I} + \alpha_1\mathbf{i} + \alpha_2\mathbf{j} + \alpha_3\mathbf{k}`,
     where :math:`\mathbf{i}=-i\mathbf{X},\ \mathbf{j}=-i\mathbf{Y},\ \text{and}\ \mathbf{k}=-i\mathbf{Z}`.
     """
-    return qml.math.array(
+    return qp.math.array(
         [
-            qml.math.real(matrix[0, 0]),
-            -qml.math.imag(matrix[0, 1]),
-            -qml.math.real(matrix[0, 1]),
-            -qml.math.imag(matrix[0, 0]),
+            qp.math.real(matrix[0, 0]),
+            -qp.math.imag(matrix[0, 1]),
+            -qp.math.real(matrix[0, 1]),
+            -qp.math.imag(matrix[0, 0]),
         ],
         dtype=float,
     )
@@ -77,9 +77,9 @@ def _contains_SU2(op_mat, ops_vecs=None, kd_tree=None, tol=1e-8):
         given operations was found, the quaternion representation of the searched operations, and its index in
         the ``op_vecs`` or ``kd_tree``.
     """
-    gate_points = qml.math.array([_quaternion_transform(op_mat)])
+    gate_points = qp.math.array([_quaternion_transform(op_mat)])
 
-    tree = kd_tree or sp.spatial.KDTree(qml.math.array(ops_vecs))
+    tree = kd_tree or sp.spatial.KDTree(qp.math.array(ops_vecs))
     dist, indx = tree.query(gate_points, workers=-1)
 
     return (dist[0] < tol, gate_points[0], indx[0])
@@ -102,13 +102,13 @@ def _prune_approximate_set(
         A tuple containing the pruned approximate set.
     """
     if approx_set_qat:
-        tree, tsum = sp.spatial.KDTree(approx_set_qat), qml.math.array(approx_set_sum)
+        tree, tsum = sp.spatial.KDTree(approx_set_qat), qp.math.array(approx_set_sum)
         dists, indxs = tree.query(approx_set_qat, workers=-1, k=10)
 
         prune_ixs = []
         for dist, indx in zip(dists, indxs):
-            eq_idx = qml.math.sort(indx[qml.math.where(dist.round(8) == 0.0)])
-            prune_ixs.extend(eq_idx[qml.math.argsort(tsum[eq_idx])][1:])
+            eq_idx = qp.math.sort(indx[qp.math.where(dist.round(8) == 0.0)])
+            prune_ixs.extend(eq_idx[qp.math.argsort(tsum[eq_idx])][1:])
 
         for ix in sorted(set(prune_ixs), reverse=True):
             del approx_set_ids[ix]
@@ -135,19 +135,19 @@ def _approximate_set(basis_gates, max_length=10):
     """
     # Defining Clifford+T basis
     _CLIFFORD_T_BASIS = {
-        "I": qml.Identity(0),
-        "X": qml.X(0),
-        "Y": qml.Y(0),
-        "Z": qml.Z(0),
-        "H": qml.Hadamard(0),
-        "T": qml.T(0),
-        "T*": qml.adjoint(qml.T(0)),
-        "S": qml.S(0),
-        "S*": qml.adjoint(qml.S(0)),
+        "I": qp.Identity(0),
+        "X": qp.X(0),
+        "Y": qp.Y(0),
+        "Z": qp.Z(0),
+        "H": qp.Hadamard(0),
+        "T": qp.T(0),
+        "T*": qp.adjoint(qp.T(0)),
+        "S": qp.S(0),
+        "S*": qp.adjoint(qp.S(0)),
     }
     # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
-    t_set = {qml.T(0), qml.adjoint(qml.T(0))}
+    t_set = {qp.T(0), qp.adjoint(qp.T(0))}
 
     # Get the SU(2) data for the gates in basis set
     basis_mat, basis_gph = {}, {}
@@ -180,7 +180,7 @@ def _approximate_set(basis_gates, max_length=10):
     # comparing its quaternion representation with the gate sequences already added to the trie.
     for depth in range(max_length - 1):
         # Build a KDTree for the quaternions stored up to the current depth for querying.
-        kdtree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
+        kdtree = sp.spatial.KDTree(qp.math.array(approx_set_qat))
 
         # Add the local containers for extending the trie to the next depth while traversing current one.
         ltrie_id, ltrie_mt, ltrie_gp, ltrie_sm, ltrie_qt = [], [], [], [], []
@@ -188,12 +188,12 @@ def _approximate_set(basis_gates, max_length=10):
             gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth], gtrie_sum[depth]
         ):
             # Get the last operation in the current node
-            last_op = qml.adjoint(node[-1], lazy=False) if node else None
+            last_op = qp.adjoint(node[-1], lazy=False) if node else None
 
             # Now attempt extending the current node with each gate in the basis set.
             for op in basis:
                 # If the op is the adjoint of last operation in the node, skip.
-                if qml.equal(op, last_op):
+                if qp.equal(op, last_op):
                     continue
 
                 # Extend and check if the node already exists in the approximate set in two steps:
@@ -212,7 +212,7 @@ def _approximate_set(basis_gates, max_length=10):
                     exists, quaternion, global_index = _contains_SU2(su2_op, kd_tree=kdtree)
 
                 # Add the sequence if it is unique, i.e., new SU(2) representation or global phase.
-                global_phase = qml.math.mod(su2_gp, math.pi)  # Get the global phase in [0, \pi)
+                global_phase = qp.math.mod(su2_gp, math.pi)  # Get the global phase in [0, \pi)
                 if not exists or global_phase != approx_set_gph[global_index]:
                     # Add the data to the approximate set
                     approx_set_ids.append(node + [op])
@@ -249,24 +249,24 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     # Use the quaternion form to get the rotation axis and angle on the Bloch sphere,
     # while using clipping for dealing with floating point precision errors.
     quaternion = _quaternion_transform(matrix)
-    theta, axis = 2 * qml.math.arccos(qml.math.clip(quaternion[0], -1.0, 1.0)), quaternion[1:]
+    theta, axis = 2 * qp.math.arccos(qp.math.clip(quaternion[0], -1.0, 1.0)), quaternion[1:]
 
     # Early return for the case where matrix is I or -I, where I is Identity.
-    if qml.math.allclose(axis, 0.0, atol=tol) and qml.math.isclose(theta % math.pi, 0.0, atol=tol):
-        return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
+    if qp.math.allclose(axis, 0.0, atol=tol) and qp.math.isclose(theta % math.pi, 0.0, atol=tol):
+        return qp.math.eye(2, dtype=complex), qp.math.eye(2, dtype=complex)
 
     # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030).
-    phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt(0.5 - 0.5 * qml.math.cos(theta / 2))))
+    phi = 2.0 * qp.math.arcsin(qp.math.sqrt(qp.math.sqrt(0.5 - 0.5 * qp.math.cos(theta / 2))))
 
     # Begin decomposition by computing the rotation operations V and W.
-    v = qml.RX(phi, [0])
-    w = qml.RY(2 * math.pi - phi, [0]) if axis[2] > 0 else qml.RY(phi, [0])
+    v = qp.RX(phi, [0])
+    w = qp.RY(2 * math.pi - phi, [0]) if axis[2] > 0 else qp.RY(phi, [0])
 
     # Get the similarity transormation matrices S and S.adjoint().
-    ud = qml.math.linalg.eig(matrix)[1]
-    vwd = qml.math.linalg.eig(qml.matrix(v @ w @ v.adjoint() @ w.adjoint()))[1]
-    s = ud @ qml.math.conj(qml.math.transpose(vwd))
-    sdg = vwd @ qml.math.conj(qml.math.transpose(ud))
+    ud = qp.math.linalg.eig(matrix)[1]
+    vwd = qp.math.linalg.eig(qp.matrix(v @ w @ v.adjoint() @ w.adjoint()))[1]
+    s = ud @ qp.math.conj(qp.math.transpose(vwd))
+    sdg = vwd @ qp.math.conj(qp.math.transpose(ud))
 
     # Get the required matrices V' and W'.
     v_hat = s @ v.matrix() @ sdg
@@ -311,18 +311,18 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
 
     .. code-block:: python
 
-        op  = qml.RZ(np.pi/3, wires=0)
+        op  = qp.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['H', 'S', 'T']
-        ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
+        ops = qp.ops.sk_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
-        matrix_sk = qml.prod(*reversed(ops)).matrix()
+        matrix_sk = qp.prod(*reversed(ops)).matrix()
 
     When the function is run for a sufficient ``depth`` with a good enough approximate set,
     the output gate sequence should implement the same operation approximately.
 
-    >>> qml.math.allclose(op.matrix(), matrix_sk, atol=1e-3)
+    >>> qp.math.allclose(op.matrix(), matrix_sk, atol=1e-3)
     True
     """
     # Check for length of wires in the operation
@@ -334,10 +334,10 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
     with QueuingManager.stop_recording():
         # Obtain the operation matrix and interface
         op_matrix = op.matrix()
-        if qml.compiler.active() or qml.math.is_abstract(op_matrix):
+        if qp.compiler.active() or qp.math.is_abstract(op_matrix):
             raise RuntimeError(
                 "Solovay-Kitaev decomposition is not supported with QJIT or JAX-JIT. "
-                "Use qml.ops.op_math.rs_decomposition (Ross-Selinger decomposition) instead."
+                "Use qp.ops.op_math.rs_decomposition (Ross-Selinger decomposition) instead."
             )
 
         # Build the approximate set with caching
@@ -346,11 +346,11 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         )
 
         # Build the k-d tree with the current approximation set for querying in the base case
-        kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
+        kd_tree = sp.spatial.KDTree(qp.math.array(approx_set_qat))
 
         # Build the SU(2) and quaternion for the operation
-        interface = qml.math.get_deep_interface(op_matrix)
-        gate_mat, gate_gph = _SU2_transform(qml.math.unwrap(op_matrix))
+        interface = qp.math.get_deep_interface(op_matrix)
+        gate_mat, gate_gph = _SU2_transform(qp.math.unwrap(op_matrix))
         gate_qat = _quaternion_transform(gate_mat)
 
         def _solovay_kitaev(umat, n, u_n1_ids, u_n1_mat):
@@ -358,13 +358,13 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
 
             if not n:
                 # Check the approximate gate in our approximate set
-                seq_node = qml.math.array([_quaternion_transform(umat)])
+                seq_node = qp.math.array([_quaternion_transform(umat)])
                 _, [index] = kd_tree.query(seq_node, workers=-1)
                 return approx_set_ids[index], approx_set_mat[index]
 
             # Get the decomposition for the remaining unitary: U @ U'.adjoint()
             v_n, w_n = _group_commutator_decompose(
-                umat @ qml.math.conj(qml.math.transpose(u_n1_mat))
+                umat @ qp.math.conj(qp.math.transpose(u_n1_mat))
             )
 
             # Get the approximation for the residual commutator unitaries: V and W
@@ -376,8 +376,8 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
                     c_n1_ids, c_n1_mat = _solovay_kitaev(c_n, i, c_n1_ids, c_n1_mat)
 
                 # Get the adjoints C' --> C'.adjoint()
-                c_n1_ids_adj = [qml.adjoint(gate, lazy=False) for gate in reversed(c_n1_ids)]
-                c_n1_mat_adj = qml.math.conj(qml.math.transpose(c_n1_mat))
+                c_n1_ids_adj = [qp.adjoint(gate, lazy=False) for gate in reversed(c_n1_ids)]
+                c_n1_mat_adj = qp.math.conj(qp.math.transpose(c_n1_mat))
 
                 # Store the decompositions and matrices for C'
                 c_ids_mats.append([c_n1_ids, c_n1_mat, c_n1_ids_adj, c_n1_mat_adj])
@@ -393,21 +393,21 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
             return approx_ids, approx_mat
 
         # If we have it already, use that, otherwise proceed for decomposition
-        _, [index] = kd_tree.query(qml.math.array([gate_qat]), workers=-1)
+        _, [index] = kd_tree.query(qp.math.array([gate_qat]), workers=-1)
         decomposition, u_prime = approx_set_ids[index], approx_set_mat[index]
 
         # Iterate until max_depth while doing an epsilon-error comparision
         for depth in range(max_depth):
             # For a SU(2) matrix Hilbert-Schmidt norm is √(|α|^2 + |β|^2),
             # which is simply the L2-norm for the first row of the matrix.
-            if qml.math.norm(gate_mat[0] - u_prime[0]) <= epsilon:
+            if qp.math.norm(gate_mat[0] - u_prime[0]) <= epsilon:
                 break
             # Approximate the residual with the approximation from previous iteration
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
         # Remove inverses if any in the decomposition and handle trivial case
-        [new_tape], _ = qml.transforms.cancel_inverses(
-            qml.tape.QuantumScript(decomposition or [qml.Identity(0)])
+        [new_tape], _ = qp.transforms.cancel_inverses(
+            qp.tape.QuantumScript(decomposition or [qp.Identity(0)])
         )
 
     # Map the wires to that of the operation and queue
@@ -415,14 +415,14 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
         QueuingManager.remove(op)
 
     if (op_wire := op.wires[0]) != 0:
-        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
+        [new_tape], _ = qp.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
     else:
         if queuing:
-            _ = [qml.apply(op) for op in new_tape.operations]
+            _ = [qp.apply(op) for op in new_tape.operations]
 
     # Get phase information based on the decomposition effort
     phase = approx_set_gph[index] - gate_gph
-    global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
+    global_phase = qp.GlobalPhase(qp.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
     return new_tape.operations + [global_phase]

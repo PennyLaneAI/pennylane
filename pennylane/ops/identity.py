@@ -76,7 +76,7 @@ class Identity(CVObservable, Operation):
     def __init__(self, wires: WiresLike = (), id=None):
         super().__init__(wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
-        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
+        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
@@ -116,10 +116,10 @@ class Identity(CVObservable, Operation):
 
         **Example**
 
-        >>> print(qml.I.compute_eigvals())
+        >>> print(qp.I.compute_eigvals())
         [1. 1.]
         """
-        return qml.math.ones(2**n_wires)
+        return qp.math.ones(2**n_wires)
 
     @staticmethod
     @lru_cache
@@ -136,11 +136,11 @@ class Identity(CVObservable, Operation):
 
         **Example**
 
-        >>> print(qml.Identity.compute_matrix())
+        >>> print(qp.Identity.compute_matrix())
         [[1. 0.]
          [0. 1.]]
         """
-        return qml.math.eye(int(2**n_wires))
+        return qp.math.eye(int(2**n_wires))
 
     @staticmethod
     @lru_cache
@@ -153,7 +153,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def _heisenberg_rep(p):
-        return qml.math.array([1, 0, 0])
+        return qp.math.array([1, 0, 0])
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -178,7 +178,7 @@ class Identity(CVObservable, Operation):
 
         **Example**
 
-        >>> qml.Identity.compute_diagonalizing_gates(wires=[0])
+        >>> qp.Identity.compute_diagonalizing_gates(wires=[0])
         []
         """
         return []
@@ -199,7 +199,7 @@ class Identity(CVObservable, Operation):
 
         **Example:**
 
-        >>> qml.Identity.compute_decomposition(wires=0)
+        >>> qp.Identity.compute_decomposition(wires=0)
         []
 
         """
@@ -216,7 +216,7 @@ class Identity(CVObservable, Operation):
     def pow(self, z):
         return [I(wires=self.wires)]
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=qp.QueuingManager):
         context.append(self)
         return self
 
@@ -266,16 +266,16 @@ class GlobalPhase(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi=None, return_state=False):
-            qml.X(0)
+            qp.X(0)
             if phi:
-                qml.GlobalPhase(phi)
+                qp.GlobalPhase(phi)
             if return_state:
-                return qml.state()
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+                return qp.state()
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
     The circuit yields the same expectation values with and without the global phase:
 
@@ -338,20 +338,20 @@ class GlobalPhase(Operation):
 
         **Example**
 
-        >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
+        >>> qp.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17-1.j, 6.123234e-17-1.j])
         """
         if (
-            qml.math.get_interface(phi) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qml.math.cast_like(phi, 1j)
-        exp = qml.math.exp(-1j * phi)
-        ones = qml.math.ones(2**n_wires, like=phi)
+            phi = qp.math.cast_like(phi, 1j)
+        exp = qp.math.exp(-1j * phi)
+        ones = qp.math.ones(2**n_wires, like=phi)
 
-        if qml.math.ndim(phi) == 0:
+        if qp.math.ndim(phi) == 0:
             return exp * ones
 
-        return qml.math.tensordot(exp, ones, axes=0)
+        return qp.math.tensordot(exp, ones, axes=0)
 
     @staticmethod
     def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -366,29 +366,29 @@ class GlobalPhase(Operation):
 
         **Example**
 
-        >>> qml.GlobalPhase.compute_matrix(np.pi/4, n_wires=1)
+        >>> qp.GlobalPhase.compute_matrix(np.pi/4, n_wires=1)
         array([[0.70710678-0.70710678j, 0.        +0.j        ],
                [0.        +0.j        , 0.70710678-0.70710678j]])
         """
-        interface = qml.math.get_interface(phi)
-        eye = qml.math.eye(2**n_wires, like=phi)
-        exp = qml.math.exp(-1j * qml.math.cast(phi, complex))
+        interface = qp.math.get_interface(phi)
+        eye = qp.math.eye(2**n_wires, like=phi)
+        exp = qp.math.exp(-1j * qp.math.cast(phi, complex))
         if (
             interface == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            eye = qml.math.cast_like(eye, 1j)
+            eye = qp.math.cast_like(eye, 1j)
         elif interface == "torch":
             eye = eye.to(exp.device)
 
-        if qml.math.ndim(phi) == 0:
+        if qp.math.ndim(phi) == 0:
             return exp * eye
-        return qml.math.tensordot(exp, eye, axes=0)
+        return qp.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
     def compute_sparse_matrix(phi, n_wires=1, format="csr"):  # pylint: disable=arguments-differ
-        if qml.math.ndim(phi) > 0:
+        if qp.math.ndim(phi) > 0:
             raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
-        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
+        return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -413,7 +413,7 @@ class GlobalPhase(Operation):
 
         **Example**
 
-        >>> qml.GlobalPhase.compute_diagonalizing_gates(1.2, wires=[0])
+        >>> qp.GlobalPhase.compute_diagonalizing_gates(1.2, wires=[0])
         []
         """
         return []
@@ -446,7 +446,7 @@ class GlobalPhase(Operation):
 
         **Example:**
 
-        >>> qml.GlobalPhase.compute_decomposition(1.23)
+        >>> qp.GlobalPhase.compute_decomposition(1.23)
         []
 
         """
@@ -472,7 +472,7 @@ class GlobalPhase(Operation):
     def generator(self):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle Identity with no wires, see PR #5194
-        return qml.s_prod(-1, qml.I(self.wires))
+        return qp.s_prod(-1, qp.I(self.wires))
 
 
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation)
@@ -483,18 +483,18 @@ def _controlled_g_phase_resource(
     *_, num_control_wires, num_zero_control_values, num_work_wires, **__
 ):
     if num_control_wires == 1 and num_zero_control_values == 1:
-        return {qml.PhaseShift: 1, qml.GlobalPhase: 1}
+        return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
     if num_control_wires == 1:
-        return {qml.PhaseShift: 1}
+        return {qp.PhaseShift: 1}
 
     if num_control_wires == 2:
-        return {qml.X: num_zero_control_values * 2, qml.ControlledPhaseShift: 1}
+        return {qp.X: num_zero_control_values * 2, qp.ControlledPhaseShift: 1}
 
     return {
-        qml.X: num_zero_control_values * 2,
+        qp.X: num_zero_control_values * 2,
         controlled_resource_rep(
-            qml.PhaseShift,
+            qp.PhaseShift,
             base_params={},
             num_control_wires=num_control_wires - 1,
             num_zero_control_values=0,
@@ -508,24 +508,24 @@ def _controlled_g_phase_decomp(*params, wires, control_wires, control_values, wo
     """The decomposition rule for a controlled global phase."""
 
     if len(control_wires) == 1 and control_values[0]:
-        qml.PhaseShift(-params[0], wires=control_wires[-1])
+        qp.PhaseShift(-params[0], wires=control_wires[-1])
         return
 
     if len(control_wires) == 1 and not control_values[0]:
-        qml.PhaseShift(params[0], wires=control_wires[-1])
-        qml.GlobalPhase(params[0])
+        qp.PhaseShift(params[0], wires=control_wires[-1])
+        qp.GlobalPhase(params[0])
         return
 
     zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
     for w in zero_control_wires:
-        qml.PauliX(w)
-    qml.ctrl(
-        qml.PhaseShift(-params[0], wires=wires[len(control_wires) - 1]),
+        qp.PauliX(w)
+    qp.ctrl(
+        qp.PhaseShift(-params[0], wires=wires[len(control_wires) - 1]),
         control=wires[: len(control_wires) - 1],
         work_wires=work_wires,
     )
     for w in zero_control_wires:
-        qml.PauliX(w)
+        qp.PauliX(w)
 
 
 add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)

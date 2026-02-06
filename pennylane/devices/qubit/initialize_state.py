@@ -22,8 +22,8 @@ import pennylane as qp
 
 
 def create_initial_state(
-    wires: qml.wires.Wires | Iterable,
-    prep_operation: qml.operation.StatePrepBase = None,
+    wires: qp.wires.Wires | Iterable,
+    prep_operation: qp.operation.StatePrepBase = None,
     like: str = None,
 ):
     r"""
@@ -42,7 +42,7 @@ def create_initial_state(
         num_wires = len(wires)
         state = np.zeros((2,) * num_wires, dtype=complex)
         state[(0,) * num_wires] = 1
-        return qml.math.asarray(state, like=like)
+        return qp.math.asarray(state, like=like)
 
     state_vector = prep_operation.state_vector(wire_order=list(wires))
     dtype = str(state_vector.dtype)
@@ -55,5 +55,5 @@ def create_initial_state(
         target_shape = [prep_operation.batch_size] if prep_operation.batch_size else []
         target_shape += [2] * len(wires)
         state_vector = state_vector.toarray()
-        state_vector = qml.math.reshape(state_vector, target_shape)
-    return qml.math.cast(qml.math.asarray(state_vector, like=like), dtype)
+        state_vector = qp.math.reshape(state_vector, target_shape)
+    return qp.math.cast(qp.math.asarray(state_vector, like=like), dtype)

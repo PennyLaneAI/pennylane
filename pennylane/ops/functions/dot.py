@@ -68,28 +68,28 @@ def dot(
     **Example**
 
     >>> coeffs = np.array([1.1, 2.2])
-    >>> ops = [qml.X(0), qml.Y(0)]
-    >>> qml.dot(coeffs, ops)
+    >>> ops = [qp.X(0), qp.Y(0)]
+    >>> qp.dot(coeffs, ops)
     1.1 * X(0) + 2.2 * Y(0)
-    >>> qml.dot(coeffs, ops, pauli=True)
+    >>> qp.dot(coeffs, ops, pauli=True)
     1.1 * X(0)
     + 2.2 * Y(0)
 
     Note that additions of the same operator are not executed by default.
 
-    >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)])
+    >>> qp.dot([1., 1.], [qp.X(0), qp.X(0)])
     X(0) + X(0)
 
     You can obtain a cleaner version by simplifying the resulting expression.
 
-    >>> qml.dot([1., 1.], [qml.X(0), qml.X(0)]).simplify()
+    >>> qp.dot([1., 1.], [qp.X(0), qp.X(0)]).simplify()
     2.0 * X(0)
 
     ``pauli=True`` can be used to construct a more efficient, simplified version of the operator.
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
 
-    >>> qml.dot([1, 2], [qml.X(0), qml.X(0)], pauli=True).operation()
+    >>> qp.dot([1, 2], [qp.X(0), qp.X(0)], pauli=True).operation()
     3.0 * X(0)
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
@@ -100,8 +100,8 @@ def dot(
     :class:`~.ParametrizedHamiltonian`:
 
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
-    >>> ops = [qml.X(0), qml.Y(0)]
-    >>> qml.dot(coeffs, ops)
+    >>> ops = [qp.X(0), qp.Y(0)]
+    >>> qp.dot(coeffs, ops)
     (
         <lambda>(params_0, t) * X(0)
       + <lambda>(params_1, t) * Y(0)
@@ -117,13 +117,13 @@ def dot(
 
             import pennylane as qp
 
-            a = qml.X(0)
-            b = qml.prod(qml.X(0), qml.X(1))
-            c = qml.Z(0)
+            a = qp.X(0)
+            b = qp.prod(qp.X(0), qp.X(1))
+            c = qp.Z(0)
             obs = [a, b, c]
             coeffs = [1.0, 2.0, 3.0]
 
-            op = qml.dot(coeffs, obs, grouping_type="qwc")
+            op = qp.dot(coeffs, obs, grouping_type="qwc")
 
         >>> op.grouping_indices
         ((0, 1), (2,))
@@ -142,7 +142,7 @@ def dot(
             )
 
     # tensorflow variables have no len
-    if qml.math.get_interface(coeffs) != "tensorflow":
+    if qp.math.get_interface(coeffs) != "tensorflow":
         if len(coeffs) != len(ops):
             raise ValueError("Number of coefficients and operators does not match.")
         if len(coeffs) == 0 and len(ops) == 0:
@@ -170,13 +170,13 @@ def dot(
     ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     operands = [
-        op if (not qml.math.is_abstract(coeff) and coeff == 1) else qml.s_prod(coeff, op)
+        op if (not qp.math.is_abstract(coeff) and coeff == 1) else qp.s_prod(coeff, op)
         for coeff, op in zip(coeffs, ops)
     ]
     return (
         operands[0]
         if len(operands) == 1
-        else qml.sum(*operands, grouping_type=grouping_type, method=method)
+        else qp.sum(*operands, grouping_type=grouping_type, method=method)
     )
 
 
@@ -185,11 +185,11 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
     Returns a PauliSentence instance"""
     pauli_words = defaultdict(int)
     for coeff, op in zip(coeffs, ops):
-        sentence = qml.pauli.pauli_sentence(op)
+        sentence = qp.pauli.pauli_sentence(op)
         for pw in sentence:
             pauli_words[pw] += sentence[pw] * coeff
 
-    return qml.pauli.PauliSentence(pauli_words)
+    return qp.pauli.PauliSentence(pauli_words)
 
 
 def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[PauliWord | PauliSentence]):

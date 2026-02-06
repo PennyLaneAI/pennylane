@@ -77,21 +77,21 @@ def kahypar_cut(
     .. code-block:: python
 
         ops = [
-            qml.RX(0.432, wires=0),
-            qml.RY(0.543, wires="a"),
-            qml.CNOT(wires=[0, "a"]),
-            qml.RZ(0.240, wires=0),
-            qml.RZ(0.133, wires="a"),
-            qml.RX(0.432, wires=0),
-            qml.RY(0.543, wires="a"),
+            qp.RX(0.432, wires=0),
+            qp.RY(0.543, wires="a"),
+            qp.CNOT(wires=[0, "a"]),
+            qp.RZ(0.240, wires=0),
+            qp.RZ(0.133, wires="a"),
+            qp.RX(0.432, wires=0),
+            qp.RY(0.543, wires="a"),
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
     We can let KaHyPar automatically find the optimal edges to place cuts:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
-    >>> cut_edges = qml.qcut.kahypar_cut(
+    >>> graph = qp.qcut.tape_to_graph(tape)
+    >>> cut_edges = qp.qcut.kahypar_cut(
     ...     graph=graph,
     ...     num_fragments=2,
     ... )

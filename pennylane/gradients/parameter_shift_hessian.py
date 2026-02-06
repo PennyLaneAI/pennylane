@@ -472,7 +472,7 @@ def param_shift_hessian(
     For second-order derivatives of more complicated cost functions, please consider using your
     chosen autodifferentiation framework directly, by chaining gradient computations:
 
-    >>> qml.jacobian(qml.grad(cost))(weights)
+    >>> qp.jacobian(qp.grad(cost))(weights)
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
@@ -501,7 +501,7 @@ def param_shift_hessian(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Hessian in the form of a tensor, a tuple, or a nested tuple depending upon the number
         of trainable QNode arguments, the output shape(s) of the input QNode itself, and the usage of shot vectors
         in the QNode execution.
@@ -519,15 +519,15 @@ def param_shift_hessian(
     This works best if no classical processing is applied within the
     QNode to operation parameters.
 
-    >>> dev = qml.device("default.qubit")
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit")
+    >>> @qp.qnode(dev)
     ... def circuit(x):
-    ...     qml.RX(x[0], wires=0)
-    ...     qml.CRY(x[1], wires=[0, 1])
-    ...     return qml.expval(qml.Z(0) @ qml.Z(1))
+    ...     qp.RX(x[0], wires=0)
+    ...     qp.CRY(x[1], wires=[0, 1])
+    ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
     >>> x = np.array([0.5, 0.2], requires_grad=True)
-    >>> qml.gradients.param_shift_hessian(circuit)(x)
+    >>> qp.gradients.param_shift_hessian(circuit)(x)
     ((array(-0.86883595), array(0.04762358)),
      (array(0.04762358), array(0.05998862)))
 
@@ -538,13 +538,13 @@ def param_shift_hessian(
         the parameter-shifted tapes and a post-processing function to combine the execution
         results of these tapes into the Hessian:
 
-        >>> tape = qml.workflow.construct_tape(circuit)(x)
-        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
+        >>> tape = qp.workflow.construct_tape(circuit)(x)
+        >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape)
         >>> len(hessian_tapes)
         13
-        >>> all(isinstance(tape, qml.tape.QuantumTape) for tape in hessian_tapes)
+        >>> all(isinstance(tape, qp.tape.QuantumTape) for tape in hessian_tapes)
         True
-        >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
+        >>> postproc_fn(qp.execute(hessian_tapes, dev, None))
         ((array(-0.86883595), array(0.04762358)),
          (array(0.04762358), array(0.05998862)))
 
@@ -553,7 +553,7 @@ def param_shift_hessian(
         all 13 tapes here):
 
         >>> for h_tape in hessian_tapes[0:4]:
-        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        ...     print(qp.drawer.tape_text(h_tape, decimals=1))
         0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
         0: ──RX(-2.6)─╭●───────┤ ╭<Z@Z>
@@ -570,11 +570,11 @@ def param_shift_hessian(
 
         >>> diag_shifts = [(x[0] / 2,), (x[1] / 2, x[1])]
         >>> offdiag_shifts = [(x[0],), (x[1], 2 * x[1])]
-        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(
+        >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(
         ...     tape, diagonal_shifts=diag_shifts, off_diagonal_shifts=offdiag_shifts
         ... )
         >>> for h_tape in hessian_tapes[0:4]:
-        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        ...     print(qp.drawer.tape_text(h_tape, decimals=1))
         0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
         0: ──RX(0.0)─╭●───────┤ ╭<Z@Z>
@@ -596,8 +596,8 @@ def param_shift_hessian(
         variational parameters. Note that this indexing refers to trainable tape parameters both
         if ``tape`` is a ``QNode`` and if it is a ``QuantumTape``.
 
-        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
-        >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
+        >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape, argnum=(1,))
+        >>> postproc_fn(qp.execute(hessian_tapes, dev, None))
         ((tensor(0., requires_grad=True), tensor(0., requires_grad=True)),
          (tensor(0., requires_grad=True), array(0.05998862)))
 

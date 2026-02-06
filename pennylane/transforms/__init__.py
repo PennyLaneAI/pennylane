@@ -19,7 +19,7 @@ This subpackage contains PennyLane transforms and their building blocks.
 Custom transforms
 -----------------
 
-``qml.transform`` can be used to define custom transformations that work with PennyLane QNodes and quantum
+``qp.transform`` can be used to define custom transformations that work with PennyLane QNodes and quantum
 functions; such transformations can map a circuit to one or many new circuits alongside associated classical post-processing.
 
 .. autosummary::
@@ -227,18 +227,18 @@ Transforms can be applied on ``QNodes`` using the decorator syntax:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.transforms.split_non_commuting
-    @qml.qnode(dev)
+    @qp.transforms.split_non_commuting
+    @qp.qnode(dev)
     def circuit(params):
-        qml.RX(params[0], wires=0)
-        qml.RZ(params[1], wires=1)
+        qp.RX(params[0], wires=0)
+        qp.RZ(params[1], wires=1)
         return [
-            qml.expval(qml.X(0)),
-            qml.expval(qml.Y(1)),
-            qml.expval(qml.Z(0) @ qml.Z(1)),
-            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+            qp.expval(qp.X(0)),
+            qp.expval(qp.Y(1)),
+            qp.expval(qp.Z(0) @ qp.Z(1)),
+            qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
         ]
 
 Passing arguments to transforms
@@ -252,18 +252,18 @@ a circuit into tapes measuring groups of commuting observables.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.transforms.split_non_commuting(grouping_strategy="wires")
-    @qml.qnode(dev)
+    @qp.transforms.split_non_commuting(grouping_strategy="wires")
+    @qp.qnode(dev)
     def circuit(params):
-        qml.RX(params[0], wires=0)
-        qml.RZ(params[1], wires=1)
+        qp.RX(params[0], wires=0)
+        qp.RZ(params[1], wires=1)
         return [
-            qml.expval(qml.X(0)),
-            qml.expval(qml.Y(1)),
-            qml.expval(qml.Z(0) @ qml.Z(1)),
-            qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+            qp.expval(qp.X(0)),
+            qp.expval(qp.Y(1)),
+            qp.expval(qp.Z(0) @ qp.Z(1)),
+            qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
         ]
 
 .. _composing_transforms:
@@ -278,19 +278,19 @@ to maximize gate reduction before execution.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.transforms.merge_rotations
-    @qml.transforms.cancel_inverses(recursive=True)
-    @qml.qnode(device=dev)
+    @qp.transforms.merge_rotations
+    @qp.transforms.cancel_inverses(recursive=True)
+    @qp.qnode(device=dev)
     def circuit(x, y):
-        qml.X(wires=0)
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=0)
-        qml.X(wires=0)
-        qml.RX(x, wires=0)
-        qml.RX(y, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.X(wires=0)
+        qp.Hadamard(wires=0)
+        qp.Hadamard(wires=0)
+        qp.X(wires=0)
+        qp.RX(x, wires=0)
+        qp.RX(y, wires=0)
+        return qp.expval(qp.Z(0))
 
 In this example, ``cancel_inverses`` is applied first, which will remove the two Hadamard
 gates and the two Pauli X gates. Subsequently, ``merge_rotations`` will be applied, which
@@ -298,7 +298,7 @@ will merge the two RX rotations into a single RX gate.
 
 Alternatively, multiple transforms can be chained together to create a :class:`~.CompilePipeline`:
 
->>> pipeline = qml.transforms.cancel_inverses(recursive=True) + qml.transforms.merge_rotations
+>>> pipeline = qp.transforms.cancel_inverses(recursive=True) + qp.transforms.merge_rotations
 >>> pipeline
 CompilePipeline(cancel_inverses, merge_rotations)
 
@@ -308,15 +308,15 @@ circuit with each pass within the pipeline sequentially.
 .. code-block:: python
 
     @pipeline
-    @qml.qnode(device=dev)
+    @qp.qnode(device=dev)
     def circuit(x, y):
-        qml.X(wires=0)
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=0)
-        qml.X(wires=0)
-        qml.RX(x, wires=0)
-        qml.RX(y, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.X(wires=0)
+        qp.Hadamard(wires=0)
+        qp.Hadamard(wires=0)
+        qp.X(wires=0)
+        qp.RX(x, wires=0)
+        qp.RX(y, wires=0)
+        return qp.expval(qp.Z(0))
 
 Creating your own transform
 ---------------------------
@@ -340,7 +340,7 @@ first and only result.
     from pennylane.tape import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
-    @qml.transform
+    @qp.transform
     def remove_rx(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
         operations = filter(lambda op: op.name != "RX", tape.operations)
@@ -351,22 +351,22 @@ first and only result.
 
         return [new_tape], null_postprocessing
 
-The ``@qml.transform`` decorator makes it applicable to a :class:`~.QNode`:
+The ``@qp.transform`` decorator makes it applicable to a :class:`~.QNode`:
 
 .. code-block:: python
 
     @remove_rx
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def circuit():
-        qml.RX(0.5, wires=0)
-        qml.RY(0.5, wires=1)
-        qml.CNOT([0, 1])
-        return qml.expval(qml.Z(0))
+        qp.RX(0.5, wires=0)
+        qp.RY(0.5, wires=1)
+        qp.CNOT([0, 1])
+        return qp.expval(qp.Z(0))
 
 For a more advanced example, let's consider a transform that sums a circuit with its
 adjoint. We define the adjoint of the tape operations, create a new tape with these
 new operations, and return both tapes. The processing function then sums the results
-of the original and the adjoint tape. In this example, we use ``qml.transform`` in
+of the original and the adjoint tape. In this example, we use ``qp.transform`` in
 the form of a decorator in order to turn the custom function into a quantum transform.
 
 .. code-block:: python
@@ -374,14 +374,14 @@ the form of a decorator in order to turn the custom function into a quantum tran
     from pennylane.tape import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
-    @qml.transform
+    @qp.transform
     def sum_circuit_and_adjoint(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
-        operations = [qml.adjoint(op) for op in tape.operation]
+        operations = [qp.adjoint(op) for op in tape.operation]
         new_tape = tape.copy(operations=operations)
 
         def sum_postprocessing(results):
-            return qml.sum(results)
+            return qp.sum(results)
 
         return [tape, new_tape], sum_postprocessing
 

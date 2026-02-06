@@ -127,7 +127,7 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
         This function includes a prefactor ``2j`` in its output compared to the "standard" Pauli
         basis coefficients. That is, for the effective generator :math:`\frac{1}{3}iX`, which has
         the Pauli basis coefficient :math:`\frac{1}{3}i`, this function will compute the
-        number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qml.PauliRot``
+        number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qp.PauliRot``
         in the pulse generator differentiation pipeline.
 
     """
@@ -166,7 +166,7 @@ def _insert_op(tape, ops, op_idx):
 
     Args:
         tape (`~.QuantumTape`): Original tape.
-        ops (list[qml.Operation]): Operations to insert (individually) at ``op_idx``
+        ops (list[qp.Operation]): Operations to insert (individually) at ``op_idx``
             to produce a new tape each.
         op_idx (int): Index at which to insert the operations in ``ops``.
 
@@ -435,12 +435,12 @@ def pulse_odegen(
             the list of trainable parameters.
         atol (float): Precision parameter used to truncate the Pauli basis coefficients
             of the effective generators. Coefficients ``x`` satisfying
-            ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
+            ``qp.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
         tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -472,9 +472,9 @@ def pulse_odegen(
         from jax import numpy as jnp
         jax.config.update("jax_enable_x64", True)
         H = (
-            qml.pulse.constant * qml.Y(0)
-            + jnp.polyval * qml.Y(1)
-            + qml.pulse.constant * (qml.Z(0) @ qml.X(1))
+            qp.pulse.constant * qp.Y(0)
+            + jnp.polyval * qp.Y(1)
+            + qp.pulse.constant * (qp.Z(0) @ qp.X(1))
         )
         params = [jnp.array(0.2), jnp.array([0.6, 0.2]), jnp.array(0.4)]
         t = [0.1, 0.9]
@@ -484,12 +484,12 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
+        @qp.qnode(dev, interface="jax", diff_method=qp.gradients.pulse_odegen)
         def circuit(params):
-            op = qml.evolve(H)(params, t)
-            return qml.expval(qml.X(0))
+            op = qp.evolve(H)(params, t)
+            return qp.expval(qp.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
@@ -503,9 +503,9 @@ def pulse_odegen(
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
-    >>> tape = qml.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
+    >>> tape = qp.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
     >>> tape.trainable_params = [0, 1, 2]
-    >>> tapes, fun = qml.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
+    >>> tapes, fun = qp.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 
@@ -532,14 +532,14 @@ def pulse_odegen(
     Note that the order of the tapes follows lexicographical ordering of the inserted
     Pauli rotations, so that :math:`Y_1` is the first of the six words.
 
-    >>> print(qml.drawer.tape_text(tapes[0]))
+    >>> print(qp.drawer.tape_text(tapes[0]))
     0: ─╭RIY─╭ParametrizedEvolution─┤  <X>
     1: ─╰RIY─╰ParametrizedEvolution─┤
 
     Executing the tapes and applying the post-processing function to the results then
     yields the gradient:
 
-    >>> fun(qml.execute(tapes, dev))
+    >>> fun(qp.execute(tapes, dev))
     (Array(1.41897932, dtype=float64),
      Array([0.00164913, 0.00284788], dtype=float64),
      Array(-0.09984584, dtype=float64))

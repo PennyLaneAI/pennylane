@@ -35,7 +35,7 @@ class TestComparison:
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
-        dev_def = qml.device("default.qubit")
+        dev_def = qp.device("default.qubit")
 
         if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
@@ -56,16 +56,16 @@ class TestComparison:
         )
 
         def circuit(theta, phi):
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hermitian(A_, wires=[0, 1]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Hermitian(A_, wires=[0, 1]))
 
-        qnode_def = qml.QNode(circuit, dev_def)
-        qnode = qml.QNode(circuit, dev)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnums=[0, 1])
-        grad = qml.grad(qnode, argnums=[0, 1])
+        grad_def = qp.grad(qnode_def, argnums=[0, 1])
+        grad = qp.grad(qnode, argnums=[0, 1])
 
         def workload():
             return (
@@ -101,12 +101,12 @@ class TestComparison:
         """Test that arbitrary multi-mode Projector expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
-        dev_def = qml.device("default.qubit", wires=n_wires)
+        dev_def = qp.device("default.qubit", wires=n_wires)
 
         if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
+        if isinstance(dev, qp.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Device does not support the Projector observable.")
 
         if dev.name == "default.qubit":
@@ -116,16 +116,16 @@ class TestComparison:
         phi = 0.123
 
         def circuit(theta, phi, state):
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Projector(state, wires=[0, 1]))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Projector(state, wires=[0, 1]))
 
-        qnode_def = qml.QNode(circuit, dev_def)
-        qnode = qml.QNode(circuit, dev)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnums=[0, 1])
-        grad = qml.grad(qnode, argnums=[0, 1])
+        grad_def = qp.grad(qnode_def, argnums=[0, 1])
+        grad = qp.grad(qnode, argnums=[0, 1])
 
         def workload():
             return (
@@ -144,12 +144,12 @@ class TestComparison:
         """Test that the tensor product of PauliZ expectation value is correct"""
         n_wires = 2
         dev = device(n_wires)
-        dev_def = qml.device("default.qubit", wires=n_wires)
+        dev_def = qp.device("default.qubit", wires=n_wires)
 
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        supports_tensor = isinstance(dev, qml.devices.Device) or get_legacy_capabilities(dev).get(
+        supports_tensor = isinstance(dev, qp.devices.Device) or get_legacy_capabilities(dev).get(
             "supports_tensor_observables", False
         )
 
@@ -163,16 +163,16 @@ class TestComparison:
         phi = 0.123
 
         def circuit(theta, phi):
-            qml.RX(theta, wires=[0])
-            qml.RX(phi, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RX(theta, wires=[0])
+            qp.RX(phi, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
-        qnode_def = qml.QNode(circuit, dev_def)
-        qnode = qml.QNode(circuit, dev)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnums=[0, 1])
-        grad = qml.grad(qnode, argnums=[0, 1])
+        grad_def = qp.grad(qnode_def, argnums=[0, 1])
+        grad = qp.grad(qnode, argnums=[0, 1])
 
         assert pnp.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
         assert pnp.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
@@ -182,12 +182,12 @@ class TestComparison:
         """Compare the result of a random circuit to default.qubit"""
         n_wires = 2
         dev = device(n_wires)
-        dev_def = qml.device("default.qubit", wires=n_wires)
+        dev_def = qp.device("default.qubit", wires=n_wires)
 
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        supports_tensor = isinstance(dev, qml.devices.Device) or get_legacy_capabilities(dev).get(
+        supports_tensor = isinstance(dev, qp.devices.Device) or get_legacy_capabilities(dev).get(
             "supports_tensor_observables", False
         )
 
@@ -204,13 +204,13 @@ class TestComparison:
 
         def circuit(weights):
             RandomLayers(weights, wires=range(n_wires))
-            return ret_type(qml.Z(0) @ qml.X(1))
+            return ret_type(qp.Z(0) @ qp.X(1))
 
-        qnode_def = qml.QNode(circuit, dev_def)
-        qnode = qml.QNode(circuit, dev)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
-        grad_def = qml.grad(qnode_def, argnums=0)
-        grad = qml.grad(qnode, argnums=0)
+        grad_def = qp.grad(qnode_def, argnums=0)
+        grad = qp.grad(qnode, argnums=0)
 
         assert pnp.allclose(qnode(weights), qnode_def(weights), atol=tol(dev.shots))
         assert pnp.allclose(grad(weights), grad_def(weights), atol=tol(dev.shots))
@@ -219,7 +219,7 @@ class TestComparison:
         """Compare a four-qubit random circuit with lots of different gates to default.qubit"""
         n_wires = 4
         dev = device(n_wires)
-        dev_def = qml.device("default.qubit")
+        dev_def = qp.device("default.qubit")
 
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
@@ -228,26 +228,26 @@ class TestComparison:
             pytest.skip("Device is in non-analytical mode.")
 
         gates = [
-            qml.X(0),
-            qml.Y(1),
-            qml.Z(2),
-            qml.S(wires=3),
-            qml.T(wires=0),
-            qml.RX(2.3, wires=1),
-            qml.RY(1.3, wires=2),
-            qml.RZ(3.3, wires=3),
-            qml.Hadamard(wires=0),
-            qml.Rot(0.1, 0.2, 0.3, wires=1),
-            qml.CRot(0.1, 0.2, 0.3, wires=[2, 3]),
-            qml.Toffoli(wires=[0, 1, 2]),
-            qml.SWAP(wires=[1, 2]),
-            qml.CSWAP(wires=[1, 2, 3]),
-            qml.U1(1.0, wires=0),
-            qml.U2(1.0, 2.0, wires=2),
-            qml.U3(1.0, 2.0, 3.0, wires=3),
-            qml.CRX(0.1, wires=[1, 2]),
-            qml.CRY(0.2, wires=[2, 3]),
-            qml.CRZ(0.3, wires=[3, 1]),
+            qp.X(0),
+            qp.Y(1),
+            qp.Z(2),
+            qp.S(wires=3),
+            qp.T(wires=0),
+            qp.RX(2.3, wires=1),
+            qp.RY(1.3, wires=2),
+            qp.RZ(3.3, wires=3),
+            qp.Hadamard(wires=0),
+            qp.Rot(0.1, 0.2, 0.3, wires=1),
+            qp.CRot(0.1, 0.2, 0.3, wires=[2, 3]),
+            qp.Toffoli(wires=[0, 1, 2]),
+            qp.SWAP(wires=[1, 2]),
+            qp.CSWAP(wires=[1, 2, 3]),
+            qp.U1(1.0, wires=0),
+            qp.U2(1.0, 2.0, wires=2),
+            qp.U3(1.0, 2.0, 3.0, wires=3),
+            qp.CRX(0.1, wires=[1, 2]),
+            qp.CRY(0.2, wires=[2, 3]),
+            qp.CRZ(0.3, wires=[3, 1]),
         ]
 
         layers = 3
@@ -260,10 +260,10 @@ class TestComparison:
             multi-qubit gates."""
             for gates in gates_per_layers:
                 for gate in gates:
-                    qml.apply(gate)
-            return qml.expval(qml.Z(0))
+                    qp.apply(gate)
+            return qp.expval(qp.Z(0))
 
-        qnode_def = qml.QNode(circuit, dev_def)
-        qnode = qml.QNode(circuit, dev)
+        qnode_def = qp.QNode(circuit, dev_def)
+        qnode = qp.QNode(circuit, dev)
 
         assert pnp.allclose(qnode(), qnode_def(), atol=tol(dev.shots))

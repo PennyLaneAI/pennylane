@@ -95,7 +95,7 @@ def apply_clifford_from_idx(idx, wire):
     """Apply a Clifford gate sequence by index on the specified wire.
 
     This function maps an integer index to one of the standard Clifford sequences
-    defined in `clifford_keys_unwired`. The returned function uses `qml.cond`
+    defined in `clifford_keys_unwired`. The returned function uses `qp.cond`
     to select and apply the correct sequence in QJIT-compatible form.
 
     Args:
@@ -123,8 +123,8 @@ def apply_clifford_from_idx(idx, wire):
     # Remaining cases handled as "elif"
     elifs = cases[1:]
 
-    # TODO: use qml.switch once available
-    return qml.cond(head_cond, head_fn, elifs=elifs)
+    # TODO: use qp.switch once available
+    return qp.cond(head_cond, head_fn, elifs=elifs)
 
 
 # pylint: disable=no-value-for-parameter
@@ -147,7 +147,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
     has_leading_t, syllable_sequence, clifford_op_idx = decomposition_info
 
     # Optional leading T gate
-    leading_t_cond = qml.cond(has_leading_t, qml.T)
+    leading_t_cond = qp.cond(has_leading_t, qp.T)
     leading_t_cond(wire)
     ops.append(leading_t_cond.operation)
 
@@ -163,18 +163,18 @@ def _jit_rs_decomposition(wire, decomposition_info):
             is_HT = syllable_sequence[i]
 
             def compose_HT():
-                qml.H(wire)
-                qml.T(wire)
+                qp.H(wire)
+                qp.T(wire)
 
             def compose_SHT():
-                qml.S(wire)
-                qml.H(wire)
-                qml.T(wire)
+                qp.S(wire)
+                qp.H(wire)
+                qp.T(wire)
 
             #  syllable_sequence can be 0, 1 or -1.
-            qml.cond(
+            qp.cond(
                 is_HT != -1,
-                true_fn=qml.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT),
+                true_fn=qp.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT),
             )()
 
         syllable_sequence_loop()
@@ -227,16 +227,16 @@ def rs_decomposition(
 
     .. code-block:: python
 
-        op  = qml.RZ(np.pi/3, wires=0)
-        ops = qml.ops.rs_decomposition(op, epsilon=1e-3)
+        op  = qp.RZ(np.pi/3, wires=0)
+        ops = qp.ops.rs_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
-        matrix_rs = qml.prod(*reversed(ops)).matrix()
+        matrix_rs = qp.prod(*reversed(ops)).matrix()
 
     When the function is run for a sufficient ``max_search_trials``, the output gate sequence
     should implement the same operation approximately, up to an :math:`\epsilon`-error.
 
-    >>> qml.math.allclose(op.matrix(), matrix_rs, atol=1e-3)
+    >>> qp.math.allclose(op.matrix(), matrix_rs, atol=1e-3)
     True
 
     """
@@ -244,7 +244,7 @@ def rs_decomposition(
     with QueuingManager.stop_recording():
 
         # Check for length of wires in the operation
-        if not isinstance(op, (qml.RZ, qml.PhaseShift)):
+        if not isinstance(op, (qp.RZ, qp.PhaseShift)):
             raise ValueError(f"Operator must be a RZ or PhaseShift gate, got {op}")
 
         angle = -op.data[0] / 2
@@ -253,7 +253,7 @@ def rs_decomposition(
 
             # Get the implemented angle with the domain correction and scaling factor for it.
             shift, scale = _domain_correction(angle)
-            phase = 0.0 if isinstance(op, qml.RZ) else angle
+            phase = 0.0 if isinstance(op, qp.RZ) else angle
 
             u, t, k = ZOmega(d=1), ZOmega(), 0
             if not isinstance(scale, ZOmega):  # Get solution for the ± (2k + 1) . PI / 4 case.
@@ -284,9 +284,9 @@ def rs_decomposition(
 
         # If QJIT is active, use the compressed normal form.
         if not is_qjit:
-            unwrapped_angle = qml.math.unwrap(angle)
+            unwrapped_angle = qp.math.unwrap(angle)
             decomposed_gates, g_phase, phase = eval_ross_algorithm(unwrapped_angle)
-            g_phase = qml.math.array(g_phase, like=angle)
+            g_phase = qp.math.array(g_phase, like=angle)
         else:
             if not is_jax:
                 raise ImportError(
@@ -320,29 +320,29 @@ def rs_decomposition(
             decomposed_gates = _jit_rs_decomposition(op.wires[0], decomposed_info)
 
         # Remove inverses if any in the decomposition and handle trivial case
-        new_tape = qml.tape.QuantumScript(decomposed_gates)
+        new_tape = qp.tape.QuantumScript(decomposed_gates)
 
     # Map the wires to that of the operation and queue
     if queuing := QueuingManager.recording():
         QueuingManager.remove(op)
 
     if not is_qjit and (op_wire := op.wires[0]) != 0:
-        [new_tape], _ = qml.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
+        [new_tape], _ = qp.map_wires(new_tape, wire_map={0: op_wire}, queue=True)
     else:
         if queuing:
-            _ = [qml.apply(op) for op in new_tape.operations]
+            _ = [qp.apply(op) for op in new_tape.operations]
 
-    interface = qml.math.get_interface(angle)
-    phase += qml.math.mod(g_phase, 2) * math.pi
+    interface = qp.math.get_interface(angle)
+    phase += qp.math.mod(g_phase, 2) * math.pi
     if is_qjit:
         if not is_jax:
             raise ImportError(
                 "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
             )  # pragma: no cover
         with jax.ensure_compile_time_eval():
-            global_phase = qml.GlobalPhase(phase)
+            global_phase = qp.GlobalPhase(phase)
     else:
-        global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
+        global_phase = qp.GlobalPhase(qp.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
     return new_tape.operations + [global_phase]

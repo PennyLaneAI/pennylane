@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines qml.vjp
+Defines qp.vjp
 """
 
 import warnings
@@ -70,13 +70,13 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
 
     .. code-block:: python
 
-        @qml.qjit
+        @qp.qjit
         def vjp(params, cotangent):
           def f(x):
               y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
               return jnp.stack(y)
 
-          return qml.vjp(f, [params], [cotangent])
+          return qp.vjp(f, [params], [cotangent])
 
     >>> x = jnp.array([0.1, 0.2])
     >>> dy = jnp.array([-0.5, 0.1, 0.3])
@@ -86,7 +86,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None, *, argnum=None
     argnums = argnums if argnums is not None else argnum
     if argnum is not None:
         warnings.warn(
-            "argnum in qml.vjp has been renamed to argnums to match jax and catalyst.",
+            "argnum in qp.vjp has been renamed to argnums to match jax and catalyst.",
             PennyLaneDeprecationWarning,
         )
 

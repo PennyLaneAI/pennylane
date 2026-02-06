@@ -145,7 +145,7 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
 
     Args:
         tape (QuantumTape): original tape
-        split_evolve_ops (tuple[list[qml.Operation]]): The time-split evolution operations as
+        split_evolve_ops (tuple[list[qp.Operation]]): The time-split evolution operations as
             created by ``_split_evol_ops``. For each group of operations, a new tape
             is created.
         op_idx (int): index of the operation to replace within the tape
@@ -349,7 +349,7 @@ def stoch_pulse_grad(
     Returns:
         tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
         structure of measurements in the original circuit.
 
@@ -389,20 +389,20 @@ def stoch_pulse_grad(
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         def sin(p, t):
             return jax.numpy.sin(p * t)
 
-        ZZ = qml.Z(0) @ qml.Z(1)
-        Y_plus_X = qml.dot([1/5, 3/5], [qml.Y(0), qml.X(1)])
-        H = 0.5 * qml.X(0) + qml.pulse.constant * ZZ + sin * Y_plus_X
+        ZZ = qp.Z(0) @ qp.Z(1)
+        Y_plus_X = qp.dot([1/5, 3/5], [qp.Y(0), qp.X(1)])
+        H = 0.5 * qp.X(0) + qp.pulse.constant * ZZ + sin * Y_plus_X
 
         def ansatz(params):
-            qml.evolve(H)(params, (0.2, 0.4))
-            return qml.expval(qml.Y(1))
+            qp.evolve(H)(params, (0.2, 0.4))
+            return qp.expval(qp.Y(1))
 
-        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
+        qnode = qp.QNode(ansatz, dev, interface="jax", diff_method=qp.gradients.stoch_pulse_grad)
 
     The program takes the two parameters :math:`v_1, v_2` for the two trainable terms:
 
@@ -426,11 +426,11 @@ def stoch_pulse_grad(
 
     .. code-block:: python
 
-        qnode = qml.QNode(
+        qnode = qp.QNode(
             ansatz,
             dev,
             interface="jax",
-            diff_method=qml.gradients.stoch_pulse_grad,
+            diff_method=qp.gradients.stoch_pulse_grad,
             num_split_times=5, # Use 5 samples for the approximation
             sampler_seed=18, # Fix randomness seed
         )
@@ -446,11 +446,11 @@ def stoch_pulse_grad(
     .. code-block:: python
 
         from time import process_time
-        faster_grad_qnode = qml.QNode(
+        faster_grad_qnode = qp.QNode(
             ansatz,
             dev,
             interface="jax",
-            diff_method=qml.gradients.stoch_pulse_grad,
+            diff_method=qp.gradients.stoch_pulse_grad,
             num_split_times=5, # Use 5 samples for the approximation
             sampler_seed=18, # Fix randomness seed
             use_broadcasting=True, # Activate broadcasting

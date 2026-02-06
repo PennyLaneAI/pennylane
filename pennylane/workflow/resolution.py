@@ -160,7 +160,7 @@ def _resolve_mcm_config(
 
     if mcm_config.mcm_method == "single-branch-statistics":
         raise ValueError(
-            "Cannot use mcm_method='single-branch-statistics' without qml.qjit or capture enabled."
+            "Cannot use mcm_method='single-branch-statistics' without qp.qjit or capture enabled."
         )
 
     if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
@@ -205,7 +205,7 @@ def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> Execut
     if "device_wires" not in gradient_kwargs and "aux_wire" not in gradient_kwargs:
         gradient_kwargs["device_wires"] = device.wires
     updated_values["gradient_keyword_arguments"] = gradient_kwargs
-    updated_values["gradient_method"] = qml.gradients.hadamard_grad
+    updated_values["gradient_method"] = qp.gradients.hadamard_grad
     return replace(initial_config, **updated_values)
 
 
@@ -221,7 +221,7 @@ def _resolve_diff_method(
     Args:
         initial_config (ExecutionConfig): The initial execution configuration.
         device (Device): A PennyLane device.
-        tape (Optional[qml.tape.QuantumTape]): The circuit that will be differentiated. Should include shots information.
+        tape (Optional[qp.tape.QuantumTape]): The circuit that will be differentiated. Should include shots information.
 
     Returns:
         ExecutionConfig: Updated execution configuration with the resolved differentiation method.
@@ -245,19 +245,19 @@ def _resolve_diff_method(
         return _resolve_hadamard(initial_config, device)
 
     if diff_method in {"best", "parameter-shift"}:
-        if tape and any(isinstance(op, qml.operation.CV) and op.name != "Identity" for op in tape):
-            updated_values["gradient_method"] = qml.gradients.param_shift_cv
+        if tape and any(isinstance(op, qp.operation.CV) and op.name != "Identity" for op in tape):
+            updated_values["gradient_method"] = qp.gradients.param_shift_cv
             updated_values["gradient_keyword_arguments"] = dict(
                 initial_config.gradient_keyword_arguments
             )
             updated_values["gradient_keyword_arguments"]["dev"] = device
         else:
-            updated_values["gradient_method"] = qml.gradients.param_shift
+            updated_values["gradient_method"] = qp.gradients.param_shift
 
     else:
         gradient_transform_map = {
-            "finite-diff": qml.gradients.finite_diff,
-            "spsa": qml.gradients.spsa_grad,
+            "finite-diff": qp.gradients.finite_diff,
+            "spsa": qp.gradients.spsa_grad,
         }
 
         if diff_method in gradient_transform_map:

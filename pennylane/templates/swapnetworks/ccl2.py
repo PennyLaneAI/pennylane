@@ -46,13 +46,13 @@ class TwoLocalSwapNetwork(Operation):
     **Example**
 
     >>> import pennylane as qp
-    >>> dev = qml.device('default.qubit', wires=5)
-    >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device('default.qubit', wires=5)
+    >>> acquaintances = lambda index, wires, param=None: qp.CNOT(index)
+    >>> @qp.qnode(dev)
     ... def swap_network_circuit():
-    ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
-    ...    return qml.state()
-    >>> print(qml.draw(swap_network_circuit, level='device')())
+    ...    qp.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
+    ...    return qp.state()
+    >>> print(qp.draw(swap_network_circuit, level='device')())
     0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤ ╭State
     1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤ ├State
     2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤ ├State
@@ -64,18 +64,18 @@ class TwoLocalSwapNetwork(Operation):
 
         More complex acquaintances can be utilized with the template. For example:
 
-        >>> dev = qml.device('default.qubit', wires=5)
+        >>> dev = qp.device('default.qubit', wires=5)
         >>> rng = np.random.default_rng(12345)
-        >>> weights = rng.random(size=qml.TwoLocalSwapNetwork.shape(len(dev.wires)))
+        >>> weights = rng.random(size=qp.TwoLocalSwapNetwork.shape(len(dev.wires)))
         >>> print(weights) # doctest: +SKIP
         [0.2273 0.3168 0.7974 0.6763 0.3911 0.3328 0.5983 0.1867 0.6728 0.9418]
-        >>> acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
-        ...                                  if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
-        >>> @qml.qnode(dev)
+        >>> acquaintances = lambda index, wires, param: (qp.CRY(param, wires=index)
+        ...                                  if np.abs(wires[0]-wires[1]) else qp.CRZ(param, wires=index))
+        >>> @qp.qnode(dev)
         ... def swap_network_circuit():
-        ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
-        ...    return qml.state()
-        >>> print(qml.draw(swap_network_circuit, level='device')())
+        ...    qp.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
+        ...    return qp.state()
+        >>> print(qp.draw(swap_network_circuit, level='device')())
         0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤ ╭State
         1: ─╰RY(0.23)─╰SWAP─╭●────────╭SWAP─╰RY(0.39)─╰SWAP─╭●────────╭SWAP─╰RY(0.67)─╰SWAP─┤ ├State
         2: ─╭●────────╭SWAP─╰RY(0.80)─╰SWAP─╭●────────╭SWAP─╰RY(0.60)─╰SWAP─╭●────────╭SWAP─┤ ├State
@@ -170,9 +170,9 @@ class TwoLocalSwapNetwork(Operation):
         **Example**
 
         >>> import pennylane as qp
-        >>> dev = qml.device('default.qubit', wires=5)
-        >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
-        >>> qml.TwoLocalSwapNetwork.compute_decomposition(wires=dev.wires,
+        >>> dev = qp.device('default.qubit', wires=5)
+        >>> acquaintances = lambda index, wires, param=None: qp.CNOT(index)
+        >>> qp.TwoLocalSwapNetwork.compute_decomposition(wires=dev.wires,
         ...        acquaintances=acquaintances, fermionic=True, shift=False)
         [CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
         CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3]),

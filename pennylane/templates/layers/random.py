@@ -75,29 +75,29 @@ class RandomLayers(Operation):
             import pennylane as qp
             from pennylane import numpy as pnp
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
             weights = pnp.array([[0.1, -2.1, 1.4]])
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit1(weights):
-                qml.RandomLayers(weights=weights, wires=range(2))
-                return qml.expval(qml.Z(0))
+                qp.RandomLayers(weights=weights, wires=range(2))
+                return qp.expval(qp.Z(0))
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit2(weights):
-                qml.RandomLayers(weights=weights, wires=range(2))
-                return qml.expval(qml.Z(0))
+                qp.RandomLayers(weights=weights, wires=range(2))
+                return qp.expval(qp.Z(0))
 
         >>> pnp.allclose(circuit1(weights), circuit2(weights))
         True
 
         You can verify this by drawing the circuits.
 
-        >>> print(qml.draw(circuit1, level="device")(weights))
+        >>> print(qp.draw(circuit1, level="device")(weights))
         0: ──RY(0.10)──╭●───────────┤  <Z>
         1: ──RX(-2.10)─╰X──RZ(1.40)─┤
 
-        >>> print(qml.draw(circuit2, level="device")(weights))
+        >>> print(qp.draw(circuit2, level="device")(weights))
         0: ──RY(0.10)──╭●───────────┤  <Z>
         1: ──RX(-2.10)─╰X──RZ(1.40)─┤
 
@@ -107,16 +107,16 @@ class RandomLayers(Operation):
         To change the randomly generated circuit architecture, you have to change the seed passed to the template.
         For example, these two calls of ``RandomLayers`` *do not* create the same circuit:
 
-        >>> @qml.qnode(dev)
+        >>> @qp.qnode(dev)
         ... def circuit(weights, seed=None):
-        ...     qml.RandomLayers(weights=weights, wires=range(2), seed=seed)
-        ...     return qml.expval(qml.Z(0))
+        ...     qp.RandomLayers(weights=weights, wires=range(2), seed=seed)
+        ...     return qp.expval(qp.Z(0))
         >>> np.allclose(circuit(weights, seed=9), circuit(weights, seed=12))
         False
-        >>> print(qml.draw(circuit, level="device")(weights, seed=9))
+        >>> print(qp.draw(circuit, level="device")(weights, seed=9))
         0: ──RZ(0.10)────────────┤  <Z>
         1: ──RZ(-2.10)──RZ(1.40)─┤
-        >>> print(qml.draw(circuit, level="device")(weights, seed=12))
+        >>> print(qp.draw(circuit, level="device")(weights, seed=12))
         0: ─╭●─╭X──RY(0.10)──RY(-2.10)─┤  <Z>
         1: ─╰X─╰●──RX(1.40)────────────┤
 
@@ -129,10 +129,10 @@ class RandomLayers(Operation):
 
         .. code-block:: python
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit_rnd(weights):
-                qml.RandomLayers(weights=weights, wires=range(2), seed=None)
-                return qml.expval(qml.Z(0))
+                qp.RandomLayers(weights=weights, wires=range(2), seed=None)
+                return qp.expval(qp.Z(0))
 
             first_call = circuit_rnd(weights)
             second_call = circuit_rnd(weights)
@@ -148,7 +148,7 @@ class RandomLayers(Operation):
 
         .. code-block:: python
 
-            shape = qml.RandomLayers.shape(n_layers=2, n_rotations=3)
+            shape = qp.RandomLayers.shape(n_layers=2, n_rotations=3)
             weights = np.random.random(size=shape)
     """
 
@@ -207,9 +207,9 @@ class RandomLayers(Operation):
         **Example**
 
         >>> weights = torch.tensor([[0.1, -2.1, 1.4]])
-        >>> rotations=[qml.RY, qml.RX]
-        >>> ops = qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
-        ...                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
+        >>> rotations=[qp.RY, qp.RX]
+        >>> ops = qp.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
+        ...                                         imprimitive=qp.CNOT, rotations=rotations, seed=42)
         >>> from pprint import pprint
         >>> pprint(ops)
         [RX(tensor(0.1000), wires=['a']),

@@ -13,7 +13,7 @@
 # limitations under the License.
 # pylint: disable=protected-access
 """
-This module contains the qml.mutual_info measurement.
+This module contains the qp.mutual_info measurement.
 """
 from collections.abc import Sequence
 from copy import copy
@@ -148,12 +148,12 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_mutual(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
+            qp.IsingXX(x, wires=[0, 1])
+            return qp.mutual_info(wires0=[0], wires1=[1])
 
     Executing this QNode:
 
@@ -163,7 +163,7 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
     It is also possible to get the gradient of the previous QNode:
 
     >>> param = np.array(np.pi/4, requires_grad=True)
-    >>> qml.grad(circuit_mutual)(param)
+    >>> qp.grad(circuit_mutual)(param)
     tensor(1.24645048, requires_grad=True)
 
     .. note::

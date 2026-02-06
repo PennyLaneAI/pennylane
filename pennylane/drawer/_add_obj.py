@@ -255,7 +255,7 @@ def _add_mid_measure_op(
     op: MidMeasure | PauliMeasure, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.ops.MidMeasure`` or a ``qml.ops.PauliMeasure``."""
+    ``qp.ops.MidMeasure`` or a ``qp.ops.PauliMeasure``."""
     layer_str = _add_mid_measure_grouping_symbols(op, layer_str, config)
     layer_str = _add_grouping_symbols(op.wires, layer_str, config)
     label_kwargs = {"decimals": config.decimals, "cache": config.cache}

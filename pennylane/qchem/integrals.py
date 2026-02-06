@@ -60,7 +60,7 @@ def primitive_norm(l, alpha):
     n = (
         (2 * alpha / np.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
-        / qml.math.sqrt(_fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1))
+        / qp.math.sqrt(_fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1))
     )
     return n
 
@@ -108,7 +108,7 @@ def contracted_norm(l, alpha, a):
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
-    n = 1 / qml.math.sqrt(c * s)
+    n = 1 / qp.math.sqrt(c * s)
     return n
 
 
@@ -149,7 +149,7 @@ def _generate_params(params, args):
             basis_params.append(p)
             continue
 
-        interface = qml.math.get_deep_interface(p)
+        interface = qp.math.get_deep_interface(p)
         if interface == "autograd":
             if getattr(p, "requires_grad", False):
                 basis_params.append(args[c])
@@ -157,7 +157,7 @@ def _generate_params(params, args):
             else:
                 basis_params.append(p)
         else:
-            if qml.math.requires_grad(args[2 - i]):
+            if qp.math.requires_grad(args[2 - i]):
                 basis_params.append(args[2 - i])
             else:
                 basis_params.append(p)
@@ -225,11 +225,11 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     array([1.])
     """
     p = alpha + beta
-    q = qml.math.array(alpha * beta / p)
+    q = qp.math.array(alpha * beta / p)
     r = ra - rb
 
     if la == lb == t == 0:
-        return qml.math.exp(-q * r**2)
+        return qp.math.exp(-q * r**2)
 
     if t < 0 or t > (la + lb):
         return 0.0
@@ -286,7 +286,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     p = alpha + beta
     s = 1.0
     for i in range(3):
-        s = s * qml.math.sqrt(np.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
+        s = s * qp.math.sqrt(np.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
     return s
 
 
@@ -300,8 +300,8 @@ def _check_requires_grad(basis_param, normalize, args, index):
         or normalize
         or (
             len(args) > 0
-            and qml.math.get_deep_interface(basis_param) == "jax"
-            and qml.math.requires_grad(args[index])
+            and qp.math.get_deep_interface(basis_param) == "jax"
+            and qp.math.requires_grad(args[index])
         )
     )
 
@@ -321,7 +321,7 @@ def overlap_integral(basis_a, basis_b, normalize=True):
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
     >>> args = []
     >>> overlap_integral(mol.basis_set[0], mol.basis_set[0])(*args)
     1.0
@@ -418,7 +418,7 @@ def hermite_moment(alpha, beta, t, order, r):
     if t > order or (order == 0 and t != 0):
         return 0.0
     if order == 0 and t == 0:
-        return qml.math.sqrt(np.pi / p)
+        return qp.math.sqrt(np.pi / p)
     m = (
         hermite_moment(alpha, beta, t - 1, order - 1, r) * t
         + hermite_moment(alpha, beta, t, order - 1, r) * r
@@ -513,7 +513,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
 
     >>> symbols  = ['H', 'Li']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> mol = qp.qchem.Molecule(symbols, geometry)
     >>> args = [mol.r] # initial values of the differentiable parameters
     >>> order, idx =  1, 0
     >>> moment_integral(mol.basis_set[0], mol.basis_set[1], order, idx)(*args)
@@ -547,13 +547,13 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
             na = nb = 1.0
 
         p = alpha[:, np.newaxis] + beta
-        q = qml.math.sqrt(np.pi / p)
+        q = qp.math.sqrt(np.pi / p)
         r = (
             alpha[:, np.newaxis] * ra[:, np.newaxis, np.newaxis]
             + beta * rb[:, np.newaxis, np.newaxis]
         ) / p
 
-        i, j, k = qml.math.roll(qml.math.array([0, 2, 1]), idx)
+        i, j, k = qp.math.roll(qp.math.array([0, 2, 1]), idx)
 
         s = (
             gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, np.newaxis], beta, order, r[i])
@@ -593,11 +593,11 @@ def _diff2(i, j, ri, rj, alpha, beta):
     """
     p = alpha + beta
 
-    d1 = j * (j - 1) * qml.math.sqrt(np.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
+    d1 = j * (j - 1) * qp.math.sqrt(np.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
     d2 = (
-        -2 * beta * (2 * j + 1) * qml.math.sqrt(np.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
+        -2 * beta * (2 * j + 1) * qp.math.sqrt(np.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
     )
-    d3 = 4 * beta**2 * qml.math.sqrt(np.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
+    d3 = 4 * beta**2 * qp.math.sqrt(np.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
 
     return d1 + d2 + d3
 
@@ -647,24 +647,24 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
 
     t1 = (
         _diff2(la[0], lb[0], ra[0], rb[0], alpha, beta)
-        * qml.math.sqrt(np.pi / p)
+        * qp.math.sqrt(np.pi / p)
         * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
-        * qml.math.sqrt(np.pi / p)
+        * qp.math.sqrt(np.pi / p)
         * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
     )
 
     t2 = (
-        qml.math.sqrt(np.pi / p)
+        qp.math.sqrt(np.pi / p)
         * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
         * _diff2(la[1], lb[1], ra[1], rb[1], alpha, beta)
-        * qml.math.sqrt(np.pi / p)
+        * qp.math.sqrt(np.pi / p)
         * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
     )
 
     t3 = (
-        qml.math.sqrt(np.pi / p)
+        qp.math.sqrt(np.pi / p)
         * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
-        * qml.math.sqrt(np.pi / p)
+        * qp.math.sqrt(np.pi / p)
         * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
         * _diff2(la[2], lb[2], ra[2], rb[2], alpha, beta)
     )
@@ -689,7 +689,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [mol.alpha]
     >>> kinetic_integral(mol.basis_set[0], mol.basis_set[1])(*args)
     0.38325367405312843
@@ -758,11 +758,11 @@ def _boys(n, t):
     Returns:
         (array[float]): value of the Boys function
     """
-    return qml.math.where(
+    return qp.math.where(
         t == 0.0,
         1 / (2 * n + 1),
-        qml.math.gammainc(n + 0.5, t + (t == 0.0))
-        * qml.math.gamma(n + 0.5)
+        qp.math.gammainc(n + 0.5, t + (t == 0.0))
+        * qp.math.gamma(n + 0.5)
         / (2 * (t + (t == 0.0)) ** (n + 0.5)),
     )  # (t == 0.0) is added to avoid divide by zero
 
@@ -895,7 +895,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
@@ -923,7 +923,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
-        if _check_requires_grad(basis_a.params[1], normalize, args, 1) and qml.math.requires_grad(
+        if _check_requires_grad(basis_a.params[1], normalize, args, 1) and qp.math.requires_grad(
             basis_a.params[1]
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
@@ -1019,7 +1019,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
             (-1) ** (r + s + w)
         ) * _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
 
-    g = g * 2 * (np.pi**2.5) / (p * q * qml.math.sqrt(p + q))
+    g = g * 2 * (np.pi**2.5) / (p * q * qp.math.sqrt(p + q))
 
     return g
 
@@ -1046,7 +1046,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qp.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]

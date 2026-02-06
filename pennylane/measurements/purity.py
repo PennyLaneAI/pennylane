@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module contains the qml.purity measurement.
+This module contains the qp.purity measurement.
 """
 from pennylane.math import dm_from_state_vector
 from pennylane.math import purity as math_purity
@@ -81,15 +81,15 @@ def purity(wires) -> PurityMP:
 
     .. code-block:: python3
 
-        dev = qml.device("default.mixed", wires=2)
+        dev = qp.device("default.mixed", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_purity(p):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.BitFlip(p, wires=0)
-            qml.BitFlip(p, wires=1)
-            return qml.purity(wires=[0,1])
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.BitFlip(p, wires=0)
+            qp.BitFlip(p, wires=1)
+            return qp.purity(wires=[0,1])
 
     >>> circuit_purity(0.1)
     array(0.7048)

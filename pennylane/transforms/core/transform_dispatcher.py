@@ -150,7 +150,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
               of :class:`~.QuantumScript` and a processing function.
 
             * The transform must have the following structure (type hinting is optional):
-              ``my_tape_transform(tape: qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
+              ``my_tape_transform(tape: qp.tape.QuantumScript, ...) -> tuple[qp.tape.QuantumScriptBatch, qp.typing.PostprocessingFn]``
 
         pass_name (str | None): the name of the associated MLIR pass to be applied when
             Catalyst is used. See Usage Details for more information.
@@ -185,7 +185,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             tape2 = tape.copy()
 
             def post_processing_fn(results):
-                return qml.math.sum(results)
+                return qp.math.sum(results)
 
             return [tape1, tape2], post_processing_fn
 
@@ -196,19 +196,19 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(device=dev)
+        @qp.qnode(device=dev)
         def qnode_circuit(a):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.X(0)
-            qml.RZ(a, wires=1)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.X(0)
+            qp.RZ(a, wires=1)
+            return qp.expval(qp.Z(0))
 
     We first apply ``transform`` to ``my_quantum_transform``:
 
-    >>> dispatched_transform = qml.transform(my_quantum_transform)
+    >>> dispatched_transform = qp.transform(my_quantum_transform)
 
     Now you can use the dispatched transform directly on a :class:`pennylane.QNode`.
 
@@ -248,15 +248,15 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
             import pennylane as qp
 
-            H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
-            measurement = [qml.expval(H)]
-            operations = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
-            tape = qml.tape.QuantumTape(operations, measurement)
+            H = qp.PauliY(2) @ qp.PauliZ(1) + 0.5 * qp.PauliZ(2) + qp.PauliZ(1)
+            measurement = [qp.expval(H)]
+            operations = [qp.Hadamard(0), qp.RX(0.2, 0), qp.RX(0.6, 0), qp.CNOT((0, 1))]
+            tape = qp.tape.QuantumTape(operations, measurement)
 
-            batch1, function1 = qml.transforms.split_non_commuting(tape)
-            batch2, function2 = qml.transforms.merge_rotations(batch1)
+            batch1, function1 = qp.transforms.split_non_commuting(tape)
+            batch2, function2 = qp.transforms.merge_rotations(batch1)
 
-            dev = qml.device("default.qubit", wires=3)
+            dev = qp.device("default.qubit", wires=3)
             result = dev.execute(batch2)
 
         The first ``split_non_commuting`` transform splits the original tape, returning a batch of
@@ -330,19 +330,19 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         properly applied as part of the lower-level compilation.
 
         For example, we can create a transform that will apply the ``cancel-inverses`` pass, like the
-        in-built ``qml.transforms.cancel_inverses`` transform.
+        in-built ``qp.transforms.cancel_inverses`` transform.
 
         .. code-block:: python
 
-            my_transform = qml.transform(pass_name="cancel-inverses")
+            my_transform = qp.transform(pass_name="cancel-inverses")
 
-            @qml.qjit
+            @qp.qjit
             @my_transform
-            @qml.qnode(qml.device('lightning.qubit', wires=4))
+            @qp.qnode(qp.device('lightning.qubit', wires=4))
             def circuit():
-                qml.X(0)
-                qml.X(0)
-                return qml.expval(qml.Z(0))
+                qp.X(0)
+                qp.X(0)
+                return qp.expval(qp.Z(0))
 
         We can see that the instruction to apply ``"cancel-inverses"`` is present in the initial MLIR.
 
@@ -368,21 +368,21 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
             from functools import partial
 
-            @partial(qml.transform, pass_name="my-pass-name")
+            @partial(qp.transform, pass_name="my-pass-name")
             def my_transform(tape):
                 return (tape, ), lambda res: res[0]
 
         Note that any transform with only a ``pass_name`` definition *must* occur after any purely tape-based
         transform, as tape transforms occur prior to lowering to MLIR.
 
-        >>> @qml.qjit
-        ... @qml.defer_measurements
-        ... @qml.transform(pass_name="cancel-inverses")
-        ... @qml.qnode(qml.device('lightning.qubit', wires=4))
+        >>> @qp.qjit
+        ... @qp.defer_measurements
+        ... @qp.transform(pass_name="cancel-inverses")
+        ... @qp.qnode(qp.device('lightning.qubit', wires=4))
         ... def c():
-        ...     qml.X(0)
-        ...     qml.X(0)
-        ...     return qml.expval(qml.Z(0))
+        ...     qp.X(0)
+        ...     qp.X(0)
+        ...     return qp.expval(qp.Z(0))
         ...
         Traceback (most recent call last):
             ...
@@ -412,15 +412,15 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            qml.capture.enable()
+            qp.capture.enable()
 
-            @qml.transforms.cancel_inverses
+            @qp.transforms.cancel_inverses
             def circuit():
-                qml.X(0)
-                qml.S(1)
-                qml.X(0)
-                qml.adjoint(qml.S(1))
-                return qml.expval(qml.Z(1))
+                qp.X(0)
+                qp.S(1)
+                qp.X(0)
+                qp.adjoint(qp.S(1))
+                return qp.expval(qp.Z(1))
 
         >>> jax.make_jaxpr(circuit)()
         { lambda ; . let
@@ -475,7 +475,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         should be used. This function accepts a function to which transforms have been applied
         as an input, and returns a new function that has been transformed:
 
-        >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
+        >>> transformed_circuit = qp.capture.expand_plxpr_transforms(circuit)
         >>> jax.make_jaxpr(transformed_circuit)()
         { lambda ; . let
             a:AbstractOperator() = PauliZ[n_wires=1] 1:i...[]
@@ -570,17 +570,17 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            @qml.transform
+            @qp.transform
             def printer(tape):
                 print("I have a tape: ", tape)
                 return (tape, ), lambda x: x[0]
 
             @printer.register
-            def _(obj: qml.operation.Operator, *targs, **tkwargs):
+            def _(obj: qp.operation.Operator, *targs, **tkwargs):
                 print("I have an operator:", obj)
                 return obj
 
-        >>> printer(qml.X(0))
+        >>> printer(qp.X(0))
         I have an operator: X(0)
         X(0)
 
@@ -619,11 +619,11 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
             @Transform.generic_register
             def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
-                tape = qml.tape.QuantumScript(obj.ops)
+                tape = qp.tape.QuantumScript(obj.ops)
                 batch, _ = transform(tape, *targs, **tkwargs)
                 return Subroutine(batch[0].operations)
 
-        >>> qml.transforms.cancel_inverses(Subroutine([qml.Y(0), qml.X(0), qml.X(0)]))
+        >>> qp.transforms.cancel_inverses(Subroutine([qp.Y(0), qp.X(0), qp.X(0)]))
         <Subroutine: [Y(0)]>
 
         The type can also be explicitly provided like:
@@ -632,7 +632,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
             @Transform.generic_register(Subroutine)
             def apply_to_subroutine(obj: Subroutine, transform, *targs, **tkwargs):
-                tape = qml.tape.QuantumScript(obj.ops)
+                tape = qp.tape.QuantumScript(obj.ops)
                 batch, _ = transform(tape, *targs, **tkwargs)
                 return Subroutine(batch[0].operations)
 
@@ -750,7 +750,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         The default :meth:`~.generic_apply_transform` method may be called
         if only pre- or post-processing dependent on QNode arguments is required.
         """
-        # unfortunately, we don't have access to qml.QNode here, or in the places where
+        # unfortunately, we don't have access to qp.QNode here, or in the places where
         # transforms are defining custom qnode transforms, so we still need to have this
         # "hold onto until later" approach
         # potentially can remove this patch by moving source code
@@ -781,13 +781,13 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     .. seealso:: :func:`~.pennylane.transform`
 
-    >>> bound_t = BoundTransform(qml.transforms.merge_rotations, (), {"atol": 1e-4})
+    >>> bound_t = BoundTransform(qp.transforms.merge_rotations, (), {"atol": 1e-4})
     >>> bound_t
     <merge_rotations((), {'atol': 0.0001})>
 
     The class can also be created by directly calling the transform with its inputs:
 
-    >>> qml.transforms.merge_rotations(atol=1e-4)
+    >>> qp.transforms.merge_rotations(atol=1e-4)
     <merge_rotations((), {'atol': 0.0001})>
 
     These objects can now directly applied to anything individual transforms can apply to:
@@ -795,19 +795,19 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     .. code-block:: python
 
         @bound_t
-        @qml.qnode(qml.device('null.qubit', wires=2))
+        @qp.qnode(qp.device('null.qubit', wires=2))
         def c(x):
-            qml.RX(x, 0)
-            qml.RX(-x + 1e-6, 0)
-            qml.RY(x, 1)
-            qml.RY(-x + 1e-2, 1)
-            return qml.probs(wires=(0,1))
+            qp.RX(x, 0)
+            qp.RX(-x + 1e-6, 0)
+            qp.RY(x, 1)
+            qp.RY(-x + 1e-2, 1)
+            return qp.probs(wires=(0,1))
 
     If we draw this circuit, we can see that the ``merge_rotations`` transforms was applied with a
     tolerance of ``1e-4``.  The ``RX`` gates sufficiently close to zero disappear, while the ``RY`` gates
     that are further from zero remain.
 
-    >>> print(qml.draw(c)(1.0))
+    >>> print(qp.draw(c)(1.0))
     0: ───────────┤ ╭Probs
     1: ──RY(0.01)─┤ ╰Probs
 
@@ -819,9 +819,9 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     And it can be used in conjunction with both individual transforms, bound transforms, and
     compile pipelines.
 
-    >>> bound_t + qml.transforms.cancel_inverses
+    >>> bound_t + qp.transforms.cancel_inverses
     CompilePipeline(merge_rotations, cancel_inverses)
-    >>> bound_t + qml.transforms.cancel_inverses + bound_t
+    >>> bound_t + qp.transforms.cancel_inverses + bound_t
     CompilePipeline(merge_rotations, cancel_inverses, merge_rotations)
 
     """
@@ -939,7 +939,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         """Whether or not a transform is informative. If true the transform is queued at the end
         of the transform program and the tapes or qnode aren't executed.
 
-        This property is rare, but used by such transforms as ``qml.transforms.commutation_dag``.
+        This property is rare, but used by such transforms as ``qp.transforms.commutation_dag``.
         """
         return self._transform.is_informative
 

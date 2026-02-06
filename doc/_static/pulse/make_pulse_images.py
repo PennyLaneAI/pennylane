@@ -32,7 +32,7 @@ def parametrized_coefficients_example(savefile="parametrized_coefficients_exampl
     def f2(p, t):
         return p * jnp.cos(t)
 
-    H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
+    H = 2 * qp.PauliX(0) + f1 * qp.PauliY(0) + f2 * qp.PauliZ(0)
 
     times = jnp.linspace(0., 5., 1000)
     fs = H.coeffs_parametrized
@@ -57,7 +57,7 @@ def parametrized_coefficients_example(savefile="parametrized_coefficients_exampl
 def pwc_example(savefile="pwc_example.png"):
     params = jnp.array([1, 2, 3, 4, 5])
     time = jnp.linspace(0, 10, 1000)
-    y = qml.pulse.pwc(timespan=(2, 7))(params, time)
+    y = qp.pulse.pwc(timespan=(2, 7))(params, time)
 
     plt.plot(time, y, label=f"params = {params}, \n timespan = (2, 7)")
     plt.legend(loc="upper left")
@@ -74,7 +74,7 @@ def rect_example(savefile="rect_example.png"):
     time = jnp.linspace(0, 10, 1000)
 
     y1 = f(p, time)
-    y2 = [qml.pulse.rect(f, windows=[(1, 7)])(p, t) for t in time]
+    y2 = [qp.pulse.rect(f, windows=[(1, 7)])(p, t) for t in time]
 
     plt.plot(time, y1, label=f"polyval, P = {p}")
     plt.plot(time, y2, label="rect(polyval), windows = [(1, 7)]")

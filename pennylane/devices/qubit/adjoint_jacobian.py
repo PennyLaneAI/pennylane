@@ -36,7 +36,7 @@ def _dot_product_real(bra, ket, num_wires):
     """Helper for calculating the inner product for adjoint differentiation."""
     # broadcasted inner product not summing over first dimension of the bra tensor
     sum_axes = tuple(range(1, num_wires + 1))
-    return qml.math.real(qml.math.sum(qml.math.conj(bra) * ket, axis=sum_axes))
+    return qp.math.real(qp.math.sum(qp.math.conj(bra) * ket, axis=sum_axes))
 
 
 def _adjoint_jacobian_state(tape: QuantumScript):
@@ -52,7 +52,7 @@ def _adjoint_jacobian_state(tape: QuantumScript):
     """
     jacobian = []
 
-    has_state_prep = isinstance(tape[0], qml.operation.StatePrepBase)
+    has_state_prep = isinstance(tape[0], qp.operation.StatePrepBase)
     state = create_initial_state(tape.wires, tape[0] if has_state_prep else None)
 
     param_idx = has_state_prep
@@ -63,7 +63,7 @@ def _adjoint_jacobian_state(tape: QuantumScript):
             if param_idx in tape.trainable_params:
                 d_op_matrix = operation_derivative(op)
                 jacobian.append(
-                    apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), state)
+                    apply_operation(qp.QubitUnitary(d_op_matrix, wires=op.wires), state)
                 )
 
             param_idx += 1
@@ -103,7 +103,7 @@ def adjoint_jacobian(tape: QuantumScript, state=None):
     # Map wires if custom wire labels used
     tape = tape.map_to_standard_wires()
 
-    if isinstance(tape.measurements[0], qml.measurements.StateMP):
+    if isinstance(tape.measurements[0], qp.measurements.StateMP):
         return _adjoint_jacobian_state(tape)
 
     ket = state if state is not None else get_final_state(tape)[0]
@@ -118,15 +118,15 @@ def adjoint_jacobian(tape: QuantumScript, state=None):
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
     for op in reversed(tape.operations[tape.num_preps :]):
-        if isinstance(op, qml.Snapshot):
+        if isinstance(op, qp.Snapshot):
             continue
-        adj_op = qml.adjoint(op)
+        adj_op = qp.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
         if op.num_params == 1:
             if param_number in tape.trainable_params:
                 d_op_matrix = operation_derivative(op)
-                ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
+                ket_temp = apply_operation(qp.QubitUnitary(d_op_matrix, wires=op.wires), ket)
                 jac[:, trainable_param_number] = _dot_product_real(bras, ket_temp, len(tape.wires))
 
                 trainable_param_number -= 1
@@ -178,7 +178,7 @@ def adjoint_jvp(tape: QuantumScript, tangents: tuple[Number], state=None):
     # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
-        tapes, fn = qml.map_wires(tape, wire_map)
+        tapes, fn = qp.map_wires(tape, wire_map)
         tape = fn(tapes)
 
     ket = state if state is not None else get_final_state(tape)[0]
@@ -194,7 +194,7 @@ def adjoint_jvp(tape: QuantumScript, tangents: tuple[Number], state=None):
     tangents_out = np.zeros(n_obs)
 
     for op in reversed(tape.operations[tape.num_preps :]):
-        adj_op = qml.adjoint(op)
+        adj_op = qp.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
         if op.num_params == 1:
@@ -202,7 +202,7 @@ def adjoint_jvp(tape: QuantumScript, tangents: tuple[Number], state=None):
                 # don't do anything if the tangent is 0
                 if not np.allclose(tangents[trainable_param_number], 0):
                     d_op_matrix = operation_derivative(op)
-                    ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
+                    ket_temp = apply_operation(qp.QubitUnitary(d_op_matrix, wires=op.wires), ket)
 
                     tangents_out += (
                         2
@@ -239,7 +239,7 @@ def _get_vjp_bras(tape, cotangents, ket):
               cotangents
     """
 
-    if isinstance(tape.measurements[0], qml.measurements.StateMP):
+    if isinstance(tape.measurements[0], qp.measurements.StateMP):
         batched_cotangents = np.ndim(cotangents) == 2
         batch_size = np.shape(cotangents)[0] if batched_cotangents else None
         bras = np.conj(cotangents.reshape(-1, *ket.shape))
@@ -296,7 +296,7 @@ def _get_vjp_bras(tape, cotangents, ket):
             if len(new_cs) == 0:
                 null_batch_indices.append(i)
             else:
-                new_obs.append(qml.dot(new_cs, new_os))
+                new_obs.append(qp.dot(new_cs, new_os))
 
     else:
         new_cs, new_os = [], []
@@ -305,7 +305,7 @@ def _get_vjp_bras(tape, cotangents, ket):
                 new_cs.append(c)
                 new_os.append(o)
 
-        new_obs.append(qml.dot(new_cs, new_os))
+        new_obs.append(qp.dot(new_cs, new_os))
 
     # Create bra(s) by taking product of observable(s) with the final state
     bras = np.empty((len(new_obs), *ket.shape), dtype=ket.dtype)
@@ -362,7 +362,7 @@ def adjoint_vjp(tape: QuantumScript, cotangents: tuple[Number, ...], state=None)
     # Map wires if custom wire labels used)
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
-        tapes, fn = qml.map_wires(tape, wire_map)
+        tapes, fn = qp.map_wires(tape, wire_map)
         tape = fn(tapes)
 
     ket = state if state is not None else get_final_state(tape)[0]
@@ -374,7 +374,7 @@ def adjoint_vjp(tape: QuantumScript, cotangents: tuple[Number, ...], state=None)
             return tuple(0.0 for _ in tape.trainable_params)
         return tuple(np.zeros((len(tape.trainable_params), batch_size)))
 
-    if isinstance(tape.measurements[0], qml.measurements.StateMP):
+    if isinstance(tape.measurements[0], qp.measurements.StateMP):
 
         def real_if_expval(val):
             return val
@@ -396,13 +396,13 @@ def adjoint_vjp(tape: QuantumScript, cotangents: tuple[Number, ...], state=None)
     summing_axis = None if batch_size is None else tuple(range(1, np.ndim(bras)))
 
     for op in reversed(tape.operations[tape.num_preps :]):
-        adj_op = qml.adjoint(op)
+        adj_op = qp.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
         if op.num_params == 1:
             if param_number in tape.trainable_params:
                 d_op_matrix = operation_derivative(op)
-                ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
+                ket_temp = apply_operation(qp.QubitUnitary(d_op_matrix, wires=op.wires), ket)
 
                 # Pad cotangent in with zeros for batch number with zero cotangents
                 cot_in = real_if_expval(np.sum(np.conj(bras) * ket_temp, axis=summing_axis))

@@ -55,16 +55,16 @@ class FABLE(Operation):
     .. code-block:: python
 
         input_matrix = np.array([[0.1, 0.2],[0.3, -0.2]])
-        dev = qml.device('default.qubit', wires=3)
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit', wires=3)
+        @qp.qnode(dev)
         def example_circuit():
-            qml.FABLE(input_matrix, wires=range(3), tol=0)
-            return qml.state()
+            qp.FABLE(input_matrix, wires=range(3), tol=0)
+            return qp.state()
 
     We can see that the input matrix has been block encoded in the matrix of the circuit:
 
     >>> s = int(np.ceil(np.log2(max(len(input_matrix), len(input_matrix[0])))))
-    >>> expected = 2**s * qml.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
+    >>> expected = 2**s * qp.matrix(example_circuit)().real[0 : 2**s, 0 : 2**s]
     >>> print(f"Block-encoded matrix:\n{expected}")
     Block-encoded matrix:
     [[ 0.1  0.2]

@@ -69,25 +69,25 @@ class GroverOperator(Operation):
         wires = list(range(n_wires))
 
         def oracle():
-            qml.Hadamard(wires[-1])
-            qml.Toffoli(wires=wires)
-            qml.Hadamard(wires[-1])
+            qp.Hadamard(wires[-1])
+            qp.Toffoli(wires=wires)
+            qp.Hadamard(wires[-1])
 
     We can then implement the entire Grover Search Algorithm for ``num_iterations`` iterations by alternating calls to the oracle and the diffusion operator:
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=wires)
+        dev = qp.device('default.qubit', wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def GroverSearch(num_iterations=1):
             for wire in wires:
-                qml.Hadamard(wire)
+                qp.Hadamard(wire)
 
             for _ in range(num_iterations):
                 oracle()
-                qml.templates.GroverOperator(wires=wires)
-            return qml.probs(wires)
+                qp.templates.GroverOperator(wires=wires)
+            return qp.probs(wires)
 
     >>> GroverSearch(num_iterations=1) # doctest: +SKIP
     array([0.0312, 0.0312, 0.0312, 0.0312, 0.0312, 0.0312, 0.0312, 0.7812])
@@ -217,7 +217,7 @@ class GroverOperator(Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`.GroverOperator.matrix` and :func:`qml.matrix() <pennylane.matrix>`
+        .. seealso:: :meth:`.GroverOperator.matrix` and :func:`qp.matrix() <pennylane.matrix>`
 
         Args:
             n_wires (int): Number of wires the ``GroverOperator`` acts on

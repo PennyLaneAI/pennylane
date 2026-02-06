@@ -96,7 +96,7 @@ def determine_abstracted_axes(args):
 
         def f(n):
             x = jax.numpy.ones((n,))
-            abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((x,))
+            abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes((x,))
             jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=abstracted_axes)(x)
             return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
 
@@ -107,7 +107,7 @@ def determine_abstracted_axes(args):
     ...    return x
     >>> def workflow(i):
     ...     args = (i, jax.numpy.ones((i, )))
-    ...     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+    ...     abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
     ...     print("abstracted_axes: ", abstracted_axes)
     ...     print("abstract_shapes: ", abstract_shapes)
     ...     print("jaxpr: ", jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args))

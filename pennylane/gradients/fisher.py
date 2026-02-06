@@ -29,7 +29,7 @@ from pennylane.workflow import execute
 from .metric_tensor import metric_tensor
 
 
-# TODO: create qml.math.jacobian and replace it here
+# TODO: create qp.math.jacobian and replace it here
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
     import torch
@@ -43,7 +43,7 @@ def _torch_jac(circ):
     return wrapper
 
 
-# TODO: create qml.math.jacobian and replace it here
+# TODO: create qp.math.jacobian and replace it here
 def _tf_jac(circ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """TF jacobian as a callable function"""
     import tensorflow as tf
@@ -111,7 +111,7 @@ def classical_fisher(qnode, argnums=0):
     for :math:`N` qubits.
 
     Args:
-        tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        tape (:class:`.QNode` or qp.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
         argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
     Returns:
@@ -132,15 +132,15 @@ def classical_fisher(qnode, argnums=0):
 
         import pennylane.numpy as np
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.CNOT([0, 1])
-            qml.CRY(params[1], wires=[1, 0])
-            qml.Hadamard(1)
-            return qml.probs(wires=[0, 1])
+            qp.RX(params[0], wires=0)
+            qp.CNOT([0, 1])
+            qp.CRY(params[1], wires=[1, 0])
+            qp.Hadamard(1)
+            return qp.probs(wires=[0, 1])
 
     Executing this circuit yields the ``2**2=4`` elements of :math:`p_\ell(\bm{\theta})`
 
@@ -152,7 +152,7 @@ def classical_fisher(qnode, argnums=0):
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
     by ``classical_fisher()``:
 
-    >>> cfim_func = qml.gradients.classical_fisher(circ)
+    >>> cfim_func = qp.gradients.classical_fisher(circ)
     >>> cfim_func(params)
     tensor([[ 0.90156094, -0.12555804],
             [-0.12555804,  0.01748614]], requires_grad=True)
@@ -161,16 +161,16 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            return qml.probs(wires=range(1))
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            return qp.probs(wires=range(1))
 
     >>> x, y = np.array([0.5, 0.6], requires_grad=True)
     >>> circ(x, y)
     tensor([0.86215007, 0.13784993], requires_grad=True)
-    >>> qml.gradients.classical_fisher(circ)(x, y)
+    >>> qp.gradients.classical_fisher(circ)(x, y)
     [tensor([[0.32934729]], requires_grad=True),
     tensor([[0.51650396]], requires_grad=True)]
 
@@ -185,24 +185,24 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        H = qml.Hamiltonian(coeffs=[0.5, 0.5], observables=[qml.Z(0), qml.Z(1)])
+        H = qp.Hamiltonian(coeffs=[0.5, 0.5], observables=[qp.Z(0), qp.Z(1)])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.RX(params[2], wires=1)
-            qml.RY(params[3], wires=1)
-            qml.CNOT(wires=(0,1))
-            return qml.expval(H)
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            qp.RX(params[2], wires=1)
+            qp.RY(params[3], wires=1)
+            qp.CNOT(wires=(0,1))
+            return qp.expval(H)
 
         params = np.random.random(4)
 
     We can compute both the gradient of :math:`\langle H \rangle` and the CFIM with the same :class:`.QNode` ``circ``
-    in this example since ``classical_fisher()`` ignores the return types and assumes ``qml.probs()`` for all wires.
+    in this example since ``classical_fisher()`` ignores the return types and assumes ``qp.probs()`` for all wires.
 
-    >>> grad = qml.grad(circ)(params)
-    >>> cfim = qml.gradients.classical_fisher(circ)(params)
+    >>> grad = qp.grad(circ)(params)
+    >>> cfim = qp.gradients.classical_fisher(circ)(params)
     >>> print(grad.shape, cfim.shape)
     (4,) (4, 4)
 
@@ -217,20 +217,20 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(params):
-            qml.RX(qml.math.cos(params[0]), wires=0)
-            qml.RX(qml.math.cos(params[0]), wires=1)
-            qml.RX(qml.math.cos(params[1]), wires=0)
-            qml.RX(qml.math.cos(params[1]), wires=1)
-            return qml.probs(wires=range(2))
+            qp.RX(qp.math.cos(params[0]), wires=0)
+            qp.RX(qp.math.cos(params[0]), wires=1)
+            qp.RX(qp.math.cos(params[1]), wires=0)
+            qp.RX(qp.math.cos(params[1]), wires=1)
+            return qp.probs(wires=range(2))
 
         params = np.random.random(2)
 
-    >>> qml.gradients.classical_fisher(circ)(params)
+    >>> qp.gradients.classical_fisher(circ)(params)
     tensor([[0.86929514, 0.76134441],
             [0.76134441, 0.6667992 ]], requires_grad=True)
-    >>> qml.jacobian(qml.gradients.classical_fisher(circ))(params)
+    >>> qp.jacobian(qp.gradients.classical_fisher(circ))(params)
     array([[[ 1.98284265e+00, -1.60461922e-16],
             [ 8.68304725e-01,  1.07654307e+00]],
            [[ 8.68304725e-01,  1.07654307e+00],
@@ -316,7 +316,7 @@ def quantum_fisher(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the quantum Fisher information in the form of a tensor.
 
     .. note::
@@ -339,26 +339,26 @@ def quantum_fisher(
 
         n_wires = 2
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        dev = qp.device("default.qubit", wires=n_wires)
 
-        H = 1.*qml.X(0) @ qml.X(1) - 0.5 * qml.Z(1)
+        H = 1.*qp.X(0) @ qp.X(1) - 0.5 * qp.Z(1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(params):
-            qml.RY(params[0], wires=1)
-            qml.CNOT(wires=(1,0))
-            qml.RY(params[1], wires=1)
-            qml.RZ(params[2], wires=1)
-            return qml.expval(H)
+            qp.RY(params[0], wires=1)
+            qp.CNOT(wires=(1,0))
+            qp.RY(params[1], wires=1)
+            qp.RZ(params[2], wires=1)
+            return qp.expval(H)
 
         params = np.array([0.5, 1., 0.2], requires_grad=True)
 
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
-    >>> grad = qml.grad(circ)(params)
+    >>> grad = qp.grad(circ)(params)
     >>> grad
     array([ 0.59422561, -0.02615095, -0.05146226])
-    >>> qfim = qml.gradients.quantum_fisher(circ)(params)
+    >>> qfim = qp.gradients.quantum_fisher(circ)(params)
     >>> qfim
     tensor([[1.        , 0.        , 0.        ],
             [0.        , 1.        , 0.        ],
@@ -369,20 +369,20 @@ def quantum_fisher(
     When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
     To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
 
-    >>> dev = qml.device("default.qubit", wires=n_wires+1)
-    >>> @qml.set_shots(shots=1000)
-    ... @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=n_wires+1)
+    >>> @qp.set_shots(shots=1000)
+    ... @qp.qnode(dev)
     ... def circ(params):
-    ...     qml.RY(params[0], wires=1)
-    ...     qml.CNOT(wires=(1,0))
-    ...     qml.RY(params[1], wires=1)
-    ...     qml.RZ(params[2], wires=1)
-    ...     return qml.expval(H)
-    >>> qfim = qml.gradients.quantum_fisher(circ)(params)
+    ...     qp.RY(params[0], wires=1)
+    ...     qp.CNOT(wires=(1,0))
+    ...     qp.RY(params[1], wires=1)
+    ...     qp.RZ(params[2], wires=1)
+    ...     return qp.expval(H)
+    >>> qfim = qp.gradients.quantum_fisher(circ)(params)
 
     Alternatively, we can fall back on the block-diagonal QFIM without the additional wire.
 
-    >>> qfim = qml.gradients.quantum_fisher(circ, approx="block-diag")(params)
+    >>> qfim = qp.gradients.quantum_fisher(circ, approx="block-diag")(params)
 
     """
 

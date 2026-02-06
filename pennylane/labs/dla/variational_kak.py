@@ -76,7 +76,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         def Kc(theta_opt: Iterable[float], k: Iterable[Operator]):
             assert len(theta_opt) == len(k)
             for theta_j, k_j in zip(theta_opt, k):
-                qml.exp(-1j * theta_j * k_j)
+                qp.exp(-1j * theta_j * k_j)
 
     Internally, this function performs a modified version of `2104.00728 <https://arxiv.org/abs/2104.00728>`__,
     in particular minimizing the cost function
@@ -143,9 +143,9 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         gens = [X(i) @ X(i + 1) for i in range(n - 1)]
         gens += [Z(i) for i in range(n)]
-        H = qml.sum(*gens)
+        H = qp.sum(*gens)
 
-        g = qml.lie_closure(gens)
+        g = qp.lie_closure(gens)
         g = [op.pauli_rep for op in g]
 
         involution = concurrence_involution
@@ -155,7 +155,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         assert check_cartan_decomp(k, m)
 
         g = k + m
-        adj = qml.structure_constants(g)
+        adj = qp.structure_constants(g)
 
         g, k, mtilde, a, adj = horizontal_cartan_subalgebra(g, k, m, adj, tol=1e-14, start_idx=0)
 
@@ -183,7 +183,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         m = mtilde + a
         [a_op] = adjvec_to_op([adjvec_a], m)
-        a_m = qml.matrix(a_op, wire_order=range(n))
+        a_m = qp.matrix(a_op, wire_order=range(n))
         assert np.allclose(a_m, a_m.conj().T)
 
     Let us now confirm that we get back the original Hamiltonian from the resulting :math:`K_c` and :math:`a`.
@@ -195,16 +195,16 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         def Kc(theta_opt):
             for th, op in zip(theta_opt, k):
-                qml.exp(-1j * th * op.operation())
+                qp.exp(-1j * th * op.operation())
 
-        Kc_m = qml.matrix(Kc, wire_order=range(n))(theta_opt)
+        Kc_m = qp.matrix(Kc, wire_order=range(n))(theta_opt)
 
         # check Unitary property of Kc
         assert np.allclose(Kc_m.conj().T @ Kc_m, np.eye(2**n))
 
         H_reconstructed = Kc_m @ a_m @ Kc_m.conj().T
 
-        H_m = qml.matrix(H, wire_order=range(len(H.wires)))
+        H_m = qp.matrix(H, wire_order=range(len(H.wires)))
 
         # check Hermitian property of reconstructed Hamiltonian
         assert np.allclose(
@@ -302,7 +302,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     [a_elem] = adjvec_to_op([vec_a], g[len(k) :])  # sum(c * op for c, op in zip(vec_h, m))
 
     if isinstance(a_elem, Operator):
-        a_elem_m = qml.matrix(a_elem, wire_order=range(n))
+        a_elem_m = qp.matrix(a_elem, wire_order=range(n))
     elif isinstance(a_elem, PauliSentence):
         a_elem_m = a_elem.to_mat(wire_order=range(n))
     else:
@@ -315,7 +315,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     Km = jnp.eye(2**n)
     assert len(theta_opt) == len(k)
     for th, op in zip(theta_opt, k):
-        opm = qml.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
+        opm = qp.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
         Km @= jax.scipy.linalg.expm(1j * th * opm)
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
@@ -323,7 +323,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # Compute K_c^† a K_c
     H_reconstructed = Km.conj().T @ a_elem_m @ Km
 
-    H_m = qml.matrix(H, wire_order=range(len(H.wires)))
+    H_m = qp.matrix(H, wire_order=range(len(H.wires)))
 
     if verbose:
         print(f"Original matrix: {H_m}")

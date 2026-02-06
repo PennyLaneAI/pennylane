@@ -56,7 +56,7 @@ def pauli_to_xz(op: Operator) -> tuple[int, int]:
     :math:`encode_{xz}(Y) = (1, 1)` and :math:`encode_{xz}(Z) = (0, 1)`.
 
     Args:
-        op (qml.operation.Operator): A Pauli operator.
+        op (qp.operation.Operator): A Pauli operator.
 
     Return:
         A tuple of xz encoding data, :math:`x` is the exponent of the :class:`~pennylane.X`, :math:`z` is the exponent of
@@ -113,7 +113,7 @@ def pauli_prod(ops: list[Operator]) -> tuple[int, int]:
     Mathematically, this function returns :math:`\prod_{i=0}^{n} ops[i]`.
 
     Args:
-        ops (List[qml.operation.Operator]): A list of Pauli operators with the same target wire.
+        ops (List[qp.operation.Operator]): A list of Pauli operators with the same target wire.
 
     Return:
         A xz tuple representing a new Pauli operator.
@@ -191,7 +191,7 @@ def commute_clifford_op(clifford_op: Operator, xz: list[tuple[int, int]]) -> lis
     :math:`new\_xz` represent a list of Pauli operations.
 
     Args:
-        clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qml.S`, :class:`qml.H`, :class:`qml.CNOT`.
+        clifford_op (Operator): A Clifford operator class. Supported operators are: :class:`qp.S`, :class:`qp.H`, :class:`qp.CNOT`.
         xz (list(tuple)): A list of xz tuples which map to Pauli operators
 
     Return:
@@ -235,7 +235,7 @@ def commute_clifford_op(clifford_op: Operator, xz: list[tuple[int, int]]) -> lis
         _xt, _zt = xz[1]
         return _commute_cnot(_xc, _zc, _xt, _zt)
 
-    raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
+    raise NotImplementedError("Only qp.H, qp.S and qp.CNOT are supported.")
 
 
 def _parse_mid_measurements(tape: QuantumScript, mid_meas: list):
@@ -341,7 +341,7 @@ def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals
     at `wires` with the corresponding recorded x.
 
         Args:
-            tape (tape: qml.tape.QuantumScript): A quantum tape.
+            tape (tape: qp.tape.QuantumScript): A quantum tape.
             measurement_vals (List) : A list of measurement values.
             x_record (math.array): The array of recorded x for each wire.
             measurement_vals (List): Measurement values.
@@ -362,11 +362,11 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
     and non-Clifford gates. Note that byproduct operations are stored as a list and accessed in a stack manner. The calculation iteratively
     pops out the first operation in the tape and applies commutation rules for the first byproduct ops in the byproduct stack and
     then the results are commutated to the byproduct of the current operations in the tape if it is a Clifford gate. The calculation
-    starts from applying commutate rules for :class:`qml.I` gate or :math:`encode\_xz(x,z)=(0,0)` to the first gate in the tape. The
+    starts from applying commutate rules for :class:`qp.I` gate or :math:`encode\_xz(x,z)=(0,0)` to the first gate in the tape. The
     measurement corrections are returned based on the observable operators and the xz recorded.
 
     Args:
-        tape (tape: qml.tape.QuantumScript): A Clifford quantum tape with :class:`~pennylane.X`, :class:`~pennylane.Y`, :class:`~pennylane.Z`,
+        tape (tape: qp.tape.QuantumScript): A Clifford quantum tape with :class:`~pennylane.X`, :class:`~pennylane.Y`, :class:`~pennylane.Z`,
             :class:`~pennylane.I`, :class:`~pennylane.H`, :class:`~pennylane.S`, :class:`~pennylane.CNOT` and non-Clifford gates (:class:`~pennylane.RZ`
             and :class:`~pennylane.ftqc.RotXZX`) at the beginning of circuit in the standard circuit formalism. Note that one non-Clifford gate per wire
             at most is supported.
@@ -402,58 +402,58 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
 
             num_shots = 1000
-            dev = qml.device("lightning.qubit")
+            dev = qp.device("lightning.qubit")
 
-            @qml.set_shots(num_shots)
+            @qp.set_shots(num_shots)
             @diagonalize_mcms
-            @qml.qnode(dev, mcm_method="one-shot")
+            @qp.qnode(dev, mcm_method="one-shot")
             def circ(start_state):
-                qml.StatePrep(start_state, wires=[0])
+                qp.StatePrep(start_state, wires=[0])
                 GraphStatePrep(generate_rot_gate_graph(), wires=[1, 2, 3, 4])
-                qml.CZ(wires=[0, 1])
+                qp.CZ(wires=[0, 1])
                 m0 = measure_x(0, reset=True)
                 m1 = measure_y(1, reset=True)
                 m2 = measure_y(2, reset=True)
                 m3 = measure_y(3, reset=True)
 
                 GraphStatePrep(generate_rot_gate_graph(), wires=[3, 2, 1, 0])
-                qml.CZ(wires=[3, 4])
+                qp.CZ(wires=[3, 4])
                 m4 = measure_x(4, reset=True)
                 m5 = measure_y(3, reset=True)
                 m6 = measure_y(2, reset=True)
                 m7 = measure_y(1, reset=True)
 
                 GraphStatePrep(generate_rot_gate_graph(), wires=[1, 2, 3, 4])
-                qml.CZ(wires=[0, 1])
+                qp.CZ(wires=[0, 1])
                 m8 = measure_x(0, reset=True)
                 m9 = measure_y(1, reset=True)
                 m10 = measure_y(2, reset=True)
                 m11 = measure_y(3, reset=True)
 
                 return (
-                    qml.sample(wires=[4]),
-                    qml.sample(m0),
-                    qml.sample(m1),
-                    qml.sample(m2),
-                    qml.sample(m3),
-                    qml.sample(m4),
-                    qml.sample(m5),
-                    qml.sample(m6),
-                    qml.sample(m7),
-                    qml.sample(m8), qml.sample(m9), qml.sample(m10), qml.sample(m11)
+                    qp.sample(wires=[4]),
+                    qp.sample(m0),
+                    qp.sample(m1),
+                    qp.sample(m2),
+                    qp.sample(m3),
+                    qp.sample(m4),
+                    qp.sample(m5),
+                    qp.sample(m6),
+                    qp.sample(m7),
+                    qp.sample(m8), qp.sample(m9), qp.sample(m10), qp.sample(m11)
                 )
 
             init_state = generate_random_state(1)
             res = circ(init_state)
 
-            ops = [qml.H(wires=[0]), qml.H(wires=[0]), qml.H(wires=[0])]
-            measurements = [qml.sample(qml.Z(0))]
+            ops = [qp.H(wires=[0]), qp.H(wires=[0]), qp.H(wires=[0])]
+            measurements = [qp.sample(qp.Z(0))]
 
             meas_res = res[0]
             mid_meas_res = res[1:]
             corrected_meas_res = []
 
-            script = qml.tape.QuantumScript(ops, measurements, shots=num_shots)
+            script = qp.tape.QuantumScript(ops, measurements, shots=num_shots)
 
             for i in range(num_shots):
                 mid_meas = [row[i] for row in mid_meas_res]
@@ -461,16 +461,16 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
             res_corrected = 1 - 2*np.sum(corrected_meas_res) / num_shots
 
-            dev_ref = qml.device("default.qubit")
+            dev_ref = qp.device("default.qubit")
 
             @diagonalize_mcms
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circ_ref(start_state):
-                qml.StatePrep(start_state, wires=[0])
-                qml.H(0)
-                qml.H(0)
-                qml.H(0)
-                return qml.expval(qml.Z(0))
+                qp.StatePrep(start_state, wires=[0])
+                qp.H(0)
+                qp.H(0)
+                qp.H(0)
+                return qp.expval(qp.Z(0))
 
             np.allclose(res_corrected, circ_ref(init_state))
 

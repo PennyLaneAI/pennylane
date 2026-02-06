@@ -93,7 +93,7 @@ class QuantumPhaseEstimation(ErrorOperation):
 
             phase = 5
             target_wires = [0]
-            unitary = qml.RX(phase, wires=0).matrix()
+            unitary = qp.RX(phase, wires=0).matrix()
 
         The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. An example is
         shown below using a register of five phase-estimation qubits:
@@ -103,12 +103,12 @@ class QuantumPhaseEstimation(ErrorOperation):
             n_estimation_wires = 5
             estimation_wires = range(1, n_estimation_wires + 1)
 
-            dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+            dev = qp.device("default.qubit", wires=n_estimation_wires + 1)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
                 # Start in the |+> eigenstate of the unitary
-                qml.Hadamard(wires=target_wires)
+                qp.Hadamard(wires=target_wires)
 
                 QuantumPhaseEstimation(
                     unitary,
@@ -116,7 +116,7 @@ class QuantumPhaseEstimation(ErrorOperation):
                     estimation_wires=estimation_wires,
                 )
 
-                return qml.probs(estimation_wires)
+                return qp.probs(estimation_wires)
 
             phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
@@ -130,23 +130,23 @@ class QuantumPhaseEstimation(ErrorOperation):
 
 
             # use the product to specify compound operators
-            unitary = qml.RX(np.pi / 2, wires=[0]) @ qml.CNOT(wires=[0, 1])
+            unitary = qp.RX(np.pi / 2, wires=[0]) @ qp.CNOT(wires=[0, 1])
             eigenvector = np.array([-1/2, -1/2, 1/2, 1/2])
 
             n_estimation_wires = 5
             estimation_wires = range(2, n_estimation_wires + 2)
             target_wires = [0, 1]
 
-            dev = qml.device("default.qubit", wires=n_estimation_wires + 2)
+            dev = qp.device("default.qubit", wires=n_estimation_wires + 2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.StatePrep(eigenvector, wires=target_wires)
+                qp.StatePrep(eigenvector, wires=target_wires)
                 QuantumPhaseEstimation(
                     unitary,
                     estimation_wires=estimation_wires,
                 )
-                return qml.probs(estimation_wires)
+                return qp.probs(estimation_wires)
 
             phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
@@ -232,9 +232,9 @@ class QuantumPhaseEstimation(ErrorOperation):
 
         **Example**
 
-        >>> class CustomOP(qml.resource.ErrorOperation):
+        >>> class CustomOP(qp.resource.ErrorOperation):
         ...    def error(self):
-        ...       return qml.resource.SpectralNormError(0.005)
+        ...       return qp.resource.SpectralNormError(0.005)
         >>> Op = CustomOP(wires=[0])
         >>> QPE = QuantumPhaseEstimation(Op, estimation_wires = range(1, 5))
         >>> QPE.error()

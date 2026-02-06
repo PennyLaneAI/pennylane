@@ -55,18 +55,18 @@ class Tracker:
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qp.device('default.qubit', wires=1)
 
-        @qml.set_shots(shots=100)
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.set_shots(shots=100)
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Z(0))
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.Tracker(dev) as tracker:
-            qml.grad(circuit)(x)
+        with qp.Tracker(dev) as tracker:
+            qp.grad(circuit)(x)
 
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
@@ -99,7 +99,7 @@ class Tracker:
     {1: 1}
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
-    forward pass and one batch of length two for the derivative of ``qml.RX``.
+    forward pass and one batch of length two for the derivative of ``qp.RX``.
 
     .. details::
         :title: Usage Details
@@ -121,8 +121,8 @@ class Tracker:
         ...     if 'shots' in latest:
         ...         print("Total shots: ", totals['shots'])
         >>> x = np.array(0.1, requires_grad=True)
-        >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
-        ...     qml.grad(circuit)(x)
+        >>> with qp.Tracker(circuit.device, callback=shots_info) as tracker:
+        ...     qp.grad(circuit)(x)
         Total shots:  100
         Total shots:  200
         Total shots:  300
@@ -130,24 +130,24 @@ class Tracker:
         By specifying ``persistent=False``, you can reuse the same tracker across
         multiple contexts.
 
-        >>> with qml.Tracker(circuit.device, persistent=False) as tracker:
+        >>> with qp.Tracker(circuit.device, persistent=False) as tracker:
         ...     circuit(0.1)
         >>> with tracker:
         ...     circuit(0.2)
         >>> tracker.totals['executions']
         2
 
-        When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we can track the resources
+        When used with the null qubit device (eg. ``dev = qp.device("null.qubit")``), we can track the resources
         used in the circuit without execution!
 
-        >>> dev = qml.device("null.qubit", wires=[0])
-        >>> @qml.set_shots(shots=10)
-        ... @qml.qnode(dev)
+        >>> dev = qp.device("null.qubit", wires=[0])
+        >>> @qp.set_shots(shots=10)
+        ... @qp.qnode(dev)
         ... def circuit(x):
-        ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.Z(0))
+        ...     qp.RX(x, wires=0)
+        ...     return qp.expval(qp.Z(0))
         ...
-        >>> with qml.Tracker(dev) as tracker:
+        >>> with qp.Tracker(dev) as tracker:
         ...     circuit(0.1)
         ...
         >>> resources_lst = tracker.history['resources']

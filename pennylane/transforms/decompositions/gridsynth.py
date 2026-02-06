@@ -37,15 +37,15 @@ def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(x):
-            qml.Hadamard(0)
-            qml.RZ(x, 0)
-            qml.PhaseShift(x * 0.2, 0)
-            return qml.state()
+            qp.Hadamard(0)
+            qp.RZ(x, 0)
+            qp.PhaseShift(x * 0.2, 0)
+            return qp.state()
 
-        gridsynth_circuit = qml.transforms.gridsynth(circuit, epsilon=1e-4)
-        qjitted_circuit = qml.qjit(gridsynth_circuit)
+        gridsynth_circuit = qp.transforms.gridsynth(circuit, epsilon=1e-4)
+        qjitted_circuit = qp.qjit(gridsynth_circuit)
 
     >>> circuit(1.1) # doctest: +SKIP
     [0.60282587-0.36959568j 0.5076395 +0.49224195j]
@@ -65,5 +65,5 @@ def gridsynth(tape, *, epsilon=1e-4, ppr_basis=False):
     """
 
     raise NotImplementedError(
-        "The gridsynth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qml.qjit and when it is placed after all transforms that only have a tape implementation."
+        "The gridsynth compilation pass has no tape implementation, and can only be applied when decorating the entire worfklow with @qp.qjit and when it is placed after all transforms that only have a tape implementation."
     )

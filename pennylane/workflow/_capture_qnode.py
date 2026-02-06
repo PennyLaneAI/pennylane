@@ -23,10 +23,10 @@ The non-exhaustive list of unsupported features are:
 that the device execution can natively handle broadcasted parameters. ``vmap`` and parameter broadcasting
 will not work with devices other than default qubit.
 
->>> @qml.qnode(qml.device('lightning.qubit', wires=1))
+>>> @qp.qnode(qp.device('lightning.qubit', wires=1))
 ... def circuit(x):
-...     qml.RX(x, 0)
-...     return qml.expval(qml.Z(0))
+...     qp.RX(x, 0)
+...     return qp.expval(qp.Z(0))
 >>> jax.vmap(circuit)(jax.numpy.array([1.0, 2.0, 3.0]))
 Traceback (most recent call last):
     ...
@@ -41,11 +41,11 @@ should be taken together. A "Combination measurement process" higher order primi
 We will also need to figure out how to implement splitting up a circuit with non-commuting measurements into
 multiple circuits.
 
->>> @qml.set_shots(shots=5)
-... @qml.qnode(qml.device('default.qubit', seed=42, wires=1))
+>>> @qp.set_shots(shots=5)
+... @qp.qnode(qp.device('default.qubit', seed=42, wires=1))
 ... def circuit():
-...     qml.H(0)
-...     return qml.sample(wires=0), qml.sample(wires=0)
+...     qp.H(0)
+...     return qp.sample(wires=0), qp.sample(wires=0)
 >>> circuit()
 (array([[1],
         [0],
@@ -178,7 +178,7 @@ qnode_prim.prim_type = "higher_order"
 def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
 
     warn(
-        "Executing PennyLane programs with capture enabled should be done inside ``qml.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
+        "Executing PennyLane programs with capture enabled should be done inside ``qp.qjit``. Native execution of captured programs is an unmaintained experimental feature.",
         UserWarning,
     )
 
@@ -198,7 +198,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         temp_all_args = []
         for a, d in zip(args, batch_dims, strict=True):
             if d is not None:
-                slices = [slice(None)] * qml.math.ndim(a)
+                slices = [slice(None)] * qp.math.ndim(a)
                 slices[d] = 0
                 temp_all_args.append(a[tuple(slices)])
             else:
@@ -211,8 +211,8 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
 
     # Expand user transforms applied to the qfunc
     if getattr(qfunc_jaxpr.eqns[0].primitive, "prim_type", "") == "transform":
-        transformed_func = qml.capture.expand_plxpr_transforms(
-            partial(qml.capture.eval_jaxpr, qfunc_jaxpr, temp_consts)
+        transformed_func = qp.capture.expand_plxpr_transforms(
+            partial(qp.capture.eval_jaxpr, qfunc_jaxpr, temp_consts)
         )
 
         qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_args)
@@ -225,13 +225,13 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     # Apply device preprocessing transforms
-    graph_enabled = qml.decomposition.enabled_graph()
+    graph_enabled = qp.decomposition.enabled_graph()
     try:
-        qml.decomposition.disable_graph()
+        qp.decomposition.disable_graph()
         qfunc_jaxpr = device_program(qfunc_jaxpr, temp_consts, *temp_args)
     finally:
         if graph_enabled:
-            qml.decomposition.enable_graph()
+            qp.decomposition.enable_graph()
     consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
@@ -358,7 +358,7 @@ def _finite_diff(args, tangents, **impl_kwargs):
             UserWarning,
         )
     f = partial(qnode_prim.bind, **impl_kwargs)
-    return qml.gradients.finite_diff_jvp(
+    return qp.gradients.finite_diff_jvp(
         f, args, tangents, **impl_kwargs["execution_config"].gradient_keyword_arguments
     )
 
@@ -448,15 +448,15 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
             "variable (a function input). Please ensure that autograph is being correctly enabled with "
-            "`qml.capture.run_autograph` or disabled with `qml.capture.disable_autograph` or consider using PennyLane native control "
-            "flow functions like `qml.for_loop`, `qml.while_loop`, or `qml.cond`."
+            "`qp.capture.run_autograph` or disabled with `qp.capture.disable_autograph` or consider using PennyLane native control "
+            "flow functions like `qp.for_loop`, `qp.while_loop`, or `qp.cond`."
         ) from exc
 
     assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
     return qfunc_jaxpr, flat_fn.out_tree
 
 
-def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
+def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
     Args:
@@ -467,20 +467,20 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         kwargs (Any): Any keyword arguments accepted by the quantum function
 
     Returns:
-        qml.typing.Result: the result of a qnode execution
+        qp.typing.Result: the result of a qnode execution
 
     **Example:**
 
     .. code-block:: python
 
-        qml.capture.enable()
+        qp.capture.enable()
         jax.config.update("jax_enable_x64", True)
 
-        @qml.set_shots(50_000)
-        @qml.qnode(qml.device('lightning.qubit', seed=42, wires=1))
+        @qp.set_shots(50_000)
+        @qp.qnode(qp.device('lightning.qubit', seed=42, wires=1))
         def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.Z(0)), qml.probs()
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Z(0)), qp.probs()
 
         def f(x):
             expval_z, probs = circuit(np.pi * x)
@@ -534,7 +534,7 @@ def _bind_qnode(qnode, *args, **kwargs):
     dynamic_args, _ = _split_static_args(args, qnode.static_argnums)
     flat_args = jax.tree_util.tree_leaves((dynamic_args, kwargs))
 
-    abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
+    abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(flat_args)
 
     # no need for args and kwargs as not resolving
     config = construct_execution_config(qnode, resolve=False)()

@@ -29,32 +29,32 @@ from pennylane.ops.qutrit import validate_subspace
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
-    qml.TRX(0.123, wires=0, subspace=(0, 1)),
-    qml.TRX(0.123, wires=0, subspace=(0, 2)),
-    qml.TRX(0.123, wires=0, subspace=(1, 2)),
-    qml.TRY(0.123, wires=0, subspace=(0, 1)),
-    qml.TRY(0.123, wires=0, subspace=(0, 2)),
-    qml.TRY(0.123, wires=0, subspace=(1, 2)),
-    qml.TRZ(0.123, wires=0, subspace=(0, 1)),
-    qml.TRZ(0.123, wires=0, subspace=(0, 2)),
-    qml.TRZ(0.123, wires=0, subspace=(1, 2)),
-    qml.QutritUnitary(TSHIFT, wires=0),
-    qml.ControlledQutritUnitary(TCLOCK, wires=[0], control_wires=[2]),
+    qp.TRX(0.123, wires=0, subspace=(0, 1)),
+    qp.TRX(0.123, wires=0, subspace=(0, 2)),
+    qp.TRX(0.123, wires=0, subspace=(1, 2)),
+    qp.TRY(0.123, wires=0, subspace=(0, 1)),
+    qp.TRY(0.123, wires=0, subspace=(0, 2)),
+    qp.TRY(0.123, wires=0, subspace=(1, 2)),
+    qp.TRZ(0.123, wires=0, subspace=(0, 1)),
+    qp.TRZ(0.123, wires=0, subspace=(0, 2)),
+    qp.TRZ(0.123, wires=0, subspace=(1, 2)),
+    qp.QutritUnitary(TSHIFT, wires=0),
+    qp.ControlledQutritUnitary(TCLOCK, wires=[0], control_wires=[2]),
 ]
 
 BROADCASTED_OPERATIONS = [
-    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(1, 2)),
-    qml.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 2)),
-    qml.TRZ(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 1)),
-    qml.QutritUnitary(np.array([TSHIFT, TCLOCK]), wires=0),
-    qml.ControlledQutritUnitary(np.array([TSHIFT, TCLOCK]), wires=[0], control_wires=[2]),
+    qp.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(1, 2)),
+    qp.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 2)),
+    qp.TRZ(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 1)),
+    qp.QutritUnitary(np.array([TSHIFT, TCLOCK]), wires=0),
+    qp.ControlledQutritUnitary(np.array([TSHIFT, TCLOCK]), wires=[0], control_wires=[2]),
 ]
 
 NON_PARAMETRIZED_OPERATIONS = [
-    qml.TShift(wires=0),
-    qml.TClock(wires=0),
-    qml.TAdd(wires=[0, 1]),
-    qml.TSWAP(wires=[0, 1]),
+    qp.TShift(wires=0),
+    qp.TClock(wires=0),
+    qp.TAdd(wires=[0, 1]),
+    qp.TSWAP(wires=[0, 1]),
 ]
 
 
@@ -71,7 +71,7 @@ class TestOperations:
         copied_op = copy.copy(op)
         assert np.allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-        op = qml.adjoint(op)
+        op = qp.adjoint(op)
         copied_op2 = copy.copy(op)
         assert np.allclose(op.matrix(), copied_op2.matrix(), atol=tol)
 
@@ -108,7 +108,7 @@ class TestParameterFrequencies:
         mat = gen.matrix()
 
         gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
-        freqs_from_gen = qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+        freqs_from_gen = qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
         freqs = op.parameter_frequencies
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
@@ -118,80 +118,80 @@ class TestParameterFrequencies:
 
 
 matrix_data = [
-    (qml.TRX, 0, (0, 1), np.eye(3)),
-    (qml.TRX, 0, (1, 2), np.eye(3)),
-    (qml.TRX, 0, (0, 2), np.eye(3)),
-    (qml.TRY, 0, (0, 1), np.eye(3)),
-    (qml.TRY, 0, (1, 2), np.eye(3)),
-    (qml.TRY, 0, (0, 2), np.eye(3)),
-    (qml.TRZ, 0, (0, 1), np.eye(3)),
-    (qml.TRZ, 0, (1, 2), np.eye(3)),
-    (qml.TRZ, 0, (0, 2), np.eye(3)),
+    (qp.TRX, 0, (0, 1), np.eye(3)),
+    (qp.TRX, 0, (1, 2), np.eye(3)),
+    (qp.TRX, 0, (0, 2), np.eye(3)),
+    (qp.TRY, 0, (0, 1), np.eye(3)),
+    (qp.TRY, 0, (1, 2), np.eye(3)),
+    (qp.TRY, 0, (0, 2), np.eye(3)),
+    (qp.TRZ, 0, (0, 1), np.eye(3)),
+    (qp.TRZ, 0, (1, 2), np.eye(3)),
+    (qp.TRZ, 0, (0, 2), np.eye(3)),
     (
-        qml.TRX,
+        qp.TRX,
         np.pi / 2,
         (0, 1),
         np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
     ),
     (
-        qml.TRX,
+        qp.TRX,
         np.pi / 2,
         (1, 2),
         np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2),
     ),
     (
-        qml.TRX,
+        qp.TRX,
         np.pi / 2,
         (0, 2),
         np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2),
     ),
     (
-        qml.TRY,
+        qp.TRY,
         np.pi / 2,
         (0, 1),
         np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
     ),
     (
-        qml.TRY,
+        qp.TRY,
         np.pi / 2,
         (1, 2),
         np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2),
     ),
     (
-        qml.TRY,
+        qp.TRY,
         np.pi / 2,
         (0, 2),
         np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2),
     ),
     (
-        qml.TRZ,
+        qp.TRZ,
         np.pi / 2,
         (0, 1),
         np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])),
     ),
     (
-        qml.TRZ,
+        qp.TRZ,
         np.pi / 2,
         (1, 2),
         np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])),
     ),
     (
-        qml.TRZ,
+        qp.TRZ,
         np.pi / 2,
         (0, 2),
         np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])),
     ),
-    (qml.TRX, np.pi, (0, 1), -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
-    (qml.TRX, np.pi, (1, 2), -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
-    (qml.TRX, np.pi, (0, 2), -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
-    (qml.TRY, np.pi, (0, 1), np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
-    (qml.TRY, np.pi, (1, 2), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
-    (qml.TRY, np.pi, (0, 2), np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
-    (qml.TRZ, np.pi, (0, 1), -1j * np.diag([1, -1, 1j])),
-    (qml.TRZ, np.pi, (1, 2), -1j * np.diag([1j, 1, -1])),
-    (qml.TRZ, np.pi, (0, 2), -1j * np.diag([1, 1j, -1])),
+    (qp.TRX, np.pi, (0, 1), -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
+    (qp.TRX, np.pi, (1, 2), -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
+    (qp.TRX, np.pi, (0, 2), -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
+    (qp.TRY, np.pi, (0, 1), np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
+    (qp.TRY, np.pi, (1, 2), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
+    (qp.TRY, np.pi, (0, 2), np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
+    (qp.TRZ, np.pi, (0, 1), -1j * np.diag([1, -1, 1j])),
+    (qp.TRZ, np.pi, (1, 2), -1j * np.diag([1j, 1, -1])),
+    (qp.TRZ, np.pi, (0, 2), -1j * np.diag([1, 1j, -1])),
     (
-        qml.TRX,
+        qp.TRX,
         np.array([np.pi / 2] * 2),
         (0, 1),
         np.tensordot(
@@ -199,7 +199,7 @@ matrix_data = [
         ),
     ),
     (
-        qml.TRX,
+        qp.TRX,
         np.array([np.pi / 2] * 2),
         (1, 2),
         np.tensordot(
@@ -207,7 +207,7 @@ matrix_data = [
         ),
     ),
     (
-        qml.TRX,
+        qp.TRX,
         np.array([np.pi / 2] * 2),
         (0, 2),
         np.tensordot(
@@ -215,7 +215,7 @@ matrix_data = [
         ),
     ),
     (
-        qml.TRY,
+        qp.TRY,
         np.array([np.pi / 2] * 2),
         (0, 1),
         np.tensordot(
@@ -223,7 +223,7 @@ matrix_data = [
         ),
     ),
     (
-        qml.TRY,
+        qp.TRY,
         np.array([np.pi / 2] * 2),
         (1, 2),
         np.tensordot(
@@ -231,7 +231,7 @@ matrix_data = [
         ),
     ),
     (
-        qml.TRY,
+        qp.TRY,
         np.array([np.pi / 2] * 2),
         (0, 2),
         np.tensordot(
@@ -239,19 +239,19 @@ matrix_data = [
         ),
     ),
     (
-        qml.TRZ,
+        qp.TRZ,
         np.array([np.pi / 2] * 2),
         (0, 1),
         np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])), axes=0),
     ),
     (
-        qml.TRZ,
+        qp.TRZ,
         np.array([np.pi / 2] * 2),
         (1, 2),
         np.tensordot([1, 1], np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])), axes=0),
     ),
     (
-        qml.TRZ,
+        qp.TRZ,
         np.array([np.pi / 2] * 2),
         (0, 2),
         np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])), axes=0),
@@ -277,24 +277,24 @@ class TestMatrix:
 
         theta = tf.Variable(theta, dtype="float64")
         expected = tf.convert_to_tensor(expected, dtype="complex128")
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             op.compute_matrix(theta, subspace=subspace), expected, atol=tol, rtol=0
         )
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             op(theta, wires=0, subspace=subspace).matrix(), expected, atol=tol, rtol=0
         )
 
 
 label_data = [
-    (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX\n(1)†"),
-    (qml.TRY(1.23456, wires=0), "TRY", "TRY\n(1.23)", "TRY\n(1)", "TRY\n(1)†"),
-    (qml.TRZ(1.23456, wires=0), "TRZ", "TRZ\n(1.23)", "TRZ\n(1)", "TRZ\n(1)†"),
+    (qp.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX\n(1)†"),
+    (qp.TRY(1.23456, wires=0), "TRY", "TRY\n(1.23)", "TRY\n(1)", "TRY\n(1)†"),
+    (qp.TRZ(1.23456, wires=0), "TRZ", "TRZ\n(1.23)", "TRZ\n(1)", "TRZ\n(1)†"),
 ]
 
 label_data_broadcasted = [
-    (qml.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX†"),
-    (qml.TRY(np.array([1.23, 4.56]), wires=0), "TRY", "TRY", "TRY", "TRY†"),
-    (qml.TRZ(np.array([1.23, 4.56]), wires=0), "TRZ", "TRZ", "TRZ", "TRZ†"),
+    (qp.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX†"),
+    (qp.TRY(np.array([1.23, 4.56]), wires=0), "TRY", "TRY", "TRY", "TRY†"),
+    (qp.TRZ(np.array([1.23, 4.56]), wires=0), "TRZ", "TRZ", "TRZ", "TRZ†"),
 ]
 
 
@@ -309,7 +309,7 @@ class TestLabel:
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
 
-        op = qml.adjoint(op)
+        op = qp.adjoint(op)
         assert op.label(decimals=0) == label4
 
     @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data_broadcasted)
@@ -320,7 +320,7 @@ class TestLabel:
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
 
-        op = qml.adjoint(op)
+        op = qp.adjoint(op)
         assert op.label(decimals=0) == label4
 
     @pytest.mark.tf
@@ -328,7 +328,7 @@ class TestLabel:
         """Test label methods work with tensorflow variables"""
         import tensorflow as tf
 
-        op1 = qml.TRX(tf.Variable(0.123456), wires=0)
+        op1 = qp.TRX(tf.Variable(0.123456), wires=0)
         assert op1.label(decimals=2) == "TRX\n(0.12)"
 
     @pytest.mark.torch
@@ -336,7 +336,7 @@ class TestLabel:
         """Test label methods work with torch tensors"""
         import torch
 
-        op1 = qml.TRX(torch.tensor(1.23456), wires=0)
+        op1 = qp.TRX(torch.tensor(1.23456), wires=0)
         assert op1.label(decimals=2) == "TRX\n(1.23)"
 
     @pytest.mark.jax
@@ -344,13 +344,13 @@ class TestLabel:
         """Test the label method works with jax"""
         import jax
 
-        op1 = qml.TRX(jax.numpy.array(1.23456), wires=0)
+        op1 = qp.TRX(jax.numpy.array(1.23456), wires=0)
         assert op1.label(decimals=2) == "TRX\n(1.23)"
 
     def test_string_parameter(self):
         """Test labelling works if variable is a string instead of a float."""
 
-        op1 = qml.TRX("x", wires=0)
+        op1 = qp.TRX("x", wires=0)
         assert op1.label() == "TRX"
         assert op1.label(decimals=0) == "TRX\n(x)"
 
@@ -358,15 +358,15 @@ class TestLabel:
         """Test labelling works (i.e. does not raise an Error) if variable is a
         string instead of a float."""
 
-        op1 = qml.TRX(np.array(["x0", "x1", "x2"]), wires=0)
+        op1 = qp.TRX(np.array(["x0", "x1", "x2"]), wires=0)
         assert op1.label() == "TRX"
         assert op1.label(decimals=0) == "TRX"
 
 
 pow_parametric_ops = (
-    qml.TRX(1.234, wires=0),
-    qml.TRY(1.234, wires=0),
-    qml.TRZ(1.234, wires=0),
+    qp.TRX(1.234, wires=0),
+    qp.TRY(1.234, wires=0),
+    qp.TRZ(1.234, wires=0),
 )
 
 
@@ -382,25 +382,25 @@ class TestParametricPow:
 
         assert len(pow_op) == 1
         assert pow_op[0].__class__ is op.__class__
-        assert all((qml.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
+        assert all((qp.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
 
     @pytest.mark.parametrize("op", pow_parametric_ops)
     @pytest.mark.parametrize("n", (3, -2))
     def test_pow_matrix(self, op, n):
         """Test that the matrix of an op first raised to a power is the same as the
         matrix raised to the power.  This test only can work for integer powers."""
-        op_mat = qml.matrix(op)
-        # Can't use qml.matrix(op.pow)(n) because qml.matrix is hardcoded to work with qubits
-        # TODO: update this test once qml.matrix is updated
+        op_mat = qp.matrix(op)
+        # Can't use qp.matrix(op.pow)(n) because qp.matrix is hardcoded to work with qubits
+        # TODO: update this test once qp.matrix is updated
         pow_mat = op.pow(n)[0].matrix()
 
-        assert qml.math.allclose(qml.math.linalg.matrix_power(op_mat, n), pow_mat)
+        assert qp.math.allclose(qp.math.linalg.matrix_power(op_mat, n), pow_mat)
 
 
 control_data = [
-    (qml.TRX(1.234, wires=0), Wires([])),
-    (qml.TRY(1.234, wires=0), Wires([])),
-    (qml.TRZ(1.234, wires=0), Wires([])),
+    (qp.TRX(1.234, wires=0), Wires([])),
+    (qp.TRY(1.234, wires=0), Wires([])),
+    (qp.TRZ(1.234, wires=0), Wires([])),
 ]
 
 
@@ -431,9 +431,9 @@ def test_qutrit_subspace_op_errors(subspace, err_msg):
 @pytest.mark.parametrize(
     "op, obs, grad_fn",
     [
-        (qml.TRX, qml.GellMann(0, 3), lambda phi: -np.sin(phi)),
-        (qml.TRY, qml.GellMann(0, 1), np.cos),
-        (qml.TRZ, qml.GellMann(0, 1), lambda phi: -np.sin(phi)),
+        (qp.TRX, qp.GellMann(0, 3), lambda phi: -np.sin(phi)),
+        (qp.TRY, qp.GellMann(0, 1), np.cos),
+        (qp.TRZ, qp.GellMann(0, 1), lambda phi: -np.sin(phi)),
     ],
 )
 class TestGrad:
@@ -447,17 +447,17 @@ class TestGrad:
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability(self, op, obs, grad_fn, phi, diff_method, tol):
         """Test that parametrized rotations are differentiable and the gradient is correct"""
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
-        grad = np.squeeze(qml.grad(circuit)(phi))
+        grad = np.squeeze(qp.grad(circuit)(phi))
 
         assert np.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
 
@@ -470,17 +470,17 @@ class TestGrad:
 
         phi = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
-        jac = qml.jacobian(circuit)(phi)
+        jac = qp.jacobian(circuit)(phi)
 
         assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
@@ -492,15 +492,15 @@ class TestGrad:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
         phi = jnp.array(phi)
         grad = np.squeeze(jax.grad(circuit)(phi))
@@ -517,15 +517,15 @@ class TestGrad:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
         phi = jnp.linspace(0, 2 * np.pi, 7)
         jac = jax.jacobian(circuit)(phi)
@@ -539,20 +539,20 @@ class TestGrad:
         """Test that parametrized operations are differentiable with Torch and the gradient is correct"""
         import torch
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
         phi_torch = torch.tensor(phi, requires_grad=True, dtype=torch.float64)
         grad = torch.autograd.grad(circuit(phi_torch), phi_torch)
 
-        assert qml.math.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
+        assert qp.math.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", diff_methods)
@@ -563,21 +563,21 @@ class TestGrad:
 
         import torch
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
         phi_torch = torch.linspace(0, 2 * np.pi, 7, requires_grad=True, dtype=torch.float64)
         jac = torch.autograd.functional.jacobian(circuit, phi_torch)
         phi = phi_torch.detach().numpy()
 
-        assert qml.math.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
+        assert qp.math.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7))
@@ -586,15 +586,15 @@ class TestGrad:
         """Test that parametrized operations are differentiable with TensorFlow and the gradient is correct"""
         import tensorflow as tf
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
         phi_tf = tf.Variable(phi)
 
@@ -602,7 +602,7 @@ class TestGrad:
             result = circuit(phi_tf)
         res = tape.gradient(result, phi_tf)
 
-        assert qml.math.isclose(res, grad_fn(phi), atol=tol, rtol=0)
+        assert qp.math.isclose(res, grad_fn(phi), atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", diff_methods)
@@ -613,15 +613,15 @@ class TestGrad:
 
         import tensorflow as tf
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            if op is qml.TRZ:
+            if op is qp.TRZ:
                 # Without Hadamard the derivative is always 0
-                qml.THadamard(wires=0, subspace=(0, 1))
+                qp.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
-            return qml.expval(obs)
+            return qp.expval(obs)
 
         phi = np.linspace(0, 2 * np.pi, 7)
         phi_tf = tf.Variable(phi)
@@ -630,4 +630,4 @@ class TestGrad:
         res = tape.jacobian(result, phi_tf)
         expected = tf.Variable(np.diag(grad_fn(phi)))
 
-        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
+        assert qp.math.allclose(res, expected, atol=tol, rtol=0)

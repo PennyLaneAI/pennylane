@@ -133,7 +133,7 @@ def choose_trainable_param_indices(tape, argnum=None):
 
     Note that trainable param indices are a **double pointer**.
 
-    >>> tape = qml.tape.QuantumScript([qml.RX(0.0, 0), qml.RY(1.0, 0), qml.RZ(2.0, 0)], trainable_params=[1,2])
+    >>> tape = qp.tape.QuantumScript([qp.RX(0.0, 0), qp.RY(1.0, 0), qp.RZ(2.0, 0)], trainable_params=[1,2])
     >>> chose_trainable_param_indices(tape, argnum=[0])
     [0]
     >>> tape.get_operation(0)
@@ -419,28 +419,28 @@ def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     Each ``qjac`` "leaf" should (after stacking) should correspond to ``(trainable_param_idx, *measurement_process shape)``
     and each ``cjac`` "leaf" should be ``(trainable_param_idx, *qnode_argument_shape)``.
 
-    >>> @qml.qnode(qml.device('default.qubit'))
+    >>> @qp.qnode(qp.device('default.qubit'))
     ... def c(x):
-    ...     qml.RX(x[0]**2, 0)
-    ...     qml.RY(x[1], 0)
-    ...     return qml.expval(qml.Z(0)), qml.expval(qml.Y(0))
+    ...     qp.RX(x[0]**2, 0)
+    ...     qp.RY(x[1], 0)
+    ...     return qp.expval(qp.Z(0)), qp.expval(qp.Y(0))
 
-    >>> x = qml.numpy.array([2.0, 3.0])
-    >>> tape = qml.workflow.construct_tape(c)(x)
-    >>> cjac = qml.gradients.classical_jacobian(c)(x)
+    >>> x = qp.numpy.array([2.0, 3.0])
+    >>> tape = qp.workflow.construct_tape(c)(x)
+    >>> cjac = qp.gradients.classical_jacobian(c)(x)
     >>> cjac
     array([[4., 0.],
         [0., 1.]])
-    >>> qjac = qml.gradients.param_shift(c, hybrid=False)(x)
+    >>> qjac = qp.gradients.param_shift(c, hybrid=False)(x)
     >>> qjac
     ((tensor(-0.74922879, requires_grad=True),
     tensor(0.09224219, requires_grad=True)),
     (tensor(0.65364362, requires_grad=True),
     tensor(2.70003469e-17, requires_grad=True)))
-    >>> qml.gradients.gradient_transform.contract_qjac_with_cjac(qjac, cjac, tape)
+    >>> qp.gradients.gradient_transform.contract_qjac_with_cjac(qjac, cjac, tape)
     (tensor([-2.99691517,  0.09224219], requires_grad=True),
     tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
-    >>> qml.gradients.param_shift(c)(x)
+    >>> qp.gradients.param_shift(c)(x)
     (tensor([-2.99691517,  0.09224219], requires_grad=True),
     tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
 

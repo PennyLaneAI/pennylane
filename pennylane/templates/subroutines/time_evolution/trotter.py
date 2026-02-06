@@ -121,20 +121,20 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     .. code-block:: python
 
         coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
+        ops = [qp.X(0), qp.Z(0)]
+        H = qp.dot(coeffs, ops)
 
-        dev = qml.device("default.qubit", wires=2)
-        @qml.qnode(dev)
+        dev = qp.device("default.qubit", wires=2)
+        @qp.qnode(dev)
         def my_circ():
             # Prepare some state
-            qml.Hadamard(0)
+            qp.Hadamard(0)
 
             # Evolve according to H
-            qml.TrotterProduct(H, time=2.4, order=2)
+            qp.TrotterProduct(H, time=2.4, order=2)
 
             # Measure some quantity
-            return qml.state()
+            return qp.state()
 
     >>> my_circ()
     array([-0.132...+0.597...j,  0.        +0.j        , -0.132...-0.779...j,  0.        +0.j        ])
@@ -162,8 +162,8 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         methods; the "one-norm-bound" scaling method and the "commutator-bound" scaling method.
         (see `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_)
 
-        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
-        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> hamiltonian = qp.dot([1.0, 0.5, -0.25], [qp.X(0), qp.Y(0), qp.Z(0)])
+        >>> op = qp.TrotterProduct(hamiltonian, time=0.01, order=2)
         >>> op.error(method="one-norm-bound")
         SpectralNormError(8.039062500000003e-06)
         >>> op.error(method="commutator-bound")
@@ -172,15 +172,15 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
         of :class:`~.ApproxTimeEvolution` by taking the adjoint:
 
-        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n)) # doctest: +SKIP
+        >>> qp.adjoint(qp.TrotterProduct(hamiltonian, time, order=1, n=n)) # doctest: +SKIP
 
         The grouping of terms in the ``operands`` attribute of the ``hamiltonian`` impacts
         the structure of the gates created by ``TrotterProduct``. To understand this, first
         consider this simple two-qubit Hamiltonian with four Pauli word terms:
 
         >>> coeffs = [0.5, 0.2, 0.1, -0.6]
-        >>> ops = [qml.X(0), qml.Y(1), qml.Y(0) @ qml.Z(1), qml.X(0) @ qml.Y(1)]
-        >>> H_flat = qml.dot(coeffs, ops)
+        >>> ops = [qp.X(0), qp.Y(1), qp.Y(0) @ qp.Z(1), qp.X(0) @ qp.Y(1)]
+        >>> H_flat = qp.dot(coeffs, ops)
         >>> H_flat
         (
             0.5 * X(0)
@@ -198,20 +198,20 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         ``TrotterProduct`` (of first order, for simplicity) of this Hamiltonian will contain four
         exponentials per Trotter step:
 
-        >>> qml.TrotterProduct(H_flat, 1., n=1, order=1).decomposition()
+        >>> qp.TrotterProduct(H_flat, 1., n=1, order=1).decomposition()
         [Evolution(1j -0.6 * (X(0) @ Y(1))), Evolution(1j 0.1 * (Y(0) @ Z(1))), Evolution(1j 0.2 * Y(1)), Evolution(1j 0.5 * X(0))]
 
         If we first create two operands with two Pauli words each and then sum those, this is
         reflected in the structure of the operator:
 
-        >>> H_grouped = qml.sum(qml.dot(coeffs[:2], ops[:2]), qml.dot(coeffs[2:], ops[2:]))
+        >>> H_grouped = qp.sum(qp.dot(coeffs[:2], ops[:2]), qp.dot(coeffs[2:], ops[2:]))
         >>> print(*H_grouped.operands, sep="\n")
         0.5 * X(0) + 0.2 * Y(1)
         0.1 * (Y(0) @ Z(1)) + -0.6 * (X(0) @ Y(1))
 
         The ``TrotterProduct`` accordingly has a different structure as well:
 
-        >>> qml.TrotterProduct(H_grouped, 1., n=1, order=1).decomposition()
+        >>> qp.TrotterProduct(H_grouped, 1., n=1, order=1).decomposition()
         [Evolution(1j 0.1 * (Y(0) @ Z(1)) + -0.6 * (X(0) @ Y(1))), Evolution(1j 0.5 * X(0) + 0.2 * Y(1))]
 
 
@@ -224,22 +224,22 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         .. code-block:: python
 
-            @qml.qnode(dev, diff_method="backprop")
+            @qp.qnode(dev, diff_method="backprop")
             def my_circ(c1, c2, time):
                 # Prepare H:
-                H = qml.dot([c1, c2], [qml.X(0), qml.Z(0)])
+                H = qp.dot([c1, c2], [qp.X(0), qp.Z(0)])
 
                 # Prepare some state
-                qml.Hadamard(0)
+                qp.Hadamard(0)
 
                 # Evolve according to H
-                qml.TrotterProduct(H, time, order=2)
+                qp.TrotterProduct(H, time, order=2)
 
                 # Measure some quantity
-                return qml.expval(qml.Z(0) @ qml.Z(1))
+                return qp.expval(qp.Z(0) @ qp.Z(1))
 
-        >>> args = qml.numpy.array([1.23, 4.5, 0.1])
-        >>> qml.grad(my_circ)(*tuple(args))
+        >>> args = qp.numpy.array([1.23, 4.5, 0.1])
+        >>> qp.grad(my_circ)(*tuple(args))
         (tensor(0.077..., requires_grad=True), tensor(0.015..., requires_grad=True), tensor(1.642..., requires_grad=True))
 
     """
@@ -265,7 +265,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(
-                    "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                    "There should be at least 2 terms in the Hamiltonian. Otherwise use `qp.exp`"
                 )
             if QueuingManager.recording():
                 QueuingManager.remove(hamiltonian)
@@ -277,7 +277,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             hamiltonian = hamiltonian.simplify()
             if len(hamiltonian.terms()[0]) < 2:
                 raise ValueError(
-                    "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                    "There should be at least 2 terms in the Hamiltonian. Otherwise use `qp.exp`"
                 )
 
         if not isinstance(hamiltonian, qml_ops.Sum):
@@ -287,7 +287,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         if check_hermitian and not all(op.is_verified_hermitian for op in hamiltonian.operands):
             raise ValueError(
-                "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qml.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
+                "One or more of the terms in the Hamiltonian are not verified to be Hermitian. Please consider verifying the Hamiltonian manually using the more exhaustive 'qp.is_hermitian' check and provide `check_hermitian=False` to the `TrotterProduct` constructor."
             )
 
         self._hyperparameters = {
@@ -364,16 +364,16 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         is defined according to Section 2.3 (lemma 6, equation 22 and 23) of
         `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
 
-        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
-        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> hamiltonian = qp.dot([1.0, 0.5, -0.25], [qp.X(0), qp.Y(0), qp.Z(0)])
+        >>> op = qp.TrotterProduct(hamiltonian, time=0.01, order=2)
         >>> op.error(method="one-norm-bound")
         SpectralNormError(8.039062500000003e-06)
 
         The "commutator" error bound can be computed by passing the kwarg :code:`method="commutator-bound"`, and
         is defined according to Appendix C (equation 189) `Childs et al. (2021) <https://arxiv.org/abs/1912.08854>`_.
 
-        >>> hamiltonian = qml.dot([1.0, 0.5, -0.25], [qml.X(0), qml.Y(0), qml.Z(0)])
-        >>> op = qml.TrotterProduct(hamiltonian, time=0.01, order=2)
+        >>> hamiltonian = qp.dot([1.0, 0.5, -0.25], [qp.X(0), qp.Y(0), qp.Z(0)])
+        >>> op = qp.TrotterProduct(hamiltonian, time=0.01, order=2)
         >>> op.error(method="commutator-bound")
         SpectralNormError(6.166666666666668e-06)
 
@@ -426,17 +426,17 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         **Example:**
 
-        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> qml.Rot._unflatten(*op._flatten())
+        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> qp.Rot._unflatten(*op._flatten())
         Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
-        >>> qml.PauliRot._unflatten(*op._flatten())
+        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
+        >>> qp.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
 
         Operators that have trainable components that differ from their ``Operator.data`` must implement their own
         ``_flatten`` methods.
 
-        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
         ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
 
@@ -614,14 +614,14 @@ class TrotterizedQfunc(Operation):
 
         def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
             "This is the first order expansion (U_1)."
-            qml.RX(time*theta, wires[0])
-            qml.RY(time*phi, wires[1])
+            qp.RX(time*theta, wires[0])
+            qp.RY(time*phi, wires[1])
             if flip:
-                qml.CNOT(wires=wires[:2])
+                qp.CNOT(wires=wires[:2])
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def my_circuit(time, angles, num_trotter_steps):
-            qml.TrotterizedQfunc(
+            qp.TrotterizedQfunc(
                 time,
                 *angles,
                 qfunc=first_order_expansion,
@@ -630,17 +630,17 @@ class TrotterizedQfunc(Operation):
                 wires=['a', 'b'],
                 flip=True,
             )
-            return qml.state()
+            return qp.state()
 
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
 
     >>> time = 0.1
     >>> angles = (0.12, -3.45)
-    >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
+    >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
     a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
     b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
     >>>
-    >>> print(qml.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
+    >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
     a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
     b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
 
@@ -775,30 +775,30 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
 
         def first_order_expansion(time, theta, phi, wires, flip=False):
             "This is the first order expansion (U_1)."
-            qml.RX(time*theta, wires[0])
-            qml.RY(time*phi, wires[1])
+            qp.RX(time*theta, wires[0])
+            qp.RY(time*phi, wires[1])
             if flip:
-                qml.CNOT(wires=wires[:2])
+                qp.CNOT(wires=wires[:2])
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def my_circuit(time, theta, phi, num_trotter_steps):
-            qml.trotterize(
+            qp.trotterize(
                 first_order_expansion,
                 n=num_trotter_steps,
                 order=2,
             )(time, theta, phi, wires=['a', 'b'], flip=True)
-            return qml.state()
+            return qp.state()
 
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
 
     >>> time = 0.1
     >>> theta, phi = (0.12, -3.45)
     >>>
-    >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
+    >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
     a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
     b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
     >>>
-    >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
+    >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
     a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤  State
     b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤  State
 

@@ -88,15 +88,15 @@ class HilbertSchmidt(Operation):
 
         .. code-block:: python
 
-            U = qml.Hadamard(0)
-            V = qml.RZ(0, wires=1)
+            U = qp.Hadamard(0)
+            V = qp.RZ(0, wires=1)
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def hilbert_test(V, U):
-                qml.HilbertSchmidt(V, U)
-                return qml.probs()
+                qp.HilbertSchmidt(V, U)
+                return qp.probs()
 
             def cost_hst(V, U):
                 return 1 - hilbert_test(V, U)[0]
@@ -245,7 +245,7 @@ class HilbertSchmidt(Operation):
 
         # Unitary U
         for op_u in u_ops:
-            # The operation has been defined outside of this function, to queue it we call qml.apply.
+            # The operation has been defined outside of this function, to queue it we call qp.apply.
             if QueuingManager.recording():
                 apply(op_u)
             decomp_ops.append(op_u)
@@ -324,20 +324,20 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
             params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
 
-            U = qml.CZ(wires=(0, 1))
+            U = qp.CZ(wires=(0, 1))
 
-            V = [qml.RZ(params[0], wires=2),
-                qml.RZ(params[1], wires=3),
-                qml.CNOT(wires=[2, 3]),
-                qml.RZ(params[2], wires=3),
-                qml.CNOT(wires=[2, 3])]
+            V = [qp.RZ(params[0], wires=2),
+                qp.RZ(params[1], wires=3),
+                qp.CNOT(wires=[2, 3]),
+                qp.RZ(params[2], wires=3),
+                qp.CNOT(wires=[2, 3])]
 
-            dev = qml.device("default.qubit", wires=4)
+            dev = qp.device("default.qubit", wires=4)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def local_hilbert_test(V, U):
-                qml.LocalHilbertSchmidt(V, U)
-                return qml.probs()
+                qp.LocalHilbertSchmidt(V, U)
+                return qp.probs()
 
             def cost_lhst(V, U):
                 return 1 - local_hilbert_test(V, U)[0]

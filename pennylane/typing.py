@@ -53,7 +53,7 @@ TensorLike = Union[
 """A type for all tensor-like data.
 
 TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-including lists and tuples. Any argument accepted by ``qml.numpy.array`` is tensor-like.
+including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
 
 **Examples**
 

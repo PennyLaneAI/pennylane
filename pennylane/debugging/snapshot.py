@@ -69,7 +69,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     If tape splitting is carried out, the transform will be conservative about the wires that it includes in each tape.
     So, if all operations preceding a snapshot in a 3-qubit circuit has been applied to only one wire,
@@ -83,7 +83,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     When the transform is applied to a QNode, the ``shots`` configuration is inherited from the device.
     Therefore, the snapshot measurements must be supported by the device's nature. An exception of this are
-    the :func:`qml.state <pennylane.state>` measurements on finite-shot simulators.
+    the :func:`qp.state <pennylane.state>` measurements on finite-shot simulators.
 
     .. warning::
 
@@ -100,18 +100,18 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=None)
+        @qp.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            qml.Snapshot("sample", measurement=qml.sample(), shots=5)
-            return qml.expval(qml.X(0))
+            qp.Snapshot(measurement=qp.expval(qp.Z(0)))
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.Snapshot()
+            qp.Snapshot("sample", measurement=qp.sample(), shots=5)
+            return qp.expval(qp.X(0))
 
-    >>> qml.snapshots(circuit)()
+    >>> qp.snapshots(circuit)()
     {0: 1.0,
     1: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
     'sample': array([[0, 0],
@@ -123,16 +123,16 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(shots=200)
-        @qml.snapshots
-        @qml.qnode(dev, interface=None)
+        @qp.set_shots(shots=200)
+        @qp.snapshots
+        @qp.qnode(dev, interface=None)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.Snapshot()
-            qml.CNOT(wires=[0, 1])
-            return qml.counts()
+            qp.Hadamard(wires=0)
+            qp.Snapshot()
+            qp.CNOT(wires=[0, 1])
+            return qp.counts()
 
     >>> circuit()
     {0: array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
@@ -143,16 +143,16 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python3
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.set_shots(shots=200)
-        @qml.snapshots
-        @qml.qnode(dev)
+        @qp.set_shots(shots=200)
+        @qp.snapshots
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=0),
-            qml.Snapshot(qml.counts())
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0),
+            qp.Snapshot(qp.counts())
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         with circuit.device.tracker:
             out = circuit()
@@ -178,24 +178,24 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     .. code-block:: python
 
-        @qml.qnode(qml.device('default.qubit'))
+        @qp.qnode(qp.device('default.qubit'))
         def c(y):
-            qml.H(0)
-            qml.Snapshot(measurement=qml.probs(0))
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.RX)(0.5, 0)
-            qml.Snapshot(measurement=qml.probs(0))
-            qml.RY(y, 0)
-            qml.measure(0)
-            qml.Snapshot(measurement=qml.probs(0))
-            return qml.probs(0)
+            qp.H(0)
+            qp.Snapshot(measurement=qp.probs(0))
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.RX)(0.5, 0)
+            qp.Snapshot(measurement=qp.probs(0))
+            qp.RY(y, 0)
+            qp.measure(0)
+            qp.Snapshot(measurement=qp.probs(0))
+            return qp.probs(0)
 
     If we use ``"one-shot"`` together with three shots, you can see that each snapshot has three
     probabilities in a list.  Each entry corresponds to a different execution of the circuit. Note that
     postselection will not be applied on snapshots with ``"one-shot"``.
 
-    >>> one_shot = qml.set_shots(c, 3).update(mcm_method="one-shot")
-    >>> qml.snapshots(one_shot)(1.0)
+    >>> one_shot = qp.set_shots(c, 3).update(mcm_method="one-shot")
+    >>> qp.snapshots(one_shot)(1.0)
     {0: [array([0., 1.]), array([0., 1.]), array([1., 0.])],
     1: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
     2: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
@@ -203,8 +203,8 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     Note that for a single shot ``"one-shot"`` execution, the results will not be in a list.
 
-    >>> one_shot = qml.set_shots(c, 1).update(mcm_method="one-shot")
-    >>> qml.snapshots(one_shot)(1.0)
+    >>> one_shot = qp.set_shots(c, 1).update(mcm_method="one-shot")
+    >>> qp.snapshots(one_shot)(1.0)
     {0: array([0., 1.]),
     1: array([0., 1.]),
     2: array([0., 1.]),
@@ -214,7 +214,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     in the circuit. Before any mcm's, we have one state. After the first mcm, we have two states.  And after
     two mcm's, we have four states.
 
-    >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(1.0)
+    >>> qp.snapshots(c.update(mcm_method="tree-traversal"))(1.0)
     {0: [array([0.5, 0.5])],
     1: [array([1., 0.]), array([0.06120872, 0.93879128])],
     2: [array([1., 0.]), array([0., 1.]), array([1., 0.]), array([0., 1.])],
@@ -223,7 +223,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     Note that without the ``RY`` rotation, the third snapshot only has **three** probabilities, not **four**.
     This is due to the fact that one of the four branches can never occur.
 
-    >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(0)
+    >>> qp.snapshots(c.update(mcm_method="tree-traversal"))(0)
     {0: array([0.5, 0.5]),
     1: [array([1., 0.]), array([0.06120872, 0.93879128])],
     2: [array([1., 0.]), array([1., 0.]), array([0., 1.])],
@@ -238,18 +238,18 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     .. code-block:: python3
 
         ops = [
-            qml.Snapshot(),
-            qml.Hadamard(wires=0),
-            qml.Snapshot("very_important_state"),
-            qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
+            qp.Snapshot(),
+            qp.Hadamard(wires=0),
+            qp.Snapshot("very_important_state"),
+            qp.CNOT(wires=[0, 1]),
+            qp.Snapshot(),
         ]
 
-        measurements = [qml.expval(qml.PauliX(0))]
+        measurements = [qp.expval(qp.PauliX(0))]
 
-        tape = qml.tape.QuantumTape(ops, measurements)
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-        tapes, collect_results_into_dict = qml.snapshots(tape)
+        tapes, collect_results_into_dict = qp.snapshots(tape)
 
     >>> print(tapes)
     [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]

@@ -108,19 +108,19 @@ to track the resources used in a quantum circuit with custom operations without 
                 depth=3,
             )
 
-    dev = qml.device("null.qubit", wires=[0, 1, 2])
+    dev = qp.device("null.qubit", wires=[0, 1, 2])
 
-    @qml.set_shots(shots=100)
-    @qml.qnode(dev)
+    @qp.set_shots(shots=100)
+    @qp.qnode(dev)
     def circuit(theta):
-        qml.RZ(theta, wires=0)
-        qml.CNOT(wires=[0,1])
+        qp.RZ(theta, wires=0)
+        qp.CNOT(wires=[0,1])
         MyCustomAlgorithm(wires=[1, 2])
-        return qml.expval(qml.Z(1))
+        return qp.expval(qp.Z(1))
 
     x = pnp.array(1.23, requires_grad=True)
 
-    with qml.Tracker(dev) as tracker:
+    with qp.Tracker(dev) as tracker:
         circuit(x)
 
 We can examine the resources by accessing the :code:`resources` key:

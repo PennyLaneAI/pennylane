@@ -50,14 +50,14 @@ class FlipSign(Operation):
     .. code-block:: python
 
         num_wires = 2
-        dev = qml.device("default.qubit", wires=num_wires)
+        dev = qp.device("default.qubit", wires=num_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for wire in range(num_wires):
-                qml.Hadamard(wire)
-            qml.FlipSign([1, 0], wires=range(num_wires))
-            return qml.state()
+                qp.Hadamard(wire)
+            qp.FlipSign([1, 0], wires=range(num_wires))
+            return qp.state()
 
     The result for the above circuit is:
 

@@ -30,12 +30,12 @@ def test_standard_validity_OutAdder():
     output_wires = [4, 5, 8]
     mod = 7
     work_wires = [6, 7]
-    op = qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-    qml.ops.functions.assert_valid(op)
+    op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestOutAdder:
-    """Test the qml.OutAdder template."""
+    """Test the qp.OutAdder template."""
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "x", "y", "z"),
@@ -69,16 +69,16 @@ class TestOutAdder:
         self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutAdder template output."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit(x, y, z):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            qml.BasisEmbedding(z, wires=output_wires)
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
+            qp.BasisEmbedding(z, wires=output_wires)
+            qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+            return qp.sample(wires=output_wires)
 
         if mod is None:
             mod = 2 ** len(output_wires)
@@ -147,7 +147,7 @@ class TestOutAdder:
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+            qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
 
     @pytest.mark.parametrize("work_wires", [None, [9], [9, 10, 11]])
     def test_validation_of_num_work_wires(self, work_wires):
@@ -155,7 +155,7 @@ class TestOutAdder:
         work wires are present, while any work wires are accepted for mod=2**len(output_wires)"""
 
         # if mod=2**len(output_wires), anything goes
-        qml.OutAdder(
+        qp.OutAdder(
             x_wires=[0, 1, 2],
             y_wires=[3, 4, 5],
             output_wires=[6, 7, 8],
@@ -164,7 +164,7 @@ class TestOutAdder:
         )
 
         with pytest.raises(ValueError, match="two work wires should be provided"):
-            qml.OutAdder(
+            qp.OutAdder(
                 x_wires=[0, 1, 2],
                 y_wires=[3, 4, 5],
                 output_wires=[6, 7, 8],
@@ -182,7 +182,7 @@ class TestOutAdder:
             [9, 10],
         )
         _adder_decomposition = (
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+            qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
             .decomposition()
         )
@@ -199,21 +199,21 @@ class TestOutAdder:
         else:
             qft_new_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT(wires=qft_new_output_wires))
+        op_list.append(qp.QFT(wires=qft_new_output_wires))
         op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
+            qp.ControlledSequence(
+                qp.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
             )
         )
         op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
+            qp.ControlledSequence(
+                qp.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
             )
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))
+        op_list.append(qp.adjoint(qp.QFT)(wires=qft_new_output_wires))
 
         for op1, op2 in zip(adder_decomposition, op_list):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
@@ -223,14 +223,14 @@ class TestOutAdder:
         y_wires = [5, 6, 7]
         output_wires = [8, 9, 10]
         work_wires = [0, 1]
-        op = qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-        for rule in qml.list_decomps(qml.OutAdder):
+        op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+        for rule in qp.list_decomps(qp.OutAdder):
             _test_decomposition_rule(op, rule)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
-        wires = qml.OutAdder(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
-        assert wires == qml.wires.Wires([1, 2, 3, 4, 5, 6])
+        wires = qp.OutAdder(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
+        assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
     @pytest.mark.jax
     def test_jit_compatible(self):
@@ -247,16 +247,16 @@ class TestOutAdder:
         y_wires = [2, 3, 5]
         output_wires = [6, 7, 8]
         work_wires = [11, 10]
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
+            qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+            return qp.sample(wires=output_wires)
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(

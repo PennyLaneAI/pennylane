@@ -57,9 +57,9 @@ def _spectral_norm(op, fast: bool = True):
             return sum(map(abs, pr.values()))
 
     elif fast:
-        return qml.math.norm(qml.matrix(op), ord="fro")
+        return qp.math.norm(qp.matrix(op), ord="fro")
 
-    return qml.math.max(qml.math.svd(qml.matrix(op), compute_uv=False))
+    return qp.math.max(qp.math.svd(qp.matrix(op), compute_uv=False))
 
 
 # Compute one-norm error:
@@ -158,9 +158,9 @@ def _recursive_nested_commutator(A, B, alpha: int):
         return B
 
     if alpha == 1:
-        return qml.comm(A, B)
+        return qp.comm(A, B)
 
-    return qml.comm(A, _recursive_nested_commutator(A, B, alpha - 1))
+    return qp.comm(A, _recursive_nested_commutator(A, B, alpha - 1))
 
 
 # Compute commutator error:
@@ -198,7 +198,7 @@ def _commutator_error(h_ops, t: float, p: int, n: int, fast: bool) -> float:
             nested_comm = h_gamma
             for index in range(num_factors - 1, -1, -1):  # iterate in reverse order
                 alpha_i = alpha_lst[index]
-                H_i = qml.s_prod(coeffs_lst[index], h_ops[ops_index_lst[index]])
+                H_i = qp.s_prod(coeffs_lst[index], h_ops[ops_index_lst[index]])
 
                 nested_comm = _recursive_nested_commutator(H_i, nested_comm, alpha_i)
 
@@ -242,7 +242,7 @@ def _recursive_flatten(order: int, num_ops: int, scalar_t: float):
         return ops_index_lst + ops_index_lst[::-1], [0.5 * scalar_t] * (2 * num_ops)
 
     # pylint: disable=protected-access
-    scalar_1 = qml.templates.subroutines.time_evolution.trotter._scalar(order)
+    scalar_1 = qp.templates.subroutines.time_evolution.trotter._scalar(order)
     scalar_2 = 1 - 4 * scalar_1
 
     ops_index_lst_1, coeff_lst_1 = _recursive_flatten(order - 2, num_ops, scalar_1 * scalar_t)

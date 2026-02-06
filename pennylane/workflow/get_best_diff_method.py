@@ -57,7 +57,7 @@ def get_best_diff_method(qnode: QNode) -> str:
 
     def handle_return(transform):
         """Helper function to manage the return"""
-        if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
+        if transform in (qp.gradients.param_shift, qp.gradients.param_shift_cv):
             return "parameter-shift"
         return transform
 
@@ -66,10 +66,10 @@ def get_best_diff_method(qnode: QNode) -> str:
         device = qnode.device
 
         # Construct the tape using the same method as the execution workflow
-        batch, _ = qml.workflow.construct_batch(qnode, level="user")(*args, **kwargs)
+        batch, _ = qp.workflow.construct_batch(qnode, level="user")(*args, **kwargs)
 
         # Create execution config with "best" method - this matches the workflow behavior
-        mcm_config = qml.devices.MCMConfig(
+        mcm_config = qp.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs.get("postselect_mode"),
             mcm_method=qnode.execute_kwargs.get("mcm_method"),
         )

@@ -64,21 +64,21 @@ def _group_measurements(mps: list[SampleMeasurement | ClassicalShadowMP | Shadow
     mp_no_obs_indices = []
     for i, mp in enumerate(mps):
         if isinstance(mp.obs, (Sum, SProd, Prod)):
-            mps[i].obs = qml.simplify(mp.obs)
+            mps[i].obs = qp.simplify(mp.obs)
         if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
         elif mp.obs is None:
             mp_no_obs.append(mp)
             mp_no_obs_indices.append(i)
-        elif qml.pauli.is_pauli_word(mp.obs):
+        elif qp.pauli.is_pauli_word(mp.obs):
             mp_pauli_obs.append((i, mp))
         else:
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
-        part_indices = qml.pauli.compute_partition_indices(
+        part_indices = qp.pauli.compute_partition_indices(
             [mp.obs for mp in i_to_pauli_mp.values()]
         )
         coeffs = list(i_to_pauli_mp.keys())
@@ -113,11 +113,11 @@ def _get_num_wire_groups_for_expval_H(obs):
     for o in obs_list:
         if o in added_obs:
             continue
-        if isinstance(o, qml.Identity):
+        if isinstance(o, qp.Identity):
             continue
         added = False
         for wires in wires_list:
-            if len(qml.wires.Wires.shared_wires([wires, o.wires])) == 0:
+            if len(qp.wires.Wires.shared_wires([wires, o.wires])) == 0:
                 added_obs.append(o)
                 added = True
                 break
@@ -134,19 +134,19 @@ def _get_num_executions_for_sum(obs):
         return len(obs.grouping_indices)
 
     if not obs.pauli_rep:
-        return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+        return sum(int(not isinstance(o, qp.Identity)) for o in obs.terms()[1])
 
     _, ops = obs.terms()
-    with qml.QueuingManager.stop_recording():
-        op_groups = qml.pauli.group_observables(ops)
+    with qp.QueuingManager.stop_recording():
+        op_groups = qp.pauli.group_observables(ops)
     return len(op_groups)
 
 
-def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int]:
+def get_num_shots_and_executions(tape: qp.tape.QuantumScript) -> tuple[int, int]:
     """Get the total number of qpu executions and shots.
 
     Args:
-        tape (qml.tape.QuantumTape): the tape we want to get the number of executions and shots for
+        tape (qp.tape.QuantumTape): the tape we want to get the number of executions and shots for
 
     Returns:
         int, int: the total number of QPU executions and the total number of shots
@@ -158,13 +158,13 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int
     num_shots = 0
     for group in groups:
         if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, qml.ops.LinearCombination
+            group[0].obs, qp.ops.LinearCombination
         ):
             H_executions = _get_num_executions_for_expval_H(group[0].obs)
             num_executions += H_executions
             if tape.shots:
                 num_shots += tape.shots.total_shots * H_executions
-        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qml.ops.Sum):
+        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qp.ops.Sum):
             sum_executions = _get_num_executions_for_sum(group[0].obs)
             num_executions += sum_executions
             if tape.shots:
@@ -191,7 +191,7 @@ def _apply_diagonalizing_gates(
     if len(mps) == 1:
         diagonalizing_gates = mps[0].diagonalizing_gates()
     elif all(mp.obs for mp in mps):
-        diagonalizing_gates = qml.pauli.diagonalize_qwc_pauli_words([mp.obs for mp in mps])[0]
+        diagonalizing_gates = qp.pauli.diagonalize_qwc_pauli_words([mp.obs for mp in mps])[0]
     else:
         diagonalizing_gates = []
 
@@ -304,7 +304,7 @@ def _measure_with_samples_diagonalizing_gates(
     state = _apply_diagonalizing_gates(mps, state, is_state_batched)
 
     total_indices = len(state.shape) - is_state_batched
-    wires = qml.wires.Wires(range(total_indices))
+    wires = qp.wires.Wires(range(total_indices))
 
     def _process_single_shot(samples):
         return tuple(mp.process_samples(samples, wires) for mp in mps)
@@ -322,7 +322,7 @@ def _measure_with_samples_diagonalizing_gates(
     except ValueError as e:
         if "probabilities contain nan" not in str(e).lower():
             raise e
-        samples = qml.math.full((shots.total_shots, len(wires)), 0)
+        samples = qp.math.full((shots.total_shots, len(wires)), 0)
 
     processed_samples = []
     for lower, upper in shots.bins():
@@ -366,7 +366,7 @@ def _measure_classical_shadow(
     # the list contains only one element based on how we group measurements
     mp = mp[0]
 
-    wires = qml.wires.Wires(range(len(state.shape)))
+    wires = qp.wires.Wires(range(len(state.shape)))
 
     if shots.has_partitioned_shots:
         return [tuple(mp.process_state_with_shots(state, wires, s, rng=rng) for s in shots)]
@@ -463,14 +463,14 @@ def sample_state(
     """
 
     total_indices = len(state.shape) - is_state_batched
-    state_wires = qml.wires.Wires(range(total_indices))
+    state_wires = qp.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
 
     flat_state = flatten_state(state, total_indices)
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
+    with qp.queuing.QueuingManager.stop_recording():
+        probs = qp.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
         # Keep same interface (e.g. jax) as in the device
 
     return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key)
@@ -491,7 +491,7 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
     """
-    if qml.math.get_interface(probs) == "jax" or prng_key is not None:
+    if qp.math.get_interface(probs) == "jax" or prng_key is not None:
         return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, seed=rng)
 
     return _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng)
@@ -511,12 +511,12 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
             If no value is provided, a default RNG will be used
     """
     rng = np.random.default_rng(rng)
-    norm = qml.math.sum(probs, axis=-1)
-    norm_err = qml.math.abs(norm - 1.0)
+    norm = qp.math.sum(probs, axis=-1)
+    norm_err = qp.math.abs(norm - 1.0)
     cutoff = 1e-07
 
     norm_err = norm_err if is_state_batched else norm_err[..., np.newaxis]
-    if qml.math.any(norm_err > cutoff):
+    if qp.math.any(norm_err > cutoff):
         raise ValueError("probabilities do not sum to 1")
 
     basis_states = np.arange(2**num_wires)

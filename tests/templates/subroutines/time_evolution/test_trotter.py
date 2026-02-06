@@ -35,14 +35,14 @@ from pennylane.templates.subroutines.time_evolution.trotter import (
 )
 
 test_hamiltonians = (
-    qml.dot([1.0, 1.0, 1.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
-    qml.dot(
-        [1.23, -0.45], [qml.s_prod(0.1, qml.PauliX(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1))]
+    qp.dot([1.0, 1.0, 1.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
+    qp.dot(
+        [1.23, -0.45], [qp.s_prod(0.1, qp.PauliX(0)), qp.prod(qp.PauliX(0), qp.PauliZ(1))]
     ),  # op arith
-    qml.dot(
-        [1, -0.5, 0.5], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(0)]
+    qp.dot(
+        [1, -0.5, 0.5], [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(0)]
     ),  # H = Identity
-    qml.dot([2.0, 2.0, 2.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
+    qp.dot([2.0, 2.0, 2.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1
@@ -53,171 +53,171 @@ p6_comp = 1 - (4 * p_6)
 test_decompositions = (
     {  # (hamiltonian_index, order): decomposition assuming t = 4.2, computed by hand
         (0, 1): [
-            qml.evolve(qml.PauliX(0), -4.2),
-            qml.evolve(qml.PauliY(0), -4.2),
-            qml.evolve(qml.PauliZ(1), -4.2),
+            qp.evolve(qp.PauliX(0), -4.2),
+            qp.evolve(qp.PauliY(0), -4.2),
+            qp.evolve(qp.PauliZ(1), -4.2),
         ],
         (0, 2): [
-            qml.evolve(qml.PauliX(0), -4.2 / 2),
-            qml.evolve(qml.PauliY(0), -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), -4.2 / 2),
-            qml.evolve(qml.PauliY(0), -4.2 / 2),
-            qml.evolve(qml.PauliX(0), -4.2 / 2),
+            qp.evolve(qp.PauliX(0), -4.2 / 2),
+            qp.evolve(qp.PauliY(0), -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), -4.2 / 2),
+            qp.evolve(qp.PauliY(0), -4.2 / 2),
+            qp.evolve(qp.PauliX(0), -4.2 / 2),
         ],
         (0, 4): [
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),  # S_2((1 - 4p) * t)
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -4.2 / 2),  # S_2((1 - 4p) * t)
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -4.2 / 2),  # S_2(p * t) ^ 2
         ],
         (1, 1): [
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), 1.23 * -4.2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), -0.45 * -4.2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), 1.23 * -4.2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), -0.45 * -4.2),
         ],
         (1, 2): [
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), 1.23 * -4.2 / 2),
         ],
         (1, 4): [
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.prod(qml.PauliX(0), qml.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
-            qml.evolve(qml.s_prod(0.1, qml.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), (1 - 4 * p_4) * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), (1 - 4 * p_4) * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.prod(qp.PauliX(0), qp.PauliZ(1)), p_4 * -0.45 * -4.2 / 2),
+            qp.evolve(qp.s_prod(0.1, qp.PauliX(0)), p_4 * 1.23 * -4.2 / 2),
         ],
         (2, 1): [
-            qml.evolve(qml.Identity(wires=[0, 1]), -4.2),
-            qml.evolve(qml.PauliZ(0), -0.5 * -4.2),
-            qml.evolve(qml.PauliZ(0), 0.5 * -4.2),
+            qp.evolve(qp.Identity(wires=[0, 1]), -4.2),
+            qp.evolve(qp.PauliZ(0), -0.5 * -4.2),
+            qp.evolve(qp.PauliZ(0), 0.5 * -4.2),
         ],
         (2, 2): [
-            qml.evolve(qml.Identity(wires=[0, 1]), -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), -4.2 / 2),
         ],
         (2, 4): [
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
-            qml.evolve(qml.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
-            qml.evolve(qml.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), (1 - 4 * p_4) * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), (1 - 4 * p_4) * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * 0.5 * -4.2 / 2),
+            qp.evolve(qp.PauliZ(0), p_4 * -0.5 * -4.2 / 2),
+            qp.evolve(qp.Identity(wires=[0, 1]), p_4 * -4.2 / 2),
         ],
         (3, 1): [
-            qml.evolve(qml.PauliX(0), -8.4),
-            qml.evolve(qml.PauliY(0), -8.4),
-            qml.evolve(qml.PauliZ(1), -8.4),
+            qp.evolve(qp.PauliX(0), -8.4),
+            qp.evolve(qp.PauliY(0), -8.4),
+            qp.evolve(qp.PauliZ(1), -8.4),
         ],
         (3, 2): [
-            qml.evolve(qml.PauliX(0), -8.4 / 2),
-            qml.evolve(qml.PauliY(0), -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), -8.4 / 2),
-            qml.evolve(qml.PauliY(0), -8.4 / 2),
-            qml.evolve(qml.PauliX(0), -8.4 / 2),
+            qp.evolve(qp.PauliX(0), -8.4 / 2),
+            qp.evolve(qp.PauliY(0), -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), -8.4 / 2),
+            qp.evolve(qp.PauliY(0), -8.4 / 2),
+            qp.evolve(qp.PauliX(0), -8.4 / 2),
         ],
         (3, 4): [
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),  # S_2((1 - 4p) * t)
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliZ(1), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliY(0), p_4 * -8.4 / 2),
-            qml.evolve(qml.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), (1 - 4 * p_4) * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), (1 - 4 * p_4) * -8.4 / 2),  # S_2((1 - 4p) * t)
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliZ(1), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliY(0), p_4 * -8.4 / 2),
+            qp.evolve(qp.PauliX(0), p_4 * -8.4 / 2),  # S_2(p * t) ^ 2
         ],
     }
 )
@@ -316,7 +316,7 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
     Trotter product for order and number of trotter steps."""
     decomp = []
     if order == 1:
-        decomp.extend(qml.evolve(op, -coeff * (time / n)) for coeff, op in zip(coeffs, ops))
+        decomp.extend(qp.evolve(op, -coeff * (time / n)) for coeff, op in zip(coeffs, ops))
 
     coeffs_ops = zip(coeffs, ops)
 
@@ -328,20 +328,20 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
         coeffs_ops_reversed = zip(coeffs[::-1], ops[::-1])
 
     if order == 2:
-        decomp.extend(qml.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops)
-        decomp.extend(qml.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops_reversed)
+        decomp.extend(qp.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops)
+        decomp.extend(qp.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops_reversed)
 
     if order == 4:
         s_2 = []
         s_2_p = []
 
         for coeff, op in coeffs_ops:
-            s_2.append(qml.evolve(op, -(p_4 * coeff) * (time / n) / 2))
-            s_2_p.append(qml.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
+            s_2.append(qp.evolve(op, -(p_4 * coeff) * (time / n) / 2))
+            s_2_p.append(qp.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
 
         for coeff, op in coeffs_ops_reversed:
-            s_2.append(qml.evolve(op, -(p_4 * coeff) * (time / n) / 2))
-            s_2_p.append(qml.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
+            s_2.append(qp.evolve(op, -(p_4 * coeff) * (time / n) / 2))
+            s_2_p.append(qp.evolve(op, -((1 - (4 * p_4)) * coeff) * (time / n) / 2))
 
         decomp = (s_2 * 2) + s_2_p + (s_2 * 2)
 
@@ -354,10 +354,10 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "hamiltonian, raise_error",
         (
-            (qml.PauliX(0), True),
-            (qml.prod(qml.PauliX(0), qml.PauliZ(1)), True),
-            (qml.Hamiltonian([1.23, 3.45], [qml.PauliX(0), qml.PauliZ(1)]), False),
-            (qml.dot([1.23, 3.45], [qml.PauliX(0), qml.PauliZ(1)]), False),
+            (qp.PauliX(0), True),
+            (qp.prod(qp.PauliX(0), qp.PauliZ(1)), True),
+            (qp.Hamiltonian([1.23, 3.45], [qp.PauliX(0), qp.PauliZ(1)]), False),
+            (qp.dot([1.23, 3.45], [qp.PauliX(0), qp.PauliZ(1)]), False),
         ),
     )
     def test_error_type(self, hamiltonian, raise_error):
@@ -367,15 +367,15 @@ class TestInitialization:
                 TypeError,
                 match="The given operator must be a PennyLane ~.Sum or ~.SProd",
             ):
-                qml.TrotterProduct(hamiltonian, time=1.23)
+                qp.TrotterProduct(hamiltonian, time=1.23)
 
         else:
-            qml.TrotterProduct(hamiltonian, time=1.23)
+            qp.TrotterProduct(hamiltonian, time=1.23)
 
     @pytest.mark.parametrize(
         "hamiltonian",
         (
-            qml.Hamiltonian([1.23, 4 + 5j], [qml.PauliX(0), qml.PauliZ(1)]),
+            qp.Hamiltonian([1.23, 4 + 5j], [qml.PauliX(0), qml.PauliZ(1)]),
             qml.dot([1.23, 4 + 5j], [qml.PauliX(0), qml.PauliZ(1)]),
             qml.dot([1.23, 0.5], [qml.RY(1.23, 0), qml.RZ(3.45, 1)]),
         ),

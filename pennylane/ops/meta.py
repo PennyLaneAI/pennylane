@@ -70,7 +70,7 @@ class Barrier(Operation):
 
         **Example:**
 
-        >>> print(qml.Barrier.compute_decomposition(0))
+        >>> print(qp.Barrier.compute_decomposition(0))
         []
 
         """
@@ -91,8 +91,8 @@ class Barrier(Operation):
     def simplify(self):
         if self.only_visual:
             if len(self.wires) == 1:
-                return qml.Identity(self.wires[0])
-            return qml.prod(*(qml.Identity(w) for w in self.wires))
+                return qp.Identity(self.wires[0])
+            return qp.prod(*(qp.Identity(w) for w in self.wires))
         return self
 
 
@@ -103,7 +103,7 @@ class WireCut(Operation):
     .. note::
 
         This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     **Details:**
 
@@ -139,7 +139,7 @@ class WireCut(Operation):
 
         **Example:**
 
-        >>> print(qml.WireCut.compute_decomposition(0))
+        >>> print(qp.WireCut.compute_decomposition(0))
         []
 
         """
@@ -172,7 +172,7 @@ class Snapshot(Operation):
             in the snapshots dictionary.
 
         measurement (MeasurementProcess or None): An optional argument to record arbitrary
-            measurements during execution. If None, the measurement defaults to `qml.state`
+            measurements during execution. If None, the measurement defaults to `qp.state`
             on the available wires.
 
         shots (Literal["workflow"], None, int, Sequence[int]): shots to use for the snapshot.
@@ -188,20 +188,20 @@ class Snapshot(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", seed=42)
+        dev = qp.device("default.qubit", seed=42)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
-            qml.Hadamard(wires=0)
-            qml.Snapshot("very_important_state")
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            m = qml.Snapshot("samples", qml.sample(), shots=5)
-            return qml.expval(qml.X(0))
+            qp.Snapshot(measurement=qp.expval(qp.Z(0)))
+            qp.Hadamard(wires=0)
+            qp.Snapshot("very_important_state")
+            qp.CNOT(wires=[0, 1])
+            qp.Snapshot()
+            m = qp.Snapshot("samples", qp.sample(), shots=5)
+            return qp.expval(qp.X(0))
 
     >>> from pprint import pprint
-    >>> pprint(qml.snapshots(circuit)())
+    >>> pprint(qp.snapshots(circuit)())
     {0: np.float64(1.0),
      2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
      'execution_results': np.float64(0.0),
@@ -236,21 +236,21 @@ class Snapshot(Operation):
             raise ValueError("Snapshot tags can only be of type 'str'")
 
         if measurement is None:
-            measurement = qml.state()
-        if isinstance(measurement, qml.measurements.StateMP) and shots == "workflow":
+            measurement = qp.state()
+        if isinstance(measurement, qp.measurements.StateMP) and shots == "workflow":
             shots = None  # always use analytic with state
-        if isinstance(measurement, qml.measurements.MeasurementProcess):
-            qml.queuing.QueuingManager.remove(measurement)
+        if isinstance(measurement, qp.measurements.MeasurementProcess):
+            qp.queuing.QueuingManager.remove(measurement)
         else:
             raise ValueError(
                 f"The measurement {measurement.__class__.__name__} is not supported as it is not "
-                f"an instance of {qml.measurements.MeasurementProcess}"
+                f"an instance of {qp.measurements.MeasurementProcess}"
             )
 
         self.hyperparameters["tag"] = tag
         self.hyperparameters["measurement"] = measurement
         self.hyperparameters["shots"] = (
-            shots if shots == "workflow" else qml.measurements.Shots(shots)
+            shots if shots == "workflow" else qp.measurements.Shots(shots)
         )
         super().__init__(wires=measurement.wires)
 

@@ -24,11 +24,11 @@ from pennylane.wires import Wires
 from .qubit_graph import QubitGraph
 
 
-def make_graph_state(graph, wires, one_qubit_ops=qml.H, two_qubit_ops=qml.CZ):
+def make_graph_state(graph, wires, one_qubit_ops=qp.H, two_qubit_ops=qp.CZ):
     """A program-capture compatible way to create a GraphStatePrep template.
     We can't capture the graph object in plxpr, so instead, if capture is enabled,
     we capture the operations generated in computing the decomposition."""
-    if qml.capture.enabled():
+    if qp.capture.enabled():
         GraphStatePrep.compute_decomposition(wires, graph, one_qubit_ops, two_qubit_ops)
     else:
         GraphStatePrep(
@@ -82,24 +82,24 @@ class GraphStatePrep(Operation):
 
             from pennylane.ftqc import generate_lattice, GraphStatePrep, QubitGraph
 
-            dev = qml.device('default.qubit')
+            dev = qp.device('default.qubit')
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(q, one_qubit_ops, two_qubit_ops, wires = None):
                 GraphStatePrep(graph=q, one_qubit_ops=one_qubit_ops, two_qubit_ops=two_qubit_ops, wires = wires)
-                return qml.probs()
+                return qp.probs()
 
             lattice = generate_lattice([2, 2], "square")
             q = QubitGraph(lattice.graph, id="square")
 
-            one_qubit_ops = qml.Y
-            two_qubit_ops = qml.CNOT
+            one_qubit_ops = qp.Y
+            two_qubit_ops = qp.CNOT
 
         If the wires argument is not explicitly passed to the circuit, the child nodes of the
         ``QubitGraph`` are used as the wires. The resulting circuit after applying the
         ``GraphStatePrep`` template is:
 
-        >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops))
+        >>> print(qp.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops))
         QubitGraph<id=(0, 0), loc=[square]>: ──Y─╭●─╭●───────┤  Probs
         QubitGraph<id=(0, 1), loc=[square]>: ──Y─│──╰X─╭●────┤  Probs
         QubitGraph<id=(1, 0), loc=[square]>: ──Y─╰X────│──╭●─┤  Probs
@@ -107,7 +107,7 @@ class GraphStatePrep(Operation):
 
         The circuit wires can also be customized by passing a wires argument to the circuit as follows:
 
-        >>> print(qml.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops, wires=[0, 1, 2, 3]))
+        >>> print(qp.draw(circuit, level="device")(q, one_qubit_ops, two_qubit_ops, wires=[0, 1, 2, 3]))
         0: ──Y─╭●─╭●───────┤  Probs
         1: ──Y─│──╰X─╭●────┤  Probs
         2: ──Y─╰X────│──╭●─┤  Probs
@@ -128,18 +128,18 @@ class GraphStatePrep(Operation):
             import networkx as nx
             from pennylane.ftqc import GraphStatePrep
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(graph, wires):
-                GraphStatePrep(graph=graph, one_qubit_ops=qml.H, two_qubit_ops=qml.CZ, wires=wires)
-                return qml.state()
+                GraphStatePrep(graph=graph, one_qubit_ops=qp.H, two_qubit_ops=qp.CZ, wires=wires)
+                return qp.state()
 
         Defining a graph structure and drawing the circuit shows how the graph node labels have been
         mapped to wires:
 
         >>> g1 = nx.Graph([("a", "b"), ("b", "c"), ("c", "d")])  # (a) -- (b) -- (c) -- (d)
-        >>> print(qml.draw(circuit, level="device")(g1, wires=range(4)))
+        >>> print(qp.draw(circuit, level="device")(g1, wires=range(4)))
         0: ──H─╭●───────┤  State
         1: ──H─╰Z─╭●────┤  State
         2: ──H────╰Z─╭●─┤  State
@@ -159,7 +159,7 @@ class GraphStatePrep(Operation):
         gives:
 
         >>> g2 = nx.Graph([("b", "a"), ("a", "c"), ("c", "d")])  # (b) -- (a) -- (c) -- (d)
-        >>> print(qml.draw(circuit, level="device")(g2, wires=range(4)))
+        >>> print(qp.draw(circuit, level="device")(g2, wires=range(4)))
         0: ──H─╭Z─╭●────┤  State
         1: ──H─╰●─│─────┤  State
         2: ──H────╰Z─╭●─┤  State
@@ -183,8 +183,8 @@ class GraphStatePrep(Operation):
     def __init__(
         self,
         graph: nx.Graph | QubitGraph,
-        one_qubit_ops: Operation = qml.H,
-        two_qubit_ops: Operation = qml.CZ,
+        one_qubit_ops: Operation = qp.H,
+        two_qubit_ops: Operation = qp.CZ,
         wires: Wires | None = None,
     ):
         self.hyperparameters["graph"] = graph
@@ -226,8 +226,8 @@ class GraphStatePrep(Operation):
     def compute_decomposition(
         wires: Wires,
         graph: nx.Graph | QubitGraph,
-        one_qubit_ops: Operation = qml.H,
-        two_qubit_ops: Operation = qml.CZ,
+        one_qubit_ops: Operation = qp.H,
+        two_qubit_ops: Operation = qp.CZ,
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 

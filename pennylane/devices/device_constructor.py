@@ -100,7 +100,7 @@ def device(name, *args, **kwargs):
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins>`_ for more
     details. To list all currently installed devices, run
-    :func:`qml.about <pennylane.about>`.
+    :func:`qp.about <pennylane.about>`.
 
     Args:
         name (str): the name of the device to load
@@ -114,8 +114,8 @@ def device(name, *args, **kwargs):
             decompositions to be applied by the device at runtime.
 
     .. warning::
-        The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-        in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+        The ``custom_decomps`` keyword argument to ``qp.device`` has been deprecated and will be removed
+        in 0.45. Instead, with ``qp.decomposition.enable_graph()``, new decomposition rules can be defined as
         quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 
@@ -126,12 +126,12 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=5)
+        dev = qp.device('default.qubit', wires=5)
 
         def circuit():
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[3, 4])
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=[0])
+            qp.CNOT(wires=[3, 4])
             ...
 
     The ``wires`` argument can also be a sequence of unique numbers or strings, specifying custom wire labels
@@ -139,37 +139,37 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
+        dev = qp.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
 
         def circuit():
-            qml.Hadamard(wires='q11')
-            qml.Hadamard(wires=['auxiliary'])
-            qml.CNOT(wires=['q12', -1])
+            qp.Hadamard(wires='q11')
+            qp.Hadamard(wires=['auxiliary'])
+            qp.CNOT(wires=['q12', -1])
             ...
 
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
     and instead the wires will be computed when executing a circuit depending on its contents.
 
-    >>> dev = qml.device("default.qubit")
+    >>> dev = qp.device("default.qubit")
 
     When executing quantum circuits on a device, we can specify the number of times the circuit must be executed
     to estimate stochastic return values by using the :func:`~pennylane.set_shots` transform.
-    As an example, ``qml.sample()`` measurements will return as many samples as the number of shots specified.
+    As an example, ``qp.sample()`` measurements will return as many samples as the number of shots specified.
     Note that ``shots`` can be a single integer or a list of shot values.
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qp.device('default.qubit', wires=1)
 
-        @qml.set_shots(10)
-        @qml.qnode(dev)
+        @qp.set_shots(10)
+        @qp.qnode(dev)
         def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.Z(0))
+            qp.RX(a, wires=0)
+            return qp.sample(qp.Z(0))
 
     >>> circuit(0.8)  # 10 samples are returned
     array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
-    >>> new_circuit = qml.set_shots(circuit, shots=[3, 4, 4])
+    >>> new_circuit = qp.set_shots(circuit, shots=[3, 4, 4])
     >>> new_circuit(0.8)  # 3, 4, and 4 samples are returned respectively
     (array([1., 1., 1.]), array([ 1.,  1.,  1., -1.]), array([ 1.,  1., -1.,  1.]))
 
@@ -179,8 +179,8 @@ def device(name, *args, **kwargs):
         .. warning::
             The keyword argument for defining custom quantum gate decompositions, ``custom_decomps``,
             has been deprecated and will be removed in v0.45. Instead, to specify custom decompositions for
-            your operators, use the ``qml.transforms.decompose`` transform with the new
-            graph-based system enabled via ``qml.decomposition.enable_graph()``. See the documentation
+            your operators, use the ``qp.transforms.decompose`` transform with the new
+            graph-based system enabled via ``qp.decomposition.enable_graph()``. See the documentation
             on **Customizing Decompositions** in :func:`~.transforms.decompose` for more details on how
             to define and register decomposition rules.
 
@@ -203,11 +203,11 @@ def device(name, *args, **kwargs):
 
             def ion_trap_cnot(wires, **_):
                 return [
-                    qml.RY(np.pi/2, wires=wires[0]),
-                    qml.IsingXX(np.pi/2, wires=wires),
-                    qml.RX(-np.pi/2, wires=wires[0]),
-                    qml.RY(-np.pi/2, wires=wires[0]),
-                    qml.RY(-np.pi/2, wires=wires[1])
+                    qp.RY(np.pi/2, wires=wires[0]),
+                    qp.IsingXX(np.pi/2, wires=wires),
+                    qp.RX(-np.pi/2, wires=wires[0]),
+                    qp.RY(-np.pi/2, wires=wires[0]),
+                    qp.RY(-np.pi/2, wires=wires[1])
                 ]
 
         Next, we create a device and a QNode for testing. When constructing the
@@ -220,16 +220,16 @@ def device(name, *args, **kwargs):
 
             # As the CNOT gate normally has no decomposition, we can use default.qubit
             # here for expository purposes.
-            dev = qml.device(
+            dev = qp.device(
                 'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
             )
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def run_cnot():
-                qml.CNOT(wires=[0, 1])
-                return qml.expval(qml.X(1))
+                qp.CNOT(wires=[0, 1])
+                return qp.expval(qp.X(1))
 
-        >>> print(qml.draw(run_cnot, level="device")())
+        >>> print(qp.draw(run_cnot, level="device")())
         0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
         1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
 
@@ -295,8 +295,8 @@ def device(name, *args, **kwargs):
         # any custom decompositions were specified.
         if custom_decomps is not None:
             warnings.warn(
-                """The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
-                in v0.45. Instead, use the graph-based system with ``qml.decomposition.enable_graph()``, and define new decomposition rules as
+                """The ``custom_decomps`` keyword argument to ``qp.device`` has been deprecated and will be removed 
+                in v0.45. Instead, use the graph-based system with ``qp.decomposition.enable_graph()``, and define new decomposition rules as
                 quantum functions with registered resources. See `Decomposition <https://docs.pennylane.ai/en/stable/code/qml_decomposition.html>`_. 
                 for more details.""",
                 PennyLaneDeprecationWarning,

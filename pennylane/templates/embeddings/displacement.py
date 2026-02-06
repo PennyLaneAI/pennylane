@@ -52,13 +52,13 @@ class DisplacementEmbedding(Operation):
 
         .. code-block:: python
 
-            dev = qml.device('default.gaussian', wires=3)
+            dev = qp.device('default.gaussian', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(feature_vector):
-                qml.DisplacementEmbedding(features=feature_vector, wires=range(3))
-                qml.QuadraticPhase(0.1, wires=1)
-                return qml.expval(qml.NumberOperator(wires=1))
+                qp.DisplacementEmbedding(features=feature_vector, wires=range(3))
+                qp.QuadraticPhase(0.1, wires=1)
+                return qp.expval(qp.NumberOperator(wires=1))
 
             X = [1, 2, 3]
 
@@ -67,7 +67,7 @@ class DisplacementEmbedding(Operation):
 
         And, the resulting circuit is:
 
-        >>> print(qml.draw(circuit, show_matrices=False)(X))
+        >>> print(qp.draw(circuit, show_matrices=False)(X))
         0: ─╭DisplacementEmbedding(M0)──────────┤
         1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
         2: ─╰DisplacementEmbedding(M0)──────────┤
@@ -76,13 +76,13 @@ class DisplacementEmbedding(Operation):
 
         .. code-block:: python
 
-            dev = qml.device('default.gaussian', wires=3)
+            dev = qp.device('default.gaussian', wires=3)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(feature_vector):
-                qml.DisplacementEmbedding(features=feature_vector, wires=range(3), method='phase', c=0.5)
-                qml.QuadraticPhase(0.1, wires=1)
-                return qml.expval(qml.NumberOperator(wires=1))
+                qp.DisplacementEmbedding(features=feature_vector, wires=range(3), method='phase', c=0.5)
+                qp.QuadraticPhase(0.1, wires=1)
+                return qp.expval(qp.NumberOperator(wires=1))
 
             X = [1, 2, 3]
 
@@ -91,7 +91,7 @@ class DisplacementEmbedding(Operation):
 
         And, the resulting circuit is:
 
-        >>> print(qml.draw(circuit, show_matrices=False)(X))
+        >>> print(qp.draw(circuit, show_matrices=False)(X))
         0: ─╭DisplacementEmbedding(M0)──────────┤
         1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
         2: ─╰DisplacementEmbedding(M0)──────────┤
@@ -153,7 +153,7 @@ class DisplacementEmbedding(Operation):
         **Example**
 
         >>> pars = torch.tensor([[1., 0.], [2., 0.]])
-        >>> qml.DisplacementEmbedding.compute_decomposition(pars, wires=[0, 1])
+        >>> qp.DisplacementEmbedding.compute_decomposition(pars, wires=[0, 1])
         [Displacement(tensor(1.), tensor(0.), wires=[0]),
          Displacement(tensor(2.), tensor(0.), wires=[1])]
         """

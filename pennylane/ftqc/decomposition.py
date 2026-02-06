@@ -50,7 +50,7 @@ def convert_to_mbqc_gateset(tape):
     if not enabled_graph():
         raise RuntimeError(
             "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
-            " method. This can be toggled by calling `qml.decomposition.enable_graph()`"
+            " method. This can be toggled by calling `qp.decomposition.enable_graph()`"
         )
     tapes, fn = decompose(tape, gate_set=mbqc_gate_set, alt_decomps={Rot: [_rot_to_xzx]})
     return tapes, fn

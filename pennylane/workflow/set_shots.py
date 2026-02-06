@@ -45,7 +45,7 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
         QNode or callable: The transformed QNode with updated shots, or a wrapper function
         if qnode is not provided.
 
-    There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
+    There are three ways to specify shot values (see :func:`qp.measurements.Shots <pennylane.measurements.Shots>` for more details):
 
     * The value ``None``: analytic mode, no shots
     * A positive integer: a fixed number of shots
@@ -57,11 +57,11 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
 
     .. code-block:: python
 
-        @qml.set_shots(1_000)
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.set_shots(1_000)
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circuit_sample():
-            qml.RX(1.23, wires=0)
-            return qml.sample(qml.Z(0))
+            qp.RX(1.23, wires=0)
+            return qp.sample(qp.Z(0))
 
     >>> result = circuit_sample()
     >>> result.shape
@@ -71,11 +71,11 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
 
     .. code-block:: python
 
-        @qml.set_shots(None)
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.set_shots(None)
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circuit_expval():
-            qml.RX(1.23, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(1.23, wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> result = circuit_expval()
     >>> np.allclose(result, np.cos(1.23))
@@ -83,7 +83,7 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
 
     The shots can be updated in-line for an existing circuit:
 
-    >>> new_circ = qml.set_shots(circuit_sample, shots=(4, 10)) # shot vector
+    >>> new_circ = qp.set_shots(circuit_sample, shots=(4, 10)) # shot vector
     >>> result = new_circ()
     >>> a, b = result
     >>> a.shape

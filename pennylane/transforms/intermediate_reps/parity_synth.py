@@ -55,24 +55,24 @@ def parity_synth(tape):
 
         import pennylane as qp
 
-        qml.capture.enable()
-        dev = qml.device("lightning.qubit", wires=2)
+        qp.capture.enable()
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x: float, y: float, z: float):
-            qml.CNOT((0, 1))
-            qml.RZ(x, 1)
-            qml.CNOT((0, 1))
-            qml.RX(y, 1)
-            qml.CNOT((1, 0))
-            qml.RZ(z, 1)
-            qml.CNOT((1, 0))
-            return qml.state()
+            qp.CNOT((0, 1))
+            qp.RZ(x, 1)
+            qp.CNOT((0, 1))
+            qp.RX(y, 1)
+            qp.CNOT((1, 0))
+            qp.RZ(z, 1)
+            qp.CNOT((1, 0))
+            return qp.state()
 
     We can draw the circuit and observe the last ``RZ`` gate being wrapped in a pair of ``CNOT``
     gates that commute with it:
 
-    >>> print(qml.draw(circuit)(0.52, 0.12, 0.2))
+    >>> print(qp.draw(circuit)(0.52, 0.12, 0.2))
     0: ─╭●───────────╭●───────────╭X───────────╭X─┤  State
     1: ─╰X──RZ(0.52)─╰X──RX(0.12)─╰●──RZ(0.20)─╰●─┤  State
 
@@ -81,8 +81,8 @@ def parity_synth(tape):
 
     .. code-block:: python
 
-        qjit_circuit = qml.qjit(qml.transforms.parity_synth(circuit))
-        specs = qml.specs(qjit_circuit, level="device")(0.52, 0.12, 0.2)
+        qjit_circuit = qp.qjit(qp.transforms.parity_synth(circuit))
+        specs = qp.specs(qjit_circuit, level="device")(0.52, 0.12, 0.2)
 
 
     Looking at the resources of the compiled module, we find only five gates left in the program;
@@ -99,6 +99,6 @@ def parity_synth(tape):
     """
     raise NotImplementedError(
         "The parity_synth compilation pass has no tape implementation, and can only be applied "
-        "when decorating the entire worfklow with @qml.qjit and when it is placed after all "
+        "when decorating the entire worfklow with @qp.qjit and when it is placed after all "
         "transforms that only have a tape implementation."
     )

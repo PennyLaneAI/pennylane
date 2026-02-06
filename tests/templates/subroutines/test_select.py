@@ -41,29 +41,29 @@ from pennylane.templates.subroutines.select import (
 def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrized):
     """Run standard validity tests."""
     if parametrized:
-        ops = [qml.RX(0.2, 0) for _ in range(num_ops)]
+        ops = [qp.RX(0.2, 0) for _ in range(num_ops)]
     else:
-        ops = [qml.PauliX(0) for _ in range(num_ops)]
+        ops = [qp.PauliX(0) for _ in range(num_ops)]
     control = list(range(1, num_controls + 1))
 
-    op = qml.Select(ops, control, work_wires, partial=partial)
+    op = qp.Select(ops, control, work_wires, partial=partial)
     if num_ops > 0:
-        assert op.target_wires == qml.wires.Wires(0)
+        assert op.target_wires == qp.wires.Wires(0)
     else:
-        assert op.target_wires == qml.wires.Wires([])
-    qml.ops.functions.assert_valid(op)
+        assert op.target_wires == qp.wires.Wires([])
+    qp.ops.functions.assert_valid(op)
 
 
 @pytest.mark.unit
 def test_repr():
     """Test the repr method."""
-    ops = [qml.X(0), qml.Y(0)]
+    ops = [qp.X(0), qp.Y(0)]
     control = [1]
 
-    op = qml.Select(ops, control)
+    op = qp.Select(ops, control)
     assert repr(op) == "Select(ops=(X(0), Y(0)), control=Wires([1]), partial=False)"
 
-    op = qml.Select(ops, control, partial=True)
+    op = qp.Select(ops, control, partial=True)
     assert repr(op) == "Select(ops=(X(0), Y(0)), control=Wires([1]), partial=True)"
 
 
@@ -105,23 +105,23 @@ class TestSelect:
 
     def test_copy(self):
         """Test that the copy function of Select works correctly."""
-        ops = [qml.X(wires=2), qml.RX(0.2, wires=3), qml.Y(wires=2), qml.SWAP([2, 3])]
-        op = qml.Select(ops, control=[0, 1])
+        ops = [qp.X(wires=2), qp.RX(0.2, wires=3), qp.Y(wires=2), qp.SWAP([2, 3])]
+        op = qp.Select(ops, control=[0, 1])
         op_copy = copy.copy(op)
 
-        qml.assert_equal(op, op_copy)
+        qp.assert_equal(op, op_copy)
 
     @pytest.mark.parametrize(
         ("ops", "control"),
         [
-            ([qml.X(0)], [1]),
-            ([qml.X(0), qml.Y(0)], [1]),
-            ([qml.RX(0.5, 0), qml.RY(0.7, 1)], [2]),
-            ([qml.X(0), qml.I(0), qml.Z(0)], [1, 2]),
-            ([qml.RX(0.5, 0), qml.RY(0.7, 1), qml.RZ(0.3, 1), qml.X(2)], [3, 4]),
-            ([qml.X(0), qml.I(0), qml.I(0), qml.RX(0.3, 0)], [1, 2]),
-            ([qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")], ["c", 1]),
-            ([qml.X("a"), qml.RX(0.7, "b")], ["c", 1]),
+            ([qp.X(0)], [1]),
+            ([qp.X(0), qp.Y(0)], [1]),
+            ([qp.RX(0.5, 0), qp.RY(0.7, 1)], [2]),
+            ([qp.X(0), qp.I(0), qp.Z(0)], [1, 2]),
+            ([qp.RX(0.5, 0), qp.RY(0.7, 1), qp.RZ(0.3, 1), qp.X(2)], [3, 4]),
+            ([qp.X(0), qp.I(0), qp.I(0), qp.RX(0.3, 0)], [1, 2]),
+            ([qp.X("a"), qp.Z("b"), qp.RX(0.7, "b")], ["c", 1]),
+            ([qp.X("a"), qp.RX(0.7, "b")], ["c", 1]),
         ],
     )
     def test_basic_decomposition(self, ops, control):
@@ -130,66 +130,66 @@ class TestSelect:
         control_values = [
             list(map(int, np.binary_repr(i, width=len(control)))) for i in range(len(ops))
         ]
-        expected_gates = [qml.ctrl(op, control, vals) for op, vals in zip(ops, control_values)]
+        expected_gates = [qp.ctrl(op, control, vals) for op, vals in zip(ops, control_values)]
 
-        select_op = qml.Select(ops, control, partial=False)
-        with qml.queuing.AnnotatedQueue() as q0:
+        select_op = qp.Select(ops, control, partial=False)
+        with qp.queuing.AnnotatedQueue() as q0:
             decomp0 = select_op.decomposition()
-        decomp_queue0 = qml.tape.QuantumScript.from_queue(q0).operations
+        decomp_queue0 = qp.tape.QuantumScript.from_queue(q0).operations
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            decomp1 = qml.Select.compute_decomposition(ops, control, partial=False)
-        decomp_queue1 = qml.tape.QuantumScript.from_queue(q1).operations
+        with qp.queuing.AnnotatedQueue() as q1:
+            decomp1 = qp.Select.compute_decomposition(ops, control, partial=False)
+        decomp_queue1 = qp.tape.QuantumScript.from_queue(q1).operations
 
         for dec in [decomp0, decomp1, decomp_queue0, decomp_queue1]:
             for op_dec, op_exp in zip(dec, expected_gates, strict=True):
-                qml.assert_equal(op_dec, op_exp)
+                qp.assert_equal(op_dec, op_exp)
 
     @pytest.mark.parametrize(
         ("ops", "control", "expected_controls"),
         [
-            ([qml.X(0)], [1], [([], [])]),
-            ([qml.X(0), qml.Y(0)], [1], [([1], [0]), ([1], [1])]),
-            ([qml.RX(0.5, 0), qml.RY(0.7, 1)], [2], [([2], [0]), ([2], [1])]),
-            ([qml.X(0), qml.I(0), qml.Z(0)], [1, 2], [([1, 2], [0, 0]), ([2], [1]), ([1], [1])]),
+            ([qp.X(0)], [1], [([], [])]),
+            ([qp.X(0), qp.Y(0)], [1], [([1], [0]), ([1], [1])]),
+            ([qp.RX(0.5, 0), qp.RY(0.7, 1)], [2], [([2], [0]), ([2], [1])]),
+            ([qp.X(0), qp.I(0), qp.Z(0)], [1, 2], [([1, 2], [0, 0]), ([2], [1]), ([1], [1])]),
             (
-                [qml.RX(0.5, 0), qml.RY(0.7, 1), qml.RZ(0.3, 1), qml.X(2)],
+                [qp.RX(0.5, 0), qp.RY(0.7, 1), qp.RZ(0.3, 1), qp.X(2)],
                 [3, 4],
                 [([3, 4], [0, 0]), ([3, 4], [0, 1]), ([3, 4], [1, 0]), ([3, 4], [1, 1])],
             ),
             (
-                [qml.X(0), qml.I(0), qml.I(0), qml.RX(0.3, 0)],
+                [qp.X(0), qp.I(0), qp.I(0), qp.RX(0.3, 0)],
                 [1, 2],
                 [([1, 2], [0, 0]), ([1, 2], [0, 1]), ([1, 2], [1, 0]), ([1, 2], [1, 1])],
             ),
             (
-                [qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")],
+                [qp.X("a"), qp.Z("b"), qp.RX(0.7, "b")],
                 ["c", 1],
                 [(["c", 1], [0, 0]), ([1], [1]), (["c"], [1])],
             ),
-            ([qml.X("a"), qml.RX(0.7, "b")], ["c", 1], [([1], [0]), ([1], [1])]),
+            ([qp.X("a"), qp.RX(0.7, "b")], ["c", 1], [([1], [0]), ([1], [1])]),
         ],
     )
     def test_basic_decomposition_partial(self, ops, control, expected_controls):
         """Test the correctness of the Select template decomposition with partial=True.
         Tests both the returned and the queued operations."""
         expected_gates = [
-            qml.ctrl(op, ctrl, vals) if ctrl else op
+            qp.ctrl(op, ctrl, vals) if ctrl else op
             for op, (ctrl, vals) in zip(ops, expected_controls)
         ]
 
-        select_op = qml.Select(ops, control, partial=True)
-        with qml.queuing.AnnotatedQueue() as q0:
+        select_op = qp.Select(ops, control, partial=True)
+        with qp.queuing.AnnotatedQueue() as q0:
             decomp0 = select_op.decomposition()
-        decomp_queue0 = qml.tape.QuantumScript.from_queue(q0).operations
+        decomp_queue0 = qp.tape.QuantumScript.from_queue(q0).operations
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            decomp1 = qml.Select.compute_decomposition(ops, control, partial=True)
-        decomp_queue1 = qml.tape.QuantumScript.from_queue(q1).operations
+        with qp.queuing.AnnotatedQueue() as q1:
+            decomp1 = qp.Select.compute_decomposition(ops, control, partial=True)
+        decomp_queue1 = qp.tape.QuantumScript.from_queue(q1).operations
 
         for dec in [decomp0, decomp1, decomp_queue0, decomp_queue1]:
             for op_dec, op_exp in zip(dec, expected_gates, strict=True):
-                qml.assert_equal(op_dec, op_exp)
+                qp.assert_equal(op_dec, op_exp)
 
     @pytest.mark.parametrize("partial", [False, True])
     def test_new_decomposition_multi_control(self, partial):
@@ -197,14 +197,14 @@ class TestSelect:
         This test uses two control qubits and four target operators, so that the Select
         template is never a partial Select, and the kwarg ``partial`` has no effect.
         """
-        decomp = qml.list_decomps(qml.Select)[0]
+        decomp = qp.list_decomps(qp.Select)[0]
 
-        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+        ops = [qp.X(2), qp.X(3), qp.X(4), qp.Y(2)]
         op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.Y),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.Y),
         )
         control = (0, 1)
 
@@ -214,27 +214,27 @@ class TestSelect:
 
         assert resource_obj.num_gates == 4
 
-        c_resource = qml.decomposition.resources.controlled_resource_rep
+        c_resource = qp.decomposition.resources.controlled_resource_rep
 
         kwargs = {"base_params": {}, "num_control_wires": 2, "num_work_wires": 0}
 
         expected_counts = {
-            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=2): 1,
-            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=1): 2,
-            c_resource(base_class=qml.Y, **kwargs, num_zero_control_values=0): 1,
+            c_resource(base_class=qp.X, **kwargs, num_zero_control_values=2): 1,
+            c_resource(base_class=qp.X, **kwargs, num_zero_control_values=1): 2,
+            c_resource(base_class=qp.Y, **kwargs, num_zero_control_values=0): 1,
         }
         assert resource_obj.gate_counts == expected_counts
 
-        op = qml.Select(ops, control, partial=partial)
-        with qml.queuing.AnnotatedQueue() as q:
+        op = qp.Select(ops, control, partial=partial)
+        with qp.queuing.AnnotatedQueue() as q:
             decomp(*op.data, wires=op.wires, **op.hyperparameters)
 
-        decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
+        decomp_ops = qp.tape.QuantumScript.from_queue(q).operations
 
-        qml.assert_equal(decomp_ops[0], qml.ctrl(qml.X(2), (0, 1), control_values=[0, 0]))
-        qml.assert_equal(decomp_ops[1], qml.ctrl(qml.X(3), (0, 1), control_values=[0, 1]))
-        qml.assert_equal(decomp_ops[2], qml.ctrl(qml.X(4), (0, 1), control_values=[1, 0]))
-        qml.assert_equal(decomp_ops[3], qml.ctrl(qml.Y(2), (0, 1), control_values=[1, 1]))
+        qp.assert_equal(decomp_ops[0], qp.ctrl(qp.X(2), (0, 1), control_values=[0, 0]))
+        qp.assert_equal(decomp_ops[1], qp.ctrl(qp.X(3), (0, 1), control_values=[0, 1]))
+        qp.assert_equal(decomp_ops[2], qp.ctrl(qp.X(4), (0, 1), control_values=[1, 0]))
+        qp.assert_equal(decomp_ops[3], qp.ctrl(qp.Y(2), (0, 1), control_values=[1, 1]))
 
     @pytest.mark.parametrize("partial", [False, True])
     def test_new_decomposition_multi_control_partial(self, partial):
@@ -243,13 +243,13 @@ class TestSelect:
         template is a partial Select, and the kwarg ``partial`` has an effect.
         """
 
-        decomp = qml.list_decomps(qml.Select)[0]
+        decomp = qp.list_decomps(qp.Select)[0]
 
-        ops = [qml.X(2), qml.X(3), qml.SWAP([2, 3])]
+        ops = [qp.X(2), qp.X(3), qp.SWAP([2, 3])]
         op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.SWAP),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.SWAP),
         )
         control = (0, 1)
 
@@ -259,7 +259,7 @@ class TestSelect:
 
         assert resource_obj.num_gates == 3
 
-        c_resource = qml.decomposition.resources.controlled_resource_rep
+        c_resource = qp.decomposition.resources.controlled_resource_rep
 
         kwargs22 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 2}
         kwargs21 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 1}
@@ -267,23 +267,23 @@ class TestSelect:
 
         if partial:
             expected_counts = {
-                c_resource(base_class=qml.X, **kwargs22): 1,
-                c_resource(base_class=qml.X, **kwargs10): 1,
-                c_resource(base_class=qml.SWAP, **kwargs10): 1,
+                c_resource(base_class=qp.X, **kwargs22): 1,
+                c_resource(base_class=qp.X, **kwargs10): 1,
+                c_resource(base_class=qp.SWAP, **kwargs10): 1,
             }
         else:
             expected_counts = {
-                c_resource(base_class=qml.X, **kwargs22): 1,
-                c_resource(base_class=qml.X, **kwargs21): 1,
-                c_resource(base_class=qml.SWAP, **kwargs21): 1,
+                c_resource(base_class=qp.X, **kwargs22): 1,
+                c_resource(base_class=qp.X, **kwargs21): 1,
+                c_resource(base_class=qp.SWAP, **kwargs21): 1,
             }
         assert resource_obj.gate_counts == expected_counts
 
-        op = qml.Select(ops, control, partial=partial)
-        with qml.queuing.AnnotatedQueue() as q:
+        op = qp.Select(ops, control, partial=partial)
+        with qp.queuing.AnnotatedQueue() as q:
             decomp(*op.data, wires=op.wires, **op.hyperparameters)
 
-        decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
+        decomp_ops = qp.tape.QuantumScript.from_queue(q).operations
 
         if partial:
             ctrls = [(0, 1), (1,), (0,)]
@@ -292,7 +292,7 @@ class TestSelect:
             ctrls = [(0, 1)] * 3
             ctrl_vals = [[0, 0], [0, 1], [1, 0]]
         for decomp_op, op, ctrl, ctrl_val in zip(decomp_ops, ops, ctrls, ctrl_vals, strict=True):
-            qml.assert_equal(decomp_op, qml.ctrl(op, ctrl, control_values=ctrl_val))
+            qp.assert_equal(decomp_op, qp.ctrl(op, ctrl, control_values=ctrl_val))
 
     @pytest.mark.parametrize("partial", [False, True])
     def test_new_decomposition_multi_control_single_op(self, partial):
@@ -300,10 +300,10 @@ class TestSelect:
         This test uses a single control wire and just one operator to be applied.
         This is a partial Select, and the kwarg ``partial`` has a notable effect.
         """
-        decomp = qml.list_decomps(qml.Select)[0]
+        decomp = qp.list_decomps(qp.Select)[0]
 
-        ops = [qml.Z(1)]
-        op_reps = (qml.resource_rep(qml.Z),)
+        ops = [qp.Z(1)]
+        op_reps = (qp.resource_rep(qp.Z),)
         control = (0,)
 
         resource_obj = decomp.compute_resources(
@@ -312,47 +312,47 @@ class TestSelect:
 
         assert resource_obj.num_gates == 1
 
-        c_resource = qml.decomposition.resources.controlled_resource_rep
+        c_resource = qp.decomposition.resources.controlled_resource_rep
 
         kwargs = {"base_params": {}, "num_control_wires": 1, "num_work_wires": 0}
 
         if partial:
-            expected_counts = {qml.resource_rep(qml.Z): 1}
+            expected_counts = {qp.resource_rep(qp.Z): 1}
         else:
-            expected_counts = {c_resource(base_class=qml.Z, **kwargs, num_zero_control_values=1): 1}
+            expected_counts = {c_resource(base_class=qp.Z, **kwargs, num_zero_control_values=1): 1}
         assert resource_obj.gate_counts == expected_counts
 
-        op = qml.Select(ops, control, partial=partial)
-        with qml.queuing.AnnotatedQueue() as q:
+        op = qp.Select(ops, control, partial=partial)
+        with qp.queuing.AnnotatedQueue() as q:
             decomp(*op.data, wires=op.wires, **op.hyperparameters)
 
-        decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
+        decomp_ops = qp.tape.QuantumScript.from_queue(q).operations
         assert len(decomp_ops) == 1
 
         if partial:
-            qml.assert_equal(decomp_ops[0], qml.Z(1))
+            qp.assert_equal(decomp_ops[0], qp.Z(1))
         else:
-            qml.assert_equal(decomp_ops[0], qml.ctrl(qml.Z(1), (0,), control_values=[0]))
+            qp.assert_equal(decomp_ops[0], qp.ctrl(qp.Z(1), (0,), control_values=[0]))
 
     def test_resources(self):
         """Test the resources property"""
 
-        assert qml.Select.resource_keys == frozenset(
+        assert qp.Select.resource_keys == frozenset(
             ("op_reps", "num_control_wires", "partial", "num_work_wires")
         )
 
-        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+        ops = [qp.X(2), qp.X(3), qp.X(4), qp.Y(2)]
 
-        op = qml.Select(ops, control=(0, 1))
+        op = qp.Select(ops, control=(0, 1))
 
         resources = op.resource_params
         assert resources["num_control_wires"] == 2
 
         op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.Y),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.Y),
         )
 
         assert resources["op_reps"] == op_reps
@@ -365,17 +365,17 @@ class TestErrorMessages:
         ("ops", "control", "msg_match"),
         [
             (
-                [qml.X(wires=1), qml.Y(wires=0), qml.Z(wires=0)],
+                [qp.X(wires=1), qp.Y(wires=0), qp.Z(wires=0)],
                 [1, 2],
                 "Control wires should be different from operation wires.",
             ),
             (
-                [qml.X(wires=2)] * 4,
+                [qp.X(wires=2)] * 4,
                 [1, 2, 3],
                 "Control wires should be different from operation wires.",
             ),
             (
-                [qml.X(wires="a"), qml.Y(wires="b")],
+                [qp.X(wires="a"), qp.Y(wires="b")],
                 ["a"],
                 "Control wires should be different from operation wires.",
             ),
@@ -384,23 +384,23 @@ class TestErrorMessages:
     def test_control_in_ops(self, ops, control, msg_match):
         """Test an error is raised when a control wire is in one of the ops"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.Select(ops, control)
+            qp.Select(ops, control)
 
     @pytest.mark.parametrize(
         ("ops", "control", "msg_match"),
         [
             (
-                [qml.X(wires=0), qml.Y(wires=0), qml.Z(wires=0)],
+                [qp.X(wires=0), qp.Y(wires=0), qp.Z(wires=0)],
                 [1],
                 r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
             (
-                [qml.X(wires=0)] * 10,
+                [qp.X(wires=0)] * 10,
                 [1, 2, 3],
                 r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires are required.",
             ),
             (
-                [qml.X(wires="a"), qml.Y(wires="b"), qml.Z(wires="c")],
+                [qp.X(wires="a"), qp.Y(wires="b"), qp.Z(wires="c")],
                 [1],
                 r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
@@ -409,22 +409,22 @@ class TestErrorMessages:
     def test_too_many_ops(self, ops, control, msg_match):
         """Test that error is raised if more ops are requested than can fit in control wires"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.Select(ops, control)
+            qp.Select(ops, control)
 
 
 def select_rx_circuit(angles):
     """Circuit that uses Select for tests."""
-    qml.RY(0.6135, 0)
-    qml.Select([qml.RX(angles[0], wires=[1]), qml.RY(angles[1], wires=[1])], control=0)
-    return qml.expval(qml.Z(wires=1))
+    qp.RY(0.6135, 0)
+    qp.Select([qp.RX(angles[0], wires=[1]), qp.RY(angles[1], wires=[1])], control=0)
+    return qp.expval(qp.Z(wires=1))
 
 
 def manual_rx_circuit(angles):
     """Circuit that manually creates Select for tests."""
-    qml.RY(0.6135, 0)
-    qml.ctrl(qml.RX(angles[0], wires=[1]), control=0, control_values=0)
-    qml.ctrl(qml.RY(angles[1], wires=[1]), control=0)
-    return qml.expval(qml.Z(wires=1))
+    qp.RY(0.6135, 0)
+    qp.ctrl(qp.RX(angles[0], wires=[1]), control=0, control_values=0)
+    qp.ctrl(qp.RY(angles[1], wires=[1]), control=0)
+    return qp.expval(qp.Z(wires=1))
 
 
 class TestInterfaces:
@@ -434,58 +434,58 @@ class TestInterfaces:
     @pytest.mark.autograd
     def test_autograd(self):
         """Tests the autograd interface."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit_default = qml.QNode(manual_rx_circuit, dev)
-        circuit_select = qml.QNode(select_rx_circuit, dev)
+        circuit_default = qp.QNode(manual_rx_circuit, dev)
+        circuit_select = qp.QNode(select_rx_circuit, dev)
 
         input_default = [0.5, 0.2]
         input_grad = pnp.array(input_default, requires_grad=True)
 
-        grad_fn = qml.grad(circuit_default)
+        grad_fn = qp.grad(circuit_default)
         grads = grad_fn(input_grad)
 
-        grad_fn2 = qml.grad(circuit_select)
+        grad_fn2 = qp.grad(circuit_select)
         grads2 = grad_fn2(input_grad)
 
-        assert qml.math.allclose(grads, grads2)
+        assert qp.math.allclose(grads, grads2)
 
     @pytest.mark.autograd
     def test_autograd_parameter_shift(self):
         """Tests the autograd interface using the parameter-shift method."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit_default = qml.QNode(manual_rx_circuit, dev, diff_method="parameter-shift")
-        circuit_select = qml.QNode(select_rx_circuit, dev, diff_method="parameter-shift")
+        circuit_default = qp.QNode(manual_rx_circuit, dev, diff_method="parameter-shift")
+        circuit_select = qp.QNode(select_rx_circuit, dev, diff_method="parameter-shift")
 
         input_default = [0.5, 0.2]
         input_grad = pnp.array(input_default, requires_grad=True)
 
-        grad_fn = qml.grad(circuit_default)
+        grad_fn = qp.grad(circuit_default)
         grads = grad_fn(input_grad)
 
-        grad_fn2 = qml.grad(circuit_select)
+        grad_fn2 = qp.grad(circuit_select)
         grads2 = grad_fn2(input_grad)
 
-        assert qml.math.allclose(grads, grads2)
+        assert qp.math.allclose(grads, grads2)
 
     @pytest.mark.tf
     def test_tf(self):
         """Tests the tf interface."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit_default = qml.QNode(manual_rx_circuit, dev)
-        circuit_tf = qml.QNode(select_rx_circuit, dev)
+        circuit_default = qp.QNode(manual_rx_circuit, dev)
+        circuit_tf = qp.QNode(select_rx_circuit, dev)
 
         input_default = [0.5, 0.2]
         input_tf = tf.Variable(input_default)
 
-        assert qml.math.allclose(
-            qml.matrix(circuit_default)(input_default), qml.matrix(circuit_tf)(input_tf)
+        assert qp.math.allclose(
+            qp.matrix(circuit_default)(input_default), qp.matrix(circuit_tf)(input_tf)
         )
-        assert qml.math.get_interface(qml.matrix(circuit_tf)(input_tf)) == "tensorflow"
+        assert qp.math.get_interface(qp.matrix(circuit_tf)(input_tf)) == "tensorflow"
 
         with tf.GradientTape() as tape:
             res = circuit_default(input_tf)
@@ -495,25 +495,25 @@ class TestInterfaces:
             res2 = circuit_tf(input_tf)
         grads2 = tape2.gradient(res2, [input_tf])
 
-        assert qml.math.allclose(grads[0], grads2[0])
+        assert qp.math.allclose(grads[0], grads2[0])
 
     @pytest.mark.torch
     def test_torch(self):
         """Tests the torch interface."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        circuit_default = qml.QNode(manual_rx_circuit, dev)
-        circuit_torch = qml.QNode(select_rx_circuit, dev)
+        circuit_default = qp.QNode(manual_rx_circuit, dev)
+        circuit_torch = qp.QNode(select_rx_circuit, dev)
 
         input_default = [0.5, 0.2]
         input_torch = torch.tensor(input_default, requires_grad=True)
 
-        assert qml.math.allclose(
-            qml.matrix(circuit_default)(input_default), qml.matrix(circuit_torch)(input_torch)
+        assert qp.math.allclose(
+            qp.matrix(circuit_default)(input_default), qp.matrix(circuit_torch)(input_torch)
         )
-        assert qml.math.get_interface(qml.matrix(circuit_torch)(input_torch)) == "torch"
+        assert qp.math.get_interface(qp.matrix(circuit_torch)(input_torch)) == "torch"
 
         res = circuit_default(input_torch)
         res.backward()
@@ -523,7 +523,7 @@ class TestInterfaces:
         res2.backward()
         grads2 = [input_torch.grad]
 
-        assert qml.math.allclose(grads[0], grads2[0])
+        assert qp.math.allclose(grads[0], grads2[0])
 
     @pytest.mark.jax
     @pytest.mark.slow
@@ -532,18 +532,18 @@ class TestInterfaces:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         input_default = [0.5, 0.2]
         input_jax = jnp.array(input_default)
 
-        circuit_default = qml.QNode(manual_rx_circuit, dev)
-        circuit_jax = qml.QNode(select_rx_circuit, dev)
+        circuit_default = qp.QNode(manual_rx_circuit, dev)
+        circuit_jax = qp.QNode(select_rx_circuit, dev)
 
-        assert qml.math.allclose(
-            qml.matrix(circuit_default)(input_default), qml.matrix(circuit_jax)(input_jax)
+        assert qp.math.allclose(
+            qp.matrix(circuit_default)(input_default), qp.matrix(circuit_jax)(input_jax)
         )
-        assert qml.math.get_interface(qml.matrix(circuit_jax)(input_jax)) == "jax"
+        assert qp.math.get_interface(qp.matrix(circuit_jax)(input_jax)) == "jax"
 
         grad_fn = jax.grad(circuit_default)
         grads = grad_fn(input_jax)
@@ -551,24 +551,24 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit_jax)
         grads2 = grad_fn2(input_jax)
 
-        assert qml.math.allclose(grads, grads2)
+        assert qp.math.allclose(grads, grads2)
 
     @pytest.mark.jax
     def test_jax_jit(self):
         """Tests jit within the jax interface."""
         import jax
 
-        dev = qml.device("default.qubit", wires=4)
-        ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
+        dev = qp.device("default.qubit", wires=4)
+        ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2, 3])]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Select(ops, control=[0, 1])
-            return qml.state()
+            qp.Select(ops, control=[0, 1])
+            return qp.state()
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.allclose(circuit(), jit_circuit())
+        assert qp.math.allclose(circuit(), jit_circuit())
 
 
 num_controls_and_num_ops = (
@@ -586,75 +586,75 @@ class TestUnaryIterator:
         """Test that the unary iteration decomposition is registered correctly with
         pml.Select."""
         # pylint: disable=unused-argument
-        decomp = qml.list_decomps(qml.Select)[1]
+        decomp = qp.list_decomps(qp.Select)[1]
         assert decomp is _select_decomp_unary
 
     @pytest.mark.parametrize(
         "c, K, expected_ops, expected_ops_partial",
         [
-            (1, 1, [qml.ctrl(qml.SWAP([0, 1]), ["c0"], [0])], [qml.SWAP([0, 1])]),
-            (1, 2, [qml.ctrl(qml.SWAP([0, 1]), ["c0"], [0]), qml.CY(["c0", 1])], None),
+            (1, 1, [qp.ctrl(qp.SWAP([0, 1]), ["c0"], [0])], [qp.SWAP([0, 1])]),
+            (1, 2, [qp.ctrl(qp.SWAP([0, 1]), ["c0"], [0]), qp.CY(["c0", 1])], None),
             (
                 2,
                 1,
                 [
-                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
-                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
-                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (0, 0))),
+                    qp.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
+                    qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (0, 0))),
                 ],
-                [qml.SWAP([0, 1])],
+                [qp.SWAP([0, 1])],
             ),
             (
                 2,
                 2,
                 [
-                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
-                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
-                    qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
-                    qml.CY(["w0", 1]),
-                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (0, 1))),
+                    qp.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
+                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.CY(["w0", 1]),
+                    qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (0, 1))),
                 ],
                 [
-                    qml.ctrl(qml.SWAP([0, 1]), ["c1"], [0], work_wires=["w0"]),
-                    qml.ctrl(qml.Y(1), ["c1"], work_wires=["w0"]),
+                    qp.ctrl(qp.SWAP([0, 1]), ["c1"], [0], work_wires=["w0"]),
+                    qp.ctrl(qp.Y(1), ["c1"], work_wires=["w0"]),
                 ],
             ),
             (
                 2,
                 3,
                 [
-                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
-                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
-                    qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
-                    qml.CY(["w0", 1]),
-                    qml.CNOT(["c0", "w0"]),
-                    qml.CNOT(["c1", "w0"]),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
-                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 0))),
+                    qp.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
+                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.CY(["w0", 1]),
+                    qp.CNOT(["c0", "w0"]),
+                    qp.CNOT(["c1", "w0"]),
+                    qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
+                    qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (1, 0))),
                 ],
                 [
-                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
-                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
-                    qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
-                    qml.CY(["w0", 1]),
-                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (0, 1))),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["c0"]),
+                    qp.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
+                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.CY(["w0", 1]),
+                    qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (0, 1))),
+                    qp.ctrl(qp.CRZ(0.4, [1, 0]), ["c0"]),
                 ],
             ),
             (
                 2,
                 4,
                 [
-                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
-                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
-                    qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
-                    qml.CY(["w0", 1]),
-                    qml.CNOT(["c0", "w0"]),
-                    qml.CNOT(["c1", "w0"]),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
-                    qml.CNOT(["c0", "w0"]),
-                    qml.CNOT(["w0", 0]),
-                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 1))),
+                    qp.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
+                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.CY(["w0", 1]),
+                    qp.CNOT(["c0", "w0"]),
+                    qp.CNOT(["c1", "w0"]),
+                    qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
+                    qp.CNOT(["c0", "w0"]),
+                    qp.CNOT(["w0", 0]),
+                    qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (1, 1))),
                 ],
                 None,
             ),
@@ -662,67 +662,67 @@ class TestUnaryIterator:
                 3,
                 7,
                 [
-                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
-                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.ctrl(qml.SWAP([0, 1]), ["w1"]),
-                    qml.CNOT(["w0", "w1"]),
-                    qml.CY(["w1", 1]),
-                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
-                    qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
-                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "c2"]),
-                    qml.CNOT(["w0", "w1"]),
-                    qml.CNOT(["w1", 0]),
-                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
-                    qml.CNOT(["c0", "w0"]),
-                    qml.CNOT(["c1", "w0"]),
-                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.CZ(["w1", 1]),
-                    qml.CNOT(["w0", "w1"]),
-                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"], work_wires=["c0", "c1", "c2"]),
-                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"])),
-                    qml.CNOT(["c0", "w0"]),
-                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.CH(["w1", 1]),
-                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 0))),
-                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 1))),
+                    qp.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qp.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qp.ctrl(qp.SWAP([0, 1]), ["w1"]),
+                    qp.CNOT(["w0", "w1"]),
+                    qp.CY(["w1", 1]),
+                    qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "c2"]),
+                    qp.CNOT(["w0", "w1"]),
+                    qp.CNOT(["w1", 0]),
+                    qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qp.CNOT(["c0", "w0"]),
+                    qp.CNOT(["c1", "w0"]),
+                    qp.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qp.CZ(["w1", 1]),
+                    qp.CNOT(["w0", "w1"]),
+                    qp.ctrl(qp.X(0) @ qp.Z(1), ["w1"], work_wires=["c0", "c1", "c2"]),
+                    qp.adjoint(qp.Elbow(["w0", "c2", "w1"])),
+                    qp.CNOT(["c0", "w0"]),
+                    qp.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qp.CH(["w1", 1]),
+                    qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 0))),
+                    qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (1, 1))),
                 ],
                 [
-                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
-                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.ctrl(qml.SWAP([0, 1]), ["w1"]),
-                    qml.CNOT(["w0", "w1"]),
-                    qml.CY(["w1", 1]),
-                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
-                    qml.ctrl(qml.X("w0"), control="c0", control_values=[0]),
-                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
-                    qml.CNOT(["w0", "w1"]),
-                    qml.CNOT(["w1", 0]),
-                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
-                    qml.CNOT(["c0", "w0"]),
-                    qml.CNOT(["c1", "w0"]),
-                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qml.CZ(["w1", 1]),
-                    qml.CNOT(["w0", "w1"]),
-                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
-                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"])),
-                    qml.CNOT(["c0", "w0"]),
-                    qml.CH(["w0", 1]),
-                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 1))),
+                    qp.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qp.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qp.ctrl(qp.SWAP([0, 1]), ["w1"]),
+                    qp.CNOT(["w0", "w1"]),
+                    qp.CY(["w1", 1]),
+                    qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
+                    qp.CNOT(["w0", "w1"]),
+                    qp.CNOT(["w1", 0]),
+                    qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qp.CNOT(["c0", "w0"]),
+                    qp.CNOT(["c1", "w0"]),
+                    qp.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qp.CZ(["w1", 1]),
+                    qp.CNOT(["w0", "w1"]),
+                    qp.ctrl(qp.X(0) @ qp.Z(1), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
+                    qp.adjoint(qp.Elbow(["w0", "c2", "w1"])),
+                    qp.CNOT(["c0", "w0"]),
+                    qp.CH(["w0", 1]),
+                    qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (1, 1))),
                 ],
             ),
         ],
     )
     def test_expected_operators(self, c, K, expected_ops, expected_ops_partial, partial):
         ops = [
-            qml.SWAP([0, 1]),
-            qml.Y(1),
-            qml.CRZ(0.4, [1, 0]),
-            qml.X(0),
-            qml.Z(1),
-            qml.X(0) @ qml.Z(1),
-            qml.H(1),
+            qp.SWAP([0, 1]),
+            qp.Y(1),
+            qp.CRZ(0.4, [1, 0]),
+            qp.X(0),
+            qp.Z(1),
+            qp.X(0) @ qp.Z(1),
+            qp.H(1),
         ][:K]
         control = [f"c{i}" for i in range(c)]
         work_wires = [f"w{i}" for i in range(c - 1)]
@@ -735,7 +735,7 @@ class TestUnaryIterator:
         else:
             expected = expected_ops
         for op, exp_op in zip(decomp, expected, strict=True):
-            qml.assert_equal(op, exp_op)
+            qp.assert_equal(op, exp_op)
 
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
     def test_no_ops(self, num_controls, partial):
@@ -745,7 +745,7 @@ class TestUnaryIterator:
         control = list(range(num_controls))
         work = list(range(num_controls, 2 * num_controls - 1))
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             _select_decomp_unary(ops=[], control=control, work_wires=work, partial=partial)
 
         assert len(q) == 0
@@ -756,7 +756,7 @@ class TestUnaryIterator:
         matrix is created by preparing the i-th computational basis state conditioned on the
         i-th basis state in the control qubits."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         # Create angle set so that feeding angles[i] into RX on the i-th control wire will
         # yield broadcasted BasisEmbedding (which does not support broadcasting atm)
@@ -766,14 +766,14 @@ class TestUnaryIterator:
         work = list(range(num_controls, 2 * num_controls - 1))
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qml.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [qp.BasisEmbedding(i, wires=target) for i in range(num_ops)]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for w, angle in zip(control, angles, strict=True):
-                qml.RX(angle, w)
+                qp.RX(angle, w)
             _select_decomp_unary(ops=ops, control=control, work_wires=work, partial=partial)
-            return qml.probs(target)
+            return qp.probs(target)
 
         probs = circuit()
         assert np.allclose(probs, np.eye(2**num_controls)[:num_ops])
@@ -787,8 +787,8 @@ class TestUnaryIterator:
     ):  # pylint: disable=too-many-arguments
         """Test that proper errors are raised"""
 
-        wires = qml.registers({"target": num_ops, "control": control, "work": work})
-        ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
+        wires = qp.registers({"target": num_ops, "control": control, "work": work})
+        ops = [qp.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
 
         with pytest.raises(ValueError, match=msg_match):
             _select_decomp_unary(
@@ -798,9 +798,9 @@ class TestUnaryIterator:
     def test_error_too_few_controls(self, partial):
         """Test that an error is raised if too few control wires are given."""
 
-        too_many_ops = [qml.X(0) for _ in range(9)]
-        exactly_right_ops = [qml.X(0) for _ in range(8)]
-        fewer_ops = [qml.X(0) for _ in range(7)]
+        too_many_ops = [qp.X(0) for _ in range(9)]
+        exactly_right_ops = [qp.X(0) for _ in range(8)]
+        fewer_ops = [qp.X(0) for _ in range(7)]
         kwargs = {"control": [1, 2, 3], "work_wires": [4, 5], "partial": partial}
 
         with pytest.raises(ValueError, match="At least 4 control wires are required"):
@@ -822,20 +822,20 @@ class TestUnaryIterator:
         work = list(range(num_controls, 2 * num_controls - 1))
         target = [2 * num_controls - 1, 2 * num_controls]
 
-        dev = qml.device("default.qubit", wires=control + work + target)
+        dev = qp.device("default.qubit", wires=control + work + target)
         unitaries = unitary_group.rvs(4, size=num_ops, random_state=seed)
         if num_ops == 1:
             unitaries = np.array([unitaries])
-        ops = [qml.QubitUnitary(U, wires=target) for U in unitaries]
-        adj_ops = [qml.QubitUnitary(U.conj().T, wires=target) for U in unitaries]
+        ops = [qp.QubitUnitary(U, wires=target) for U in unitaries]
+        adj_ops = [qp.QubitUnitary(U.conj().T, wires=target) for U in unitaries]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for w, angle in zip(control, angles, strict=True):
-                qml.RX(angle, w)
+                qp.RX(angle, w)
             _select_decomp_unary(ops=ops, control=control, work_wires=work, partial=partial)
-            qml.Select(adj_ops, control=control, work_wires=None, partial=partial)
-            return qml.probs(target)
+            qp.Select(adj_ops, control=control, work_wires=None, partial=partial)
+            return qp.probs(target)
 
         probs = circuit()
         exp = np.eye(4)[0]
@@ -854,7 +854,7 @@ class TestSelectWithWorkWire:
         control = list(range(num_controls))
         work = ["a"]
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             _select_decomp_multi_control_work_wire(
                 ops=[], control=control, work_wires=work, partial=partial
             )
@@ -867,7 +867,7 @@ class TestSelectWithWorkWire:
         matrix is created by preparing the i-th computational basis state conditioned on the
         i-th basis state in the control qubits."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         # Create angle set so that feeding angles[i] into RX on the i-th control wire will
         # yield broadcasted BasisEmbedding (which does not support broadcasting atm)
@@ -877,16 +877,16 @@ class TestSelectWithWorkWire:
         work = ["a"]
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qml.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [qp.BasisEmbedding(i, wires=target) for i in range(num_ops)]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for w, angle in zip(control, angles, strict=True):
-                qml.RX(angle, w)
+                qp.RX(angle, w)
             _select_decomp_multi_control_work_wire(
                 ops=ops, control=control, work_wires=work, partial=partial
             )
-            return qml.probs(target)
+            return qp.probs(target)
 
         probs = circuit()
         assert np.allclose(probs, np.eye(2**num_controls)[:num_ops])
@@ -902,22 +902,22 @@ class TestSelectWithWorkWire:
         work = ["a"]
         target = [2 * num_controls - 1, 2 * num_controls]
 
-        dev = qml.device("default.qubit", wires=control + work + target)
+        dev = qp.device("default.qubit", wires=control + work + target)
         unitaries = unitary_group.rvs(4, size=num_ops, random_state=seed)
         if num_ops == 1:
             unitaries = np.array([unitaries])
-        ops = [qml.QubitUnitary(U, wires=target) for U in unitaries]
-        adj_ops = [qml.QubitUnitary(U.conj().T, wires=target) for U in unitaries]
+        ops = [qp.QubitUnitary(U, wires=target) for U in unitaries]
+        adj_ops = [qp.QubitUnitary(U.conj().T, wires=target) for U in unitaries]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for w, angle in zip(control, angles, strict=True):
-                qml.RX(angle, w)
+                qp.RX(angle, w)
             _select_decomp_multi_control_work_wire(
                 ops=ops, control=control, work_wires=work, partial=partial
             )
-            qml.Select(adj_ops, control=control, work_wires=None, partial=partial)
-            return qml.probs(target)
+            qp.Select(adj_ops, control=control, work_wires=None, partial=partial)
+            return qp.probs(target)
 
         probs = circuit()
         exp = np.eye(4)[0]

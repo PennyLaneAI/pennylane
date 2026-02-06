@@ -228,7 +228,7 @@ def apply_operation(
     >>> state
     tensor([[1., 0.],
         [0., 0.]], requires_grad=True)
-    >>> apply_operation(qml.X(0), state)
+    >>> apply_operation(qp.X(0), state)
     tensor([[0., 0.],
         [1., 0.]], requires_grad=True)
 
@@ -383,7 +383,7 @@ def apply_mid_measure(
     assert mid_measurements is not None
     mid_measurements[op] = sample
 
-    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
+    # Using apply_operation(qp.QubitUnitary,...) instead of apply_operation(qp.Projector([sample], wire),...)
     # to select the sample branch enables jax.jit and prevents it from using Python callbacks
     matrix = math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
     state = apply_operation(
@@ -394,7 +394,7 @@ def apply_mid_measure(
     )
     state = state / math.norm(state)
 
-    # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.X(wire), ...)
+    # Using apply_operation(qp.QubitUnitary,...) instead of apply_operation(qp.X(wire), ...)
     # to reset enables jax.jit and prevents it from using Python callbacks
     element = op.reset and sample == 1
     matrix = math.array(
@@ -598,7 +598,7 @@ def apply_multicontrolledx(
 
 @apply_operation.register
 def apply_grover(
-    op: qml.GroverOperator,
+    op: qp.GroverOperator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -658,7 +658,7 @@ def apply_snapshot(
         shots = op.hyperparameters["shots"]
 
     if shots:
-        snapshot = qml.devices.qubit.measure_with_samples(
+        snapshot = qp.devices.qubit.measure_with_samples(
             [measurement],
             state,
             shots,
@@ -667,7 +667,7 @@ def apply_snapshot(
             execution_kwargs.get("prng_key"),
         )[0]
     else:
-        snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
+        snapshot = qp.devices.qubit.measure(measurement, state, is_state_batched)
 
     if op.tag is None:
         debugger.snapshots[len(debugger.snapshots)] = snapshot
@@ -684,7 +684,7 @@ def apply_snapshot(
 # pylint:disable=import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
-    op: qml.pulse.ParametrizedEvolution,
+    op: qp.pulse.ParametrizedEvolution,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -711,7 +711,7 @@ def apply_parametrized_evolution(
 
 
 def _evolve_state_vector_under_parametrized_evolution(
-    operation: qml.pulse.ParametrizedEvolution, state, num_wires, is_state_batched
+    operation: qp.pulse.ParametrizedEvolution, state, num_wires, is_state_batched
 ):
     """Uses an odeint solver to compute the evolution of the input ``state`` under the given
     ``ParametrizedEvolution`` operation.

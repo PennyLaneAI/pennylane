@@ -291,8 +291,8 @@ def taylor_coeffs(pes, max_deg=4, min_deg=3):
 
     >>> freqs = np.array([0.0249722])
     >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
-    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode])
-    >>> coeffs = qml.qchem.taylor_coeffs(pes_object, 4, 2)
+    >>> pes_object = qp.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode])
+    >>> coeffs = qp.qchem.taylor_coeffs(pes_object, 4, 2)
     >>> print(coeffs)
     [array([[-4.73959071e-05, -3.06785775e-03,  5.21798831e-04]])]
 
@@ -393,8 +393,8 @@ def taylor_dipole_coeffs(pes, max_deg=4, min_deg=1):
     ...                             [ 1.67813138e-17, -5.63904474e-17, -5.60662627e-15],
     ...                             [-7.37584781e-17, -5.51948189e-17,  2.96786374e-02],
     ...                             [ 1.40526000e-16, -3.67126324e-17,  5.92006212e-02]]])
-    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, dipole_data=[dipole_onemode])
-    >>> coeffs_x, coeffs_y, coeffs_z = qml.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
+    >>> pes_object = qp.qchem.VibrationalPES(freqs=freqs, dipole_data=[dipole_onemode])
+    >>> coeffs_x, coeffs_y, coeffs_z = qp.qchem.taylor_dipole_coeffs(pes_object, 4, 2)
     >>> print(coeffs_z)
     [array([[-1.54126823e-03,  8.17300533e-03,  3.94178001e-05]])]
 
@@ -707,7 +707,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     >>> freqs = np.array([0.025])
     >>> one_mode = np.array([[-0.00088528, -0.00361425,  0.00068143]])
     >>> uloc = np.array([[1.0]])
-    >>> ham = qml.qchem.taylor_bosonic(coeffs=[one_mode], freqs=freqs, uloc=uloc)
+    >>> ham = qp.qchem.taylor_bosonic(coeffs=[one_mode], freqs=freqs, uloc=uloc)
     >>> print(ham)
     -0.0012778303419517393 * b⁺(0) b⁺(0) b⁺(0)
     + -0.0038334910258552178 * b⁺(0) b⁺(0) b(0)
@@ -833,8 +833,8 @@ def taylor_hamiltonian(
 
     >>> freqs = np.array([0.0249722])
     >>> pes_onemode = np.array([[0.08477, 0.01437, 0.00000, 0.00937, 0.03414]])
-    >>> pes_object = qml.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode], localized=False)
-    >>> ham = qml.qchem.taylor_hamiltonian(pes_object)
+    >>> pes_object = qp.qchem.VibrationalPES(freqs=freqs, pes_data=[pes_onemode], localized=False)
+    >>> ham = qp.qchem.taylor_hamiltonian(pes_object)
     >>> print(ham)
     0.026123120450329353 * I(0) + -0.01325338030021957 * Z(0) + -0.0032539545260859464 * X(0)
     """

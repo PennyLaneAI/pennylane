@@ -72,7 +72,7 @@ def append_time_evolution(
         n (int): number of Trotter steps.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     """
@@ -175,11 +175,11 @@ class RiemannianGradientOptimizer:
 
     Args:
         circuit (QNode): a user-defined circuit that does not take any arguments and returns
-            the expectation value of a ``qml.Hamiltonian``.
+            the expectation value of a ``qp.Hamiltonian``.
         stepsize (float): the user-defined hyperparameter :math:`\epsilon` (default value: 0.01).
         restriction (:class:`~.Hamiltonian`): restrict the Lie algebra to a corresponding subspace of
             the full Lie algebra. This restriction should be passed in the form of a
-            ``qml.Hamiltonian`` that consists only of Pauli words (default value: None).
+            ``qp.Hamiltonian`` that consists only of Pauli words (default value: None).
         exact (bool): a flag that indicates whether we approximate the Riemannian gradient with a
             Trotterization (False) or calculate the exact evolution via a matrix exponential (True). The latter is
             not hardware friendly and can only be done in simulation (default value: False).
@@ -190,23 +190,23 @@ class RiemannianGradientOptimizer:
     Define a Hamiltonian cost function to minimize:
 
     >>> coeffs = [-1., -1., -1.]
-    >>> observables = [qml.X(0), qml.Z(1), qml.Y(0) @ qml.X(1)]
-    >>> hamiltonian = qml.Hamiltonian(coeffs, observables)
+    >>> observables = [qp.X(0), qp.Z(1), qp.Y(0) @ qp.X(1)]
+    >>> hamiltonian = qp.Hamiltonian(coeffs, observables)
 
     Create an initial state and return the expectation value of the Hamiltonian:
 
-    >>> @qml.qnode(qml.device("default.qubit", wires=2))
+    >>> @qp.qnode(qp.device("default.qubit", wires=2))
     ... def quant_fun():
-    ...     qml.RX(0.1, wires=[0])
-    ...     qml.RY(0.5, wires=[1])
-    ...     qml.CNOT(wires=[0,1])
-    ...     qml.RY(0.6, wires=[0])
-    ...     return qml.expval(hamiltonian)
+    ...     qp.RX(0.1, wires=[0])
+    ...     qp.RY(0.5, wires=[1])
+    ...     qp.CNOT(wires=[0,1])
+    ...     qp.RY(0.6, wires=[0])
+    ...     return qp.expval(hamiltonian)
 
     Instantiate the optimizer with the initial circuit and the cost function and set the stepsize
     accordingly:
 
-    >>> opt = qml.RiemannianGradientOptimizer(circuit=quant_fun, stepsize=0.1)
+    >>> opt = qp.RiemannianGradientOptimizer(circuit=quant_fun, stepsize=0.1)
 
     Applying 5 steps gets us close the ground state of :math:`E\approx-2.23`:
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.matrix function.
+This module contains the qp.matrix function.
 """
 from functools import partial
 
@@ -56,22 +56,22 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
         If an operator, :class:`~PauliWord` or :class:`~PauliSentence` is provided as input, the matrix is returned directly in the form of a tensor.
-        Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
+        Otherwise, the transformed circuit is returned as described in :func:`qp.transform <pennylane.transform>`.
         Executing this circuit will provide its matrix representation.
 
     **Example**
 
-    Given an instantiated operator, ``qml.matrix`` returns the matrix representation:
+    Given an instantiated operator, ``qp.matrix`` returns the matrix representation:
 
-    >>> op = qml.RX(0.54, wires=0)
-    >>> qml.matrix(op)
+    >>> op = qp.RX(0.54, wires=0)
+    >>> qp.matrix(op)
     array([[0.9637709+0.j        , 0.       -0.26673144j],
            [0.       -0.26673144j, 0.9637709+0.j        ]])
 
     It can also be used in a functional form:
 
     >>> x = torch.tensor(0.6, requires_grad=True)
-    >>> matrix_fn = qml.matrix(qml.RX)
+    >>> matrix_fn = qp.matrix(qp.RX)
     >>> matrix_fn(x, wires=0)
     tensor([[0.9553+0.0000j, 0.0000-0.2955j],
             [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<StackBackward0>)
@@ -89,14 +89,14 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
     .. details::
         :title: Usage Details
 
-        ``qml.matrix`` can also be used with :class:`~PauliWord` and :class:`~PauliSentence` instances.
+        ``qp.matrix`` can also be used with :class:`~PauliWord` and :class:`~PauliSentence` instances.
         Internally, we are using their ``to_mat()`` methods.
 
         >>> X0 = PauliWord({0:"X"})
-        >>> np.allclose(qml.matrix(X0), X0.to_mat())
+        >>> np.allclose(qp.matrix(X0), X0.to_mat())
         True
 
-        ``qml.matrix`` can also be used with QNodes, tapes, or quantum functions that
+        ``qp.matrix`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations.
 
         Consider the following quantum function:
@@ -104,13 +104,13 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
         .. code-block:: python
 
             def circuit(theta):
-                qml.RX(theta, wires=1)
-                qml.Z(0)
+                qp.RX(theta, wires=1)
+                qp.Z(0)
 
-        We can use ``qml.matrix`` to generate a new function that returns the unitary matrix
+        We can use ``qp.matrix`` to generate a new function that returns the unitary matrix
         corresponding to the function ``circuit``:
 
-        >>> matrix_fn = qml.matrix(circuit, wire_order=[1, 0])
+        >>> matrix_fn = qp.matrix(circuit, wire_order=[1, 0])
         >>> theta = np.pi / 4
         >>> matrix_fn(theta)
         array([[ 0.92387953+0.j        ,  0.        +0.j        ,
@@ -132,10 +132,10 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
         .. code-block:: python
 
             def circuit(theta):
-                qml.RY(theta, wires=0)
+                qp.RY(theta, wires=0)
 
             def cost(theta):
-                matrix = qml.matrix(circuit, wire_order=[0])(theta)
+                matrix = qp.matrix(circuit, wire_order=[0])(theta)
                 return pnp.real(pnp.trace(matrix))
 
         Since this cost function returns a real scalar as a function of ``theta``, we can differentiate it:
@@ -145,7 +145,7 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
         >>> cost(theta)
         np.float64(1.97...)
         >>> # The gradient is -sin(0.3 / 2)
-        >>> qml.grad(cost, argnums=0)(theta)
+        >>> qp.grad(cost, argnums=0)(theta)
         tensor(-0.14943813, requires_grad=True)
 
     """
@@ -157,29 +157,29 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
         if isinstance(op, (PauliWord, PauliSentence)):
             if wire_order is None and len(op.wires) > 1:
                 raise ValueError(
-                    "wire_order is required by qml.matrix() for PauliWords "
+                    "wire_order is required by qp.matrix() for PauliWords "
                     "or PauliSentences with more than one wire."
                 )
             return op.to_mat(wire_order=wire_order)
 
         if isinstance(op, QuantumScript):
             if wire_order is None:
-                error_base_str = "wire_order is required by qml.matrix() for tapes"
+                error_base_str = "wire_order is required by qp.matrix() for tapes"
                 if len(op.wires) > 1:
                     raise ValueError(error_base_str + " with more than one wire.")
                 if len(op.wires) == 0:
                     raise ValueError(error_base_str + " without wires.")
 
-        elif isinstance(op, qml.QNode):
+        elif isinstance(op, qp.QNode):
             if wire_order is None and op.device.wires is None:
                 raise ValueError(
-                    "wire_order is required by qml.matrix() for QNodes if the device does "
+                    "wire_order is required by qp.matrix() for QNodes if the device does "
                     "not have wires specified."
                 )
 
         elif callable(op):
             if getattr(op, "num_wires", 0) != 1 and wire_order is None:
-                raise ValueError("wire_order is required by qml.matrix() for quantum functions.")
+                raise ValueError("wire_order is required by qp.matrix() for quantum functions.")
 
         else:
             raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
@@ -203,7 +203,7 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
             ops = op.decomposition()
         return matrix(QuantumScript(ops), wire_order=wire_order or op.wires)
     raise MatrixUndefinedError(
-        "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
+        "Operator must define a matrix, sparse matrix, or decomposition for use with qp.matrix."
     )
 
 
@@ -225,11 +225,11 @@ def _matrix_transform(
         """Defines how matrix works if applied to a tape containing multiple operations."""
 
         params = res[0].get_parameters(trainable_only=False)
-        interface = qml.math.get_interface(*params)
+        interface = qp.math.get_interface(*params)
 
         # initialize the unitary matrix
         if len(res[0].operations) == 0:
-            result = qml.math.eye(2 ** len(wire_order), like=interface)
+            result = qp.math.eye(2 ** len(wire_order), like=interface)
         else:
             result = matrix(res[0].operations[0], wire_order=wire_order)
 
@@ -237,7 +237,7 @@ def _matrix_transform(
             U = matrix(op, wire_order=wire_order)
             # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
             # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
-            result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
+            result = qp.math.matmul(*qp.math.coerce([U, result], like=interface), like=interface)
 
         return result
 

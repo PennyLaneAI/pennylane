@@ -72,9 +72,9 @@ class PauliVSpace:
     .. code-block:: python
 
         ops = [
-            qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1),
-            qml.X(0) @ qml.X(1),
-            qml.Y(0) @ qml.Y(1)
+            qp.X(0) @ qp.X(1) + qp.Y(0) @ qp.Y(1),
+            qp.X(0) @ qp.X(1),
+            qp.Y(0) @ qp.Y(1)
         ]
 
         vspace = PauliVSpace(ops)
@@ -88,7 +88,7 @@ class PauliVSpace:
 
     We can also retrospectively add operators.
 
-    >>> vspace.add(qml.X(0))
+    >>> vspace.add(qp.X(0))
     [1.0 * X(0) @ X(1)
      + 1.0 * Y(0) @ Y(1),
      1.0 * X(0) @ X(1),
@@ -96,7 +96,7 @@ class PauliVSpace:
 
     Again, checks of linear independence are always performed. So in the following example no operator is added.
 
-    >>> vspace.add(qml.Y(0) @ qml.Y(1))
+    >>> vspace.add(qp.Y(0) @ qp.Y(1))
     [1.0 * X(0) @ X(1)
      + 1.0 * Y(0) @ Y(1),
      1.0 * X(0) @ X(1),
@@ -109,7 +109,7 @@ class PauliVSpace:
 
         if any(not isinstance(g, PauliSentence) for g in generators):
             generators = [
-                qml.pauli.pauli_sentence(g) if not isinstance(g, PauliSentence) else g
+                qp.pauli.pauli_sentence(g) if not isinstance(g, PauliSentence) else g
                 for g in generators
             ]
 
@@ -164,25 +164,25 @@ class PauliVSpace:
 
         We can generate a ``PauliVSpace`` and add a linearly independent operator to its basis.
 
-        >>> ops = [qml.X(0), qml.X(1)]
-        >>> vspace = qml.pauli.PauliVSpace(ops)
-        >>> vspace.add(qml.Y(0))
+        >>> ops = [qp.X(0), qp.X(1)]
+        >>> vspace = qp.pauli.PauliVSpace(ops)
+        >>> vspace.add(qp.Y(0))
         [1.0 * X(0), 1.0 * X(1), 1.0 * Y(0)]
 
         We can add a list of operators at once. Only those that are linearly dependent with the current ``PauliVSpace`` are added.
 
-        >>> vspace.add([qml.Z(0), qml.X(0)])
+        >>> vspace.add([qp.Z(0), qp.X(0)])
         [1.0 * X(0), 1.0 * X(1), 1.0 * Y(0), 1.0 * Z(0)]
 
         """
         if tol is None:
             tol = self.tol
 
-        if isinstance(other, (qml.pauli.PauliWord, qml.pauli.PauliSentence, Operator)):
+        if isinstance(other, (qp.pauli.PauliWord, qp.pauli.PauliSentence, Operator)):
             other = [other]
 
         other = [
-            qml.pauli.pauli_sentence(op) if not isinstance(op, qml.pauli.PauliSentence) else op
+            qp.pauli.pauli_sentence(op) if not isinstance(op, qp.pauli.PauliSentence) else op
             for op in other
         ]
 
@@ -213,11 +213,11 @@ class PauliVSpace:
 
         **Example**
 
-        >>> ops = [qml.X(0), qml.X(1)]
+        >>> ops = [qp.X(0), qp.X(1)]
         >>> vspace = PauliVSpace([op.pauli_rep for op in ops])
-        >>> vspace.is_independent(qml.X(0).pauli_rep)
+        >>> vspace.is_independent(qp.X(0).pauli_rep)
         False
-        >>> vspace.is_independent(qml.Y(0).pauli_rep)
+        >>> vspace.is_independent(qp.Y(0).pauli_rep)
         True
 
         """

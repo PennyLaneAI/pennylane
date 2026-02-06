@@ -75,11 +75,11 @@ class QubitCarry(Operation):
 
         input_bitstring = (0, 1, 1, 0)
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(basis_state):
-            qml.BasisState(basis_state, wires=[0, 1, 2, 3])
-            qml.QubitCarry(wires=[0, 1, 2, 3])
-            return qml.probs(wires=[0, 1, 2, 3])
+            qp.BasisState(basis_state, wires=[0, 1, 2, 3])
+            qp.QubitCarry(wires=[0, 1, 2, 3])
+            return qp.probs(wires=[0, 1, 2, 3])
 
         probs =  circuit(input_bitstring)
         probs_indx = np.argwhere(probs == 1).flatten()[0]
@@ -129,7 +129,7 @@ class QubitCarry(Operation):
 
         **Example**
 
-        >>> print(qml.QubitCarry.compute_matrix())
+        >>> print(qp.QubitCarry.compute_matrix())
         [[1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
          [0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0]
@@ -169,7 +169,7 @@ class QubitCarry(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
+    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -184,26 +184,26 @@ class QubitCarry(Operation):
 
         **Example:**
 
-        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        >>> qp.QubitCarry.compute_decomposition((0,1,2,4))
         [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
 
         """
         return [
-            qml.Toffoli(wires=wires[1:]),
-            qml.CNOT(wires=[wires[1], wires[2]]),
-            qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
+            qp.Toffoli(wires=wires[1:]),
+            qp.CNOT(wires=[wires[1], wires[2]]),
+            qp.Toffoli(wires=[wires[0], wires[2], wires[3]]),
         ]
 
 
 def _qubitcarry_to_cnot_toffoli_resources():
-    return {qml.CNOT: 1, qml.Toffoli: 2}
+    return {qp.CNOT: 1, qp.Toffoli: 2}
 
 
 @register_resources(_qubitcarry_to_cnot_toffoli_resources)
 def _qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
-    qml.Toffoli(wires=wires[1:])
-    qml.CNOT(wires=[wires[1], wires[2]])
-    qml.Toffoli(wires=[wires[0], wires[2], wires[3]])
+    qp.Toffoli(wires=wires[1:])
+    qp.CNOT(wires=[wires[1], wires[2]])
+    qp.Toffoli(wires=[wires[0], wires[2], wires[3]])
 
 
 add_decomps(QubitCarry, _qubitcarry_to_cnot_toffolis)
@@ -245,11 +245,11 @@ class QubitSum(Operation):
 
         input_bitstring = (0, 1, 0)
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(basis_state):
-            qml.BasisState(basis_state, wires = [0, 1, 2])
-            qml.QubitSum(wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1, 2])
+            qp.BasisState(basis_state, wires = [0, 1, 2])
+            qp.QubitSum(wires=[0, 1, 2])
+            return qp.probs(wires=[0, 1, 2])
 
         probs = circuit(input_bitstring)
         probs_indx = np.argwhere(probs == 1).flatten()[0]
@@ -302,7 +302,7 @@ class QubitSum(Operation):
 
         **Example**
 
-        >>> print(qml.QubitSum.compute_matrix())
+        >>> print(qp.QubitSum.compute_matrix())
         [[1 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0]
          [0 0 0 1 0 0 0 0]
@@ -326,7 +326,7 @@ class QubitSum(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> qml.operation.Operator:
+    def compute_decomposition(wires: WiresLike) -> qp.operation.Operator:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -341,13 +341,13 @@ class QubitSum(Operation):
 
         **Example:**
 
-        >>> qml.QubitSum.compute_decomposition((0,1,2))
+        >>> qp.QubitSum.compute_decomposition((0,1,2))
         [CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
 
         """
         decomp_ops = [
-            qml.CNOT(wires=[wires[1], wires[2]]),
-            qml.CNOT(wires=[wires[0], wires[2]]),
+            qp.CNOT(wires=[wires[1], wires[2]]),
+            qp.CNOT(wires=[wires[0], wires[2]]),
         ]
         return decomp_ops
 
@@ -356,13 +356,13 @@ class QubitSum(Operation):
 
 
 def _qubitsum_to_cnots_resources():
-    return {qml.CNOT: 2}
+    return {qp.CNOT: 2}
 
 
 @register_resources(_qubitsum_to_cnots_resources)
 def _qubitsum_to_cnots(wires: WiresLike, **__):
-    qml.CNOT(wires=[wires[1], wires[2]])
-    qml.CNOT(wires=[wires[0], wires[2]])
+    qp.CNOT(wires=[wires[1], wires[2]])
+    qp.CNOT(wires=[wires[0], wires[2]])
 
 
 add_decomps(QubitSum, _qubitsum_to_cnots)
@@ -399,12 +399,12 @@ class IntegerComparator(Operation):
 
     **Example**
 
-    >>> dev = qml.device("default.qubit", wires=3)
-    >>> @qml.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=3)
+    >>> @qp.qnode(dev)
     ... def circuit(state, value, geq):
-    ...     qml.BasisState(np.array(state), wires=range(3))
-    ...     qml.IntegerComparator(value, geq=geq, wires=range(3))
-    ...     return qml.state()
+    ...     qp.BasisState(np.array(state), wires=range(3))
+    ...     qp.IntegerComparator(value, geq=geq, wires=range(3))
+    ...     return qp.state()
     >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
     np.complex128(1+0j)
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
@@ -506,7 +506,7 @@ class IntegerComparator(Operation):
 
         **Example**
 
-        >>> print(qml.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2))
+        >>> print(qp.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2))
         [[1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 1. 0. 0. 0. 0. 0. 0.]
          [0. 0. 1. 0. 0. 0. 0. 0.]
@@ -515,7 +515,7 @@ class IntegerComparator(Operation):
          [0. 0. 0. 0. 1. 0. 0. 0.]
          [0. 0. 0. 0. 0. 0. 0. 1.]
          [0. 0. 0. 0. 0. 0. 1. 0.]]
-        >>> print(qml.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2, geq=False))
+        >>> print(qp.IntegerComparator.compute_matrix(control_wires=[0, 1], value=2, geq=False))
         [[0. 1. 0. 0. 0. 0. 0. 0.]
          [1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 0. 0. 1. 0. 0. 0. 0.]
@@ -547,7 +547,7 @@ class IntegerComparator(Operation):
             mat = np.eye(2 ** (len(control_wires) + 1))
             for control_values in control_values_list:
                 control_values = [int(n) for n in control_values]
-                mat = mat @ qml.MultiControlledX.compute_matrix(
+                mat = mat @ qp.MultiControlledX.compute_matrix(
                     control_wires, control_values=control_values
                 )
 
@@ -560,7 +560,7 @@ class IntegerComparator(Operation):
         geq: bool = True,
         work_wires: WiresLike | None = None,
         **kwargs,
-    ) -> list[qml.operation.Operator]:
+    ) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -579,7 +579,7 @@ class IntegerComparator(Operation):
 
         **Example:**
 
-        >>> print(qml.draw(qml.IntegerComparator.compute_decomposition)(4, wires=[0, 1, 2, 3]))
+        >>> print(qp.draw(qp.IntegerComparator.compute_decomposition)(4, wires=[0, 1, 2, 3]))
         0: ─╭●────╭●────╭●────┤
         1: ─├●──X─├●────├●──X─┤
         2: ─│─────├●──X─├●──X─┤
@@ -599,15 +599,15 @@ class IntegerComparator(Operation):
             )
 
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             if geq:
                 _integer_comparator_ge_decomposition(wires, value, work_wires)
             else:
                 _integer_comparator_lt_decomposition(wires, value, work_wires)
 
-        if qml.queuing.QueuingManager.recording():
+        if qp.queuing.QueuingManager.recording():
             for op in q.queue:
-                qml.apply(op)
+                qp.apply(op)
 
         return q.queue
 
@@ -628,17 +628,17 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
         return {}
 
     if value > 2 ** (num_wires - 1) - 1:
-        return {qml.X: 1}
+        return {qp.X: 1}
 
     num_controls = num_wires - 1
     binary_str = format(value, f"0{num_controls}b")
     last_significant = binary_str.rfind("1")
-    gate_counts = {resource_rep(qml.X): (last_significant + 1) * 2}
+    gate_counts = {resource_rep(qp.X): (last_significant + 1) * 2}
 
     first_significant = binary_str.find("1")
     gate_counts[
         resource_rep(
-            qml.MultiControlledX,
+            qp.MultiControlledX,
             num_control_wires=first_significant + 1,
             num_work_wires=num_work_wires + num_wires - 2 - first_significant,
             num_zero_control_values=0,
@@ -649,7 +649,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
     while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
         gate_counts[
             resource_rep(
-                qml.MultiControlledX,
+                qp.MultiControlledX,
                 num_control_wires=first_significant + 1,
                 num_work_wires=num_work_wires + num_wires - 2 - first_significant,
                 num_zero_control_values=0,
@@ -718,7 +718,7 @@ def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
     # the number of control bits, the flipping condition is always satisfied, in
     # which case we apply an X gate to the target wire and terminate.
     if value > 2**num_controls - 1:
-        qml.X(wires[-1])
+        qp.X(wires[-1])
         return
 
     # Track which control bits have been flipped back
@@ -728,39 +728,39 @@ def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
     binary_str = format(value, f"0{num_controls}b")
     last_significant = binary_str.rfind("1")
     for i in range(last_significant + 1):
-        qml.X(wires[i])
+        qp.X(wires[i])
 
     # The flipping condition is satisfied if all bits from the first bit to the
     # first non-zero bit of the value are zeroes.
     first_significant = binary_str.find("1")
-    qml.MultiControlledX(
+    qp.MultiControlledX(
         wires=wires[: first_significant + 1] + wires[-1:],
         work_wires=wires[first_significant + 1 : -1] + work_wires,
     )
     control_value_tracker[first_significant] = 1
-    qml.X(wires[first_significant])
+    qp.X(wires[first_significant])
 
     # If the wire corresponding to the first significant bit of the value is 1, then we
     # iteratively look for the next significant bit, and apply a flip conditioned on all
     # bits from the last significant bit to this next significant bit being zeroes.
     while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
-        qml.MultiControlledX(
+        qp.MultiControlledX(
             wires=wires[: first_significant + 1] + wires[-1:],
             work_wires=wires[first_significant + 1 : -1] + work_wires,
         )
         control_value_tracker[first_significant] = 1
-        qml.X(wires[first_significant])
+        qp.X(wires[first_significant])
 
     for i in range(last_significant + 1):
         if control_value_tracker[i] == 0:
-            qml.X(wires[i])
+            qp.X(wires[i])
 
 
 def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
 
     # If the value is 0, the flipping condition is always satisfied.
     if value == 0:
-        return {qml.X: 1}
+        return {qp.X: 1}
 
     num_controls = num_wires - 1
 
@@ -773,7 +773,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
     if first_zero == -1:
         return {
             resource_rep(
-                qml.MultiControlledX,
+                qp.MultiControlledX,
                 num_control_wires=num_controls,
                 num_work_wires=num_work_wires,
                 num_zero_control_values=0,
@@ -785,30 +785,30 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
 
     gate_set[
         resource_rep(
-            qml.MultiControlledX,
+            qp.MultiControlledX,
             num_control_wires=first_zero + 1,
             num_work_wires=num_work_wires + num_wires - 2 - first_zero,
             num_zero_control_values=0,
             work_wire_type="borrowed",
         )
     ] = 1
-    gate_set[resource_rep(qml.X)] = 2
+    gate_set[resource_rep(qp.X)] = 2
 
     while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
         gate_set[
             resource_rep(
-                qml.MultiControlledX,
+                qp.MultiControlledX,
                 num_control_wires=first_zero + 1,
                 num_work_wires=num_work_wires + num_wires - 2 - first_zero,
                 num_zero_control_values=0,
                 work_wire_type="borrowed",
             )
         ] = 1
-        gate_set[resource_rep(qml.X)] += 2
+        gate_set[resource_rep(qp.X)] += 2
 
     gate_set[
         resource_rep(
-            qml.MultiControlledX,
+            qp.MultiControlledX,
             num_control_wires=num_controls,
             num_work_wires=num_work_wires,
             num_zero_control_values=0,
@@ -830,7 +830,7 @@ def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
 
     # If the value is 0, the flipping condition is always satisfied.
     if value == 0:
-        qml.X(wires[-1])
+        qp.X(wires[-1])
         return
 
     num_controls = len(wires) - 1
@@ -848,38 +848,38 @@ def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
 
     if first_zero == -1:
         # If the value happens to be the all-one state, then we apply a single MCX
-        qml.MultiControlledX(wires=wires, work_wires=work_wires)
+        qp.MultiControlledX(wires=wires, work_wires=work_wires)
         return
 
-    qml.MultiControlledX(
+    qp.MultiControlledX(
         wires=wires[: first_zero + 1] + wires[-1:],
         work_wires=wires[first_zero + 1 : -1] + work_wires,
     )
     control_value_tracker[first_zero] = 1
-    qml.X(wires[first_zero])
+    qp.X(wires[first_zero])
 
     while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
-        qml.MultiControlledX(
+        qp.MultiControlledX(
             wires=wires[: first_zero + 1] + wires[-1:],
             work_wires=wires[first_zero + 1 : -1] + work_wires,
         )
         control_value_tracker[first_zero] = 1
-        qml.X(wires[first_zero])
+        qp.X(wires[first_zero])
 
     # The last MCX corresponds to the equal case.
-    qml.MultiControlledX(wires=wires, work_wires=work_wires)
+    qp.MultiControlledX(wires=wires, work_wires=work_wires)
 
     for i in range(num_controls):
         if control_value_tracker[i]:
-            qml.X(wires[i])
+            qp.X(wires[i])
 
 
 def _integer_comparator_flip_geq_resource(num_wires, value, num_work_wires, geq, **_):
     """Resource estimation for flipping the geq condition."""
     return {
-        qml.X: 1,
+        qp.X: 1,
         resource_rep(
-            qml.IntegerComparator,
+            qp.IntegerComparator,
             num_wires=num_wires,
             value=value,
             geq=not geq,
@@ -891,7 +891,7 @@ def _integer_comparator_flip_geq_resource(num_wires, value, num_work_wires, geq,
 @register_resources(_integer_comparator_flip_geq_resource)
 def _integer_comparator_flip_geq(value, geq, wires, work_wires, **_):
     """Decompose the IntegerComparator by flipping geq to lt or vice versa."""
-    qml.X(wires[-1])
+    qp.X(wires[-1])
     IntegerComparator(value, wires, geq=not geq, work_wires=work_wires)
 
 

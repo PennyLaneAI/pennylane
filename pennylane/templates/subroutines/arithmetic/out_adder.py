@@ -73,14 +73,14 @@ class OutAdder(Operation):
         output_wires=[7,8,9]
         work_wires=[6,10]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, shots=1)
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(y, wires=y_wires)
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            return qml.sample(wires=output_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.BasisEmbedding(y, wires=y_wires)
+            qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+            return qp.sample(wires=output_wires)
 
     >>> print(circuit())
     [[1 0 0]]
@@ -119,15 +119,15 @@ class OutAdder(Operation):
             output_wires=[7,8,9]
             work_wires=[6,10]
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev, shots=1)
+            @qp.qnode(dev, shots=1)
             def circuit():
-                qml.BasisEmbedding(x, wires=x_wires)
-                qml.BasisEmbedding(y, wires=y_wires)
-                qml.BasisEmbedding(b, wires=output_wires)
-                qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-                return qml.sample(wires=output_wires)
+                qp.BasisEmbedding(x, wires=x_wires)
+                qp.BasisEmbedding(y, wires=y_wires)
+                qp.BasisEmbedding(b, wires=output_wires)
+                qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+                return qp.sample(wires=output_wires)
 
         >>> print(circuit())
         [[1 0 1]]
@@ -262,7 +262,7 @@ class OutAdder(Operation):
 
         **Example**
 
-        >>> ops = qml.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
+        >>> ops = qp.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         >>> from pprint import pprint
         >>> pprint(ops)
         [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ QFT(wires=[5, 6])]

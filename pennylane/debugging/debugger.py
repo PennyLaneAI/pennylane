@@ -34,7 +34,7 @@ class PLDB(pdb.Pdb):
     debugger functionality is inherited from the native Python debugger (Pdb).
 
     This class is not directly user-facing, but is interfaced with the
-    ``qml.breakpoint()`` function and ``pldb_device_manager`` context manager.
+    ``qp.breakpoint()`` function and ``pldb_device_manager`` context manager.
     The former is responsible for launching the debugger prompt and the latter
     is responsible with extracting and storing the ``qnode.device``.
 
@@ -68,7 +68,7 @@ class PLDB(pdb.Pdb):
         """Update the global active device.
 
         Args:
-            dev (Union[Device, "qml.devices.Device"]): the active device
+            dev (Union[Device, "qp.devices.Device"]): the active device
         """
         cls.__active_dev = dev
 
@@ -80,7 +80,7 @@ class PLDB(pdb.Pdb):
             RuntimeError: No active device to get
 
         Returns:
-            Union[Device, "qml.devices.Device"]: The active device
+            Union[Device, "qp.devices.Device"]: The active device
         """
         if not cls.has_active_dev():
             raise RuntimeError("No active device to get")
@@ -123,7 +123,7 @@ def pldb_device_manager(device):
     device on the Pennylane Debugger (PLDB).
 
     Args:
-        device (Union[Device, "qml.devices.Device"]): the active device instance
+        device (Union[Device, "qp.devices.Device"]): the active device instance
     """
     try:
         PLDB.add_device(device)
@@ -151,19 +151,19 @@ def breakpoint():
 
         import pennylane as qp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.breakpoint()
+            qp.breakpoint()
 
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
 
-            qml.breakpoint()
+            qp.breakpoint()
 
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(0))
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Z(0))
 
         circuit(1.23)
 
@@ -173,7 +173,7 @@ def breakpoint():
     .. code-block:: console
 
         > /Users/your/path/to/script.py(9)circuit()
-        -> qml.RX(x, wires=0)
+        -> qp.RX(x, wires=0)
         [pldb]
 
     We can interact with the prompt using the commands: :code:`list` , :code:`next`,
@@ -190,17 +190,17 @@ def breakpoint():
     .. code-block:: console
 
         [pldb] list
-        5     @qml.qnode(dev)
+        5     @qp.qnode(dev)
         6     def circuit(x):
-        7         qml.breakpoint()
+        7         qp.breakpoint()
         8
-        9  ->     qml.RX(x, wires=0)
-        10         qml.Hadamard(wires=1)
+        9  ->     qp.RX(x, wires=0)
+        10         qp.Hadamard(wires=1)
         11
-        12         qml.breakpoint()
+        12         qp.breakpoint()
         13
-        14         qml.CNOT(wires=[0, 1])
-        15         return qml.expval(qml.Z(0))
+        14         qp.CNOT(wires=[0, 1])
+        15         return qp.expval(qp.Z(0))
         [pldb]
 
     The :code:`next` command will execute the next line of code, and print the new line to be executed.
@@ -209,7 +209,7 @@ def breakpoint():
 
         [pldb] next
         > /Users/your/path/to/script.py(10)circuit()
-        -> qml.Hadamard(wires=1)
+        -> qp.Hadamard(wires=1)
         [pldb]
 
     The :code:`continue` command will resume code execution until another breakpoint is reached. It will
@@ -220,7 +220,7 @@ def breakpoint():
 
         [pldb] continue
         > /Users/your/path/to/script.py(14)circuit()
-        -> qml.CNOT(wires=[0, 1])
+        -> qp.CNOT(wires=[0, 1])
         [pldb] quit
 
     """
@@ -245,17 +245,17 @@ def debug_state():
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
 
-            qml.breakpoint()
+            qp.breakpoint()
 
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Z(0))
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.Z(0))
 
         circuit(1.23)
 
@@ -265,16 +265,16 @@ def debug_state():
     .. code-block:: console
 
         [pldb] longlist
-          4  	@qml.qnode(dev)
+          4  	@qp.qnode(dev)
           5  	def circuit(x):
-          6  	    qml.RX(x, wires=0)
-          7  	    qml.Hadamard(wires=1)
+          6  	    qp.RX(x, wires=0)
+          7  	    qp.Hadamard(wires=1)
           8
-          9  	    qml.breakpoint()
+          9  	    qp.breakpoint()
          10
-         11  ->	    qml.CNOT(wires=[0, 1])
-         12  	    return qml.expval(qml.Z(0))
-        [pldb] qml.debug_state()
+         11  ->	    qp.CNOT(wires=[0, 1])
+         12  	    return qp.expval(qp.Z(0))
+        [pldb] qp.debug_state()
         array([0.57754604+0.j        , 0.57754604+0.j        ,
         0.        -0.40797128j, 0.        -0.40797128j])
 
@@ -305,17 +305,17 @@ def debug_expval(op):
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
 
-            qml.breakpoint()
+            qp.breakpoint()
 
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
         circuit(1.23)
 
@@ -325,16 +325,16 @@ def debug_expval(op):
     .. code-block:: console
 
         [pldb] longlist
-          4  	@qml.qnode(dev)
+          4  	@qp.qnode(dev)
           5  	def circuit(x):
-          6  	    qml.RX(x, wires=0)
-          7  	    qml.Hadamard(wires=1)
+          6  	    qp.RX(x, wires=0)
+          7  	    qp.Hadamard(wires=1)
           8
-          9  	    qml.breakpoint()
+          9  	    qp.breakpoint()
          10
-         11  ->	    qml.CNOT(wires=[0, 1])
-         12  	    return qml.state()
-        [pldb] qml.debug_expval(qml.Z(0))
+         11  ->	    qp.CNOT(wires=[0, 1])
+         12  	    return qp.state()
+        [pldb] qp.debug_expval(qp.Z(0))
         0.33423772712450256
     """
 
@@ -369,17 +369,17 @@ def debug_probs(wires=None, op=None):
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
 
-            qml.breakpoint()
+            qp.breakpoint()
 
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
         circuit(1.23)
 
@@ -389,16 +389,16 @@ def debug_probs(wires=None, op=None):
     .. code-block:: console
 
         [pldb] longlist
-          4  	@qml.qnode(dev)
+          4  	@qp.qnode(dev)
           5  	def circuit(x):
-          6  	    qml.RX(x, wires=0)
-          7  	    qml.Hadamard(wires=1)
+          6  	    qp.RX(x, wires=0)
+          7  	    qp.Hadamard(wires=1)
           8
-          9  	    qml.breakpoint()
+          9  	    qp.breakpoint()
          10
-         11  ->	    qml.CNOT(wires=[0, 1])
-         12  	    return qml.state()
-        [pldb] qml.debug_probs()
+         11  ->	    qp.CNOT(wires=[0, 1])
+         12  	    return qp.state()
+        [pldb] qp.debug_probs()
         array([0.33355943, 0.33355943, 0.16644057, 0.16644057])
 
     """
@@ -445,17 +445,17 @@ def debug_tape():
 
     .. code-block:: python3
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
+            qp.RX(x, wires=0)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
 
-            qml.breakpoint()
+            qp.breakpoint()
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         circuit(1.23)
 
@@ -464,7 +464,7 @@ def debug_tape():
 
     .. code-block:: console
 
-        [pldb] t = qml.debug_tape()
+        [pldb] t = qp.debug_tape()
         [pldb] print(t.draw())
         0: ──RX─╭●─┤
         1: ──H──╰X─┤

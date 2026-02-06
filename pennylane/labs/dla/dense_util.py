@@ -47,9 +47,9 @@ def _make_permutation_indices(dim: int) -> list[np.ndarray]:
     r"""Make a list of ``dim`` arrays of length ``dim`` containing the indices
     ``0`` through ``dim-1`` in a specific permutation order to match the Walsh-Hadamard
     transform to the Pauli decomposition task."""
-    indices = [qml.math.arange(dim)]
+    indices = [qp.math.arange(dim)]
     for idx in range(dim - 1):
-        indices.append(qml.math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
+        indices.append(qp.math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
     return indices
 
 
@@ -89,7 +89,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
 
     Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
 
-    >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
+    >>> H = 1 / 4 * qp.X(0) + 2 / 5 * qp.Z(0) @ qp.X(1)
     >>> mat = H.matrix()
     >>> mat
     array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
@@ -106,7 +106,7 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
 
     The function can be used on a batch of matrices:
 
-    >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0), 3 / 5 * qml.Y(0)]
+    >>> ops = [1 / 4 * qp.X(0), 1 / 2 * qp.Z(0), 3 / 5 * qp.Y(0)]
     >>> batch = np.stack([op.matrix() for op in ops])
     >>> pauli_coefficients(batch)
     array([[0.  , 0.25, 0.  , 0.  ],
@@ -125,26 +125,26 @@ def pauli_coefficients(H: TensorLike) -> np.ndarray:
     indices = _make_permutation_indices(dim)
     # Apply the permutation by slicing and stacking again
     sliced_H = [
-        qml.math.take(H[..., idx, :], _indices, axis=-1) for idx, _indices in enumerate(indices)
+        qp.math.take(H[..., idx, :], _indices, axis=-1) for idx, _indices in enumerate(indices)
     ]
-    sliced_H = qml.math.cast(qml.math.stack(sliced_H), complex)
+    sliced_H = qp.math.cast(qp.math.stack(sliced_H), complex)
     # Move leading axis (different permutation slices) to last position and combine broadcasting axis
     # and slicing axis into one leading axis (because `_walsh_hadamard_transform` only takes one batch axis)
-    term_mat = qml.math.reshape(qml.math.moveaxis(sliced_H, 0, -1), (-1, dim))
+    term_mat = qp.math.reshape(qp.math.moveaxis(sliced_H, 0, -1), (-1, dim))
     # Apply Walsh-Hadamard transform
     hadamard_transform_mat = _walsh_hadamard_transform(term_mat)
     # Reshape again to separate actual broadcasting axis and previous slicing axis
-    hadamard_transform_mat = qml.math.reshape(hadamard_transform_mat, shape)
+    hadamard_transform_mat = qp.math.reshape(hadamard_transform_mat, shape)
     # make phase matrix that allows us to figure out phase contributions from Pauli Y terms.
-    phase_mat = qml.math.convert_like(_make_phase_mat(n), H)
+    phase_mat = qp.math.convert_like(_make_phase_mat(n), H)
     # Multiply phase matrix to Hadamard transformed matrix and transpose the two Hilbert-space-dim axes
-    coefficients = qml.math.moveaxis(
-        qml.math.real(qml.math.multiply(hadamard_transform_mat, phase_mat)), -2, -1
+    coefficients = qp.math.moveaxis(
+        qp.math.real(qp.math.multiply(hadamard_transform_mat, phase_mat)), -2, -1
     )
-    # Extract the coefficients by reordering them according to the encoding in `qml.pauli.batched_pauli_decompose`
+    # Extract the coefficients by reordering them according to the encoding in `qp.pauli.batched_pauli_decompose`
     indices = _make_extraction_indices(n)
     new_shape = (dim**2,) if batch is None else (batch, dim**2)
-    return qml.math.reshape(coefficients[..., indices[0], indices[1]], new_shape)
+    return qp.math.reshape(coefficients[..., indices[0], indices[1]], new_shape)
 
 
 _pauli_strings = (None, "X", "Y", "Z")
@@ -185,7 +185,7 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
     matrix and get back the Pauli representation via ``batched_pauli_decompose``.
 
     >>> from pennylane.labs.dla import batched_pauli_decompose
-    >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
+    >>> H = 1 / 4 * qp.X(0) + 2 / 5 * qp.Z(0) @ qp.X(1)
     >>> mat = H.matrix()
     >>> op = batched_pauli_decompose(mat)
     >>> op
@@ -202,7 +202,7 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
 
     This function supports batching and will return a list of operations for a batched input:
 
-    >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0) + 1e-7 * qml.Y(0)]
+    >>> ops = [1 / 4 * qp.X(0), 1 / 2 * qp.Z(0) + 1e-7 * qp.Y(0)]
     >>> batch = np.stack([op.matrix() for op in ops])
     >>> batched_pauli_decompose(batch)
     [0.25 * X(0), 1e-07 * Y(0) + 0.5 * Z(0)]
@@ -216,14 +216,14 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
     if tol is None:
         tol = 1e-10
     coeffs = pauli_coefficients(H)
-    if single_H := qml.math.ndim(coeffs) == 1:
+    if single_H := qp.math.ndim(coeffs) == 1:
         coeffs = [coeffs]
 
-    n = int(np.round(np.log2(qml.math.shape(coeffs)[1]))) // 2
+    n = int(np.round(np.log2(qp.math.shape(coeffs)[1]))) // 2
 
     H_ops = []
     for _coeffs in coeffs:
-        ids = qml.math.where(qml.math.abs(_coeffs) > tol)[0]
+        ids = qp.math.where(qp.math.abs(_coeffs) > tol)[0]
         sentence = PauliSentence({_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids)})
         if pauli:
             H_ops.append(sentence)
@@ -250,7 +250,7 @@ def orthonormalize(basis: Iterable[PauliSentence | Operator | np.ndarray]) -> np
 
     >>> from pennylane.labs.dla import orthonormalize, check_orthonormal
     >>> from pennylane.pauli import trace_inner_product
-    >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
+    >>> ops = [qp.X(0), qp.X(0) + qp.Y(0), qp.Y(0) + qp.Z(0)]
     >>> check_orthonormal(ops, trace_inner_product)
     False
     >>> ops_orth = orthonormalize(ops)
@@ -258,7 +258,7 @@ def orthonormalize(basis: Iterable[PauliSentence | Operator | np.ndarray]) -> np
     True
 
     This works also for lists of dense matrices as inputs
-    >>> ops_m = [qml.matrix(op) for op in ops]
+    >>> ops_m = [qp.matrix(op) for op in ops]
     >>> ops_m_orth = orthonormalize(ops_m)
     >>> ops_m_orth.shape
     (3, 2, 2)
@@ -347,8 +347,8 @@ def check_orthonormal(g: Iterable[PauliSentence | Operator], inner_product: call
     **Example**
 
     >>> from pennylane.labs.dla import orthonormalize, check_orthonormal
-    >>> ops = [qml.X(0), qml.X(0) + qml.Y(0), qml.Y(0) + qml.Z(0)]
-    >>> check_orthonormal(ops, qml.pauli.trace_inner_product)
+    >>> ops = [qp.X(0), qp.X(0) + qp.Y(0), qp.Y(0) + qp.Z(0)]
+    >>> check_orthonormal(ops, qp.pauli.trace_inner_product)
     False
     >>> ops_orth = orthonormalize(ops)
     >>> check_orthonormal(ops_orth, trace_inner_product)

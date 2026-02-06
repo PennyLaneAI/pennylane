@@ -120,38 +120,38 @@ class ParticleConservingU2(Operation):
 
             # Build the electronic Hamiltonian
             symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
+            h, qubits = qp.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the HF state
-            ref_state = qml.qchem.hf_state(2, qubits)
+            ref_state = qp.qchem.hf_state(2, qubits)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qp.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(qml.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
+            ansatz = partial(qp.ParticleConservingU2, init_state=ref_state, wires=dev.wires)
 
             # Define the cost function
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def cost_fn(params):
                 ansatz(params)
-                return qml.expval(h)
+                return qp.expval(h)
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
-            shape = qml.ParticleConservingU2.shape(layers, qubits)
+            shape = qp.ParticleConservingU2.shape(layers, qubits)
             params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
 
         The shape of the trainable weights tensor can be computed by the static method
-        :meth:`~qml.ParticleConservingU2.shape` and used when creating randomly
+        :meth:`~qp.ParticleConservingU2.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = qml.ParticleConservingU2.shape(n_layers=2, n_wires=2)
+            shape = qp.ParticleConservingU2.shape(n_layers=2, n_wires=2)
             params = np.random.random(size=shape)
     """
 
@@ -214,7 +214,7 @@ class ParticleConservingU2(Operation):
         **Example**
 
         >>> weights = torch.tensor([[0.3, 1., 0.2]])
-        >>> ops = qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        >>> ops = qp.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
         [BasisEmbedding(array([0, 1]), wires=['a', 'b']),

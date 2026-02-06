@@ -156,13 +156,13 @@ def single_tape_support(cls: type) -> type:
     .. code-block:: python
 
         @single_tape_support
-        class MyDevice(qml.devices.Device):
+        class MyDevice(qp.devices.Device):
 
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return tuple(0.0 for _ in circuits)
 
     >>> dev = MyDevice()
-    >>> t = qml.tape.QuantumScript()
+    >>> t = qp.tape.QuantumScript()
     >>> dev.execute(t)
     0.0
     >>> dev.execute((t, ))

@@ -239,11 +239,11 @@ def estimate(
             import pennylane as qp
             import pennylane.estimator as qre
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit():
-                qml.Hadamard(0)
-                qml.CNOT(wires=[0, 1])
-                qml.QFT(wires=[0, 1, 2, 3])
+                qp.Hadamard(0)
+                qp.CNOT(wires=[0, 1])
+                qp.QFT(wires=[0, 1, 2, 3])
 
         >>> res = qre.estimate(circuit)()
         >>> print(res)

@@ -45,17 +45,17 @@ class DefaultQubitInterpreter(FlattenedInterpreter):
 
 
     >>> from pennylane.devices.qubit.dq_interpreter import DefaultQubitInterpreter
-    >>> qml.capture.enable()
+    >>> qp.capture.enable()
     >>> import jax
     >>> key = jax.random.PRNGKey(1234)
     >>> dq = DefaultQubitInterpreter(num_wires=2, shots=None, key=key)
-    >>> @qml.for_loop(2)
+    >>> @qp.for_loop(2)
     ... def g(i,y):
-    ...     qml.RX(y,0)
+    ...     qp.RX(y,0)
     ...     return y
     >>> def f(x):
     ...     g(x)
-    ...     return qml.expval(qml.Z(0))
+    ...     return qp.expval(qp.Z(0))
     >>> dq(f)(0.5)
     Array(0.54030231, dtype=float64)
     >>> jaxpr = jax.make_jaxpr(f)(0.5)

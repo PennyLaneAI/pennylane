@@ -49,7 +49,7 @@ def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="ro
             f"block_encoding = {block_encoding} not supported for A of type {type(A)}. "
             "When A is a Hamiltonian or has a Pauli decomposition, block_encoding should "
             "take the value 'prepselprep' or 'qubitization'. Otherwise, please provide the "
-            "matrix of the Hamiltonian as input. For more details, see the 'qml.matrix' function."
+            "matrix of the Hamiltonian as input. For more details, see the 'qp.matrix' function."
         )
 
     if any(wire in Wires(encoding_wires) for wire in A.wires):
@@ -79,7 +79,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
             f"block_encoding = {block_encoding} not supported for A of type {type(A)}."
             "When A is a matrix block_encoding should take the value 'embedding' or 'fable'. "
             "Otherwise, please provide an input with a Pauli decomposition. For more details, "
-            "see the 'qml.pauli_decompose' function."
+            "see the 'qp.pauli_decompose' function."
         )
 
     # compute angles
@@ -186,18 +186,18 @@ def qsvt(
         # P(x) = -x + 0.5 x^3 + 0.5 x^5
         poly = np.array([0, -1, 0, 0.5, 0, 0.5])
 
-        hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
+        hamiltonian = qp.dot([0.3, 0.7], [qp.Z(1), qp.X(1) @ qp.Z(2)])
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep")
-            return qml.state()
+            qp.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep")
+            return qp.state()
 
 
-        matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
+        matrix = qp.matrix(circuit, wire_order=[0, 1, 2])()
 
     >>> print(matrix[:4, :4].real) # doctest: +SKIP
     [[-0.1625  0.     -0.3793  0.    ]
@@ -221,17 +221,17 @@ def qsvt(
             # P(x) = -1 + 0.2 x^2 + 0.5 x^4
             poly = np.array([-1, 0, 0.2, 0, 0.5])
 
-            hamiltonian = qml.dot([0.3, 0.4, 0.3], [qml.Z(2), qml.X(2) @ qml.Z(3), qml.X(2)])
+            hamiltonian = qp.dot([0.3, 0.4, 0.3], [qp.Z(2), qp.X(2) @ qp.Z(3), qp.X(2)])
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.qsvt(hamiltonian, poly, encoding_wires=[0, 1], block_encoding="prepselprep")
-                return qml.state()
+                qp.qsvt(hamiltonian, poly, encoding_wires=[0, 1], block_encoding="prepselprep")
+                return qp.state()
 
 
-            matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3])()
+            matrix = qp.matrix(circuit, wire_order=[0, 1, 2, 3])()
 
         >>> print(np.round(matrix[:4, :4], 4).real) # doctest: +SKIP
         [[-0.7158  0.     -0.      0.    ]
@@ -252,14 +252,14 @@ def qsvt(
 
             A = np.array([[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]])
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.qsvt(A, poly, encoding_wires=[0, 1, 2, 3, 4], block_encoding="fable")
-                return qml.state()
+                qp.qsvt(A, poly, encoding_wires=[0, 1, 2, 3, 4], block_encoding="fable")
+                return qp.state()
 
-            matrix = qml.matrix(circuit, wire_order=[0, 1, 2, 3, 4])()
+            matrix = qp.matrix(circuit, wire_order=[0, 1, 2, 3, 4])()
 
         >>> print(np.round(matrix[:4, :4], 4).real) # doctest: +SKIP
         [[-0.0954  0.     -0.0056 -0.0054]
@@ -357,14 +357,14 @@ class QSVT(Operation):
 
     To implement QSVT in a circuit, we can use the following method:
 
-    >>> dev = qml.device("default.qubit", wires=[0])
-    >>> block_encoding = qml.Hadamard(wires=0)  # note H is a block encoding of 1/sqrt(2)
-    >>> phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to match convention
+    >>> dev = qp.device("default.qubit", wires=[0])
+    >>> block_encoding = qp.Hadamard(wires=0)  # note H is a block encoding of 1/sqrt(2)
+    >>> phase_shifts = [qp.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to match convention
 
-    >>> @qml.qnode(dev)
+    >>> @qp.qnode(dev)
     ... def example_circuit():
-    ...     qml.QSVT(block_encoding, phase_shifts)
-    ...     return qml.expval(qml.Z(0))
+    ...     qp.QSVT(block_encoding, phase_shifts)
+    ...     return qp.expval(qp.Z(0))
     ... 
     
     >>> example_circuit()
@@ -372,12 +372,12 @@ class QSVT(Operation):
 
     We can visualize the circuit as follows:
 
-    >>> print(qml.draw(example_circuit)())
+    >>> print(qp.draw(example_circuit)())
     0: ──QSVT─┤  <Z>
 
     To see the implementation details, we can expand the circuit:
 
-    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
+    >>> q_script = qp.tape.QuantumScript(ops=[qp.QSVT(block_encoding, phase_shifts)])
     >>> print(q_script.expand().draw(decimals=2))
     0: ──RZ(-2.46)──(H†)@RZ(1.00)@H──RZ(-8.00)─┤
 
@@ -404,21 +404,21 @@ class QSVT(Operation):
         .. code-block:: python
 
             poly = np.array([0, -1, 0, 0.5, 0, 0.5])
-            angles = qml.poly_to_angles(poly, "QSVT")
+            angles = qp.poly_to_angles(poly, "QSVT")
             input_matrix = np.array([[0.2, 0.1], [0.1, -0.1]])
 
             wires = [0, 1]
-            block_encode = qml.BlockEncode(input_matrix, wires=wires)
+            block_encode = qp.BlockEncode(input_matrix, wires=wires)
             projectors = [
-                qml.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
+                qp.PCPhase(angles[i], dim=len(input_matrix), wires=wires)
                 for i in range(len(angles))
             ]
 
-            dev = qml.device("default.qubit")
-            @qml.qnode(dev)
+            dev = qp.device("default.qubit")
+            @qp.qnode(dev)
             def circuit():
-                qml.QSVT(block_encode, projectors)
-                return qml.state()
+                qp.QSVT(block_encode, projectors)
+                return qp.state()
 
         >>> circuit() # doctest: +SKIP
         array([-0.1942+0.6665j, -0.0979+0.3583j,  0.332 -0.5105j, -0.0955+0.0104j])
@@ -433,23 +433,23 @@ class QSVT(Operation):
         .. code-block:: python
 
             poly = np.array([0, -1, 0, 0.5, 0, 0.5])
-            H = 0.1 * qml.X(2) - 0.7 * qml.X(2) @ qml.Z(3) - 0.2 * qml.Z(2)
+            H = 0.1 * qp.X(2) - 0.7 * qp.X(2) @ qp.Z(3) - 0.2 * qp.Z(2)
 
             control_wires = [0, 1]
-            block_encode = qml.PrepSelPrep(H, control=control_wires)
-            angles = qml.poly_to_angles(poly, "QSVT")
+            block_encode = qp.PrepSelPrep(H, control=control_wires)
+            angles = qp.poly_to_angles(poly, "QSVT")
 
             projectors = [
-                qml.PCPhase(angles[i], dim=2 ** len(H.wires), wires=control_wires + H.wires)
+                qp.PCPhase(angles[i], dim=2 ** len(H.wires), wires=control_wires + H.wires)
                 for i in range(len(angles))
             ]
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.QSVT(block_encode, projectors)
-                return qml.state()
+                qp.QSVT(block_encode, projectors)
+                return qp.state()
 
         >>> circuit() # doctest: +SKIP
         array([ 1.44000000e-01+1.01511390e-01j,  0.00000000e+00+0.00000000e+00j,
@@ -1107,7 +1107,7 @@ def transform_angles(angles, routine1, routine2):
     .. code-block::
 
         >>> qsp_angles = np.array([0.2, 0.3, 0.5])
-        >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
+        >>> qsvt_angles = qp.transform_angles(qsp_angles, "QSP", "QSVT")
         >>> print(qsvt_angles)
         [-6.868...  1.870... -0.285...]
 
@@ -1122,22 +1122,22 @@ def transform_angles(angles, routine1, routine2):
 
             poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
 
-            qsp_angles = qml.poly_to_angles(poly, "QSP")
-            qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
+            qsp_angles = qp.poly_to_angles(poly, "QSP")
+            qsvt_angles = qp.transform_angles(qsp_angles, "QSP", "QSVT")
 
             x = 0.2
 
             # Encodes x in the top left of the matrix
-            block_encoding = qml.RX(2 * np.arccos(x), wires=0)
+            block_encoding = qp.RX(2 * np.arccos(x), wires=0)
 
-            projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
+            projectors = [qp.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit_qsvt():
-                qml.QSVT(block_encoding, projectors)
-                return qml.state()
+                qp.QSVT(block_encoding, projectors)
+                return qp.state()
 
-            output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+            output = qp.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
             expected = sum(coef * (x**i) for i, coef in enumerate(poly))
 
             print("output qsvt: ", output.real)
@@ -1210,7 +1210,7 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
     .. code-block::
 
         >>> poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
-        >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
+        >>> qsvt_angles = qp.poly_to_angles(poly, "QSVT")
         >>> print(qsvt_angles)
         [-5.497...  1.570...  1.570...  0.583...   1.61...  0.747...]
 
@@ -1225,20 +1225,20 @@ def poly_to_angles(poly, routine, angle_solver: Literal["root-finding"] = "root-
 
             poly = np.array([0, 1.0, 0, -1/2, 0, 1/3])
 
-            qsvt_angles = qml.poly_to_angles(poly, "QSVT")
+            qsvt_angles = qp.poly_to_angles(poly, "QSVT")
 
             x = 0.2
 
             # Encode x in the top left of the matrix
-            block_encoding = qml.RX(2 * np.arccos(x), wires=0)
-            projectors = [qml.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
+            block_encoding = qp.RX(2 * np.arccos(x), wires=0)
+            projectors = [qp.PCPhase(angle, dim=1, wires=0) for angle in qsvt_angles]
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit_qsvt():
-                qml.QSVT(block_encoding, projectors)
-                return qml.state()
+                qp.QSVT(block_encoding, projectors)
+                return qp.state()
 
-            output = qml.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
+            output = qp.matrix(circuit_qsvt, wire_order=[0])()[0, 0]
             expected = sum(coef * (x**i) for i, coef in enumerate(poly))
 
             print("output qsvt: ", output.real)

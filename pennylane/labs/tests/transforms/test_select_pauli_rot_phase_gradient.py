@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the transform ``qml.transform.select_pauli_rot_phase_gradient``"""
+"""Tests for the transform ``qp.transform.select_pauli_rot_phase_gradient``"""
 
 from functools import partial
 
@@ -31,8 +31,8 @@ def prepare_phase_gradient(wires):
     """Prepares the phase gradient state."""
     ops = []
     for i, w in enumerate(wires):
-        ops.append(qml.H(w))
-        ops.append(qml.PhaseShift(-np.pi / 2**i, w))
+        ops.append(qp.H(w))
+        ops.append(qp.PhaseShift(-np.pi / 2**i, w))
     return ops
 
 
@@ -64,10 +64,10 @@ def test_units_select_pauli_rot_phase_gradient(p):
     ]
 
     wire = "targ"
-    control_wires = qml.wires.Wires([f"control_{i}" for i in range(2)])
-    angle_wires = qml.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qml.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qml.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    control_wires = qp.wires.Wires([f"control_{i}" for i in range(2)])
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
 
     op = _select_pauli_rot_phase_gradient(
         phis,
@@ -93,11 +93,11 @@ def test_units_select_pauli_rot_phase_gradient(p):
 def test_wire_validation():
     """Test that an error is raised when phg wires are fewer than angle wires"""
 
-    circ = qml.tape.QuantumScript([qml.SelectPauliRot([0.2, -0.4], [0], 1)])
+    circ = qp.tape.QuantumScript([qp.SelectPauliRot([0.2, -0.4], [0], 1)])
 
-    angle_wires = qml.wires.Wires([f"angle_{i}" for i in range(3)])
-    phase_grad_wires = qml.wires.Wires([f"phg_{i}" for i in range(2)])
-    work_wires = qml.wires.Wires([f"work_{i}" for i in range(2)])
+    angle_wires = qp.wires.Wires([f"angle_{i}" for i in range(3)])
+    phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(2)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(2)])
 
     with pytest.raises(
         ValueError, match="phase_grad_wires needs to be at least as large as angle_wires"
@@ -159,33 +159,33 @@ def test_correctness_select_pauli_rot_phase_gradient(phis, rot_axis):
         phase_grad_wires=phase_grad_wires,
         work_wires=work_wires,
     )
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def select_pauli_rot_circ(phis, control_wires, target_wire):
         prepare_phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
         for wire in control_wires:
-            qml.Hadamard(wire)
+            qp.Hadamard(wire)
 
-        qml.SelectPauliRot(phis, control_wires, target_wire, rot_axis=rot_axis)
-
-        if rot_axis == "Y":
-            qml.adjoint(qml.S)(target_wire)
-
-        if rot_axis in ["X", "Y"]:
-            qml.Hadamard(target_wire)
-
-        qml.Select([qml.RZ(-phi, target_wire) for phi in phis], control=control_wires)
-
-        if rot_axis in ["X", "Y"]:
-            qml.Hadamard(target_wire)
+        qp.SelectPauliRot(phis, control_wires, target_wire, rot_axis=rot_axis)
 
         if rot_axis == "Y":
-            qml.S(target_wire)
+            qp.adjoint(qp.S)(target_wire)
+
+        if rot_axis in ["X", "Y"]:
+            qp.Hadamard(target_wire)
+
+        qp.Select([qp.RZ(-phi, target_wire) for phi in phis], control=control_wires)
+
+        if rot_axis in ["X", "Y"]:
+            qp.Hadamard(target_wire)
+
+        if rot_axis == "Y":
+            qp.S(target_wire)
 
         for wire in control_wires:
-            qml.Hadamard(wire)
+            qp.Hadamard(wire)
 
-        return qml.probs([target_wire] + control_wires + angle_wires)
+        return qp.probs([target_wire] + control_wires + angle_wires)
 
     # pylint: disable=unsubscriptable-object
     expected_probs = select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire)

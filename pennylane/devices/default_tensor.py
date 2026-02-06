@@ -149,10 +149,10 @@ _gate_contract_tn = frozenset(
 )
 # The set of supported gate contraction methods for the TN method.
 _PAULI_MATRICES = {
-    "I": qml.Identity(0).matrix(),
-    "X": qml.PauliX(0).matrix(),
-    "Y": qml.PauliY(0).matrix(),
-    "Z": qml.PauliZ(0).matrix(),
+    "I": qp.Identity(0).matrix(),
+    "X": qp.PauliX(0).matrix(),
+    "Y": qp.PauliY(0).matrix(),
+    "Z": qp.PauliZ(0).matrix(),
 }
 
 
@@ -161,12 +161,12 @@ def accepted_methods(method: str) -> bool:
     return method in _methods
 
 
-def stopping_condition(op: qml.operation.Operator) -> bool:
+def stopping_condition(op: qp.operation.Operator) -> bool:
     """A function that determines if an operation is supported by ``default.tensor``."""
     return op.name in _operations
 
 
-def accepted_observables(obs: qml.operation.Operator) -> bool:
+def accepted_observables(obs: qp.operation.Operator) -> bool:
     """A function that determines if an observable is supported by ``default.tensor``."""
     return obs.name in _observables
 
@@ -245,15 +245,15 @@ class DefaultTensor(Device):
 
         num_qubits = 100
 
-        dev = qml.device("default.tensor", wires=num_qubits)
+        dev = qp.device("default.tensor", wires=num_qubits)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(num_qubits):
             for qubit in range(0, num_qubits - 1):
-                qml.CZ(wires=[qubit, qubit + 1])
-                qml.X(wires=[qubit])
-                qml.Z(wires=[qubit + 1])
-            return qml.expval(qml.Z(0))
+                qp.CZ(wires=[qubit, qubit + 1])
+                qp.X(wires=[qubit])
+                qp.Z(wires=[qubit + 1])
+            return qp.expval(qp.Z(0))
 
     >>> circuit(num_qubits)
     tensor(-1., requires_grad=True)
@@ -298,22 +298,22 @@ class DefaultTensor(Device):
                     "contract": "auto-mps",
                 }
 
-                dev = qml.device("default.tensor", wires=num_qubits, method="mps", **device_kwargs_mps)
+                dev = qp.device("default.tensor", wires=num_qubits, method="mps", **device_kwargs_mps)
 
-                @qml.qnode(dev)
+                @qp.qnode(dev)
                 def circuit(theta, phi, num_qubits):
                     for qubit in range(num_qubits - 4):
-                        qml.X(wires=qubit)
-                        qml.RX(theta, wires=qubit + 1)
-                        qml.CNOT(wires=[qubit, qubit + 1])
-                        qml.DoubleExcitation(phi, wires=[qubit, qubit + 1, qubit + 3, qubit + 4])
-                        qml.CSWAP(wires=[qubit + 1, qubit + 3, qubit + 4])
-                        qml.RY(theta, wires=qubit + 1)
-                        qml.Toffoli(wires=[qubit + 1, qubit + 3, qubit + 4])
+                        qp.X(wires=qubit)
+                        qp.RX(theta, wires=qubit + 1)
+                        qp.CNOT(wires=[qubit, qubit + 1])
+                        qp.DoubleExcitation(phi, wires=[qubit, qubit + 1, qubit + 3, qubit + 4])
+                        qp.CSWAP(wires=[qubit + 1, qubit + 3, qubit + 4])
+                        qp.RY(theta, wires=qubit + 1)
+                        qp.Toffoli(wires=[qubit + 1, qubit + 3, qubit + 4])
                     return [
-                        qml.expval(qml.Z(0)),
-                        qml.expval(qml.Hamiltonian([np.pi, np.e], [qml.Z(15) @ qml.Y(25), qml.Hadamard(40)])),
-                        qml.var(qml.Y(20)),
+                        qp.expval(qp.Z(0)),
+                        qp.expval(qp.Hamiltonian([np.pi, np.e], [qp.Z(15) @ qp.Y(25), qp.Hadamard(40)])),
+                        qp.var(qp.Y(20)),
                     ]
 
             >>> circuit(theta, phi, num_qubits)
@@ -343,20 +343,20 @@ class DefaultTensor(Device):
                 depth = 10
                 num_qubits = 100
 
-                dev = qml.device("default.tensor", method="tn", contract="auto-split-gate")
+                dev = qp.device("default.tensor", method="tn", contract="auto-split-gate")
 
-                @qml.qnode(dev)
+                @qp.qnode(dev)
                 def circuit(phi, depth, num_qubits):
                     for qubit in range(num_qubits):
-                        qml.X(wires=qubit)
+                        qp.X(wires=qubit)
                     for _ in range(depth):
                         for qubit in range(num_qubits - 1):
-                            qml.CNOT(wires=[qubit, qubit + 1])
+                            qp.CNOT(wires=[qubit, qubit + 1])
                         for qubit in range(num_qubits):
-                            qml.RX(phi, wires=qubit)
+                            qp.RX(phi, wires=qubit)
                     for qubit in range(num_qubits - 1):
-                        qml.CNOT(wires=[qubit, qubit + 1])
-                    return qml.expval(qml.Z(0))
+                        qp.CNOT(wires=[qubit, qubit + 1])
+                    return qp.expval(qp.Z(0))
 
             >>> circuit(phi, depth, num_qubits)
             -0.9511499466743283
@@ -458,7 +458,7 @@ class DefaultTensor(Device):
         return self._c_dtype
 
     def _initial_quimb_circuit(
-        self, wires: qml.wires.Wires, psi0=None
+        self, wires: qp.wires.Wires, psi0=None
     ) -> Union["qtn.CircuitMPS", "qtn.Circuit"]:
         """
         Initialize the quimb circuit according to the method chosen.
@@ -497,7 +497,7 @@ class DefaultTensor(Device):
 
         raise NotImplementedError  # pragma: no cover
 
-    def _initial_mps(self, wires: qml.wires.Wires, basis_state=None) -> "qtn.MatrixProductState":
+    def _initial_mps(self, wires: qp.wires.Wires, basis_state=None) -> "qtn.MatrixProductState":
         r"""
         Return a MPS object in the :math:`\ket{0}` state.
 
@@ -539,7 +539,7 @@ class DefaultTensor(Device):
 
             import pennylane as qp
 
-            dev = qml.device("default.tensor", method="mps", wires=15)
+            dev = qp.device("default.tensor", method="mps", wires=15)
 
             dev.draw()
 
@@ -547,24 +547,24 @@ class DefaultTensor(Device):
 
         .. code-block:: python
 
-            dev = qml.device("default.tensor", method="tn", contract=False)
+            dev = qp.device("default.tensor", method="tn", contract=False)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(num_qubits):
                 for i in range(num_qubits):
-                    qml.Hadamard(wires=i)
+                    qp.Hadamard(wires=i)
                 for _ in range(1, num_qubits - 1):
                     for i in range(0, num_qubits, 2):
-                        qml.CNOT(wires=[i, i + 1])
+                        qp.CNOT(wires=[i, i + 1])
                     for i in range(10):
-                        qml.RZ(1.234, wires=i)
+                        qp.RZ(1.234, wires=i)
                     for i in range(1, num_qubits - 1, 2):
-                        qml.CZ(wires=[i, i + 1])
+                        qp.CZ(wires=[i, i + 1])
                     for i in range(num_qubits):
-                        qml.RX(1.234, wires=i)
+                        qp.RX(1.234, wires=i)
                 for i in range(num_qubits):
-                    qml.Hadamard(wires=i)
-                return qml.expval(qml.Z(0))
+                    qp.Hadamard(wires=i)
+                return qp.expval(qp.Z(0))
 
             num_qubits = 12
 
@@ -636,7 +636,7 @@ class DefaultTensor(Device):
         program.add_transform(validate_measurements, name=self.name)
         program.add_transform(validate_observables, accepted_observables, name=self.name)
         program.add_transform(validate_device_wires, self._wires, name=self.name)
-        program.add_transform(qml.defer_measurements, allow_postselect=False)
+        program.add_transform(qp.defer_measurements, allow_postselect=False)
         program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -645,7 +645,7 @@ class DefaultTensor(Device):
             device_wires=self.wires,
             target_gates=_operations,
         )
-        program.add_transform(qml.transforms.broadcast_expand)
+        program.add_transform(qp.transforms.broadcast_expand)
 
         return program, config
 
@@ -694,7 +694,7 @@ class DefaultTensor(Device):
         # is established at runtime to match the circuit if not provided.
         wires = circuit.wires if self.wires is None else self.wires
         operations = copy.deepcopy(circuit.operations)
-        if operations and isinstance(operations[0], qml.BasisState):
+        if operations and isinstance(operations[0], qp.BasisState):
             op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
                 wires,
@@ -705,7 +705,7 @@ class DefaultTensor(Device):
                     ),
                 ),
             )
-        elif operations and isinstance(operations[0], qml.StatePrep):
+        elif operations and isinstance(operations[0], qp.StatePrep):
             op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
                 wires,
@@ -726,7 +726,7 @@ class DefaultTensor(Device):
 
         raise NotImplementedError  # pragma: no cover
 
-    def _apply_operation(self, op: qml.operation.Operator) -> None:
+    def _apply_operation(self, op: qp.operation.Operator) -> None:
         """Apply a single operator to the circuit.
 
         Internally it uses ``quimb``'s ``apply_gate`` method. This method modifies the tensor state of the device.
@@ -802,10 +802,10 @@ class DefaultTensor(Device):
 
         obs = measurementprocess.obs
         assert obs is not None, "variance must have an observable"
-        obs_mat = qml.matrix(obs)
+        obs_mat = qp.matrix(obs)
         expect_op = self.expval(measurementprocess)
         expect_squar_op = self._local_expectation(
-            obs_mat @ qml.math.conj(obs_mat).T, tuple(obs.wires)
+            obs_mat @ qp.math.conj(obs_mat).T, tuple(obs.wires)
         )
 
         return expect_squar_op - np.square(expect_op)
@@ -850,7 +850,7 @@ class DefaultTensor(Device):
     def supports_derivatives(
         self,
         execution_config: ExecutionConfig | None = None,
-        circuit: qml.tape.QuantumTape | None = None,
+        circuit: qp.tape.QuantumTape | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -964,26 +964,26 @@ class DefaultTensor(Device):
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
-    if not isinstance(ops, qml.Identity):
+    if not isinstance(ops, qp.Identity):
         device._quimb_circuit.apply_gate(
-            qml.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
+            qp.matrix(ops).astype(device._c_dtype), *ops.wires, parametrize=None
         )
 
 
 @apply_operation_core.register
-def apply_operation_core_global_phase(ops: qml.GlobalPhase, device):
+def apply_operation_core_global_phase(ops: qp.GlobalPhase, device):
     """Dispatcher for _apply_operation."""
-    device._quimb_circuit._psi *= qml.math.exp(-1j * ops.data[0])
+    device._quimb_circuit._psi *= qp.math.exp(-1j * ops.data[0])
 
 
 @apply_operation_core.register
-def apply_operation_core_multirz(ops: qml.MultiRZ, device):
+def apply_operation_core_multirz(ops: qp.MultiRZ, device):
     """Dispatcher for _apply_operation."""
-    apply_operation_core(qml.PauliRot(ops.parameters[0], "Z" * len(ops.wires), ops.wires), device)
+    apply_operation_core(qp.PauliRot(ops.parameters[0], "Z" * len(ops.wires), ops.wires), device)
 
 
 @apply_operation_core.register
-def apply_operation_core_paulirot(ops: qml.PauliRot, device):
+def apply_operation_core_paulirot(ops: qp.PauliRot, device):
     """Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO)."""
 
     theta = ops.parameters[0]
@@ -995,9 +995,9 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
 
         if len(sites) == 1:
             # Special case for a single-qubit Pauli rotation
-            arr = qml.math.zeros((1, 1, 2, 2), dtype=complex)
-            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
-            arr[0, 0] += qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
+            arr = qp.math.zeros((1, 1, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qp.math.sin(theta / 2)
+            arr[0, 0] += qp.math.eye(2, dtype=complex) * qp.math.cos(theta / 2)
 
         # Multi-qubit Pauli rotations are implemented with an MPO chain. Each tensor
         # in this chain has the shape of (in_dim, out_dim, 2, 2), where the last two
@@ -1005,21 +1005,21 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
         # acting on a single site.
         elif i == 0:
             # The first tensor has an in-dimension of 1, and an out-dimension of 2.
-            arr = qml.math.zeros((1, 2, 2, 2), dtype=complex)
+            arr = qp.math.zeros((1, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
-            arr[0, 1] = qml.math.eye(2, dtype=complex)
+            arr[0, 1] = qp.math.eye(2, dtype=complex)
 
         elif i == len(sites) - 1:
             # The last tensor has an out-dimension of 1, and an in-dimension of 2.
-            arr = qml.math.zeros((2, 1, 2, 2), dtype=complex)
-            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qml.math.sin(theta / 2)
-            arr[1, 0] = qml.math.eye(2, dtype=complex) * qml.math.cos(theta / 2)
+            arr = qp.math.zeros((2, 1, 2, 2), dtype=complex)
+            arr[0, 0] = _PAULI_MATRICES[P] * (-1j) * qp.math.sin(theta / 2)
+            arr[1, 0] = qp.math.eye(2, dtype=complex) * qp.math.cos(theta / 2)
 
         else:
             # The middle tensors maintain connectivity with the previous and next tensors.
-            arr = qml.math.zeros((2, 2, 2, 2), dtype=complex)
+            arr = qp.math.zeros((2, 2, 2, 2), dtype=complex)
             arr[0, 0] = _PAULI_MATRICES[P]
-            arr[1, 1] = qml.math.eye(2, dtype=complex)
+            arr[1, 1] = qp.math.eye(2, dtype=complex)
 
         arrays.append(arr)
 
@@ -1033,7 +1033,7 @@ def apply_operation_core_paulirot(ops: qml.PauliRot, device):
 
 
 @apply_operation_core.register
-def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
+def apply_operation_core_trotter_product(ops: qp.TrotterProduct, device):
     """Dispatcher for _apply_operation."""
     time = ops.data[-1]
     n = ops._hyperparameters["n"]
@@ -1041,14 +1041,14 @@ def apply_operation_core_trotter_product(ops: qml.TrotterProduct, device):
     ops = ops._hyperparameters["base"].operands
     decomp = _recursive_expression(time / n, order, ops)[::-1] * n
     for o in decomp:
-        mat = qml.matrix(o).astype(device._c_dtype)  # pylint: disable=no-member
+        mat = qp.matrix(o).astype(device._c_dtype)  # pylint: disable=no-member
         device._quimb_circuit.apply_gate(mat, *o.wires, parametrize=None)
 
 
 @singledispatch
 def expval_core(obs: Operator, device) -> float:
     """Dispatcher for expval."""
-    return device._local_expectation(qml.matrix(obs), tuple(obs.wires))
+    return device._local_expectation(qp.matrix(obs), tuple(obs.wires))
 
 
 @expval_core.register
@@ -1056,7 +1056,7 @@ def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
     ket = device._quimb_circuit.copy()
     for op in obs:
-        mat = qml.matrix(op).astype(device._c_dtype)  # pylint: disable=no-member
+        mat = qp.matrix(op).astype(device._c_dtype)  # pylint: disable=no-member
         ket.apply_gate(mat, *op.wires, parametrize=None)
     return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
 

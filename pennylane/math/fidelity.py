@@ -61,7 +61,7 @@ def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"
 
     >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
     >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
-    >>> qml.math.fidelity_statevector(state0, state1)
+    >>> qp.math.fidelity_statevector(state0, state1)
     0.9905158135644924
 
     .. seealso:: :func:`pennylane.math.fidelity`
@@ -123,16 +123,16 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     To find the fidelity between two state vectors, call :func:`~.math.dm_from_state_vector` on the
     inputs first, e.g.:
 
-    >>> state0 = qml.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
-    >>> state1 = qml.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
-    >>> qml.math.fidelity(state0, state1)
+    >>> state0 = qp.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
+    >>> state1 = qp.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
+    >>> qp.math.fidelity(state0, state1)
     0.9905158135644924
 
     To find the fidelity between two density matrices, they can be passed directly:
 
     >>> state0 = [[1, 0], [0, 0]]
     >>> state1 = [[0, 0], [0, 1]]
-    >>> qml.math.fidelity(state0, state1)
+    >>> qp.math.fidelity(state0, state1)
     0.0
 
     .. seealso:: :func:`pennylane.math.fidelity_statevector`

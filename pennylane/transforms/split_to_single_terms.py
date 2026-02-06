@@ -45,7 +45,7 @@ def split_to_single_terms(tape):
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     .. note::
         This transform doesn't split non-commuting terms into multiple executions. It is suitable for state-based
@@ -60,33 +60,33 @@ def split_to_single_terms(tape):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.transforms.split_to_single_terms
-        @qml.qnode(dev)
+        @qp.transforms.split_to_single_terms
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=1)
-            return [qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
-                   qml.expval(qml.X(1) + qml.Y(1))]
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=1)
+            return [qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
+                   qp.expval(qp.X(1) + qp.Y(1))]
 
     Instead of decorating the QNode, we can also create a new function that yields the same
     result in the following way:
 
     .. code-block:: python
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=1)
-            return [qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
-                   qml.expval(qml.X(1) + qml.Y(1))]
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=1)
+            return [qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
+                   qp.expval(qp.X(1) + qp.Y(1))]
 
-        circuit = qml.transforms.split_to_single_terms(circuit)
+        circuit = qp.transforms.split_to_single_terms(circuit)
 
     Internally, the QNode measures the individual measurements
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    >>> print(qp.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)─┤ ╭<X@Z>  <Z>
     1: ──RX(0.79)─┤ ╰<X@Z>  <Y>  <X>
 
@@ -110,12 +110,12 @@ def split_to_single_terms(tape):
         .. code-block:: python
 
             measurements = [
-                qml.expval(qml.Z(0) + qml.Z(1)),
-                qml.expval(qml.X(0) + 0.2 * qml.X(1) + 2 * qml.Identity()),
-                qml.expval(qml.X(1) + qml.Z(1)),
+                qp.expval(qp.Z(0) + qp.Z(1)),
+                qp.expval(qp.X(0) + 0.2 * qp.X(1) + 2 * qp.Identity()),
+                qp.expval(qp.X(1) + qp.Z(1)),
             ]
-            tape = qml.tape.QuantumScript(measurements=measurements)
-            tapes, processing_fn = qml.transforms.split_to_single_terms(tape)
+            tape = qp.tape.QuantumScript(measurements=measurements)
+            tapes, processing_fn = qp.transforms.split_to_single_terms(tape)
 
         Now ``tapes`` is a tuple containing a single tape with the updated measurements,
         which are now the single-term observables that the original sum observables are
@@ -128,7 +128,7 @@ def split_to_single_terms(tape):
         Instead of evaluating the observables in the returned expectation values directly, the
         four single-term observables are measured, resulting in 4 return values for the execution:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qp.device("default.qubit", wires=2)
         >>> results = dev.execute(tapes)
         >>> results
         ((np.float64(1.0), np.float64(1.0), np.float64(0.0), np.float64(0.0)),)

@@ -28,18 +28,18 @@ from pennylane.templates.subroutines.time_evolution.qdrift import _sample_decomp
 test_hamiltonians = (
     (
         [1, 1, 1],
-        [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)],
+        [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)],
     ),
     (
         [1.23, -0.45],
         [
-            qml.s_prod(0.1, qml.PauliX(0)),
-            qml.prod(qml.PauliZ(0), qml.PauliX(1)),
+            qp.s_prod(0.1, qp.PauliX(0)),
+            qp.prod(qp.PauliZ(0), qp.PauliX(1)),
         ],  #  Here we chose such hamiltonian to have non-commutability
     ),  # op arith
     (
         [1, -0.5, 0.5],
-        [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(1)],
+        [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(1)],
     ),
 )
 
@@ -50,9 +50,9 @@ class TestInitialization:
     def test_queuing(self):
         """Test that QDrift de-queues the input hamiltonian."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            H = qml.X(0) + qml.Y(1)
-            op = qml.QDrift(H, 0.1, n=20)
+        with qp.queuing.AnnotatedQueue() as q:
+            H = qp.X(0) + qp.Y(1)
+            op = qp.QDrift(H, 0.1, n=20)
 
         assert len(q.queue) == 1
         assert q.queue[0] is op
@@ -63,13 +63,13 @@ class TestInitialization:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_init_correctly(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that all of the attributes are initialized correctly."""
-        h = qml.dot(coeffs, ops)
-        op = qml.QDrift(h, time, n=n, seed=seed)
+        h = qp.dot(coeffs, ops)
+        op = qp.QDrift(h, time, n=n, seed=seed)
 
         if seed is not None:
             # For seed = None, decomposition and compute_decomposition do not match because
             # compute_decomposition is stochastic
-            qml.ops.functions.assert_valid(op, skip_differentiation=True)
+            qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
         assert op.wires == h.wires
         assert op.parameters == [*h.data, time]
@@ -84,8 +84,8 @@ class TestInitialization:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_copy(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that we can make copies of QDrift correctly."""
-        h = qml.dot(coeffs, ops)
-        op = qml.QDrift(h, time, n=n, seed=seed)
+        h = qp.dot(coeffs, ops)
+        op = qp.QDrift(h, time, n=n, seed=seed)
         new_op = copy.copy(op)
 
         assert op.wires == new_op.wires
@@ -97,20 +97,20 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "hamiltonian, raise_error",
         (
-            (qml.PauliX(0), True),
-            (qml.prod(qml.PauliX(0), qml.PauliZ(1)), True),
-            (qml.Hamiltonian([1.23, 3.45], [qml.PauliX(0), qml.PauliZ(1)]), False),
-            (qml.dot([1.23, 3.45], [qml.PauliX(0), qml.PauliZ(1)]), False),
+            (qp.PauliX(0), True),
+            (qp.prod(qp.PauliX(0), qp.PauliZ(1)), True),
+            (qp.Hamiltonian([1.23, 3.45], [qp.PauliX(0), qp.PauliZ(1)]), False),
+            (qp.dot([1.23, 3.45], [qp.PauliX(0), qp.PauliZ(1)]), False),
         ),
     )
     def test_error_type(self, hamiltonian, raise_error):
         """Test an error is raised of an incorrect type is passed"""
         if raise_error:
             with pytest.raises(TypeError, match="The given operator must be a PennyLane ~.Sum"):
-                qml.QDrift(hamiltonian, time=1.23)
+                qp.QDrift(hamiltonian, time=1.23)
         else:
             try:
-                qml.QDrift(hamiltonian, time=1.23)
+                qp.QDrift(hamiltonian, time=1.23)
             except TypeError:
                 assert False  # test should fail if an error was raised when we expect it not to
 
@@ -118,8 +118,8 @@ class TestInitialization:
         """Test that a hamiltonian must have at least 2 terms to be supported."""
         msg = "There should be at least 2 terms in the Hamiltonian."
         with pytest.raises(ValueError, match=msg):
-            h = qml.Hamiltonian([1.0], [qml.PauliX(0)])
-            qml.QDrift(h, 1.23, n=2, seed=None)
+            h = qp.Hamiltonian([1.0], [qp.PauliX(0)])
+            qp.QDrift(h, 1.23, n=2, seed=None)
 
 
 class TestDecomposition:
@@ -133,14 +133,14 @@ class TestDecomposition:
         ops_to_coeffs = dict(zip(ops, coeffs))
         normalization = qnp.sum(qnp.abs(coeffs))
 
-        with qml.tape.QuantumTape() as tape:
+        with qp.tape.QuantumTape() as tape:
             decomp = _sample_decomposition(coeffs, ops, time, n, seed)
 
         assert len(decomp) == n
         assert len(tape.operations) == 0  # no queuing
         for term in decomp:
             coeff = ops_to_coeffs[term.base]
-            s = coeff / qml.math.abs(coeff)
+            s = coeff / qp.math.abs(coeff)
 
             assert term.base in ops  # sample from ops
             assert term.coeff == (s * normalization * time * 1j / n)  # with this exponent
@@ -148,30 +148,30 @@ class TestDecomposition:
     @pytest.mark.parametrize("coeffs", ([0.999, 0.001], [0.5 + 0.499j, -0.001j]))
     def test_private_sample_statistics(self, coeffs, seed):
         """Test the private function samples from the right distribution"""
-        ops = [qml.PauliX(0), qml.PauliZ(1)]
+        ops = [qp.PauliX(0), qp.PauliZ(1)]
         decomp = _sample_decomposition(coeffs, ops, 1.23, n=10, seed=seed)
 
         # High probability we only sample PauliX!
-        assert all(isinstance(op.base, qml.PauliX) for op in decomp)
+        assert all(isinstance(op.base, qp.PauliX) for op in decomp)
 
     def test_compute_decomposition(self, seed):
         """Test that the decomposition is computed and queues correctly."""
         coeffs = [1, -0.5, 0.5]
-        ops = [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(1)]
+        ops = [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.PauliZ(1)]
 
-        h = qml.dot(coeffs, ops)
-        op = qml.QDrift(h, time=1.23, n=10, seed=seed)
+        h = qp.dot(coeffs, ops)
+        op = qp.QDrift(h, time=1.23, n=10, seed=seed)
 
         expected_decomp = _sample_decomposition(coeffs, ops, 1.23, 10, seed=seed)
 
-        with qml.tape.QuantumTape() as tape:
+        with qp.tape.QuantumTape() as tape:
             decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
         assert decomp == list(expected_decomp)  # sample the same ops
 
         # Decompositions of an instance are maintained across calls to `compute_decomposition`
-        with qml.tape.QuantumTape() as second_tape:
+        with qp.tape.QuantumTape() as second_tape:
             second_decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
 
         assert second_tape.operations == tape.operations
@@ -187,14 +187,14 @@ class TestIntegration:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that the circuit executes as expected"""
-        hamiltonian = qml.dot(coeffs, ops)
+        hamiltonian = qp.dot(coeffs, ops)
         wires = hamiltonian.wires
-        dev = qml.device("reference.qubit", wires=wires)
+        dev = qp.device("reference.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.QDrift(hamiltonian, time, n=n, seed=seed)
-            return qml.state()
+            qp.QDrift(hamiltonian, time, n=n, seed=seed)
+            return qp.state()
 
         expected_decomp = _sample_decomposition(coeffs, ops, time, n=n, seed=seed)
 
@@ -204,7 +204,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -220,13 +220,13 @@ class TestIntegration:
         time = qnp.array(0.5)
         coeffs = qnp.array(coeffs, requires_grad=False)
 
-        dev = qml.device("reference.qubit", wires=[0, 1])
+        dev = qp.device("reference.qubit", wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time):
-            hamiltonian = qml.dot(coeffs, ops)
-            qml.QDrift(hamiltonian, time, n=2, seed=seed)
-            return qml.state()
+            hamiltonian = qp.dot(coeffs, ops)
+            qp.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qp.state()
 
         expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
 
@@ -235,7 +235,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -250,13 +250,13 @@ class TestIntegration:
         import torch
 
         time = torch.tensor(0.5, dtype=torch.complex128, requires_grad=True)
-        dev = qml.device("default.qubit", wires=[0, 1])
+        dev = qp.device("default.qubit", wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time):
-            hamiltonian = qml.dot(coeffs, ops)
-            qml.QDrift(hamiltonian, time, n=2, seed=seed)
-            return qml.state()
+            hamiltonian = qp.dot(coeffs, ops)
+            qp.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qp.state()
 
         expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
 
@@ -265,7 +265,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -280,13 +280,13 @@ class TestIntegration:
         import tensorflow as tf
 
         time = tf.Variable(0.5, dtype=tf.complex128)
-        dev = qml.device("default.qubit", wires=[0, 1])
+        dev = qp.device("default.qubit", wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time):
-            hamiltonian = qml.dot(coeffs, ops)
-            qml.QDrift(hamiltonian, time, n=2, seed=seed)
-            return qml.state()
+            hamiltonian = qp.dot(coeffs, ops)
+            qp.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qp.state()
 
         expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
 
@@ -295,7 +295,7 @@ class TestIntegration:
         expected_state = tf.linalg.matvec(
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             ),
             initial_state,
         )
@@ -310,13 +310,13 @@ class TestIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.5)
-        dev = qml.device("reference.qubit", wires=[0, 1])
+        dev = qp.device("reference.qubit", wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time):
-            hamiltonian = qml.dot(coeffs, ops)
-            qml.QDrift(hamiltonian, time, n=2, seed=seed)
-            return qml.state()
+            hamiltonian = qp.dot(coeffs, ops)
+            qp.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qp.state()
 
         expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
 
@@ -325,7 +325,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -341,14 +341,14 @@ class TestIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.5)
-        dev = qml.device("reference.qubit", wires=[0, 1])
+        dev = qp.device("reference.qubit", wires=[0, 1])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circ(time):
-            hamiltonian = qml.sum(*(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)))
-            qml.QDrift(hamiltonian, time, n=2, seed=seed)
-            return qml.state()
+            hamiltonian = qp.sum(*(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)))
+            qp.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qp.state()
 
         expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
 
@@ -357,7 +357,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
+                [qp.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -371,18 +371,18 @@ class TestIntegration:
         time = qnp.array(1.5)
         coeffs = qnp.array([1.23, -0.45], requires_grad=True)
 
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
-        dev = qml.device("default.qubit", wires=1)
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.QDrift(h, time, n=3)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.QDrift(h, time, n=3)
+            return qp.expval(qp.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(QuantumFunctionError, match=msg):
-            qml.grad(circ)(time, coeffs)
+            qp.grad(circ)(time, coeffs)
 
     @pytest.mark.torch
     def test_error_gradient_workflow_torch(self):
@@ -392,14 +392,14 @@ class TestIntegration:
         time = torch.tensor(1.5, dtype=torch.complex128, requires_grad=True)
         coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex128, requires_grad=True)
 
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
-        dev = qml.device("default.qubit", wires=1)
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.QDrift(h, time, n=3)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.QDrift(h, time, n=3)
+            return qp.expval(qp.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(QuantumFunctionError, match=msg):
@@ -414,17 +414,17 @@ class TestIntegration:
         time = tf.Variable(1.5, dtype=tf.complex128)
         coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
 
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
-        dev = qml.device("default.qubit", wires=1)
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.sum(
-                qml.s_prod(coeffs[0], terms[0]),
-                qml.s_prod(coeffs[1], terms[1]),
+            h = qp.sum(
+                qp.s_prod(coeffs[0], terms[0]),
+                qp.s_prod(coeffs[1], terms[1]),
             )
-            qml.QDrift(h, time, n=3)
-            return qml.expval(qml.Hadamard(0))
+            qp.QDrift(h, time, n=3)
+            return qp.expval(qp.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(QuantumFunctionError, match=msg):
@@ -441,14 +441,14 @@ class TestIntegration:
         time = jnp.array(1.5)
         coeffs = jnp.array([1.23, -0.45])
 
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
-        dev = qml.device("reference.qubit", wires=1)
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
+        dev = qp.device("reference.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.QDrift(h, time, n=3)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.QDrift(h, time, n=3)
+            return qp.expval(qp.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(QuantumFunctionError, match=msg):
@@ -460,28 +460,28 @@ class TestIntegration:
         """Test that the gradient is computed correctly"""
         time = qnp.array(1.5)
         coeffs = qnp.array([1.23, -0.45], requires_grad=False)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.QDrift(h, time, n=n, seed=seed)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.QDrift(h, time, n=n, seed=seed)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
+            with qp.QueuingManager.stop_recording():
                 decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
-        measured_grad = qml.grad(circ)(time, coeffs)
-        reference_grad = qml.grad(reference_circ)(time, coeffs)
+        measured_grad = qp.grad(circ)(time, coeffs)
+        reference_grad = qp.grad(reference_circ)(time, coeffs)
         assert allclose(measured_grad, reference_grad)
 
     @pytest.mark.torch
@@ -494,25 +494,25 @@ class TestIntegration:
         coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex128, requires_grad=False)
         ref_time = torch.tensor(1.5, dtype=torch.complex128, requires_grad=True)
         ref_coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex128, requires_grad=False)
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.QDrift(h, time, n=n, seed=seed)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.QDrift(h, time, n=n, seed=seed)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
+            with qp.QueuingManager.stop_recording():
                 decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
         res_circ = circ(time, coeffs)
         res_circ.backward()
@@ -532,25 +532,25 @@ class TestIntegration:
 
         time = tf.Variable(1.5, dtype=tf.complex128)
         coeffs = [1.23, -0.45]
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.QDrift(h, time, n=n, seed=seed)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.QDrift(h, time, n=n, seed=seed)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
+            with qp.QueuingManager.stop_recording():
                 decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
         with tf.GradientTape() as tape:
             result = circ(time, coeffs)
@@ -571,25 +571,25 @@ class TestIntegration:
 
         time = jnp.array(1.5)
         coeffs = jnp.array([1.23, -0.45])
-        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        terms = [qp.PauliX(0), qp.PauliZ(0)]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
-            qml.QDrift(h, time, n=n, seed=seed)
-            return qml.expval(qml.Hadamard(0))
+            h = qp.dot(coeffs, terms)
+            qp.QDrift(h, time, n=n, seed=seed)
+            return qp.expval(qp.Hadamard(0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def reference_circ(time, coeffs):
-            with qml.QueuingManager.stop_recording():
+            with qp.QueuingManager.stop_recording():
                 decomp = _sample_decomposition(coeffs, terms, time, n, seed)
 
             for op in decomp:
-                qml.apply(op)
+                qp.apply(op)
 
-            return qml.expval(qml.Hadamard(0))
+            return qp.expval(qp.Hadamard(0))
 
         measured_grad = jax.grad(circ, argnums=[0])(time, coeffs)
         reference_grad = jax.grad(reference_circ, argnums=[0])(time, coeffs)
@@ -597,10 +597,10 @@ class TestIntegration:
 
 
 test_error_data = (  # Computed by hand
-    (qml.dot([1.23, -0.45j], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.3949494464),
-    (qml.Hamiltonian([1.23, -0.45], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.3949494464),
+    (qp.dot([1.23, -0.45j], [qp.PauliX(0), qp.PauliZ(1)]), 0.5, 5, 0.3949494464),
+    (qp.Hamiltonian([1.23, -0.45], [qp.PauliX(0), qp.PauliZ(1)]), 0.5, 5, 0.3949494464),
     (
-        qml.dot([1, -0.5, 0.5j], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.Hadamard(1)]),
+        qp.dot([1, -0.5, 0.5j], [qp.Identity(wires=[0, 1]), qp.PauliZ(0), qp.Hadamard(1)]),
         3,
         100,
         0.81179773314,
@@ -611,7 +611,7 @@ test_error_data = (  # Computed by hand
 @pytest.mark.parametrize("h, time, n, expected_error", test_error_data)
 def test_error_func(h, time, n, expected_error):
     """Test that the error function computes the expected precision correctly"""
-    computed_error = qml.QDrift.error(h, time, n)
+    computed_error = qp.QDrift.error(h, time, n)
     assert isclose(computed_error, expected_error)
 
 
@@ -619,4 +619,4 @@ def test_error_func_type_error():
     """Test that an error is raised if the wrong type is passed for hamiltonian"""
     msg = "The given operator must be a PennyLane ~.Sum"
     with pytest.raises(TypeError, match=msg):
-        qml.QDrift.error(qml.PauliX(0), time=1.23, n=10)
+        qp.QDrift.error(qp.PauliX(0), time=1.23, n=10)

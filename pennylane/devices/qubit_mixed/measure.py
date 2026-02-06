@@ -76,7 +76,7 @@ def state_diagonalizing_gates(
     if readout_errors is not None and measurementprocess.wires is not None:
         for err_channel_fn in readout_errors:
             for w in measurementprocess.wires:
-                # Here, we assume err_channel_fn(w) returns a quantum operation/channel like qml.BitFlip(...)
+                # Here, we assume err_channel_fn(w) returns a quantum operation/channel like qp.BitFlip(...)
                 error_op = err_channel_fn(w)
                 state = apply_operation(error_op, state, is_state_batched=is_state_batched)
 
@@ -85,7 +85,7 @@ def state_diagonalizing_gates(
     flattened_state = _reshape_state_as_matrix(state, num_wires)
     is_StateMP = isinstance(measurementprocess, StateMP)
     is_DensityMatrixMP = isinstance(measurementprocess, DensityMatrixMP)
-    if is_StateMP and not is_DensityMatrixMP:  # a pure qml.state()
+    if is_StateMP and not is_DensityMatrixMP:  # a pure qp.state()
         raw_wires = measurementprocess.raw_wires or wires  # incase the None raw_wires case
         measurementprocess = DensityMatrixMP(wires=raw_wires)
     res = measurementprocess.process_density_matrix(flattened_state, wires)

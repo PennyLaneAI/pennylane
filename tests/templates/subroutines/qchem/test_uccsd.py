@@ -31,10 +31,10 @@ test_data_decomposition = [
         np.array([3.815]),
         1,
         [
-            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
-            [1, qml.RX, [0], [-np.pi / 2]],
-            [5, qml.RZ, [2], [1.9075]],
-            [6, qml.CNOT, [1, 2], []],
+            [0, qp.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qp.RX, [0], [-np.pi / 2]],
+            [5, qp.RZ, [2], [1.9075]],
+            [6, qp.CNOT, [1, 2], []],
         ],
     ),
     (
@@ -43,10 +43,10 @@ test_data_decomposition = [
         np.array([3.815]),
         1,
         [
-            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
-            [1, qml.RX, [0], [-np.pi / 2]],
-            [5, qml.RZ, [2], [1.9075]],
-            [6, qml.CNOT, [1, 2], []],
+            [0, qp.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qp.RX, [0], [-np.pi / 2]],
+            [5, qp.RZ, [2], [1.9075]],
+            [6, qp.CNOT, [1, 2], []],
         ],
     ),
     (
@@ -55,12 +55,12 @@ test_data_decomposition = [
         np.array([3.815, 4.866]),
         1,
         [
-            [2, qml.Hadamard, [2], []],
-            [8, qml.RX, [0], [np.pi / 2]],
-            [12, qml.CNOT, [0, 1], []],
-            [23, qml.RZ, [3], [2.433]],
-            [24, qml.CNOT, [2, 3], []],
-            [26, qml.RX, [1], [np.pi / 2]],
+            [2, qp.Hadamard, [2], []],
+            [8, qp.RX, [0], [np.pi / 2]],
+            [12, qp.CNOT, [0, 1], []],
+            [23, qp.RZ, [3], [2.433]],
+            [24, qp.CNOT, [2, 3], []],
+            [26, qp.RX, [1], [np.pi / 2]],
         ],
     ),
     (
@@ -69,12 +69,12 @@ test_data_decomposition = [
         np.array([3.815]),
         1,
         [
-            [3, qml.RX, [2], [-np.pi / 2]],
-            [29, qml.RZ, [5], [0.476875]],
-            [73, qml.Hadamard, [0], []],
-            [150, qml.RX, [1], [np.pi / 2]],
-            [88, qml.CNOT, [3, 4], []],
-            [121, qml.CNOT, [2, 3], []],
+            [3, qp.RX, [2], [-np.pi / 2]],
+            [29, qp.RZ, [5], [0.476875]],
+            [73, qp.Hadamard, [0], []],
+            [150, qp.RX, [1], [np.pi / 2]],
+            [88, qp.CNOT, [3, 4], []],
+            [121, qp.CNOT, [2, 3], []],
         ],
     ),
     (
@@ -83,12 +83,12 @@ test_data_decomposition = [
         np.array([3.815]),
         1,
         [
-            [3, qml.RX, [2], [-np.pi / 2]],
-            [29, qml.RZ, [5], [0.476875]],
-            [73, qml.Hadamard, [0], []],
-            [150, qml.RX, [1], [np.pi / 2]],
-            [88, qml.CNOT, [3, 4], []],
-            [121, qml.CNOT, [2, 3], []],
+            [3, qp.RX, [2], [-np.pi / 2]],
+            [29, qp.RZ, [5], [0.476875]],
+            [73, qp.Hadamard, [0], []],
+            [150, qp.RX, [1], [np.pi / 2]],
+            [88, qp.CNOT, [3, 4], []],
+            [121, qp.CNOT, [2, 3], []],
         ],
     ),
     (
@@ -97,15 +97,15 @@ test_data_decomposition = [
         np.array([3.815, 4.866]),
         1,
         [
-            [4, qml.Hadamard, [3], []],
-            [16, qml.RX, [0], [-np.pi / 2]],
-            [38, qml.RZ, [3], [0.476875]],
-            [78, qml.Hadamard, [2], []],
-            [107, qml.RX, [1], [-np.pi / 2]],
-            [209, qml.Hadamard, [4], []],
-            [218, qml.RZ, [5], [-0.60825]],
-            [82, qml.CNOT, [2, 3], []],
-            [159, qml.CNOT, [4, 5], []],
+            [4, qp.Hadamard, [3], []],
+            [16, qp.RX, [0], [-np.pi / 2]],
+            [38, qp.RZ, [3], [0.476875]],
+            [78, qp.Hadamard, [2], []],
+            [107, qp.RX, [1], [-np.pi / 2]],
+            [209, qp.Hadamard, [4], []],
+            [218, qp.RZ, [5], [-0.60825]],
+            [82, qp.CNOT, [2, 3], []],
+            [159, qp.CNOT, [4, 5], []],
         ],
     ),
     (
@@ -114,15 +114,15 @@ test_data_decomposition = [
         np.array([3.815, 4.866, 1.019, 0.639]),
         1,
         [
-            [16, qml.RX, [0], [-np.pi / 2]],
-            [47, qml.Hadamard, [1], []],
-            [74, qml.Hadamard, [2], []],
-            [83, qml.RZ, [3], [-0.127375]],
-            [134, qml.RX, [4], [np.pi / 2]],
-            [158, qml.RZ, [5], [0.079875]],
-            [188, qml.RZ, [5], [-0.079875]],
-            [96, qml.CNOT, [1, 2], []],
-            [235, qml.CNOT, [1, 4], []],
+            [16, qp.RX, [0], [-np.pi / 2]],
+            [47, qp.Hadamard, [1], []],
+            [74, qp.Hadamard, [2], []],
+            [83, qp.RZ, [3], [-0.127375]],
+            [134, qp.RX, [4], [np.pi / 2]],
+            [158, qp.RZ, [5], [0.079875]],
+            [188, qp.RZ, [5], [-0.079875]],
+            [96, qp.CNOT, [1, 2], []],
+            [235, qp.CNOT, [1, 4], []],
         ],
     ),
     (
@@ -131,10 +131,10 @@ test_data_decomposition = [
         np.array([[3.815]]),
         1,
         [
-            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
-            [1, qml.RX, [0], [-np.pi / 2]],
-            [5, qml.RZ, [2], [1.9075]],
-            [6, qml.CNOT, [1, 2], []],
+            [0, qp.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qp.RX, [0], [-np.pi / 2]],
+            [5, qp.RZ, [2], [1.9075]],
+            [6, qp.CNOT, [1, 2], []],
         ],
     ),
     (
@@ -143,13 +143,13 @@ test_data_decomposition = [
         np.array([[3.815], [1.019]]),
         2,
         [
-            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
-            [1, qml.RX, [0], [-np.pi / 2]],
-            [5, qml.RZ, [2], [1.9075]],
-            [6, qml.CNOT, [1, 2], []],
-            [19, qml.RX, [0], [-np.pi / 2]],
-            [23, qml.RZ, [2], [0.5095]],
-            [24, qml.CNOT, [1, 2], []],
+            [0, qp.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qp.RX, [0], [-np.pi / 2]],
+            [5, qp.RZ, [2], [1.9075]],
+            [6, qp.CNOT, [1, 2], []],
+            [19, qp.RX, [0], [-np.pi / 2]],
+            [23, qp.RZ, [2], [0.5095]],
+            [24, qp.CNOT, [1, 2], []],
         ],
     ),
 ]
@@ -209,7 +209,7 @@ def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
 
     ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-    op = qml.UCCSD(
+    op = qp.UCCSD(
         weights,
         wires,
         s_wires=s_wires,
@@ -217,7 +217,7 @@ def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
         init_state=ref_state,
         n_repeats=n_repeats,
     )
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -250,7 +250,7 @@ class TestDecomposition:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.UCCSD(
+        op = qp.UCCSD(
             weights,
             wires,
             s_wires=s_wires,
@@ -293,7 +293,7 @@ class TestDecomposition:
         self, s_wires, d_wires, weights, n_repeats
     ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.UCCSD(
+        op = qp.UCCSD(
             weights,
             wires=range(6),
             s_wires=s_wires,
@@ -301,37 +301,37 @@ class TestDecomposition:
             init_state=np.array([1, 1, 0, 0, 0, 0]),
             n_repeats=n_repeats,
         )
-        for rule in qml.list_decomps(qml.UCCSD):
+        for rule in qp.list_decomps(qp.UCCSD):
             _test_decomposition_rule(op, rule)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
         weights = [0.1, 0.2]
-        dev = qml.device("default.qubit", wires=4)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k", "e"])
+        dev = qp.device("default.qubit", wires=4)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k", "e"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.UCCSD(
+            qp.UCCSD(
                 weights,
                 wires=range(4),
                 s_wires=[[0, 1]],
                 d_wires=[[[0, 1], [2, 3]]],
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity(0)), qml.state()
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.UCCSD(
+            qp.UCCSD(
                 weights,
                 wires=["z", "a", "k", "e"],
                 s_wires=[["z", "a"]],
                 d_wires=[[["z", "a"], ["k", "e"]]],
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity("z")), qml.state()
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -449,7 +449,7 @@ class TestInputs:
         shapes, types or values."""
         N = 4
         wires = range(4)
-        dev = qml.device("default.qubit", wires=N)
+        dev = qp.device("default.qubit", wires=N)
 
         def circuit(
             weights=weights,
@@ -459,7 +459,7 @@ class TestInputs:
             init_state=init_state,
             n_repeats=n_repeats,
         ):
-            qml.UCCSD(
+            qp.UCCSD(
                 weights=weights,
                 wires=wires,
                 s_wires=s_wires,
@@ -467,9 +467,9 @@ class TestInputs:
                 init_state=init_state,
                 n_repeats=n_repeats,
             )
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qp.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             qnode(
@@ -483,7 +483,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.UCCSD(
+        template = qp.UCCSD(
             [0.1, 0.2],
             wires=range(4),
             s_wires=[[0, 1]],
@@ -495,7 +495,7 @@ class TestInputs:
 
 
 def circuit_template(weights, n_repeats=1):
-    qml.UCCSD(
+    qp.UCCSD(
         weights,
         wires=range(4),
         s_wires=[[0, 1]],
@@ -503,19 +503,19 @@ def circuit_template(weights, n_repeats=1):
         init_state=np.array([1, 0, 0, 0]),
         n_repeats=n_repeats,
     )
-    return qml.expval(qml.PauliZ(0))
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(weights, n_repeats=1):
-    qml.BasisState(np.array([1, 0, 0, 0]), wires=range(4))
+    qp.BasisState(np.array([1, 0, 0, 0]), wires=range(4))
 
-    if n_repeats == 1 and len(qml.math.shape(weights)) == 1:
-        weights = qml.math.expand_dims(weights, 0)
+    if n_repeats == 1 and len(qp.math.shape(weights)) == 1:
+        weights = qp.math.expand_dims(weights, 0)
 
     for layer in range(n_repeats):
-        qml.FermionicDoubleExcitation(weights[layer][1], wires1=[0, 1], wires2=[2, 3])
-        qml.FermionicSingleExcitation(weights[layer][0], wires=[0, 1])
-    return qml.expval(qml.PauliZ(0))
+        qp.FermionicDoubleExcitation(weights[layer][1], wires1=[0, 1], wires2=[2, 3])
+        qp.FermionicSingleExcitation(weights[layer][0], wires=[0, 1])
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -527,20 +527,20 @@ class TestInterfaces:
 
         weights = list(range(2))
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         # Test with n_repeats=2
         weights = [list(range(2)), list(range(2))]
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd(self, tol):
@@ -548,19 +548,19 @@ class TestInterfaces:
 
         weights = pnp.array(np.random.random(size=(2,)), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(weights)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
@@ -577,12 +577,12 @@ class TestInterfaces:
         )
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(weights, n_repeats=2)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(weights, n_repeats=2)
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
@@ -596,14 +596,14 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(2,)))
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -624,7 +624,7 @@ class TestInterfaces:
         )
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights, n_repeats=2)
@@ -643,14 +643,14 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(2,)))
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit, static_argnames="n_repeats")
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -658,13 +658,13 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
         # Test with n_repeats=2
         weights = jnp.array(np.random.random(size=(2, 2)))
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights, n_repeats=2)
@@ -681,14 +681,14 @@ class TestInterfaces:
         import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(2,)))
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(weights)
@@ -711,7 +711,7 @@ class TestInterfaces:
         )
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(weights, n_repeats=2)
@@ -731,14 +731,14 @@ class TestInterfaces:
 
         weights = torch.tensor(np.random.random(size=(2,)), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(weights)
         res.backward()
@@ -760,12 +760,12 @@ class TestInterfaces:
             ),
             requires_grad=True,
         )
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(weights, n_repeats=2)
         res.backward()

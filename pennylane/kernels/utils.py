@@ -39,12 +39,12 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit', wires=2)
+        @qp.qnode(dev)
         def circuit(x1, x2):
-            qml.templates.AngleEmbedding(x1, wires=dev.wires)
-            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-            return qml.probs(wires=dev.wires)
+            qp.templates.AngleEmbedding(x1, wires=dev.wires)
+            qp.adjoint(qp.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qp.probs(wires=dev.wires)
 
         kernel = lambda x1, x2: circuit(x1, x2)[0]
 
@@ -53,7 +53,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
 
     >>> rng = np.random.default_rng(seed=1234)
     >>> X = rng.random((4, 2))
-    >>> qml.kernels.square_kernel_matrix(X, kernel)
+    >>> qp.kernels.square_kernel_matrix(X, kernel)
     array([[1.        , 0.9957817 , 0.88043387, 0.87011008],
            [0.9957817 , 1.        , 0.90680189, 0.88760331],
            [0.88043387, 0.90680189, 1.        , 0.98850996],
@@ -104,12 +104,12 @@ def kernel_matrix(X1, X2, kernel):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev)
+        dev = qp.device('default.qubit', wires=2)
+        @qp.qnode(dev)
         def circuit(x1, x2):
-            qml.templates.AngleEmbedding(x1, wires=dev.wires)
-            qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-            return qml.probs(wires=dev.wires)
+            qp.templates.AngleEmbedding(x1, wires=dev.wires)
+            qp.adjoint(qp.templates.AngleEmbedding)(x2, wires=dev.wires)
+            return qp.probs(wires=dev.wires)
 
         kernel = lambda x1, x2: circuit(x1, x2)[0]
 
@@ -120,7 +120,7 @@ def kernel_matrix(X1, X2, kernel):
     >>> rng = np.random.default_rng(seed=1234)
     >>> X_train = rng.random((4,2))
     >>> X_test = rng.random((3,2))
-    >>> qml.kernels.kernel_matrix(X_train, X_test, kernel)
+    >>> qp.kernels.kernel_matrix(X_train, X_test, kernel)
     array([[0.99656842, 0.91774724, 0.93966202],
            [0.99958227, 0.91468777, 0.91127346],
            [0.89479886, 0.937256  , 0.80459952],

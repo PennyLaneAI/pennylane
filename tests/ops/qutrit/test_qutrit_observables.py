@@ -88,13 +88,13 @@ class TestTHermitian:
         """Tests that the eigendecomposition property of the THermitian class returns the correct results
         for a single wire."""
 
-        eigendecomp = qml.THermitian(observable, wires=0).eigendecomposition
+        eigendecomp = qp.THermitian(observable, wires=0).eigendecomposition
         assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
 
         key = tuple(observable.flatten().tolist())
-        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("observable", EIGVALS_TEST_DATA_MULTI_WIRES)
     def test_thermitian_eigendecomposition_multiple_wires(self, observable, tol):
@@ -102,7 +102,7 @@ class TestTHermitian:
         for multiple wires."""
 
         num_wires = int(np.log(len(observable)) / np.log(3))
-        eigendecomp = qml.THermitian(observable, wires=list(range(num_wires))).eigendecomposition
+        eigendecomp = qp.THermitian(observable, wires=list(range(num_wires))).eigendecomposition
 
         eigvals, eigvecs = np.linalg.eigh(observable)
 
@@ -110,9 +110,9 @@ class TestTHermitian:
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
 
         key = tuple(observable.flatten().tolist())
-        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
-        assert len(qml.THermitian._eigs) == 1
+        assert np.allclose(qp.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert len(qp.THermitian._eigs) == 1
 
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
     @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
@@ -128,14 +128,14 @@ class TestTHermitian:
 
         key = tuple(observable_1.flatten().tolist())
 
-        qml.THermitian(observable_1, 0).eigvals()
+        qp.THermitian(observable_1, 0).eigvals()
         assert np.allclose(
-            qml.THermitian._eigs[key]["eigval"], observable_1_eigvals, atol=tol, rtol=0
+            qp.THermitian._eigs[key]["eigval"], observable_1_eigvals, atol=tol, rtol=0
         )
         assert np.allclose(
-            qml.THermitian._eigs[key]["eigvec"], observable_1_eigvecs, atol=tol, rtol=0
+            qp.THermitian._eigs[key]["eigvec"], observable_1_eigvecs, atol=tol, rtol=0
         )
-        assert len(qml.THermitian._eigs) == 1
+        assert len(qp.THermitian._eigs) == 1
 
         observable_2 = obs2[0]
         observable_2_eigvals = obs2[1]
@@ -143,14 +143,14 @@ class TestTHermitian:
 
         key_2 = tuple(observable_2.flatten().tolist())
 
-        qml.THermitian(observable_2, 0).eigvals()
+        qp.THermitian(observable_2, 0).eigvals()
         assert np.allclose(
-            qml.THermitian._eigs[key_2]["eigval"], observable_2_eigvals, atol=tol, rtol=0
+            qp.THermitian._eigs[key_2]["eigval"], observable_2_eigvals, atol=tol, rtol=0
         )
         assert np.allclose(
-            qml.THermitian._eigs[key_2]["eigvec"], observable_2_eigvecs, atol=tol, rtol=0
+            qp.THermitian._eigs[key_2]["eigvec"], observable_2_eigvecs, atol=tol, rtol=0
         )
-        assert len(qml.THermitian._eigs) == 2
+        assert len(qp.THermitian._eigs) == 2
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_thermitian_eigvals_eigvecs_same_observable_twice(
@@ -159,27 +159,27 @@ class TestTHermitian:
         """Tests that the eigvals method of the THermitian class keeps the same dictionary entries upon multiple calls."""
         key = tuple(observable.flatten().tolist())
 
-        qml.THermitian(observable, 0).eigvals()
-        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
-        assert len(qml.THermitian._eigs) == 1
+        qp.THermitian(observable, 0).eigvals()
+        assert np.allclose(qp.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert len(qp.THermitian._eigs) == 1
 
-        qml.THermitian(observable, 0).eigvals()
-        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
-        assert len(qml.THermitian._eigs) == 1
+        qp.THermitian(observable, 0).eigvals()
+        assert np.allclose(qp.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert len(qp.THermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol):
         """Tests that the diagonalizing_gates method of the THermitian class returns the correct results."""
-        qutrit_unitary = qml.THermitian(observable, wires=[0]).diagonalizing_gates()
+        qutrit_unitary = qp.THermitian(observable, wires=[0]).diagonalizing_gates()
 
         key = tuple(observable.flatten().tolist())
-        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
         assert np.allclose(qutrit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
-        assert len(qml.THermitian._eigs) == 1
+        assert len(qp.THermitian._eigs) == 1
 
     def test_thermitian_compute_diagonalizing_gates(self, tol):
         """Tests that the compute_diagonalizing_gates method of the
@@ -191,7 +191,7 @@ class TestTHermitian:
                 [0.70710678, -0.38268343, 1.41421356],
             ]
         )
-        res = qml.THermitian.compute_diagonalizing_gates(eigvecs, wires=[0])[0].data
+        res = qp.THermitian.compute_diagonalizing_gates(eigvecs, wires=[0])[0].data
         expected = eigvecs.conj().T
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -207,60 +207,60 @@ class TestTHermitian:
         observable_1_eigvals = obs1[1]
         observable_1_eigvecs = obs1[2]
 
-        qutrit_unitary = qml.THermitian(observable_1, wires=[0]).diagonalizing_gates()
+        qutrit_unitary = qp.THermitian(observable_1, wires=[0]).diagonalizing_gates()
 
         key = tuple(observable_1.flatten().tolist())
         assert np.allclose(
-            qml.THermitian._eigs[key]["eigval"], observable_1_eigvals, atol=tol, rtol=0
+            qp.THermitian._eigs[key]["eigval"], observable_1_eigvals, atol=tol, rtol=0
         )
         assert np.allclose(
-            qml.THermitian._eigs[key]["eigvec"], observable_1_eigvecs, atol=tol, rtol=0
+            qp.THermitian._eigs[key]["eigvec"], observable_1_eigvecs, atol=tol, rtol=0
         )
 
         assert np.allclose(qutrit_unitary[0].data, observable_1_eigvecs.conj().T, atol=tol, rtol=0)
-        assert len(qml.THermitian._eigs) == 1
+        assert len(qp.THermitian._eigs) == 1
 
         observable_2 = obs2[0]
         observable_2_eigvals = obs2[1]
         observable_2_eigvecs = obs2[2]
 
-        qutrit_unitary_2 = qml.THermitian(observable_2, wires=[0]).diagonalizing_gates()
+        qutrit_unitary_2 = qp.THermitian(observable_2, wires=[0]).diagonalizing_gates()
 
         key = tuple(observable_2.flatten().tolist())
         assert np.allclose(
-            qml.THermitian._eigs[key]["eigval"], observable_2_eigvals, atol=tol, rtol=0
+            qp.THermitian._eigs[key]["eigval"], observable_2_eigvals, atol=tol, rtol=0
         )
         assert np.allclose(
-            qml.THermitian._eigs[key]["eigvec"], observable_2_eigvecs, atol=tol, rtol=0
+            qp.THermitian._eigs[key]["eigvec"], observable_2_eigvecs, atol=tol, rtol=0
         )
 
         assert np.allclose(
             qutrit_unitary_2[0].data, observable_2_eigvecs.conj().T, atol=tol, rtol=0
         )
-        assert len(qml.THermitian._eigs) == 2
+        assert len(qp.THermitian._eigs) == 2
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_thermitian_diagonalizing_gates_same_observable_twice(
         self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the diagonalizing_gates method of the THermitian class keeps the same dictionary entries upon multiple calls."""
-        qutrit_unitary = qml.THermitian(observable, wires=[0]).diagonalizing_gates()
+        qutrit_unitary = qp.THermitian(observable, wires=[0]).diagonalizing_gates()
 
         key = tuple(observable.flatten().tolist())
-        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
         assert np.allclose(qutrit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
-        assert len(qml.THermitian._eigs) == 1
+        assert len(qp.THermitian._eigs) == 1
 
-        qutrit_unitary = qml.THermitian(observable, wires=[0]).diagonalizing_gates()
+        qutrit_unitary = qp.THermitian(observable, wires=[0]).diagonalizing_gates()
 
         key = tuple(observable.flatten().tolist())
-        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qp.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
         assert np.allclose(qutrit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
-        assert len(qml.THermitian._eigs) == 1
+        assert len(qp.THermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_thermitian_diagonalizing_gates_integration(self, observable, eigvals, eigvecs, tol):
@@ -269,7 +269,7 @@ class TestTHermitian:
         tensor_obs = np.kron(observable, observable)
         eigvals = np.kron(eigvals, eigvals)
 
-        diag_gates = qml.THermitian(tensor_obs, wires=[0, 1]).diagonalizing_gates()
+        diag_gates = qp.THermitian(tensor_obs, wires=[0, 1]).diagonalizing_gates()
 
         assert len(diag_gates) == 1
 
@@ -280,7 +280,7 @@ class TestTHermitian:
     def test_thermitian_matrix(self, tol):
         """Test that the Hermitian matrix method produces the correct output."""
         H_01 = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-        out = qml.THermitian(H_01, wires=0).matrix()
+        out = qp.THermitian(H_01, wires=0).matrix()
 
         # verify output type
         assert isinstance(out, np.ndarray)
@@ -294,13 +294,13 @@ class TestTHermitian:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.THermitian(H_01[1:], wires=0).matrix()
+            qp.THermitian(H_01[1:], wires=0).matrix()
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         A = np.array([[6 + 0j, 1 - 2j, 0], [1 + 2j, -1, 0], [0, 0, 1]])
-        res_static = qml.THermitian.compute_matrix(A)
-        res_dynamic = qml.THermitian(A, wires=0).matrix()
+        res_static = qp.THermitian.compute_matrix(A)
+        res_dynamic = qp.THermitian(A, wires=0).matrix()
         expected = np.array(
             [
                 [6.0 + 0.0j, 1.0 - 2.0j, 0.0 + 0.0j],
@@ -330,7 +330,7 @@ class TestGellMann:
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_diagonalization(self, index, mat, eigs, tol):
         """Test the method transforms Gell-Mann observables appropriately."""
-        ob = qml.GellMann(wires=0, index=index)
+        ob = qp.GellMann(wires=0, index=index)
         A = ob.matrix()
 
         diag_gates = ob.diagonalizing_gates()
@@ -340,7 +340,7 @@ class TestGellMann:
             assert len(diag_gates) == 0
         else:
             assert len(diag_gates) == 1
-            assert diag_gates[0].__class__ == qml.QutritUnitary
+            assert diag_gates[0].__class__ == qp.QutritUnitary
             mat = diag_gates[0].matrix()
             U = np.dot(np.eye(3), mat)
 
@@ -355,13 +355,13 @@ class TestGellMann:
             ValueError,
             match="The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive.",
         ):
-            qml.GellMann(wires=0, index=index)
+            qp.GellMann(wires=0, index=index)
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_matrix(self, index, mat, eigs, tol):
         """Test that the Gell-Mann matrices are correct"""
-        res_static = qml.GellMann.compute_matrix(index)
-        res_dynamic = qml.GellMann(wires=0, index=index).matrix()
+        res_static = qp.GellMann.compute_matrix(index)
+        res_dynamic = qp.GellMann(wires=0, index=index).matrix()
 
         assert np.allclose(res_static, mat)
         assert np.allclose(res_dynamic, mat)
@@ -369,8 +369,8 @@ class TestGellMann:
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_eigvals(self, index, mat, eigs, tol):
         """Test that the Gell-Mann eigenvalues are correct"""
-        res_static = qml.GellMann.compute_eigvals(index)
-        res_dynamic = qml.GellMann(wires=0, index=index).eigvals()
+        res_static = qp.GellMann.compute_eigvals(index)
+        res_dynamic = qp.GellMann(wires=0, index=index).eigvals()
 
         assert np.allclose(res_static, eigs)
         assert np.allclose(res_dynamic, eigs)
@@ -380,7 +380,7 @@ class TestGellMann:
         """Test that the label is correct"""
 
         label = f"GellMann({index})"
-        obs = qml.GellMann(wires=0, index=index)
+        obs = qp.GellMann(wires=0, index=index)
 
         assert obs.label() == label
         assert obs.label(decimals=2) == label
@@ -390,6 +390,6 @@ class TestGellMann:
         """Test that the __repr__ method is correct"""
 
         rep = f"GellMann{index}(wires=[0])"
-        obs = qml.GellMann(wires=0, index=index)
+        obs = qp.GellMann(wires=0, index=index)
 
         assert repr(obs) == rep

@@ -51,20 +51,20 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
     .. code-block:: python
 
-        @qml.for_loop(3)
+        @qp.for_loop(3)
         def loop(i):
-            qml.X(i)
+            qp.X(i)
 
         def f(x):
             loop()
-            qml.adjoint(qml.S)(0)
-            m0 = qml.measure(0)
-            qml.RX(2*x, 0)
-            return qml.probs(wires=0), qml.expval(qml.Z(1))
+            qp.adjoint(qp.S)(0)
+            m0 = qp.measure(0)
+            qp.RX(2*x, 0)
+            return qp.probs(wires=0), qp.expval(qp.Z(1))
 
     >>> from pennylane.tape.plxpr_conversion import CollectOpsandMeas
     >>> from jax import make_jaxpr
-    >>> qml.capture.enable()
+    >>> qp.capture.enable()
     >>> plxpr = make_jaxpr(f)(0.5)
     >>> collector = CollectOpsandMeas()
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
@@ -79,10 +79,10 @@ class CollectOpsandMeas(FlattenedInterpreter):
     same state.
 
     >>> collector = CollectOpsandMeas()
-    >>> collector(qml.T)(0)
+    >>> collector(qp.T)(0)
     >>> collector.state['ops']
     [T(0)]
-    >>> collector(qml.S)(0)
+    >>> collector(qp.S)(0)
     >>> collector.state['ops']
     [T(0), S(0)]
 
@@ -151,7 +151,7 @@ def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     if mcm_conditions:
         if len(mcm_conditions) != len(conditions) - 1:
             raise ValueError(
-                "Cannot use qml.cond with a combination of mid-circuit measurements "
+                "Cannot use qp.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
         conditions = get_mcm_predicates(mcm_conditions)
@@ -241,22 +241,22 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
 
     .. code-block:: python
 
-        @qml.for_loop(3)
+        @qp.for_loop(3)
         def loop(i):
-            qml.X(i)
+            qp.X(i)
 
         def f(x):
             loop()
-            qml.adjoint(qml.S)(0)
-            m0 = qml.measure(0)
-            qml.RX(2*x, 0)
-            return qml.probs(wires=0), qml.expval(qml.Z(1))
+            qp.adjoint(qp.S)(0)
+            m0 = qp.measure(0)
+            qp.RX(2*x, 0)
+            return qp.probs(wires=0), qp.expval(qp.Z(1))
 
-        qml.capture.enable()
+        qp.capture.enable()
 
         plxpr = jax.make_jaxpr(f)(0.5)
-        tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
-        print(qml.drawer.tape_text(tape, decimals=2))
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
+        print(qp.drawer.tape_text(tape, decimals=2))
 
     .. code-block::
 

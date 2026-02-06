@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qp
 from pennylane.operation import Operation
 
-stack_last = functools.partial(qml.math.stack, axis=-1)
+stack_last = functools.partial(qp.math.stack, axis=-1)
 
 
 def validate_subspace(subspace):
@@ -84,17 +84,17 @@ class TRX(Operation):
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.TRX(0.5, wires=0, subspace=(0, 1)).matrix()
+    >>> qp.TRX(0.5, wires=0, subspace=(0, 1)).matrix()
     array([[0.96891242+0.j        , 0.        -0.24740396j, 0.        +0.j        ],
            [0.        -0.24740396j, 0.96891242+0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 1.        +0.j        ]])
 
-    >>> qml.TRX(0.5, wires=0, subspace=(0, 2)).matrix()
+    >>> qp.TRX(0.5, wires=0, subspace=(0, 2)).matrix()
     array([[0.96891242+0.j        , 0.        +0.j        , 0.        -0.24740396j],
            [0.        +0.j        , 1.        +0.j        , 0.        +0.j        ],
            [0.        -0.24740396j, 0.        +0.j        , 0.96891242+0.j        ]])
 
-    >>> qml.TRX(0.5, wires=0, subspace=(1, 2)).matrix()
+    >>> qp.TRX(0.5, wires=0, subspace=(1, 2)).matrix()
     array([[1.        +0.j        , 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.96891242+0.j        , 0.        -0.24740396j],
            [0.        +0.j        , 0.        -0.24740396j, 0.96891242+0.j        ]])
@@ -116,7 +116,7 @@ class TRX(Operation):
     def generator(self):
         # this generator returns SProd, even with the old op_math, because other options are not suitable
         # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
-        return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
+        return qp.s_prod(-0.5, qp.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = validate_subspace(subspace)
@@ -155,34 +155,34 @@ class TRX(Operation):
 
         **Example**
 
-        >>> qml.TRX.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
+        >>> qp.TRX.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
         tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        c = qp.math.cos(theta / 2)
+        s = qp.math.sin(theta / 2)
 
         if (
-            qml.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(theta) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
+            c = qp.math.cast_like(c, 1j)
+            s = qp.math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
-        one = qml.math.ones_like(c)
-        z = qml.math.zeros_like(c)
+        one = qp.math.ones_like(c)
+        z = qp.math.zeros_like(c)
 
         diags = [one, one, one]
         diags[subspace[0]] = c
         diags[subspace[1]] = c
 
         off_diags = [z, z, z]
-        off_diags[qml.math.sum(subspace) - 1] = js
+        off_diags[qp.math.sum(subspace) - 1] = js
 
-        return qml.math.stack(
+        return qp.math.stack(
             [
                 stack_last([diags[0], off_diags[0], off_diags[1]]),
                 stack_last([off_diags[0], diags[1], off_diags[2]]),
@@ -231,17 +231,17 @@ class TRY(Operation):
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.TRY(0.5, wires=0, subspace=(0, 1)).matrix()
+    >>> qp.TRY(0.5, wires=0, subspace=(0, 1)).matrix()
     array([[ 0.96891242+0.j, -0.24740396-0.j, -0.        -0.j],
            [ 0.24740396+0.j,  0.96891242+0.j, -0.        -0.j],
            [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
 
-    >>> qml.TRY(0.5, wires=0, subspace=(0, 2)).matrix()
+    >>> qp.TRY(0.5, wires=0, subspace=(0, 2)).matrix()
     array([[ 0.96891242+0.j, -0.        -0.j, -0.24740396-0.j],
            [ 0.        +0.j,  1.        +0.j, -0.        -0.j],
            [ 0.24740396+0.j,  0.        +0.j,  0.96891242+0.j]])
 
-    >>> qml.TRY(0.5, wires=0, subspace=(1, 2)).matrix()
+    >>> qp.TRY(0.5, wires=0, subspace=(1, 2)).matrix()
     array([[ 1.        +0.j, -0.        -0.j, -0.        -0.j],
            [ 0.        +0.j,  0.96891242+0.j, -0.24740396-0.j],
            [ 0.        +0.j,  0.24740396+0.j,  0.96891242+0.j]])
@@ -263,7 +263,7 @@ class TRY(Operation):
     def generator(self):
         # this generator returns SProd, even with the old op_math, because other options are not suitable
         # to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
-        return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
+        return qp.s_prod(-0.5, qp.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = validate_subspace(subspace)
@@ -302,33 +302,33 @@ class TRY(Operation):
 
         **Example**
 
-        >>> qml.TRY.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
+        >>> qp.TRY.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
         tensor([[ 0.9689+0.j, -0.0000-0.j, -0.2474-0.j],
                 [ 0.0000+0.j,  1.0000+0.j, -0.0000-0.j],
                 [ 0.2474+0.j,  0.0000+0.j,  0.9689+0.j]])
         """
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        c = qp.math.cos(theta / 2)
+        s = qp.math.sin(theta / 2)
         if (
-            qml.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(theta) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
+            c = qp.math.cast_like(c, 1j)
+            s = qp.math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
-        one = qml.math.ones_like(c)
-        z = qml.math.zeros_like(c)
+        one = qp.math.ones_like(c)
+        z = qp.math.zeros_like(c)
 
         diags = [one, one, one]
         diags[subspace[0]] = c
         diags[subspace[1]] = c
 
         off_diags = [z, z, z]
-        off_diags[qml.math.sum(subspace) - 1] = s
+        off_diags[qp.math.sum(subspace) - 1] = s
 
-        return qml.math.stack(
+        return qp.math.stack(
             [
                 stack_last([diags[0], -off_diags[0], -off_diags[1]]),
                 stack_last([off_diags[0], diags[1], -off_diags[2]]),
@@ -376,17 +376,17 @@ class TRZ(Operation):
     The specified subspace will determine which basis states the operation actually
     applies to:
 
-    >>> qml.TRZ(0.5, wires=0, subspace=(0, 1)).matrix()
+    >>> qp.TRZ(0.5, wires=0, subspace=(0, 1)).matrix()
     array([[0.96891242-0.24740396j, 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.96891242+0.24740396j, 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 1.        +0.j        ]])
 
-    >>> qml.TRZ(0.5, wires=0, subspace=(0, 2)).matrix()
+    >>> qp.TRZ(0.5, wires=0, subspace=(0, 2)).matrix()
     array([[0.96891242-0.24740396j, 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 1.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 0.96891242+0.24740396j]])
 
-    >>> qml.TRZ(0.5, wires=0, subspace=(1, 2)).matrix()
+    >>> qp.TRZ(0.5, wires=0, subspace=(1, 2)).matrix()
     array([[1.        +0.j        , 0.        +0.j        , 0.        +0.j        ],
            [0.        +0.j        , 0.96891242-0.24740396j, 0.        +0.j        ],
            [0.        +0.j        , 0.        +0.j        , 0.96891242+0.24740396j]])
@@ -406,16 +406,16 @@ class TRZ(Operation):
         # these generators return SProd and Sum, even with the old op_math, because other options are
         # not suitable to qudit operators (for example, they do not have a matrix defined as a Hamiltonian)
         if self.subspace == (0, 1):
-            return qml.s_prod(-0.5, qml.GellMann(wires=self.wires, index=3))
+            return qp.s_prod(-0.5, qp.GellMann(wires=self.wires, index=3))
 
         if self.subspace == (0, 2):
             coeffs = [-0.25, -0.25 * np.sqrt(3)]
-            obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
-            return qml.dot(coeffs, obs)
+            obs = [qp.GellMann(wires=self.wires, index=3), qp.GellMann(wires=self.wires, index=8)]
+            return qp.dot(coeffs, obs)
 
         coeffs = [0.25, -0.25 * np.sqrt(3)]
-        obs = [qml.GellMann(wires=self.wires, index=3), qml.GellMann(wires=self.wires, index=8)]
-        return qml.dot(coeffs, obs)
+        obs = [qp.GellMann(wires=self.wires, index=3), qp.GellMann(wires=self.wires, index=8)]
+        return qp.dot(coeffs, obs)
 
     def __init__(self, phi, wires, subspace=(0, 1), id=None):
         self._subspace = validate_subspace(subspace)
@@ -454,24 +454,24 @@ class TRZ(Operation):
 
         **Example**
 
-        >>> qml.TRZ.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
+        >>> qp.TRZ.compute_matrix(torch.tensor(0.5), subspace=(0, 2))
         tensor([[0.9689-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
         if (
-            qml.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(theta) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = qml.math.cast_like(theta, 1j)
-        p = qml.math.exp(-1j * theta / 2)
-        one = qml.math.ones_like(p)
-        z = qml.math.zeros_like(p)
+            theta = qp.math.cast_like(theta, 1j)
+        p = qp.math.exp(-1j * theta / 2)
+        one = qp.math.ones_like(p)
+        z = qp.math.zeros_like(p)
 
         diags = [one, one, one]
         diags[subspace[0]] = p
-        diags[subspace[1]] = qml.math.conj(p)
+        diags[subspace[1]] = qp.math.conj(p)
 
-        return qml.math.stack(
+        return qp.math.stack(
             [
                 stack_last([diags[0], z, z]),
                 stack_last([z, diags[1], z]),

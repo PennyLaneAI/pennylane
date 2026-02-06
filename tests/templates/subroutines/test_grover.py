@@ -28,23 +28,23 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 def test_repr():
     """Tests the repr method for GroverOperator."""
-    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+    op = qp.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
     expected = "GroverOperator(wires=[0, 1, 2], work_wires=[3, 4])"
     assert repr(op) == expected
 
 
 def test_work_wire_property():
-    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
-    expected = qml.wires.Wires((3, 4))
+    op = qp.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
+    expected = qp.wires.Wires((3, 4))
     assert op.work_wires == expected
 
 
 @pytest.mark.jax
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
-    work_wires = qml.wires.Wires((3, 4))
-    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
-    qml.ops.functions.assert_valid(op)
+    work_wires = qp.wires.Wires((3, 4))
+    op = qp.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
+    qp.ops.functions.assert_valid(op)
 
 
 def test_work_wires():
@@ -52,7 +52,7 @@ def test_work_wires():
     wires = ("a", "b")
     work_wire = ("aux",)
 
-    op = qml.GroverOperator(wires=wires, work_wires=work_wire)
+    op = qp.GroverOperator(wires=wires, work_wires=work_wire)
 
     assert op.hyperparameters["work_wires"] == work_wire
 
@@ -63,8 +63,8 @@ def test_work_wires():
 
 def test_work_wires_None():
     """Test that work wires of None are not inpreted as work wires."""
-    op = qml.GroverOperator(wires=(0, 1, 2, 3), work_wires=None)
-    assert op.hyperparameters["work_wires"] == qml.wires.Wires([])
+    op = qp.GroverOperator(wires=(0, 1, 2, 3), work_wires=None)
+    assert op.hyperparameters["work_wires"] == qp.wires.Wires([])
 
 
 @pytest.mark.parametrize("bad_wires", [0, (0,), tuple()])
@@ -72,26 +72,26 @@ def test_single_wire_error(bad_wires):
     """Assert error raised when called with only a single wire"""
 
     with pytest.raises(ValueError, match="GroverOperator must have at least"):
-        qml.GroverOperator(wires=bad_wires)
+        qp.GroverOperator(wires=bad_wires)
 
 
 def test_id():
     """Assert id keyword works"""
 
-    op = qml.GroverOperator(wires=(0, 1), id="hello")
+    op = qp.GroverOperator(wires=(0, 1), id="hello")
 
     assert op.id == "hello"
 
 
 decomp_3wires = [
-    qml.Hadamard,
-    qml.Hadamard,
-    qml.PauliZ,
-    qml.MultiControlledX,
-    qml.PauliZ,
-    qml.Hadamard,
-    qml.Hadamard,
-    qml.GlobalPhase,
+    qp.Hadamard,
+    qp.Hadamard,
+    qp.PauliZ,
+    qp.MultiControlledX,
+    qp.PauliZ,
+    qp.Hadamard,
+    qp.Hadamard,
+    qp.GlobalPhase,
 ]
 
 
@@ -124,7 +124,7 @@ def test_grover_diffusion_matrix(n_wires):
     # uniform superposition state
     s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
     # Grover matrix
-    G_matrix = qml.GroverOperator(wires=wires).matrix()
+    G_matrix = qp.GroverOperator(wires=wires).matrix()
 
     amplitudes = G_matrix @ oracle @ s
     probs = amplitudes**2
@@ -157,27 +157,27 @@ def test_grover_diffusion_matrix_results():
     wires = list(range(n_wires))
 
     def oracle():
-        qml.Hadamard(wires[-1])
-        qml.Toffoli(wires=wires)
-        qml.Hadamard(wires[-1])
+        qp.Hadamard(wires[-1])
+        qp.Toffoli(wires=wires)
+        qp.Hadamard(wires[-1])
 
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qp.device("default.qubit", wires=wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def GroverSearch(num_iterations=1):
         for wire in wires:
-            qml.Hadamard(wire)
+            qp.Hadamard(wire)
 
         for _ in range(num_iterations):
             oracle()
-            qml.GroverOperator(wires=wires)
-        return qml.probs(wires)
+            qp.GroverOperator(wires=wires)
+        return qp.probs(wires)
 
     # Get probabilities from example
     probs_example = GroverSearch(num_iterations=1)
 
     # Grover diffusion matrix
-    G_matrix = qml.GroverOperator(wires=wires).matrix()
+    G_matrix = qp.GroverOperator(wires=wires).matrix()
 
     oracle_matrix = np.identity(2**n_wires)
     oracle_matrix[-1, -1] = -1
@@ -198,7 +198,7 @@ def test_grover_diffusion_matrix_results():
 @pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
 def test_expand(wires):
     """Asserts decomposition uses expected operations and wires"""
-    op = qml.GroverOperator(wires=wires)
+    op = qp.GroverOperator(wires=wires)
 
     decomp = op.decomposition()
 
@@ -208,23 +208,23 @@ def test_expand(wires):
 
     for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
         assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == qml.wires.Wires(expected_wire)
+        assert actual_op.wires == qp.wires.Wires(expected_wire)
 
 
 @pytest.mark.capture
 def test_decomposition_new_capture():
     """Tests the decomposition rule implemented with the new system."""
-    op = qml.GroverOperator(wires=(0, 1, 2))
+    op = qp.GroverOperator(wires=(0, 1, 2))
 
-    for rule in qml.list_decomps(qml.GroverOperator):
+    for rule in qp.list_decomps(qp.GroverOperator):
         _test_decomposition_rule(op, rule)
 
 
 def test_decomposition_new():
     """Tests the decomposition rule implemented with the new system."""
-    op = qml.GroverOperator(wires=(0, 1, 2))
+    op = qp.GroverOperator(wires=(0, 1, 2))
 
-    for rule in qml.list_decomps(qml.GroverOperator):
+    for rule in qp.list_decomps(qp.GroverOperator):
         _test_decomposition_rule(op, rule)
 
 
@@ -233,20 +233,20 @@ def test_findstate(n_wires):
     """Asserts can find state marked by oracle, with operation full matrix and decomposition."""
     wires = list(range(n_wires))
 
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qp.device("default.qubit", wires=wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circ():
         for wire in wires:
-            qml.Hadamard(wire)
+            qp.Hadamard(wire)
 
         for _ in range(2):
-            qml.Hadamard(wires[0])
-            qml.MultiControlledX(wires=wires[1:] + wires[0:1])
-            qml.Hadamard(wires[0])
-            qml.GroverOperator(wires=wires)
+            qp.Hadamard(wires[0])
+            qp.MultiControlledX(wires=wires[1:] + wires[0:1])
+            qp.Hadamard(wires[0])
+            qp.GroverOperator(wires=wires)
 
-        return qml.probs(wires=wires)
+        return qp.probs(wires=wires)
 
     probs = circ()
 
@@ -256,9 +256,9 @@ def test_findstate(n_wires):
 def test_matrix(tol):
     """Test that the matrix representation is correct."""
 
-    res_static = qml.GroverOperator.compute_matrix(2, work_wires=None)
-    res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
-    res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
+    res_static = qp.GroverOperator.compute_matrix(2, work_wires=None)
+    res_dynamic = qp.GroverOperator(wires=[0, 1]).matrix()
+    res_reordered = qp.GroverOperator(wires=[0, 1]).matrix([1, 0])
 
     expected = np.array(
         [[-0.5, 0.5, 0.5, 0.5], [0.5, -0.5, 0.5, 0.5], [0.5, 0.5, -0.5, 0.5], [0.5, 0.5, 0.5, -0.5]]
@@ -274,9 +274,9 @@ def test_matrix(tol):
 def test_decomposition_matrix(n_wires):
     """Test that the decomposition and the matrix match."""
     wires = list(range(n_wires))
-    op = qml.GroverOperator(wires)
+    op = qp.GroverOperator(wires)
     mat1 = op.matrix()
-    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wires)
+    mat2 = qp.matrix(qp.tape.QuantumScript(op.decomposition()), wire_order=wires)
     assert np.allclose(mat1, mat2)
 
 
@@ -288,28 +288,28 @@ def test_jax_jit():
     wires = list(range(n_wires))
 
     def oracle():
-        qml.Hadamard(wires[-1])
-        qml.Toffoli(wires=wires)
-        qml.Hadamard(wires[-1])
+        qp.Hadamard(wires[-1])
+        qp.Toffoli(wires=wires)
+        qp.Hadamard(wires[-1])
 
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qp.device("default.qubit", wires=wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         for wire in wires:
-            qml.Hadamard(wire)
+            qp.Hadamard(wire)
 
         oracle()
-        qml.GroverOperator(wires=wires)
+        qp.GroverOperator(wires=wires)
 
         oracle()
-        qml.GroverOperator(wires=wires)
+        qp.GroverOperator(wires=wires)
 
-        return qml.probs(wires)
+        return qp.probs(wires)
 
     jit_circuit = jax.jit(circuit)
 
-    assert qml.math.allclose(circuit(), jit_circuit())
+    assert qp.math.allclose(circuit(), jit_circuit())
 
 
 @pytest.mark.jax
@@ -334,8 +334,8 @@ class TestDynamicDecomposition:
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         def circuit(wires):
-            qml.GroverOperator(wires=wires, work_wires=work_wires)
-            return qml.state()
+            qp.GroverOperator(wires=wires, work_wires=work_wires)
+            return qp.state()
 
         jaxpr = jax.make_jaxpr(circuit)(wires)
 
@@ -347,14 +347,14 @@ class TestDynamicDecomposition:
         for hadamard_loop in hadamard_loops_eqns:
             assert hadamard_loop.primitive == for_loop_prim
             hadamard_inner_eqns = hadamard_loop.params["jaxpr_body_fn"].eqns
-            assert hadamard_inner_eqns[-1].primitive == qml.Hadamard._primitive
+            assert hadamard_inner_eqns[-1].primitive == qp.Hadamard._primitive
 
         # 4 remaining operations
         remaining_ops = [
             eqn
             for eqn in jaxpr_eqns
             if eqn.primitive
-            in (qml.PauliZ._primitive, qml.MultiControlledX._primitive, qml.GlobalPhase._primitive)
+            in (qp.PauliZ._primitive, qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
         ]
         assert len(remaining_ops) == 4
 
@@ -363,15 +363,15 @@ class TestDynamicDecomposition:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *wires)
         ops_list = collector.state["ops"]
 
-        tape = qml.tape.QuantumScript([qml.GroverOperator(wires=wires, work_wires=work_wires)])
-        [decomp_tape], _ = qml.transforms.decompose(
+        tape = qp.tape.QuantumScript([qp.GroverOperator(wires=wires, work_wires=work_wires)])
+        [decomp_tape], _ = qp.transforms.decompose(
             tape, max_expansion=max_expansion, gate_set=gate_set
         )
         for op1, op2 in zip(ops_list, decomp_tape.operations):
             if op1.name == "GlobalPhase":
                 # GlobalPhase applied to single wire instead of all wires
                 assert op1.name == op2.name
-                assert qml.math.allclose(op1.parameters, op2.parameters)
+                assert qp.math.allclose(op1.parameters, op2.parameters)
             elif op1.name == "MultiControlledX":
                 # MultiControlledX's work_wire is traced in plxpr but not in tape
                 assert op1.name == op2.name
@@ -379,7 +379,7 @@ class TestDynamicDecomposition:
                 assert op1.control_wires == op2.control_wires
                 assert op1.control_values == op2.control_values
             else:
-                assert qml.equal(op1, op2)
+                assert qp.equal(op1, op2)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(
@@ -387,7 +387,7 @@ class TestDynamicDecomposition:
     )
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, None])
     @pytest.mark.parametrize(
-        "gate_set", [[qml.Hadamard, qml.CNOT, qml.PauliX, qml.GlobalPhase, qml.RZ], None]
+        "gate_set", [[qp.Hadamard, qp.CNOT, qp.PauliX, qp.GlobalPhase, qp.RZ], None]
     )
     def test_grover(
         self, max_expansion, gate_set, wires, work_wires, autograph
@@ -399,24 +399,24 @@ class TestDynamicDecomposition:
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=5))
+        @qp.qnode(device=qp.device("default.qubit", wires=5))
         def circuit(wires):
-            qml.GroverOperator(wires=wires, work_wires=work_wires)
-            return qml.state()
+            qp.GroverOperator(wires=wires, work_wires=work_wires)
+            return qp.state()
 
         if autograph:
             circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
 
-        with qml.capture.pause():
+        with qp.capture.pause():
 
-            @qml.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
-            @qml.qnode(device=qml.device("default.qubit", wires=5))
+            @qp.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
+            @qp.qnode(device=qp.device("default.qubit", wires=5))
             def circuit_comparison():
-                qml.GroverOperator(wires=wires, work_wires=work_wires)
-                return qml.state()
+                qp.GroverOperator(wires=wires, work_wires=work_wires)
+                return qp.state()
 
             result_comparison = circuit_comparison()
 
-        assert qml.math.allclose(*result, result_comparison)
+        assert qp.math.allclose(*result, result_comparison)

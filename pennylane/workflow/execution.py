@@ -82,7 +82,7 @@ def execute(
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies
             if the device is queried for the gradient; gradient transform
-            functions available in ``qml.gradients`` are only supported on the backward
+            functions available in ``qp.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.
         cache="auto" (str or bool or dict or Cache): Whether to cache evalulations.
             ``"auto"`` indicates to cache only when ``max_diff > 1``. This can result in
@@ -122,25 +122,25 @@ def execute(
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
         def cost_fn(params, x):
-            ops1 = [qml.RX(params[0], wires=0), qml.RY(params[1], wires=0)]
-            measurements1 = [qml.expval(qml.Z(0))]
-            tape1 = qml.tape.QuantumTape(ops1, measurements1)
+            ops1 = [qp.RX(params[0], wires=0), qp.RY(params[1], wires=0)]
+            measurements1 = [qp.expval(qp.Z(0))]
+            tape1 = qp.tape.QuantumTape(ops1, measurements1)
 
             ops2 = [
-                qml.RX(params[2], wires=0),
-                qml.RY(x[0], wires=1),
-                qml.CNOT(wires=(0,1))
+                qp.RX(params[2], wires=0),
+                qp.RY(x[0], wires=1),
+                qp.CNOT(wires=(0,1))
             ]
-            measurements2 = [qml.probs(wires=0)]
-            tape2 = qml.tape.QuantumTape(ops2, measurements2)
+            measurements2 = [qp.probs(wires=0)]
+            tape2 = qp.tape.QuantumTape(ops2, measurements2)
 
             tapes = [tape1, tape2]
 
             # execute both tapes in a batch on the given device
-            res = qml.execute(tapes, dev, diff_method=qml.gradients.param_shift, max_diff=2)
+            res = qp.execute(tapes, dev, diff_method=qp.gradients.param_shift, max_diff=2)
 
             return res[0] + res[1][0] - res[1][1]
 
@@ -159,20 +159,20 @@ def execute(
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
 
-    >>> print(qml.grad(cost_fn)(params, x)) # doctest: +SKIP
+    >>> print(qp.grad(cost_fn)(params, x)) # doctest: +SKIP
     (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
 
     Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
     of the gradient (that is, the Hessian):
 
     >>> x.requires_grad = False
-    >>> print(qml.jacobian(qml.grad(cost_fn))(params, x)) # doctest: +SKIP
+    >>> print(qp.jacobian(qp.grad(cost_fn))(params, x)) # doctest: +SKIP
     [[-0.97517033  0.01983384  0.        ]
      [ 0.01983384 -0.97517033  0.        ]
      [ 0.          0.         -0.95533649]]
     """
-    if not isinstance(device, qml.devices.Device):
-        device = qml.devices.LegacyDeviceFacade(device)
+    if not isinstance(device, qp.devices.Device):
+        device = qp.devices.LegacyDeviceFacade(device)
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
@@ -185,7 +185,7 @@ def execute(
             repr(device),
             (
                 diff_method
-                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(diff_method))
+                if not (logger.isEnabledFor(qp.logging.TRACE) and inspect.isfunction(diff_method))
                 else "\n" + inspect.getsource(diff_method) + "\n"
             ),
             interface,
@@ -216,12 +216,12 @@ def execute(
     if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:  # pragma: no cover
         warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
 
-    config = qml.devices.ExecutionConfig(
+    config = qp.devices.ExecutionConfig(
         interface=interface,
         gradient_method=diff_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
-        mcm_config=qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
+        mcm_config=qp.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method),
         gradient_keyword_arguments=gradient_kwargs or {},
         derivative_order=max_diff,
         executor_backend=executor_backend,

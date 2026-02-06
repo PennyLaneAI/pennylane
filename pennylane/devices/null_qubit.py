@@ -79,7 +79,7 @@ def _(mp: ClassicalShadowMP, num_device_wires, shots: int | None, batch_size, in
     if batch_size is not None:
         # shapes = [(batch_size,) + shape for shape in shapes]
         raise ValueError(
-            "Parameter broadcasting is not supported with null.qubit and qml.classical_shadow"
+            "Parameter broadcasting is not supported with null.qubit and qp.classical_shadow"
         )
     shape = mp.shape(shots, num_device_wires)
     return math.zeros(shape, like=interface, dtype=np.int8)
@@ -147,15 +147,15 @@ class NullQubit(Device):
             If not set, the filename will match ``__pennylane_resources_data_*`` where the wildcard (asterisk)
             is replaced by the timestamp of when execution began in nanoseconds since Unix EPOCH.
         compute_depth (bool): If True, compute the circuit depth as part of resource tracking.
-        target_device (qml.devices.Device): The target device to use for preprocessing steps. If None, ``DefaultQubit`` is used.
+        target_device (qp.devices.Device): The target device to use for preprocessing steps. If None, ``DefaultQubit`` is used.
 
     **Example:**
 
     .. code-block:: python
 
-        qs = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.CNOT([0, 1])],
-            [qml.expval(qml.PauliZ(0)), qml.probs()],
+        qs = qp.tape.QuantumScript(
+            [qp.Hadamard(0), qp.CNOT([0, 1])],
+            [qp.expval(qp.PauliZ(0)), qp.probs()],
         )
         qscripts = [qs, qs, qs]
 
@@ -181,16 +181,16 @@ class NullQubit(Device):
 
         n_layers = 50
         n_wires = 100
-        shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        shape = qp.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            return [qml.expval(qml.Z(i)) for i in range(n_wires)]
+            qp.StronglyEntanglingLayers(params, wires=range(n_wires))
+            return [qp.expval(qp.Z(i)) for i in range(n_wires)]
 
         params = np.random.random(shape)
 
-        with qml.Tracker(dev) as tracker:
+        with qp.Tracker(dev) as tracker:
             circuit(params)
 
     >>> tracker.history["resources"][0]

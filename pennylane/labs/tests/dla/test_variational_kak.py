@@ -34,9 +34,9 @@ def test_kak_Ising(n, dense):
     """Basic test for kak decomposition on Ising model"""
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]
     gens += [Z(i) for i in range(n)]
-    H = qml.sum(*gens)
+    H = qp.sum(*gens)
 
-    g = qml.lie_closure(gens, matrix=dense)
+    g = qp.lie_closure(gens, matrix=dense)
     if not dense:
         g = [op.pauli_rep for op in g]
 
@@ -48,10 +48,10 @@ def test_kak_Ising(n, dense):
 
     if not dense:
         g = k + m
-        adj = qml.structure_constants(g)
+        adj = qp.structure_constants(g)
     else:
         g = np.vstack([k, m])
-        adj = qml.structure_constants(g, matrix=True)
+        adj = qp.structure_constants(g, matrix=True)
 
     g, k, mtilde, h, adj = horizontal_cartan_subalgebra(k, m, adj, tol=1e-10, start_idx=0)
 
@@ -72,9 +72,9 @@ def test_kak_Heisenberg(n, dense):
     gens = [X(i) @ X(i + 1) for i in range(n - 1)]
     gens += [Y(i) @ Y(i + 1) for i in range(n - 1)]
     gens += [Z(i) @ Z(i + 1) for i in range(n - 1)]
-    H = qml.sum(*gens)
+    H = qp.sum(*gens)
 
-    g = qml.lie_closure(gens, matrix=dense)
+    g = qp.lie_closure(gens, matrix=dense)
     if not dense:
         g = [op.pauli_rep for op in g]
 
@@ -86,10 +86,10 @@ def test_kak_Heisenberg(n, dense):
 
     if not dense:
         g = k + m
-        adj = qml.structure_constants(g)
+        adj = qp.structure_constants(g)
     else:
         g = np.vstack([k, m])
-        adj = qml.structure_constants(g, matrix=True)
+        adj = qp.structure_constants(g, matrix=True)
 
     g, k, mtilde, h, adj = horizontal_cartan_subalgebra(k, m, adj, tol=1e-10, start_idx=0)
 
@@ -109,9 +109,9 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
     """Basic test for kak decomposition on summed Heisenberg model"""
     n = 4
     gens = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(n - 1)]
-    H = qml.sum(*gens)
+    H = qp.sum(*gens)
 
-    g = qml.lie_closure(gens, matrix=dense)
+    g = qp.lie_closure(gens, matrix=dense)
     if not dense:
         g = [op.pauli_rep for op in g]
 
@@ -126,10 +126,10 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
 
     if not dense:
         g = k + m
-        adj = qml.structure_constants(g, is_orthogonal=is_orthogonal)
+        adj = qp.structure_constants(g, is_orthogonal=is_orthogonal)
     else:
         g = np.vstack([k, m])
-        adj = qml.structure_constants(g, matrix=True, is_orthogonal=is_orthogonal)
+        adj = qp.structure_constants(g, matrix=True, is_orthogonal=is_orthogonal)
 
     g, k, mtilde, h, adj = horizontal_cartan_subalgebra(
         k, m, adj, tol=1e-10, start_idx=0, is_orthogonal=is_orthogonal

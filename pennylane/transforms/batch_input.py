@@ -51,7 +51,7 @@ def batch_input(
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the batched results.
 
     .. seealso:: :func:`~.batch_params`
@@ -60,15 +60,15 @@ def batch_input(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.batch_input(argnum=1)
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.batch_input(argnum=1)
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(inputs, weights):
-            qml.RY(weights[0], wires=0)
-            qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
-            qml.RY(weights[1], wires=1)
-            return qml.expval(qml.Z(1))
+            qp.RY(weights[0], wires=0)
+            qp.AngleEmbedding(inputs, wires=range(2), rotation="Y")
+            qp.RY(weights[1], wires=1)
+            return qp.expval(qp.Z(1))
 
     >>> rng = np.random.default_rng(seed=1234)
     >>> x = rng.random((10, 2))
@@ -87,13 +87,13 @@ def batch_input(
     if any(num in tape.trainable_params for num in argnum):
         # JAX arrays can't be marked as non-trainable, so don't raise this error
         # if the interface is JAX
-        if qml.math.get_interface(*argnum_params) != "jax":
+        if qp.math.get_interface(*argnum_params) != "jax":
             raise ValueError(
                 "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
                 + "'argnum' are not marked as trainable."
             )
 
-    batch_dims = np.unique([qml.math.shape(x)[0] for x in argnum_params])
+    batch_dims = np.unique([qp.math.shape(x)[0] for x in argnum_params])
     if len(batch_dims) != 1:
         raise ValueError(
             "Batch dimension for all gate arguments specified by 'argnum' must be the same."
@@ -103,7 +103,7 @@ def batch_input(
 
     output_tapes = []
     for ops in _split_operations(tape.operations, all_parameters, argnum, batch_size):
-        new_tape = qml.tape.QuantumScript(
+        new_tape = qp.tape.QuantumScript(
             ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
         )
         output_tapes.append(new_tape)

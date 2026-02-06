@@ -42,7 +42,7 @@ def compile(
 
     .. note::
 
-        While ``qml.compile`` is useful for initial exploration by appliying a default set of
+        While ``qp.compile`` is useful for initial exploration by appliying a default set of
         transforms, the new :class:`~.CompilePipeline` class is the recommended tool for
         constructing large & modular compilation pipelines in a natural way.
 
@@ -73,33 +73,33 @@ def compile(
             such passes can be adjusted.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
+    >>> dev = qp.device('default.qubit', wires=[0, 1, 2])
 
     You can apply the transform directly on a :class:`QNode`:
 
     .. code-block:: python
 
-        @qml.compile
-        @qml.qnode(device=dev)
+        @qp.compile
+        @qp.qnode(device=dev)
         def circuit(x, y, z):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=2)
-            qml.RZ(z, wires=2)
-            qml.CNOT(wires=[2, 1])
-            qml.RX(z, wires=0)
-            qml.CNOT(wires=[1, 0])
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=[1, 0])
-            qml.RZ(-z, wires=2)
-            qml.RX(y, wires=2)
-            qml.Y(2)
-            qml.CY(wires=[1, 2])
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=2)
+            qp.RZ(z, wires=2)
+            qp.CNOT(wires=[2, 1])
+            qp.RX(z, wires=0)
+            qp.CNOT(wires=[1, 0])
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=[1, 0])
+            qp.RZ(-z, wires=2)
+            qp.RX(y, wires=2)
+            qp.Y(2)
+            qp.CY(wires=[1, 2])
+            return qp.expval(qp.Z(0))
 
     The default compilation pipeline is applied before execution.
 
@@ -108,58 +108,58 @@ def compile(
     .. code-block:: python
 
         def qfunc(x, y, z):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=2)
-            qml.RZ(z, wires=2)
-            qml.CNOT(wires=[2, 1])
-            qml.RX(z, wires=0)
-            qml.CNOT(wires=[1, 0])
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=[1, 0])
-            qml.RZ(-z, wires=2)
-            qml.RX(y, wires=2)
-            qml.Y(2)
-            qml.CY(wires=[1, 2])
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=2)
+            qp.RZ(z, wires=2)
+            qp.CNOT(wires=[2, 1])
+            qp.RX(z, wires=0)
+            qp.CNOT(wires=[1, 0])
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=[1, 0])
+            qp.RZ(-z, wires=2)
+            qp.RX(y, wires=2)
+            qp.Y(2)
+            qp.CY(wires=[1, 2])
+            return qp.expval(qp.Z(0))
 
     Visually, the original function looks like this:
 
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(0.2, 0.3, 0.4))
+    >>> qnode = qp.QNode(qfunc, dev)
+    >>> print(qp.draw(qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.40)────╭X──────────RX(0.20)─╭X────┤  <Z>
     1: ──H───────────╭X─╰●───────────────────╰●─╭●─┤
     2: ──H──RZ(0.40)─╰●──RZ(-0.40)──RX(0.30)──Y─╰Y─┤
 
-    We can compile it down to a smaller set of gates using the ``qml.compile``
+    We can compile it down to a smaller set of gates using the ``qp.compile``
     transform.
 
-    >>> compiled_qnode = qml.compile(qnode)
-    >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+    >>> compiled_qnode = qp.compile(qnode)
+    >>> print(qp.draw(compiled_qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.60)─────────────────┤  <Z>
     1: ──H─╭X──────────────────╭●────┤
     2: ──H─╰●─────────RX(0.30)─╰Y──Y─┤
 
     You can change up the set of transforms by passing a custom ``pipeline`` to
-    ``qml.compile``. The pipeline is a list of transform functions. Furthermore,
+    ``qp.compile``. The pipeline is a list of transform functions. Furthermore,
     you can specify a number of passes (repetitions of the pipeline), and a list
     of gates into which the compiler will first attempt to decompose the
     existing operations prior to applying any optimization transforms.
 
     .. code-block:: python
 
-        compiled_qnode = qml.compile(
+        compiled_qnode = qp.compile(
             qnode,
             pipeline=[
-                partial(qml.transforms.commute_controlled, direction="left"),
-                partial(qml.transforms.merge_rotations, atol=1e-6),
-                qml.transforms.cancel_inverses
+                partial(qp.transforms.commute_controlled, direction="left"),
+                partial(qp.transforms.merge_rotations, atol=1e-6),
+                qp.transforms.cancel_inverses
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],
             num_passes=2
         )
 
-        print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+        print(qp.draw(compiled_qnode)(0.2, 0.3, 0.4))
 
     .. code-block::
 
@@ -191,17 +191,17 @@ def compile(
             basis_set = all_ops
 
         def stop_at(obj):
-            if not isinstance(obj, qml.operation.Operator):
+            if not isinstance(obj, qp.operation.Operator):
                 return True
             if not obj.has_decomposition:
                 return True
             return obj.name in basis_set and (not getattr(obj, "only_visual", False))
 
-        [expanded_tape], _ = qml.devices.preprocess.decompose(
+        [expanded_tape], _ = qp.devices.preprocess.decompose(
             tape,
             stopping_condition=stop_at,
             name="compile",
-            error=qml.operation.DecompositionUndefinedError,
+            error=qp.operation.DecompositionUndefinedError,
             skip_initial_state_prep=False,
         )
 

@@ -51,15 +51,15 @@ class QubitMgr:
         .. code-block:: python
 
             from pennylane.ftqc import QubitGraph, diagonalize_mcms, generate_lattice, measure_x, measure_y
-            dev = qml.device('null.qubit')
+            dev = qp.device('null.qubit')
 
-            @qml.qnode(dev, mcm_method="one-shot")
+            @qp.qnode(dev, mcm_method="one-shot")
             def circuit_mbqc(start_state, angles):
                 q_mgr = QubitMgr(num_qubits=5, start_idx=0)
                 input_idx = q_mgr.acquire_qubit()
 
                 # prep input node
-                qml.StatePrep(start_state, wires=[input_idx])
+                qp.StatePrep(start_state, wires=[input_idx])
 
                 # prep and consume graph state iteratively
                 for i in range(num_iter):
@@ -70,10 +70,10 @@ class QubitMgr:
                     output_idx = graph_wires[-1]
 
                     # Prepare the state
-                    qml.ftqc.GraphStatePrep(lattice.graph, wires=graph_wires)
+                    qp.ftqc.GraphStatePrep(lattice.graph, wires=graph_wires)
 
                     # entangle input and graph using first qubit
-                    qml.CZ([input_idx, graph_wires[0]])
+                    qp.CZ([input_idx, graph_wires[0]])
 
                     # MBQC Z rotation: X, X, +/- angle, X
                     # Reset operations allow qubits to be returned to the pool
@@ -83,8 +83,8 @@ class QubitMgr:
                     m3 = measure_x(graph_wires[2], reset=True)
 
                     # corrections based on measurement outcomes
-                    qml.cond((m0+m2)%2, qml.Z)(graph_wires[3])
-                    qml.cond((m1+m3)%2, qml.X)(graph_wires[3])
+                    qp.cond((m0+m2)%2, qp.Z)(graph_wires[3])
+                    qp.cond((m1+m3)%2, qp.X)(graph_wires[3])
 
                     # The input qubit can be freed and the output qubit becomes the next iteration's input
                     q_mgr.release_qubit(input_idx)
@@ -94,7 +94,7 @@ class QubitMgr:
                     q_mgr.release_qubits(graph_wires[0:-1])
 
                 # Perform the measurements on the output qubit from the last iteration
-                return qml.expval(X(output_idx)), qml.expval(Y(output_idx)), qml.expval(Z(output_idx))
+                return qp.expval(X(output_idx)), qp.expval(Y(output_idx)), qp.expval(Z(output_idx))
 
         For each loop iteration, the measured and reset wire labels are returned to the ``QubitMgr`` instance, which are then reallocated
         on the next step, which when combined with the MCM resets allows for qubit index recycling.

@@ -74,21 +74,21 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x: float):
 
-            @qml.while_loop(lambda x: x < 2.0)
+            @qp.while_loop(lambda x: x < 2.0)
             def loop_rx(x):
                 # perform some work and update (some of) the arguments
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
                 return x ** 2
 
             # apply the while loop
             loop_rx(x)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
     >>> circuit(1.6)
     -0.02919952
@@ -97,7 +97,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
     :func:`~.qjit` decorator, the while loop will not be unrolled, and instead
     will be captured as-is during compilation and executed during runtime:
 
-    >>> qml.qjit(circuit)(1.6)
+    >>> qp.qjit(circuit)(1.6)
     Array(-0.02919952, dtype=float64)
 
     .. details::
@@ -114,10 +114,10 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
             Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
             which captures the abstract computational graph for the given input and generates the abstract shapes.
-            The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
+            The resulting JAXPR can then be evaluated using ``qp.capture.eval_jaxpr``:
 
             >>> jaxpr = jax.make_jaxpr(workflow)(arg)
-            >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+            >>> qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
@@ -125,7 +125,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         >>> import jax
         >>> import jax.numpy as jnp
         >>> jax.config.update("jax_dynamic_shapes", True)
-        >>> qml.capture.enable()
+        >>> qp.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
         If the needed mode is ``allow_array_resizing=False``, then this will require re-capturing
@@ -136,7 +136,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
+            @qp.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
             def f(x, y):
                 return jnp.hstack([x, y]), 2*y
 
@@ -154,7 +154,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
+            @qp.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 return x * y, 2*y
 
@@ -170,7 +170,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
         .. code-block:: python
 
-            @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
+            @qp.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
             def f(x, y):
                 x = jnp.hstack([x, y])
                 return x, 2*x
@@ -188,7 +188,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         .. code-block:: python
 
             def w():
-                @qml.while_loop(lambda i, x: i < 5)
+                @qp.while_loop(lambda i, x: i < 5)
                 def f(i, x):
                     return i + 1, jnp.append(x, i)
 

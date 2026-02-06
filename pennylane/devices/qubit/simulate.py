@@ -123,7 +123,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     if is_state_batched:
         raise ValueError(
             "Cannot postselect on circuits with broadcasting. Use the "
-            "qml.transforms.broadcast_expand transform to split a broadcasted "
+            "qp.transforms.broadcast_expand transform to split a broadcasted "
             "tape into multiple non-broadcasted tapes before executing if "
             "postselection is used."
         )
@@ -225,7 +225,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             **execution_kwargs,
         )
         # Handle postselection on mid-circuit measurements
-        if isinstance(op, qml.Projector):
+        if isinstance(op, qp.Projector):
             prng_key, key = jax_random_split(prng_key)
             state, new_shots = _postselection_postprocess(
                 state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
@@ -343,7 +343,7 @@ def simulate(
 
     This function assumes that all operations provide matrices.
 
-    >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.Z(0)), qml.probs(wires=(0,1))])
+    >>> qs = qp.tape.QuantumScript([qp.RX(1.2, wires=0)], [qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
     >>> simulate(qs)
     (0.36235775447667357,
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
@@ -654,7 +654,7 @@ def split_circuit_at_mcms(circuit):
     for last, op in mcm_gen:
         new_operations = circuit.operations[first:last]
         new_measurements = (
-            [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
+            [qp.sample(wires=op.wires)] if circuit.shots else [qp.probs(wires=op.wires)]
         )
         circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
@@ -685,7 +685,7 @@ def prepend_state_prep(circuit, state, interface, wires):
     interface = Interface(interface)
     state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
     new_ops = [
-        qml.StatePrep(math.ravel(state), wires=wires, validate_norm=False)
+        qp.StatePrep(math.ravel(state), wires=wires, validate_norm=False)
     ] + circuit.operations
     return circuit.copy(operations=new_ops)
 
@@ -747,11 +747,11 @@ def branch_state(state, branch, mcm):
         state /= math.norm(state)
     else:
         # SLOWER
-        state = apply_operation(qml.Projector([branch], mcm.wires), state)
+        state = apply_operation(qp.Projector([branch], mcm.wires), state)
         state = state / math.norm(state)
 
     if mcm.reset and branch == 1:
-        state = apply_operation(qml.PauliX(mcm.wires), state)
+        state = apply_operation(qp.PauliX(mcm.wires), state)
     return state
 
 
@@ -812,7 +812,7 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     return mcm_samples, cumcounts
 
 
-@qml.transform
+@qp.transform
 def variance_transform(circuit):
     """Replace variance measurements by expectation value measurements of both the observable and the observable square.
 

@@ -32,7 +32,7 @@ from pennylane.wires import WiresLike
 I4 = np.eye(4)
 I16 = np.eye(16)
 
-stack_last = functools.partial(qml.math.stack, axis=-1)
+stack_last = functools.partial(qp.math.stack, axis=-1)
 
 
 def _single_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> TensorLike:
@@ -43,43 +43,43 @@ def _single_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
         `phase_prefactor=0.5j` : `SingleExcitationPlus`
         `phase_prefactor=-0.5j` : `SingleExcitationMinus`
     """
-    interface = qml.math.get_interface(phi)
+    interface = qp.math.get_interface(phi)
     if (
         interface == "tensorflow"
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         if isinstance(phase_prefactor, complex):
-            phi = qml.math.cast_like(phi, 1j)
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-        e = qml.math.exp(phase_prefactor * phi)
-        zeros = qml.math.zeros_like(phi)
+            phi = qp.math.cast_like(phi, 1j)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
+        e = qp.math.exp(phase_prefactor * phi)
+        zeros = qp.math.zeros_like(phi)
         rows = [
             [e, zeros, zeros, zeros],
             [zeros, c, -s, zeros],
             [zeros, s, c, zeros],
             [zeros, zeros, zeros, e],
         ]
-        return qml.math.stack([stack_last(row) for row in rows], axis=-2)
+        return qp.math.stack([stack_last(row) for row in rows], axis=-2)
 
-    c = qml.math.cos(phi / 2)
-    s = qml.math.sin(phi / 2)
-    e = qml.math.exp(phase_prefactor * phi)
+    c = qp.math.cos(phi / 2)
+    s = qp.math.sin(phi / 2)
+    e = qp.math.exp(phase_prefactor * phi)
 
     mask_e = np.diag([1, 0, 0, 1])
     mask_c = np.diag([0, 1, 1, 0])
     mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
 
-    if qml.math.ndim(phi) == 0:
+    if qp.math.ndim(phi) == 0:
         if interface == "torch":
-            mask_e = qml.math.convert_like(mask_e, phi)
-            mask_c = qml.math.convert_like(mask_c, phi)
-            mask_s = qml.math.convert_like(mask_s, phi)
+            mask_e = qp.math.convert_like(mask_e, phi)
+            mask_c = qp.math.convert_like(mask_c, phi)
+            mask_s = qp.math.convert_like(mask_s, phi)
         return e * mask_e + c * mask_c + s * mask_s
 
     return (
-        qml.math.einsum("i,jk->ijk", e, mask_e)
-        + qml.math.einsum("i,jk->ijk", c, mask_c)
-        + qml.math.einsum("i,jk->ijk", s, mask_s)
+        qp.math.einsum("i,jk->ijk", e, mask_e)
+        + qp.math.einsum("i,jk->ijk", c, mask_c)
+        + qp.math.einsum("i,jk->ijk", s, mask_s)
     )
 
 
@@ -91,28 +91,28 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
         `phase_prefactor=0.5j` : `DoubleExcitationPlus`
         `phase_prefactor=-0.5j` : `DoubleExcitationMinus`
     """
-    interface = qml.math.get_interface(phi)
+    interface = qp.math.get_interface(phi)
 
     if interface == "tensorflow" and isinstance(
         phase_prefactor, complex
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        phi = qml.math.cast_like(phi, 1j)
+        phi = qp.math.cast_like(phi, 1j)
 
-    c = qml.math.cos(phi / 2)
-    s = qml.math.sin(phi / 2)
-    e = qml.math.exp(phase_prefactor * phi)
+    c = qp.math.cos(phi / 2)
+    s = qp.math.sin(phi / 2)
+    e = qp.math.exp(phase_prefactor * phi)
 
-    if qml.math.ndim(phi) == 0:
-        diag = qml.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
+    if qp.math.ndim(phi) == 0:
+        diag = qp.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
         if interface == "torch":
-            return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
+            return diag + s * qp.math.convert_like(DoubleExcitation.mask_s, phi)
         return diag + s * DoubleExcitation.mask_s
 
     if isinstance(phase_prefactor, complex):
         c = (1 + 0j) * c
-    diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-    diag = qml.math.einsum("ij,jk->ijk", diag, I16)
-    off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
+    diag = qp.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
+    diag = qp.math.einsum("ij,jk->ijk", diag, I16)
+    off_diag = qp.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
     return diag + off_diag
 
 
@@ -152,13 +152,13 @@ class SingleExcitation(Operation):
 
     .. code-block::
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qp.device('default.qubit', wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi):
-            qml.X(0)
-            qml.SingleExcitation(phi, wires=[0, 1])
-            return qml.state()
+            qp.X(0)
+            qp.SingleExcitation(phi, wires=[0, 1])
+            return qp.state()
 
         circuit(0.1)
     """
@@ -184,9 +184,9 @@ class SingleExcitation(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
-        return qml.Hamiltonian([0.25, -0.25], [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)])
+        return qp.Hamiltonian([0.25, -0.25], [qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2)])
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
@@ -209,7 +209,7 @@ class SingleExcitation(Operation):
 
         **Example**
 
-        >>> qml.SingleExcitation.compute_matrix(torch.tensor(0.5))
+        >>> qp.SingleExcitation.compute_matrix(torch.tensor(0.5))
         tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
                 [ 0.0000,  0.9689, -0.2474,  0.0000],
                 [ 0.0000,  0.2474,  0.9689,  0.0000],
@@ -218,7 +218,7 @@ class SingleExcitation(Operation):
         return _single_excitations_matrix(phi, 0.0)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -235,7 +235,7 @@ class SingleExcitation(Operation):
 
         **Example:**
 
-        >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
+        >>> qp.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
         [H(0),
          CNOT(wires=[0, 1]),
          RY(-0.615, wires=[0]),
@@ -246,12 +246,12 @@ class SingleExcitation(Operation):
         """
         # This decomposition is reported, e.g., in Fig. 2 of https://arxiv.org/pdf/2104.05695
         decomp_ops = [
-            qml.Hadamard(wires[0]),
-            qml.CNOT(wires),
-            qml.RY(-phi / 2, wires[0]),
-            qml.RY(-phi / 2, wires[1]),
-            qml.CNOT(wires),
-            qml.Hadamard(wires[0]),
+            qp.Hadamard(wires[0]),
+            qp.CNOT(wires),
+            qp.RY(-phi / 2, wires[0]),
+            qp.RY(-phi / 2, wires[1]),
+            qp.CNOT(wires),
+            qp.Hadamard(wires[0]),
         ]
 
         return decomp_ops
@@ -260,7 +260,7 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [SingleExcitation(self.data[0] * z, wires=self.wires)]
 
     def label(
@@ -274,33 +274,33 @@ class SingleExcitation(Operation):
 
 def _single_excitation_resources():
     return {
-        qml.Hadamard: 2,
-        qml.CNOT: 2,
-        qml.RY: 2,
+        qp.Hadamard: 2,
+        qp.CNOT: 2,
+        qp.RY: 2,
     }
 
 
 @register_resources(_single_excitation_resources)
 def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
-    qml.Hadamard(wires[0])
-    qml.CNOT(wires)
-    qml.RY(-phi / 2, wires[0])
-    qml.RY(-phi / 2, wires[1])
-    qml.CNOT(wires)
-    qml.Hadamard(wires[0])
+    qp.Hadamard(wires[0])
+    qp.CNOT(wires)
+    qp.RY(-phi / 2, wires[0])
+    qp.RY(-phi / 2, wires[1])
+    qp.CNOT(wires)
+    qp.Hadamard(wires[0])
 
 
 def _single_excitation_ppr_resource():
     return {
-        resource_rep(qml.PauliRot, pauli_word="XY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YX"): 1,
+        resource_rep(qp.PauliRot, pauli_word="XY"): 1,
+        resource_rep(qp.PauliRot, pauli_word="YX"): 1,
     }
 
 
 @register_resources(_single_excitation_ppr_resource)
 def _single_excitation_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qml.PauliRot(phi / 2, "YX", wires=wires)
-    qml.PauliRot(-phi / 2, "XY", wires=wires)
+    qp.PauliRot(phi / 2, "YX", wires=wires)
+    qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
 add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
@@ -355,11 +355,11 @@ class SingleExcitationMinus(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
-        return qml.Hamiltonian(
+        return qp.Hamiltonian(
             [-0.25, 0.25, -0.25, -0.25],
-            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
+            [qp.Identity(w1), qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2), qp.Z(w1) @ qp.Z(w2)],
         )
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
@@ -383,7 +383,7 @@ class SingleExcitationMinus(Operation):
 
         **Example**
 
-        >>> qml.SingleExcitationMinus.compute_matrix(torch.tensor(0.5))
+        >>> qp.SingleExcitationMinus.compute_matrix(torch.tensor(0.5))
         tensor([[ 0.9689-0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
@@ -392,7 +392,7 @@ class SingleExcitationMinus(Operation):
         return _single_excitations_matrix(phi, -0.5j)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -409,7 +409,7 @@ class SingleExcitationMinus(Operation):
 
         **Example:**
 
-        >>> qml.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
+        >>> qp.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
         [H(1),
          CNOT(wires=[1, 0]),
          RY(0.615, wires=[0]),
@@ -423,16 +423,16 @@ class SingleExcitationMinus(Operation):
 
         """
         decomp_ops = [
-            qml.Hadamard(wires[1]),
-            qml.CNOT([wires[1], wires[0]]),
-            qml.RY(phi / 2, wires[0]),
-            qml.RY(phi / 2, wires[1]),
-            qml.CY([wires[1], wires[0]]),
-            qml.S(wires[1]),
-            qml.Hadamard(wires[1]),
-            qml.RZ(phi / 2, wires[1]),
-            qml.CNOT(wires),
-            qml.GlobalPhase(phi / 4),
+            qp.Hadamard(wires[1]),
+            qp.CNOT([wires[1], wires[0]]),
+            qp.RY(phi / 2, wires[0]),
+            qp.RY(phi / 2, wires[1]),
+            qp.CY([wires[1], wires[0]]),
+            qp.S(wires[1]),
+            qp.Hadamard(wires[1]),
+            qp.RZ(phi / 2, wires[1]),
+            qp.CNOT(wires),
+            qp.GlobalPhase(phi / 4),
         ]
         return decomp_ops
 
@@ -451,28 +451,28 @@ class SingleExcitationMinus(Operation):
 
 def _single_excitation_minus_decomp_resources():
     return {
-        qml.Hadamard: 2,
-        qml.CY: 1,
-        qml.CNOT: 2,
-        qml.RY: 2,
-        qml.S: 1,
-        qml.RZ: 1,
-        qml.GlobalPhase: 1,
+        qp.Hadamard: 2,
+        qp.CY: 1,
+        qp.CNOT: 2,
+        qp.RY: 2,
+        qp.S: 1,
+        qp.RZ: 1,
+        qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_single_excitation_minus_decomp_resources)
 def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
-    qml.Hadamard(wires[1])
-    qml.CNOT([wires[1], wires[0]])
-    qml.RY(phi / 2, wires[0])
-    qml.RY(phi / 2, wires[1])
-    qml.CY([wires[1], wires[0]])
-    qml.S(wires[1])
-    qml.Hadamard(wires[1])
-    qml.RZ(phi / 2, wires[1])
-    qml.CNOT(wires)
-    qml.GlobalPhase(phi / 4)
+    qp.Hadamard(wires[1])
+    qp.CNOT([wires[1], wires[0]])
+    qp.RY(phi / 2, wires[0])
+    qp.RY(phi / 2, wires[1])
+    qp.CY([wires[1], wires[0]])
+    qp.S(wires[1])
+    qp.Hadamard(wires[1])
+    qp.RZ(phi / 2, wires[1])
+    qp.CNOT(wires)
+    qp.GlobalPhase(phi / 4)
 
 
 add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
@@ -527,11 +527,11 @@ class SingleExcitationPlus(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
-        return qml.Hamiltonian(
+        return qp.Hamiltonian(
             [0.25, 0.25, -0.25, 0.25],
-            [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
+            [qp.Identity(w1), qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2), qp.Z(w1) @ qp.Z(w2)],
         )
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
@@ -555,7 +555,7 @@ class SingleExcitationPlus(Operation):
 
         **Example**
 
-        >>> qml.SingleExcitationPlus.compute_matrix(torch.tensor(0.5))
+        >>> qp.SingleExcitationPlus.compute_matrix(torch.tensor(0.5))
         tensor([[ 0.9689+0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
@@ -564,7 +564,7 @@ class SingleExcitationPlus(Operation):
         return _single_excitations_matrix(phi, 0.5j)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -582,22 +582,22 @@ class SingleExcitationPlus(Operation):
         **Example:**
 
         >>> from pprint import pprint
-        >>> decomp = qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
+        >>> decomp = qp.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
         >>> pprint(decomp)
         [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075, wires=[])]
 
         """
         decomp_ops = [
-            qml.Hadamard(wires[1]),
-            qml.CNOT([wires[1], wires[0]]),
-            qml.RY(phi / 2, wires[0]),
-            qml.RY(phi / 2, wires[1]),
-            qml.CY([wires[1], wires[0]]),
-            qml.S(wires[1]),
-            qml.Hadamard(wires[1]),
-            qml.RZ(-phi / 2, wires[1]),
-            qml.CNOT(wires),
-            qml.GlobalPhase(-phi / 4),
+            qp.Hadamard(wires[1]),
+            qp.CNOT([wires[1], wires[0]]),
+            qp.RY(phi / 2, wires[0]),
+            qp.RY(phi / 2, wires[1]),
+            qp.CY([wires[1], wires[0]]),
+            qp.S(wires[1]),
+            qp.Hadamard(wires[1]),
+            qp.RZ(-phi / 2, wires[1]),
+            qp.CNOT(wires),
+            qp.GlobalPhase(-phi / 4),
         ]
         return decomp_ops
 
@@ -616,28 +616,28 @@ class SingleExcitationPlus(Operation):
 
 def _single_excitation_plus_decomp_resources():
     return {
-        qml.Hadamard: 2,
-        qml.CY: 1,
-        qml.CNOT: 2,
-        qml.RY: 2,
-        qml.S: 1,
-        qml.RZ: 1,
-        qml.GlobalPhase: 1,
+        qp.Hadamard: 2,
+        qp.CY: 1,
+        qp.CNOT: 2,
+        qp.RY: 2,
+        qp.S: 1,
+        qp.RZ: 1,
+        qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_single_excitation_plus_decomp_resources)
 def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
-    qml.Hadamard(wires[1])
-    qml.CNOT([wires[1], wires[0]])
-    qml.RY(phi / 2, wires[0])
-    qml.RY(phi / 2, wires[1])
-    qml.CY([wires[1], wires[0]])
-    qml.S(wires[1])
-    qml.Hadamard(wires[1])
-    qml.RZ(-phi / 2, wires[1])
-    qml.CNOT(wires)
-    qml.GlobalPhase(-phi / 4)
+    qp.Hadamard(wires[1])
+    qp.CNOT([wires[1], wires[0]])
+    qp.RY(phi / 2, wires[0])
+    qp.RY(phi / 2, wires[1])
+    qp.CY([wires[1], wires[0]])
+    qp.S(wires[1])
+    qp.Hadamard(wires[1])
+    qp.RZ(-phi / 2, wires[1])
+    qp.CNOT(wires)
+    qp.GlobalPhase(-phi / 4)
 
 
 add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)
@@ -683,14 +683,14 @@ class DoubleExcitation(Operation):
 
     .. code-block::
 
-        dev = qml.device('default.qubit', wires=4)
+        dev = qp.device('default.qubit', wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi):
-            qml.X(0)
-            qml.X(1)
-            qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-            return qml.state()
+            qp.X(0)
+            qp.X(1)
+            qp.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+            return qp.state()
 
         circuit(0.1)
     """
@@ -716,23 +716,23 @@ class DoubleExcitation(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
-        return qml.Hamiltonian(
+        return qp.Hamiltonian(
             [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
             [
-                qml.X(w0) @ qml.X(w1) @ qml.X(w2) @ qml.Y(w3),
-                qml.X(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.X(w3),
-                qml.X(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.X(w3),
-                qml.X(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.Y(w3),
-                qml.Y(w0) @ qml.X(w1) @ qml.X(w2) @ qml.X(w3),
-                qml.Y(w0) @ qml.X(w1) @ qml.Y(w2) @ qml.Y(w3),
-                qml.Y(w0) @ qml.Y(w1) @ qml.X(w2) @ qml.Y(w3),
-                qml.Y(w0) @ qml.Y(w1) @ qml.Y(w2) @ qml.X(w3),
+                qp.X(w0) @ qp.X(w1) @ qp.X(w2) @ qp.Y(w3),
+                qp.X(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.X(w3),
+                qp.X(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.X(w3),
+                qp.X(w0) @ qp.Y(w1) @ qp.Y(w2) @ qp.Y(w3),
+                qp.Y(w0) @ qp.X(w1) @ qp.X(w2) @ qp.X(w3),
+                qp.Y(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.Y(w3),
+                qp.Y(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.Y(w3),
+                qp.Y(w0) @ qp.Y(w1) @ qp.Y(w2) @ qp.X(w3),
             ],
         )
 
-    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
@@ -761,7 +761,7 @@ class DoubleExcitation(Operation):
         return _double_excitations_matrix(phi, 0.0)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -781,7 +781,7 @@ class DoubleExcitation(Operation):
 
         **Example:**
 
-        >>> qml.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
+        >>> qp.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
         [CNOT(wires=[2, 3]),
         CNOT(wires=[0, 2]),
         H(3),
@@ -814,34 +814,34 @@ class DoubleExcitation(Operation):
         """
         # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
-            qml.CNOT(wires=[wires[2], wires[3]]),
-            qml.CNOT(wires=[wires[0], wires[2]]),
-            qml.Hadamard(wires=wires[3]),
-            qml.Hadamard(wires=wires[0]),
-            qml.CNOT(wires=[wires[2], wires[3]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.RY(phi / 8, wires=wires[1]),
-            qml.RY(-phi / 8, wires=wires[0]),
-            qml.CNOT(wires=[wires[0], wires[3]]),
-            qml.Hadamard(wires=wires[3]),
-            qml.CNOT(wires=[wires[3], wires[1]]),
-            qml.RY(phi / 8, wires=wires[1]),
-            qml.RY(-phi / 8, wires=wires[0]),
-            qml.CNOT(wires=[wires[2], wires[1]]),
-            qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.RY(-phi / 8, wires=wires[1]),
-            qml.RY(phi / 8, wires=wires[0]),
-            qml.CNOT(wires=[wires[3], wires[1]]),
-            qml.Hadamard(wires=wires[3]),
-            qml.CNOT(wires=[wires[0], wires[3]]),
-            qml.RY(-phi / 8, wires=wires[1]),
-            qml.RY(phi / 8, wires=wires[0]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.Hadamard(wires=wires[0]),
-            qml.Hadamard(wires=wires[3]),
-            qml.CNOT(wires=[wires[0], wires[2]]),
-            qml.CNOT(wires=[wires[2], wires[3]]),
+            qp.CNOT(wires=[wires[2], wires[3]]),
+            qp.CNOT(wires=[wires[0], wires[2]]),
+            qp.Hadamard(wires=wires[3]),
+            qp.Hadamard(wires=wires[0]),
+            qp.CNOT(wires=[wires[2], wires[3]]),
+            qp.CNOT(wires=[wires[0], wires[1]]),
+            qp.RY(phi / 8, wires=wires[1]),
+            qp.RY(-phi / 8, wires=wires[0]),
+            qp.CNOT(wires=[wires[0], wires[3]]),
+            qp.Hadamard(wires=wires[3]),
+            qp.CNOT(wires=[wires[3], wires[1]]),
+            qp.RY(phi / 8, wires=wires[1]),
+            qp.RY(-phi / 8, wires=wires[0]),
+            qp.CNOT(wires=[wires[2], wires[1]]),
+            qp.CNOT(wires=[wires[2], wires[0]]),
+            qp.RY(-phi / 8, wires=wires[1]),
+            qp.RY(phi / 8, wires=wires[0]),
+            qp.CNOT(wires=[wires[3], wires[1]]),
+            qp.Hadamard(wires=wires[3]),
+            qp.CNOT(wires=[wires[0], wires[3]]),
+            qp.RY(-phi / 8, wires=wires[1]),
+            qp.RY(phi / 8, wires=wires[0]),
+            qp.CNOT(wires=[wires[0], wires[1]]),
+            qp.CNOT(wires=[wires[2], wires[0]]),
+            qp.Hadamard(wires=wires[0]),
+            qp.Hadamard(wires=wires[3]),
+            qp.CNOT(wires=[wires[0], wires[2]]),
+            qp.CNOT(wires=[wires[2], wires[3]]),
         ]
 
         return decomp_ops
@@ -860,64 +860,64 @@ class DoubleExcitation(Operation):
 
 
 def _doublexcit_resource():
-    return {qml.CNOT: 14, qml.Hadamard: 6, qml.RY: 8}
+    return {qp.CNOT: 14, qp.Hadamard: 6, qp.RY: 8}
 
 
 @register_resources(_doublexcit_resource)
 def _doublexcit(phi: TensorLike, wires: WiresLike, **_):
-    qml.CNOT(wires=[wires[2], wires[3]])
-    qml.CNOT(wires=[wires[0], wires[2]])
-    qml.Hadamard(wires=wires[3])
-    qml.Hadamard(wires=wires[0])
-    qml.CNOT(wires=[wires[2], wires[3]])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    qml.RY(phi / 8, wires=wires[1])
-    qml.RY(-phi / 8, wires=wires[0])
-    qml.CNOT(wires=[wires[0], wires[3]])
-    qml.Hadamard(wires=wires[3])
-    qml.CNOT(wires=[wires[3], wires[1]])
-    qml.RY(phi / 8, wires=wires[1])
-    qml.RY(-phi / 8, wires=wires[0])
-    qml.CNOT(wires=[wires[2], wires[1]])
-    qml.CNOT(wires=[wires[2], wires[0]])
-    qml.RY(-phi / 8, wires=wires[1])
-    qml.RY(phi / 8, wires=wires[0])
-    qml.CNOT(wires=[wires[3], wires[1]])
-    qml.Hadamard(wires=wires[3])
-    qml.CNOT(wires=[wires[0], wires[3]])
-    qml.RY(-phi / 8, wires=wires[1])
-    qml.RY(phi / 8, wires=wires[0])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    qml.CNOT(wires=[wires[2], wires[0]])
-    qml.Hadamard(wires=wires[0])
-    qml.Hadamard(wires=wires[3])
-    qml.CNOT(wires=[wires[0], wires[2]])
-    qml.CNOT(wires=[wires[2], wires[3]])
+    qp.CNOT(wires=[wires[2], wires[3]])
+    qp.CNOT(wires=[wires[0], wires[2]])
+    qp.Hadamard(wires=wires[3])
+    qp.Hadamard(wires=wires[0])
+    qp.CNOT(wires=[wires[2], wires[3]])
+    qp.CNOT(wires=[wires[0], wires[1]])
+    qp.RY(phi / 8, wires=wires[1])
+    qp.RY(-phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[0], wires[3]])
+    qp.Hadamard(wires=wires[3])
+    qp.CNOT(wires=[wires[3], wires[1]])
+    qp.RY(phi / 8, wires=wires[1])
+    qp.RY(-phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[2], wires[1]])
+    qp.CNOT(wires=[wires[2], wires[0]])
+    qp.RY(-phi / 8, wires=wires[1])
+    qp.RY(phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[3], wires[1]])
+    qp.Hadamard(wires=wires[3])
+    qp.CNOT(wires=[wires[0], wires[3]])
+    qp.RY(-phi / 8, wires=wires[1])
+    qp.RY(phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[0], wires[1]])
+    qp.CNOT(wires=[wires[2], wires[0]])
+    qp.Hadamard(wires=wires[0])
+    qp.Hadamard(wires=wires[3])
+    qp.CNOT(wires=[wires[0], wires[2]])
+    qp.CNOT(wires=[wires[2], wires[3]])
 
 
 def _doublexcit_ppr_resource():
     return {
-        resource_rep(qml.PauliRot, pauli_word="YYYX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YYXY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YXYY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="YXXX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="XYYY"): 1,
-        resource_rep(qml.PauliRot, pauli_word="XYXX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="XXYX"): 1,
-        resource_rep(qml.PauliRot, pauli_word="XXXY"): 1,
+        resource_rep(qp.PauliRot, pauli_word="YYYX"): 1,
+        resource_rep(qp.PauliRot, pauli_word="YYXY"): 1,
+        resource_rep(qp.PauliRot, pauli_word="YXYY"): 1,
+        resource_rep(qp.PauliRot, pauli_word="YXXX"): 1,
+        resource_rep(qp.PauliRot, pauli_word="XYYY"): 1,
+        resource_rep(qp.PauliRot, pauli_word="XYXX"): 1,
+        resource_rep(qp.PauliRot, pauli_word="XXYX"): 1,
+        resource_rep(qp.PauliRot, pauli_word="XXXY"): 1,
     }
 
 
 @register_resources(_doublexcit_ppr_resource)
 def _doublexcit_ppr(phi: TensorLike, wires: WiresLike, **_):
-    qml.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
-    qml.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
-    qml.PauliRot(-phi / 8, pauli_word="YXYY", wires=wires)
-    qml.PauliRot(phi / 8, pauli_word="YXXX", wires=wires)
-    qml.PauliRot(-phi / 8, pauli_word="XYYY", wires=wires)
-    qml.PauliRot(phi / 8, pauli_word="XYXX", wires=wires)
-    qml.PauliRot(-phi / 8, pauli_word="XXYX", wires=wires)
-    qml.PauliRot(-phi / 8, pauli_word="XXXY", wires=wires)
+    qp.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
+    qp.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="YXYY", wires=wires)
+    qp.PauliRot(phi / 8, pauli_word="YXXX", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="XYYY", wires=wires)
+    qp.PauliRot(phi / 8, pauli_word="XYXX", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="XXYX", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="XXXY", wires=wires)
 
 
 add_decomps(DoubleExcitation, _doublexcit, _doublexcit_ppr)
@@ -976,13 +976,13 @@ class DoubleExcitationPlus(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.SparseHamiltonian":
+    def generator(self) -> "qp.SparseHamiltonian":
         G = -1 * np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = csr_matrix(-0.5 * G)
-        return qml.SparseHamiltonian(H, wires=self.wires)
+        return qp.SparseHamiltonian(H, wires=self.wires)
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
@@ -1073,13 +1073,13 @@ class DoubleExcitationMinus(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.SparseHamiltonian":
+    def generator(self) -> "qp.SparseHamiltonian":
         G = np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = csr_matrix(-0.5 * G)
-        return qml.SparseHamiltonian(H, wires=self.wires)
+        return qp.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1159,12 +1159,12 @@ class OrbitalRotation(Operation):
 
     .. code-block::
 
-        >>> dev = qml.device('default.qubit', wires=4)
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device('default.qubit', wires=4)
+        >>> @qp.qnode(dev)
         ... def circuit(phi):
-        ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-        ...     qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-        ...     return qml.state()
+        ...     qp.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+        ...     qp.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        ...     return qp.state()
         >>> circuit(0.1)
         array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
                 0.00249792+0.j,  0.        +0.j,  0.        +0.j,
@@ -1195,15 +1195,15 @@ class OrbitalRotation(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
-        return qml.Hamiltonian(
+        return qp.Hamiltonian(
             [0.25, -0.25, 0.25, -0.25],
             [
-                qml.X(w0) @ qml.Z(w1) @ qml.Y(w2),
-                (qml.Y(w0) @ qml.Z(w1) @ qml.X(w2)),
-                (qml.X(w1) @ qml.Z(w2) @ qml.Y(w3)),
-                (qml.Y(w1) @ qml.Z(w2) @ qml.X(w3)),
+                qp.X(w0) @ qp.Z(w1) @ qp.Y(w2),
+                (qp.Y(w0) @ qp.Z(w1) @ qp.X(w2)),
+                (qp.X(w1) @ qp.Z(w2) @ qp.Y(w3)),
+                (qp.Y(w1) @ qp.Z(w2) @ qp.X(w3)),
             ],
         )
 
@@ -1242,17 +1242,17 @@ class OrbitalRotation(Operation):
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
         # It has been further modifided for the decomposition consistent with interleaved JW ordering.
 
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
 
-        if qml.math.ndim(phi) == 0:
-            diag = qml.math.diag(
+        if qp.math.ndim(phi) == 0:
+            diag = qp.math.diag(
                 [1.0, c, c, c**2, c, 1.0, c**2, c, c, c**2, 1.0, c, c**2, c, c, 1.0]
             )
-            if qml.math.get_interface(phi) == "torch":
-                mask_s = qml.math.convert_like(OrbitalRotation.mask_s, phi)
-                mask_cs = qml.math.convert_like(OrbitalRotation.mask_cs, phi)
-                mask_s2 = qml.math.convert_like(OrbitalRotation.mask_s2, phi)
+            if qp.math.get_interface(phi) == "torch":
+                mask_s = qp.math.convert_like(OrbitalRotation.mask_s, phi)
+                mask_cs = qp.math.convert_like(OrbitalRotation.mask_cs, phi)
+                mask_s2 = qp.math.convert_like(OrbitalRotation.mask_s2, phi)
                 return diag + s * mask_s + (c * s) * mask_cs + s**2 * mask_s2
             return (
                 diag
@@ -1261,23 +1261,23 @@ class OrbitalRotation(Operation):
                 + s**2 * OrbitalRotation.mask_s2
             )
 
-        ones = qml.math.ones_like(c)
-        diag = qml.math.stack(
+        ones = qp.math.ones_like(c)
+        diag = qp.math.stack(
             [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
             axis=-1,
         )
 
-        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
+        diag = qp.math.einsum("ij,jk->ijk", diag, I16)
         off_diag = (
-            qml.math.einsum("i,jk->ijk", s, OrbitalRotation.mask_s)
-            + qml.math.einsum("i,jk->ijk", c * s, OrbitalRotation.mask_cs)
-            + qml.math.einsum("i,jk->ijk", s**2, OrbitalRotation.mask_s2)
+            qp.math.einsum("i,jk->ijk", s, OrbitalRotation.mask_s)
+            + qp.math.einsum("i,jk->ijk", c * s, OrbitalRotation.mask_cs)
+            + qp.math.einsum("i,jk->ijk", s**2, OrbitalRotation.mask_s2)
         )
 
         return diag + off_diag
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1298,16 +1298,16 @@ class OrbitalRotation(Operation):
 
         **Example:**
 
-        >>> qml.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
+        >>> qp.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
         [FermionicSWAP(3.141592653589793, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 1]), SingleExcitation(1.2, wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[1, 2])]
 
         """
 
         return [
-            qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
-            qml.SingleExcitation(phi, wires=[wires[0], wires[1]]),
-            qml.SingleExcitation(phi, wires=[wires[2], wires[3]]),
-            qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
+            qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
+            qp.SingleExcitation(phi, wires=[wires[0], wires[1]]),
+            qp.SingleExcitation(phi, wires=[wires[2], wires[3]]),
+            qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
         ]
 
     def adjoint(self) -> "OrbitalRotation":
@@ -1316,15 +1316,15 @@ class OrbitalRotation(Operation):
 
 
 def _orbital_rotation_decomposition_resources():
-    return {qml.FermionicSWAP: 2, qml.SingleExcitation: 2}
+    return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
 
 
 @register_resources(_orbital_rotation_decomposition_resources)
 def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
-    qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
-    qml.SingleExcitation(phi, wires=[wires[0], wires[1]])
-    qml.SingleExcitation(phi, wires=[wires[2], wires[3]])
-    qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
+    qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
+    qp.SingleExcitation(phi, wires=[wires[0], wires[1]])
+    qp.SingleExcitation(phi, wires=[wires[2], wires[3]])
+    qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
 
 
 add_decomps(OrbitalRotation, _orbital_rotation_decomp)
@@ -1377,12 +1377,12 @@ class FermionicSWAP(Operation):
 
     .. code-block::
 
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> @qml.qnode(dev)
+        >>> dev = qp.device('default.qubit', wires=2)
+        >>> @qp.qnode(dev)
         ... def circuit(phi):
-        ...     qml.X(1)
-        ...     qml.FermionicSWAP(phi, wires=[0, 1])
-        ...     return qml.state()
+        ...     qp.X(1)
+        ...     qp.FermionicSWAP(phi, wires=[0, 1])
+        ...     return qp.state()
         >>> circuit(0.1)
         array([0.        +0.j        , 0.99750208+0.04991671j,
                0.00249792-0.04991671j, 0.        +0.j        ])
@@ -1409,16 +1409,16 @@ class FermionicSWAP(Operation):
     def resource_params(self) -> dict:
         return {}
 
-    def generator(self) -> "qml.Hamiltonian":
+    def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
-        return qml.Hamiltonian(
+        return qp.Hamiltonian(
             [0.5, -0.25, -0.25, -0.25, -0.25],
             [
-                qml.Identity(w1) @ qml.Identity(w2),
-                qml.Identity(w1) @ qml.Z(w2),
-                qml.Z(w1) @ qml.Identity(w2),
-                qml.X(w1) @ qml.X(w2),
-                qml.Y(w1) @ qml.Y(w2),
+                qp.Identity(w1) @ qp.Identity(w2),
+                qp.Identity(w1) @ qp.Z(w2),
+                qp.Z(w1) @ qp.Identity(w2),
+                qp.X(w1) @ qp.X(w2),
+                qp.Y(w1) @ qp.Y(w2),
             ],
         )
 
@@ -1443,7 +1443,7 @@ class FermionicSWAP(Operation):
 
         **Example**
 
-        >>> qml.FermionicSWAP.compute_matrix(torch.tensor(0.5))
+        >>> qp.FermionicSWAP.compute_matrix(torch.tensor(0.5))
         tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9388+0.2397j, 0.0612-0.2397j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0612-0.2397j, 0.9388+0.2397j, 0.0000+0.0000j],
@@ -1452,27 +1452,27 @@ class FermionicSWAP(Operation):
         """
 
         if (
-            qml.math.get_interface(phi) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qml.math.cast_like(phi, 1j)
+            phi = qp.math.cast_like(phi, 1j)
 
-        c = qml.math.cast_like(qml.math.cos(phi / 2), 1j)
-        s = qml.math.cast_like(qml.math.sin(phi / 2), 1j)
-        g = qml.math.cast_like(qml.math.exp(1j * phi / 2), 1j)
-        p = qml.math.cast_like(qml.math.exp(1j * phi), 1j)
+        c = qp.math.cast_like(qp.math.cos(phi / 2), 1j)
+        s = qp.math.cast_like(qp.math.sin(phi / 2), 1j)
+        g = qp.math.cast_like(qp.math.exp(1j * phi / 2), 1j)
+        p = qp.math.cast_like(qp.math.exp(1j * phi), 1j)
 
-        zeros = qml.math.zeros_like(phi)
-        ones = qml.math.ones_like(phi)
+        zeros = qp.math.zeros_like(phi)
+        ones = qp.math.ones_like(phi)
         rows = [
             [ones, zeros, zeros, zeros],
             [zeros, g * c, -1j * g * s, zeros],
             [zeros, -1j * g * s, g * c, zeros],
             [zeros, zeros, zeros, p],
         ]
-        return qml.math.stack([stack_last(row) for row in rows], axis=-2)
+        return qp.math.stack([stack_last(row) for row in rows], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1489,7 +1489,7 @@ class FermionicSWAP(Operation):
 
         **Example:**
 
-        >>> qml.FermionicSWAP.compute_decomposition(0.2, wires=(0, 1))
+        >>> qp.FermionicSWAP.compute_decomposition(0.2, wires=(0, 1))
         [H(0),
          H(1),
          MultiRZ(0.1, wires=[0, 1]),
@@ -1505,20 +1505,20 @@ class FermionicSWAP(Operation):
          Exp(0.1j Identity)]
         """
         decomp_ops = [
-            qml.Hadamard(wires=wires[0]),
-            qml.Hadamard(wires=wires[1]),
-            qml.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
-            qml.Hadamard(wires=wires[0]),
-            qml.Hadamard(wires=wires[1]),
-            qml.RX(np.pi / 2, wires=wires[0]),
-            qml.RX(np.pi / 2, wires=wires[1]),
-            qml.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
-            qml.RX(-np.pi / 2, wires=wires[0]),
-            qml.RX(-np.pi / 2, wires=wires[1]),
-            qml.RZ(phi / 2, wires=wires[0]),
-            qml.RZ(phi / 2, wires=wires[1]),
+            qp.Hadamard(wires=wires[0]),
+            qp.Hadamard(wires=wires[1]),
+            qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
+            qp.Hadamard(wires=wires[0]),
+            qp.Hadamard(wires=wires[1]),
+            qp.RX(np.pi / 2, wires=wires[0]),
+            qp.RX(np.pi / 2, wires=wires[1]),
+            qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
+            qp.RX(-np.pi / 2, wires=wires[0]),
+            qp.RX(-np.pi / 2, wires=wires[1]),
+            qp.RZ(phi / 2, wires=wires[0]),
+            qp.RZ(phi / 2, wires=wires[1]),
             # for correcting global phase
-            qml.exp(qml.Identity(wires=[wires[0], wires[1]]), 0.5j * phi),
+            qp.exp(qp.Identity(wires=[wires[0], wires[1]]), 0.5j * phi),
         ]
         return decomp_ops
 
@@ -1526,7 +1526,7 @@ class FermionicSWAP(Operation):
         (phi,) = self.parameters
         return FermionicSWAP(-phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [FermionicSWAP(self.data[0] * z, wires=self.wires)]
 
     def label(
@@ -1540,30 +1540,30 @@ class FermionicSWAP(Operation):
 
 def _fermionic_swap_decomp_resources():
     return {
-        qml.Hadamard: 4,
-        qml.resource_rep(qml.MultiRZ, num_wires=2): 2,
-        qml.RX: 4,
-        qml.RZ: 2,
-        qml.GlobalPhase: 1,
+        qp.Hadamard: 4,
+        qp.resource_rep(qp.MultiRZ, num_wires=2): 2,
+        qp.RX: 4,
+        qp.RZ: 2,
+        qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_fermionic_swap_decomp_resources)
 def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
-    qml.Hadamard(wires=wires[0])
-    qml.Hadamard(wires=wires[1])
-    qml.MultiRZ(phi / 2, wires=[wires[0], wires[1]])
-    qml.Hadamard(wires=wires[0])
-    qml.Hadamard(wires=wires[1])
-    qml.RX(np.pi / 2, wires=wires[0])
-    qml.RX(np.pi / 2, wires=wires[1])
-    qml.MultiRZ(phi / 2, wires=[wires[0], wires[1]])
-    qml.RX(-np.pi / 2, wires=wires[0])
-    qml.RX(-np.pi / 2, wires=wires[1])
-    qml.RZ(phi / 2, wires=wires[0])
-    qml.RZ(phi / 2, wires=wires[1])
+    qp.Hadamard(wires=wires[0])
+    qp.Hadamard(wires=wires[1])
+    qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]])
+    qp.Hadamard(wires=wires[0])
+    qp.Hadamard(wires=wires[1])
+    qp.RX(np.pi / 2, wires=wires[0])
+    qp.RX(np.pi / 2, wires=wires[1])
+    qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]])
+    qp.RX(-np.pi / 2, wires=wires[0])
+    qp.RX(-np.pi / 2, wires=wires[1])
+    qp.RZ(phi / 2, wires=wires[0])
+    qp.RZ(phi / 2, wires=wires[1])
     # for correcting global phase
-    qml.GlobalPhase(-0.5 * phi, wires=[wires[0], wires[1]])
+    qp.GlobalPhase(-0.5 * phi, wires=[wires[0], wires[1]])
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)

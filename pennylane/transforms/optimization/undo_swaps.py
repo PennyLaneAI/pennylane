@@ -36,25 +36,25 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=3)
+    >>> dev = qp.device('default.qubit', wires=3)
 
     You can apply the transform directly on a :class:`QNode`
 
     .. code-block:: python
 
         @undo_swaps
-        @qml.qnode(device=dev)
+        @qp.qnode(device=dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.X(1)
-            qml.SWAP(wires=[0,1])
-            qml.SWAP(wires=[0,2])
-            qml.Y(0)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(wires=0)
+            qp.X(1)
+            qp.SWAP(wires=[0,1])
+            qp.SWAP(wires=[0,2])
+            qp.Y(0)
+            return qp.expval(qp.Z(0))
 
     The SWAP gates are removed before execution.
 
@@ -66,18 +66,18 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         .. code-block:: python
 
             def qfunc():
-                qml.Hadamard(wires=0)
-                qml.X(1)
-                qml.SWAP(wires=[0,1])
-                qml.SWAP(wires=[0,2])
-                qml.Y(0)
-                return qml.expval(qml.Z(0))
+                qp.Hadamard(wires=0)
+                qp.X(1)
+                qp.SWAP(wires=[0,1])
+                qp.SWAP(wires=[0,2])
+                qp.Y(0)
+                return qp.expval(qp.Z(0))
 
         The circuit before optimization:
 
-        >>> dev = qml.device('default.qubit', wires=3)
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)())
+        >>> dev = qp.device('default.qubit', wires=3)
+        >>> qnode = qp.QNode(qfunc, dev)
+        >>> print(qp.draw(qnode)())
         0: ──H─╭SWAP─╭SWAP──Y─┤  <Z>
         1: ──X─╰SWAP─│────────┤
         2: ──────────╰SWAP────┤
@@ -86,8 +86,8 @@ def undo_swaps(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingF
         We can remove the SWAP gates by running the ``undo_swap`` transform:
 
         >>> optimized_qfunc = undo_swaps(qfunc)
-        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        >>> print(qml.draw(optimized_qnode)())
+        >>> optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        >>> print(qp.draw(optimized_qnode)())
         0: ──Y─┤  <Z>
         1: ──H─┤
         2: ──X─┤

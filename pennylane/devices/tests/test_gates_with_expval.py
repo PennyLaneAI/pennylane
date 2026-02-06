@@ -47,10 +47,10 @@ class TestGatesQubitExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisState(np.array(par), wires=wires)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            qp.BasisState(np.array(par), wires=wires)
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -79,10 +79,10 @@ class TestGatesQubitExpval:
 
         par = np.array(par)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.StatePrep(par, wires=wires)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+            qp.StatePrep(par, wires=wires)
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1)), qp.expval(qp.Z(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -139,12 +139,12 @@ class TestGatesQubitExpval:
 
         n_wires = 1
         dev = device(n_wires)
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             op(*par, wires=0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -207,13 +207,13 @@ class TestGatesQubitExpval:
 
         n_wires = 2
         dev = device(n_wires)
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qp.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(*par, wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -232,12 +232,12 @@ class TestGatesQubitExpval:
         n_wires = 1
         dev = device(n_wires)
 
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             op(wires=0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -255,15 +255,15 @@ class TestGatesQubitExpval:
         n_wires = 2
         dev = device(n_wires)
 
-        op = getattr(qml.ops, name)
-        if isinstance(dev, qml.devices.LegacyDevice) and not dev.supports_operation(op):
+        op = getattr(qp.ops, name)
+        if isinstance(dev, qp.devices.LegacyDevice) and not dev.supports_operation(op):
             pytest.skip("operation not supported")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
+            qp.StatePrep(np.array([1 / 2, 0, 0, sqrt(3) / 2]), wires=[0, 1])
             op(wires=[0, 1])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
@@ -278,12 +278,12 @@ class TestGatesQubitExpval:
         n_wires = 3
         dev = device(n_wires)
 
-        op = getattr(qml.ops, name)
+        op = getattr(qp.ops, name)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
+            qp.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
             op(wires=[0, 1, 2])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1)), qp.expval(qp.Z(2))
 
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))

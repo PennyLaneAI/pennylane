@@ -69,13 +69,13 @@ def adjoint(fn, lazy=True):
 
         This function supports a batched operator:
 
-        >>> op = qml.adjoint(qml.RX([1, 2, 3], wires=0))
-        >>> qml.matrix(op).shape
+        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))
+        >>> qp.matrix(op).shape
         (3, 2, 2)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.adjoint([qml.RX(1, wires=0), qml.RX(2, wires=0)])
+        >>> op = qp.adjoint([qp.RX(1, wires=0), qp.RX(2, wires=0)])
         Traceback (most recent call last):
             ...
         ValueError: The object [RX(1, wires=[0]), RX(2, wires=[0])] of type <class 'list'> is not callable.
@@ -87,13 +87,13 @@ def adjoint(fn, lazy=True):
 
     The adjoint transform can accept a single operator.
 
-    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    >>> @qp.qnode(qp.device('default.qubit', wires=1))
     ... def circuit2(y):
-    ...     qml.adjoint(qml.RY(y, wires=0))
-    ...     return qml.expval(qml.Z(0))
-    >>> print(qml.draw(circuit2)("y"))
+    ...     qp.adjoint(qp.RY(y, wires=0))
+    ...     return qp.expval(qp.Z(0))
+    >>> print(qp.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
-    >>> print(qml.draw(circuit2, level="device")(0.1))
+    >>> print(qp.draw(circuit2, level="device")(0.1))
     0: ──RY(0.10)†─┤  <Z>
 
     The adjoint transforms can also be used to apply the adjoint of
@@ -105,21 +105,21 @@ def adjoint(fn, lazy=True):
     .. code-block:: python
 
         def my_ops(a, wire):
-            qml.RX(a, wires=wire)
-            qml.SX(wire)
+            qp.RX(a, wires=wire)
+            qp.SX(wire)
 
-        dev = qml.device('default.qubit', wires=1)
+        dev = qp.device('default.qubit', wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(a):
             my_ops(a, wire=0)
-            qml.adjoint(my_ops)(a, wire=0)
-            return qml.expval(qml.Z(0))
+            qp.adjoint(my_ops)(a, wire=0)
+            return qp.expval(qp.Z(0))
 
     Printing this out, we can see that the inverse quantum
     function has indeed been applied:
 
-    >>> print(qml.draw(circuit)(0.2))
+    >>> print(qp.draw(circuit)(0.2))
     0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
 
     **Example with compiler**
@@ -128,19 +128,19 @@ def adjoint(fn, lazy=True):
 
     .. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def workflow(theta, n, wires):
             def func():
-                @qml.for_loop(0, n, 1)
+                @qp.for_loop(0, n, 1)
                 def loop_fn(i):
-                    qml.RX(theta, wires=wires)
+                    qp.RX(theta, wires=wires)
 
                 loop_fn()
-            qml.adjoint(func)()
-            return qml.probs()
+            qp.adjoint(func)()
+            return qp.probs()
 
     >>> import jax.numpy as jnp
     >>> workflow(jnp.pi/2, 3, 0)
@@ -159,11 +159,11 @@ def adjoint(fn, lazy=True):
         an :meth:`.Operator.adjoint` method is the object wrapped with the :class:`~.ops.op_math.Adjoint`
         wrapper class.
 
-        >>> qml.adjoint(qml.Z(0), lazy=False)
+        >>> qp.adjoint(qp.Z(0), lazy=False)
         Z(0)
-        >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
+        >>> qp.adjoint(qp.RX, lazy=False)(1.0, wires=0)
         RX(-1.0, wires=[0])
-        >>> qml.adjoint(qml.S, lazy=False)(0)
+        >>> qp.adjoint(qp.S, lazy=False)(0)
         Adjoint(S(0))
 
     """
@@ -175,13 +175,13 @@ def adjoint(fn, lazy=True):
 
 
 def create_adjoint_op(fn, lazy):
-    """Main logic for qml.adjoint, but allows bypassing the compiler dispatch if needed."""
-    if qml.math.is_abstract(fn):
+    """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
+    if qp.math.is_abstract(fn):
         return Adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if callable(fn):
-        if qml.capture.enabled():
+        if qp.capture.enabled():
             return _capture_adjoint_transform(fn, lazy=lazy)
         return _adjoint_transform(fn, lazy=lazy)
     raise ValueError(
@@ -230,7 +230,7 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
-        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
         flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
@@ -249,10 +249,10 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+        qscript = qp.tape.make_qscript(qfunc)(*args, **kwargs)
 
-        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
-        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
@@ -289,15 +289,15 @@ class Adjoint(SymbolicOp):
 
     **Example**
 
-    >>> op = Adjoint(qml.S(0))
+    >>> op = Adjoint(qp.S(0))
     >>> op.name
     'Adjoint(S)'
-    >>> qml.matrix(op)
+    >>> qp.matrix(op)
     array([[1.-0.j, 0.-0.j],
        [0.-0.j, 0.-1.j]])
-    >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
+    >>> qp.generator(Adjoint(qp.RX(1.0, wires=0)))
     (X(0), np.float64(0.5))
-    >>> Adjoint(qml.RX(1.234, wires=0)).data
+    >>> Adjoint(qp.RX(1.234, wires=0)).data
     (1.234,)
 
     .. details::
@@ -307,8 +307,8 @@ class Adjoint(SymbolicOp):
         For example, when provided an ``Operation``, the instance will inherit from ``Operation`` and
         the ``AdjointOperation`` mixin.
 
-        >>> op = Adjoint(qml.RX(1.234, wires=0))
-        >>> isinstance(op, qml.operation.Operation)
+        >>> op = Adjoint(qp.RX(1.234, wires=0))
+        >>> isinstance(op, qp.operation.Operation)
         True
         >>> isinstance(op, AdjointOperation)
         True
@@ -330,7 +330,7 @@ class Adjoint(SymbolicOp):
     @classmethod
     def _primitive_bind_call(cls, base, **kwargs):
         if isinstance(base, Operator):
-            qml.QueuingManager.remove(base)
+            qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
         return cls._primitive.bind(base, **kwargs)
 
@@ -351,8 +351,8 @@ class Adjoint(SymbolicOp):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, id=id)
         if self.base.pauli_rep:
-            pr = {pw: qml.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
-            self._pauli_rep = qml.pauli.PauliSentence(pr)
+            pr = {pw: qp.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
+            self._pauli_rep = qp.pauli.PauliSentence(pr)
         else:
             self._pauli_rep = None
 
@@ -420,9 +420,9 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        base = self.base if qml.capture.enabled() else self.base.simplify()
+        base = self.base if qp.capture.enabled() else self.base.simplify()
         if base.has_adjoint:
-            return base.adjoint() if qml.capture.enabled() else base.adjoint().simplify()
+            return base.adjoint() if qp.capture.enabled() else base.adjoint().simplify()
         return Adjoint(base=base)
 
 

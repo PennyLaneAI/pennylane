@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qml.simplify function.
+This module contains the qp.simplify function.
 """
 from __future__ import annotations
 
@@ -43,16 +43,16 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
         (Operator or MeasurementProcess or qnode (QNode) or quantum function (Callable)
         or tuple[List[QuantumTape], function]): Simplified input. If an operator or measurement
         process is provided as input, the simplified input is returned directly. Otherwise, the
-        transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
+        transformed circuit is returned as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
-    Given an instantiated operator, ``qml.simplify`` reduces the operator's arithmetic depth:
+    Given an instantiated operator, ``qp.simplify`` reduces the operator's arithmetic depth:
 
-    >>> op = qml.adjoint(qml.RX(0.54, wires=0) + qml.X(0) + qml.Z(1))
+    >>> op = qp.adjoint(qp.RX(0.54, wires=0) + qp.X(0) + qp.Z(1))
     >>> op.arithmetic_depth
     2
-    >>> sim_op = qml.simplify(op)
+    >>> sim_op = qp.simplify(op)
     >>> sim_op.arithmetic_depth
     1
     >>> type(sim_op)
@@ -62,28 +62,28 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
 
     This function can also simplify the number of rotation gate parameters:
 
-    >>> qml.simplify(qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
+    >>> qp.simplify(qp.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
     RX(0.1, wires=[0])
 
     Both types of simplification occur together:
 
-    >>> op = qml.adjoint(qml.U2(-np.pi/2, np.pi/2, wires=0) + qml.X(0))
+    >>> op = qp.adjoint(qp.U2(-np.pi/2, np.pi/2, wires=0) + qp.X(0))
     >>> op
     Adjoint(U2(-1.5707963267948966, 1.5707963267948966, wires=[0]) + X(0))
-    >>> qml.simplify(op)
+    >>> qp.simplify(op)
     RX(10.995574287564276, wires=[0]) + X(0)
 
-    Moreover, ``qml.simplify`` can be used to simplify QNodes or quantum functions:
+    Moreover, ``qp.simplify`` can be used to simplify QNodes or quantum functions:
 
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev)
-    ... @qml.simplify
+    >>> dev = qp.device("default.qubit", wires=2)
+    >>> @qp.qnode(dev)
+    ... @qp.simplify
     ... def circuit():
-    ...     qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
-    ...     return qml.probs(wires=0)
+    ...     qp.adjoint(qp.prod(qp.RX(1, 0) ** 1, qp.RY(1, 0), qp.RZ(1, 0)))
+    ...     return qp.probs(wires=0)
     >>> circuit()
     array([0.64596329, 0.35403671])
-    >>> tape = qml.workflow.construct_tape(circuit)()
+    >>> tape = qp.workflow.construct_tape(circuit)()
     >>> list(tape)
     [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
      probs(wires=[0])]
@@ -93,7 +93,7 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
             with QueuingManager.stop_recording():
                 new_op = copy(input.simplify())
             QueuingManager.remove(input)
-            return qml.apply(new_op)
+            return qp.apply(new_op)
         return input.simplify()
 
     if isinstance(input, QuantumScript) or callable(input):
@@ -102,9 +102,9 @@ def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Call
     raise ValueError(f"Cannot simplify the object {input} of type {type(input)}.")
 
 
-@qml.transform
+@qp.transform
 def _simplify_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    with qml.QueuingManager.stop_recording():
+    with qp.QueuingManager.stop_recording():
         new_operations = [op.simplify() for op in tape.operations]
         new_measurements = [m.simplify() for m in tape.measurements]
 

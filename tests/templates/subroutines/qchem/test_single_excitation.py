@@ -26,8 +26,8 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     weight = np.pi / 3
-    op = qml.FermionicSingleExcitation(weight, wires=[0, 1, 2])
-    qml.ops.functions.assert_valid(op)
+    op = qp.FermionicSingleExcitation(weight, wires=[0, 1, 2])
+    qp.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -39,53 +39,53 @@ class TestDecomposition:
             (
                 [0, 1, 2],
                 [
-                    [0, qml.RX, [0], [-np.pi / 2]],
-                    [1, qml.Hadamard, [2], []],
-                    [7, qml.RX, [0], [np.pi / 2]],
-                    [8, qml.Hadamard, [2], []],
-                    [9, qml.Hadamard, [0], []],
-                    [10, qml.RX, [2], [-np.pi / 2]],
-                    [16, qml.Hadamard, [0], []],
-                    [17, qml.RX, [2], [np.pi / 2]],
-                    [4, qml.RZ, [2], [np.pi / 6]],
-                    [13, qml.RZ, [2], [-np.pi / 6]],
+                    [0, qp.RX, [0], [-np.pi / 2]],
+                    [1, qp.Hadamard, [2], []],
+                    [7, qp.RX, [0], [np.pi / 2]],
+                    [8, qp.Hadamard, [2], []],
+                    [9, qp.Hadamard, [0], []],
+                    [10, qp.RX, [2], [-np.pi / 2]],
+                    [16, qp.Hadamard, [0], []],
+                    [17, qp.RX, [2], [np.pi / 2]],
+                    [4, qp.RZ, [2], [np.pi / 6]],
+                    [13, qp.RZ, [2], [-np.pi / 6]],
                 ],
             ),
             (
                 [10, 11],
                 [
-                    [0, qml.RX, [10], [-np.pi / 2]],
-                    [1, qml.Hadamard, [11], []],
-                    [12, qml.Hadamard, [10], []],
-                    [13, qml.RX, [11], [np.pi / 2]],
-                    [3, qml.RZ, [11], [np.pi / 6]],
-                    [10, qml.RZ, [11], [-np.pi / 6]],
+                    [0, qp.RX, [10], [-np.pi / 2]],
+                    [1, qp.Hadamard, [11], []],
+                    [12, qp.Hadamard, [10], []],
+                    [13, qp.RX, [11], [np.pi / 2]],
+                    [3, qp.RZ, [11], [np.pi / 6]],
+                    [10, qp.RZ, [11], [-np.pi / 6]],
                 ],
             ),
             (
                 [1, 2, 3, 4],
                 [
-                    [2, qml.CNOT, [1, 2], []],
-                    [3, qml.CNOT, [2, 3], []],
-                    [4, qml.CNOT, [3, 4], []],
-                    [6, qml.CNOT, [3, 4], []],
-                    [7, qml.CNOT, [2, 3], []],
-                    [8, qml.CNOT, [1, 2], []],
-                    [13, qml.CNOT, [1, 2], []],
-                    [14, qml.CNOT, [2, 3], []],
-                    [15, qml.CNOT, [3, 4], []],
-                    [17, qml.CNOT, [3, 4], []],
-                    [18, qml.CNOT, [2, 3], []],
-                    [19, qml.CNOT, [1, 2], []],
+                    [2, qp.CNOT, [1, 2], []],
+                    [3, qp.CNOT, [2, 3], []],
+                    [4, qp.CNOT, [3, 4], []],
+                    [6, qp.CNOT, [3, 4], []],
+                    [7, qp.CNOT, [2, 3], []],
+                    [8, qp.CNOT, [1, 2], []],
+                    [13, qp.CNOT, [1, 2], []],
+                    [14, qp.CNOT, [2, 3], []],
+                    [15, qp.CNOT, [3, 4], []],
+                    [17, qp.CNOT, [3, 4], []],
+                    [18, qp.CNOT, [2, 3], []],
+                    [19, qp.CNOT, [1, 2], []],
                 ],
             ),
             (
                 [10, 11],
                 [
-                    [2, qml.CNOT, [10, 11], []],
-                    [4, qml.CNOT, [10, 11], []],
-                    [9, qml.CNOT, [10, 11], []],
-                    [11, qml.CNOT, [10, 11], []],
+                    [2, qp.CNOT, [10, 11], []],
+                    [4, qp.CNOT, [10, 11], []],
+                    [9, qp.CNOT, [10, 11], []],
+                    [11, qp.CNOT, [10, 11], []],
                 ],
             ),
         ],
@@ -99,7 +99,7 @@ class TestDecomposition:
         sqg = 10
         cnots = 4 * (len(single_wires) - 1)
         weight = np.pi / 3
-        op = qml.FermionicSingleExcitation(weight, wires=single_wires)
+        op = qp.FermionicSingleExcitation(weight, wires=single_wires)
         queue = op.decomposition()
 
         assert len(queue) == sqg + cnots
@@ -122,18 +122,18 @@ class TestDecomposition:
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.FermionicSingleExcitation(0.4, wires=[1, 0, 2])
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.FermionicSingleExcitation(0.4, wires=[1, 0, 2])
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.FermionicSingleExcitation(0.4, wires=["a", "z", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.FermionicSingleExcitation(0.4, wires=["a", "z", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -152,12 +152,12 @@ class TestDecomposition:
     @pytest.mark.capture
     def test_decomposition_new_capture(self, single_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.FermionicSingleExcitation(
+        op = qp.FermionicSingleExcitation(
             np.pi / 3,
             wires=single_wires,
         )
 
-        for rule in qml.list_decomps(qml.FermionicSingleExcitation):
+        for rule in qp.list_decomps(qp.FermionicSingleExcitation):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
@@ -170,12 +170,12 @@ class TestDecomposition:
     )
     def test_decomposition_new(self, single_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.FermionicSingleExcitation(
+        op = qp.FermionicSingleExcitation(
             np.pi / 3,
             wires=single_wires,
         )
 
-        for rule in qml.list_decomps(qml.FermionicSingleExcitation):
+        for rule in qp.list_decomps(qp.FermionicSingleExcitation):
             _test_decomposition_rule(op, rule)
 
 
@@ -193,26 +193,26 @@ class TestInputs:
     def test_single_excitation_unitary_exceptions(self, weight, single_wires, msg_match):
         """Test that FermionicSingleExcitation throws an exception if ``weight`` or
         ``single_wires`` parameter has illegal shapes, types or values."""
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         def circuit(weight=weight):
-            qml.FermionicSingleExcitation(weight=weight, wires=single_wires)
-            return qml.expval(qml.PauliZ(0))
+            qp.FermionicSingleExcitation(weight=weight, wires=single_wires)
+            return qp.expval(qp.PauliZ(0))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qp.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             qnode(weight=weight)
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.FermionicSingleExcitation(0.4, wires=[1, 0, 2], id="a")
+        template = qp.FermionicSingleExcitation(0.4, wires=[1, 0, 2], id="a")
         assert template.id == "a"
 
 
 def circuit_template(weight):
-    qml.FermionicSingleExcitation(weight, wires=[0, 1])
-    return qml.expval(qml.PauliZ(0))
+    qp.FermionicSingleExcitation(weight, wires=[0, 1])
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -225,12 +225,12 @@ class TestInterfaces:
 
         weight = pnp.array(0.5, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
 
         circuit(weight)
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
 
         # since test cases are hard to construct
         # for this template, just check that the gradient is computed
@@ -245,9 +245,9 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         weight = jnp.array(0.5)
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
 
         circuit(weight)
         grad_fn = jax.grad(circuit)
@@ -263,15 +263,15 @@ class TestInterfaces:
         import jax.numpy as jnp
 
         weight = jnp.array(0.5)
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         jit_circuit = jax.jit(circuit)
-        assert qml.math.allclose(circuit(weight), jit_circuit(weight))
+        assert qp.math.allclose(circuit(weight), jit_circuit(weight))
 
         grad_fn = jax.grad(circuit)
         grad_jit = jax.grad(jit_circuit)
-        assert qml.math.allclose(grad_fn(weight), grad_jit(weight))
+        assert qp.math.allclose(grad_fn(weight), grad_jit(weight))
 
     @pytest.mark.tf
     def test_tf(self):
@@ -280,9 +280,9 @@ class TestInterfaces:
         import tensorflow as tf
 
         weight = tf.Variable(0.5)
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
 
         circuit(weight)
 
@@ -300,9 +300,9 @@ class TestInterfaces:
 
         weight = torch.tensor(0.5, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
 
         circuit(weight)
 

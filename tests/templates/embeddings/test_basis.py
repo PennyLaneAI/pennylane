@@ -24,16 +24,16 @@ from pennylane import numpy as pnp
 @pytest.mark.jax
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    wires = qml.wires.Wires((0, 1, 2))
-    op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    wires = qp.wires.Wires((0, 1, 2))
+    op = qp.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
-    wires = qml.wires.Wires((0, 1, 2))
-    op = qml.BasisEmbedding(features=[1, 1, 1], wires=wires)
+    wires = qp.wires.Wires((0, 1, 2))
+    op = qp.BasisEmbedding(features=[1, 1, 1], wires=wires)
     data, metadata = op._flatten()
     assert np.allclose(data[0], [1, 1, 1])
     assert metadata[0] == wires
@@ -42,7 +42,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = op._unflatten(*op._flatten())
-    qml.assert_equal(op, new_op)
+    qp.assert_equal(op, new_op)
     assert op is not new_op
 
 
@@ -53,8 +53,8 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue."""
 
-        op = qml.BasisEmbedding(features=features, wires=range(3))
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.BasisEmbedding(features=features, wires=range(3))
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == features.count(1)
         for gate in tape.operations:
@@ -65,12 +65,12 @@ class TestDecomposition:
         """Checks that the correct state is prepared."""
 
         n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qp.device("default.qubit", wires=n_qubits)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.BasisEmbedding(features=x, wires=range(2))
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
+            qp.BasisEmbedding(features=x, wires=range(2))
+            return [qp.expval(qp.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=state)
         expected = [1 if s == 0 else -1 for s in state]
@@ -80,18 +80,18 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = [1, 0, 1]
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.BasisEmbedding(features, wires=range(3))
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.BasisEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.BasisEmbedding(features, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -111,7 +111,7 @@ class TestInputs:
         """checks conversion from features as int to a list of binary digits
         with length = len(wires)"""
 
-        assert np.allclose(qml.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
+        assert np.allclose(qp.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
 
     @pytest.mark.parametrize(
         "x, msg",
@@ -124,12 +124,12 @@ class TestInputs:
     def test_wrong_input_bits_exception(self, x, msg):
         """Checks exception if number of features is not same as number of qubits."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(features=x, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
+            qp.BasisEmbedding(features=x, wires=range(2))
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg):
             circuit()
@@ -137,12 +137,12 @@ class TestInputs:
     def test_input_not_binary_exception(self):
         """Checks exception if the features contain values other than zero and one."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.BasisEmbedding(features=x, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
+            qp.BasisEmbedding(features=x, wires=range(2))
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="Basis state must only consist of"):
             circuit(x=[2, 3])
@@ -150,33 +150,33 @@ class TestInputs:
     def test_exception_wrong_dim(self):
         """Checks exception if the number of dimensions of features is incorrect."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x=None):
-            qml.BasisEmbedding(features=x, wires=2)
-            return qml.expval(qml.PauliZ(0))
+            qp.BasisEmbedding(features=x, wires=2)
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="State must be one-dimensional"):
             circuit(x=[[1], [0]])
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.BasisEmbedding([0, 1], wires=[0, 1], id="a")
+        template = qp.BasisEmbedding([0, 1], wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.BasisEmbedding(features, wires=range(3))
-    return qml.state()
+    qp.BasisEmbedding(features, wires=range(3))
+    return qp.state()
 
 
 def circuit_decomposed(features):
     # convert tensor to list
-    feats = list(qml.math.array(features))
-    _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
+    feats = list(qp.math.array(features))
+    _ = [qp.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
-    return qml.state()
+    return qp.state()
 
 
 class TestInterfaces:
@@ -186,21 +186,21 @@ class TestInterfaces:
         """Tests common iterables as inputs."""
         features = [0, 1, 0]
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tuple(features))
         res2 = circuit2(tuple(features))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd(self, tol):
@@ -208,17 +208,17 @@ class TestInterfaces:
 
         features = pnp.array([0, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(pnp.array(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol):
@@ -228,17 +228,17 @@ class TestInterfaces:
 
         features = jnp.array([0, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(jnp.array(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax_jit(self, tol):
@@ -249,18 +249,18 @@ class TestInterfaces:
 
         features = jnp.array([0, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = jax.jit(qml.QNode(circuit_template, dev))
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = jax.jit(qp.QNode(circuit_template, dev))
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(2)
         res2 = circuit2(2)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -270,17 +270,17 @@ class TestInterfaces:
 
         features = tf.Variable([0, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tf.Variable(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf_autograph(self, tol):
@@ -290,17 +290,17 @@ class TestInterfaces:
 
         features = tf.Variable([0, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tf.Variable(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):
@@ -310,14 +310,14 @@ class TestInterfaces:
 
         features = torch.tensor([0, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(torch.tensor(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)

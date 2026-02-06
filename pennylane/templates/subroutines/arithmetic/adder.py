@@ -70,12 +70,12 @@ class Adder(Operation):
         x_wires =[0,1,2,3]
         work_wires=[4,5]
 
-        dev = qml.device("default.qubit")
-        @qml.qnode(dev, shots=1)
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev, shots=1)
         def circuit():
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.Adder(k, x_wires, mod, work_wires)
-            return qml.sample(wires=x_wires)
+            qp.BasisEmbedding(x, wires=x_wires)
+            qp.Adder(k, x_wires, mod, work_wires)
+            return qp.sample(wires=x_wires)
 
     >>> print(circuit())
     [[1 1 0 1]]
@@ -201,7 +201,7 @@ class Adder(Operation):
 
         **Example**
 
-        >>> qml.Adder.compute_decomposition(k=2, x_wires=[0,1,2], mod=8, work_wires=[3])
+        >>> qp.Adder.compute_decomposition(k=2, x_wires=[0,1,2], mod=8, work_wires=[3])
         [(Adjoint(QFT(wires=[0, 1, 2]))) @ PhaseAdder(wires=[0, 1, 2]) @ QFT(wires=[0, 1, 2])]
         """
         if mod == 2 ** len(x_wires):

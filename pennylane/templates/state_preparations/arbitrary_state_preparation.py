@@ -68,19 +68,19 @@ class ArbitraryStatePreparation(Operation):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def vqe(weights):
-            qml.ArbitraryStatePreparation(weights, wires=[0, 1, 2, 3])
+            qp.ArbitraryStatePreparation(weights, wires=[0, 1, 2, 3])
 
-            return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
+            return qp.expval(qp.Hermitian(H, wires=[0, 1, 2, 3]))
 
     The shape of the weights parameter can be computed as follows:
 
     .. code-block:: python
 
-        shape = qml.ArbitraryStatePreparation.shape(n_wires=4)
+        shape = qp.ArbitraryStatePreparation.shape(n_wires=4)
 
     """
 
@@ -89,7 +89,7 @@ class ArbitraryStatePreparation(Operation):
     resource_keys = {"num_wires"}
 
     def __init__(self, weights, wires, id=None):
-        shape = qml.math.shape(weights)
+        shape = qp.math.shape(weights)
         if shape != (2 ** (len(wires) + 1) - 2,):
             raise ValueError(
                 f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
@@ -128,7 +128,7 @@ class ArbitraryStatePreparation(Operation):
         **Example**
 
         >>> weights = torch.tensor([1., 2., 3., 4., 5., 6.])
-        >>> ops = qml.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
+        >>> ops = qp.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
         >>> from pprint import pprint
         >>> pprint(ops)
         [PauliRot(1.0, XI, wires=['a', 'b']),
@@ -141,7 +141,7 @@ class ArbitraryStatePreparation(Operation):
         """
         op_list = []
         for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
-            op_list.append(qml.PauliRot(weights[i], pauli_word, wires=wires))
+            op_list.append(qp.PauliRot(weights[i], pauli_word, wires=wires))
 
         return op_list
 
@@ -161,7 +161,7 @@ class ArbitraryStatePreparation(Operation):
 def _arbitrary_state_preparation_resources(num_wires):
     return dict(
         Counter(
-            resource_rep(qml.PauliRot, pauli_word=pauli_word)
+            resource_rep(qp.PauliRot, pauli_word=pauli_word)
             for pauli_word in _state_preparation_pauli_words(num_wires)
         )
     )
@@ -174,7 +174,7 @@ def _arbitrary_state_preparation_decomposition(weights, wires):
     @for_loop(len(pauli_words))
     def pauli_loop(i):
         pauli_word = pauli_words[i]
-        qml.PauliRot(weights[i], pauli_word, wires=wires)
+        qp.PauliRot(weights[i], pauli_word, wires=wires)
 
     pauli_loop()  # pylint: disable=no-value-for-parameter
 

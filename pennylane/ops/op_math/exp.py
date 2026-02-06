@@ -47,9 +47,9 @@ def _get_has_generator_types(num_wires):
     # Store operator classes with generators
     has_generator_types = []
     any_wires_types = []
-    for op_name in qml.ops.qubit.__all__:
-        op_class = getattr(qml.ops.qubit, op_name)
-        if op_class not in {qml.PauliRot, qml.PCPhase} and op_class.has_generator:
+    for op_name in qp.ops.qubit.__all__:
+        op_class = getattr(qp.ops.qubit, op_name)
+        if op_class not in {qp.PauliRot, qp.PCPhase} and op_class.has_generator:
             if op_class.num_wires == num_wires:
                 has_generator_types.append(op_class)
             elif op_class.num_wires is None:
@@ -62,19 +62,19 @@ def _get_has_generator_types(num_wires):
 
 def _find_equal_generator(base, coeff):
     for op_class in _get_has_generator_types(len(base.wires)):
-        g, c = qml.generator(op_class)(coeff, base.wires)
+        g, c = qp.generator(op_class)(coeff, base.wires)
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
-        mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+        mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires)))
 
-        if qml.equal(mapped_wires_g, base):
+        if qp.equal(mapped_wires_g, base):
             # Cancel the coefficients added by the generator
             coeff = math.real(-1j / c * coeff)
             return op_class(coeff, g.wires)
 
         # could have absorbed the coefficient.
-        simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
+        simplified_g = qp.simplify(qp.s_prod(c, mapped_wires_g))
 
-        if qml.equal(simplified_g, base):
+        if qp.equal(simplified_g, base):
             coeff = math.real(-1j * coeff)
             return op_class(coeff, g.wires)
 
@@ -97,19 +97,19 @@ def exp(op, coeff: float = 1.0, id: str | None = None):
 
         This operator supports a batched base, a batched coefficient and a combination of both:
 
-        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=4)
-        >>> qml.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=4)
+        >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qml.exp(qml.RX(1, wires=0), coeff=[1, 2, 3])
-        >>> qml.matrix(op).shape
+        >>> op = qp.exp(qp.RX(1, wires=0), coeff=[1, 2, 3])
+        >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
-        >>> qml.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
+        >>> qp.matrix(op).shape
         (3, 2, 2)
 
         But it doesn't support batching of operators:
 
-        >>> qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
+        >>> qp.exp([qp.RX(1, wires=0), qp.RX(2, wires=0)], coeff=4)
         Traceback (most recent call last):
             ...
         TypeError: base is expected to be of type Operator, but received <class 'list'>
@@ -119,35 +119,35 @@ def exp(op, coeff: float = 1.0, id: str | None = None):
     This symbolic operator can be used to make general rotation operators:
 
     >>> x = np.array(1.23)
-    >>> op = qml.exp(qml.X(0), -0.5j * x)
-    >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
+    >>> op = qp.exp(qp.X(0), -0.5j * x)
+    >>> qp.math.allclose(op.matrix(), qp.RX(x, wires=0).matrix())
     True
 
     This can even be used for more complicated generators:
 
-    >>> t = qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1)
-    >>> isingxy = qml.exp(t, 0.25j * x)
-    >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+    >>> t = qp.X(0) @ qp.X(1) + qp.Y(0) @ qp.Y(1)
+    >>> isingxy = qp.exp(t, 0.25j * x)
+    >>> qp.math.allclose(isingxy.matrix(), qp.IsingXY(x, wires=(0,1)).matrix())
     True
 
     If the coefficient is purely imaginary and the base operator is Hermitian, then
     the gate can be used in a circuit, though it may not be supported by the device and
     may not be differentiable.
 
-    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    >>> @qp.qnode(qp.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     qml.exp(qml.X(0), -0.5j * x)
-    ...     return qml.expval(qml.Z(0))
-    >>> print(qml.draw(circuit)(1.23))
+    ...     qp.exp(qp.X(0), -0.5j * x)
+    ...     return qp.expval(qp.Z(0))
+    >>> print(qp.draw(circuit)(1.23))
     0: ──Exp(0.00-0.61j X)─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
 
-    >>> obs = qml.exp(qml.Z(0), 3)
-    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    >>> obs = qp.exp(qp.Z(0), 3)
+    >>> @qp.qnode(qp.device('default.qubit', wires=1))
     ... def circuit():
-    ...     return qml.expval(obs)
+    ...     return qp.expval(obs)
     >>> print(circuit())
     20.085...
 
@@ -169,35 +169,35 @@ class Exp(ScalarSymbolicOp, Operation):
     This symbolic operator can be used to make general rotation operators:
 
     >>> x = np.array(1.23)
-    >>> op = Exp( qml.X(0), -0.5j * x)
-    >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
+    >>> op = Exp( qp.X(0), -0.5j * x)
+    >>> qp.math.allclose(op.matrix(), qp.RX(x, wires=0).matrix())
     True
 
     This can even be used for more complicated generators:
 
-    >>> t = qml.X(0) @ qml.X(1) + qml.Y(0) @ qml.Y(1)
+    >>> t = qp.X(0) @ qp.X(1) + qp.Y(0) @ qp.Y(1)
     >>> isingxy = Exp(t, 0.25j * x)
-    >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+    >>> qp.math.allclose(isingxy.matrix(), qp.IsingXY(x, wires=(0,1)).matrix())
     True
 
     If the coefficient is purely imaginary and the base operator is Hermitian, then
     the gate can be used in a circuit, though it may not be supported by the device and
     may not be differentiable.
 
-    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    >>> @qp.qnode(qp.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     Exp(qml.X(0), -0.5j * x)
-    ...     return qml.expval(qml.Z(0))
-    >>> print(qml.draw(circuit)(1.23))
+    ...     Exp(qp.X(0), -0.5j * x)
+    ...     return qp.expval(qp.Z(0))
+    >>> print(qp.draw(circuit)(1.23))
     0: ──Exp(0.00-0.61j X)─┤  <Z>
 
     If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
     can be measured as an observable:
 
-    >>> obs = Exp(qml.Z(0), 3)
-    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    >>> obs = Exp(qp.Z(0), 3)
+    >>> @qp.qnode(qp.device('default.qubit', wires=1))
     ... def circuit():
-    ...     return qml.expval(obs)
+    ...     return qp.expval(obs)
     >>> print(circuit())
     20.085...
 
@@ -269,7 +269,7 @@ class Exp(ScalarSymbolicOp, Operation):
             # if type is Evolution, we assume that is is indeed time evolution
             return False
 
-        if qml.pauli.is_pauli_word(base):
+        if qp.pauli.is_pauli_word(base):
             return True
 
         op = _find_equal_generator(base, coeff)
@@ -335,7 +335,7 @@ class Exp(ScalarSymbolicOp, Operation):
         if op is not None:
             return [op]
 
-        if qml.pauli.is_pauli_word(base):
+        if qp.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
@@ -359,8 +359,8 @@ class Exp(ScalarSymbolicOp, Operation):
             if math.get_interface(coeff) == "jax"
             else math.real_if_close(2j * coeff)  # only cast to real if close
         )
-        pauli_word = qml.pauli.pauli_word_to_string(base)
-        return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
+        pauli_word = qp.pauli.pauli_word_to_string(base)
+        return [qp.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
     def matrix(self, wire_order=None):
         coeff_interface = math.get_interface(self.scalar)
@@ -379,7 +379,7 @@ class Exp(ScalarSymbolicOp, Operation):
                 )
                 if len(self.diagonalizing_gates()) == 0:
                     return math.expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
-                diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
+                diagonalizing_mat = qp.matrix(self.diagonalizing_gates, wire_order=self.wires)()
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
@@ -417,10 +417,10 @@ class Exp(ScalarSymbolicOp, Operation):
             \quad \Longrightarrow \quad
             e^{c \mathbf{M}} \mathbf{v} = e^{c \lambda} \mathbf{v}
 
-        >>> obs = Exp(qml.X(0), 3)
-        >>> qml.eigvals(obs)
+        >>> obs = Exp(qp.X(0), 3)
+        >>> qp.eigvals(obs)
         array([20.08...,  0.049...])
-        >>> np.exp(3 * qml.eigvals(qml.X(0)))
+        >>> np.exp(3 * qp.eigvals(qp.X(0)))
         array([20.08...,  0.049...])
 
         """
@@ -464,7 +464,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
         we get the generator
 
-        >>> U = qml.ops.op_math.Evolution(0.5 * qml.Y(0) + qml.Z(0) @ qml.X(1), 1)
+        >>> U = qp.ops.op_math.Evolution(0.5 * qp.Y(0) + qp.Z(0) @ qp.X(1), 1)
         >>> print(U)
         Evolution(-1j 0.5 * Y(0) + Z(0) @ X(1))
         >>> U.generator()
@@ -485,13 +485,13 @@ def _pauli_rot_decomp_condition(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
-    return qml.pauli.is_pauli_word(base)
+    return qp.pauli.is_pauli_word(base)
 
 
 def _pauli_rot_decomp_resource(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    return {resource_rep(qml.PauliRot, pauli_word=qml.pauli.pauli_word_to_string(base)): 1}
+    return {resource_rep(qp.PauliRot, pauli_word=qp.pauli.pauli_word_to_string(base)): 1}
 
 
 @register_condition(_pauli_rot_decomp_condition)
@@ -501,12 +501,12 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     coeff = params[0]
-    if isinstance(base, qml.ops.SProd):
+    if isinstance(base, qp.ops.SProd):
         coeff, base = params[0] * base.scalar, base.base
     coeff = 2j * coeff  # The 2j cancels the coefficient added by PauliRot
-    pauli_word = qml.pauli.pauli_word_to_string(base)
+    pauli_word = qp.pauli.pauli_word_to_string(base)
     if not all(p == "I" for p in pauli_word):
-        qml.PauliRot(coeff, pauli_word, base.wires)
+        qp.PauliRot(coeff, pauli_word, base.wires)
 
 
 add_decomps(Exp, pauli_rot_decomp)

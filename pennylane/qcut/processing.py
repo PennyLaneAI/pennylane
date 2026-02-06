@@ -37,7 +37,7 @@ def qcut_processing_fn(
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         results (Sequence[Sequence]): A collection of execution results generated from the
@@ -86,7 +86,7 @@ def qcut_processing_fn_sample(results: Sequence, communication_graph, shots: int
     .. note::
 
         This function is designed for use as part of the sampling-based circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
+        Check out the :func:`qp.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
         results (Sequence): a collection of sample-based execution results generated from the
@@ -126,7 +126,7 @@ def qcut_processing_fn_mc(
     .. note::
 
         This function is designed for use as part of the sampling-based circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
+        Check out the :func:`qp.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
         results (Sequence): a collection of sample-based execution results generated from the
@@ -223,7 +223,7 @@ def contract_tensors(
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Consider the three tensors :math:`T^{(1)}`, :math:`T^{(2)}`, and :math:`T^{(3)}`, along with
     their contraction equation
@@ -293,7 +293,7 @@ def contract_tensors(
 
     The network can then be contracted using:
 
-    >>> qml.qcut.contract_tensors(tensors, graph, prep, meas)
+    >>> qp.qcut.contract_tensors(tensors, graph, prep, meas)
     38
     """
     # pylint: disable=import-outside-toplevel
@@ -360,7 +360,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     1. Reshapes ``results`` into the intermediate shape ``(4,) * n_prep + (4**n_meas,)``
     2. Shuffles the final axis to follow the standard product over measurement settings. E.g., for
       ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
-      will be the result of ``qml.pauli.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
+      will be the result of ``qp.pauli.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
       YY.
     3. Reshapes into the final target shape ``(4,) * (n_prep + n_meas)``
     4. Performs a change of basis for the preparation indices (the first ``n_prep`` indices) from

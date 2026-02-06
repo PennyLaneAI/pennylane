@@ -78,18 +78,18 @@ class SelectPauliRot(Operation):
 
         angles = np.array([1.0, 2.0, 3.0, 4.0])
 
-        wires = qml.registers({"control": 2, "target": 1})
-        dev = qml.device("default.qubit", wires=3)
+        wires = qp.registers({"control": 2, "target": 1})
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.SelectPauliRot(
+            qp.SelectPauliRot(
                 angles,
                 control_wires=wires["control"],
                 target_wire=wires["target"],
                 rot_axis="Y",
             )
-            return qml.state()
+            return qp.state()
 
     >>> print(circuit()) # doctest: +SKIP
     [0.8776+0.j 0.4794+0.j 0.    +0.j 0.    +0.j 0.    +0.j 0.    +0.j

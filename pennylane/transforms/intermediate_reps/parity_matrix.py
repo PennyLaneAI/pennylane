@@ -47,12 +47,12 @@ def parity_matrix(
         from pennylane.transforms import parity_matrix
 
         def circuit():
-            qml.CNOT((3, 2))
-            qml.CNOT((0, 2))
-            qml.CNOT((2, 1))
-            qml.CNOT((3, 2))
-            qml.CNOT((3, 0))
-            qml.CNOT((0, 2))
+            qp.CNOT((3, 2))
+            qp.CNOT((0, 2))
+            qp.CNOT((2, 1))
+            qp.CNOT((3, 2))
+            qp.CNOT((3, 0))
+            qp.CNOT((0, 2))
 
     >>> parity_matrix(circuit, wire_order=range(4))()
     array([[1, 0, 0, 1],
@@ -74,7 +74,7 @@ def parity_matrix(
     """
 
     def postprocessing_fn(tapes):
-        # This is required in a qml.transforms.transform (see docs therein)
+        # This is required in a qp.transforms.transform (see docs therein)
         circ = tapes[0]
         wires = circ.wires
 
@@ -83,8 +83,8 @@ def parity_matrix(
         if w_order is None:
             w_order = wires
 
-        if not qml.wires.Wires(w_order).contains_wires(wires):
-            raise qml.wires.WireError(
+        if not qp.wires.Wires(w_order).contains_wires(wires):
+            raise qp.wires.WireError(
                 f"The provided wire_order {w_order} does not contain all wires of the circuit {wires}"
             )
 

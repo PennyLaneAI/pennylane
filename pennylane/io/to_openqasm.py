@@ -229,16 +229,16 @@ def to_openqasm(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(theta, phi):
-            qml.RX(theta, wires=0)
-            qml.CNOT(wires=[0,1])
-            qml.RZ(phi, wires=1)
-            return qml.sample()
+            qp.RX(theta, wires=0)
+            qp.CNOT(wires=[0,1])
+            qp.RZ(phi, wires=1)
+            return qp.sample()
 
-    >>> output = qml.to_openqasm(circuit)(1.2, 0.9)
+    >>> output = qp.to_openqasm(circuit)(1.2, 0.9)
     >>> print(output)
     OPENQASM 2.0;
     include "qelib1.inc";
@@ -253,7 +253,7 @@ def to_openqasm(
     Note that the terminal measurements will be re-imported as mid-circuit measurements
     when used with ``from_qasm`` or ``from_qasm3``.
 
-    >>> print(qml.draw(qml.from_qasm(output))())
+    >>> print(qp.draw(qp.from_qasm(output))())
     0: ──RX(1.20)─╭●──┤↗├───────────┤
     1: ───────────╰X──RZ(0.90)──┤↗├─┤
 
@@ -268,15 +268,15 @@ def to_openqasm(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.Hadamard(0)
-                qml.CNOT(wires=[0,1])
-                return qml.sample(wires=1)
+                qp.Hadamard(0)
+                qp.CNOT(wires=[0,1])
+                return qp.sample(wires=1)
 
-        >>> print(qml.to_openqasm(circuit, measure_all=False)())
+        >>> print(qp.to_openqasm(circuit, measure_all=False)())
         OPENQASM 2.0;
         include "qelib1.inc";
         qreg q[2];
@@ -291,15 +291,15 @@ def to_openqasm(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit():
-                qml.Hadamard(0)
-                qml.CNOT(wires=[0,1])
-                return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+                qp.Hadamard(0)
+                qp.CNOT(wires=[0,1])
+                return qp.expval(qp.PauliX(0) @ qp.PauliY(1))
 
-        >>> print(qml.to_openqasm(circuit, rotations=True)())
+        >>> print(qp.to_openqasm(circuit, rotations=True)())
         OPENQASM 2.0;
         include "qelib1.inc";
         qreg q[2];

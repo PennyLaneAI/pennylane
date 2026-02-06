@@ -27,14 +27,14 @@ import pennylane as qp
 @pytest.mark.parametrize(
     ("lcu", "control", "skip_diff"),
     [
-        (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
-        (qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
-        (qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0], False),
-        (0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2), [0], False),
-        (qml.Z(2) + qml.X(1) @ qml.X(2), [0], False),
-        (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1], True),
+        (qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
+        (qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
+        (qp.Hamiltonian([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
+        (0.25 * qp.Z(2) - 0.75 * qp.X(1) @ qp.X(2), [0], False),
+        (qp.Z(2) + qp.X(1) @ qp.X(2), [0], False),
+        (qp.ops.LinearCombination([-0.25, 0.75j], [qp.Z(3), qp.X(2) @ qp.X(3)]), [0, 1], True),
         (
-            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
+            qp.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qp.Z(4), qp.X(4) @ qp.X(5)]),
             [0, 1, 2, 3],
             True,
         ),
@@ -43,18 +43,18 @@ import pennylane as qp
 def test_standard_checks(lcu, control, skip_diff):
     """Run standard validity tests."""
 
-    op = qml.PrepSelPrep(lcu, control)
+    op = qp.PrepSelPrep(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
+    qp.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
 def test_repr():
     """Test the repr method."""
 
-    lcu = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    lcu = qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
     control = [0]
 
-    op = qml.PrepSelPrep(lcu, control)
+    op = qp.PrepSelPrep(lcu, control)
     with np.printoptions(legacy="1.21"):
         assert repr(op) == "PrepSelPrep(lcu=0.25 * Z(2) + 0.75 * (X(1) @ X(2)), control=Wires([0]))"
 
@@ -67,14 +67,14 @@ def _get_new_terms(lcu):
 
     for coeff, op in zip(*lcu.terms()):
 
-        angle = qml.math.angle(coeff)
-        new_coeffs.append(qml.math.abs(coeff))
+        angle = qp.math.angle(coeff)
+        new_coeffs.append(qp.math.abs(coeff))
 
-        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
+        new_op = op @ qp.GlobalPhase(-angle, wires=op.wires)
         new_ops.append(new_op)
 
-    interface = qml.math.get_interface(lcu.terms()[0])
-    new_coeffs = qml.math.array(new_coeffs, like=interface)
+    interface = qp.math.get_interface(lcu.terms()[0])
+    new_coeffs = qp.math.array(new_coeffs, like=interface)
 
     return new_coeffs, new_ops
 
@@ -84,26 +84,26 @@ def manual_circuit(lcu, control):
     """Circuit equivalent to decomposition of PrepSelPrep"""
     coeffs, ops = _get_new_terms(lcu)
 
-    qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
-    qml.Select(ops, control=control, partial=True)
-    qml.adjoint(
-        qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+    qp.AmplitudeEmbedding(qp.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+    qp.Select(ops, control=control, partial=True)
+    qp.adjoint(
+        qp.AmplitudeEmbedding(qp.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
     )
 
 
 def prepselprep_circuit(lcu, control):
     """PrepSelPrep circuit used for testing"""
-    qml.PrepSelPrep(lcu, control)
+    qp.PrepSelPrep(lcu, control)
 
 
 a_set_of_lcus = [
-    qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-    qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-    qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-    0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2),
-    qml.Z(2) + qml.X(1) @ qml.X(2),
-    qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
-    qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
+    qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
+    qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
+    qp.Hamiltonian([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
+    0.25 * qp.Z(2) - 0.75 * qp.X(1) @ qp.X(2),
+    qp.Z(2) + qp.X(1) @ qp.X(2),
+    qp.ops.LinearCombination([-0.25, 0.75j], [qp.Z(3), qp.X(2) @ qp.X(3)]),
+    qp.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qp.Z(4), qp.X(4) @ qp.X(5)]),
 ]
 
 
@@ -111,22 +111,22 @@ class TestPrepSelPrep:
     """Test the correctness of the decomposition"""
 
     # Use these LCUs as test input
-    lcu1 = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-    lcu2 = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
+    lcu1 = qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
+    lcu2 = qp.dot([1 / 2, 1 / 2], [qp.Identity(0), qp.PauliZ(0)])
 
     a = 0.25
     b = 0.75
     A = np.array([[a, 0, 0, b], [0, -a, b, 0], [0, b, a, 0], [b, 0, 0, -a]])
-    decomp = qml.pauli_decompose(A)
+    decomp = qp.pauli_decompose(A)
     coeffs, unitaries = decomp.terms()
-    unitaries = [qml.map_wires(op, {0: 1, 1: 2}) for op in unitaries]
-    lcu3 = qml.dot(coeffs, unitaries)
+    unitaries = [qp.map_wires(op, {0: 1, 1: 2}) for op in unitaries]
+    lcu3 = qp.dot(coeffs, unitaries)
 
-    lcu4 = qml.dot([-0.25, -0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-    lcu5 = qml.dot([1 + 0.25j, 0 - 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)])
-    lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
-    lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
-    lcu8 = qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)])
+    lcu4 = qp.dot([-0.25, -0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
+    lcu5 = qp.dot([1 + 0.25j, 0 - 0.75j], [qp.Z(3), qp.X(2) @ qp.X(3)])
+    lcu6 = qp.dot([0.5, -0.5], [qp.Z(1), qp.X(1)])
+    lcu7 = qp.dot([0.5, -0.5, 0 + 0.5j], [qp.Z(2), qp.X(2), qp.X(2)])
+    lcu8 = qp.dot([0.5, 0.5j], [qp.X(1), qp.Z(1)])
 
     @pytest.mark.parametrize(
         ("lcu", "control", "wire_order"),
@@ -144,55 +144,55 @@ class TestPrepSelPrep:
     def test_against_manual_circuit(self, lcu, control, wire_order):
         """Test that the template produces the corrent decomposition"""
 
-        assert qml.math.allclose(
-            qml.matrix(prepselprep_circuit, wire_order=wire_order)(lcu, control),
-            qml.matrix(manual_circuit, wire_order=wire_order)(lcu, control),
+        assert qp.math.allclose(
+            qp.matrix(prepselprep_circuit, wire_order=wire_order)(lcu, control),
+            qp.matrix(manual_circuit, wire_order=wire_order)(lcu, control),
         )
 
     @pytest.mark.parametrize(
         ("lcu", "control", "wire_order", "dim"),
         [
-            (qml.dot([0.1, -0.4], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
-            (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
-            (qml.dot([0.3, -0.1], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
-            (qml.dot([0.5j, -0.5j], [qml.Z(2), qml.X(2)]), [0, 1], [0, 1, 2], 2),
+            (qp.dot([0.1, -0.4], [qp.Z(1), qp.X(1)]), [0], [0, 1], 2),
+            (qp.dot([0.5, -0.5], [qp.Z(1), qp.X(1)]), [0], [0, 1], 2),
+            (qp.dot([0.3, -0.1], [qp.Z(1), qp.X(1)]), [0], [0, 1], 2),
+            (qp.dot([0.5j, -0.5j], [qp.Z(2), qp.X(2)]), [0, 1], [0, 1, 2], 2),
             (
-                qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]),
+                qp.dot([0.5, 0.5], [qp.Identity(0), qp.PauliZ(0)]),
                 "auxiliary",
                 ["auxiliary", 0],
                 2,
             ),
             (
-                qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]),
+                qp.dot([0.5, 0.5, 0.5], [qp.PauliX(2), qp.PauliY(2), qp.PauliZ(2)]),
                 [0, 1],
                 [0, 1, 2],
                 2,
             ),
-            (qml.dot([0.5, 0.5 + 0.5j], [qml.PauliX(2), qml.PauliY(2)]), [0, 1], [0, 1, 2], 2),
-            (qml.dot([1.0, 0.0], [qml.PauliY(1), qml.PauliZ(1)]), [0], [0, 1], 2),
-            (qml.dot([0.5, 0.5j], [qml.X(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2),
-            (qml.dot([1.0, 1.0, 1.0], [qml.X(2), qml.Y(2), qml.Z(2)]), [0, 1], [0, 1, 2], 2),
-            (qml.dot([0.25, 0.75], [qml.I(1) @ qml.Z(2), qml.X(1) @ qml.X(2)]), [0], [0, 1, 2], 4),
-            (qml.dot([0.25, 0.75], [qml.I(1) @ qml.Z(2), qml.Y(1) @ qml.Y(2)]), [0], [0, 1, 2], 4),
-            (qml.dot([0.25, 0.75], [qml.Z(1), qml.Y(2) @ qml.Y(1)]), [0], [0, 1, 2], 4),
+            (qp.dot([0.5, 0.5 + 0.5j], [qp.PauliX(2), qp.PauliY(2)]), [0, 1], [0, 1, 2], 2),
+            (qp.dot([1.0, 0.0], [qp.PauliY(1), qp.PauliZ(1)]), [0], [0, 1], 2),
+            (qp.dot([0.5, 0.5j], [qp.X(2), qp.Z(2)]), [0, 1], [0, 1, 2], 2),
+            (qp.dot([1.0, 1.0, 1.0], [qp.X(2), qp.Y(2), qp.Z(2)]), [0, 1], [0, 1, 2], 2),
+            (qp.dot([0.25, 0.75], [qp.I(1) @ qp.Z(2), qp.X(1) @ qp.X(2)]), [0], [0, 1, 2], 4),
+            (qp.dot([0.25, 0.75], [qp.I(1) @ qp.Z(2), qp.Y(1) @ qp.Y(2)]), [0], [0, 1, 2], 4),
+            (qp.dot([0.25, 0.75], [qp.Z(1), qp.Y(2) @ qp.Y(1)]), [0], [0, 1, 2], 4),
         ],
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
         """Test that the decomposition is a block-encoding"""
-        matrix = qml.matrix(lcu)
+        matrix = qp.matrix(lcu)
 
         coeffs, _ = _get_new_terms(lcu)
-        normalization_factor = qml.math.sum(coeffs)
-        block_encoding = qml.matrix(prepselprep_circuit, wire_order=wire_order)(
+        normalization_factor = qp.math.sum(coeffs)
+        block_encoding = qp.matrix(prepselprep_circuit, wire_order=wire_order)(
             lcu, control=control
         )
 
-        assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
+        assert qp.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
-    lcu1 = qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    lcu1 = qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
     ops1 = [
-        qml.Z(2) @ qml.GlobalPhase(0, [2]),
-        qml.prod(qml.X(1) @ qml.X(2), qml.GlobalPhase(0, [1, 2])),
+        qp.Z(2) @ qp.GlobalPhase(0, [2]),
+        qp.prod(qp.X(1) @ qp.X(2), qp.GlobalPhase(0, [1, 2])),
     ]
     coeffs1 = lcu1.terms()[0]
 
@@ -203,46 +203,46 @@ class TestPrepSelPrep:
                 lcu1,
                 [0],
                 [
-                    qml.ops.ChangeOpBasis(
-                        qml.AmplitudeEmbedding(
-                            qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
+                    qp.ops.ChangeOpBasis(
+                        qp.AmplitudeEmbedding(
+                            qp.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
                         ),
-                        qml.Select(ops1, control=[0]),
+                        qp.Select(ops1, control=[0]),
                     )
                 ],
             )
         ],
     )
     def test_queuing_ops(self, lcu, control, expected):
-        """Test that qml.PrepSelPrep queues operations in the correct order."""
+        """Test that qp.PrepSelPrep queues operations in the correct order."""
         # Test that `compute_decomposition` queues the right ops
-        prepselprep = qml.PrepSelPrep(lcu, control=control)
-        with qml.queuing.AnnotatedQueue() as q0:
+        prepselprep = qp.PrepSelPrep(lcu, control=control)
+        with qp.queuing.AnnotatedQueue() as q0:
             prepselprep.compute_decomposition(lcu, control)
 
         # Test that `compute_decomposition` queues the right ops
-        with qml.queuing.AnnotatedQueue() as q1:
+        with qp.queuing.AnnotatedQueue() as q1:
             prepselprep.decomposition()
 
         for op0, op1, exp_op in zip(q0.queue, q1.queue, expected, strict=True):
-            qml.assert_equal(op0, exp_op)
-            qml.assert_equal(op1, exp_op)
+            qp.assert_equal(op0, exp_op)
+            qp.assert_equal(op1, exp_op)
 
         # Test that PrepSelPrep de-queues its input
-        with qml.queuing.AnnotatedQueue() as q2:
-            op = qml.apply(lcu)
-            prepselprep = qml.PrepSelPrep(op, control=control)
+        with qp.queuing.AnnotatedQueue() as q2:
+            op = qp.apply(lcu)
+            prepselprep = qp.PrepSelPrep(op, control=control)
 
         assert len(q2.queue) == 1 and q2.queue[0] == prepselprep
 
     def test_copy(self):
         """Test the copy function"""
 
-        lcu = qml.dot([1 / 2, 1 / 2], [qml.Identity(1), qml.PauliZ(1)])
-        op = qml.PrepSelPrep(lcu, control=0)
+        lcu = qp.dot([1 / 2, 1 / 2], [qp.Identity(1), qp.PauliZ(1)])
+        op = qp.PrepSelPrep(lcu, control=0)
         op_copy = copy.copy(op)
 
-        qml.assert_equal(op, op_copy)
+        qp.assert_equal(op, op_copy)
 
     @pytest.mark.parametrize("lcu", a_set_of_lcus)
     def test_flatten_unflatten(self, lcu):
@@ -250,7 +250,7 @@ class TestPrepSelPrep:
 
         lcu_coeffs, lcu_ops = lcu.terms()
 
-        op = qml.PrepSelPrep(lcu, control=0)
+        op = qp.PrepSelPrep(lcu, control=0)
         data, metadata = op._flatten()
 
         data_coeffs, data_ops = data[0].terms()
@@ -266,7 +266,7 @@ class TestPrepSelPrep:
         new_op = type(op)._unflatten(*op._flatten())
         assert op.lcu == new_op.lcu
         assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(op.coeffs, new_op.coeffs))
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
+        assert all(qp.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
         assert op.control == new_op.control
         assert op.wires == new_op.wires
         assert op.target_wires == new_op.target_wires
@@ -275,8 +275,8 @@ class TestPrepSelPrep:
     @pytest.mark.parametrize("lcu", a_set_of_lcus)
     def test_label(self, lcu):
         """Test the custom label method of PrepSelPrep."""
-        op = qml.PrepSelPrep(lcu, control=0)
-        op_with_id = qml.PrepSelPrep(lcu, control=0, id="myID")
+        op = qp.PrepSelPrep(lcu, control=0)
+        op_with_id = qp.PrepSelPrep(lcu, control=0, id="myID")
 
         # Default
         assert op.label() == "PrepSelPrep"
@@ -303,92 +303,92 @@ class TestPrepSelPrep:
         assert op_with_id.label(cache={"matrices": [0.1, 0.6]}) == 'PrepSelPrep(M2,"myID")'
 
         # use cache with same matrix existing
-        c = qml.math.array(op.coeffs)
+        c = qp.math.array(op.coeffs)
         assert op.label(cache={"matrices": [0.1, c]}) == "PrepSelPrep(M1)"
         assert op_with_id.label(cache={"matrices": [c, 0.1, 0.6]}) == 'PrepSelPrep(M0,"myID")'
 
     def test_resources(self):
         """Test the registered resources."""
 
-        assert qml.PrepSelPrep.resource_keys == frozenset({"num_control", "op_reps"})
+        assert qp.PrepSelPrep.resource_keys == frozenset({"num_control", "op_reps"})
 
-        ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
-        lcu = qml.dot([1, 2, 3], ops)
-        op = qml.PrepSelPrep(lcu, (3, 4))
+        ops = [qp.X(0), qp.X(1), qp.X(0) @ qp.Y(1)]
+        lcu = qp.dot([1, 2, 3], ops)
+        op = qp.PrepSelPrep(lcu, (3, 4))
 
         op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.ops.Prod, **ops[-1].resource_params),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.X),
+            qp.resource_rep(qp.ops.Prod, **ops[-1].resource_params),
         )
         assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
 
     def test_decomposition_new_structure(self):
         """Test that the decomposition is registered into the new pipeline."""
 
-        ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
-        grep = qml.resource_rep(qml.GlobalPhase)
-        xrep = qml.resource_rep(qml.X)
-        yrep = qml.resource_rep(qml.Y)
-        prodrep = qml.resource_rep(qml.ops.Prod, resources={xrep: 1, yrep: 1})
+        ops = [qp.X(0), qp.X(1), qp.X(0) @ qp.Y(1)]
+        grep = qp.resource_rep(qp.GlobalPhase)
+        xrep = qp.resource_rep(qp.X)
+        yrep = qp.resource_rep(qp.Y)
+        prodrep = qp.resource_rep(qp.ops.Prod, resources={xrep: 1, yrep: 1})
         op_reps = (
-            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
-            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
-            qml.resource_rep(qml.ops.Prod, resources={grep: 1, prodrep: 1}),
+            qp.resource_rep(qp.ops.Prod, resources={grep: 1, xrep: 1}),
+            qp.resource_rep(qp.ops.Prod, resources={grep: 1, xrep: 1}),
+            qp.resource_rep(qp.ops.Prod, resources={grep: 1, prodrep: 1}),
         )
-        lcu = qml.dot([1, 4, 9], ops)
-        op = qml.PrepSelPrep(lcu, (3, 4))
+        lcu = qp.dot([1, 4, 9], ops)
+        op = qp.PrepSelPrep(lcu, (3, 4))
 
-        decomp = qml.list_decomps(qml.PrepSelPrep)[0]
+        decomp = qp.list_decomps(qp.PrepSelPrep)[0]
 
         resource_obj = decomp.compute_resources(**op.resource_params)
         assert resource_obj.num_gates == 1
 
         expected_counts = {
-            qml.resource_rep(
-                qml.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
+            qp.resource_rep(
+                qp.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
             ): 1,
-            qml.resource_rep(qml.StatePrep, num_wires=2): 1,
-            qml.resource_rep(
-                qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
+            qp.resource_rep(qp.StatePrep, num_wires=2): 1,
+            qp.resource_rep(
+                qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
             ): 1,
         }
         expected_counts = {
-            qml.resource_rep(
-                qml.ops.ChangeOpBasis,
-                compute_op=qml.resource_rep(qml.StatePrep, num_wires=2),
-                target_op=qml.resource_rep(
-                    qml.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
+            qp.resource_rep(
+                qp.ops.ChangeOpBasis,
+                compute_op=qp.resource_rep(qp.StatePrep, num_wires=2),
+                target_op=qp.resource_rep(
+                    qp.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
                 ),
-                uncompute_op=qml.resource_rep(
-                    qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
+                uncompute_op=qp.resource_rep(
+                    qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),
             ): 1,
         }
 
         assert resource_obj.gate_counts == expected_counts
 
-        decomp = qml.list_decomps(qml.PrepSelPrep)[0]
+        decomp = qp.list_decomps(qp.PrepSelPrep)[0]
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             decomp(*op.data, wires=op.wires, **op.hyperparameters)
 
         q = q.queue[0].decomposition()
 
-        phase_ops = [qml.prod(op, qml.GlobalPhase(0, wires=op.wires)) for op in ops]
+        phase_ops = [qp.prod(op, qp.GlobalPhase(0, wires=op.wires)) for op in ops]
 
-        prep = qml.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
-        qml.assert_equal(q[0], prep)
-        qml.assert_equal(q[1], qml.Select(phase_ops, (3, 4)))
-        qml.assert_equal(q[2], qml.adjoint(prep))
+        prep = qp.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
+        qp.assert_equal(q[0], prep)
+        qp.assert_equal(q[1], qp.Select(phase_ops, (3, 4)))
+        qp.assert_equal(q[2], qp.adjoint(prep))
 
 
 def test_control_in_ops():
     """Test that using an operation wire as a control wire results in an error"""
 
-    lcu = qml.dot([1 / 2, 1 / 2], [qml.Identity(0), qml.PauliZ(0)])
+    lcu = qp.dot([1 / 2, 1 / 2], [qp.Identity(0), qp.PauliZ(0)])
     with pytest.raises(ValueError, match="Control wires should be different from operation wires."):
-        qml.PrepSelPrep(lcu, control=0)
+        qp.PrepSelPrep(lcu, control=0)
 
 
 class TestInterfaces:
@@ -403,39 +403,39 @@ class TestInterfaces:
         """Test the torch interface"""
         import torch
 
-        dev = qml.device("reference.qubit", wires=5)
+        dev = qp.device("reference.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
+            H = qp.ops.LinearCombination(
+                coeffs, [qp.Y(0), qp.Y(1) @ qp.Y(2), qp.X(0), -1 * qp.X(1) @ qp.X(2)]
             )
-            qml.PrepSelPrep(H, control=(3, 4))
-            return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
+            qp.PrepSelPrep(H, control=(3, 4))
+            return qp.expval(qp.PauliZ(3) @ qp.PauliZ(4))
 
         params = torch.tensor(self.params)
         res = torch.autograd.functional.jacobian(circuit, params)
-        assert qml.math.shape(res) == (4,)
+        assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
     @pytest.mark.autograd
     def test_autograd(self):
         """Test the autograd interface"""
 
-        dev = qml.device("reference.qubit", wires=5)
+        dev = qp.device("reference.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
+            H = qp.ops.LinearCombination(
+                coeffs, [qp.Y(0), qp.Y(1) @ qp.Y(2), qp.X(0), -1 * qp.X(1) @ qp.X(2)]
             )
-            qml.PrepSelPrep(H, control=(3, 4))
-            return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
+            qp.PrepSelPrep(H, control=(3, 4))
+            return qp.expval(qp.PauliZ(3) @ qp.PauliZ(4))
 
-        params = qml.numpy.array(self.params, requires_grad=True)
-        res = qml.grad(circuit)(params)
+        params = qp.numpy.array(self.params, requires_grad=True)
+        res = qp.grad(circuit)(params)
 
-        assert qml.math.shape(res) == (4,)
+        assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
     @pytest.mark.jax
@@ -443,19 +443,19 @@ class TestInterfaces:
         """Test the jax interface"""
         import jax
 
-        dev = qml.device("reference.qubit", wires=5)
+        dev = qp.device("reference.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
+            H = qp.ops.LinearCombination(
+                coeffs, [qp.Y(0), qp.Y(1) @ qp.Y(2), qp.X(0), -1 * qp.X(1) @ qp.X(2)]
             )
-            qml.PrepSelPrep(H, control=(3, 4))
-            return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
+            qp.PrepSelPrep(H, control=(3, 4))
+            return qp.expval(qp.PauliZ(3) @ qp.PauliZ(4))
 
         res = jax.grad(circuit)(self.params)
 
-        assert qml.math.shape(res) == (4,)
+        assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
     @pytest.mark.jax
@@ -463,18 +463,18 @@ class TestInterfaces:
         """Test that jax jit works"""
         import jax
 
-        dev = qml.device("reference.qubit", wires=5)
+        dev = qp.device("reference.qubit", wires=5)
 
         @jax.jit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), -1 * qml.X(1) @ qml.X(2)]
+            H = qp.ops.LinearCombination(
+                coeffs, [qp.Y(0), qp.Y(1) @ qp.Y(2), qp.X(0), -1 * qp.X(1) @ qp.X(2)]
             )
-            qml.PrepSelPrep(H, control=(3, 4))
-            return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
+            qp.PrepSelPrep(H, control=(3, 4))
+            return qp.expval(qp.PauliZ(3) @ qp.PauliZ(4))
 
         res = jax.grad(circuit)(self.params)
 
-        assert qml.math.shape(res) == (4,)
+        assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)

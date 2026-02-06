@@ -94,22 +94,22 @@ def register_condition(
         import pennylane as qp
         from pennylane.math.decomposition import zyz_rotation_angles
 
-        # The parameters must be consistent with ``qml.QubitUnitary.resource_keys``
+        # The parameters must be consistent with ``qp.QubitUnitary.resource_keys``
         def _zyz_condition(num_wires):
             return num_wires == 1
 
-        @qml.register_condition(_zyz_condition)
-        @qml.register_resources({qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1})
+        @qp.register_condition(_zyz_condition)
+        @qp.register_resources({qp.RZ: 2, qp.RY: 1, qp.GlobalPhase: 1})
         def zyz_decomposition(U, wires, **__):
             # Assumes that U is a 2x2 unitary matrix
             phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
-            qml.RZ(phi, wires=wires[0])
-            qml.RY(theta, wires=wires[0])
-            qml.RZ(omega, wires=wires[0])
-            qml.GlobalPhase(-phase)
+            qp.RZ(phi, wires=wires[0])
+            qp.RY(theta, wires=wires[0])
+            qp.RZ(omega, wires=wires[0])
+            qp.GlobalPhase(-phase)
 
         # This decomposition will be ignored for `QubitUnitary` on more than one wire.
-        qml.add_decomps(qml.QubitUnitary, zyz_decomposition)
+        qp.add_decomps(qp.QubitUnitary, zyz_decomposition)
 
     """
 
@@ -150,7 +150,7 @@ def register_resources(
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qml.register_resources``.
+        declares its required resources using ``qp.register_resources``.
 
     Args:
         ops (dict or Callable): a dictionary mapping unique operators within the given ``qfunc``
@@ -184,28 +184,28 @@ def register_resources(
 
         import pennylane as qp
 
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
-        @qml.register_resources({qml.H: 2, qml.CZ: 1})
+        @qp.register_resources({qp.H: 2, qp.CZ: 1})
         def my_cnot(wires, **_):
-            qml.H(wires=wires[1])
-            qml.CZ(wires=wires)
-            qml.H(wires=wires[1])
+            qp.H(wires=wires[1])
+            qp.CZ(wires=wires)
+            qp.H(wires=wires[1])
 
-        @qml.transforms.decompose(gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
 
-    >>> print(qml.draw(circuit, level="device")())
+    >>> print(qp.draw(circuit, level="device")())
     0: ────╭●────┤  State
     1: ──H─╰Z──H─┤  State
 
     Alternatively, the decomposition rule can be created in-line:
 
-    >>> my_cnot = qml.register_resources({qml.H: 2, qml.CZ: 1}, my_cnot)
+    >>> my_cnot = qp.register_resources({qp.H: 2, qp.CZ: 1}, my_cnot)
 
     .. details::
         :title: Quantum Functions as Decomposition Rules
@@ -223,12 +223,12 @@ def register_resources(
 
         For each operator class, the set of parameters that affects the type of gates and their
         number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
-        For example, the number of gates in the decomposition for ``qml.MultiRZ`` changes based
-        on the number of wires it acts on, in contrast to the decomposition for ``qml.CNOT``:
+        For example, the number of gates in the decomposition for ``qp.MultiRZ`` changes based
+        on the number of wires it acts on, in contrast to the decomposition for ``qp.CNOT``:
 
-        >>> qml.CNOT.resource_keys
+        >>> qp.CNOT.resource_keys
         set()
-        >>> qml.MultiRZ.resource_keys
+        >>> qp.MultiRZ.resource_keys
         {'num_wires'}
 
         The output of ``resource_keys`` indicates that custom decompositions for the operator
@@ -239,17 +239,17 @@ def register_resources(
 
             def _multi_rz_resources(num_wires):
                 return {
-                    qml.CNOT: 2 * (num_wires - 1),
-                    qml.RZ: 1
+                    qp.CNOT: 2 * (num_wires - 1),
+                    qp.RZ: 1
                 }
 
-            @qml.register_resources(_multi_rz_resources)
+            @qp.register_resources(_multi_rz_resources)
             def multi_rz_decomposition(theta, wires, **__):
                 for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                    qml.CNOT(wires=(w0, w1))
-                qml.RZ(theta, wires=wires[0])
+                    qp.CNOT(wires=(w0, w1))
+                qp.RZ(theta, wires=wires[0])
                 for w0, w1 in zip(wires[1:], wires[:-1]):
-                    qml.CNOT(wires=(w0, w1))
+                    qp.CNOT(wires=(w0, w1))
 
         Additionally, if a custom decomposition for an operator contains gates that, in turn,
         have properties that affect their own decompositions, this information must also be
@@ -262,9 +262,9 @@ def register_resources(
         .. code-block:: python
 
             def my_decomp(theta, wires):
-                qml.MultiRZ(theta, wires=wires[:-1])
-                qml.MultiRZ(theta, wires=wires)
-                qml.MultiRZ(theta, wires=wires[1:])
+                qp.MultiRZ(theta, wires=wires[:-1])
+                qp.MultiRZ(theta, wires=wires)
+                qp.MultiRZ(theta, wires=wires[1:])
 
         It contains two ``MultiRZ`` gates acting on ``len(wires) - 1`` wires (the first and last
         ``MultiRZ``) and one ``MultiRZ`` gate acting on exactly ``len(wires)`` wires. This
@@ -274,17 +274,17 @@ def register_resources(
 
             def my_resources(num_wires):
                 return {
-                    qml.resource_rep(qml.MultiRZ, num_wires=num_wires - 1): 2,
-                    qml.resource_rep(qml.MultiRZ, num_wires=num_wires): 1
+                    qp.resource_rep(qp.MultiRZ, num_wires=num_wires - 1): 2,
+                    qp.resource_rep(qp.MultiRZ, num_wires=num_wires): 1
                 }
 
-            my_decomp = qml.register_resources(my_resources, my_decomp)
+            my_decomp = qp.register_resources(my_resources, my_decomp)
 
         where :func:`~pennylane.resource_rep` is a utility function that wraps an operator type and any
         additional information relevant to its resource estimate into a compressed data structure.
         To check what (if any) additional information is required to declare an operator type
         in a resource function, refer to the ``resource_keys`` attribute of the :class:`~pennylane.operation.Operator`
-        class. Operators with non-empty ``resource_keys`` must be declared using ``qml.resource_rep``,
+        class. Operators with non-empty ``resource_keys`` must be declared using ``qp.resource_rep``,
         with keyword arguments matching its ``resource_keys`` exactly.
 
         .. seealso::
@@ -319,31 +319,31 @@ def register_resources(
           from pennylane.allocation import allocate
           from pennylane.decomposition import controlled_resource_rep
 
-          qml.decomposition.enable_graph()
+          qp.decomposition.enable_graph()
 
           def _ops_fn(num_control_wires, **_):
               return {
-                  controlled_resource_rep(qml.X, {}, num_control_wires): 2,
-                  qml.CRot: 1
+                  controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+                  qp.CRot: 1
               }
 
-          @qml.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
-          @qml.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
+          @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+          @qp.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
           def _controlled_rot_decomp(*params, wires, **_):
               with allocate(1, state="zero", restored=True) as work_wires:
-                  qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
-                  qml.CRot(*params, wires=[work_wires[0], wires[-1]])
-                  qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
+                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
+                  qp.CRot(*params, wires=[work_wires[0], wires[-1]])
+                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qml.transforms.decompose(fixed_decomps=decomps, num_work_wires=1)
-          @qml.qnode(qml.device("default.qubit"))
+          @qp.transforms.decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.qnode(qp.device("default.qubit"))
           def circuit():
-              qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
-              return qml.probs(wires=[0, 1, 2, 3])
+              qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
+              return qp.probs(wires=[0, 1, 2, 3])
 
-       >>> print(qml.draw(circuit)())
+       >>> print(qp.draw(circuit)())
        <DynamicWire>: ──Allocate─╭X─╭●───────────────────╭X──Deallocate─┤
                    0: ───────────├●─│────────────────────├●─────────────┤ ╭Probs
                    1: ───────────├●─│────────────────────├●─────────────┤ ├Probs
@@ -472,35 +472,35 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             For symbolic operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
         decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
             A decomposition is a quantum function registered with a resource estimate using
-            ``qml.register_resources``.
+            ``qp.register_resources``.
 
     .. seealso:: :func:`~pennylane.register_resources` and :class:`~pennylane.list_decomps`
 
     **Example**
 
-    This example demonstrates adding two new decomposition rules to the ``qml.Hadamard`` operator.
+    This example demonstrates adding two new decomposition rules to the ``qp.Hadamard`` operator.
 
     .. code-block:: python
 
         import pennylane as qp
         import numpy as np
 
-        @qml.register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
+        @qp.register_resources({qp.RZ: 2, qp.RX: 1, qp.GlobalPhase: 1})
         def my_hadamard1(wires):
-            qml.RZ(np.pi / 2, wires=wires)
-            qml.RX(np.pi / 2, wires=wires)
-            qml.RZ(np.pi / 2, wires=wires)
-            qml.GlobalPhase(-np.pi / 2, wires=wires)
+            qp.RZ(np.pi / 2, wires=wires)
+            qp.RX(np.pi / 2, wires=wires)
+            qp.RZ(np.pi / 2, wires=wires)
+            qp.GlobalPhase(-np.pi / 2, wires=wires)
 
-        @qml.register_resources({qml.RZ: 1, qml.RY: 1, qml.GlobalPhase: 1})
+        @qp.register_resources({qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1})
         def my_hadamard2(wires):
-            qml.RZ(np.pi, wires=wires)
-            qml.RY(np.pi / 2, wires=wires)
-            qml.GlobalPhase(-np.pi / 2)
+            qp.RZ(np.pi, wires=wires)
+            qp.RY(np.pi / 2, wires=wires)
+            qp.GlobalPhase(-np.pi / 2)
 
-        qml.add_decomps(qml.Hadamard, my_hadamard1, my_hadamard2)
+        qp.add_decomps(qp.Hadamard, my_hadamard1, my_hadamard2)
 
-    These two new decomposition rules for ``qml.Hadamard`` will be subsequently stored within the
+    These two new decomposition rules for ``qp.Hadamard`` will be subsequently stored within the
     scope of this program, and they will be taken into account for all circuit decompositions
     for the duration of the session. To add alternative decompositions for a particular circuit
     as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
@@ -510,11 +510,11 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
 
     .. code-block:: python
 
-        @register_resources({qml.RY: 1})
+        @register_resources({qp.RY: 1})
         def adjoint_ry(phi, wires, **_):
-            qml.RY(-phi, wires=wires)
+            qp.RY(-phi, wires=wires)
 
-        qml.add_decomps("Adjoint(RY)", adjoint_ry)
+        qp.add_decomps("Adjoint(RY)", adjoint_ry)
 
     .. seealso:: :func:`~pennylane.transforms.decompose`
 
@@ -522,7 +522,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     if not all(isinstance(d, DecompositionRule) for d in decomps):
         raise TypeError(
             "A decomposition rule must be a qfunc with a resource estimate "
-            "registered using qml.register_resources"
+            "registered using qp.register_resources"
         )
     if isinstance(op_type, type):
         op_type = op_type.__name__
@@ -550,21 +550,21 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     **Example**
 
     >>> import pennylane as qp
-    >>> qml.list_decomps(qml.CRX)
+    >>> qp.list_decomps(qp.CRX)
     [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
      <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
      <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
 
     Each decomposition rule can be inspected:
 
-    >>> print(qml.list_decomps(qml.CRX)[0])
+    >>> print(qp.list_decomps(qp.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
     def _crx_to_rx_cz(phi, wires, **__):
-        qml.RX(phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
-        qml.RX(-phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
-    >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
+        qp.RX(phi / 2, wires=wires[1]),
+        qp.CZ(wires=wires),
+        qp.RX(-phi / 2, wires=wires[1]),
+        qp.CZ(wires=wires),
+    >>> print(qp.draw(qp.list_decomps(qp.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
@@ -614,17 +614,17 @@ def null_decomp(*_, **__):
         import pennylane as qp
         from pennylane.decomposition import null_decomp
 
-        qml.decomposition.enable_graph()
+        qp.decomposition.enable_graph()
 
-        @qml.transforms.decompose(
-            gate_set={qml.RZ},
-            fixed_decomps={qml.GlobalPhase: null_decomp}
+        @qp.transforms.decompose(
+            gate_set={qp.RZ},
+            fixed_decomps={qp.GlobalPhase: null_decomp}
         )
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.Z(0)
+            qp.Z(0)
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──RZ(3.14)─┤
 
     """

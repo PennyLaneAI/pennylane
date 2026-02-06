@@ -75,28 +75,28 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     >>> from functools import partial
     >>> coeffs = [2, 4, -1, 5, 2]
     >>> obs = [
-    ...   qml.X(1),
-    ...   qml.Z(1),
-    ...   qml.X(0) @ qml.X(1),
-    ...   qml.Y(0) @ qml.Y(1),
-    ...   qml.Z(0) @ qml.Z(1)
+    ...   qp.X(1),
+    ...   qp.Z(1),
+    ...   qp.X(0) @ qp.X(1),
+    ...   qp.Y(0) @ qp.Y(1),
+    ...   qp.Z(0) @ qp.Z(1)
     ... ]
-    >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.set_shots(shots=100)
-    ... @qml.qnode(dev)
+    >>> H = qp.Hamiltonian(coeffs, obs)
+    >>> dev = qp.device("default.qubit", wires=2)
+    >>> @qp.set_shots(shots=100)
+    ... @qp.qnode(dev)
     ... def cost(weights):
-    ...     qml.StronglyEntanglingLayers(weights, wires=range(2))
-    ...     return qml.expval(H)
+    ...     qp.StronglyEntanglingLayers(weights, wires=range(2))
+    ...     return qp.expval(H)
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` method. The attributes ``opt.shots_used`` and
     ``opt.total_shots_used`` can be used to track the number of shots per
     iteration, and across the life of the optimizer, respectively.
 
-    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+    >>> shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
     >>> params = np.random.random(shape)
-    >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
+    >>> opt = qp.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
     >>> for i in range(60):
     ...    params = opt.step(cost, params)
     ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")

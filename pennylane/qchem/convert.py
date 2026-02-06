@@ -155,19 +155,19 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     wires = _process_wires(wires, n_wires=n_wires)
 
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
-        return np.array([0.0]), [qml.Identity(wires[0])]
+        return np.array([0.0]), [qp.Identity(wires[0])]
 
-    xyz2pauli = {"X": qml.X, "Y": qml.Y, "Z": qml.Z}
+    xyz2pauli = {"X": qp.X, "Y": qp.Y, "Z": qp.Z}
 
     def _get_op(term, wires):
         """A function to compute the PL operator associated with the term string."""
         if len(term) > 1:
-            return qml.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
+            return qp.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
 
         if len(term) == 1:
             return xyz2pauli[term[0][1]](wires=wires[term[0][0]])
 
-        return qml.Identity(wires[0])
+        return qp.Identity(wires[0])
 
     coeffs, ops = zip(
         *[(coef, _get_op(term, wires)) for term, coef in qubit_operator.terms.items()],
@@ -224,10 +224,10 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
 
     >>> coeffs = np.array([0.1, 0.2, 0.3, 0.4])
     >>> ops = [
-    ...     qml.prod(qml.X('w0')),
-    ...     qml.prod(qml.Y('w0'), qml.Z('w2')),
-    ...     qml.sum(qml.Z('w0'), qml.s_prod(-0.5, qml.X('w0'))),
-    ...     qml.prod(qml.X('w0'), qml.Z('w1')),
+    ...     qp.prod(qp.X('w0')),
+    ...     qp.prod(qp.Y('w0'), qp.Z('w2')),
+    ...     qp.sum(qp.Z('w0'), qp.s_prod(-0.5, qp.X('w0'))),
+    ...     qp.prod(qp.X('w0'), qp.Z('w1')),
     ... ]
     >>> _pennylane_to_openfermion(coeffs, ops, wires=Wires(['w0', 'w1', 'w2']))
     (-0.05+0j) [X0] +
@@ -252,7 +252,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
-        qubit_indexed_wires = qml.wires.Wires(range(max(all_wires) + 1))
+        qubit_indexed_wires = qp.wires.Wires(range(max(all_wires) + 1))
 
     coeffs = np.array(coeffs)
     if (np.abs(coeffs.imag) < tol).all():
@@ -347,7 +347,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
             f" {list(coeffs[np.iscomplex(coeffs)])}"
         )
 
-    return qml.dot(*_openfermion_to_pennylane(qubit_observable, wires=wires))
+    return qp.dot(*_openfermion_to_pennylane(qubit_observable, wires=wires))
 
 
 def _excitations(electrons, orbitals):
@@ -439,7 +439,7 @@ def _excited_configurations(electrons, orbitals, excitation):
             "Only single (excitation = 1) and double (excitation = 2) excitations are supported."
         )
 
-    hf_state = qml.qchem.hf_state(electrons, orbitals)
+    hf_state = qp.qchem.hf_state(electrons, orbitals)
     singles, doubles = _excitations(electrons, orbitals)
     states, signs = [], []
 
@@ -491,7 +491,7 @@ def import_state(solver, tol=1e-15):
     >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto6g')
     >>> myhf = scf.UHF(mol).run()
     >>> myci = ci.UCISD(myhf).run()
-    >>> wf_cisd = qml.qchem.import_state(myci, tol=1e-1)
+    >>> wf_cisd = qp.qchem.import_state(myci, tol=1e-1)
     >>> print(wf_cisd)
     [ 0.        +0.j  0.        +0.j  0.        +0.j  0.1066467 +0.j
       0.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j

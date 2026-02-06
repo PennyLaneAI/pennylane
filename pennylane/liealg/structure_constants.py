@@ -258,15 +258,15 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     >>> import pennylane as qp
     >>> from pennylane import X, Y, Z, I
     >>> n = 4
-    >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]
-    >>> g = qml.lie_closure(gens, matrix=True)
+    >>> gens = [qp.X(i) @ qp.X(i+1) + qp.Y(i) @ qp.Y(i+1) + qp.Z(i) @ qp.Z(i+1) for i in range(n-1)]
+    >>> g = qp.lie_closure(gens, matrix=True)
     >>> g.shape
     (12, 16, 16)
 
     The DLA is represented by a collection of twelve :math:`2^4 \times 2^4` matrices.
     Hence, the dimension of the DLA is :math:`d = 12` and the structure constants have shape ``(12, 12, 12)``.
 
-    >>> adj = qml.structure_constants(g, matrix=True)
+    >>> adj = qp.structure_constants(g, matrix=True)
     >>> adj.shape
     (12, 12, 12)
 
