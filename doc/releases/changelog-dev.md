@@ -170,44 +170,48 @@ def c():
   All operators are de-queued when used to construct new operators, so the following example
   does *not* show changed behaviour (creating ``B`` removes ``A`` from the queue):
   
-  .. code-block:: python3
+```python
+import pennylane as qml
+import numpy as np
+coeff = np.array([0.2, 0.1])
 
-    import pennylane as qml
-    import numpy as np
-    coeff = np.array([0.2, 0.1])
+@qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+def expval(x: float):
+    qml.RX(x, 1)
+    A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
+    B = A @ qml.Z(2)  
+    return qml.expval(B)
+```
 
-    @qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
-    def expval(x: float):
-        qml.RX(x, 1)
-        A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
-        B = A @ qml.Z(2)  
-        return qml.expval(B)
-
-  >>> print(qml.draw(expval)(0.4))
-  0: ───────────┤ ╭<𝓗(0.20,0.10)>
-  1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
-  2: ───────────┤ ╰<𝓗(0.20,0.10)>
+```pycon
+>>> print(qml.draw(expval)(0.4))
+0: ───────────┤ ╭<𝓗(0.20,0.10)>
+1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
+2: ───────────┤ ╰<𝓗(0.20,0.10)>
+```
 
   However, if we convert an operator ``A`` to numerical data, from which a new 
   operator ``B`` is constructed, the chain of operator dependencies is broken and de-queuing will
   not work as expected:
   
-  .. code-block:: python3
-    
-    coeff = np.array([0.2, 0.1])
+```python
+coeff = np.array([0.2, 0.1])
 
-    @qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
-    def expval(x: float):
-        qml.RX(x, 1)
-        A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
-        numerical_data = A.matrix()
-        B = qml.Hermitian(numerical_data, wires=[2, 0])
-        return qml.expval(B)
+@qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+def expval(x: float):
+    qml.RX(x, 1)
+    A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
+    numerical_data = A.matrix()
+    B = qml.Hermitian(numerical_data, wires=[2, 0])
+    return qml.expval(B)
+```
 
-  >>> print(qp.draw(expval)(0.4))
-  0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
-  1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │       
-  2: ─────────────────────────┤ ╰<𝓗(M0)>
+```pycon
+>>> print(qp.draw(expval)(0.4))
+0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
+1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │       
+2: ─────────────────────────┤ ╰<𝓗(M0)>
+```
 
   As we can see, the ``Hamiltonian`` instance ``A`` remained in the queue.
   In cases where such a conversion to numerical data is unavoidable, perform the conversion
@@ -403,7 +407,7 @@ def c():
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
-  of an operator product computed via ``@``, i.e. the dunder method ``__matmul__``. 
+  of an operator product via the dunder method ``__matmul__``. 
   [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
 
 * Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
