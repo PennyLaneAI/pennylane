@@ -170,6 +170,9 @@ def iqp_expval(config: CircuitConfig):
         B = (-1) ** (samples @ generators.T)
         C = 1 - ((-1) ** (bitflips @ generators.T))
 
+        # We need to expand params to match the param_map, since param_map tells us which params
+        # correspond to which generators. E.g. if param_map = [0, 1, 1], and params = [a, b],
+        # then the expanded params should be [a, b, b].
         expanded_params = params if param_map is None else jnp.asarray(params)[param_map]
 
         E = C @ (expanded_params[:, None] * B.T)
