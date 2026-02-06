@@ -14,13 +14,13 @@
   ```python
   from pennylane.qnn import KerasLayer
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(inputs, weights_0, weight_1):
      # define the circuit
      # ...
 
   weight_shapes = {"weights_0": 3, "weight_1": 1}
-  qlayer = qml.qnn.KerasLayer(circuit, weight_shapes, output_dim=2)
+  qlayer = qp.qnn.KerasLayer(circuit, weight_shapes, output_dim=2)
   ```
 
   A hybrid model can then be easily constructed:
@@ -29,7 +29,7 @@
   model = tf.keras.models.Sequential([qlayer, tf.keras.layers.Dense(2)])
   ```
 
-* Added a new type of QNode, `qml.qnodes.PassthruQNode`. For simulators which are coded in an
+* Added a new type of QNode, `qp.qnodes.PassthruQNode`. For simulators which are coded in an
   external library which supports automatic differentiation, PennyLane will treat a PassthruQNode as
   a "white box", and rely on the external library to directly provide gradients via backpropagation.
   This can be more efficient than the using parameter-shift rule for a large number of parameters.
@@ -39,14 +39,14 @@
   compatible with the `'tf'` interface using TensorFlow 2:
 
   ```python
-  dev = qml.device('default.tensor.tf', wires=2)
+  dev = qp.device('default.tensor.tf', wires=2)
 
-  @qml.qnode(dev, diff_method="backprop")
+  @qp.qnode(dev, diff_method="backprop")
   def circuit(params):
-      qml.RX(params[0], wires=0)
-      qml.RX(params[1], wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0))
+      qp.RX(params[0], wires=0)
+      qp.RX(params[1], wires=1)
+      qp.CNOT(wires=[0, 1])
+      return qp.expval(qp.PauliZ(0))
 
   qnode = PassthruQNode(circuit, dev)
   params = tf.Variable([0.3, 0.1])
@@ -60,14 +60,14 @@
 
 <h4>New optimizers</h4>
 
-* Added the `qml.RotosolveOptimizer`, a gradient-free optimizer
+* Added the `qp.RotosolveOptimizer`, a gradient-free optimizer
   that minimizes the quantum function by updating each parameter,
   one-by-one, via a closed-form expression while keeping other parameters
   fixed.
   [(#636)](https://github.com/XanaduAI/pennylane/pull/636)
   [(#539)](https://github.com/XanaduAI/pennylane/pull/539)
 
-* Added the `qml.RotoselectOptimizer`, which uses Rotosolve to
+* Added the `qp.RotoselectOptimizer`, which uses Rotosolve to
   minimizes a quantum function with respect to both the
   rotation operations applied and the rotation parameters.
   [(#636)](https://github.com/XanaduAI/pennylane/pull/636)
@@ -79,9 +79,9 @@
   values and the list of rotation gates to minimize the loss:
 
   ```pycon
-  >>> opt = qml.optimize.RotoselectOptimizer()
+  >>> opt = qp.optimize.RotoselectOptimizer()
   >>> x = [0.3, 0.7]
-  >>> generators = [qml.RX, qml.RY]
+  >>> generators = [qp.RX, qp.RY]
   >>> for _ in range(100):
   ...     x, generators = opt.step(f, x, generators)
   ```
@@ -96,12 +96,12 @@
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
 
   ```python
-  dev = qml.device('default.qubit', wires=4)
+  dev = qp.device('default.qubit', wires=4)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(angle):
-      qml.PauliRot(angle, "IXYZ", wires=[0, 1, 2, 3])
-      return [qml.expval(qml.PauliZ(wire)) for wire in [0, 1, 2, 3]]
+      qp.PauliRot(angle, "IXYZ", wires=[0, 1, 2, 3])
+      return [qp.expval(qp.PauliZ(wire)) for wire in [0, 1, 2, 3]]
   ```
 
   ```pycon
@@ -145,20 +145,20 @@
   The gate can be used, for example, to efficiently simulate oracles:
 
   ```python
-  dev = qml.device('default.qubit', wires=3)
+  dev = qp.device('default.qubit', wires=3)
 
   # Function as a bitstring
   f = np.array([1, 0, 0, 1, 1, 0, 1, 0])
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(weights1, weights2):
-      qml.templates.StronglyEntanglingLayers(weights1, wires=[0, 1, 2])
+      qp.templates.StronglyEntanglingLayers(weights1, wires=[0, 1, 2])
 
       # Implements the function as a phase-kickback oracle
-      qml.DiagonalQubitUnitary((-1)**f, wires=[0, 1, 2])
+      qp.DiagonalQubitUnitary((-1)**f, wires=[0, 1, 2])
 
-      qml.templates.StronglyEntanglingLayers(weights2, wires=[0, 1, 2])
-      return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+      qp.templates.StronglyEntanglingLayers(weights2, wires=[0, 1, 2])
+      return [qp.expval(qp.PauliZ(w)) for w in range(3)]
   ```
 
 * Added the `TensorN` CVObservable that can represent the tensor product of the
@@ -173,13 +173,13 @@
   [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
 
   ```python
-  dev = qml.device('default.qubit', wires=3)
+  dev = qp.device('default.qubit', wires=3)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(weights1, weights2):
-        qml.templates.ArbitraryStatePreparation(weights1, wires=[0, 1, 2])
-        qml.templates.ArbitraryUnitary(weights2, wires=[0, 1, 2])
-        return qml.probs(wires=[0, 1, 2])
+        qp.templates.ArbitraryStatePreparation(weights1, wires=[0, 1, 2])
+        qp.templates.ArbitraryUnitary(weights2, wires=[0, 1, 2])
+        return qp.probs(wires=[0, 1, 2])
   ```
 
 * Added the `IQPEmbedding` template, which encodes inputs into the diagonal gates of an
@@ -204,7 +204,7 @@
   width=50%></img>
 
 * PennyLane now offers a broadcasting function to easily construct templates:
-  `qml.broadcast()` takes single quantum operations or other templates and applies
+  `qp.broadcast()` takes single quantum operations or other templates and applies
   them to wires in a specific pattern.
   [(#515)](https://github.com/XanaduAI/pennylane/pull/515)
   [(#522)](https://github.com/XanaduAI/pennylane/pull/522)
@@ -219,15 +219,15 @@
 
   @template
   def mytemplate(pars, wires):
-      qml.Hadamard(wires=wires)
-      qml.RY(pars, wires=wires)
+      qp.Hadamard(wires=wires)
+      qp.RY(pars, wires=wires)
 
-  dev = qml.device('default.qubit', wires=3)
+  dev = qp.device('default.qubit', wires=3)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(pars):
-      qml.broadcast(mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
-      return qml.expval(qml.PauliZ(0))
+      qp.broadcast(mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
+      return qp.expval(qp.PauliZ(0))
   ```
 
   ```pycon
@@ -300,12 +300,12 @@
   the overall TensorFlow computation:
 
   ```python
-  >>> dev = qml.device("default.tensor.tf", wires=1)
-  >>> @qml.qnode(dev, interface="tf", diff_method="backprop")
+  >>> dev = qp.device("default.tensor.tf", wires=1)
+  >>> @qp.qnode(dev, interface="tf", diff_method="backprop")
   >>> def circuit(x):
-  ...     qml.RX(x[1], wires=0)
-  ...     qml.Rot(x[0], x[1], x[2], wires=0)
-  ...     return qml.expval(qml.PauliZ(0))
+  ...     qp.RX(x[1], wires=0)
+  ...     qp.Rot(x[0], x[1], x[2], wires=0)
+  ...     return qp.expval(qp.PauliZ(0))
   >>> vars = tf.Variable([0.2, 0.5, 0.1])
   >>> with tf.GradientTape() as tape:
   ...     res = circuit(vars)
@@ -318,12 +318,12 @@
   [(#540)](https://github.com/XanaduAI/pennylane/pull/540)
 
   ```python
-  >>> @qml.qnode(dev)
+  >>> @qp.qnode(dev)
   ... def circuit(theta):
-  ...     qml.RX(theta, wires=0)
-  ...     qml.CNOT(wires=[0, 1])
-  ...     qml.S(wires=1).inv()
-  ...     return qml.probs(wires=[0, 1])
+  ...     qp.RX(theta, wires=0)
+  ...     qp.CNOT(wires=[0, 1])
+  ...     qp.S(wires=1).inv()
+  ...     return qp.probs(wires=[0, 1])
   >>> circuit(0.2)
   array([0.99003329, 0.        , 0.        , 0.00996671])
   >>> print(circuit.draw())
@@ -333,7 +333,7 @@
 
 * You can now evaluate the metric tensor of a VQE Hamiltonian via the new
   `VQECost.metric_tensor` method. This allows `VQECost` objects to be directly
-  optimized by the quantum natural gradient optimizer (`qml.QNGOptimizer`).
+  optimized by the quantum natural gradient optimizer (`qp.QNGOptimizer`).
   [(#618)](https://github.com/XanaduAI/pennylane/pull/618)
 
 * The input check functions in `pennylane.templates.utils` are now public
@@ -351,7 +351,7 @@
 * The decomposition for the `CRY` gate now uses the simpler form `RY @ CNOT @ RY @ CNOT`
   [(#547)](https://github.com/XanaduAI/pennylane/pull/547)
 
-* The underlying queuing system was refactored, removing the `qml._current_context`
+* The underlying queuing system was refactored, removing the `qp._current_context`
   property that held the currently active `QNode` or `OperationRecorder`. Now, all
   objects that expose a queue for operations inherit from `QueuingContext` and
   register their queue globally.
@@ -392,7 +392,7 @@
   [(#543)](https://github.com/XanaduAI/pennylane/pull/543)
 
 * The `QNode.print_applied()` method now correctly displays wires where
-  `qml.prob()` is being returned.
+  `qp.prob()` is being returned.
   [#542](https://github.com/XanaduAI/pennylane/pull/542)
 
 <h3>Contributors</h3>

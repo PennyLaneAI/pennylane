@@ -12,14 +12,14 @@
   [(#721)](https://github.com/XanaduAI/pennylane/pull/721)
 
   ```pycon
-  >>> dev = qml.device("default.qubit.autograd", wires=1)
-  >>> @qml.qnode(dev, diff_method="backprop")
+  >>> dev = qp.device("default.qubit.autograd", wires=1)
+  >>> @qp.qnode(dev, diff_method="backprop")
   ... def circuit(x):
-  ...     qml.RX(x[1], wires=0)
-  ...     qml.Rot(x[0], x[1], x[2], wires=0)
-  ...     return qml.expval(qml.PauliZ(0))
+  ...     qp.RX(x[1], wires=0)
+  ...     qp.Rot(x[0], x[1], x[2], wires=0)
+  ...     return qp.expval(qp.PauliZ(0))
   >>> weights = np.array([0.2, 0.5, 0.1])
-  >>> grad_fn = qml.grad(circuit)
+  >>> grad_fn = qp.grad(circuit)
   >>> print(grad_fn(weights))
   array([-2.25267173e-01, -1.00864546e+00,  6.93889390e-18])
   ```
@@ -39,14 +39,14 @@
   Once installed, it can be used as a PennyLane device:
 
   ```pycon
-  >>> dev = qml.device("lightning.qubit", wires=2)
+  >>> dev = qp.device("lightning.qubit", wires=2)
   ```
 
   For more details, please see the [lightning qubit documentation](https://pennylane-lightning.readthedocs.io).
 
 <h4>New algorithms and templates</h4>
 
-* Added built-in QAOA functionality via the new `qml.qaoa` module.
+* Added built-in QAOA functionality via the new `qp.qaoa` module.
   [(#712)](https://github.com/PennyLaneAI/pennylane/pull/712)
   [(#718)](https://github.com/PennyLaneAI/pennylane/pull/718)
   [(#741)](https://github.com/PennyLaneAI/pennylane/pull/741)
@@ -54,13 +54,13 @@
 
   This includes the following features:
 
-  * New `qml.qaoa.x_mixer` and `qml.qaoa.xy_mixer` functions for defining Pauli-X and XY
+  * New `qp.qaoa.x_mixer` and `qp.qaoa.xy_mixer` functions for defining Pauli-X and XY
     mixer Hamiltonians.
 
-  * MaxCut: The `qml.qaoa.maxcut` function allows easy construction of the cost Hamiltonian
+  * MaxCut: The `qp.qaoa.maxcut` function allows easy construction of the cost Hamiltonian
     and recommended mixer Hamiltonian for solving the MaxCut problem for a supplied graph.
 
-  * Layers: `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` take cost and mixer
+  * Layers: `qp.qaoa.cost_layer` and `qp.qaoa.mixer_layer` take cost and mixer
     Hamiltonians, respectively, and apply the corresponding QAOA cost and mixer layers
     to the quantum circuit
 
@@ -78,13 +78,13 @@
   def antatz(params, **kwargs):
 
       for w in wires:
-          qml.Hadamard(wires=w)
+          qp.Hadamard(wires=w)
 
       # repeat the QAOA layer two times
-      qml.layer(qaoa_layer, 2, params[0], params[1])
+      qp.layer(qaoa_layer, 2, params[0], params[1])
 
-  dev = qml.device('default.qubit', wires=len(wires))
-  cost_function = qml.VQECost(ansatz, cost_h, dev)
+  dev = qp.device('default.qubit', wires=len(wires))
+  cost_function = qp.VQECost(ansatz, cost_h, dev)
   ```
 
 * Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
@@ -93,22 +93,22 @@
 
   <img src="https://pennylane.readthedocs.io/en/latest/_static/templates/subroutines/approx_time_evolution.png" width=50%/>
 
-* Added a `qml.layer` template-constructing function, which takes a unitary, and
+* Added a `qp.layer` template-constructing function, which takes a unitary, and
   repeatedly applies it on a set of wires to a given depth.
   [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
 
   ```python
   def subroutine():
-      qml.Hadamard(wires=[0])
-      qml.CNOT(wires=[0, 1])
-      qml.PauliX(wires=[1])
+      qp.Hadamard(wires=[0])
+      qp.CNOT(wires=[0, 1])
+      qp.PauliX(wires=[1])
 
-  dev = qml.device('default.qubit', wires=3)
+  dev = qp.device('default.qubit', wires=3)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.layer(subroutine, 3)
-      return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+      qp.layer(subroutine, 3)
+      return [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
   ```
 
   This creates the following circuit:
@@ -119,7 +119,7 @@
   1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
   ```
 
-* Added the `qml.utils.decompose_hamiltonian` function. This function can be used to
+* Added the `qp.utils.decompose_hamiltonian` function. This function can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
 
@@ -141,16 +141,16 @@
   Custom wire labels are defined by passing a list to the `wires` argument when creating the device:
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
+  >>> dev = qp.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
   ```
 
   Quantum operations should then be invoked with these custom wire labels:
 
   ``` pycon
-  >>> @qml.qnode(dev)
+  >>> @qp.qnode(dev)
   >>> def circuit():
-  ...    qml.Hadamard(wires='anc2')
-  ...    qml.CNOT(wires=['anc1', 3])
+  ...    qp.Hadamard(wires='anc2')
+  ...    qp.CNOT(wires=['anc1', 3])
   ...    ...
   ```
 
@@ -159,7 +159,7 @@
   by consecutive integers.
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=5)
+  >>> dev = qp.device("default.qubit", wires=5)
   ```
 
 * An integrated device test suite has been added, which can be used
@@ -207,11 +207,11 @@
   [(#699)](https://github.com/XanaduAI/pennylane/pull/699/)
 
   ```pycon
-  >>> dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=5)
-  >>> @qml.qnode(dev)
+  >>> dev = qp.device("strawberryfields.fock", wires=2, cutoff_dim=5)
+  >>> @qp.qnode(dev)
   ... def circuit(a):
-  ...     qml.Displacement(a, 0, wires=0)
-  ...     return qml.probs(wires=0)
+  ...     qp.Displacement(a, 0, wires=0)
+  ...     return qp.probs(wires=0)
   >>> print(circuit(0.5))
   [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
   ```

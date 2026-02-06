@@ -5,7 +5,7 @@
 
 <h4>Better and more flexible shot control</h4>
 
-* Adds a new optimizer `qml.ShotAdaptiveOptimizer`, a gradient-descent optimizer where
+* Adds a new optimizer `qp.ShotAdaptiveOptimizer`, a gradient-descent optimizer where
   the shot rate is adaptively calculated using the variances of the parameter-shift gradient.
   [(#1139)](https://github.com/PennyLaneAI/pennylane/pull/1139)
 
@@ -26,17 +26,17 @@
   ```pycon
   >>> coeffs = [2, 4, -1, 5, 2]
   >>> obs = [
-  ...   qml.PauliX(1),
-  ...   qml.PauliZ(1),
-  ...   qml.PauliX(0) @ qml.PauliX(1),
-  ...   qml.PauliY(0) @ qml.PauliY(1),
-  ...   qml.PauliZ(0) @ qml.PauliZ(1)
+  ...   qp.PauliX(1),
+  ...   qp.PauliZ(1),
+  ...   qp.PauliX(0) @ qp.PauliX(1),
+  ...   qp.PauliY(0) @ qp.PauliY(1),
+  ...   qp.PauliZ(0) @ qp.PauliZ(1)
   ... ]
-  >>> H = qml.Hamiltonian(coeffs, obs)
-  >>> dev = qml.device("default.qubit", wires=2, shots=100)
-  >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
-  >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
-  >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+  >>> H = qp.Hamiltonian(coeffs, obs)
+  >>> dev = qp.device("default.qubit", wires=2, shots=100)
+  >>> cost = qp.ExpvalCost(qp.templates.StronglyEntanglingLayers, H, dev)
+  >>> params = qp.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
+  >>> opt = qp.ShotAdaptiveOptimizer(min_shots=10)
   >>> for i in range(5):
   ...    params = opt.step(cost, params)
   ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")
@@ -53,7 +53,7 @@
 
   ```pycon
   >>> shots_list = [5, 10, 1000]
-  >>> dev = qml.device("default.qubit", wires=2, shots=shots_list)
+  >>> dev = qp.device("default.qubit", wires=2, shots=shots_list)
   ```
 
   When QNodes are executed on this device, a single execution of 1015 shots will be submitted.
@@ -63,11 +63,11 @@
   For example, executing a circuit with two outputs will lead to a result of shape `(3, 2)`:
 
   ```pycon
-  >>> @qml.qnode(dev)
+  >>> @qp.qnode(dev)
   ... def circuit(x):
-  ...     qml.RX(x, wires=0)
-  ...     qml.CNOT(wires=[0, 1])
-  ...     return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+  ...     qp.RX(x, wires=0)
+  ...     qp.CNOT(wires=[0, 1])
+  ...     return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.expval(qp.PauliZ(0))
   >>> circuit(0.5)
   [[0.33333333 1.        ]
    [0.2        1.        ]
@@ -82,11 +82,11 @@
   For this, the qnode should be called with an additional `shots` keyword argument:
 
   ```pycon
-  >>> dev = qml.device('default.qubit', wires=1, shots=10) # default is 10
-  >>> @qml.qnode(dev)
+  >>> dev = qp.device('default.qubit', wires=1, shots=10) # default is 10
+  >>> @qp.qnode(dev)
   ... def circuit(a):
-  ...     qml.RX(a, wires=0)
-  ...     return qml.sample(qml.PauliZ(wires=0))
+  ...     qp.RX(a, wires=0)
+  ...     return qp.sample(qp.PauliZ(wires=0))
   >>> circuit(0.8)
   [ 1  1  1 -1 -1  1  1  1  1  1]
   >>> circuit(0.8, shots=3)
@@ -98,7 +98,7 @@
 <h4>New differentiable quantum transforms</h4>
 
 A new module is available,
-[qml.transforms](https://pennylane.rtfd.io/en/stable/code/qml_transforms.html),
+[qp.transforms](https://pennylane.rtfd.io/en/stable/code/qml_transforms.html),
 which contains *differentiable quantum transforms*. These are functions that act
 on QNodes, quantum functions, devices, and tapes, transforming them while remaining
 fully differentiable.
@@ -111,59 +111,59 @@ fully differentiable.
 
   ```python
   def subroutine(wire):
-      qml.RX(0.123, wires=wire)
-      qml.RY(0.456, wires=wire)
+      qp.RX(0.123, wires=wire)
+      qp.RY(0.456, wires=wire)
 
-  dev = qml.device('default.qubit', wires=1)
-  @qml.qnode(dev)
+  dev = qp.device('default.qubit', wires=1)
+  @qp.qnode(dev)
   def circuit():
       subroutine(0)
-      qml.adjoint(subroutine)(0)
-      return qml.expval(qml.PauliZ(0))
+      qp.adjoint(subroutine)(0)
+      return qp.expval(qp.PauliZ(0))
   ```
 
   This creates the following circuit:
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
   ```
 
   Directly applying to a gate also works as expected.
 
   ```python
-  qml.adjoint(qml.RX)(0.123, wires=0) # applies RX(-0.123)
+  qp.adjoint(qp.RX)(0.123, wires=0) # applies RX(-0.123)
   ```
 
-* A new transform `qml.ctrl` is now available that adds control wires to subroutines.
+* A new transform `qp.ctrl` is now available that adds control wires to subroutines.
   [(#1157)](https://github.com/PennyLaneAI/pennylane/pull/1157)
 
   ```python
   def my_ansatz(params):
-     qml.RX(params[0], wires=0)
-     qml.RZ(params[1], wires=1)
+     qp.RX(params[0], wires=0)
+     qp.RZ(params[1], wires=1)
 
   # Create a new operation that applies `my_ansatz`
   # controlled by the "2" wire.
-  my_ansatz2 = qml.ctrl(my_ansatz, control=2)
+  my_ansatz2 = qp.ctrl(my_ansatz, control=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(params):
       my_ansatz2(params)
-      return qml.state()
+      return qp.state()
   ```
 
   This is equivalent to:
 
   ```python
-  @qml.qnode(...)
+  @qp.qnode(...)
   def circuit(params):
-      qml.CRX(params[0], wires=[2, 0])
-      qml.CRZ(params[1], wires=[2, 1])
-      return qml.state()
+      qp.CRX(params[0], wires=[2, 0])
+      qp.CRZ(params[1], wires=[2, 1])
+      return qp.state()
   ```
 
-* The `qml.transforms.classical_jacobian` transform has been added.
+* The `qp.transforms.classical_jacobian` transform has been added.
   [(#1186)](https://github.com/PennyLaneAI/pennylane/pull/1186)
 
   This transform returns a function to extract the Jacobian matrix of the classical part of a
@@ -173,12 +173,12 @@ fully differentiable.
   For example, given the following QNode:
 
   ```pycon
-  >>> @qml.qnode(dev)
+  >>> @qp.qnode(dev)
   ... def circuit(weights):
-  ...     qml.RX(weights[0], wires=0)
-  ...     qml.RY(weights[0], wires=1)
-  ...     qml.RZ(weights[2] ** 2, wires=1)
-  ...     return qml.expval(qml.PauliZ(0))
+  ...     qp.RX(weights[0], wires=0)
+  ...     qp.RY(weights[0], wires=1)
+  ...     qp.RZ(weights[2] ** 2, wires=1)
+  ...     return qp.expval(qp.PauliZ(0))
   ```
 
   We can use this transform to extract the relationship
@@ -187,7 +187,7 @@ fully differentiable.
   a given value of the QNode arguments:
 
   ```pycon
-  >>> cjac_fn = qml.transforms.classical_jacobian(circuit)
+  >>> cjac_fn = qp.transforms.classical_jacobian(circuit)
   >>> weights = np.array([1., 1., 1.], requires_grad=True)
   >>> cjac = cjac_fn(weights)
   >>> print(cjac)
@@ -211,12 +211,12 @@ fully differentiable.
   :math:`|10\rangle \rightarrow \cos(\phi/2)|10\rangle - \sin(\phi/2)|01\rangle`:
 
   ```python
-  dev = qml.device('default.qubit', wires=2)
+  dev = qp.device('default.qubit', wires=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(phi):
-      qml.PauliX(wires=0)
-      qml.SingleExcitation(phi, wires=[0, 1])
+      qp.PauliX(wires=0)
+      qp.SingleExcitation(phi, wires=[0, 1])
   ```
 
   The `SingleExcitation` operation supports analytic gradients on hardware
@@ -233,13 +233,13 @@ fully differentiable.
   :math:`|1100\rangle\rightarrow \cos(\phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle`:
 
   ```python
-  dev = qml.device('default.qubit', wires=2)
+  dev = qp.device('default.qubit', wires=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(phi):
-      qml.PauliX(wires=0)
-      qml.PauliX(wires=1)
-      qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+      qp.PauliX(wires=0)
+      qp.PauliX(wires=1)
+      qp.DoubleExcitation(phi, wires=[0, 1, 2, 3])
   ```
 
   The `DoubleExcitation` operation supports analytic gradients on hardware using only
@@ -271,17 +271,17 @@ fully differentiable.
 
   func = lambda i: np.sin(xs[i]) ** 2
 
-  dev = qml.device("default.qubit", wires=(n + m + 1))
+  dev = qp.device("default.qubit", wires=(n + m + 1))
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.templates.QuantumMonteCarlo(
+      qp.templates.QuantumMonteCarlo(
           probs,
           func,
           target_wires=target_wires,
           estimation_wires=estimation_wires,
       )
-      return qml.probs(estimation_wires)
+      return qp.probs(estimation_wires)
 
   phase_estimated = np.argmax(circuit()[:int(N / 2)]) / N
   expectation_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
@@ -296,7 +296,7 @@ fully differentiable.
   ```pycon
   >>> phase = 5
   >>> target_wires = [0]
-  >>> unitary = qml.RX(phase, wires=0).matrix
+  >>> unitary = qp.RX(phase, wires=0).matrix
   ```
 
   The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. For example, using five
@@ -306,12 +306,12 @@ fully differentiable.
   n_estimation_wires = 5
   estimation_wires = range(1, n_estimation_wires + 1)
 
-  dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+  dev = qp.device("default.qubit", wires=n_estimation_wires + 1)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
       # Start in the |+> eigenstate of the unitary
-      qml.Hadamard(wires=target_wires)
+      qp.Hadamard(wires=target_wires)
 
       QuantumPhaseEstimation(
           unitary,
@@ -319,7 +319,7 @@ fully differentiable.
           estimation_wires=estimation_wires,
       )
 
-      return qml.probs(estimation_wires)
+      return qp.probs(estimation_wires)
 
   phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
 
@@ -332,11 +332,11 @@ fully differentiable.
   [(#1064)](https://github.com/PennyLaneAI/pennylane/pull/1064)
 
   ```python
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit_qft(basis_state):
-      qml.BasisState(basis_state, wires=range(3))
-      qml.templates.QFT(wires=range(3))
-      return qml.state()
+      qp.BasisState(basis_state, wires=range(3))
+      qp.templates.QFT(wires=range(3))
+      return qp.state()
   ```
 
 - Added the `ControlledQubitUnitary` operation. This
@@ -350,8 +350,8 @@ fully differentiable.
   For example, we can  create a multi-controlled T gate using:
 
   ```python
-  T = qml.T._matrix()
-  qml.ControlledQubitUnitary(T, control_wires=[0, 1, 3], wires=2, control_values="110")
+  T = qp.T._matrix()
+  qp.ControlledQubitUnitary(T, control_wires=[0, 1, 3], wires=2, control_values="110")
   ```
 
   Here, the T gate will be applied to wire `2` if control wires `0` and `1` are in
@@ -377,19 +377,19 @@ fully differentiable.
   evaluated on both hardware and simulator devices.
 
   ```python
-  dev = qml.device('default.qubit', wires=1)
+  dev = qp.device('default.qubit', wires=1)
 
-  @qml.qnode(dev, diff_method="parameter-shift")
+  @qp.qnode(dev, diff_method="parameter-shift")
   def circuit(p):
-      qml.RY(p[0], wires=0)
-      qml.RX(p[1], wires=0)
-      return qml.expval(qml.PauliZ(0))
+      qp.RY(p[0], wires=0)
+      qp.RX(p[1], wires=0)
+      return qp.expval(qp.PauliZ(0))
 
   x = np.array([1.0, 2.0], requires_grad=True)
   ```
 
   ```python
-  >>> hessian_fn = qml.jacobian(qml.grad(circuit))
+  >>> hessian_fn = qp.jacobian(qp.grad(circuit))
   >>> hessian_fn(x)
   [[0.2248451 0.7651474]
    [0.7651474 0.2248451]]
@@ -409,11 +409,11 @@ fully differentiable.
 
   ```pycon
   >>> def H(x):
-  ...    return qml.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
+  ...    return qp.qchem.molecular_hamiltonian(['H', 'H'], x)[0]
   >>> x = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-  >>> grad_fn = qml.finite_diff(H, N=1)
+  >>> grad_fn = qp.finite_diff(H, N=1)
   >>> grad = grad_fn(x)
-  >>> deriv2_fn = qml.finite_diff(H, N=2, idx=[0, 1])
+  >>> deriv2_fn = qp.finite_diff(H, N=2, idx=[0, 1])
   >>> deriv2_fn(x)
   ```
 
@@ -424,12 +424,12 @@ fully differentiable.
   For example, using the JAX interface with Cirq:
 
   ```python
-  dev = qml.device('cirq.simulator', wires=1)
-  @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+  dev = qp.device('cirq.simulator', wires=1)
+  @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
   def circuit(x):
-      qml.RX(x[1], wires=0)
-      qml.Rot(x[0], x[1], x[2], wires=0)
-      return qml.expval(qml.PauliZ(0))
+      qp.RX(x[1], wires=0)
+      qp.Rot(x[0], x[1], x[2], wires=0)
+      return qp.expval(qp.PauliZ(0))
   weights = jnp.array([0.2, 0.5, 0.1])
   print(circuit(weights))
   ```
@@ -442,20 +442,20 @@ fully differentiable.
 <h3>Improvements</h3>
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  dev = qp.device("default.qubit", wires=2)
 
   inputstate = [np.sqrt(0.2), np.sqrt(0.3), np.sqrt(0.4), np.sqrt(0.1)]
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
       mottonen.MottonenStatePreparation(inputstate,wires=[0, 1])
-      return qml.expval(qml.PauliZ(0))
+      return qp.expval(qp.PauliZ(0))
   ```
 
   Previously returned:
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──RY(1.57)──╭C─────────────╭C──╭C──╭C──┤ ⟨Z⟩
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──╰X──╰X──┤
   ```
@@ -463,7 +463,7 @@ fully differentiable.
   In this release, it now returns:
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──RY(1.57)──╭C─────────────╭C──┤ ⟨Z⟩
   1: ──RY(1.35)──╰X──RY(0.422)──╰X──┤
   ```
@@ -481,9 +481,9 @@ fully differentiable.
   random tensors.
 
   ```python
-  shape = qml.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
+  shape = qp.templates.BasicEntanglerLayers.shape(n_layers=2, n_wires=4)
   weights = np.random.random(shape)
-  qml.templates.BasicEntanglerLayers(weights, wires=range(4))
+  qp.templates.BasicEntanglerLayers(weights, wires=range(4))
   ```
 
 - `QubitUnitary` now validates to ensure the input matrix is two dimensional.
@@ -497,16 +497,16 @@ fully differentiable.
   Example use:
 
   ```python
-  dev = qml.device("default.qubit", wires=4)
+  dev = qp.device("default.qubit", wires=4)
   x = tf.ones((5, 4, 4))
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def layer(weights, inputs):
-      qml.templates.AngleEmbedding(inputs, wires=range(4))
-      qml.templates.StronglyEntanglingLayers(weights, wires=range(4))
-      return [qml.expval(qml.PauliZ(i)) for i in range(4)]
+      qp.templates.AngleEmbedding(inputs, wires=range(4))
+      qp.templates.StronglyEntanglingLayers(weights, wires=range(4))
+      return [qp.expval(qp.PauliZ(i)) for i in range(4)]
 
-  qlayer = qml.qnn.KerasLayer(layer, {"weights": (4, 4, 3)}, output_dim=4)
+  qlayer = qp.qnn.KerasLayer(layer, {"weights": (4, 4, 3)}, output_dim=4)
   out = qlayer(x)
   ```
 
@@ -516,7 +516,7 @@ fully differentiable.
   (5, 4, 4)
   ```
 
-* If only one argument to the function `qml.grad` has the `requires_grad` attribute
+* If only one argument to the function `qp.grad` has the `requires_grad` attribute
   set to True, then the returned gradient will be a NumPy array, rather than a
   tuple of length 1.
   [(#1067)](https://github.com/PennyLaneAI/pennylane/pull/1067)
@@ -533,7 +533,7 @@ fully differentiable.
 * Two new utility methods are provided for working with quantum tapes.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
-  - `qml.tape.get_active_tape()` gets the currently recording tape.
+  - `qp.tape.get_active_tape()` gets the currently recording tape.
 
   - `tape.stop_recording()` is a context manager that temporarily
     stops the currently recording tape from recording additional
@@ -542,20 +542,20 @@ fully differentiable.
   For example:
 
   ```pycon
-  >>> with qml.tape.QuantumTape():
-  ...     qml.RX(0, wires=0)
-  ...     current_tape = qml.tape.get_active_tape()
+  >>> with qp.tape.QuantumTape():
+  ...     qp.RX(0, wires=0)
+  ...     current_tape = qp.tape.get_active_tape()
   ...     with current_tape.stop_recording():
-  ...         qml.RY(1.0, wires=1)
-  ...     qml.RZ(2, wires=1)
+  ...         qp.RY(1.0, wires=1)
+  ...     qp.RZ(2, wires=1)
   >>> current_tape.operations
   [RX(0, wires=[0]), RZ(2, wires=[1])]
   ```
 
-* When printing `qml.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
+* When printing `qp.Hamiltonian` objects, the terms are sorted by number of wires followed by coefficients.
   [(#981)](https://github.com/PennyLaneAI/pennylane/pull/981)
 
-* Adds `qml.math.conj` to the PennyLane math module.
+* Adds `qp.math.conj` to the PennyLane math module.
   [(#1143)](https://github.com/PennyLaneAI/pennylane/pull/1143)
 
   This new method will do elementwise conjugation to the given tensor-like object,
@@ -564,7 +564,7 @@ fully differentiable.
 
   ```python
   >>> a = np.array([1.0 + 2.0j])
-  >>> qml.math.conj(a)
+  >>> qp.math.conj(a)
   array([1.0 - 2.0j])
   ```
 
@@ -573,7 +573,7 @@ fully differentiable.
   https://arxiv.org/abs/2104.05695.
   [(#1206)](https://github.com/PennyLaneAI/pennylane/pull/1206)
 
-* A new transform `qml.transforms.invisible` has been added, to make it easier
+* A new transform `qp.transforms.invisible` has been added, to make it easier
   to transform QNodes.
   [(#1175)](https://github.com/PennyLaneAI/pennylane/pull/1175)
 
@@ -587,15 +587,15 @@ fully differentiable.
   [(#1196)](https://github.com/PennyLaneAI/pennylane/pull/1196)
 
   ```python
-  dev_analytic = qml.device('default.qubit', wires=1, shots=None)
-  dev_finite_shots = qml.device('default.qubit', wires=1, shots=1000)
+  dev_analytic = qp.device('default.qubit', wires=1, shots=None)
+  dev_finite_shots = qp.device('default.qubit', wires=1, shots=1000)
 
   def circuit():
-      qml.Hadamard(wires=0)
-      return qml.expval(qml.PauliZ(wires=0))
+      qp.Hadamard(wires=0)
+      return qp.expval(qp.PauliZ(wires=0))
 
-  circuit_analytic = qml.QNode(circuit, dev_analytic)
-  circuit_finite_shots = qml.QNode(circuit, dev_finite_shots)
+  circuit_analytic = qp.QNode(circuit, dev_analytic)
+  circuit_finite_shots = qp.QNode(circuit, dev_finite_shots)
   ```
 
   Devices with `shots=None` return deterministic, exact results:
@@ -616,7 +616,7 @@ fully differentiable.
   0.034
   ```
 
-  The `qml.sample()` measurement can only be used on devices on which the number
+  The `qp.sample()` measurement can only be used on devices on which the number
   of shots is set explicitly.
 
 * If creating a QNode from a quantum function with an argument named `shots`,
@@ -635,7 +635,7 @@ fully differentiable.
   For example, consider the following device:
 
   ```pycon
-  >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+  >>> dev = qp.device("my_device", shots=[5, (10, 3), 100])
   ```
 
   This device will execute QNodes using 135 shots, however
@@ -674,7 +674,7 @@ fully differentiable.
 
   In addition,
 
-  - All tape-mode functions have been removed (`qml.enable_tape()`, `qml.tape_mode_active()`),
+  - All tape-mode functions have been removed (`qp.enable_tape()`, `qp.tape_mode_active()`),
   - All tape fixtures have been deleted,
   - Tests specifically for non-tape mode have been deleted.
 

@@ -5,7 +5,7 @@
 
 * Added the `Identity` expectation value for both CV and qubit models [(#135)](https://github.com/XanaduAI/pennylane/pull/135)
 * Added the `templates.py` submodule, containing some commonly used QML models to be used as ansatz in QNodes [(#133)](https://github.com/XanaduAI/pennylane/pull/133)
-* Added the `qml.Interferometer` CV operation [(#152)](https://github.com/XanaduAI/pennylane/pull/152)
+* Added the `qp.Interferometer` CV operation [(#152)](https://github.com/XanaduAI/pennylane/pull/152)
 * Wires are now supported as free QNode parameters [(#151)](https://github.com/XanaduAI/pennylane/pull/151)
 * Added ability to update stepsizes of the optimizers [(#159)](https://github.com/XanaduAI/pennylane/pull/159)
 

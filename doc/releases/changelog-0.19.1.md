@@ -9,7 +9,7 @@
   [(#1927)](https://github.com/PennyLaneAI/pennylane/pull/1927)
 
 * Fixes a bug where using JAX's jit function on certain QNodes that contain
-  the `qml.QubitStateVector` operation raised an error with earlier JAX
+  the `qp.QubitStateVector` operation raised an error with earlier JAX
   versions (e.g., `jax==0.2.10` and `jaxlib==0.1.64`).
   [(#1924)](https://github.com/PennyLaneAI/pennylane/pull/1924)
 

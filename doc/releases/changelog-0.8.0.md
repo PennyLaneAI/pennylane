@@ -22,13 +22,13 @@
 * PennyLane now has some functions and classes for creating and solving VQE
   problems. [(#467)](https://github.com/XanaduAI/pennylane/pull/467)
 
-  - `qml.Hamiltonian`: a lightweight class for representing qubit Hamiltonians
-  - `qml.VQECost`: a class for quickly constructing a differentiable cost function
+  - `qp.Hamiltonian`: a lightweight class for representing qubit Hamiltonians
+  - `qp.VQECost`: a class for quickly constructing a differentiable cost function
     given a circuit ansatz, Hamiltonian, and one or more devices
 
     ```python
-    >>> H = qml.vqe.Hamiltonian(coeffs, obs)
-    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
+    >>> H = qp.vqe.Hamiltonian(coeffs, obs)
+    >>> cost = qp.VQECost(ansatz, hamiltonian, dev, interface="torch")
     >>> params = torch.rand([4, 3])
     >>> cost(params)
     tensor(0.0245, dtype=torch.float64)
@@ -42,14 +42,14 @@
 
   Consider the following circuit as an example:
   ```python3
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def qfunc(a, w):
-      qml.Hadamard(0)
-      qml.CRX(a, wires=[0, 1])
-      qml.Rot(w[0], w[1], w[2], wires=[1])
-      qml.CRX(-a, wires=[0, 1])
+      qp.Hadamard(0)
+      qp.CRX(a, wires=[0, 1])
+      qp.Rot(w[0], w[1], w[2], wires=[1])
+      qp.CRX(-a, wires=[0, 1])
 
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+      return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
   ```
 
   We can draw the circuit after it has been executed:
@@ -74,19 +74,19 @@
   <img src="https://pennylane.readthedocs.io/en/latest/_images/qaoa_layers.png"
   width=70%></img>
 
-* Added the `qml.probs()` measurement function, allowing QNodes
+* Added the `qp.probs()` measurement function, allowing QNodes
   to differentiate variational circuit probabilities
   on simulators and hardware.
   [(#432)](https://github.com/XanaduAI/pennylane/pull/432)
 
   ```python
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(x):
-      qml.Hadamard(wires=0)
-      qml.RY(x, wires=0)
-      qml.RX(x, wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.probs(wires=[0])
+      qp.Hadamard(wires=0)
+      qp.RY(x, wires=0)
+      qp.RX(x, wires=1)
+      qp.CNOT(wires=[0, 1])
+      return qp.probs(wires=[0])
   ```
   Executing this circuit gives the marginal probability of wire 1:
   ```python
@@ -95,33 +95,33 @@
   ```
   QNodes that return probabilities fully support autodifferentiation.
 
-* Added the convenience load functions `qml.from_pyquil`, `qml.from_quil` and
-  `qml.from_quil_file` that convert pyQuil objects and Quil code to PennyLane
+* Added the convenience load functions `qp.from_pyquil`, `qp.from_quil` and
+  `qp.from_quil_file` that convert pyQuil objects and Quil code to PennyLane
   templates. This feature requires version 0.8 or above of the PennyLane-Forest
   plugin.
   [(#459)](https://github.com/XanaduAI/pennylane/pull/459)
 
-* Added a `qml.inv` method that inverts templates and sequences of Operations.
-  Added a `@qml.template` decorator that makes templates return the queued Operations.
+* Added a `qp.inv` method that inverts templates and sequences of Operations.
+  Added a `@qp.template` decorator that makes templates return the queued Operations.
   [(#462)](https://github.com/XanaduAI/pennylane/pull/462)
 
   For example, using this function to invert a template inside a QNode:
 
   ```python3
-      @qml.template
+      @qp.template
       def ansatz(weights, wires):
           for idx, wire in enumerate(wires):
-              qml.RX(weights[idx], wires=[wire])
+              qp.RX(weights[idx], wires=[wire])
 
           for idx in range(len(wires) - 1):
-              qml.CNOT(wires=[wires[idx], wires[idx + 1]])
+              qp.CNOT(wires=[wires[idx], wires[idx + 1]])
 
-      dev = qml.device('default.qubit', wires=2)
+      dev = qp.device('default.qubit', wires=2)
 
-      @qml.qnode(dev)
+      @qp.qnode(dev)
       def circuit(weights):
-          qml.inv(ansatz(weights, wires=[0, 1]))
-          return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+          qp.inv(ansatz(weights, wires=[0, 1]))
+          return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
     ```
 
 * Added the `QNodeCollection` container class, that allows independent
@@ -130,7 +130,7 @@
   `parallel=True` keyword argument.
   [(#466)](https://github.com/XanaduAI/pennylane/pull/466)
 
-* Added a high level `qml.map` function, that maps a quantum
+* Added a high level `qp.map` function, that maps a quantum
   circuit template over a list of observables or devices, returning
   a `QNodeCollection`.
   [(#466)](https://github.com/XanaduAI/pennylane/pull/466)
@@ -139,31 +139,31 @@
 
   ```python3
   >>> def my_template(params, wires, **kwargs):
-  >>>    qml.RX(params[0], wires=wires[0])
-  >>>    qml.RX(params[1], wires=wires[1])
-  >>>    qml.CNOT(wires=wires)
+  >>>    qp.RX(params[0], wires=wires[0])
+  >>>    qp.RX(params[1], wires=wires[1])
+  >>>    qp.CNOT(wires=wires)
 
-  >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
-  >>> dev = qml.device("default.qubit", wires=2)
-  >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
+  >>> obs_list = [qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliX(1)]
+  >>> dev = qp.device("default.qubit", wires=2)
+  >>> qnodes = qp.map(my_template, obs_list, dev, measure="expval")
   >>> qnodes([0.54, 0.12])
   array([-0.06154835  0.99280864])
   ```
 
-* Added high level `qml.sum`, `qml.dot`, `qml.apply` functions
+* Added high level `qp.sum`, `qp.dot`, `qp.apply` functions
   that act on QNode collections.
   [(#466)](https://github.com/XanaduAI/pennylane/pull/466)
 
-  `qml.apply` allows vectorized functions to act over the entire QNode
+  `qp.apply` allows vectorized functions to act over the entire QNode
   collection:
   ```python
-  >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
-  >>> cost = qml.apply(np.sin, qnodes)
+  >>> qnodes = qp.map(my_template, obs_list, dev, measure="expval")
+  >>> cost = qp.apply(np.sin, qnodes)
   >>> cost([0.54, 0.12])
   array([-0.0615095  0.83756375])
   ```
 
-  `qml.sum` and `qml.dot` take the sum of a QNode collection, and a
+  `qp.sum` and `qp.dot` take the sum of a QNode collection, and a
   dot product of tensors/arrays/QNode collections, respectively.
 
 <h3>Breaking changes</h3>

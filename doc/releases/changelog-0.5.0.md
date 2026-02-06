@@ -3,7 +3,7 @@
 
 <h3>New features since last release</h3>
 
-* Adds a new optimizer, `qml.QNGOptimizer`, which optimizes QNodes using
+* Adds a new optimizer, `qp.QNGOptimizer`, which optimizes QNodes using
   quantum natural gradient descent. See https://arxiv.org/abs/1909.02108
   for more details.
   [(#295)](https://github.com/XanaduAI/pennylane/pull/295)
@@ -32,7 +32,7 @@
 * The method `Device.supported` was removed, and replaced with the methods
   `Device.supports_observable` and `Device.supports_operation`.
   Both methods can be called with string arguments (`dev.supports_observable('PauliX')`) and
-  class arguments (`dev.supports_observable(qml.PauliX)`).
+  class arguments (`dev.supports_observable(qp.PauliX)`).
   [(#276)](https://github.com/XanaduAI/pennylane/pull/276)
 
 * The following CV observables were renamed to comply with the new Operation/Observable
@@ -120,7 +120,7 @@
   [(#248)](https://github.com/XanaduAI/pennylane/pull/248)
 
 * Fixed a broken link in the tutorial documentation, as a
-  result of the `qml.expval.Observable` deprecation.
+  result of the `qp.expval.Observable` deprecation.
   [(#246)](https://github.com/XanaduAI/pennylane/pull/246)
 
 <h3>Bug fixes</h3>

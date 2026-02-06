@@ -4,7 +4,7 @@
 <h3>Bug fixes</h3>
 
 * Fixed Torch device discrepencies for certain parametrized operations by
-  updating `qml.math.array` and `qml.math.eye` to preserve the Torch device
+  updating `qp.math.array` and `qp.math.eye` to preserve the Torch device
   used.
   [(#2967)](https://github.com/PennyLaneAI/pennylane/pull/2967)
 

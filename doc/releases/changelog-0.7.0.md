@@ -23,10 +23,10 @@
   [(#396)](https://github.com/XanaduAI/pennylane/pull/396)
 
 * The ability to load circuits from external frameworks as templates
-  has been added via the new `qml.load()` function. This feature
+  has been added via the new `qp.load()` function. This feature
   requires plugin support --- this initial release provides support
   for Qiskit circuits and QASM files when `pennylane-qiskit` is installed,
-  via the functions `qml.from_qiskit` and `qml.from_qasm`.
+  via the functions `qp.from_qiskit` and `qp.from_qasm`.
   [(#418)](https://github.com/XanaduAI/pennylane/pull/418)
 
 * An experimental tensor network device has been added

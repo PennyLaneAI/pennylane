@@ -14,15 +14,15 @@
   the qubit-wise commuting Pauli words `XX` and `XI`:
 
   ```python
-  qml.enable_tape()
+  qp.enable_tape()
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def f(x):
-      qml.Hadamard(wires=0)
-      qml.Hadamard(wires=1)
-      qml.CRot(0.1, 0.2, 0.3, wires=[1, 0])
-      qml.RZ(x, wires=1)
-      return qml.expval(qml.PauliX(0) @ qml.PauliX(1)), qml.expval(qml.PauliX(0))
+      qp.Hadamard(wires=0)
+      qp.Hadamard(wires=1)
+      qp.CRot(0.1, 0.2, 0.3, wires=[1, 0])
+      qp.RZ(x, wires=1)
+      return qp.expval(qp.PauliX(0) @ qp.PauliX(1)), qp.expval(qp.PauliX(0))
   ```
 
   ```pycon
@@ -36,20 +36,20 @@
 
   This is achieved by separating the observables composing the Hamiltonian into qubit-wise
   commuting groups and evaluating those groups on a single QNode using functionality from the
-  `qml.grouping` module:
+  `qp.grouping` module:
 
   ```python
-  qml.enable_tape()
-  commuting_obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]
-  H = qml.vqe.Hamiltonian([1, 1], commuting_obs)
+  qp.enable_tape()
+  commuting_obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1)]
+  H = qp.vqe.Hamiltonian([1, 1], commuting_obs)
 
-  dev = qml.device("default.qubit", wires=2)
-  ansatz = qml.templates.StronglyEntanglingLayers
+  dev = qp.device("default.qubit", wires=2)
+  ansatz = qp.templates.StronglyEntanglingLayers
 
-  cost_opt = qml.ExpvalCost(ansatz, H, dev, optimize=True)
-  cost_no_opt = qml.ExpvalCost(ansatz, H, dev, optimize=False)
+  cost_opt = qp.ExpvalCost(ansatz, H, dev, optimize=True)
+  cost_no_opt = qp.ExpvalCost(ansatz, H, dev, optimize=False)
 
-  params = qml.init.strong_ent_layers_uniform(3, 2)
+  params = qp.init.strong_ent_layers_uniform(3, 2)
   ```
 
   Grouping these commuting observables leads to fewer device executions:
@@ -98,19 +98,19 @@
   [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
 
   ```python
-  qml.enable_tape()
+  qp.enable_tape()
 
-  dev = qml.device("default.qubit.tf", wires=2)
+  dev = qp.device("default.qubit.tf", wires=2)
 
-  @qml.qnode(dev, interface="tf", diff_method="backprop")
+  @qp.qnode(dev, interface="tf", diff_method="backprop")
   def f(inputs, weights):
-      qml.templates.AngleEmbedding(inputs, wires=range(2))
-      qml.templates.StronglyEntanglingLayers(weights, wires=range(2))
-      return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+      qp.templates.AngleEmbedding(inputs, wires=range(2))
+      qp.templates.StronglyEntanglingLayers(weights, wires=range(2))
+      return [qp.expval(qp.PauliZ(i)) for i in range(2)]
 
   weight_shapes = {"weights": (3, 2, 3)}
 
-  qlayer = qml.qnn.KerasLayer(f, weight_shapes, output_dim=2)
+  qlayer = qp.qnn.KerasLayer(f, weight_shapes, output_dim=2)
 
   inputs = tf.constant(np.random.random((4, 2)), dtype=tf.float32)
 
@@ -122,31 +122,31 @@
 
 <h4>New operations, templates, and measurements</h4>
 
-* Adds the `qml.density_matrix` QNode return with partial trace capabilities.
+* Adds the `qp.density_matrix` QNode return with partial trace capabilities.
   [(#878)](https://github.com/PennyLaneAI/pennylane/pull/878)
 
   The density matrix over the provided wires is returned, with all other subsystems traced out.
-  `qml.density_matrix` currently works for both the `default.qubit` and `default.mixed` devices.
+  `qp.density_matrix` currently works for both the `default.qubit` and `default.mixed` devices.
 
   ```python
-  qml.enable_tape()
-  dev = qml.device("default.qubit", wires=2)
+  qp.enable_tape()
+  dev = qp.device("default.qubit", wires=2)
 
   def circuit(x):
-      qml.PauliY(wires=0)
-      qml.Hadamard(wires=1)
-      return qml.density_matrix(wires=[1])  # wire 0 is traced out
+      qp.PauliY(wires=0)
+      qp.Hadamard(wires=1)
+      return qp.density_matrix(wires=[1])  # wire 0 is traced out
   ```
 
 * Adds the square-root X gate `SX`. [(#871)](https://github.com/PennyLaneAI/pennylane/pull/871)
 
   ```python
-  dev = qml.device("default.qubit", wires=1)
+  dev = qp.device("default.qubit", wires=1)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.SX(wires=[0])
-      return qml.expval(qml.PauliZ(wires=[0]))
+      qp.SX(wires=[0])
+      return qp.expval(qp.PauliZ(wires=[0]))
   ```
 
 * Two new hardware-efficient particle-conserving templates have been implemented
@@ -164,14 +164,14 @@
   [(#862)](https://github.com/PennyLaneAI/pennylane/pull/862)
 
   ```pycon
-  >>> with qml.tape.QuantumTape() as tape:
-  ...    qml.Hadamard(wires=0)
-  ...    qml.RZ(0.26, wires=1)
-  ...    qml.CNOT(wires=[1, 0])
-  ...    qml.Rot(1.8, -2.7, 0.2, wires=0)
-  ...    qml.Hadamard(wires=1)
-  ...    qml.CNOT(wires=[0, 1])
-  ...    qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  >>> with qp.tape.QuantumTape() as tape:
+  ...    qp.Hadamard(wires=0)
+  ...    qp.RZ(0.26, wires=1)
+  ...    qp.CNOT(wires=[1, 0])
+  ...    qp.Rot(1.8, -2.7, 0.2, wires=0)
+  ...    qp.Hadamard(wires=1)
+  ...    qp.CNOT(wires=[0, 1])
+  ...    qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
   >>> tape.get_resources()
   {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1}
   >>> tape.get_depth()
@@ -182,13 +182,13 @@
   [(#853)](https://github.com/PennyLaneAI/pennylane/pull/853)
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=2)
-  >>> @qml.qnode(dev)
+  >>> dev = qp.device("default.qubit", wires=2)
+  >>> @qp.qnode(dev)
   ... def circuit(x, y):
-  ...    qml.RX(x, wires=[0])
-  ...    qml.RY(y, wires=[1])
-  ...    qml.CNOT(wires=[0, 1])
-  ...    return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+  ...    qp.RX(x, wires=[0])
+  ...    qp.RY(y, wires=[1])
+  ...    qp.CNOT(wires=[0, 1])
+  ...    return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
   >>> for _ in range(10):
   ...    circuit(0.432, 0.12)
   >>> print(dev.num_executions)
@@ -204,21 +204,21 @@
   - `qnn.ExpvalCost` [(#863)](https://github.com/PennyLaneAI/pennylane/pull/863)
     [(#911)](https://github.com/PennyLaneAI/pennylane/pull/911)
 
-  - `qml.qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
+  - `qp.qnn.KerasLayer` [(#869)](https://github.com/PennyLaneAI/pennylane/pull/869)
 
-  - `qml.qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
+  - `qp.qnn.TorchLayer` [(#865)](https://github.com/PennyLaneAI/pennylane/pull/865)
 
-  - The `qml.qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
+  - The `qp.qaoa` module [(#905)](https://github.com/PennyLaneAI/pennylane/pull/905)
 
-* A new function, `qml.refresh_devices()`, has been added, allowing PennyLane to
-  rescan installed PennyLane plugins and refresh the device list. In addition, the `qml.device`
+* A new function, `qp.refresh_devices()`, has been added, allowing PennyLane to
+  rescan installed PennyLane plugins and refresh the device list. In addition, the `qp.device`
   loader will attempt to refresh devices if the required plugin device cannot be found.
   This will result in an improved experience if installing PennyLane and plugins within
   a running Python session (for example, on Google Colab), and avoid the need to
   restart the kernel/runtime.
   [(#907)](https://github.com/PennyLaneAI/pennylane/pull/907)
 
-* When using `grad_fn = qml.grad(cost)` to compute the gradient of a cost function with the Autograd
+* When using `grad_fn = qp.grad(cost)` to compute the gradient of a cost function with the Autograd
   interface, the value of the intermediate forward pass is now available via the `grad_fn.forward`
   property
   [(#914)](https://github.com/PennyLaneAI/pennylane/pull/914):
@@ -229,7 +229,7 @@
 
   params = np.array([0.1, 0.5], requires_grad=True)
   data = np.array(0.65, requires_grad=False)
-  grad_fn = qml.grad(cost_fn)
+  grad_fn = qp.grad(cost_fn)
 
   grad_fn(params, data)  # perform backprop and evaluate the gradient
   grad_fn.forward  # the cost function value
@@ -240,11 +240,11 @@
   [(#916)](https://github.com/PennyLaneAI/pennylane/pull/916)
 
   ```pycon
-  >>> opt = qml.GradientDescentOptimizer()
+  >>> opt = qp.GradientDescentOptimizer()
   >>> params, cost = opt.step_and_cost(cost_fn, params)
   ```
 
-* PennyLane provides a new experimental module `qml.proc` which provides framework-agnostic processing
+* PennyLane provides a new experimental module `qp.proc` which provides framework-agnostic processing
   functions for array and tensor manipulations.
   [(#886)](https://github.com/PennyLaneAI/pennylane/pull/886)
 
@@ -254,10 +254,10 @@
 
   ```pycon
   >>> x = torch.tensor([1., 2.])
-  >>> qml.proc.ones_like(x)
+  >>> qp.proc.ones_like(x)
   tensor([1, 1])
   >>> y = tf.Variable([[0], [5]])
-  >>> qml.proc.ones_like(y, dtype=np.complex128)
+  >>> qp.proc.ones_like(y, dtype=np.complex128)
   <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
   array([[1.+0.j],
          [1.+0.j]])>
@@ -311,7 +311,7 @@
   cache of size 10 is created using:
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=2, cache=10)
+  >>> dev = qp.device("default.qubit", wires=2, cache=10)
   ```
 
 * The `Operation`, `Tensor`, and `MeasurementProcess` classes now have the `__copy__` special method
@@ -323,7 +323,7 @@
   the copied operation will continue to share the same parameter data,
   ```pycon
   >>> import copy
-  >>> op = qml.RX(0.2, wires=0)
+  >>> op = qp.RX(0.2, wires=0)
   >>> op2 = copy.copy(op)
   >>> op.data[0] is op2.data[0]
   True

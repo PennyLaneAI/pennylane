@@ -5,7 +5,7 @@
 * Fixed a recursion error when simplifying operators that are raised to integer powers. For example,
 
   ```pycon
-  >>> class DummyOp(qml.operation.Operator):
+  >>> class DummyOp(qp.operation.Operator):
   ...     pass
   >>> (DummyOp(0) ** 2).simplify()
   DummyOp(0) @ DummyOp(0)

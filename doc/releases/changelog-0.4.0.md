@@ -16,7 +16,7 @@
 
   - All qubit observables (requiring 3 circuit evaluations for involutory
     observables such as `Identity`, `X`, `Y`, `Z`; and 5 circuit evals for
-    non-involutary observables, currently only `qml.Hermitian`)
+    non-involutary observables, currently only `qp.Hermitian`)
 
   - First-order CV observables (requiring 5 circuit evaluations)
 

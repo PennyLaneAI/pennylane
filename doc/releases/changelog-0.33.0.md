@@ -8,20 +8,20 @@
 * It is now possible to request postselection on a mid-circuit measurement.
   [(#4604)](https://github.com/PennyLaneAI/pennylane/pull/4604)
 
-  This can be achieved by specifying the `postselect` keyword argument in `qml.measure` as either
+  This can be achieved by specifying the `postselect` keyword argument in `qp.measure` as either
   `0` or `1`, corresponding to the basis states.
 
   ```python
   import pennylane as qp
 
-  dev = qml.device("default.qubit")
+  dev = qp.device("default.qubit")
 
-  @qml.qnode(dev, interface=None)
+  @qp.qnode(dev, interface=None)
   def circuit():
-      qml.Hadamard(wires=0)
-      qml.CNOT(wires=[0, 1])
-      qml.measure(0, postselect=1)
-      return qml.expval(qml.PauliZ(1)), qml.sample(wires=1)
+      qp.Hadamard(wires=0)
+      qp.CNOT(wires=[0, 1])
+      qp.measure(0, postselect=1)
+      return qp.expval(qp.PauliZ(1)), qp.sample(wires=1)
   ```
   
   This circuit prepares the :math:`| \Phi^{+} \rangle` Bell state and postselects on measuring
@@ -40,14 +40,14 @@
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
   ```python
-  dev = qml.device("default.qubit")
+  dev = qp.device("default.qubit")
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circ(x, y):
-      qml.RX(x, wires=0)
-      qml.RY(y, wires=1)
-      m0 = qml.measure(1)
-      return qml.expval(qml.PauliZ(0)), qml.expval(m0), qml.sample(m0)
+      qp.RX(x, wires=0)
+      qp.RY(y, wires=1)
+      m0 = qp.measure(1)
+      return qp.expval(qp.PauliZ(0)), qp.expval(m0), qp.sample(m0)
   ```
 
   ```pycon
@@ -75,16 +75,16 @@
 
   ```python
   coeffs = [0.25, 0.75]
-  ops = [qml.PauliX(0), qml.PauliZ(0)]
-  H = qml.dot(coeffs, ops)
+  ops = [qp.PauliX(0), qp.PauliZ(0)]
+  H = qp.dot(coeffs, ops)
 
-  dev = qml.device("default.qubit", wires=2)
+  dev = qp.device("default.qubit", wires=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.Hadamard(0)
-      qml.TrotterProduct(H, time=2.4, order=2)
-      return qml.state()
+      qp.Hadamard(0)
+      qp.TrotterProduct(H, time=2.4, order=2)
+      return qp.state()
   ```
 
   ```pycon
@@ -104,16 +104,16 @@
   
   ```python
   coeffs = [0.25, 0.75]
-  ops = [qml.PauliX(0), qml.PauliZ(0)]
-  H = qml.dot(coeffs, ops)
+  ops = [qp.PauliX(0), qp.PauliZ(0)]
+  H = qp.dot(coeffs, ops)
 
-  dev = qml.device("default.qubit", wires=2)
+  dev = qp.device("default.qubit", wires=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.Hadamard(0)
-      qml.QDrift(H, time=1.2, n = 10)
-      return qml.probs()
+      qp.Hadamard(0)
+      qp.QDrift(H, time=1.2, n = 10)
+      return qp.probs()
   ```
 
   ```pycon
@@ -133,12 +133,12 @@
   ```python
   import matplotlib.pyplot as plt
 
-  dev = qml.device('default.qubit', wires=4)
+  dev = qp.device('default.qubit', wires=4)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def example_circuit():
-        qml.CosineWindow(wires=range(4))
-        return qml.state()
+        qp.CosineWindow(wires=range(4))
+        return qp.state()
   output = example_circuit()
 
   plt.style.use("pennylane.drawer.plot")
@@ -155,15 +155,15 @@
   To use `ControlledSequence`, specify the controlled unitary operator and the control wires, `control`:
 
   ```python
-  dev = qml.device("default.qubit", wires = 4)
+  dev = qp.device("default.qubit", wires = 4)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
       for i in range(3):
-          qml.Hadamard(wires = i)
-      qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
-      qml.adjoint(qml.QFT)(wires = range(3))
-      return qml.probs(wires = range(3))
+          qp.Hadamard(wires = i)
+      qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
+      qp.adjoint(qp.QFT)(wires = range(3))
+      return qp.probs(wires = range(3))
   ```
 
   ```pycon
@@ -173,11 +173,11 @@
   
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
-* `default.qubit` now uses the new `qml.devices.Device` API and functionality in
-  `qml.devices.qubit`. If you experience any issues with the updated `default.qubit`, please let us
+* `default.qubit` now uses the new `qp.devices.Device` API and functionality in
+  `qp.devices.qubit`. If you experience any issues with the updated `default.qubit`, please let us
   know by [posting an issue](https://github.com/PennyLaneAI/pennylane/issues/new/choose). 
   The old version of the device is still
-  accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
+  accessible by the short name `default.qubit.legacy`, or directly via `qp.devices.DefaultQubitLegacy`.
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
@@ -185,23 +185,23 @@
 
   This changeover has a number of benefits for `default.qubit`, including:
 
-  * The number of wires is now optional — simply having `qml.device("default.qubit")` is valid! If
+  * The number of wires is now optional — simply having `qp.device("default.qubit")` is valid! If
     wires are not provided at instantiation, the device automatically infers the required number of
     wires for each circuit provided for execution.
 
     ```python
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.PauliZ(0)
-        qml.RZ(0.1, wires=1)
-        qml.Hadamard(2)
-        return qml.state()
+        qp.PauliZ(0)
+        qp.RZ(0.1, wires=1)
+        qp.Hadamard(2)
+        return qp.state()
     ```
 
     ```pycon
-    >>> print(qml.draw(circuit)())
+    >>> print(qp.draw(circuit)())
     0: ──Z────────┤  State
     1: ──RZ(0.10)─┤  State
     2: ──H────────┤  State
@@ -213,12 +213,12 @@
     ```python
     import jax
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, diff_method="backprop")
+    @qp.qnode(dev, diff_method="backprop")
     def f(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(x, wires=0)
+        return qp.expval(qp.PauliZ(0))
     
     f(jax.numpy.array(0.2))
     ```
@@ -244,28 +244,28 @@
 
 * A QNode that has been decorated with `qjit` from PennyLane's
   [Catalyst](https://docs.pennylane.ai/projects/catalyst/en/stable/index.html) library for just-in-time hybrid
-  compilation is now compatible with `qml.draw`.
+  compilation is now compatible with `qp.draw`.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
   ```python
   import catalyst
 
   @catalyst.qjit
-  @qml.qnode(qml.device("lightning.qubit", wires=3))
+  @qp.qnode(qp.device("lightning.qubit", wires=3))
   def circuit(x, y, z, c):
       """A quantum circuit on three wires."""
 
       @catalyst.for_loop(0, c, 1)
       def loop(i):
-          qml.Hadamard(wires=i)
+          qp.Hadamard(wires=i)
 
-      qml.RX(x, wires=0)
+      qp.RX(x, wires=0)
       loop()  
-      qml.RY(y, wires=1)
-      qml.RZ(z, wires=2)
-      return qml.expval(qml.PauliZ(0))
+      qp.RY(y, wires=1)
+      qp.RZ(z, wires=2)
+      return qp.expval(qp.PauliZ(0))
   
-  draw = qml.draw(circuit, decimals=None)(1.234, 2.345, 3.456, 1)
+  draw = qp.draw(circuit, decimals=None)(1.234, 2.345, 3.456, 1)
   ```
   
   ```pycon
@@ -289,12 +289,12 @@
   ```python
   import jax
 
-  tape0 = qml.tape.QuantumTape([qml.RX(1.0, 0), qml.RY(0.5, 0)], [qml.expval(qml.PauliZ(0))])
-  dev = qml.device('lightning.qubit', wires=5)
+  tape0 = qp.tape.QuantumTape([qp.RX(1.0, 0), qp.RY(0.5, 0)], [qp.expval(qp.PauliZ(0))])
+  dev = qp.device('lightning.qubit', wires=5)
 
-  execute_kwargs = {"device": dev, "gradient_fn": qml.gradients.param_shift, "interface":"jax"}
+  execute_kwargs = {"device": dev, "gradient_fn": qp.gradients.param_shift, "interface":"jax"}
 
-  jitted_execute = jax.jit(qml.execute, static_argnames=execute_kwargs.keys())
+  jitted_execute = jax.jit(qp.execute, static_argnames=execute_kwargs.keys())
   jitted_execute((tape0, ), **execute_kwargs)
   ```
 
@@ -304,7 +304,7 @@
   been modified to replace indexing with slicing for better compatibility with JAX.
   [(#4685)](https://github.com/PennyLaneAI/pennylane/pull/4685)
 
-* `qml.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
+* `qp.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
   from MPS, DMRG and SHCI classical calculations performed with the Block2 and Dice libraries.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
@@ -320,17 +320,17 @@
   [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
   [(#4556)](https://github.com/PennyLaneAI/pennylane/pull/4556)
 
-* The tensor-network template `qml.MPS` now supports changing the `offset` between subsequent blocks for more flexibility.
+* The tensor-network template `qp.MPS` now supports changing the `offset` between subsequent blocks for more flexibility.
   [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
-* Builtin types support with `qml.pauli_decompose` have been improved.
+* Builtin types support with `qp.pauli_decompose` have been improved.
   [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
 
 * `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
-* `qml.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
+* `qp.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
 
@@ -363,7 +363,7 @@
   [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
   [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
 
-* `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
+* `qp.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
   [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
 
 * The new device API now has a `repr()` method.
@@ -390,7 +390,7 @@
   and `no_sampling` to assist in constructing devices under the new device API.
   [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
 
-* Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
+* Updated `qp.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
   manager to bring `DefaultQubit` to feature parity with `default.qubit.legacy` with regards to 
   using custom decompositions. The `DefaultQubit` device can now be included in a `set_decomposition` 
   context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
@@ -431,13 +431,13 @@
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
-* `qml.exp` returns a more informative error message when decomposition is unavailable for non-unitary operators.
+* `qp.exp` returns a more informative error message when decomposition is unavailable for non-unitary operators.
   [(#4571)](https://github.com/PennyLaneAI/pennylane/pull/4571)
 
-* Added `qml.math.get_deep_interface` to get the interface of a scalar hidden deep in lists or tuples.
+* Added `qp.math.get_deep_interface` to get the interface of a scalar hidden deep in lists or tuples.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
-* Updated `qml.math.ndim` and `qml.math.shape` to work with built-in lists or tuples that contain
+* Updated `qp.math.ndim` and `qp.math.shape` to work with built-in lists or tuples that contain
   interface-specific scalar dat (e.g., `[(tf.Variable(1.1), tf.Variable(2.2))]`).
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
@@ -449,18 +449,18 @@
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
 
-* `qml.data.load` properly handles parameters that come after `'full'`
+* `qp.data.load` properly handles parameters that come after `'full'`
   [(#4663)](https://github.com/PennyLaneAI/pennylane/pull/4663)
 
-* The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
+* The `qp.jordan_wigner` function has been modified to optionally remove the imaginary components
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
-* `qml.data.load` correctly performs a full download of the dataset after a partial download of the
+* `qp.data.load` correctly performs a full download of the dataset after a partial download of the
   same dataset has already been performed.
   [(#4681)](https://github.com/PennyLaneAI/pennylane/pull/4681)
   
-* The performance of `qml.data.load()` has been improved when partially loading a dataset
+* The performance of `qp.data.load()` has been improved when partially loading a dataset
   [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
 
 * Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
@@ -474,13 +474,13 @@
 
 * `QubitDevice` and `CountsMP` are updated to disregard samples containing failed hardware measurements
   (record as `np.NaN`) when tallying samples, rather than counting failed measurements as ground-state 
-  measurements, and to display `qml.counts` coming from these hardware devices correctly.
+  measurements, and to display `qp.counts` coming from these hardware devices correctly.
   [(#4739)](https://github.com/PennyLaneAI/pennylane/pull/4739)
 
 <h3>Breaking changes 💔</h3>
 
-* `qml.defer_measurements` now raises an error if a transformed circuit measures `qml.probs`,
-  `qml.sample`, or `qml.counts` without any wires or observable, or if it measures `qml.state`.
+* `qp.defer_measurements` now raises an error if a transformed circuit measures `qp.probs`,
+  `qp.sample`, or `qp.counts` without any wires or observable, or if it measures `qp.state`.
   [(#4701)](https://github.com/PennyLaneAI/pennylane/pull/4701)
 
 * The device test suite now converts device keyword arguments to integers or floats if possible.
@@ -492,7 +492,7 @@
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
   object's address in memory. Using `==` with operators and measurement processes will now behave the
-  same as `qml.equal`, and objects of the same type with the same data and hyperparameters will have
+  same as `qp.equal`, and objects of the same type with the same data and hyperparameters will have
   the same hash.
   [(#4536)](https://github.com/PennyLaneAI/pennylane/pull/4536)
 
@@ -500,8 +500,8 @@
   of operator and measurement process equality, determined by `==`:
 
   ```python
-  op1 = qml.PauliX(0)
-  op2 = qml.PauliX(0)
+  op1 = qp.PauliX(0)
+  op2 = qp.PauliX(0)
   op3 = op1
   ```
 
@@ -529,8 +529,8 @@
   The second and third code blocks show the previous and current behaviour.
 
   ```python
-  op1 = qml.PauliX(0)
-  op2 = qml.PauliX(0)
+  op1 = qp.PauliX(0)
+  op2 = qp.PauliX(0)
   ```
 
   Old behaviour:
@@ -547,16 +547,16 @@
   {PauliX(wires=[0])}
   ```
 
-* The old return type and associated functions `qml.enable_return` and `qml.disable_return` have been removed.
+* The old return type and associated functions `qp.enable_return` and `qp.disable_return` have been removed.
   [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
 * The `mode` keyword argument in `QNode` has been removed. Please use `grad_on_execution` instead.
   [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
-* The CV observables `qml.X` and `qml.P` have been removed. Please use `qml.QuadX` and `qml.QuadP` instead.
+* The CV observables `qp.X` and `qp.P` have been removed. Please use `qp.QuadX` and `qp.QuadP` instead.
   [(#4533)](https://github.com/PennyLaneAI/pennylane/pull/4533)
 
-* The `sampler_seed` argument of `qml.gradients.spsa_grad` has been removed.
+* The `sampler_seed` argument of `qp.gradients.spsa_grad` has been removed.
   Instead, the `sampler_rng` argument should be set, either to an integer value, which will be used
   to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
   `np.random.default_rng(seed)`.
@@ -567,7 +567,7 @@
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
 * The method `tape.unwrap()` and corresponding `UnwrapTape` and `Unwrap` classes have been removed.
-  Instead of `tape.unwrap()`, use `qml.transforms.convert_to_numpy_parameters`.
+  Instead of `tape.unwrap()`, use `qp.transforms.convert_to_numpy_parameters`.
   [(#4535)](https://github.com/PennyLaneAI/pennylane/pull/4535)
 
 * The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` has been changed to
@@ -589,7 +589,7 @@
 
   ```python
   @transform_fn(**transform_kwargs)
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
       ...
   ```
@@ -600,7 +600,7 @@
 
   ```python
   @functools.partial(transform_fn, **transform_kwargs)
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
       ...
   ```
@@ -609,7 +609,7 @@
   `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
   [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
 
-* `qml.gradients.pulse_generator` has been renamed to `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+* `qp.gradients.pulse_generator` has been renamed to `qp.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
   is still available but raises a warning.
   [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
 
@@ -623,15 +623,15 @@
   parameters are only passed to the device for backpropagation derivatives. 
   [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)
 
-* Functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section have been added.
+* Functions for qubit-simulation to the `qp.devices` sub-page of the "Internal" section have been added.
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
-* A documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page has been made.
+* A documentation improvement to the usage example in the `qp.QuantumMonteCarlo` page has been made.
   An integral was missing the differential :math:`dx`.
   [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
-* A documentation improvement for the use of the `pennylane` style of `qml.drawer` and the
+* A documentation improvement for the use of the `pennylane` style of `qp.drawer` and the
   `pennylane.drawer.plot` style of `matplotlib.pyplot` has been made by clarifying the use of the default font.
   [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
@@ -646,23 +646,23 @@
 * Fixes `transforms.transpile` with arbitrary measurement processes.
   [(#4732)](https://github.com/PennyLaneAI/pennylane/pull/4732)
 
-* Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
+* Providing `work_wires=None` to `qp.GroverOperator` no longer interprets `None` as a wire.
   [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
-* Fixed an issue where the `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
+* Fixed an issue where the `__copy__` method of the `qp.Select()` operator attempted to access un-initialized data.
   [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
 
 * Fixed the `skip_first` option in `expand_tape_state_prep`.
   [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
 
-* `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
+* `convert_to_numpy_parameters` now uses `qp.ops.functions.bind_new_parameters`. This reinitializes the operation and
   makes sure everything references the new NumPy parameters.
   [(#4540)](https://github.com/PennyLaneAI/pennylane/pull/4540)
 
 * `tf.function` no longer breaks `ProbabilityMP.process_state`, which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
-* Fixed unit tests for `qml.qchem.mol_data`.
+* Fixed unit tests for `qp.qchem.mol_data`.
   [(#4591)](https://github.com/PennyLaneAI/pennylane/pull/4591)
 
 * Fixed `ProbabilityMP.process_state` so that it allows for proper Autograph compilation. Without this,
@@ -673,7 +673,7 @@
 * The `torch.nn.Module` properties are now accessible on a `pennylane.qnn.TorchLayer`.
   [(#4611)](https://github.com/PennyLaneAI/pennylane/pull/4611)
 
-* `qml.math.take` with Pytorch now returns `tensor[..., indices]` when the user requests
+* `qp.math.take` with Pytorch now returns `tensor[..., indices]` when the user requests
   the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
   [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 

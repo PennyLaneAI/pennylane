@@ -6,7 +6,7 @@
 * Fix gradient performance regression due to expansion of VJP products.
   [(#4806)](https://github.com/PennyLaneAI/pennylane/pull/4806)
 
-* `qml.defer_measurements` now correctly transforms circuits when terminal measurements include wires
+* `qp.defer_measurements` now correctly transforms circuits when terminal measurements include wires
   used in mid-circuit measurements.
   [(#4787)](https://github.com/PennyLaneAI/pennylane/pull/4787)
 

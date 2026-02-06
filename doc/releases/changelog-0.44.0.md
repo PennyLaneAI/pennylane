@@ -41,7 +41,7 @@
   num_control_wires = 2 # len(bitstrings) = 4 = 2**2
   num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
 
-  reg = qml.registers(
+  reg = qp.registers(
       {
           "control": num_control_wires,
           "target": bitstring_size,
@@ -49,19 +49,19 @@
       }
   )
 
-  dev = qml.device("default.qubit")
-  @qml.qnode(dev)
+  dev = qp.device("default.qubit")
+  @qp.qnode(dev)
   def bb_quantum():
       # prepare an address, e.g., |10> (index 2)
-      qml.BasisEmbedding(2, wires=reg["control"])
+      qp.BasisEmbedding(2, wires=reg["control"])
 
-      qml.BBQRAM(
+      qp.BBQRAM(
           bitstrings,
           control_wires=reg["control"],
           target_wires=reg["target"],
           work_wires=reg["work_wires"],
       )
-      return qml.probs(wires=reg["target"])
+      return qp.probs(wires=reg["target"])
   ```
 
   ```pycon
@@ -76,14 +76,14 @@
   For more information on each implementation of QRAM in this release, check out their respective
   documentation pages: :class:`~.BBQRAM`, :class:`~.SelectOnlyQRAM`, and:class:`~.HybridQRAM`.
 
-* A lightweight representation of the :class:`~.BBQRAM` template called ``qml.estimator.BBQRAM`` has 
+* A lightweight representation of the :class:`~.BBQRAM` template called ``qp.estimator.BBQRAM`` has 
   been added for fast and efficient resource estimation.
   [(#8825)](https://github.com/PennyLaneAI/pennylane/pull/8825)
 
   Like with other existing lightweight representations of PennyLane operations, leveraging 
-  ``qml.estimator.BBQRAM`` for fast resource estimation can be done in two ways: 
+  ``qp.estimator.BBQRAM`` for fast resource estimation can be done in two ways: 
 
-  * Using ``qml.estimator.BBQRAM`` directly inside of a function and then calling 
+  * Using ``qp.estimator.BBQRAM`` directly inside of a function and then calling 
     :func:`estimate <pennylane.estimator.estimate.estimate>`:
 
     ```python
@@ -121,7 +121,7 @@
     num_control_wires = 2 # len(bistrings) = 4 = 2**2
     num_work_wires = 1 + 3 * ((1 << num_control_wires) - 1) # 10
 
-    reg = qml.registers(
+    reg = qp.registers(
         {
             "control": num_control_wires,
             "target": bitstring_size,
@@ -129,19 +129,19 @@
         }
     )
 
-    dev = qml.device("default.qubit")
-    @qml.qnode(dev)
+    dev = qp.device("default.qubit")
+    @qp.qnode(dev)
     def bb_quantum():
         # prepare an address, e.g., |10> (index 2)
-        qml.BasisEmbedding(2, wires=reg["control"])
+        qp.BasisEmbedding(2, wires=reg["control"])
 
-        qml.BBQRAM(
+        qp.BBQRAM(
             bitstrings,
             control_wires=reg["control"],
             target_wires=reg["target"],
             work_wires=reg["work_wires"],
         )
-        return qml.probs(wires=reg["target"])
+        return qp.probs(wires=reg["target"])
     ```
 
     ```pycon
@@ -175,21 +175,21 @@
   generators, the number of measurements, and the presence of available auxiliary wires. For more 
   details on how ``"auto"`` works, consult the section titled 
   "Variants of the standard hadamard gradient" in the documentation for the Hadamard test gradient 
-  (:func:`qml.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>`).
+  (:func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>`).
 
   The ``"auto"`` method can be accessed by specifying it in ``gradient_kwargs`` in the QNode when 
   using ``diff_method="hadamard"``:
 
   ```python
-  dev = qml.device('default.qubit')
-  @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "auto"})
+  dev = qp.device('default.qubit')
+  @qp.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "auto"})
   def circuit(x):
-      qml.evolve(qml.X(0) @ qml.X(1) + qml.Z(0) @ qml.Z(1) + qml.H(0), x)
-      return qml.expval(qml.Z(0) @ qml.Z(1) + qml.Y(0))
+      qp.evolve(qp.X(0) @ qp.X(1) + qp.Z(0) @ qp.Z(1) + qp.H(0), x)
+      return qp.expval(qp.Z(0) @ qp.Z(1) + qp.Y(0))
   ```
 
   ```pycon
-  >>> print(qml.grad(circuit)(qml.numpy.array(0.5)))
+  >>> print(qp.grad(circuit)(qp.numpy.array(0.5)))
   0.7342549405478683
   ```
 
@@ -221,15 +221,15 @@
 
   pattern = [[[0]],[[1]],[[0,1]]]
 
-  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  @qp.qnode(qp.device('lightning.qubit', wires=2))
   def circuit():
-    qml.IQP(
+    qp.IQP(
         weights=[1., 2., 3.],
         num_wires=2,
         pattern=pattern,
         spin_sym=False,
     )
-    return qml.state()
+    return qp.state()
   ```
 
   ```pycon
@@ -288,13 +288,13 @@
   ```python
   probs_vector = np.array([0.5, 0., 0.25, 0.25])
 
-  dev = qml.device("default.qubit", wires = 2)
+  dev = qp.device("default.qubit", wires = 2)
   wires = [0, 1]
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-    qml.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
-    return qml.probs(wires)
+    qp.MultiplexerStatePreparation(np.sqrt(probs_vector), wires)
+    return qp.probs(wires)
   ```
   
   ```pycon
@@ -325,27 +325,27 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   The new :func:`~.pauli_measure` function is currently only for analysis on the ``null.qubit`` device,
   which allows for circuit inspection with :func:`~.specs` and :func:`~.drawer.draw`.
 
-  Using :func:`~.pauli_measure` in a circuit is similar to :func:`qml.measure <pennylane.measure>` 
+  Using :func:`~.pauli_measure` in a circuit is similar to :func:`qp.measure <pennylane.measure>` 
   (a mid-circuit measurement), but requires that a ``pauli_word`` be specified for the measurement 
   basis:
 
   ```python
   import pennylane as qp
 
-  dev = qml.device("null.qubit", wires=3)
+  dev = qp.device("null.qubit", wires=3)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.Hadamard(0)
-      qml.Hadamard(2)
-      qml.PauliRot(np.pi / 4, pauli_word="XYZ", wires=[0, 1, 2])
-      ppm = qml.pauli_measure(pauli_word="XY", wires=[0, 2])
-      qml.cond(ppm, qml.X)(wires=1)
-      return qml.expval(qml.Z(0))
+      qp.Hadamard(0)
+      qp.Hadamard(2)
+      qp.PauliRot(np.pi / 4, pauli_word="XYZ", wires=[0, 1, 2])
+      ppm = qp.pauli_measure(pauli_word="XY", wires=[0, 2])
+      qp.cond(ppm, qp.X)(wires=1)
+      return qp.expval(qp.Z(0))
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──H─╭RXYZ(0.79)─╭┤↗X├────┤  <Z>
   1: ────├RXYZ(0.79)─│──────X─┤
   2: ──H─╰RXYZ(0.79)─╰┤↗Y├──║─┤
@@ -357,7 +357,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   operation (represented by the :class:`~.PauliRot` and ``PauliMeasure`` gate types, respectively):
 
   ```pycon
-  >>> print(qml.specs(circuit)()['resources'])
+  >>> print(qp.specs(circuit)()['resources'])
   Total wire allocations: 3
   Total gates: 5
   Circuit depth: 4
@@ -384,14 +384,14 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   gates to either the Clifford+T basis or to other PPRs.
 
     ```python
-    @qml.qjit
-    @qml.transforms.gridsynth
-    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    @qp.qjit
+    @qp.transforms.gridsynth
+    @qp.qnode(qp.device("lightning.qubit", wires=1))
     def circuit(x):
-        qml.Hadamard(0)
-        qml.RZ(x, 0)
-        qml.PhaseShift(x * 0.2, 0)
-        return qml.state()
+        qp.Hadamard(0)
+        qp.RZ(x, 0)
+        qp.PhaseShift(x * 0.2, 0)
+        return qp.state()
 
     ```
     ```pycon
@@ -405,18 +405,18 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   :func:`~.transforms.reduce_t_depth`, and :func:`~.transforms.decompose_arbitrary_ppr`.
   
     ```python
-    @qml.qjit(target="mlir")
-    @qml.transforms.to_ppr
-    @qml.qnode(qml.device("null.qubit", wires=2))
+    @qp.qjit(target="mlir")
+    @qp.transforms.to_ppr
+    @qp.qnode(qp.device("null.qubit", wires=2))
     def circuit():
-        qml.H(0)
-        qml.CNOT([0, 1])
-        qml.T(0)
-        return qml.expval(qml.Z(0))
+        qp.H(0)
+        qp.CNOT([0, 1])
+        qp.T(0)
+        return qp.expval(qp.Z(0))
     ```
 
     ```pycon
-    >>> print(qml.specs(circuit, level=2)())
+    >>> print(qp.specs(circuit, level=2)())
     ...
     Resource specifications:
       Total wire allocations: 2
@@ -457,17 +457,17 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```python
   from functools import partial
   
-  qml.decomposition.enable_graph()
+  qp.decomposition.enable_graph()
 
-  @partial(qml.transforms.decompose, gate_set={qml.PauliRot, qml.GlobalPhase})
-  @qml.qnode(qml.device("null.qubit", wires=2))
+  @partial(qp.transforms.decompose, gate_set={qp.PauliRot, qp.GlobalPhase})
+  @qp.qnode(qp.device("null.qubit", wires=2))
   def circuit():
-      qml.CNOT([0, 1])
-      return qml.expval(qml.Z(0))
+      qp.CNOT([0, 1])
+      return qp.expval(qp.Z(0))
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──RZ(-1.57)─╭RZX(1.57)─╭GlobalPhase(0.79)───────────┤  <Z>
   1: ──RX(-1.57)─╰RZX(1.57)─╰GlobalPhase(0.79)──RZ(3.14)─┤    
   ```
@@ -491,15 +491,15 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   to create custom circuit optimization pipelines with ease. For example, :class:`~.CompilePipeline` objects can compound:
 
   ```pycon
-  >>> pipeline = qml.CompilePipeline(qml.transforms.commute_controlled, qml.transforms.cancel_inverses)
-  >>> qml.CompilePipeline(pipeline, qml.transforms.merge_rotations)
+  >>> pipeline = qp.CompilePipeline(qp.transforms.commute_controlled, qp.transforms.cancel_inverses)
+  >>> qp.CompilePipeline(pipeline, qp.transforms.merge_rotations)
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
 
   They can be added together with ``+``:
 
   ```pycon
-  >>> pipeline += qml.transforms.merge_rotations
+  >>> pipeline += qp.transforms.merge_rotations
   >>> pipeline
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations)
   ```
@@ -507,7 +507,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   They can be multiplied by scalars via ``*`` to repeat compilation passes a predetermined number of times:
   
   ```pycon
-  >>> pipeline += 2 * qml.transforms.cancel_inverses(recursive=True)
+  >>> pipeline += 2 * qp.transforms.cancel_inverses(recursive=True)
   >>> pipeline
   CompilePipeline(commute_controlled, cancel_inverses, merge_rotations, cancel_inverses, cancel_inverses)
   ```
@@ -515,7 +515,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   Finally, they can be modified via ``list`` operations like ``append``, ``extend``, and ``insert``:
 
   ```pycon
-  >>> pipeline.insert(0, qml.transforms.remove_barrier)
+  >>> pipeline.insert(0, qp.transforms.remove_barrier)
   >>> pipeline
   CompilePipeline(remove_barrier, commute_controlled, cancel_inverses, merge_rotations, cancel_inverses, cancel_inverses)
   ```
@@ -526,19 +526,19 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```python
   import pennylane as qp
 
-  pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+  pipeline = qp.transforms.merge_rotations + qp.transforms.cancel_inverses(recursive=True)
 
   @pipeline
-  @qml.qnode(qml.device("default.qubit"))
+  @qp.qnode(qp.device("default.qubit"))
   def circuit():
-    qml.H(0)
-    qml.H(0)
-    qml.RX(0.5, 1)
-    qml.RX(0.2, 1)
-    return qml.expval(qml.Z(0) @ qml.Z(1))
+    qp.H(0)
+    qp.H(0)
+    qp.RX(0.5, 1)
+    qp.RX(0.2, 1)
+    return qp.expval(qp.Z(0) @ qp.Z(1))
   ```
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ───────────┤ ╭<Z@Z>
   1: ──RX(0.70)─┤ ╰<Z@Z>
   ```
@@ -556,42 +556,42 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```python
   import pennylane as qp
   
-  Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
+  Hamiltonian = qp.dot([1.0, 0.5], [qp.X(0), qp.Y(0)])
   
-  dev = qml.device("default.qubit")
+  dev = qp.device("default.qubit")
   
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
-      return qml.state()
+      qp.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
+      return qp.state()
   ```
 
   ```pycon
-  >>> qml.resource.algo_error(circuit)()
+  >>> qp.resource.algo_error(circuit)()
   {'SpectralNormError': SpectralNormError(0.25)}
   ```
 
 * Fast resource estimation is now available for many algorithms, including:
    
   * The **Generalized Quantum Signal Processing** (GQSP) algorithm and its time evolution via the 
-    ``qml.estimator.GQSP`` and ``qml.estimator.GQSPTimeEvolution`` resource operations.
+    ``qp.estimator.GQSP`` and ``qp.estimator.GQSPTimeEvolution`` resource operations.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
-  * The **Qubitization** algorithm via two new resource operators: ``qml.estimator.Reflection`` and
-    ``qml.estimator.Qubitization``.
+  * The **Qubitization** algorithm via two new resource operators: ``qp.estimator.Reflection`` and
+    ``qp.estimator.Qubitization``.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
   * The **Quantum Signal Processing** (QSP) and **Quantum Singular Value Transformation** (QSVT) 
-    algorithms via two new resource operators: ``qml.estimator.QSP``.
+    algorithms via two new resource operators: ``qp.estimator.QSP``.
     [(#8733)](https://github.com/PennyLaneAI/pennylane/pull/8733)
 
-  * The **unary iteration implementation of QPE** via the new ``qml.estimator.UnaryIterationQPE``
+  * The **unary iteration implementation of QPE** via the new ``qp.estimator.UnaryIterationQPE``
     subroutine, which makes it possible to reduce ``T`` and ``Toffoli`` gate counts in exchange for 
     using additional qubits.
     [(#8708)](https://github.com/PennyLaneAI/pennylane/pull/8708)
 
-  * **Trotterization** for Pauli Hamiltonians, using the new ``qml.estimator.PauliHamiltonian``
-    resource Hamiltonian class and the new ``qml.estimator.TrotterPauli`` resource operator. 
+  * **Trotterization** for Pauli Hamiltonians, using the new ``qp.estimator.PauliHamiltonian``
+    resource Hamiltonian class and the new ``qp.estimator.TrotterPauli`` resource operator. 
     [(#8546)](https://github.com/PennyLaneAI/pennylane/pull/8546)
     [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
     
@@ -611,8 +611,8 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
     30
     ```
   
-  * **Linear combination of unitaries** (LCU) representations of ``qml.estimator.PauliHamiltonian`` 
-    Hamiltonians via the new ``qml.estimator.SelectPauli`` operator.
+  * **Linear combination of unitaries** (LCU) representations of ``qp.estimator.PauliHamiltonian`` 
+    Hamiltonians via the new ``qp.estimator.SelectPauli`` operator.
     [(#8675)](https://github.com/PennyLaneAI/pennylane/pull/8675)
 
 
@@ -646,17 +646,17 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   applied:
   
   ```python
-  @qml.qjit
-  @qml.transforms.merge_rotations
-  @qml.transforms.cancel_inverses
-  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  @qp.qjit
+  @qp.transforms.merge_rotations
+  @qp.transforms.cancel_inverses
+  @qp.qnode(qp.device('lightning.qubit', wires=2))
   def circuit():
-      qml.RX(1.23, wires=0)
-      qml.RX(1.23, wires=0)
-      qml.X(0)
-      qml.X(0)
-      qml.CNOT([0, 1])
-      return qml.probs()
+      qp.RX(1.23, wires=0)
+      qp.RX(1.23, wires=0)
+      qp.X(0)
+      qp.X(0)
+      qp.CNOT([0, 1])
+      return qp.probs()
   ```
 
   The supplied ``level`` to :func:`~.specs` can be an individual ``int`` value or an iterable of 
@@ -665,7 +665,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   only, respectively.
 
   ```pycon
-  >>> print(qml.specs(circuit, level=[2, 3])())
+  >>> print(qp.specs(circuit, level=[2, 3])())
   Device: lightning.qubit
   Device wires: 2
   Shots: Shots(total=None)
@@ -708,27 +708,27 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   a decorator on top of QNodes:
 
   ```python
-  @qml.marker(level="rotations-merged")
-  @qml.transforms.merge_rotations
-  @qml.marker(level="my-level")
-  @qml.transforms.cancel_inverses
-  @qml.transforms.decompose(gate_set={qml.RX})
-  @qml.qnode(qml.device('lightning.qubit'))
+  @qp.marker(level="rotations-merged")
+  @qp.transforms.merge_rotations
+  @qp.marker(level="my-level")
+  @qp.transforms.cancel_inverses
+  @qp.transforms.decompose(gate_set={qp.RX})
+  @qp.qnode(qp.device('lightning.qubit'))
   def circuit():
-      qml.RX(0.2,0)
-      qml.X(0)
-      qml.X(0)
-      qml.RX(0.2, 0)
-      return qml.state()
+      qp.RX(0.2,0)
+      qp.X(0)
+      qp.X(0)
+      qp.RX(0.2, 0)
+      return qp.state()
   ```
 
   The string supplied to :func:`~.marker` can then be used as an argument to ``level`` in ``draw``
   and ``specs``, showing the cumulative result of applying transforms up to the marker:
 
   ```pycon
-  >>> print(qml.draw(circuit, level="my-level")())
+  >>> print(qp.draw(circuit, level="my-level")())
   0: ──RX(0.20)──RX(3.14)──RX(3.14)──RX(0.20)─┤  State
-  >>> print(qml.draw(circuit, level="rotations-merged")())
+  >>> print(qp.draw(circuit, level="rotations-merged")())
   0: ──RX(6.68)─┤  State
   ```
 
@@ -740,16 +740,16 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 <h4>Resource estimation</h4>
 
 * It is now easier to access the total gates and wires in resource estimates with the 
-  ``total_wires`` and ``total_gates`` properties in the ``qml.estimator.Resources`` class.
+  ``total_wires`` and ``total_gates`` properties in the ``qp.estimator.Resources`` class.
   [(#8761)](https://github.com/PennyLaneAI/pennylane/pull/8761)
 
   ```python
   import pennylane.estimator as qre
 
   def circuit():
-      qml.X(0)
-      qml.Z(0)
-      qml.Y(1)
+      qp.X(0)
+      qp.Z(0)
+      qp.Y(1)
   ```
 
   ```pycon
@@ -773,7 +773,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   :class:`~.Controlled`, :class:`~.ControlledOp`, :class:`~.Pow`, and/or :class:`~.Adjoint`.
   [(#8464)](https://github.com/PennyLaneAI/pennylane/pull/8464)
 
-* Qualtran call graphs built via :func:`qml.to_bloq <pennylane.to_bloq>` now provide faster resource
+* Qualtran call graphs built via :func:`qp.to_bloq <pennylane.to_bloq>` now provide faster resource
   counting by using PennyLane's resource estimation module. 
   To use the previous behaviour based on PennyLane decompositions, set 
   ``call_graph='decomposition'``.
@@ -782,7 +782,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   The old behaviour was the following:
 
   ```pycon
-  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False, call_graph='decomposition').call_graph()[1]
+  >>> qp.to_bloq(qp.QFT(wires=range(5)), map_ops=False, call_graph='decomposition').call_graph()[1]
   {Hadamard(): 5,
    ZPowGate(exponent=-0.15915494309189535, eps=1e-11): 10,
    ZPowGate(exponent=-0.15915494309189535, eps=5e-12): 10,
@@ -795,7 +795,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   The new behaviour is now this:
 
   ```pycon
-  >>> qml.to_bloq(qml.QFT(wires=range(5)), map_ops=False).call_graph()[1]
+  >>> qp.to_bloq(qp.QFT(wires=range(5)), map_ops=False).call_graph()[1]
   {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
   ```
 
@@ -830,7 +830,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8522)](https://github.com/PennyLaneAI/pennylane/pull/8522)
 
   ```pycon
-  >>> dev = qml.device('lightning.qubit')
+  >>> dev = qp.device('lightning.qubit')
   >>> dev.capabilities.gate_set()
   {'Adjoint(CNOT)',
   'Adjoint(CRX)',
@@ -854,7 +854,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8717)](https://github.com/PennyLaneAI/pennylane/pull/8717)
 
 * Operator decompositions now only need to be defined in the graph decomposition system, as
-  ``Operator.decomposition`` will fallback to the first entry in ``qml.list_decomps`` if the 
+  ``Operator.decomposition`` will fallback to the first entry in ``qp.list_decomps`` if the 
   ``Operator.compute_decomposition`` method is not overridden.
   [(#8686)](https://github.com/PennyLaneAI/pennylane/pull/8686)
 
@@ -930,7 +930,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```
 
   ```pycon
-  >>> qml.pauli_decompose(sparse)
+  >>> qp.pauli_decompose(sparse)
   1.0 * (I(0) @ X(1) @ X(2))
   ```
 
@@ -969,24 +969,24 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8810)](https://github.com/PennyLaneAI/pennylane/pull/8810)
 
   ```python
-  my_transform = qml.transform(pass_name="cancel-inverses")
+  my_transform = qp.transform(pass_name="cancel-inverses")
 
-  @qml.qjit
+  @qp.qjit
   @my_transform
-  @qml.qnode(qml.device('lightning.qubit', wires=4))
+  @qp.qnode(qp.device('lightning.qubit', wires=4))
   def circuit():
-      qml.X(0)
-      qml.X(0)
-      return qml.expval(qml.Z(0))
+      qp.X(0)
+      qp.X(0)
+      return qp.expval(qp.Z(0))
   ```
 
   For additional details see the "Transforms with Catalyst" section in :func:`~pennylane.transform`.
 
-* When program capture is enabled, ``qml.adjoint`` and ``qml.ctrl`` can now be called on operators 
+* When program capture is enabled, ``qp.adjoint`` and ``qp.ctrl`` can now be called on operators 
   that were constructed ahead of time and used as closure variables.
   [(#8816)](https://github.com/PennyLaneAI/pennylane/pull/8816)
 
-* The constant to convert the length unit Bohr to Angstrom in ``qml.qchem`` has been updated to use 
+* The constant to convert the length unit Bohr to Angstrom in ``qp.qchem`` has been updated to use 
   scipy constants, leading to more consistent and standardized conversion.
   [(#8537)](https://github.com/PennyLaneAI/pennylane/pull/8537)
 
@@ -998,53 +998,53 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   For example, the following two usages are equivalent:
 
   ```python
-  @partial(qml.transforms.decompose, gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
+  @partial(qp.transforms.decompose, gate_set={qp.RX, qp.CNOT})
+  @qp.qnode(qp.device('default.qubit', wires=2))
   def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
+      qp.Hadamard(wires=0)
+      qp.CZ(wires=[0,1])
+      return qp.expval(qp.Z(0))
   ```
 
   ```python
-  @qml.transforms.decompose(gate_set={qml.RX, qml.CNOT})
-  @qml.qnode(qml.device('default.qubit', wires=2))
+  @qp.transforms.decompose(gate_set={qp.RX, qp.CNOT})
+  @qp.qnode(qp.device('default.qubit', wires=2))
   def circuit():
-      qml.Hadamard(wires=0)
-      qml.CZ(wires=[0,1])
-      return qml.expval(qml.Z(0))
+      qp.Hadamard(wires=0)
+      qp.CZ(wires=[0,1])
+      return qp.expval(qp.Z(0))
   ```
 
 * :class:`~.transforms.core.TransformContainer` has been renamed to 
   :class:`~.transforms.core.BoundTransform`. The old name is still available in the same location.
   [(#8753)](https://github.com/PennyLaneAI/pennylane/pull/8753)
 
-* More programs can be captured because ``qml.for_loop`` now falls back to a standard Python ``for`` 
+* More programs can be captured because ``qp.for_loop`` now falls back to a standard Python ``for`` 
   loop if capturing a condensed, structured loop fails with program capture enabled.
   [(#8615)](https://github.com/PennyLaneAI/pennylane/pull/8615)
 
-* ``qml.cond`` will now use standard Python logic if all predicates have concrete values, leading to 
+* ``qp.cond`` will now use standard Python logic if all predicates have concrete values, leading to 
   shorter, more efficient jaxpr programs. Nested control flow primitives will no longer be captured 
   as they are not needed.
   [(#8634)](https://github.com/PennyLaneAI/pennylane/pull/8634)
 
-* Added a keyword argument ``recursive`` to ``qml.transforms.cancel_inverses`` that enables
+* Added a keyword argument ``recursive`` to ``qp.transforms.cancel_inverses`` that enables
   recursive cancellation of nested pairs of mutually inverse gates. This allows the transform to 
   cancel larger blocks of inverse gates without having to scan the circuit from scratch. By default, 
   the recursive cancellation is enabled (``recursive=True``). To obtain the previous behaviour, 
   disable it by setting ``recursive=False``.
   [(#8483)](https://github.com/PennyLaneAI/pennylane/pull/8483)
 
-* ``qml.while_loop`` and ``qml.for_loop`` can now lazily dispatch to Catalyst when called, instead 
+* ``qp.while_loop`` and ``qp.for_loop`` can now lazily dispatch to Catalyst when called, instead 
   of dispatching upon creation.
   [(#8786)](https://github.com/PennyLaneAI/pennylane/pull/8786)
 
-* ``qml.grad`` and ``qml.jacobian`` now lazily dispatch to Catalyst and program capture, allowing 
-  for ``qml.qjit(qml.grad(c))`` and ``qml.qjit(qml.jacobian(c))`` to work.
+* ``qp.grad`` and ``qp.jacobian`` now lazily dispatch to Catalyst and program capture, allowing 
+  for ``qp.qjit(qp.grad(c))`` and ``qp.qjit(qp.jacobian(c))`` to work.
   [(#8382)](https://github.com/PennyLaneAI/pennylane/pull/8382)
 
 * Both the generic and transform-specific application behavior of a 
-  ``qml.transforms.core.TransformDispatcher`` can now be overwritten with 
+  ``qp.transforms.core.TransformDispatcher`` can now be overwritten with 
   ``TransformDispatcher.generic_register`` and ``my_transform.register``, leading to easier 
   customization of transforms.
   [(#7797)](https://github.com/PennyLaneAI/pennylane/pull/7797)
@@ -1055,7 +1055,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8504)](https://github.com/PennyLaneAI/pennylane/pull/8504)
 
 * Wires can now be specified via the ``range`` function with program capture enabled and Autograph 
-  activated via ``@qml.qjit(autograph=True)``.
+  activated via ``@qp.qjit(autograph=True)``.
   [(#8500)](https://github.com/PennyLaneAI/pennylane/pull/8500)
 
 * The :func:`~pennylane.transforms.decompose` transform no longer raises an error if both 
@@ -1068,15 +1068,15 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
 
-* Added a custom solver to ``qml.transforms.intermediate_reps.rowcol`` for linear systems over 
+* Added a custom solver to ``qp.transforms.intermediate_reps.rowcol`` for linear systems over 
   :math:`\mathbb{Z}_2` based on Gauss-Jordan elimination. This removes the need to install the 
   ``galois`` package for this single function and provides a performance improvement.
   [(#8771)](https://github.com/PennyLaneAI/pennylane/pull/8771)
 
-* ``qml.measure`` can now be used as a frontend for ``catalyst.measure``.
+* ``qp.measure`` can now be used as a frontend for ``catalyst.measure``.
   [(#8782)](https://github.com/PennyLaneAI/pennylane/pull/8782)
 
-* ``qml.cond`` will also accept a partial of an operator type as the true function without a false 
+* ``qp.cond`` will also accept a partial of an operator type as the true function without a false 
   function when capture is enabled.
   [(#8776)](https://github.com/PennyLaneAI/pennylane/pull/8776)
 
@@ -1087,7 +1087,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* A new transform ``qml.labs.transforms.select_pauli_rot_phase_gradient`` has been added. This 
+* A new transform ``qp.labs.transforms.select_pauli_rot_phase_gradient`` has been added. This 
   transform may reduce the number of ``T`` gates in circuits with :class:`~.SelectPauliRot` 
   rotations by implementing them with a phase gradient resource state and semi-in-place addition 
   (:class:`~.SemiAdder`).
@@ -1098,19 +1098,19 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   from pennylane.labs.transforms import select_pauli_rot_phase_gradient
   import numpy as np
 
-  @qml.qnode(qml.device("default.qubit"))
+  @qp.qnode(qp.device("default.qubit"))
   def select_pauli_rot_circ(phis):
       # prepare phase gradient state
       for i, w in enumerate([6,7,8,9]):
-          qml.H(w)
-          qml.PhaseShift(-np.pi / 2**i, w)
+          qp.H(w)
+          qp.PhaseShift(-np.pi / 2**i, w)
 
       for wire in [0,1]:
-          qml.Hadamard(wire)
+          qp.Hadamard(wire)
 
-      qml.SelectPauliRot(phis, [0,1], 13, rot_axis="X")
+      qp.SelectPauliRot(phis, [0,1], 13, rot_axis="X")
 
-      return qml.probs(13)
+      return qp.probs(13)
 
   phase_grad = select_pauli_rot_phase_gradient(select_pauli_rot_circ,
       angle_wires=[2,3,4,5],
@@ -1125,13 +1125,13 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
       (0 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
   ]
 
-  clifford_T = qml.clifford_t_decomposition(select_pauli_rot_circ)
-  clifford_T_phase_gradient = qml.clifford_t_decomposition(phase_grad)
+  clifford_T = qp.clifford_t_decomposition(select_pauli_rot_circ)
+  clifford_T_phase_gradient = qp.clifford_t_decomposition(phase_grad)
   ```
   ```pycon
-  >>> qml.specs(clifford_T)(phis).resources.gate_types['T']
+  >>> qp.specs(clifford_T)(phis).resources.gate_types['T']
   128
-  >>> qml.specs(clifford_T_phase_gradient)(phis).resources.gate_types['T']
+  >>> qp.specs(clifford_T_phase_gradient)(phis).resources.gate_types['T']
   84
   ```
 
@@ -1146,7 +1146,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8735)](https://github.com/PennyLaneAI/pennylane/pull/8735)
 
 * The class to dispatch transforms, the ``TransformDispatcher`` class, has been renamed to 
-  :class:`~.transforms.core.Transform` and is now available as ``qml.transform``. For backward 
+  :class:`~.transforms.core.Transform` and is now available as ``qp.transform``. For backward 
   compatibility, the ``TransformDispatcher`` class can still be accessed from 
   ``pennylane.transforms.core``.
   [(#8756)](https://github.com/PennyLaneAI/pennylane/pull/8756)
@@ -1165,19 +1165,19 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   Consider the following circuit:
 
   ```python
-  dev = qml.device("default.qubit")
-  @qml.qnode(dev)
+  dev = qp.device("default.qubit")
+  @qp.qnode(dev)
   def circuit():
-    qml.X(0)
-    qml.Y(1)
-    qml.Z(2)
-    return qml.state()
+    qp.X(0)
+    qp.Y(1)
+    qp.Z(2)
+    return qp.state()
   ```
 
   The new :func:`~.specs` output format is:
 
   ```pycon
-  >>> qml.specs(circuit)()
+  >>> qp.specs(circuit)()
   Device: default.qubit
   Device wires: None
   Shots: Shots(total=None)
@@ -1200,7 +1200,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   Whereas previously, :func:`~.specs` provided:
 
   ```pycon
-  >>> qml.specs(circuit)()
+  >>> qp.specs(circuit)()
   {'resources': Resources(num_wires=3, num_gates=3, gate_types=defaultdict(<class 'int'>, {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1}), gate_sizes=defaultdict(<class 'int'>, {1: 3}), depth=1, shots=Shots(total_shots=None, shot_vector=())),
   'errors': {},
   'num_observables': 1,
@@ -1240,14 +1240,14 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
   ```pycon
   >>> coeffs = [0.5, -0.6]
-  >>> ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
-  >>> H_flat = qml.dot(coeffs, ops)
+  >>> ops = [qp.X(0), qp.X(0) @ qp.Y(1)]
+  >>> H_flat = qp.dot(coeffs, ops)
   ```
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
   ```pycon
-  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  >>> qp.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
@@ -1257,8 +1257,8 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   The same result would now be obtained using :class:`~.TrotterProduct` as follows:
 
   ```pycon
-  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
-  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  >>> decomp_ops = qp.adjoint(qp.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qp.simplify, op.decomposition())]
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
@@ -1270,7 +1270,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   from the :mod:`pennylane.noise` module.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
-* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be 
+* ``qp.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be 
   accomplished with a function such as ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#8477)](https://github.com/PennyLaneAI/pennylane/pull/8477)
 
@@ -1299,26 +1299,26 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 * ``MeasurementProcess.expand`` has been removed. 
-  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``
+  ``qp.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``
   should be used instead.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
-* The ``qml.QNode.add_transform`` method is removed. Instead, please use 
+* The ``qp.QNode.add_transform`` method is removed. Instead, please use 
   ``QNode.transform_program.push_back(transform_container=transform_container)``.
   [(#8468)](https://github.com/PennyLaneAI/pennylane/pull/8468)
 
 * The :func:`~.dynamic_one_shot` transform can no longer be applied directly on a QNode. Instead, 
-  specify the mid-circuit measurement method in QNode: ``@qml.qnode(..., mcm_method="one-shot")``.
+  specify the mid-circuit measurement method in QNode: ``@qp.qnode(..., mcm_method="one-shot")``.
   [(8781)](https://github.com/PennyLaneAI/pennylane/pull/8781)
 
-* The ``qml.compiler.python_compiler`` submodule has been removed from PennyLane. It has been 
+* The ``qp.compiler.python_compiler`` submodule has been removed from PennyLane. It has been 
   migrated to Catalyst, available as ``catalyst.python_interface``.
   [(#8662)](https://github.com/PennyLaneAI/pennylane/pull/8662)
 
-* ``qml.transforms.map_wires`` no longer supports transforming jaxpr directly.
+* ``qp.transforms.map_wires`` no longer supports transforming jaxpr directly.
   [(#8683)](https://github.com/PennyLaneAI/pennylane/pull/8683)
 
-* ``qml.cond``, the ``QNode``, transforms, ``qml.grad``, and ``qml.jacobian`` no longer treat all 
+* ``qp.cond``, the ``QNode``, transforms, ``qp.grad``, and ``qp.jacobian`` no longer treat all 
   keyword arguments as static arguments. They are instead treated as dynamic, numerical inputs, 
   matching the behaviour of JAX and Catalyst.
   [(#8290)](https://github.com/PennyLaneAI/pennylane/pull/8290)
@@ -1344,16 +1344,16 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```python
   import pennylane as qp
 
-  @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
-  @qml.qnode(qml.device("default.qubit"))
+  @qp.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+  @qp.qnode(qp.device("default.qubit"))
   def circuit():
-      qml.Hadamard(wires=[0])
-      qml.Toffoli(wires=[0,1,2])
-      return qml.expval(qml.Z(0))
+      qp.Hadamard(wires=[0])
+      qp.Toffoli(wires=[0,1,2])
+      return qp.expval(qp.Z(0))
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
   1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
   2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
@@ -1363,10 +1363,10 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   Instead, these functions must be imported from the :mod:`~.estimator` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
-  - ``qml.estimator.estimate_shots`` rather than ``qml.resources.estimate_shots``
-  - ``qml.estimator.estimate_error`` rather than ``qml.resources.estimate_error``
-  - ``qml.estimator.FirstQuantization`` rather than ``qml.resources.FirstQuantization``
-  - ``qml.estimator.DoubleFactorization`` rather than ``qml.resources.DoubleFactorization``
+  - ``qp.estimator.estimate_shots`` rather than ``qp.resources.estimate_shots``
+  - ``qp.estimator.estimate_error`` rather than ``qp.resources.estimate_error``
+  - ``qp.estimator.FirstQuantization`` rather than ``qp.resources.FirstQuantization``
+  - ``qp.estimator.DoubleFactorization`` rather than ``qp.resources.DoubleFactorization``
 
 * The ``argnum`` parameter has been renamed to ``argnums`` for :class:`~.grad`, :class:`~.jacobian`, 
   :func:`~.gradients.jvp` and :func:`~.gradients.vjp` to better adhere to conventions in JAX and 
@@ -1374,15 +1374,15 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8496)](https://github.com/PennyLaneAI/pennylane/pull/8496)
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+* The ``custom_decomps`` keyword argument to ``qp.device`` has been deprecated and will be removed
   in 0.45. Instead, with :func:`~.decomposition.enable_graph`, new decomposition rules can be 
   defined as quantum functions with registered resources. See :mod:`pennylane.decomposition` for more 
   details.
 
-* ``qml.measure``, ``qml.measurements.MidMeasureMP``, ``qml.measurements.MeasurementValue``, and 
-  ``qml.measurements.get_mcm_predicates`` are now located in ``qml.ops.mid_measure``. 
-  ``MidMeasureMP`` has been renamed to ``MidMeasure``. ``qml.measurements.find_post_processed_mcms`` 
-  is now ``qml.devices.qubit.simulate._find_post_processed_mcms``, and is being made private, as it 
+* ``qp.measure``, ``qp.measurements.MidMeasureMP``, ``qp.measurements.MeasurementValue``, and 
+  ``qp.measurements.get_mcm_predicates`` are now located in ``qp.ops.mid_measure``. 
+  ``MidMeasureMP`` has been renamed to ``MidMeasure``. ``qp.measurements.find_post_processed_mcms`` 
+  is now ``qp.devices.qubit.simulate._find_post_processed_mcms``, and is being made private, as it 
   is a utility for tree-traversal mid-circuit measurements.
   [(#8466)](https://github.com/PennyLaneAI/pennylane/pull/8466)
 
@@ -1472,7 +1472,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8486)](https://github.com/PennyLaneAI/pennylane/pull/8486)
   [(#8495)](https://github.com/PennyLaneAI/pennylane/pull/8495)
 
-* The various private functions of the ``qml.estimator.FirstQuantization`` class have been modified 
+* The various private functions of the ``qp.estimator.FirstQuantization`` class have been modified 
   to avoid using ``numpy.matrix`` as this function is deprecated.
   [(#8523)](https://github.com/PennyLaneAI/pennylane/pull/8523)
 
@@ -1489,7 +1489,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   that the resource function is correct.
   [(#8687)](https://github.com/PennyLaneAI/pennylane/pull/8687)
 
-* Simplified the decomposition pipeline for the ``estimator`` module. ``qml.estimator.estimate()``
+* Simplified the decomposition pipeline for the ``estimator`` module. ``qp.estimator.estimate()``
   was updated to call the base class's ``symbolic_resource_decomp`` method directly.
   [(#8641)](https://github.com/PennyLaneAI/pennylane/pull/8641)
   
@@ -1501,13 +1501,13 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 * Minor corrections in the docstring code examples for ``QAOAEmbedding`` and ``ParticleConservingU1`` were made.
   [(#8895)](https://github.com/PennyLaneAI/pennylane/pull/8895)
 
-* A note was made in the documentation of ``qml.transforms.decompose`` for its behaviour 
+* A note was made in the documentation of ``qp.transforms.decompose`` for its behaviour 
   when graph-based decompositions are enabled with ``qjit`` present. It clarifies that, when used with ``qjit``, 
   non-deterministic graph solutions may lead to non-executable programs if intermediate gates 
   are not executable by Catalyst.
   [(#8894)](https://github.com/PennyLaneAI/pennylane/pull/8894)
 
-* The code example in the documentation for ``qml.decomposition.register_resources`` has been
+* The code example in the documentation for ``qp.decomposition.register_resources`` has been
   updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8550)](https://github.com/PennyLaneAI/pennylane/pull/8550)
 
@@ -1515,12 +1515,12 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   added to the documentation of ``ChangeOpBasis``.
   [(#8757)](https://github.com/PennyLaneAI/pennylane/pull/8757)
 
-* The documentation of ``qml.transforms.rz_phase_gradient`` has been updated with respect to the
+* The documentation of ``qp.transforms.rz_phase_gradient`` has been updated with respect to the
   sign convention of phase gradient states, how it prepares the phase gradient state in the code
   example, and the verification of the code example result.
   [(#8536)](https://github.com/PennyLaneAI/pennylane/pull/8536)
 
-* The docstring for ``qml.device`` has been updated to include a section on custom decompositions,
+* The docstring for ``qp.device`` has been updated to include a section on custom decompositions,
   and a warning about the removal of the ``custom_decomps`` kwarg in v0.45. Additionally, the
   :doc:`Building a plugin <../development/plugins>` page now includes instructions on using
   the :func:`~pennylane.devices.preprocess.decompose` transform for device-level decompositions.
@@ -1554,12 +1554,12 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   single-branch-statistics mid-circuit measurement methods.
   [(#8856)](https://github.com/PennyLaneAI/pennylane/pull/8856)
 
-* Fixed a bug in ``qml.estimator.QubitizeTHC`` where specified arguments for ``Prepare`` and 
+* Fixed a bug in ``qp.estimator.QubitizeTHC`` where specified arguments for ``Prepare`` and 
   ``Select`` resource operators were being ignored in favor of default ones.
   [(#8858)] (https://github.com/PennyLaneAI/pennylane/pull/8858)
 
 * Fixed a bug in ``torch.vmap`` that produced an error when it was used with native parameter 
-  broadcasting and ``qml.RZ``.
+  broadcasting and ``qp.RZ``.
   [(#8760)](https://github.com/PennyLaneAI/pennylane/pull/8760)
 
 * Fixed various incorrect decomposition rules.
@@ -1640,15 +1640,15 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 * Fixed a bug where decomposition rules were sometimes incorrectly disregarded by the 
   ``DecompositionGraph`` when a higher level decomposition rule uses dynamically allocated work 
-  wires via ``qml.allocate``.
+  wires via ``qp.allocate``.
   [(#8725)](https://github.com/PennyLaneAI/pennylane/pull/8725)
 
 * Fixed a bug where :class:`~.ops.op_math.ChangeOpBasis` was not correctly reconstructed using 
-  ``qml.pytrees.unflatten(*qml.pytrees.flatten(op))``.
+  ``qp.pytrees.unflatten(*qp.pytrees.flatten(op))``.
   [(#8721)](https://github.com/PennyLaneAI/pennylane/issues/8721)
 
-* Fixed a bug where ``qml.estimator.SelectTHC``, ``qml.estimator.QubitizeTHC``, and 
-  ``qml.estimator.PrepTHC`` were not accounting for auxiliary wires correctly.
+* Fixed a bug where ``qp.estimator.SelectTHC``, ``qp.estimator.QubitizeTHC``, and 
+  ``qp.estimator.PrepTHC`` were not accounting for auxiliary wires correctly.
   [(#8719)](https://github.com/PennyLaneAI/pennylane/pull/8719)
 
 * Fixed a bug where the associated ``expand_transform`` does not stay with the original 
@@ -1657,7 +1657,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8774)](https://github.com/PennyLaneAI/pennylane/pull/8774)
 
 * Fixed a bug where an error was raised when ``to_openqasm`` is used with 
-  ``qml.decomposition.enable_graph()``.
+  ``qp.decomposition.enable_graph()``.
   [(#8809)](https://github.com/PennyLaneAI/pennylane/pull/8809)
 
 <h3>Contributors ✍️</h3>

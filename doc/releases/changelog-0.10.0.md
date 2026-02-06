@@ -19,13 +19,13 @@
   [AutoGraph](https://www.tensorflow.org/guide/function) support:
 
   ```pycon
-  >>> dev = qml.device("default.qubit.tf", wires=1)
+  >>> dev = qp.device("default.qubit.tf", wires=1)
   >>> @tf.function
-  ... @qml.qnode(dev, interface="tf", diff_method="backprop")
+  ... @qp.qnode(dev, interface="tf", diff_method="backprop")
   ... def circuit(x):
-  ...     qml.RX(x[1], wires=0)
-  ...     qml.Rot(x[0], x[1], x[2], wires=0)
-  ...     return qml.expval(qml.PauliZ(0))
+  ...     qp.RX(x[1], wires=0)
+  ...     qp.Rot(x[0], x[1], x[2], wires=0)
+  ...     return qp.expval(qp.PauliZ(0))
   >>> weights = tf.Variable([0.2, 0.5, 0.1])
   >>> with tf.GradientTape() as tape:
   ...     res = circuit(weights)
@@ -51,16 +51,16 @@
   hybrid models using the `torch.nn` API.
   [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
 
-  A PennyLane QNode can be converted into a `torch.nn` layer using the `qml.qnn.TorchLayer` class:
+  A PennyLane QNode can be converted into a `torch.nn` layer using the `qp.qnn.TorchLayer` class:
 
   ```pycon
-  >>> @qml.qnode(dev)
+  >>> @qp.qnode(dev)
   ... def qnode(inputs, weights_0, weight_1):
   ...    # define the circuit
   ...    # ...
 
   >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
-  >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+  >>> qlayer = qp.qnn.TorchLayer(qnode, weight_shapes)
   ```
 
   A hybrid model can then be easily constructed:
@@ -81,14 +81,14 @@
   [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=2)
-  ... @qml.qnode(dev, diff_method="reversible")
+  >>> dev = qp.device("default.qubit", wires=2)
+  ... @qp.qnode(dev, diff_method="reversible")
   ... def circuit(x):
-  ...     qml.RX(x, wires=0)
-  ...     qml.RX(x, wires=0)
-  ...     qml.CNOT(wires=[0,1])
-  ...     return qml.expval(qml.PauliZ(0))
-  >>> qml.grad(circuit)(0.5)
+  ...     qp.RX(x, wires=0)
+  ...     qp.RX(x, wires=0)
+  ...     qp.CNOT(wires=[0,1])
+  ...     return qp.expval(qp.PauliZ(0))
+  >>> qp.grad(circuit)(0.5)
   (array(-0.47942554),)
   ```
 
@@ -128,7 +128,7 @@
     accept the `requires_grad` keyword argument, and allows Autograd to differentiate
     `pennylane.numpy.tensor` objects.
 
-  - The `argnum` argument to `qml.grad` is now optional; if not provided, arguments explicitly
+  - The `argnum` argument to `qp.grad` is now optional; if not provided, arguments explicitly
     marked as `requires_grad=False` are excluded for the list of differentiable arguments.
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.

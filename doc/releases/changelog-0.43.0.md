@@ -32,17 +32,17 @@ This new module includes the following features:
   import pennylane as qp
   import pennylane.estimator as qre
 
-  dev = qml.device("null.qubit")
+  dev = qp.device("null.qubit")
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circ():
       for w in range(2):
-          qml.Hadamard(wires=w)
-      qml.CNOT(wires=[0,1])
-      qml.RX(1.23*np.pi, wires=0)
-      qml.RY(1.23*np.pi, wires=1)
-      qml.QFT(wires=[0, 1, 2])
-      return qml.state()
+          qp.Hadamard(wires=w)
+      qp.CNOT(wires=[0,1])
+      qp.RX(1.23*np.pi, wires=0)
+      qp.RY(1.23*np.pi, wires=1)
+      qp.QFT(wires=[0, 1, 2])
+      return qp.state()
   ```
 
   ```pycon
@@ -91,7 +91,7 @@ This new module includes the following features:
   with far less detail. Here is an example of a circuit with 50 (logical) algorithmic qubits, which 
   includes a :class:`~.estimator.templates.QROMStatePreparation` acting on 48 qubits. Defining this 
   state preparation for execution would require a state vector of length :math:`2^{48}` (see 
-  :class:`qml.QROMStatePreparation <pennylane.QROMStatePreparation>`), but we are able to estimate 
+  :class:`qp.QROMStatePreparation <pennylane.QROMStatePreparation>`), but we are able to estimate 
   the required resources with only metadata, bypassing this computational barrier. Even at this 
   scale, the resource estimate is computed in a fraction of a second!
 
@@ -281,20 +281,20 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   import pennylane as qp
 
-  @qml.qnode(qml.device("default.qubit"))
+  @qp.qnode(qp.device("default.qubit"))
   def circuit():
-      qml.H(0)
-      qml.H(1)
+      qp.H(0)
+      qp.H(1)
 
-      with qml.allocate(2, state="zero", restored=False) as new_wires:
-          qml.H(new_wires[0])
-          qml.H(new_wires[1])
+      with qp.allocate(2, state="zero", restored=False) as new_wires:
+          qp.H(new_wires[0])
+          qp.H(new_wires[1])
 
-      return qml.expval(qml.Z(0))
+      return qp.expval(qp.Z(0))
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
               0: ──H───────────────────────┤  <Z>
               1: ──H───────────────────────┤
   <DynamicWire>: ─╭Allocate──H─╭Deallocate─┤
@@ -306,10 +306,10 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   in-line along with :func:`~.deallocate` for manual handling:
 
   ```python
-  new_wires = qml.allocate(2, state="zero", restored=False)
-  qml.H(new_wires[0])
-  qml.H(new_wires[1])
-  qml.deallocate(new_wires)
+  new_wires = qp.allocate(2, state="zero", restored=False)
+  qp.H(new_wires[0])
+  qp.H(new_wires[1])
+  qp.deallocate(new_wires)
   ```
 
   For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic allocation
@@ -317,22 +317,22 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   following circuit, which contains two dynamic allocations within a ``for`` loop.
 
   ```python
-  @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal")
+  @qp.qnode(qp.device("default.qubit"), mcm_method="tree-traversal")
   def circuit():
-      qml.H(0)
+      qp.H(0)
 
       for i in range(2):
-          with qml.allocate(1, state="zero", restored=True) as new_qubit1:
-              with qml.allocate(1, state="any", restored=False) as new_qubit2:
-                  m0 = qml.measure(new_qubit1[0], reset=True)
-                  qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
-                  qml.CNOT((0, new_qubit2[0]))
+          with qp.allocate(1, state="zero", restored=True) as new_qubit1:
+              with qp.allocate(1, state="any", restored=False) as new_qubit2:
+                  m0 = qp.measure(new_qubit1[0], reset=True)
+                  qp.cond(m0 == 1, qp.Z)(new_qubit2[0])
+                  qp.CNOT((0, new_qubit2[0]))
 
-      return qml.expval(qml.Z(0))
+      return qp.expval(qp.Z(0))
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
               0: ──H─────────────────────╭●───────────────────────╭●─────────────┤  <Z>
   <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤
   <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤
@@ -348,7 +348,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   the first iteration of the ``for`` loop:
 
   ```
-  >>> print(qml.draw(circuit, level="device")())
+  >>> print(qp.draw(circuit, level="device")())
   0: ──H───────────╭●──────────────╭●─┤  <Z>
   1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤
   2: ───║────────Z─╰X───║────────Z─╰X─┤
@@ -368,23 +368,23 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   from functools import partial
 
-  gateset = {qml.H, qml.S, qml.CNOT, qml.T, qml.RX, qml.RY, qml.RZ}
+  gateset = {qp.H, qp.S, qp.CNOT, qp.T, qp.RX, qp.RY, qp.RZ}
 
-  @qml.qjit
-  @partial(qml.transforms.decompose, gate_set=gateset)
-  @qml.qnode(qml.device("null.qubit", wires=100))
+  @qp.qjit
+  @partial(qp.transforms.decompose, gate_set=gateset)
+  @qp.qnode(qp.device("null.qubit", wires=100))
   def circuit():
-      qml.QFT(wires=range(100))
-      qml.Hadamard(wires=0)
-      qml.CNOT(wires=[0, 1])
-      qml.OutAdder(
+      qp.QFT(wires=range(100))
+      qp.Hadamard(wires=0)
+      qp.CNOT(wires=[0, 1])
+      qp.OutAdder(
                   x_wires=range(10),
                   y_wires=range(10,20),
                   output_wires=range(20,31)
                   )
-      return qml.expval(qml.Z(0) @ qml.Z(1))
+      return qp.expval(qp.Z(0) @ qp.Z(1))
 
-  circ_specs = qml.specs(circuit, level="device")()
+  circ_specs = qp.specs(circuit, level="device")()
   ```
 
   ```pycon
@@ -446,22 +446,22 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   import pennylane as qp
 
-  dev = qml.device("default.qubit")
+  dev = qp.device("default.qubit")
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.T(0)
-      qml.CNOT([0, 1])
-      qml.S(0)
-      qml.T(0)
-      qml.T(1)
-      qml.CNOT([0, 2])
-      qml.T(1)
-      return qml.state()
+      qp.T(0)
+      qp.CNOT([0, 1])
+      qp.S(0)
+      qp.T(0)
+      qp.T(1)
+      qp.CNOT([0, 2])
+      qp.T(1)
+      return qp.state()
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──T─╭●──S──T─╭●────┤  State
   1: ────╰X──T────│───T─┤  State
   2: ─────────────╰X────┤  State
@@ -471,7 +471,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   reduce the number of ``T`` gates. In this case, all ``T`` gates can be removed!
 
   ```pycon
-  >>> print(qml.draw(qml.transforms.zx.optimize_t_count(circuit))())
+  >>> print(qp.draw(qp.transforms.zx.optimize_t_count(circuit))())
   0: ──Z─╭●────╭●─┤  State
   1: ────╰X──S─│──┤  State
   2: ──────────╰X─┤  State
@@ -495,27 +495,27 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   from functools import partial
 
-  qml.decomposition.enable_graph()
+  qp.decomposition.enable_graph()
 
-  dev = qml.device("default.qubit")
+  dev = qp.device("default.qubit")
 
-  @partial(qml.transforms.decompose, max_expansion=1)
-  @qml.qnode(dev)
+  @partial(qp.transforms.decompose, max_expansion=1)
+  @qp.qnode(dev)
   def circuit():
-      qml.H(0)
-      qml.CNOT([1,2])
-      qml.ctrl(
-          qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
+      qp.H(0)
+      qp.CNOT([1,2])
+      qp.ctrl(
+          qp.change_op_basis(qp.QFT([1,2]), qp.PhaseAdder(1, x_wires=[1,2])),
           control=0
       )
-      return qml.state()
+      return qp.state()
   ```
 
   When this circuit is decomposed, the ``QFT`` and ``Adjoint(QFT)`` are not controlled, resulting in 
   a much more resource-efficient decomposition:
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──H──────╭●────────────────┤  State
   1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
   2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
@@ -530,19 +530,19 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   Here, the optimization is demonstrated when :class:`~.Adder` is controlled:
 
   ```python
-  qml.decomposition.enable_graph()
+  qp.decomposition.enable_graph()
 
-  dev = qml.device("default.qubit")
+  dev = qp.device("default.qubit")
 
-  @partial(qml.transforms.decompose, max_expansion=2)
-  @qml.qnode(dev)
+  @partial(qp.transforms.decompose, max_expansion=2)
+  @qp.qnode(dev)
   def circuit():
-      qml.ctrl(qml.Adder(10, x_wires=[1,2,3,4]), control=0)
-      return qml.state()
+      qp.ctrl(qp.Adder(10, x_wires=[1,2,3,4]), control=0)
+      return qp.state()
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──────╭●────────────────┤  State
   1: ─╭QFT─├PhaseAdder─╭QFT†─┤  State
   2: ─├QFT─├PhaseAdder─├QFT†─┤  State
@@ -558,8 +558,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
 
   The v0.42 release saw the addition of the :class:`~.QNGOptimizerQJIT` optimizer, which is a 
-  ``qml.qjit``-compatible analogue to :class:`~.QNGOptimizer`. In this release, we've added the 
-  :class:`~.MomentumQNGOptimizerQJIT` optimizer, which is the ``qml.qjit``-compatible analogue to 
+  ``qp.qjit``-compatible analogue to :class:`~.QNGOptimizer`. In this release, we've added the 
+  :class:`~.MomentumQNGOptimizerQJIT` optimizer, which is the ``qp.qjit``-compatible analogue to 
   :class:`~.MomentumQNGOptimizer`. Both optimizers have an 
   [Optax](https://optax.readthedocs.io/en/stable/getting_started.html#basic-usage-of-optax)-like 
   interface:
@@ -567,26 +567,26 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   import jax.numpy as jnp
 
-  dev = qml.device("lightning.qubit", wires=2)
+  dev = qp.device("lightning.qubit", wires=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(params):
-      qml.RX(params[0], wires=0)
-      qml.RY(params[1], wires=1)
-      return qml.expval(qml.Z(0) + qml.X(1))
+      qp.RX(params[0], wires=0)
+      qp.RY(params[1], wires=1)
+      return qp.expval(qp.Z(0) + qp.X(1))
 
-  opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+  opt = qp.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
 
-  @qml.qjit
+  @qp.qjit
   def update_step_qjit(i, args):
       params, state = args
       return opt.step(circuit, params, state)
 
-  @qml.qjit
+  @qp.qjit
   def optimization_qjit(params, iters):
       state = opt.init(params)
       args = (params, state)
-      params, state = qml.for_loop(iters)(update_step_qjit)(args)
+      params, state = qp.for_loop(iters)(update_step_qjit)(args)
       return params
   ```
 
@@ -677,22 +677,22 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   from functools import partial
 
-  dev = qml.device('default.qubit')
+  dev = qp.device('default.qubit')
 
-  @partial(qml.transforms.decompose, gate_set={qml.RY, qml.RZ, qml.measurements.MidMeasureMP})
-  @qml.qnode(dev)
+  @partial(qp.transforms.decompose, gate_set={qp.RY, qp.RZ, qp.measurements.MidMeasureMP})
+  @qp.qnode(dev)
   def circuit():
-      m0 = qml.measure(0)
-      qml.cond(m0 == 0, qml.Rot)(qml.numpy.pi / 2, qml.numpy.pi / 2, qml.numpy.pi / 2, wires=1)
-      return qml.expval(qml.X(0))
+      m0 = qp.measure(0)
+      qp.cond(m0 == 0, qp.Rot)(qp.numpy.pi / 2, qp.numpy.pi / 2, qp.numpy.pi / 2, wires=1)
+      return qp.expval(qp.X(0))
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit, level=0)())
+  >>> print(qp.draw(circuit, level=0)())
   0: ──┤↗├──────────────────────┤  <X>
   1: ───║───Rot(1.57,1.57,1.57)─┤     
         ╚═══╝  
-  >>> print(qml.draw(circuit, level=1)())
+  >>> print(qp.draw(circuit, level=1)())
   0: ──┤↗├───────────────────────────────┤  <X>
   1: ───║───RZ(1.57)──RY(1.57)──RZ(1.57)─┤     
         ╚═══╩═════════╩═════════╝              
@@ -715,9 +715,9 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8286)](https://github.com/PennyLaneAI/pennylane/pull/8286)
 
   ```pycon
-  >>> qml.decomposition.has_decomp(qml.MultiControlledX)
+  >>> qp.decomposition.has_decomp(qp.MultiControlledX)
   True
-  >>> qml.decomposition.list_decomps(qml.Select)
+  >>> qp.decomposition.list_decomps(qp.Select)
   [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x126f99ed0>,
   <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x127002fd0>,
   <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x127034bd0>]
@@ -765,10 +765,10 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
 
   ```python
-  @qml.qnode(qml.device("default.qubit"), shots=1000)
+  @qp.qnode(qp.device("default.qubit"), shots=1000)
   def circuit():
-      qml.H(0)
-      return qml.expval(qml.Z(0))
+      qp.H(0)
+      return qp.expval(qp.Z(0))
   ```
 
   ```pycon
@@ -783,7 +783,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   QNode ``shots``:
 
   ```pycon
-  >>> new_circ = qml.set_shots(circuit, shots=123)
+  >>> new_circ = qp.set_shots(circuit, shots=123)
   >>> new_circ.shots
   Shots(total_shots=123, shot_vector=(ShotCopies(123 shots x 1),))
   ```
@@ -795,11 +795,11 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
   ```python
-  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
-  @qml.qnode(dev)
+  @qp.set_shots(shots=1000)  # or @qp.set_shots(1000)
+  @qp.qnode(dev)
   def circuit():
-      qml.H(0)
-      return qml.expval(qml.Z(0))
+      qp.H(0)
+      return qp.expval(qp.Z(0))
   ```
 
   ```pycon
@@ -814,13 +814,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
 
   ```python
-  @qml.qjit
-  @partial(qml.transforms.clifford_t_decomposition, method="gridsynth")
-  @qml.qnode(qml.device("lightning.qubit", wires=1))
+  @qp.qjit
+  @partial(qp.transforms.clifford_t_decomposition, method="gridsynth")
+  @qp.qnode(qp.device("lightning.qubit", wires=1))
   def circuit():
-      qml.RX(np.pi/3, wires=0)
-      qml.RY(np.pi/4, wires=0)
-      return qml.state()
+      qp.RX(np.pi/3, wires=0)
+      qp.RY(np.pi/4, wires=0)
+      return qp.state()
   ```
 
   ```pycon
@@ -852,19 +852,19 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
 
   ```python
-  @qml.qnode(qml.device("default.qubit", wires=4))
+  @qp.qnode(qp.device("default.qubit", wires=4))
   def circuit():
-    qml.CCZ(wires=[0, 1, 3])
-    qml.ctrl(qml.S(wires=[1]), control=[0])
-    qml.ctrl(qml.S(wires=[2]), control=[0, 1])
-    qml.MultiControlledX(wires=[0, 1, 2, 3])
+    qp.CCZ(wires=[0, 1, 3])
+    qp.ctrl(qp.S(wires=[1]), control=[0])
+    qp.ctrl(qp.S(wires=[2]), control=[0, 1])
+    qp.MultiControlledX(wires=[0, 1, 2, 3])
 
-    return qml.expval(qml.Z(0))
+    return qp.expval(qp.Z(0))
   ```
 
   ```pycon
-  >>> new_circuit = qml.transforms.match_relative_phase_toffoli(circuit)
-  >>> print(qml.draw(new_circuit, level=1)())
+  >>> new_circuit = qp.transforms.match_relative_phase_toffoli(circuit)
+  >>> print(qp.draw(new_circuit, level=1)())
   0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
   1: ─────────────────│─────╭●─────│─────╭●─────────────────────┤
   2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
@@ -883,24 +883,24 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   containing only ``CNOT`` gates. 
 
   ```python
-  dev = qml.device('default.qubit', wires=1)
+  dev = qp.device('default.qubit', wires=1)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.CNOT((3, 2))
-      qml.CNOT((0, 2))
-      qml.CNOT((2, 1))
-      qml.CNOT((3, 2))
-      qml.CNOT((3, 0))
-      qml.CNOT((0, 2))
-      return qml.state()
+      qp.CNOT((3, 2))
+      qp.CNOT((0, 2))
+      qp.CNOT((2, 1))
+      qp.CNOT((3, 2))
+      qp.CNOT((3, 0))
+      qp.CNOT((0, 2))
+      return qp.state()
   ```
 
   Upon transforming the above circuit with :func:`~transforms.parity_matrix`, the output is the 
   parity matrix.
 
   ```pycon
-  >>> P = qml.transforms.parity_matrix(circuit, wire_order=range(4))()
+  >>> P = qp.transforms.parity_matrix(circuit, wire_order=range(4))()
   >>> print(P)
   array([[1, 0, 0, 1],
          [1, 1, 1, 1],
@@ -913,20 +913,20 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   corresponding angles for each parity.
 
   ```python
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit():
-      qml.CNOT((1, 0))
-      qml.RZ(1, 0)
-      qml.CNOT((2, 0))
-      qml.RZ(2, 0)
-      qml.CNOT((0, 1))
-      qml.CNOT((3, 1))
-      qml.RZ(3, 1)
-      return qml.state()
+      qp.CNOT((1, 0))
+      qp.RZ(1, 0)
+      qp.CNOT((2, 0))
+      qp.RZ(2, 0)
+      qp.CNOT((0, 1))
+      qp.CNOT((3, 1))
+      qp.RZ(3, 1)
+      return qp.state()
   ```
 
   ```pycon
-  >>> pmat, ptab, angles = qml.transforms.phase_polynomial(circuit, wire_order=range(4))()
+  >>> pmat, ptab, angles = qp.transforms.phase_polynomial(circuit, wire_order=range(4))()
   >>> pmat
   [[1 1 1 0]
    [1 0 1 1]
@@ -969,14 +969,14 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   To show an example about how this works, let's start by defining a simple Hamiltonian:
 
   ```python
-  ham = qml.Hamiltonian(
+  ham = qp.Hamiltonian(
       coeffs=[10, 0.1, 20, 100, 0.2],
       observables=[
-          qml.X(0) @ qml.Y(1),
-          qml.Z(0) @ qml.Z(2),
-          qml.Y(1),
-          qml.X(1) @ qml.X(2),
-          qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+          qp.X(0) @ qp.Y(1),
+          qp.Z(0) @ qp.Z(2),
+          qp.Y(1),
+          qp.X(1) @ qp.X(2),
+          qp.Z(0) @ qp.Z(1) @ qp.Z(2)
       ]
   )
   ```
@@ -989,14 +989,14 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   from functools import partial
   from pennylane.transforms import split_non_commuting
 
-  dev = qml.device("default.qubit")
+  dev = qp.device("default.qubit")
 
   @partial(split_non_commuting, shot_dist="weighted")
-  @qml.qnode(dev, shots=10000)
+  @qp.qnode(dev, shots=10000)
   def circuit():
-      return qml.expval(ham)
+      return qp.expval(ham)
 
-  with qml.Tracker(dev) as tracker:
+  with qp.Tracker(dev) as tracker:
       circuit()
   ```
 
@@ -1019,9 +1019,9 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
   ```pycon
   >>> import numpy as np
-  >>> Ks = [np.sqrt(0.3) * qml.CNOT((0, 1)), np.sqrt(1-0.3) * qml.X(0)]
-  >>> Ks = [qml.matrix(op, wire_order=range(2)) for op in Ks]
-  >>> Lambda = qml.math.choi_matrix(Ks)
+  >>> Ks = [np.sqrt(0.3) * qp.CNOT((0, 1)), np.sqrt(1-0.3) * qp.X(0)]
+  >>> Ks = [qp.matrix(op, wire_order=range(2)) for op in Ks]
+  >>> Lambda = qp.math.choi_matrix(Ks)
   >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
   (np.float64(1.0), np.float64(0.58))
   ```
@@ -1035,25 +1035,25 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   This improvement is particularly useful for extracting the state in finite-shot workflows:
 
   ```python
-  @qml.qnode(qml.device("default.qubit"), mcm_method="one-shot", shots=1)
+  @qp.qnode(qp.device("default.qubit"), mcm_method="one-shot", shots=1)
   def circuit():
-      qml.RY(1.23, 0)
+      qp.RY(1.23, 0)
 
-      m0 = qml.measure(0)
-      qml.cond(m0 == 0, qml.H)(0)
-      qml.Snapshot("state", measurement=qml.state())
+      m0 = qp.measure(0)
+      qp.cond(m0 == 0, qp.H)(0)
+      qp.Snapshot("state", measurement=qp.state())
 
-      return qml.expval(qml.X(0))
+      return qp.expval(qp.X(0))
   ```
 
   ```pycon
-  >>> qml.snapshots(circuit)()
+  >>> qp.snapshots(circuit)()
   {'state': array([0.+0.j, 1.+0.j]), 'execution_results': np.float64(-1.0)}
   ```
 
   Here, the state is projected onto the corresponding state resulting from the MCM.
 
-* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
+* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qp.Elbow``, and its adjoint
   have been improved to be more legible and consistent with how it's depicted in circuits in the 
   literature.
   [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
@@ -1062,13 +1062,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   import pennylane as qp
 
-  @qml.draw
-  @qml.qnode(qml.device("lightning.qubit", wires=4))
+  @qp.draw
+  @qp.qnode(qp.device("lightning.qubit", wires=4))
   def node():
-      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
-      qml.CNOT([2, 3])
-      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
-      return qml.expval(qml.Z(3))
+      qp.TemporaryAND([0, 1, 2], control_values=[1, 0])
+      qp.CNOT([2, 3])
+      qp.adjoint(qp.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+      return qp.expval(qp.Z(3))
   ```
 
   ```pycon
@@ -1111,21 +1111,21 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
 
   ```python
-  @qml.qnode(qml.device("default.qubit"), mcm_method="deferred")
+  @qp.qnode(qp.device("default.qubit"), mcm_method="deferred")
   def circuit():
-      m = qml.measure("a")
-      qml.cond(m == 0, qml.X)("aux")
-      return qml.expval(qml.Z("a"))
+      m = qp.measure("a")
+      qp.cond(m == 0, qp.X)("aux")
+      return qp.expval(qp.Z("a"))
   ```
 
   ```pycon
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
     a: ──┤↗├────┤  <Z>
   aux: ───║───X─┤
           ╚═══╝
   ```
 
-* ``qml.transforms.core.TransformContainer`` now holds onto a ``TransformDispatcher``, ``args``, and 
+* ``qp.transforms.core.TransformContainer`` now holds onto a ``TransformDispatcher``, ``args``, and 
   ``kwargs``, instead of the transform's defining function and unpacked properties. It can still be 
   constructed via the old signature, as well.
   [(#8306)](https://github.com/PennyLaneAI/pennylane/pull/8306)
@@ -1134,7 +1134,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8277)](https://github.com/PennyLaneAI/pennylane/pull/8277)
 
 * A warning is now raised when circuits are executed without Catalyst and with 
-  ``qml.capture.enable()`` present.
+  ``qp.capture.enable()`` present.
   [(#8291)](https://github.com/PennyLaneAI/pennylane/pull/8291)
 
 * The QNode primitive in the experimental program capture module now captures the unprocessed 
@@ -1142,7 +1142,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   with Catalyst.
   [(#8258)](https://github.com/PennyLaneAI/pennylane/pull/8258)
 
-* ``qml.counts`` can now be captured with program capture. Circuits returning ``counts`` still 
+* ``qp.counts`` can now be captured with program capture. Circuits returning ``counts`` still 
   cannot be interpreted or executed with program capture.
   [(#8229)](https://github.com/PennyLaneAI/pennylane/pull/8229)
 
@@ -1158,17 +1158,17 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```python
   import jax.numpy as jnp
 
-  qml.capture.enable()
+  qp.capture.enable()
 
-  @qml.qnode(qml.device("default.qubit", wires=3))
+  @qp.qnode(qp.device("default.qubit", wires=3))
   def circuit(val):
     angles = jnp.zeros(3)
     angles[0:3] += val
 
     for i, angle in enumerate(angles):
-        qml.RX(angle, i)
+        qp.RX(angle, i)
 
-    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+    return qp.expval(qp.Z(0)), qp.expval(qp.Z(1)), qp.expval(qp.Z(2))
   ```
 
   ```pycon
@@ -1182,13 +1182,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8006)](https://github.com/PennyLaneAI/pennylane/pull/8006)
 
   ```python
-  qml.capture.enable()
+  qp.capture.enable()
 
-  @qml.qnode(qml.device("default.qubit", wires=1))
+  @qp.qnode(qp.device("default.qubit", wires=1))
   def circuit(param):
       if param >= 0 and param <= 1:
-          qml.H(0)
-      return qml.state()
+          qp.H(0)
+      return qp.state()
   ```
 
   ```pycon
@@ -1197,7 +1197,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```
 
 * With program capture, the ``true_fn`` can now be a subclass of ``Operator`` when no ``false_fn`` 
-  is provided. For example, ``qml.cond(condition, qml.X)(0)`` is now valid code.
+  is provided. For example, ``qp.cond(condition, qp.X)(0)`` is now valid code.
   [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
   [(#8101)](https://github.com/PennyLaneAI/pennylane/pull/8101)
 
@@ -1214,7 +1214,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
 
 * Two new ``draw`` and ``generate_mlir_graph`` functions have been introduced in the 
-  ``qml.compiler.python_compiler.visualization`` module to visualize circuits with the new unified 
+  ``qp.compiler.python_compiler.visualization`` module to visualize circuits with the new unified 
   compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
   [(#8180)](https://github.com/PennyLaneAI/pennylane/pull/8180)
@@ -1232,11 +1232,11 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * The ``Quantum`` xDSL dialect now has more strict constraints for operands and results.
   [(#8083)](https://github.com/PennyLaneAI/pennylane/pull/8083)
 
-* A callback mechanism has been added to ``qml.compiler.python_compiler`` submodule to inspect the 
+* A callback mechanism has been added to ``qp.compiler.python_compiler`` submodule to inspect the 
   intermediate representation of the program between multiple compilation passes.
   [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
 
-* A ``QuantumParser`` class has been added to the ``qml.compiler.python_compiler`` submodule that 
+* A ``QuantumParser`` class has been added to the ``qp.compiler.python_compiler`` submodule that 
   automatically loads relevant dialects.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
 
@@ -1249,7 +1249,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
     [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
   
 * A compilation pass written called 
-  ``qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`` has been added for 
+  ``qp.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`` has been added for 
   integration with the unified compiler framework. This pass replaces all terminal measurements in a 
   program with a single :func:`~.sample` measurement, and adds postprocessing instructions to 
   recover the original measurement.
@@ -1361,13 +1361,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 <h4>Labs Removals</h4>
 
-* The module ``qml.labs.zxopt`` has been removed. Its functionalities are now available in the
+* The module ``qp.labs.zxopt`` has been removed. Its functionalities are now available in the
   submodule :mod:`~.transforms.zx`. The same functions are available, but their signature
   may have changed.
-  - Instead of ``qml.labs.zxopt.full_optimize``, use :func:`~.transforms.zx.optimize_t_count`
-  - Instead of ``qml.labs.zxopt.full_reduce``, use :func:`~.transforms.zx.reduce_non_clifford`
-  - Instead of ``qml.labs.zxopt.todd``, use :func:`~.transforms.zx.todd`
-  - Instead of ``qml.labs.zxopt.basic_optimization``, use :func:`~.transforms.zx.push_hadamards`
+  - Instead of ``qp.labs.zxopt.full_optimize``, use :func:`~.transforms.zx.optimize_t_count`
+  - Instead of ``qp.labs.zxopt.full_reduce``, use :func:`~.transforms.zx.reduce_non_clifford`
+  - Instead of ``qp.labs.zxopt.todd``, use :func:`~.transforms.zx.todd`
+  - Instead of ``qp.labs.zxopt.basic_optimization``, use :func:`~.transforms.zx.push_hadamards`
   [(#8177)](https://github.com/PennyLaneAI/pennylane/pull/8177)
 
 <h3>Breaking changes 💔</h3>
@@ -1389,7 +1389,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   between measurements is not preserved.
   [(#8411)](https://github.com/PennyLaneAI/pennylane/pull/8411)
 
-* ``qml.workflow.construct_batch.expand_fn_transform`` has been deleted as it was no longer getting 
+* ``qp.workflow.construct_batch.expand_fn_transform`` has been deleted as it was no longer getting 
   used.
   [(#8344)](https://github.com/PennyLaneAI/pennylane/pull/8344)
 
@@ -1416,7 +1416,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   problems caused by it always acting like an operator.
   [(#8166)](https://github.com/PennyLaneAI/pennylane/pull/8166)
 
-* With the deprecation of the ``shots`` kwarg in ``qml.device``, ``DefaultQubit.eval_jaxpr`` does 
+* With the deprecation of the ``shots`` kwarg in ``qp.device``, ``DefaultQubit.eval_jaxpr`` does 
   not use ``self.shots`` from the device anymore; instead, it takes ``shots`` as a keyword argument, and the QNode primitive should process the ``shots`` and call ``eval_jaxpr`` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
@@ -1424,7 +1424,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   no longer queue any operators. This improves the consistency of the queuing behaviour for the operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
-* ``qml.sample`` no longer has singleton dimensions squeezed out for single shots or single wires. 
+* ``qp.sample`` no longer has singleton dimensions squeezed out for single shots or single wires. 
   This cuts down on the complexity of post-processing due to having to handle single shot and single 
   wire cases separately. The return shape will now *always* be ``(shots, num_wires)``.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
@@ -1433,29 +1433,29 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   For a simple qnode:
 
   ```python
-  @qml.qnode(qml.device('default.qubit'))
+  @qp.qnode(qp.device('default.qubit'))
   def circuit():
-      return qml.sample(wires=0)
+      return qp.sample(wires=0)
   ```
 
   Before the change, we had:
 
   ```pycon
-  >>> qml.set_shots(circuit, shots=1)()
+  >>> qp.set_shots(circuit, shots=1)()
   0
   ```
 
   and now we have:
 
   ```pycon
-  >>> qml.set_shots(circuit, shots=1)()
+  >>> qp.set_shots(circuit, shots=1)()
   array([[0]])
   ```
 
   Previous behavior can be recovered by squeezing the output:
 
   ```pycon
-  >>> qml.math.squeeze(qml.set_shots(circuit, shots=1)())
+  >>> qp.math.squeeze(qp.set_shots(circuit, shots=1)())
   array(0)
   ```
 
@@ -1485,7 +1485,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
   In past versions of PennyLane, these templates required providing the ``U`` and ``V`` unitaries as 
-  a ``qml.tape.QuantumTape`` and a quantum function, respectively, along with separate parameters 
+  a ``qp.tape.QuantumTape`` and a quantum function, respectively, along with separate parameters 
   and wires.
 
   With this release, each template has been improved to accept one or more operators as unitaries.
@@ -1493,9 +1493,9 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   to the order provided.
 
   ```pycon
-  >>> U = qml.Hadamard(0)
-  >>> V = qml.RZ(0.1, wires=1)
-  >>> qml.HilbertSchmidt(V, U)
+  >>> U = qp.Hadamard(0)
+  >>> V = qp.RZ(0.1, wires=1)
+  >>> qp.HilbertSchmidt(V, U)
   HilbertSchmidt(0.1, wires=[0, 1])
   ```
 
@@ -1506,7 +1506,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ``exceptions.py``, and a documentation page for them was added in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
-* The boolean functions provided in ``qml.operation`` have been deprecated. See the
+* The boolean functions provided in ``qp.operation`` have been deprecated. See the
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These
   include ``not_tape``, ``has_gen``, ``has_grad_method``, ``has_multipar``, ``has_nopar``, 
   ``has_unitary_gen``, ``is_measurement``, ``defines_diagonalizing_gates``, and 
@@ -1514,7 +1514,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7924)](https://github.com/PennyLaneAI/pennylane/pull/7924)
 
 * To prevent code duplication, access to ``lie_closure``, ``structure_constants`` and ``center`` via 
-  ``qml.pauli`` has been removed. The functions now live in the ``liealg`` module and top level 
+  ``qp.pauli`` has been removed. The functions now live in the ``liealg`` module and top level 
   import and usage is advised. 
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
   [(#7994)](https://github.com/PennyLaneAI/pennylane/pull/7994)
@@ -1524,21 +1524,21 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   from pennylane.liealg import lie_closure, structure_constants, center
   ```
 
-* ``qml.operation.Observable`` and the corresponding ``Observable.compare`` have been removed, as
+* ``qp.operation.Observable`` and the corresponding ``Observable.compare`` have been removed, as
   PennyLane now depends on the more general ``Operator`` interface instead. The
   ``Operator.is_hermitian`` property can instead be used to check whether or not it is highly likely
   that the operator instance is Hermitian.
   [(#7927)](https://github.com/PennyLaneAI/pennylane/pull/7927)
 
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` have been 
+* ``qp.operation.WiresEnum``, ``qp.operation.AllWires``, and ``qp.operation.AnyWires`` have been 
   removed. To indicate that an operator can act on any number of wires, 
   ``Operator.num_wires = None`` should be used instead. This is the default and does not need to be 
   overwritten unless the operator developer wants to validate that the correct number of wires is 
   passed.
   [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
 
-* The :func:`qml.QNode.get_gradient_fn` function has been removed. Instead, use 
-  :func:`qml.workflow.get_best_diff_method` to obtain the differentiation method.
+* The :func:`qp.QNode.get_gradient_fn` function has been removed. Instead, use 
+  :func:`qp.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7907)](https://github.com/PennyLaneAI/pennylane/pull/7907)
 
 * Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and 
@@ -1546,12 +1546,12 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ``pennylane.exceptions`` module.
   [(#7874)](https://github.com/PennyLaneAI/pennylane/pull/7874)
 
-* To improve code reliability, ``qml.cut_circuit_mc`` no longer accepts a ``shots`` keyword  
+* To improve code reliability, ``qp.cut_circuit_mc`` no longer accepts a ``shots`` keyword  
   argument. The shots should instead be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 * :func:`~.tape.tape.expand_tape` has been moved to its own file, and made available at 
-  ``qml.tape``.
+  ``qp.tape``.
   [(#8296)](https://github.com/PennyLaneAI/pennylane/pull/8296)
 
 <h3>Deprecations 👋</h3>
@@ -1562,21 +1562,21 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   Intel CPUs in the OS (see their [blog post](https://github.blog/changelog/2025-09-19-github-actions-macos-13-runner-image-is-closing-down/#notice-of-macos-x86_64-intel-architecture-deprecation) for more details).
 
 * Setting shots on a device through the ``shots`` keyword argument (e.g., 
-  ``qml.device("default.qubit", wires=2, shots=1000)``) and in QNode calls (e.g., 
-  ``qml.QNode(circuit, dev)(shots=1000)``) has been deprecated. Please use the :func:`~pennylane.set_shots` transform to set the number of shots for a QNode instead.  This is done to reduce confusion and 
+  ``qp.device("default.qubit", wires=2, shots=1000)``) and in QNode calls (e.g., 
+  ``qp.QNode(circuit, dev)(shots=1000)``) has been deprecated. Please use the :func:`~pennylane.set_shots` transform to set the number of shots for a QNode instead.  This is done to reduce confusion and 
   code complexity by having a centralized way to set shots.
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
   [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
   
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  dev = qp.device("default.qubit", wires=2)
 
-  @qml.set_shots(1000)
-  @qml.qnode(dev)
+  @qp.set_shots(1000)
+  @qp.qnode(dev)
   def circuit(x):
-      qml.RX(x, wires=0)
-      return qml.expval(qml.Z(0))
+      qp.RX(x, wires=0)
+      return qp.expval(qp.Z(0))
   ```
 
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane
@@ -1592,12 +1592,12 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
 * ``pennylane.devices.DefaultExecutionConfig`` has been deprecated and will be removed in v0.44.
-  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration. 
+  Instead, use ``qp.devices.ExecutionConfig()`` to create a default execution configuration. 
   This helps prevent unintended changes in a workflow's behaviour that could be caused by using a 
   global, mutable object.
   [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as 
+* Specifying the ``work_wire_type`` argument in ``qp.ctrl`` and other controlled operators as 
   ``"clean"`` or ``"dirty"`` has been deprecated. Use ``"zeroed"`` to indicate that the work wires 
   are initially in the :math:`|0\rangle` state, and ``"borrowed"`` to indicate that the work wires 
   can be in any arbitrary state instead. In both cases, the work wires are restored to their 
@@ -1619,14 +1619,14 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
   ```python
   coeffs = [0.5, -0.6]
-  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
-  H_flat = qml.dot(coeffs, ops)
+  ops = [qp.X(0), qp.X(0) @ qp.Y(1)]
+  H_flat = qp.dot(coeffs, ops)
   ```
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
   ```pycon
-  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  >>> qp.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
@@ -1636,8 +1636,8 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
   ```pycon
-  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
-  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  >>> decomp_ops = qp.adjoint(qp.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qp.simplify, op.decomposition())]
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
@@ -1645,7 +1645,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ```
 
 * ``MeasurementProcess.expand`` has been deprecated. The relevant method can be replaced with
-  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
+  ``qp.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
   This improves the code design by removing an unused method with undesired dependencies (i.e. 
   circular dependency).
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
@@ -1655,7 +1655,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   ``MeasurementProcess`` class should be used.
   [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
 
-* Some unnecessary methods of the ``qml.CircuitGraph`` class have been deprecated and will be 
+* Some unnecessary methods of the ``qp.CircuitGraph`` class have been deprecated and will be 
   removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
@@ -1666,20 +1666,20 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
     - ``descendants_in_order`` in favor of ``descendants(obj, sort=True)``
 
 * The ``QuantumScript.to_openqasm`` method has been deprecated and will be removed in version v0.44.
-  Instead, the ``qml.to_openqasm`` function should be used. This change makes the code cleaner by 
+  Instead, the ``qp.to_openqasm`` function should be used. This change makes the code cleaner by 
   separating out methods that interface with external libraries from PennyLane's internal 
   functionality.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
 
 * The ``level=None`` argument in the :func:`pennylane.workflow.get_transform_program`, 
-  :func:`pennylane.workflow.construct_batch`, ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` 
+  :func:`pennylane.workflow.construct_batch`, ``qp.draw``, ``qp.draw_mpl``, and ``qp.specs`` 
   transforms has been deprecated and will be removed in v0.44. Please use ``level='device'`` instead 
   to apply the noise model at the device level. This reduces ambiguity by making it clear that the 
   default is to apply all transforms to the QNode.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
   [(#8364)](https://github.com/PennyLaneAI/pennylane/pull/8364)
 
-* ``qml.qnn.cost.SquaredErrorLoss`` has been deprecated and will be removed in version v0.44. 
+* ``qp.qnn.cost.SquaredErrorLoss`` has been deprecated and will be removed in version v0.44. 
   Instead, this hybrid workflow can be accomplished with a function like 
   ``loss = lambda *args: (circuit(*args) - target)**2``.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
@@ -1688,7 +1688,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   Instead, these functions should be imported from the ``noise`` module, which is a more appropriate location for them.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
-* The ``qml.QNode.add_transform`` method has been deprecated and will be removed in v0.44.
+* The ``qp.QNode.add_transform`` method has been deprecated and will be removed in v0.44.
   Instead, please use 
   ``QNode.transform_program.push_back(transform_container=transform_container)``.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
@@ -1721,16 +1721,16 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * ``test_horizontal_cartan_subalgebra.py`` now uses our fixture ``seed`` for reproducibility and CI stability.
   [(#8304)](https://github.com/PennyLaneAI/pennylane/pull/8304)
 
-* The `qml.compiler.python_compiler` submodule has been restructured to be more cohesive.
+* The `qp.compiler.python_compiler` submodule has been restructured to be more cohesive.
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
-* ``default.tensor`` now supports graph decomposition (``qml.decomposition.enable_graph()``) during preprocessing.
+* ``default.tensor`` now supports graph decomposition (``qp.decomposition.enable_graph()``) during preprocessing.
   [(#8253)](https://github.com/PennyLaneAI/pennylane/pull/8253)
 
 * Legacy interface names from tests have been removed (e.g., ``interface="jax-python"`` or ``interface="pytorch"``)
   [(#8249)](https://github.com/PennyLaneAI/pennylane/pull/8249)
 
-* ``qml.devices.preprocess.decompose`` now works in graph decomposition mode
+* ``qp.devices.preprocess.decompose`` now works in graph decomposition mode
   when a gateset is provided. ``default.qubit`` and ``null.qubit`` can now use
   graph decomposition mode.
   [(#8225)](https://github.com/PennyLaneAI/pennylane/pull/8225)
@@ -1757,13 +1757,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 * The ``autograph`` keyword argument has been removed from the ``QNode`` constructor.
   To enable autograph conversion, use the ``qjit`` decorator together with the 
-  ``qml.capture.disable_autograph`` context manager.
+  ``qp.capture.disable_autograph`` context manager.
 
 * The ability to disable ``autograph`` conversion has been added by using the new 
-  ``qml.capture.disable_autograph`` decorator or context manager. Additionally, the 
+  ``qp.capture.disable_autograph`` decorator or context manager. Additionally, the 
   ``autograph`` keyword argument has been removed from the ``QNode`` constructor. To enable 
   autograph conversion, use the ``qjit`` decorator together with the 
-  ``qml.capture.disable_autograph`` context manager.
+  ``qp.capture.disable_autograph`` context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
   [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
 
@@ -1822,7 +1822,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
 * A new fixture called ``run_filecheck_qjit`` has been added, which can be used to run ``FileCheck`` 
-  on integration tests for the ``qml.compiler.python_compiler`` submodule.
+  on integration tests for the ``qp.compiler.python_compiler`` submodule.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
 
 * The minimum supported ``pytest`` version has been updated to ``8.4.1``.
@@ -1871,13 +1871,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8059)](https://github.com/PennyLaneAI/pennylane/pull/8059)
 
 * A compilation pass written with xDSL called 
-  ``qml.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass`` has been added for the 
+  ``qp.compiler.python_compiler.transforms.ConvertToMBQCFormalismPass`` has been added for the 
   experimental unified compiler framework. This pass converts all gates in the MBQC gate set
   (``Hadamard``, ``S``, ``RZ``, ``RotXZX`` and ``CNOT``) to the textbook MBQC formalism.
   [(#7870)](https://github.com/PennyLaneAI/pennylane/pull/7870)
   [(#8254)](https://github.com/PennyLaneAI/pennylane/pull/8254)
 
-* A ``dialects`` submodule has been added to ``qml.compiler.python_compiler`` which now houses all 
+* A ``dialects`` submodule has been added to ``qp.compiler.python_compiler`` which now houses all 
   the xDSL dialects we create. Additionally, the ``MBQCDialect`` and ``QuantumDialect`` dialects 
   have been renamed to ``MBQC`` and ``Quantum``.
   [(#7897)](https://github.com/PennyLaneAI/pennylane/pull/7897)
@@ -1906,7 +1906,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8273)](https://github.com/PennyLaneAI/pennylane/pull/8273)
 
 * Support for ``pubchempy`` has been updated to ``1.0.5`` in the unit tests for 
-  ``qml.qchem.mol_data``.
+  ``qp.qchem.mol_data``.
   [(#8224)](https://github.com/PennyLaneAI/pennylane/pull/8224)
 
 * A nightly RC builds script has been added to ``.github/workflows``.
@@ -1926,9 +1926,9 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   currently supported Python versions and installation instructions.
   [(#8369)](https://github.com/PennyLaneAI/pennylane/pull/8369)
 
-* The documentation of ``qml.probs`` and ``qml.Hermitian`` has been updated with a warning
+* The documentation of ``qp.probs`` and ``qp.Hermitian`` has been updated with a warning
   to avoid using them together as the output might be different than expected.
-  Furthermore, a warning is raised if a user attempts to use ``qml.probs`` with a Hermitian 
+  Furthermore, a warning is raised if a user attempts to use ``qp.probs`` with a Hermitian 
   observable.
   [(#8235)](https://github.com/PennyLaneAI/pennylane/pull/8235)
 
@@ -1936,11 +1936,11 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   facilitate docstring testing and fit best practices.
   [(#8319)](https://github.com/PennyLaneAI/pennylane/pull/8319)
 
-* Three more examples of the deprecated usage of ``qml.device(..., shots=...)`` have been updated in 
+* Three more examples of the deprecated usage of ``qp.device(..., shots=...)`` have been updated in 
   the documentation.
   [(#8298)](https://github.com/PennyLaneAI/pennylane/pull/8298)
 
-* The documentation of ``qml.device`` has been updated to reflect the usage of 
+* The documentation of ``qp.device`` has been updated to reflect the usage of 
   :func:`~pennylane.set_shots`.
   [(#8294)](https://github.com/PennyLaneAI/pennylane/pull/8294)
 
@@ -1952,7 +1952,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 * ``ancilla`` has been renamed to ``auxiliary`` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
-* Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
+* Small typos in the docstring for `qp.noise.partial_wires` have been corrected.
   [(#8052)](https://github.com/PennyLaneAI/pennylane/pull/8052)
 
 * The theoretical background section of :class:`~.BasisRotation` has been extended to explain
@@ -1978,7 +1978,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   updated to give the correct output.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
-* The :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize` 
+* The :math:`\LaTeX` rendering in the documentation for `qp.TrotterProduct` and `qp.trotterize` 
   has been corrected.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
@@ -2015,18 +2015,18 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   to transform the user function when transforms are applied to the ``QNode``.
   [(#8307)](https://github.com/PennyLaneAI/pennylane/pull/8307)
   
-* ``qml.compiler.python_compiler.transforms.MergeRotationsPass`` now takes the ``adjoint`` property of
+* ``qp.compiler.python_compiler.transforms.MergeRotationsPass`` now takes the ``adjoint`` property of
   merged operations correctly into account.
   [(#8429)](https://github.com/PennyLaneAI/pennylane/pull/8429)
   
-* Promoting NumPy data to autograd no longer occurs in ``qml.qchem.molecular_hamiltonian``.
+* Promoting NumPy data to autograd no longer occurs in ``qp.qchem.molecular_hamiltonian``.
   [(#8410)](https://github.com/PennyLaneAI/pennylane/pull/8410)
 
 * Fixed compatibility with JAX and PyTorch input parameters in :class:`~.SpecialUnitary` when large
   numbers of wires are used.
   [(#8209)](https://github.com/PennyLaneAI/pennylane/pull/8209)
 
-* With ``qml.capture.enable()``, AutoGraph will now be correctly applied to functions containing 
+* With ``qp.capture.enable()``, AutoGraph will now be correctly applied to functions containing 
   control flow that are then wrapped in :func:`~pennylane.adjoint` or :func:`~pennylane.ctrl`.
   [(#8215)](https://github.com/PennyLaneAI/pennylane/pull/8215)
 
@@ -2034,7 +2034,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   the computational basis to raise an error.
   [(#8251)](https://github.com/PennyLaneAI/pennylane/pull/8251)
 
-* ``qml.ctrl(qml.Barrier(), control_wires)`` now just returns the original ``Barrier`` operation, 
+* ``qp.ctrl(qp.Barrier(), control_wires)`` now just returns the original ``Barrier`` operation, 
   but placed in the circuit where the ``ctrl`` happens.
   [(#8238)](https://github.com/PennyLaneAI/pennylane/pull/8238)
 
@@ -2061,13 +2061,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
 * A scalar product of a norm one scalar and an operator now decomposes into a ``GlobalPhase`` and 
-  the operator. For example, ``-1 * qml.X(0)`` now decomposes into 
-  ``[qml.GlobalPhase(-np.pi), qml.X(0)]``. This improves the decomposition of ``Select`` when there 
+  the operator. For example, ``-1 * qp.X(0)`` now decomposes into 
+  ``[qp.GlobalPhase(-np.pi), qp.X(0)]``. This improves the decomposition of ``Select`` when there 
   are complicated target ``ops``.
   [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
 
 * Fixed a bug that made the queueing behaviour of 
-  :meth:`qml.PauliWord.operation <~.PauliWord.operation>` and 
+  :meth:`qp.PauliWord.operation <~.PauliWord.operation>` and 
   :meth:`qmle.PauliSentence.operation <~.PauliSentence.operation>` depndent on the global state of a
   program due to a caching issue.
   [(#8135)](https://github.com/PennyLaneAI/pennylane/pull/8135)
@@ -2077,13 +2077,13 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 * An error is now raised if sequences of classically processed mid-circuit measurements
   are used as input to :func:`pennylane.counts` or :func:`pennylane.probs` (e.g., 
-  ``qml.counts([2*qml.measure(0), qml.measure(1)])``)
+  ``qp.counts([2*qp.measure(0), qp.measure(1)])``)
   [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
 
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
-* Fixed a GPU selection issue in ``qml.math`` with PyTorch when multiple GPUs are present.
+* Fixed a GPU selection issue in ``qp.math`` with PyTorch when multiple GPUs are present.
   [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
 
 * The :func:`~.for_loop` function with capture enabled can now properly handle cases when 
@@ -2110,7 +2110,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   gates conversion into their ZX-graph representation.
   [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
 
-* Fixed ``qml.workflow.get_best_diff_method`` to correctly align with ``execute`` and ``construct_batch`` logic in    
+* Fixed ``qp.workflow.get_best_diff_method`` to correctly align with ``execute`` and ``construct_batch`` logic in    
   the workflow module for internal consistency.
   [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
 
@@ -2132,7 +2132,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
   [(#8437)](https://github.com/PennyLaneAI/pennylane/pull/8437)
 
-* Fixed a bug where ``qml.prod``, ``qml.matrix``, and ``qml.cond`` applied on a quantum function 
+* Fixed a bug where ``qp.prod``, ``qp.matrix``, and ``qp.cond`` applied on a quantum function 
   was not dequeueing operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
   [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
@@ -2148,12 +2148,12 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
   [(8297)](https://github.com/PennyLaneAI/pennylane/pull/8297)
 
-* When using ``mcm_method="tree-traversal"`` with ``qml.samples``, the data type of the returned
+* When using ``mcm_method="tree-traversal"`` with ``qp.samples``, the data type of the returned
   values is now ``int``. This change ensures consistency with the output of other MCM methods.
   [(#8274)](https://github.com/PennyLaneAI/pennylane/pull/8274)
 
 * The labels for operators that have multiple matrix-valued parameters (e.g. those from 
-  :class:`~.operation.Operator`) can now also be drawn correctly (e.g. with ``qml.draw``).     
+  :class:`~.operation.Operator`) can now also be drawn correctly (e.g. with ``qp.draw``).     
   [(#8432)](https://github.com/PennyLaneAI/pennylane/pull/8432)
 
 * Fixed a bug with `~.estimator.resource_mapping._map_to_resource_op()` where it was incorrectly

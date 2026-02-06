@@ -9,18 +9,18 @@
   [(#5218)](https://github.com/PennyLaneAI/pennylane/pull/5218)
   [(#5168)](https://github.com/PennyLaneAI/pennylane/pull/5168)
 
-  The `qml.from_qiskit` function converts a Qiskit
+  The `qp.from_qiskit` function converts a Qiskit
   [QuantumCircuit](https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit) into
   a PennyLane
   [quantum function](https://docs.pennylane.ai/en/stable/introduction/circuits.html#quantum-functions).
-  Although `qml.from_qiskit` already exists in PennyLane, we have made a number of improvements to
-  make importing from Qiskit easier. And yes — `qml.from_qiskit` functionality
+  Although `qp.from_qiskit` already exists in PennyLane, we have made a number of improvements to
+  make importing from Qiskit easier. And yes — `qp.from_qiskit` functionality
   is compatible with both Qiskit
   [1.0](https://docs.quantum.ibm.com/api/qiskit/release-notes/1.0) and earlier
   versions! Here's a comprehensive list of the improvements:
 
   * You can now append PennyLane measurements onto the quantum function returned by
-    `qml.from_qiskit`. Consider this simple Qiskit circuit:
+    `qp.from_qiskit`. Consider this simple Qiskit circuit:
 
     ```python
     import pennylane as qp
@@ -35,16 +35,16 @@
     `measurements` easily included:
 
     ```pycon
-    >>> dev = qml.device("default.qubit")
-    >>> measurements = qml.expval(qml.Z(0) @ qml.Z(1))
-    >>> qfunc = qml.from_qiskit(qc, measurements=measurements)
-    >>> qnode = qml.QNode(qfunc, dev)
+    >>> dev = qp.device("default.qubit")
+    >>> measurements = qp.expval(qp.Z(0) @ qp.Z(1))
+    >>> qfunc = qp.from_qiskit(qc, measurements=measurements)
+    >>> qnode = qp.QNode(qfunc, dev)
     >>> qnode()
     tensor(0.00056331, requires_grad=True)
     ```
 
   * Quantum circuits that already contain Qiskit-side measurements can be faithfully converted with
-    `qml.from_qiskit`. Consider this example Qiskit circuit:
+    `qp.from_qiskit`. Consider this example Qiskit circuit:
 
     ```python
     qc = QuantumCircuit(3, 2)  # Teleportation
@@ -67,11 +67,11 @@
     use those results as inputs to a mid-circuit measurement in PennyLane:
 
     ```python
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def teleport():
-        m0, m1 = qml.from_qiskit(qc)()
-        qml.cond(m0, qml.Z)(2)
-        return qml.density_matrix(2)
+        m0, m1 = qp.from_qiskit(qc)()
+        qp.cond(m0, qp.Z)(2)
+        return qp.density_matrix(2)
     ```
 
     ```pycon
@@ -98,9 +98,9 @@
     We can convert this circuit into a QNode with two arguments, corresponding to `x` and `y`:
 
     ```python
-    measurements = qml.expval(qml.PauliZ(0))
-    qfunc = qml.from_qiskit(qc, measurements)
-    qnode = qml.QNode(qfunc, dev)
+    measurements = qp.expval(qp.PauliZ(0))
+    qfunc = qp.from_qiskit(qc, measurements)
+    qnode = qp.QNode(qfunc, dev)
     ```
 
     The QNode can be evaluated and differentiated:
@@ -109,7 +109,7 @@
     >>> x, y = np.array([0.4, 0.5], requires_grad=True)
     >>> qnode(x, y)
     tensor(0.80830707, requires_grad=True)
-    >>> qml.grad(qnode)(x, y)
+    >>> qp.grad(qnode)(x, y)
     (tensor(-0.34174675, requires_grad=True),
      tensor(-0.44158016, requires_grad=True))
     ```
@@ -117,12 +117,12 @@
     This shows how easy it is to make a Qiskit circuit differentiable with PennyLane.
 
 * In addition to circuits, it is also possible to convert operators from Qiskit to PennyLane with a new function called
-  `qml.from_qiskit_op`.
+  `qp.from_qiskit_op`.
   [(#5251)](https://github.com/PennyLaneAI/pennylane/pull/5251)
 
   A Qiskit
   [SparsePauliOp](https://docs.quantum.ibm.com/api/qiskit/qiskit.quantum_info.SparsePauliOp) can be
-  converted to a PennyLane operator using `qml.from_qiskit_op`:
+  converted to a PennyLane operator using `qp.from_qiskit_op`:
 
   ```pycon
   >>> from qiskit.quantum_info import SparsePauliOp
@@ -130,12 +130,12 @@
   >>> qiskit_op
   SparsePauliOp(['II', 'XY'],
                 coeffs=[1.+0.j, 1.+0.j])
-  >>> pl_op = qml.from_qiskit_op(qiskit_op)
+  >>> pl_op = qp.from_qiskit_op(qiskit_op)
   >>> pl_op
   I(0) + X(1) @ Y(0)
   ```
 
-  Combined with `qml.from_qiskit`, it becomes easy to quickly calculate quantities like expectation
+  Combined with `qp.from_qiskit`, it becomes easy to quickly calculate quantities like expectation
   values by converting the whole workflow to PennyLane:
 
   ```python
@@ -143,9 +143,9 @@
   qc.rx(0.785, 0)
   qc.ry(1.57, 1)
 
-  measurements = qml.expval(pl_op)  # Create QNode
-  qfunc = qml.from_qiskit(qc, measurements)
-  qnode = qml.QNode(qfunc, dev)
+  measurements = qp.expval(pl_op)  # Create QNode
+  qfunc = qp.from_qiskit(qc, measurements)
+  qnode = qp.QNode(qfunc, dev)
   ```
 
   ```pycon
@@ -161,7 +161,7 @@
   [(#5120)](https://github.com/PennyLaneAI/pennylane/pull/5120)
 
   Previously, mid-circuit measurements (MCMs) would be automatically replaced with an additional qubit
-  using the `@qml.defer_measurements` transform. The circuit below would have required thousands
+  using the `@qp.defer_measurements` transform. The circuit below would have required thousands
   of qubits to simulate.
 
   Now, MCMs are performed in a similar way to quantum hardware
@@ -173,14 +173,14 @@
   ```python
   import pennylane as qp
 
-  dev = qml.device("default.qubit", shots=10)
+  dev = qp.device("default.qubit", shots=10)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def f():
       for i in range(1967):
-          qml.Hadamard(0)
-          qml.measure(0)
-      return qml.sample(qml.PauliX(0))
+          qp.Hadamard(0)
+          qp.measure(0)
+      return qp.sample(qp.PauliX(0))
   ```
 
   ```pycon
@@ -197,7 +197,7 @@
   2. To improve the efficiency of operator arithmetic.
 
   The updated operator arithmetic functionality is still being finalized, but can be activated
-  using `qml.operation.enable_new_opmath()`. In the next release, the new behaviour will become the
+  using `qp.operation.enable_new_opmath()`. In the next release, the new behaviour will become the
   default, so we recommend enabling now to become familiar with the new system!
 
   The following updates have been made in this version of PennyLane:
@@ -217,14 +217,14 @@
     The original long-form names `Identity`, `PauliX`, `PauliY`, and `PauliZ` remain available, but
     use of the short-form names is now recommended.
 
-  * A new `qml.commutator` function is now available that allows you to compute commutators between
+  * A new `qp.commutator` function is now available that allows you to compute commutators between
     PennyLane operators.
     [(#5051)](https://github.com/PennyLaneAI/pennylane/pull/5051)
     [(#5052)](https://github.com/PennyLaneAI/pennylane/pull/5052)
     [(#5098)](https://github.com/PennyLaneAI/pennylane/pull/5098)
 
     ```pycon
-    >>> qml.commutator(X(0), Y(0))
+    >>> qp.commutator(X(0), Y(0))
     2j * Z(0)
     ```
 
@@ -239,7 +239,7 @@
     The Pauli representation can be optionally accessed via `op.pauli_rep`:
 
     ```pycon
-    >>> qml.operation.enable_new_opmath()
+    >>> qp.operation.enable_new_opmath()
     >>> op = X(0) + Y(0)
     >>> op.pauli_rep
     1.0 * X(0)
@@ -281,7 +281,7 @@
 
     ```pycon
     >>> obs = [X(0) @ Y(1), Z(0), Y(0) @ Z(1), Y(1)]
-    >>> qml.pauli.group_observables(obs)
+    >>> qp.pauli.group_observables(obs)
     [[Y(0) @ Z(1)], [X(0) @ Y(1), Y(1)], [Z(0)]]
     ```
 
@@ -301,14 +301,14 @@
   ```python
   import pennylane as qp
 
-  dev = qml.device("default.clifford", tableau=True)
-  @qml.qnode(dev)
+  dev = qp.device("default.clifford", tableau=True)
+  @qp.qnode(dev)
   def circuit():
-      qml.CNOT(wires=[0, 1])
-      qml.PauliX(wires=[1])
-      qml.ISWAP(wires=[0, 1])
-      qml.Hadamard(wires=[0])
-      return qml.state()
+      qp.CNOT(wires=[0, 1])
+      qp.PauliX(wires=[1])
+      qp.ISWAP(wires=[0, 1])
+      qp.Hadamard(wires=[0])
+      return qp.state()
   ```
 
   ```pycon
@@ -345,29 +345,29 @@
     for `tf.Function` and Tensorflow Autograph.
     [(#4676)](https://github.com/PennyLaneAI/pennylane/pull/4676)
 
-* Measuring `qml.probs` is now faster due to an optimization in converting samples to counts.
+* Measuring `qp.probs` is now faster due to an optimization in converting samples to counts.
   [(#5145)](https://github.com/PennyLaneAI/pennylane/pull/5145)
 
 * The performance of circuit-cutting workloads with large numbers of generated tapes has been improved.
   [(#5005)](https://github.com/PennyLaneAI/pennylane/pull/5005)
 
-* Queueing (`AnnotatedQueue`) has been removed from `qml.cut_circuit` and `qml.cut_circuit_mc` to improve performance
+* Queueing (`AnnotatedQueue`) has been removed from `qp.cut_circuit` and `qp.cut_circuit_mc` to improve performance
   for large workflows.
   [(#5108)](https://github.com/PennyLaneAI/pennylane/pull/5108)
 
 
 <h4>Community contributions 🥳</h4>
 
-* A new function called `qml.fermi.parity_transform` has been added for parity mapping of a fermionic Hamiltonian.
+* A new function called `qp.fermi.parity_transform` has been added for parity mapping of a fermionic Hamiltonian.
   [(#4928)](https://github.com/PennyLaneAI/pennylane/pull/4928)
 
   It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
 
   ```python
   import pennylane as qp
-  fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+  fermi_ham = qp.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
 
-  qubit_ham = qml.fermi.parity_transform(fermi_ham, n=6)
+  qubit_ham = qp.fermi.parity_transform(fermi_ham, n=6)
   ```
 
   ```pycon
@@ -386,18 +386,18 @@
 
   ```pycon
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
-  >>> x = qml.math.dm_from_state_vector(x)
-  >>> qml.math.min_entropy(x, indices=[0])
+  >>> x = qp.math.dm_from_state_vector(x)
+  >>> qp.math.min_entropy(x, indices=[0])
   0.6931471805599455
   ```
 
-* A function called `apply_operation` that applies operations to device-compatible states has been added to the new `qutrit_mixed` module found in `qml.devices`.
+* A function called `apply_operation` that applies operations to device-compatible states has been added to the new `qutrit_mixed` module found in `qp.devices`.
   [(#5032)](https://github.com/PennyLaneAI/pennylane/pull/5032)
 
-* A function called `measure` has been added to the new `qutrit_mixed` module found in `qml.devices` that measures device-compatible states for a collection of measurement processes.
+* A function called `measure` has been added to the new `qutrit_mixed` module found in `qp.devices` that measures device-compatible states for a collection of measurement processes.
   [(#5049)](https://github.com/PennyLaneAI/pennylane/pull/5049)
 
-* A `partial_trace` function has been added to `qml.math` for taking the partial trace of matrices.
+* A `partial_trace` function has been added to `qp.math` for taking the partial trace of matrices.
   [(#5152)](https://github.com/PennyLaneAI/pennylane/pull/5152)
 
 <h4>Other operator arithmetic improvements</h4>
@@ -416,10 +416,10 @@
   * You can now intuitively add and subtract `PauliWord` and `PauliSentence` instances and scalars together (scalars are treated implicitly as multiples
     of the identity, `I`). For example, `ps1 + pw1 + 1.` for some Pauli word `pw1 = PauliWord({0: "X", 1: "Y"})` and Pauli sentence `ps1 = PauliSentence({pw1: 3.})`.
 
-  * You can now element-wise multiply `PauliWord`, `PauliSentence`, and operators together with `qml.dot` (e.g.,
-    `qml.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`).
+  * You can now element-wise multiply `PauliWord`, `PauliSentence`, and operators together with `qp.dot` (e.g.,
+    `qp.dot([0.5, -1.5, 2], [pw1, ps1, id_word])` with `id_word = PauliWord({})`).
 
-  * `qml.matrix` now accepts `PauliWord` and `PauliSentence` instances (e.g., `qml.matrix(PauliWord({0: "X"}))`).
+  * `qp.matrix` now accepts `PauliWord` and `PauliSentence` instances (e.g., `qp.matrix(PauliWord({0: "X"}))`).
 
   * It is now possible to compute commutators with Pauli operators natively with the new `commutator` method.
 
@@ -431,33 +431,33 @@
     + 2j * X(0) @ Z(1)
     ```
 
-* Composite operations (e.g., those made with `qml.prod` and `qml.sum`) and scalar-product operations
+* Composite operations (e.g., those made with `qp.prod` and `qp.sum`) and scalar-product operations
   convert `Hamiltonian` and `Tensor` operands to `Sum` and `Prod` types, respectively. This helps
   avoid the mixing of incompatible operator types.
   [(#5031)](https://github.com/PennyLaneAI/pennylane/pull/5031)
   [(#5063)](https://github.com/PennyLaneAI/pennylane/pull/5063)
 
-* `qml.Identity()` can be initialized without wires. Measuring it is currently not possible, though.
+* `qp.Identity()` can be initialized without wires. Measuring it is currently not possible, though.
   [(#5106)](https://github.com/PennyLaneAI/pennylane/pull/5106)
 
-* `qml.dot` now returns a `Sum` class even when all the coefficients match.
+* `qp.dot` now returns a `Sum` class even when all the coefficients match.
   [(#5143)](https://github.com/PennyLaneAI/pennylane/pull/5143)
 
-* `qml.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
+* `qp.pauli.group_observables` now supports grouping `Prod` and `SProd` operators.
   [(#5070)](https://github.com/PennyLaneAI/pennylane/pull/5070)
 
 * The performance of converting a `PauliSentence` to a `Sum` has been improved.
   [(#5141)](https://github.com/PennyLaneAI/pennylane/pull/5141)
   [(#5150)](https://github.com/PennyLaneAI/pennylane/pull/5150)
 
-* Akin to `qml.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed
+* Akin to `qp.Hamiltonian` features, the coefficients and operators that make up composite operators formed via `Sum` or `Prod` can now be accessed
   with the `terms()` method.
   [(#5132)](https://github.com/PennyLaneAI/pennylane/pull/5132)
   [(#5133)](https://github.com/PennyLaneAI/pennylane/pull/5133)
   [(#5164)](https://github.com/PennyLaneAI/pennylane/pull/5164)
 
   ```python
-  >>> qml.operation.enable_new_opmath()
+  >>> qp.operation.enable_new_opmath()
   >>> op = X(0) @ (0.5 * X(1) + X(2))
   >>> op.terms()
   ([0.5, 1.0],
@@ -470,7 +470,7 @@
 
 <h4>Other improvements</h4>
 
-* The `pl-device-test` suite is now compatible with the `qml.devices.Device` interface.
+* The `pl-device-test` suite is now compatible with the `qp.devices.Device` interface.
   [(#5229)](https://github.com/PennyLaneAI/pennylane/pull/5229)
 
 * The `QSVT` operation now determines its `data` from the block encoding and projector operator data.
@@ -480,7 +480,7 @@
 * The `BlockEncode` operator is now JIT-compatible with JAX.
   [(#5110)](https://github.com/PennyLaneAI/pennylane/pull/5110)
 
-* The `qml.qsvt` function uses `qml.GlobalPhase` instead of `qml.exp` to define a global phase.
+* The `qp.qsvt` function uses `qp.GlobalPhase` instead of `qp.exp` to define a global phase.
   [(#5105)](https://github.com/PennyLaneAI/pennylane/pull/5105)
 
 * The `tests/ops/functions/conftest.py` test has been updated to ensure that all operator types are tested for validity.
@@ -492,11 +492,11 @@
 * A more informative error is now raised when calling `adjoint_jacobian` with trainable state-prep operations.
   [(#5026)](https://github.com/PennyLaneAI/pennylane/pull/5026)
 
-* `qml.workflow.get_transform_program` and `qml.workflow.construct_batch` have been added to inspect the transform program and batch of tapes
+* `qp.workflow.get_transform_program` and `qp.workflow.construct_batch` have been added to inspect the transform program and batch of tapes
   at different stages.
   [(#5084)](https://github.com/PennyLaneAI/pennylane/pull/5084)
 
-* All custom controlled operations such as `CRX`, `CZ`, `CNOT`, `ControlledPhaseShift` now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qml.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
+* All custom controlled operations such as `CRX`, `CZ`, `CNOT`, `ControlledPhaseShift` now inherit from `ControlledOp`, giving them additional properties such as `control_wire` and `control_values`. Calling `qp.ctrl` on `RX`, `RY`, `RZ`, `Rot`, and `PhaseShift` with a single control wire will return gates of types `CRX`, `CRY`, etc. as opposed to a general `Controlled` operator.
   [(#5069)](https://github.com/PennyLaneAI/pennylane/pull/5069)
   [(#5199)](https://github.com/PennyLaneAI/pennylane/pull/5199)
 
@@ -504,10 +504,10 @@
   and the codecov check itself would never execute.
   [(#5101)](https://github.com/PennyLaneAI/pennylane/pull/5101)
 
-* `qml.ctrl` called on operators with custom controlled versions will now return instances
+* `qp.ctrl` called on operators with custom controlled versions will now return instances
   of the custom class, and it will flatten nested controlled operators to a single
   multi-controlled operation. For `PauliX`, `CNOT`, `Toffoli`, and `MultiControlledX`,
-  calling `qml.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or
+  calling `qp.ctrl` will always resolve to the best option in `CNOT`, `Toffoli`, or
   `MultiControlledX` depending on the number of control wires and control values.
   [(#5125)](https://github.com/PennyLaneAI/pennylane/pull/5125/)
 
@@ -527,14 +527,14 @@
   when working in the tape paradigm.
   [(#5163)](https://github.com/PennyLaneAI/pennylane/pull/5163)
 
-* `qml.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
+* `qp.ctrl` is now a simple wrapper that either calls PennyLane's built in `create_controlled_op`
   or uses the Catalyst implementation.
   [(#5247)](https://github.com/PennyLaneAI/pennylane/pull/5247)
 
 * Controlled composite operations can now be decomposed using ZYZ rotations.
   [(#5242)](https://github.com/PennyLaneAI/pennylane/pull/5242)
 
-* New functions called `qml.devices.modifiers.simulator_tracking` and `qml.devices.modifiers.single_tape_support` have been added
+* New functions called `qp.devices.modifiers.simulator_tracking` and `qp.devices.modifiers.single_tape_support` have been added
   to add basic default behavior onto a device class.
   [(#5200)](https://github.com/PennyLaneAI/pennylane/pull/5200)
 
@@ -544,7 +544,7 @@
   of `functools.partial`.
   [(#5046)](https://github.com/PennyLaneAI/pennylane/pull/5046)
 
-* `qml.ExpvalCost` has been removed. Users should use `qml.expval()` moving forward.
+* `qp.ExpvalCost` has been removed. Users should use `qp.expval()` moving forward.
   [(#5097)](https://github.com/PennyLaneAI/pennylane/pull/5097)
 
 * Caching of executions is now turned off by default when `max_diff == 1`, as the classical overhead cost
@@ -598,7 +598,7 @@
   For example:
 
   ```pycon
-  >>> qml.ctrl(qml.RX(0.123, wires=1), control=0).decomposition()
+  >>> qp.ctrl(qp.RX(0.123, wires=1), control=0).decomposition()
   [
     RZ(1.5707963267948966, wires=[1]),
     RY(0.0615, wires=[1]),
@@ -613,18 +613,18 @@
   validate these properties manually.
   [(#5072)](https://github.com/PennyLaneAI/pennylane/pull/5072)
 
-* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` have been removed. Instead,
-  you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition`.
+* `qp.transforms.one_qubit_decomposition` and `qp.transforms.two_qubit_decomposition` have been removed. Instead,
+  you should use `qp.ops.one_qubit_decomposition` and `qp.ops.two_qubit_decomposition`.
   [(#5091)](https://github.com/PennyLaneAI/pennylane/pull/5091)
 
 <h3>Deprecations 👋</h3>
 
-* Calling `qml.matrix` without providing a `wire_order` on objects where the wire order could be
+* Calling `qp.matrix` without providing a `wire_order` on objects where the wire order could be
   ambiguous now raises a warning. In the future, the `wire_order` argument will be required in
   these cases.
   [(#5039)](https://github.com/PennyLaneAI/pennylane/pull/5039)
 
-* `Operator.validate_subspace(subspace)` has been relocated to the `qml.ops.qutrit.parametric_ops`
+* `Operator.validate_subspace(subspace)` has been relocated to the `qp.ops.qutrit.parametric_ops`
   module and will be removed from the Operator class in an upcoming release.
   [(#5067)](https://github.com/PennyLaneAI/pennylane/pull/5067)
 
@@ -642,8 +642,8 @@
   [(#5076)](https://github.com/PennyLaneAI/pennylane/pull/5076)
   [(#5122)](https://github.com/PennyLaneAI/pennylane/pull/5122)
 
-* `qml.pauli.pauli_mult` and `qml.pauli.pauli_mult_with_phase` are now deprecated. Instead, you
-  should use `qml.simplify(qml.prod(pauli_1, pauli_2))` to get the reduced operator.
+* `qp.pauli.pauli_mult` and `qp.pauli.pauli_mult_with_phase` are now deprecated. Instead, you
+  should use `qp.simplify(qp.prod(pauli_1, pauli_2))` to get the reduced operator.
   [(#5057)](https://github.com/PennyLaneAI/pennylane/pull/5057)
 
 * The private functions `_pauli_mult`, `_binary_matrix` and `_get_pauli_map` from the
@@ -659,31 +659,31 @@
 * The module documentation for `pennylane.tape` now explains the difference between `QuantumTape` and `QuantumScript`.
   [(#5065)](https://github.com/PennyLaneAI/pennylane/pull/5065)
 
-* A typo in a code example in the `qml.transforms` API has been fixed.
+* A typo in a code example in the `qp.transforms` API has been fixed.
   [(#5014)](https://github.com/PennyLaneAI/pennylane/pull/5014)
 
-* Documentation for `qml.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
+* Documentation for `qp.data` has been updated and now mentions a way to access the same dataset simultaneously from multiple environments.
   [(#5029)](https://github.com/PennyLaneAI/pennylane/pull/5029)
 
 * A clarification for the definition of `argnum` added to gradient methods has been made.
   [(#5035)](https://github.com/PennyLaneAI/pennylane/pull/5035)
 
-* A typo in the code example for `qml.qchem.dipole_of` has been fixed.
+* A typo in the code example for `qp.qchem.dipole_of` has been fixed.
   [(#5036)](https://github.com/PennyLaneAI/pennylane/pull/5036)
 
 * A development guide on deprecations and removals has been added.
   [(#5083)](https://github.com/PennyLaneAI/pennylane/pull/5083)
 
-* A note about the eigenspectrum of second-quantized Hamiltonians has been added to `qml.eigvals`.
+* A note about the eigenspectrum of second-quantized Hamiltonians has been added to `qp.eigvals`.
   [(#5095)](https://github.com/PennyLaneAI/pennylane/pull/5095)
 
-* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions has been added to `qml.TrotterProduct` and `qml.ApproxTimeEvolution`.
+* A warning about two mathematically equivalent Hamiltonians undergoing different time evolutions has been added to `qp.TrotterProduct` and `qp.ApproxTimeEvolution`.
   [(#5137)](https://github.com/PennyLaneAI/pennylane/pull/5137)
 
-* A reference to the paper that provides the image of the `qml.QAOAEmbedding` template has been added.
+* A reference to the paper that provides the image of the `qp.QAOAEmbedding` template has been added.
   [(#5130)](https://github.com/PennyLaneAI/pennylane/pull/5130)
 
-* The docstring of `qml.sample` has been updated to advise the use of single-shot expectations
+* The docstring of `qp.sample` has been updated to advise the use of single-shot expectations
   instead when differentiating a circuit.
   [(#5237)](https://github.com/PennyLaneAI/pennylane/pull/5237)
 
@@ -699,32 +699,32 @@
 * Fixed a bug in the matplotlib drawer where the colour of `Barrier` did not match the requested style.
   [(#5276)](https://github.com/PennyLaneAI/pennylane/pull/5276)
 
-* `qml.draw` and `qml.draw_mpl` now apply all applied transforms before drawing.
+* `qp.draw` and `qp.draw_mpl` now apply all applied transforms before drawing.
   [(#5277)](https://github.com/PennyLaneAI/pennylane/pull/5277)
 
 * `ctrl_decomp_zyz` is now differentiable.
   [(#5198)](https://github.com/PennyLaneAI/pennylane/pull/5198)
 
-* `qml.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
+* `qp.ops.Pow.matrix()` is now differentiable with TensorFlow with integer exponents.
   [(#5178)](https://github.com/PennyLaneAI/pennylane/pull/5178)
 
-* The `qml.MottonenStatePreparation` template has been updated to include a global phase operation.
+* The `qp.MottonenStatePreparation` template has been updated to include a global phase operation.
   [(#5166)](https://github.com/PennyLaneAI/pennylane/pull/5166)
 
-* Fixed a queuing bug when using `qml.prod` with a quantum function that queues a single operator.
+* Fixed a queuing bug when using `qp.prod` with a quantum function that queues a single operator.
   [(#5170)](https://github.com/PennyLaneAI/pennylane/pull/5170)
 
-* The `qml.TrotterProduct` template has been updated to accept scalar products of operators as an input Hamiltonian.
+* The `qp.TrotterProduct` template has been updated to accept scalar products of operators as an input Hamiltonian.
   [(#5073)](https://github.com/PennyLaneAI/pennylane/pull/5073)
 
 * Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
   `Operator.hash` now depends on the memory location, `id`, of a JAX tracer instead of its string representation.
   [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
 
-* `qml.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
+* `qp.transforms.undo_swaps` can now work with operators with hyperparameters or nesting.
   [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
 
-* `qml.transforms.split_non_commuting` will now pass the original shots along.
+* `qp.transforms.split_non_commuting` will now pass the original shots along.
   [(#5081)](https://github.com/PennyLaneAI/pennylane/pull/5081)
 
 * If `argnum` is provided to a gradient transform, only the parameters specified in `argnum` will have their gradient methods validated.
@@ -733,7 +733,7 @@
 * `StatePrep` operations expanded onto more wires are now compatible with backprop.
   [(#5028)](https://github.com/PennyLaneAI/pennylane/pull/5028)
 
-* `qml.equal` works well with `qml.Sum` operators when wire labels are a mix of integers and strings.
+* `qp.equal` works well with `qp.Sum` operators when wire labels are a mix of integers and strings.
   [(#5037)](https://github.com/PennyLaneAI/pennylane/pull/5037)
 
 * The return value of `Controlled.generator` now contains a projector that projects onto the correct subspace based on the control value specified.
@@ -748,7 +748,7 @@
 * `PauliSentence.wires` no longer imposes a false order.
   [(#5041)](https://github.com/PennyLaneAI/pennylane/pull/5041)
 
-* `qml.qchem.import_state` now applies the chemist-to-physicist
+* `qp.qchem.import_state` now applies the chemist-to-physicist
   sign convention when initializing a PennyLane state vector from
   classically pre-computed wavefunctions. That is, it interleaves
   spin-up/spin-down operators for the same spatial orbital index,
@@ -769,7 +769,7 @@
 * `ctrl_decomp_zyz` no longer raises a `TypeError` if the rotation parameters are of type `torch.Tensor`
   [(#5183)](https://github.com/PennyLaneAI/pennylane/pull/5183)
 
-* Comparing `Prod` and `Sum` objects now works regardless of nested structure with `qml.equal` if the
+* Comparing `Prod` and `Sum` objects now works regardless of nested structure with `qp.equal` if the
   operators have a valid `pauli_rep` property.
   [(#5177)](https://github.com/PennyLaneAI/pennylane/pull/5177)
 

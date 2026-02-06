@@ -19,14 +19,14 @@
 
   wires = 3
   layers = 2
-  dev = qml.device("lightning.qubit", wires=wires)
+  dev = qp.device("lightning.qubit", wires=wires)
 
-  @qml.qnode(dev, diff_method="adjoint")
+  @qp.qnode(dev, diff_method="adjoint")
   def circuit(weights):
-      qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
-      return qml.expval(qml.PauliZ(0))
+      qp.templates.StronglyEntanglingLayers(weights, wires=range(wires))
+      return qp.expval(qp.PauliZ(0))
 
-  weights = qml.init.strong_ent_layers_normal(layers, wires, seed=1967)
+  weights = qp.init.strong_ent_layers_normal(layers, wires, seed=1967)
   ```
 
   Evaluating circuits and their gradients on the device can be achieved using the standard approach:
@@ -34,7 +34,7 @@
   ```pycon
   >>> print(f"Circuit evaluated: {circuit(weights)}")
   Circuit evaluated: 0.9801286266677633
-  >>> print(f"Circuit gradient:\n{qml.grad(circuit)(weights)}")
+  >>> print(f"Circuit gradient:\n{qp.grad(circuit)(weights)}")
   Circuit gradient:
   [[[-9.35301749e-17 -1.63051504e-01 -4.14810501e-04]
     [-7.88816484e-17 -1.50136528e-04 -1.77922957e-04]
@@ -76,12 +76,12 @@
   z = torch.tensor(0.75110998, dtype=torch.float64, requires_grad=True)
 
   p = torch.tensor([x, y, z], requires_grad=True)
-  dev = qml.device("default.qubit", wires=1)
+  dev = qp.device("default.qubit", wires=1)
 
-  @qml.qnode(dev, interface="torch", diff_method="backprop")
+  @qp.qnode(dev, interface="torch", diff_method="backprop")
   def circuit(x):
-      qml.Rot(x[0], x[1], x[2], wires=0)
-      return qml.expval(qml.PauliZ(0))
+      qp.Rot(x[0], x[1], x[2], wires=0)
+      return qp.expval(qp.PauliZ(0))
 
   res = circuit(p)
   res.backward()
@@ -115,18 +115,18 @@
   single-parameter layers of Pauli rotations:
 
   ```python
-  dev = qml.device('default.qubit', wires=3, shots=None)
+  dev = qp.device('default.qubit', wires=3, shots=None)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def cost_function(rot_param, layer_par, crot_param):
       for i, par in enumerate(rot_param):
-          qml.RX(par, wires=i)
+          qp.RX(par, wires=i)
       for w in dev.wires:
-          qml.RX(layer_par, wires=w)
+          qp.RX(layer_par, wires=w)
       for i, par in enumerate(crot_param):
-          qml.CRY(par, wires=[i, (i+1) % 3])
+          qp.CRY(par, wires=[i, (i+1) % 3])
 
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+      return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
   ```
 
   This cost function has one frequency for each of the first `RX` rotation angles,
@@ -144,7 +144,7 @@
   # Numbers of frequencies per parameter
   num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
 
-  opt = qml.RotosolveOptimizer()
+  opt = qp.RotosolveOptimizer()
   param = init_param.copy()
   ```
 
@@ -184,18 +184,18 @@
   ``` python
   from pennylane import numpy as np
 
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
+  dev = qp.device("default.qubit", wires=2)
+  @qp.qnode(dev)
   def circuit(coeffs, param):
-      qml.RX(param, wires=0)
-      qml.RY(param, wires=0)
-      return qml.expval(
-          qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=True)
+      qp.RX(param, wires=0)
+      qp.RY(param, wires=0)
+      return qp.expval(
+          qp.Hamiltonian(coeffs, [qp.PauliX(0), qp.PauliZ(0)], simplify=True)
       )
 
   coeffs = np.array([-0.05, 0.17])
   param = np.array(1.7)
-  grad_fn = qml.grad(circuit)
+  grad_fn = qp.grad(circuit)
   ```
   ``` pycon
   >>> grad_fn(coeffs, param)
@@ -219,9 +219,9 @@
   [(#1515)](https://github.com/PennyLaneAI/pennylane/pull/1515)
 
   ```python
-  obs = [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)]
+  obs = [qp.PauliX(0), qp.PauliX(1), qp.PauliZ(0)]
   coeffs = np.array([1., 2., 3.])
-  H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+  H = qp.Hamiltonian(coeffs, obs, grouping_type='qwc')
   ```
 
   Initialization with a ``grouping_type`` other than ``None`` stores the indices
@@ -235,34 +235,34 @@
 <h4>Create multi-circuit quantum transforms and custom gradient rules</h4>
 
 * Custom gradient transforms can now be created using the new
-  `@qml.gradients.gradient_transform` decorator on a batch-tape transform.
+  `@qp.gradients.gradient_transform` decorator on a batch-tape transform.
   [(#1589)](https://github.com/PennyLaneAI/pennylane/pull/1589)
 
-  Quantum gradient transforms are a specific case of `qml.batch_transform`.
+  Quantum gradient transforms are a specific case of `qp.batch_transform`.
 
   Supported gradient transforms must be of the following form:
 
   ```python
-  @qml.gradients.gradient_transform
+  @qp.gradients.gradient_transform
   def my_custom_gradient(tape, argnum=None, **kwargs):
       ...
       return gradient_tapes, processing_fn
   ```
 
   Various built-in quantum gradient transforms are provided within the
-  `qml.gradients` module, including `qml.gradients.param_shift`.
+  `qp.gradients` module, including `qp.gradients.param_shift`.
   Once defined, quantum gradient transforms can be applied directly
   to QNodes:
 
   ```pycon
-  >>> @qml.qnode(dev)
+  >>> @qp.qnode(dev)
   ... def circuit(x):
-  ...     qml.RX(x, wires=0)
-  ...     qml.CNOT(wires=[0, 1])
-  ...     return qml.expval(qml.PauliZ(0))
+  ...     qp.RX(x, wires=0)
+  ...     qp.CNOT(wires=[0, 1])
+  ...     return qp.expval(qp.PauliZ(0))
   >>> circuit(0.3)
   tensor(0.95533649, requires_grad=True)
-  >>> qml.gradients.param_shift(circuit)(0.5)
+  >>> qp.gradients.param_shift(circuit)(0.5)
   array([[-0.47942554]])
   ```
 
@@ -270,7 +270,7 @@
   accessed:
 
   ```pycon
-  >>> qml.grad(qml.gradients.param_shift(circuit))(0.5)
+  >>> qp.grad(qp.gradients.param_shift(circuit))(0.5)
   tensor(-0.87758256, requires_grad=True)
   ```
 
@@ -278,7 +278,7 @@
   for more details.
 
 * The ability to define *batch* transforms has been added via the new
-  `@qml.batch_transform` decorator.
+  `@qp.batch_transform` decorator.
   [(#1493)](https://github.com/PennyLaneAI/pennylane/pull/1493)
 
   A batch transform is a transform that takes a single tape or QNode as input,
@@ -288,27 +288,27 @@
   For example, consider the following batch transform:
 
   ```python
-  @qml.batch_transform
+  @qp.batch_transform
   def my_transform(tape, a, b):
       """Generates two tapes, one with all RX replaced with RY,
       and the other with all RX replaced with RZ."""
-      tape1 = qml.tape.JacobianTape()
-      tape2 = qml.tape.JacobianTape()
+      tape1 = qp.tape.JacobianTape()
+      tape2 = qp.tape.JacobianTape()
 
       # loop through all operations on the input tape
       for op in tape.operations + tape.measurements:
           if op.name == "RX":
               with tape1:
-                  qml.RY(a * qml.math.abs(op.parameters[0]), wires=op.wires)
+                  qp.RY(a * qp.math.abs(op.parameters[0]), wires=op.wires)
               with tape2:
-                  qml.RZ(b * qml.math.abs(op.parameters[0]), wires=op.wires)
+                  qp.RZ(b * qp.math.abs(op.parameters[0]), wires=op.wires)
           else:
               for t in [tape1, tape2]:
                   with t:
-                      qml.apply(op)
+                      qp.apply(op)
 
       def processing_fn(results):
-          return qml.math.sum(qml.math.stack(results))
+          return qp.math.sum(qp.math.stack(results))
 
       return [tape1, tape2], processing_fn
   ```
@@ -317,11 +317,11 @@
 
   ```pycon
   >>> @my_transform(0.65, 2.5)
-  ... @qml.qnode(dev)
+  ... @qp.qnode(dev)
   ... def circuit(x):
-  ...     qml.Hadamard(wires=0)
-  ...     qml.RX(x, wires=0)
-  ...     return qml.expval(qml.PauliX(0))
+  ...     qp.Hadamard(wires=0)
+  ...     qp.RX(x, wires=0)
+  ...     return qp.expval(qp.PauliX(0))
   >>> print(circuit(-0.5))
   1.2629730888100839
   ```
@@ -329,7 +329,7 @@
   Batch tape transforms are fully differentiable:
 
   ```pycon
-  >>> gradient = qml.grad(circuit)(-0.5)
+  >>> gradient = qp.grad(circuit)(-0.5)
   >>> print(gradient)
   2.5800122591960153
   ```
@@ -347,18 +347,18 @@
   ```pycon
   >>> tapes, fn = my_transform(tape, 0.65, 2.5)
   >>> from pennylane.interfaces.batch import execute
-  >>> dev = qml.device("default.qubit", wires=1)
-  >>> res = execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+  >>> dev = qp.device("default.qubit", wires=1)
+  >>> res = execute(tapes, dev, interface="autograd", gradient_fn=qp.gradients.param_shift)
   1.2629730888100839
   ```
 
-* Vector-Jacobian product transforms have been added to the `qml.gradients` package.
+* Vector-Jacobian product transforms have been added to the `qp.gradients` package.
   [(#1494)](https://github.com/PennyLaneAI/pennylane/pull/1494)
 
   The new transforms include:
 
-  - `qml.gradients.vjp`
-  - `qml.gradients.batch_vjp`
+  - `qp.gradients.vjp`
+  - `qp.gradients.batch_vjp`
 
 * Support for differentiable execution of batches of circuits has been
   added, via the beta `pennylane.interfaces.batch` module.
@@ -377,34 +377,34 @@
   from pennylane.interfaces.batch import execute
 
   def cost_fn(x):
-      with qml.tape.JacobianTape() as tape1:
-          qml.RX(x[0], wires=[0])
-          qml.RY(x[1], wires=[1])
-          qml.CNOT(wires=[0, 1])
-          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+      with qp.tape.JacobianTape() as tape1:
+          qp.RX(x[0], wires=[0])
+          qp.RY(x[1], wires=[1])
+          qp.CNOT(wires=[0, 1])
+          qp.var(qp.PauliZ(0) @ qp.PauliX(1))
 
-      with qml.tape.JacobianTape() as tape2:
-          qml.RX(x[0], wires=0)
-          qml.RY(x[0], wires=1)
-          qml.CNOT(wires=[0, 1])
-          qml.probs(wires=1)
+      with qp.tape.JacobianTape() as tape2:
+          qp.RX(x[0], wires=0)
+          qp.RY(x[0], wires=1)
+          qp.CNOT(wires=[0, 1])
+          qp.probs(wires=1)
 
       result = execute(
           [tape1, tape2], dev,
-          gradient_fn=qml.gradients.param_shift,
+          gradient_fn=qp.gradients.param_shift,
           interface="autograd"
       )
       return result[0] + result[1][0, 0]
 
-  res = qml.grad(cost_fn)(params)
+  res = qp.grad(cost_fn)(params)
   ```
 
 <h3>Improvements</h3>
 
-* A new operation `qml.SISWAP` has been added, the square-root of the `qml.ISWAP` operation.
+* A new operation `qp.SISWAP` has been added, the square-root of the `qp.ISWAP` operation.
   [(#1563)](https://github.com/PennyLaneAI/pennylane/pull/1563)
 
-* The `frobenius_inner_product` function has been moved to the `qml.math`
+* The `frobenius_inner_product` function has been moved to the `qp.math`
   module, and is now differentiable using all autodiff frameworks.
   [(#1388)](https://github.com/PennyLaneAI/pennylane/pull/1388)
 
@@ -412,7 +412,7 @@
   only supported for `QubitDevice` based devices.
   [(#1659)](https://github.com/PennyLaneAI/pennylane/pull/1659)
 
-* The `qml.circuit_drawer.MPLDrawer` class provides manual circuit drawing
+* The `qp.circuit_drawer.MPLDrawer` class provides manual circuit drawing
   functionality using Matplotlib. While not yet integrated with automatic circuit
   drawing, this class provides customization and control.
   [(#1484)](https://github.com/PennyLaneAI/pennylane/pull/1484)
@@ -450,7 +450,7 @@
   created from multi-qubit operations.
   [(#1550)](https://github.com/PennyLaneAI/pennylane/pull/1550)
 
-* Added the matrix attribute to `qml.templates.subroutines.GroverOperator`
+* Added the matrix attribute to `qp.templates.subroutines.GroverOperator`
   [(#1553)](https://github.com/PennyLaneAI/pennylane/pull/1553)
 
 * The `tape.to_openqasm()` method now has a `measure_all` argument that specifies whether the
@@ -475,7 +475,7 @@
   obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
   def group(coeffs, select=None):
-    _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+    _, grouped_coeffs = qp.grouping.group_observables(obs, coeffs)
     # in this example, grouped_coeffs is a list of two jax tensors
     # [Array([1., 2.], dtype=float32), Array([3.], dtype=float32)]
     return grouped_coeffs[select]
@@ -495,11 +495,11 @@
   [(#1505)](https://github.com/PennyLaneAI/pennylane/pull/1505)
 
   This allows manipulation of Observables inside a tape context. An example is
-  `expval(Tensor(qml.PauliX(0), qml.Identity(1)).prune())` which makes the expval
+  `expval(Tensor(qp.PauliX(0), qp.Identity(1)).prune())` which makes the expval
   an owner of the pruned tensor and its constituent observables, but leaves the
   original tensor in the queue without an owner.
 
-* The `qml.ResetError` is now supported for `default.mixed` device.
+* The `qp.ResetError` is now supported for `default.mixed` device.
   [(#1541)](https://github.com/PennyLaneAI/pennylane/pull/1541)
 
 * `QNode.diff_method` will now reflect which method was selected from `diff_method="best"`.
@@ -519,7 +519,7 @@
   `pennylane.templates.QFT`.
   [(#1548)](https://github.com/PennyLaneAI/pennylane/pull/1548)
 
-* Specifying `shots=None` with `qml.sample` was previously deprecated.
+* Specifying `shots=None` with `qp.sample` was previously deprecated.
   From this release onwards, setting `shots=None` when sampling will
   raise an error also for `default.qubit.jax`.
   [(#1629)](https://github.com/PennyLaneAI/pennylane/pull/1629)
@@ -528,7 +528,7 @@
   a device with finite-shots.
   [(#1588)](https://github.com/PennyLaneAI/pennylane/pull/1588)
 
-* The class `qml.Interferometer` is deprecated and will be renamed `qml.InterferometerUnitary`
+* The class `qp.Interferometer` is deprecated and will be renamed `qp.InterferometerUnitary`
   after one release cycle.
   [(#1546)](https://github.com/PennyLaneAI/pennylane/pull/1546)
 
@@ -543,7 +543,7 @@
 * Fixed a bug with shot vectors and `Device` base class.
   [(#1666)](https://github.com/PennyLaneAI/pennylane/pull/1666)
 
-* Fixed a bug where `@jax.jit` would fail on a QNode that used `qml.QubitStateVector`.
+* Fixed a bug where `@jax.jit` would fail on a QNode that used `qp.QubitStateVector`.
   [(#1649)](https://github.com/PennyLaneAI/pennylane/pull/1649)
 
 * Fixed a bug related to an edge case of single-qubit `zyz_decomposition` when
@@ -559,7 +559,7 @@
 * Dask and CVXPY dependent tests are skipped if those packages are not installed.
 [(#1617)](https://github.com/PennyLaneAI/pennylane/pull/1617)
 
-* The `qml.layer` template now works with tensorflow variables.
+* The `qp.layer` template now works with tensorflow variables.
 [(#1615)](https://github.com/PennyLaneAI/pennylane/pull/1615)
 
 * Remove `QFT` from possible operations in `default.qubit` and `default.mixed`.
@@ -574,10 +574,10 @@
 
 <h3>Documentation</h3>
 
-* The `qml.Identity` operation is placed under the sections Qubit observables and CV observables.
+* The `qp.Identity` operation is placed under the sections Qubit observables and CV observables.
   [(#1576)](https://github.com/PennyLaneAI/pennylane/pull/1576)
 
-* Updated the documentation of `qml.grouping`, `qml.kernels` and `qml.qaoa` modules to present
+* Updated the documentation of `qp.grouping`, `qp.kernels` and `qp.qaoa` modules to present
   the list of functions first followed by the technical details of the module.
   [(#1581)](https://github.com/PennyLaneAI/pennylane/pull/1581)
 

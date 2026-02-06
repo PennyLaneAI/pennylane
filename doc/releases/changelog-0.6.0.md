@@ -43,7 +43,7 @@
   than the previously used `scipy.linalg.pinv`.
   [(#331)](https://github.com/XanaduAI/pennylane/pull/331)
 
-* The deprecated `qml.expval.Observable` syntax has been removed.
+* The deprecated `qp.expval.Observable` syntax has been removed.
   [(#267)](https://github.com/XanaduAI/pennylane/pull/267)
 
 * Remainder of the unittest-style tests were ported to pytest.

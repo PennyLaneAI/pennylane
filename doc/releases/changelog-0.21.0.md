@@ -17,17 +17,17 @@
   # molecular geometry
   symbols = ["He", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
-  mol = qml.hf.Molecule(symbols, geometry, charge=1)
+  mol = qp.hf.Molecule(symbols, geometry, charge=1)
 
   # generate the qubit Hamiltonian
-  H = qml.hf.generate_hamiltonian(mol)(geometry)
+  H = qp.hf.generate_hamiltonian(mol)(geometry)
 
   # determine Hamiltonian symmetries
-  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  opt_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
+  generators, paulix_ops = qp.hf.generate_symmetries(H, len(H.wires))
+  opt_sector = qp.hf.optimal_sector(H, generators, mol.n_electrons)
 
   # taper the Hamiltonian
-  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
+  H_tapered = qp.hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
   ```
 
   We can compare the number of qubits required by the original Hamiltonian
@@ -46,7 +46,7 @@
   n_elec = mol.n_electrons
   n_qubits = mol.n_orbitals * 2
 
-  hf_tapered = qml.hf.transform_hf(
+  hf_tapered = qp.hf.transform_hf(
       generators, paulix_ops, opt_sector, n_elec, n_qubits
   )
   ```
@@ -59,62 +59,62 @@
 
 * Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented
-  using the new `qml.MPS` template, based on the work
+  using the new `qp.MPS` template, based on the work
   [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
   [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
   ```python
   def block(weights, wires):
-      qml.CNOT(wires=[wires[0], wires[1]])
-      qml.RY(weights[0], wires=wires[0])
-      qml.RY(weights[1], wires=wires[1])
+      qp.CNOT(wires=[wires[0], wires[1]])
+      qp.RY(weights[0], wires=wires[0])
+      qp.RY(weights[1], wires=wires[1])
 
   n_wires = 4
   n_block_wires = 2
   n_params_block = 2
   template_weights = np.array([[0.1, -0.3], [0.4, 0.2], [-0.15, 0.5]], requires_grad=True)
 
-  dev = qml.device("default.qubit", wires=range(n_wires))
+  dev = qp.device("default.qubit", wires=range(n_wires))
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(weights):
-      qml.MPS(range(n_wires), n_block_wires, block, n_params_block, weights)
-      return qml.expval(qml.PauliZ(wires=n_wires - 1))
+      qp.MPS(range(n_wires), n_block_wires, block, n_params_block, weights)
+      return qp.expval(qp.PauliZ(wires=n_wires - 1))
   ```
 
   The resulting circuit is:
   ```pycon
-  >>> print(qml.draw(circuit, expansion_strategy="device")(template_weights))
+  >>> print(qp.draw(circuit, expansion_strategy="device")(template_weights))
   0: ──╭C──RY(0.1)───────────────────────────────┤
   1: ──╰X──RY(-0.3)──╭C──RY(0.4)─────────────────┤
   2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
   3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
   ```
 
-* Added a template for tree tensor networks, `qml.TTN`.
+* Added a template for tree tensor networks, `qp.TTN`.
   [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
   ```python
   def block(weights, wires):
-      qml.CNOT(wires=[wires[0], wires[1]])
-      qml.RY(weights[0], wires=wires[0])
-      qml.RY(weights[1], wires=wires[1])
+      qp.CNOT(wires=[wires[0], wires[1]])
+      qp.RY(weights[0], wires=wires[0])
+      qp.RY(weights[1], wires=wires[1])
 
   n_wires = 4
   n_block_wires = 2
   n_params_block = 2
-  n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+  n_blocks = qp.MPS.get_n_blocks(range(n_wires), n_block_wires)
   template_weights = [[0.1, -0.3]] * n_blocks
 
-  dev = qml.device("default.qubit", wires=range(n_wires))
+  dev = qp.device("default.qubit", wires=range(n_wires))
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(template_weights):
-      qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
-      return qml.expval(qml.PauliZ(wires=n_wires - 1))
+      qp.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+      return qp.expval(qp.PauliZ(wires=n_wires - 1))
   ```
   The resulting circuit is:
   ```pycon
-  >>> print(qml.draw(circuit, expansion_strategy="device")(template_weights))
+  >>> print(qp.draw(circuit, expansion_strategy="device")(template_weights))
   0: ──╭C──RY(0.1)─────────────────┤
   1: ──╰X──RY(-0.3)──╭C──RY(0.1)───┤
   2: ──╭C──RY(0.1)───│─────────────┤
@@ -138,23 +138,23 @@
 
   Consider the QNode
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  dev = qp.device("default.qubit", wires=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def qnode(x, Y):
-      qml.RX(2.5 * x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      qml.RZ(0.3 * Y[0], wires=0)
-      qml.CRY(1.1 * Y[1], wires=[1, 0])
-      return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+      qp.RX(2.5 * x, wires=0)
+      qp.CNOT(wires=[0, 1])
+      qp.RZ(0.3 * Y[0], wires=0)
+      qp.CRY(1.1 * Y[1], wires=[1, 0])
+      return qp.expval(qp.PauliX(0) @ qp.PauliZ(1))
 
   x = np.array(0.8, requires_grad=True)
   Y = np.array([-0.2, 1.5], requires_grad=True)
   ```
 
-  Its frequency spectra can be easily obtained via `qml.fourier.qnode_spectrum`:
+  Its frequency spectra can be easily obtained via `qp.fourier.qnode_spectrum`:
   ```pycon
-  >>> spectra = qml.fourier.qnode_spectrum(qnode)(x, Y)
+  >>> spectra = qp.fourier.qnode_spectrum(qnode)(x, Y)
   >>> spectra
   {'x': {(): [-2.5, 0.0, 2.5]},
    'Y': {(0,): [-0.3, 0.0, 0.3], (1,): [-1.1, -0.55, 0.0, 0.55, 1.1]}}
@@ -165,7 +165,7 @@
   each step to the initial cost.
   ```pycon
   >>> cost_init = qnode(x, Y)
-  >>> opt = qml.RotosolveOptimizer()
+  >>> opt = qp.RotosolveOptimizer()
   >>> for _ in range(2):
   ...     x, Y = opt.step(qnode, x, Y, spectra=spectra)
   ...     print(f"New cost: {np.round(qnode(x, Y), 3)}; Initial cost: {np.round(cost_init, 3)}")
@@ -178,7 +178,7 @@
   ```pycon
   >>> x = np.array(0.8, requires_grad=True)
   >>> Y = np.array([-0.2, 1.5], requires_grad=True)
-  >>> opt = qml.RotosolveOptimizer()
+  >>> opt = qp.RotosolveOptimizer()
   >>> for _ in range(2):
   ...     (x, Y), history = opt.step(qnode, x, Y, spectra=spectra, full_output=True)
   ...     print(f"New cost: {np.round(qnode(x, Y), 3)} reached via substeps {np.round(history, 3)}")
@@ -196,23 +196,23 @@
   [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
 
   Vector-valued QNodes include those with:
-  * `qml.probs`;
-  * `qml.state`;
-  * `qml.sample` or
-  * multiple `qml.expval` / `qml.var` measurements.
+  * `qp.probs`;
+  * `qp.state`;
+  * `qp.sample` or
+  * multiple `qp.expval` / `qp.var` measurements.
 
   Consider a QNode that returns basis-state probabilities:
   ```python
-  dev = qml.device('default.qubit', wires=2)
+  dev = qp.device('default.qubit', wires=2)
   x = jnp.array(0.543)
   y = jnp.array(-0.654)
 
-  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  @qp.qnode(dev, diff_method="parameter-shift", interface="jax")
   def circuit(x, y):
-      qml.RX(x, wires=[0])
-      qml.RY(y, wires=[1])
-      qml.CNOT(wires=[0, 1])
-      return qml.probs(wires=[1])
+      qp.RX(x, wires=[0])
+      qp.RY(y, wires=[1])
+      qp.CNOT(wires=[0, 1])
+      return qp.probs(wires=[1])
   ```
   The QNode can be evaluated and its jacobian can be computed:
   ```pycon
@@ -227,7 +227,7 @@
 <h4>Speedier quantum natural gradient ⚡</h4>
 
 * A new function for computing the metric tensor on simulators,
-  `qml.adjoint_metric_tensor`, has been added, that uses classically
+  `qp.adjoint_metric_tensor`, has been added, that uses classically
   efficient methods to massively improve performance.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
@@ -245,27 +245,27 @@
   for measurements simulation with `shots!=None`.
 
   ```python
-  dev = qml.device("default.qubit", wires=3)
+  dev = qp.device("default.qubit", wires=3)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(x, y):
-      qml.Rot(*x[0], wires=0)
-      qml.Rot(*x[1], wires=1)
-      qml.Rot(*x[2], wires=2)
-      qml.CNOT(wires=[0, 1])
-      qml.CNOT(wires=[1, 2])
-      qml.CNOT(wires=[2, 0])
-      qml.RY(y[0], wires=0)
-      qml.RY(y[1], wires=1)
-      qml.RY(y[0], wires=2)
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(1))
+      qp.Rot(*x[0], wires=0)
+      qp.Rot(*x[1], wires=1)
+      qp.Rot(*x[2], wires=2)
+      qp.CNOT(wires=[0, 1])
+      qp.CNOT(wires=[1, 2])
+      qp.CNOT(wires=[2, 0])
+      qp.RY(y[0], wires=0)
+      qp.RY(y[1], wires=1)
+      qp.RY(y[0], wires=2)
+      return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1)), qp.expval(qp.PauliY(1))
 
   x = np.array([[0.2, 0.4, -0.1], [-2.1, 0.5, -0.2], [0.1, 0.7, -0.6]], requires_grad=False)
   y = np.array([1.3, 0.2], requires_grad=True)
   ```
 
   ```pycon
-  >>> qml.adjoint_metric_tensor(circuit)(x, y)
+  >>> qp.adjoint_metric_tensor(circuit)(x, y)
   tensor([[ 0.25495723, -0.07086695],
           [-0.07086695,  0.24945606]], requires_grad=True)
   ```
@@ -284,7 +284,7 @@
 
 <h4>Compute the Hessian on hardware ⬆️</h4>
 
-* A new gradient transform `qml.gradients.param_shift_hessian` has been added
+* A new gradient transform `qp.gradients.param_shift_hessian` has been added
   to directly compute the Hessian (2nd order partial derivative matrix) of
   QNodes on hardware.
   [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
@@ -297,22 +297,22 @@
   differentiable on all supported PennyLane interfaces.
 
   Additionally, the parameter-shift Hessian comes with a new batch transform decorator
-  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian functions.
+  `@qp.gradients.hessian_transform`, which can be used to create custom Hessian functions.
 
   The following code demonstrates how to use the parameter-shift Hessian:
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  dev = qp.device("default.qubit", wires=2)
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit(x):
-      qml.RX(x[0], wires=0)
-      qml.RY(x[1], wires=0)
-      return qml.expval(qml.PauliZ(0))
+      qp.RX(x[0], wires=0)
+      qp.RY(x[1], wires=0)
+      return qp.expval(qp.PauliZ(0))
 
   x = np.array([0.1, 0.2], requires_grad=True)
 
-  hessian = qml.gradients.param_shift_hessian(circuit)(x)
+  hessian = qp.gradients.param_shift_hessian(circuit)(x)
   ```
   ```pycon
   >>> hessian
@@ -322,7 +322,7 @@
 
 <h3>Improvements</h3>
 
-* The `qml.transforms.insert` transform now supports adding operation after or
+* The `qp.transforms.insert` transform now supports adding operation after or
   before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
@@ -356,7 +356,7 @@
   when constructing a QNode.
   [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
 
-* The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
+* The new function `qp.drawer.tape_text` produces a string drawing of a tape. This function
   differs in implementation and minor stylistic details from the old string circuit drawing
   infrastructure.
   [(#1885)](https://github.com/PennyLaneAI/pennylane/pull/1885)
@@ -365,11 +365,11 @@
   detected, instead of silently skipping update steps for all arguments.
   [(#2109)](https://github.com/PennyLaneAI/pennylane/pull/2109)
 
-* The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
+* The function `qp.math.safe_squeeze` is introduced and `gradient_transform` allows
   for QNode argument axes of size `1`.
   [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
 
-  `qml.math.safe_squeeze` wraps `qml.math.squeeze`, with slight modifications:
+  `qp.math.safe_squeeze` wraps `qp.math.squeeze`, with slight modifications:
 
   - When provided the `axis` keyword argument, axes that do not have size `1` will be
     ignored, instead of raising an error.
@@ -381,27 +381,27 @@
   is not callable.
   [(#2060)](https://github.com/PennyLaneAI/pennylane/pull/2060)
 
-  An example is a list of operations to which one might apply `qml.adjoint`:
+  An example is a list of operations to which one might apply `qp.adjoint`:
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
+  dev = qp.device("default.qubit", wires=2)
+  @qp.qnode(dev)
   def circuit_wrong(params):
       # Note the difference:                  v                         v
-      qml.adjoint(qml.templates.AngleEmbedding(params, wires=dev.wires))
-      return qml.state()
+      qp.adjoint(qp.templates.AngleEmbedding(params, wires=dev.wires))
+      return qp.state()
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def circuit_correct(params):
       # Note the difference:                  v                         v
-      qml.adjoint(qml.templates.AngleEmbedding)(params, wires=dev.wires)
-      return qml.state()
+      qp.adjoint(qp.templates.AngleEmbedding)(params, wires=dev.wires)
+      return qp.state()
 
   params = list(range(1, 3))
   ```
 
   Evaluating `circuit_wrong(params)` now raises a `ValueError` and if we apply
-  `qml.adjoint` correctly, we get
+  `qp.adjoint` correctly, we get
 
   ```pycon
   >>> circuit_correct(params)
@@ -420,7 +420,7 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
-* `qml.BasisStatePreparation` now supports the `batch_params` decorator.
+* `qp.BasisStatePreparation` now supports the `batch_params` decorator.
   [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
 
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
@@ -432,7 +432,7 @@
   tensors handled by the interface:
 
   ```pycon
-  >>> @qml.math.multi_dispatch(argnum=[0, 1])
+  >>> @qp.math.multi_dispatch(argnum=[0, 1])
   ... def some_function(tensor1, tensor2, option, like):
   ...     # the interface string is stored in ``like``.
   ...     ...
@@ -442,7 +442,7 @@
 
   ```pycon
   >>> def some_function(tensor1, tensor2, option):
-  ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
+  ...     interface = qp.math._multi_dispatch([tensor1, tensor2])
   ...     ...
   ```
 
@@ -469,32 +469,32 @@
   ```python
   from pennylane import numpy as np
 
-  @qml.qnode(qml.device("default.qubit", wires=2))
+  @qp.qnode(qp.device("default.qubit", wires=2))
   def circuit(x):
     ...
 
   x = np.array([0.1, 0.2], requires_grad=True)
-  qml.grad(circuit)(x)
+  qp.grad(circuit)(x)
   ```
 
-  For the `qml.grad` and `qml.jacobian` functions, trainability can alternatively be
+  For the `qp.grad` and `qp.jacobian` functions, trainability can alternatively be
   indicated via the `argnum` keyword:
 
   ```python
   import numpy as np
 
-  @qml.qnode(qml.device("default.qubit", wires=2))
+  @qp.qnode(qp.device("default.qubit", wires=2))
   def circuit(hyperparam, param):
     ...
 
   x = np.array([0.1, 0.2])
-  qml.grad(circuit, argnum=1)(0.5, x)
+  qp.grad(circuit, argnum=1)(0.5, x)
   ```
 
-* `qml.jacobian` now follows a different convention regarding its output shape.
+* `qp.jacobian` now follows a different convention regarding its output shape.
   [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
 
-  Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
+  Previously, `qp.jacobian` would attempt to stack the Jacobian for multiple
   QNode arguments, which succeeded whenever the arguments have the same shape.
   In this case, the stacked Jacobian would also be transposed, leading to the
   output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
@@ -512,17 +512,17 @@
   with respect to which the differentiation takes place, or if an integer
   is provided as `argnum`.
 
-  A workaround that allowed `qml.jacobian` to differentiate multiple QNode arguments
+  A workaround that allowed `qp.jacobian` to differentiate multiple QNode arguments
   will no longer support higher-order derivatives. In such cases, combining multiple
   arguments into a single array is recommended.
 
-* `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
+* `qp.metric_tensor`, `qp.adjoint_metric_tensor` and `qp.transforms.classical_jacobian`
   now follow a different convention regarding their output shape when being used
   with the Autograd interface
   [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
 
   See the previous entry for details. This breaking change immediately follows from
-  the change in `qml.jacobian` whenever `hybrid=True` is used in the above methods.
+  the change in `qp.jacobian` whenever `hybrid=True` is used in the above methods.
 
 * The behaviour of `RotosolveOptimizer` has been changed regarding
   its keyword arguments.
@@ -539,7 +539,7 @@
   each entry in turn being either an `int` or a `list` of `int` entries.
   Now the expected structure is a nested dictionary, matching the
   formatting expected by
-  [qml.fourier.reconstruct](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.fourier.reconstruct.html)
+  [qp.fourier.reconstruct](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.fourier.reconstruct.html)
   This also matches the expected formatting of the new keyword arguments
   `spectra` and `shifts`.
 
@@ -554,14 +554,14 @@
   Going forward, the preferred way is to use the caching abilities of the
   QNode:
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  dev = qp.device("default.qubit", wires=2)
 
   cache = {}
 
-  @qml.qnode(dev, diff_method='parameter-shift', cache=cache)
+  @qp.qnode(dev, diff_method='parameter-shift', cache=cache)
   def circuit():
-      qml.RY(0.345, wires=0)
-      return qml.expval(qml.PauliZ(0))
+      qp.RY(0.345, wires=0)
+      return qp.expval(qp.PauliZ(0))
   ```
   ```pycon
   >>> for _ in range(10):
@@ -632,7 +632,7 @@
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
 * Fixes a bug which allows using `jax.jit` to be compatible with circuits
-  which return `qml.probs` when the `default.qubit.jax` is provided with a custom shot
+  which return `qp.probs` when the `default.qubit.jax` is provided with a custom shot
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 

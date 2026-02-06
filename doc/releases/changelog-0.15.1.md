@@ -13,7 +13,7 @@
     rule currently, so raises an error if asked to differentiate
     any unsupported gates (such as the controlled rotation gates).
 
-* A bug which resulted in `qml.adjoint()` and `qml.inv()` failing to work with
+* A bug which resulted in `qp.adjoint()` and `qp.inv()` failing to work with
   templates has been fixed.
   [(#1243)](https://github.com/PennyLaneAI/pennylane/pull/1243)
 

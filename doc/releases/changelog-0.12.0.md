@@ -15,19 +15,19 @@
 
   The device can be initialized as
   ```pycon
-  >>> dev = qml.device("default.mixed", wires=1)
+  >>> dev = qp.device("default.mixed", wires=1)
   ```
 
   This allows the construction of QNodes that include non-unitary operations,
   such as noisy channels:
 
   ```pycon
-  >>> @qml.qnode(dev)
+  >>> @qp.qnode(dev)
   ... def circuit(params):
-  ...     qml.RX(params[0], wires=0)
-  ...     qml.RY(params[1], wires=0)
-  ...     qml.AmplitudeDamping(0.5, wires=0)
-  ...     return qml.expval(qml.PauliZ(0))
+  ...     qp.RX(params[0], wires=0)
+  ...     qp.RY(params[1], wires=0)
+  ...     qp.AmplitudeDamping(0.5, wires=0)
+  ...     return qp.expval(qp.PauliZ(0))
   >>> print(circuit([0.54, 0.12]))
   0.9257702929524184
   >>> print(circuit([0, np.pi]))
@@ -48,7 +48,7 @@
 
     ```python
     from pennylane.grouping import optimize_measurements
-    h, nr_qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
+    h, nr_qubits = qp.qchem.molecular_hamiltonian("h2", "h2.xyz")
     rotations, grouped_ops, grouped_coeffs = optimize_measurements(h.ops, h.coeffs, grouping="qwc")
     ```
 
@@ -85,8 +85,8 @@
     >>> from pennylane.grouping import pauli_to_binary
     >>> from pennylane.wires import Wires
     >>> wire_map = {Wires('a'): 0, Wires('b'): 1}
-    >>> pauli_vec_1 = pauli_to_binary(qml.PauliX('a') @ qml.PauliY('b'))
-    >>> pauli_vec_2 = pauli_to_binary(qml.PauliZ('a') @ qml.PauliZ('b'))
+    >>> pauli_vec_1 = pauli_to_binary(qp.PauliX('a') @ qp.PauliY('b'))
+    >>> pauli_vec_2 = pauli_to_binary(qp.PauliZ('a') @ qp.PauliZ('b'))
     >>> pauli_vec_1
     [1. 1. 0. 1.]
     >>> pauli_vec_2
@@ -108,22 +108,22 @@
 
 <h4>Returning the quantum state from simulators</h4>
 
-* The quantum state of a QNode can now be returned using the `qml.state()` return function.
+* The quantum state of a QNode can now be returned using the `qp.state()` return function.
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
 
   ```python
   import pennylane as qp
 
-  dev = qml.device("default.qubit", wires=3)
-  qml.enable_tape()
+  dev = qp.device("default.qubit", wires=3)
+  qp.enable_tape()
 
-  @qml.qnode(dev)
+  @qp.qnode(dev)
   def qfunc(x, y):
-      qml.RZ(x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      qml.RY(y, wires=1)
-      qml.CNOT(wires=[0, 2])
-      return qml.state()
+      qp.RZ(x, wires=0)
+      qp.CNOT(wires=[0, 1])
+      qp.RY(y, wires=1)
+      qp.CNOT(wires=[0, 2])
+      return qp.state()
 
   >>> qfunc(0.56, 0.1)
   array([0.95985437-0.27601028j, 0.        +0.j        ,
@@ -145,9 +145,9 @@
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
   [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
 
-* The controlled-Y operation is now available via `qml.CY`. For devices that do
+* The controlled-Y operation is now available via `qp.CY`. For devices that do
   not natively support the controlled-Y operation, it will be decomposed
-  into `qml.RY`, `qml.CNOT`, and `qml.S` operations.
+  into `qp.RY`, `qp.CNOT`, and `qp.S` operations.
   [(#806)](https://github.com/PennyLaneAI/pennylane/pull/806)
 
 <h4>Preview the next-generation PennyLane QNode</h4>
@@ -191,18 +191,18 @@
   existing QNode. [Feedback and bug reports](https://github.com/PennyLaneAI/pennylane/issues) are
   encouraged and will help improve the new tape mode.
 
-  Tape mode can be enabled globally via the `qml.enable_tape` function, without changing your
+  Tape mode can be enabled globally via the `qp.enable_tape` function, without changing your
   PennyLane code:
 
   ```python
-  qml.enable_tape()
-  dev = qml.device("default.qubit", wires=1)
+  qp.enable_tape()
+  dev = qp.device("default.qubit", wires=1)
 
-  @qml.qnode(dev, interface="tf")
+  @qp.qnode(dev, interface="tf")
   def circuit(p):
       print("Parameter value:", p)
-      qml.RX(tf.sin(p[0])**2 + p[1], wires=0)
-      return qml.expval(qml.PauliZ(0))
+      qp.RX(tf.sin(p[0])**2 + p[1], wires=0)
+      return qp.expval(qp.PauliZ(0))
   ```
 
   For more details, please see the [tape mode
@@ -218,15 +218,15 @@
   Caching is available by passing a `caching` argument to the QNode:
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
-  qml.enable_tape()
+  dev = qp.device("default.qubit", wires=2)
+  qp.enable_tape()
 
-  @qml.qnode(dev, caching=10)  # cache up to 10 evaluations
+  @qp.qnode(dev, caching=10)  # cache up to 10 evaluations
   def qfunc(x):
-      qml.RX(x, wires=0)
-      qml.RX(0.3, wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(1))
+      qp.RX(x, wires=0)
+      qp.RX(0.3, wires=1)
+      qp.CNOT(wires=[0, 1])
+      return qp.expval(qp.PauliZ(1))
 
   qfunc(0.1)  # first evaluation executes on the device
   qfunc(0.1)  # second evaluation accesses the cached result
@@ -250,7 +250,7 @@
   Hamiltonians can now easily be defined as sums of observables:
 
   ```pycon3
-  >>> H = 3 * qml.PauliZ(0) - (qml.PauliX(0) @ qml.PauliX(1)) + qml.Hamiltonian([4], [qml.PauliZ(0)])
+  >>> H = 3 * qp.PauliZ(0) - (qp.PauliX(0) @ qp.PauliX(1)) + qp.Hamiltonian([4], [qp.PauliZ(0)])
   >>> print(H)
   (7.0) [Z0] + (-1.0) [X0 X1]
   ```
@@ -260,15 +260,15 @@
   [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
 
   ```pycon3
-  >>> H = qml.Hamiltonian([1], [qml.PauliZ(0)])
-  >>> obs = qml.PauliZ(0) @ qml.Identity(1)
+  >>> H = qp.Hamiltonian([1], [qp.PauliZ(0)])
+  >>> obs = qp.PauliZ(0) @ qp.Identity(1)
   >>> print(H.compare(obs))
   True
   ```
 
   ```pycon3
-  >>> H = qml.Hamiltonian([2], [qml.PauliZ(0)])
-  >>> obs = qml.PauliZ(1) @ qml.Identity(0)
+  >>> H = qp.Hamiltonian([2], [qp.PauliZ(0)])
+  >>> obs = qp.PauliZ(1) @ qp.Identity(0)
   >>> print(H.compare(obs))
   False
   ```
@@ -277,13 +277,13 @@
   [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
 
   ```pycon3
-  >>> H = qml.Hamiltonian([1, 2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.Identity(1)])
+  >>> H = qp.Hamiltonian([1, 2], [qp.PauliZ(0), qp.PauliZ(0) @ qp.Identity(1)])
   >>> H.simplify()
   >>> print(H)
   (3.0) [Z0]
   ```
 
-* Added a new bit-flip mixer to the `qml.qaoa` module.
+* Added a new bit-flip mixer to the `qp.qaoa` module.
   [(#774)](https://github.com/PennyLaneAI/pennylane/pull/774)
 
 * Summation of two `Wires` objects is now supported and will return
@@ -340,7 +340,7 @@
 
 <h3>Documentation</h3>
 
-* Equations have been added to the `qml.sample` and `qml.probs` docstrings
+* Equations have been added to the `qp.sample` and `qp.probs` docstrings
   to clarify the mathematical foundation of the performed measurements.
   [(#843)](https://github.com/PennyLaneAI/pennylane/pull/843)
 

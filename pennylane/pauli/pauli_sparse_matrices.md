@@ -53,7 +53,7 @@ Z &= \begin{cases}
 
 $Z$ and $I$ have the same structure, and the same happens with $X$ and $Y$. All of them have the same $\texttt{row}=[0, 1, 2]$, as all the matrices have a unique NNZ element in every row.
 
-Let's look at a simple example to illustrate the properties of the tensor product of Pauli matrices. Consider the Pauli word $XZI$, which can be created in PennyLane with `qml.pauli.PauliWord({0: "X", 1: "Z", 2: "I"})`. The corresponding operator is obtained by taking the tensor product of its elements:
+Let's look at a simple example to illustrate the properties of the tensor product of Pauli matrices. Consider the Pauli word $XZI$, which can be created in PennyLane with `qp.pauli.PauliWord({0: "X", 1: "Z", 2: "I"})`. The corresponding operator is obtained by taking the tensor product of its elements:
 
 $$
 XZI = \begin{pmatrix}
