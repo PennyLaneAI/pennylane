@@ -419,7 +419,7 @@ class TestOpenQasm:
             return qml.expval(qml.PauliZ(0))
 
         qasm = qml.to_openqasm(circuit, measure_all=False)()
-        assert "creg c[1]" in qasm
+        assert "creg c[1];" in qasm
 
     def test_mid_circuit_measurements_with_measure_all_false(self):
         """Test circuits with mid-circuit measurements generate a dedicated classical
@@ -435,7 +435,7 @@ class TestOpenQasm:
         qasm = qml.to_openqasm(circuit, measure_all=False)()
 
         assert "creg c[" not in qasm
-        assert "creg mcms[" in qasm
+        assert "creg mcms[1];" in qasm
 
     def test_mid_and_final_measurements_with_measure_all_false(self):
         """Test circuits with both mid-circuit and terminal measurements generate
@@ -450,5 +450,5 @@ class TestOpenQasm:
 
         qasm = qml.to_openqasm(circuit, measure_all=False)()
 
-        assert "creg c[" in qasm
-        assert "creg mcms[" in qasm
+        assert "creg c[1];" in qasm
+        assert "creg mcms[1];" in qasm
