@@ -269,8 +269,9 @@ def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_w
     """A convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
+    num_target_wires = len(wires) - len(control_wires)
     qml.ops.Controlled(
-        qml.QubitUnitary(U, wires=wires[: len(wires) - len(control_wires)]),
+        qml.QubitUnitary(U, wires=wires[-num_target_wires:]),
         control_wires=control_wires,
         control_values=control_values,
         work_wires=work_wires,
