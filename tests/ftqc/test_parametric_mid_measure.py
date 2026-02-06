@@ -149,52 +149,52 @@ class TestParametricMidMeasure:
         "plane, measurement_angle, corresponding_obs",
         [
             # XY measurements
-            ("XY", 0, qml.X(0)),
-            ("XY", np.pi / 4, qml.X(0) + qml.Y(0)),
-            ("XY", np.pi / 2, qml.Y(0)),
-            ("XY", 3 * np.pi / 4, qml.Y(0) - qml.X(0)),
-            ("XY", np.pi, -qml.X(0)),
-            ("XY", 5 * np.pi / 4, -qml.X(0) - qml.Y(0)),
-            ("XY", -3 * np.pi / 4, -qml.X(0) - qml.Y(0)),
+            ("XY", 0, qp.X(0)),
+            ("XY", np.pi / 4, qp.X(0) + qp.Y(0)),
+            ("XY", np.pi / 2, qp.Y(0)),
+            ("XY", 3 * np.pi / 4, qp.Y(0) - qp.X(0)),
+            ("XY", np.pi, -qp.X(0)),
+            ("XY", 5 * np.pi / 4, -qp.X(0) - qp.Y(0)),
+            ("XY", -3 * np.pi / 4, -qp.X(0) - qp.Y(0)),
             # ZX measurements
-            ("ZX", 0, qml.Z(0)),
-            ("ZX", np.pi / 4, qml.X(0) + qml.Z(0)),
-            ("ZX", np.pi / 2, qml.X(0)),
-            ("ZX", 3 * np.pi / 4, qml.X(0) - qml.Z(0)),
-            ("ZX", np.pi, -qml.Z(0)),
-            ("ZX", 5 * np.pi / 4, -qml.X(0) - qml.Z(0)),
-            ("ZX", -3 * np.pi / 4, -qml.X(0) - qml.Z(0)),
+            ("ZX", 0, qp.Z(0)),
+            ("ZX", np.pi / 4, qp.X(0) + qp.Z(0)),
+            ("ZX", np.pi / 2, qp.X(0)),
+            ("ZX", 3 * np.pi / 4, qp.X(0) - qp.Z(0)),
+            ("ZX", np.pi, -qp.Z(0)),
+            ("ZX", 5 * np.pi / 4, -qp.X(0) - qp.Z(0)),
+            ("ZX", -3 * np.pi / 4, -qp.X(0) - qp.Z(0)),
             # YZ measurements
-            ("YZ", 0, qml.Z(0)),
-            ("YZ", np.pi / 4, -qml.Y(0) + qml.Z(0)),
-            ("YZ", np.pi / 2, -qml.Y(0)),
-            ("YZ", 3 * np.pi / 4, -qml.Y(0) - qml.Z(0)),
-            ("YZ", np.pi, -qml.Z(0)),
-            ("YZ", 5 * np.pi / 4, qml.Y(0) - qml.Z(0)),
-            ("YZ", -3 * np.pi / 4, qml.Y(0) - qml.Z(0)),
+            ("YZ", 0, qp.Z(0)),
+            ("YZ", np.pi / 4, -qp.Y(0) + qp.Z(0)),
+            ("YZ", np.pi / 2, -qp.Y(0)),
+            ("YZ", 3 * np.pi / 4, -qp.Y(0) - qp.Z(0)),
+            ("YZ", np.pi, -qp.Z(0)),
+            ("YZ", 5 * np.pi / 4, qp.Y(0) - qp.Z(0)),
+            ("YZ", -3 * np.pi / 4, qp.Y(0) - qp.Z(0)),
         ],
     )
     def test_diagonalizing_gates(self, plane, measurement_angle, corresponding_obs):
         """Test that diagonalizing a parametrized mid-circuit measurement and measuring
         in the computational basis corresponds to the expected observable"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="tree-traversal")
+        @qp.qnode(dev, mcm_method="tree-traversal")
         def circ(state, angle):
-            qml.StatePrep(state, wires=0)
+            qp.StatePrep(state, wires=0)
             mp = ParametricMidMeasure([0], angle=angle, plane=plane)
             assert mp.has_diagonalizing_gates
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         input_state = np.random.random(2) + 1j * np.random.random(2)
         input_state = input_state / np.linalg.norm(input_state)
 
         res = circ(input_state, measurement_angle)
 
-        expected_res = apply_qubit_measurement(qml.expval(corresponding_obs), input_state)
-        if isinstance(corresponding_obs, qml.ops.Sum):
+        expected_res = apply_qubit_measurement(qp.expval(corresponding_obs), input_state)
+        if isinstance(corresponding_obs, qp.ops.Sum):
             expected_res = expected_res / np.sqrt(2)
 
         assert np.allclose(res, expected_res)
@@ -318,15 +318,15 @@ class TestMidMeasureXAndY:
         """Test that diagonalizing a XMidMeasure and measuring in the computational
         basis corresponds to the expected observable"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="tree-traversal")
+        @qp.qnode(dev, mcm_method="tree-traversal")
         def circ(state):
-            qml.StatePrep(state, wires=0)
+            qp.StatePrep(state, wires=0)
             mp = XMidMeasure([0])
             assert mp.has_diagonalizing_gates
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         rng = np.random.default_rng(seed=111)
         input_state = rng.random(2) + 1j * rng.random(2)
@@ -334,24 +334,24 @@ class TestMidMeasureXAndY:
 
         res = circ(input_state)
 
-        expected_res = apply_qubit_measurement(qml.expval(qml.X(0)), input_state)
+        expected_res = apply_qubit_measurement(qp.expval(qp.X(0)), input_state)
 
         assert np.allclose(res, expected_res)
-        assert XMidMeasure([0]).diagonalizing_gates() == [qml.H(0)]
+        assert XMidMeasure([0]).diagonalizing_gates() == [qp.H(0)]
 
     def test_diagonalizing_gates_y(self):
         """Test that diagonalizing a YMidMeasure and measuring in the computational
         basis corresponds to the expected observable"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="tree-traversal")
+        @qp.qnode(dev, mcm_method="tree-traversal")
         def circ(state):
-            qml.StatePrep(state, wires=0)
+            qp.StatePrep(state, wires=0)
             mp = YMidMeasure([0])
             assert mp.has_diagonalizing_gates
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         rng = np.random.default_rng(seed=111)
         input_state = rng.random(2) + 1j * rng.random(2)
@@ -359,10 +359,10 @@ class TestMidMeasureXAndY:
 
         res = circ(input_state)
 
-        expected_res = apply_qubit_measurement(qml.expval(qml.Y(0)), input_state)
+        expected_res = apply_qubit_measurement(qp.expval(qp.Y(0)), input_state)
 
         assert np.allclose(res, expected_res)
-        assert YMidMeasure([0]).diagonalizing_gates() == [qml.adjoint(qml.S(0)), qml.H(0)]
+        assert YMidMeasure([0]).diagonalizing_gates() == [qp.adjoint(qp.S(0)), qp.H(0)]
 
 
 class TestMeasureFunctions:
@@ -380,13 +380,13 @@ class TestMeasureFunctions:
         """Test that measure_arbitrary_basis queues the expected ParametricMidMeasure
         and returns a linked MeasurementValue"""
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             m = measure_arbitrary_basis(
                 wire, angle=angle, plane=plane, reset=reset, postselect=postselect
             )
 
         # a single op is queued
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert len(tape.operations) == 1
         op = tape.operations[0]
 
@@ -409,11 +409,11 @@ class TestMeasureFunctions:
         """Test that measure_arbitrary_basis queues the expected XMidMeasure
         and returns a linked MeasurementValue"""
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             m = measure_x(wire, reset=reset, postselect=postselect)
 
         # a single op is queued
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert len(tape.operations) == 1
         op = tape.operations[0]
 
@@ -434,11 +434,11 @@ class TestMeasureFunctions:
         """Test that measure_arbitrary_basis queues the expected YMidMeasure
         and returns a linked MeasurementValue"""
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             m = measure_y(wire, reset=reset, postselect=postselect)
 
         # a single op is queued
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert len(tape.operations) == 1
         op = tape.operations[0]
 
@@ -483,7 +483,7 @@ class TestMeasureFunctions:
         """Test that the measurement in the computational basis calls the standard
         PennyLane MCM class, and passes through the arguments"""
 
-        m = qml.ftqc.measure_z(0, reset=reset, postselect=postselect)
+        m = qp.ftqc.measure_z(0, reset=reset, postselect=postselect)
 
         assert isinstance(m, MeasurementValue)
 
@@ -508,8 +508,8 @@ class TestMeasureFunctions:
 
         def circ():
             m = meas_func(wire, reset=reset, postselect=postselect)
-            qml.cond(m, qml.X, qml.Y)(0)
-            return qml.expval(qml.Z(2))
+            qp.cond(m, qp.X, qp.Y)(0)
+            return qp.expval(qp.Z(2))
 
         plxpr = jax.make_jaxpr(circ)()
 
@@ -552,9 +552,9 @@ class TestMeasureFunctions:
             m = measure_arbitrary_basis(
                 wire, angle=angle, plane=plane, reset=reset, postselect=postselect
             )
-            qml.cond(m, qml.X, qml.Y)(0)
-            qml.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
-            return qml.expval(qml.Z(2))
+            qp.cond(m, qp.X, qp.Y)(0)
+            qp.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
+            return qp.expval(qp.Z(2))
 
         plxpr = jax.make_jaxpr(circ)()
         assert plxpr.eqns[0].primitive.name == "measure_in_basis"
@@ -607,19 +607,19 @@ class TestDrawParametricMidMeasure:
 
         from matplotlib import pyplot as plt
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         if mp_class == ParametricMidMeasure:
             args = {"wires": Wires([0]), "angle": np.pi / 4, "plane": "XY"}
         else:
             args = {"wires": Wires([0])}
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
             mp_class(**args)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        _, ax = qml.draw_mpl(circ)()
+        _, ax = qp.draw_mpl(circ)()
         assert len(ax.texts) == 2  # one wire label, 1 box label on the MCM
         assert ax.texts[0].get_text() == "0"
         assert ax.texts[1].get_text() == expected_label
@@ -636,19 +636,19 @@ class TestDrawParametricMidMeasure:
 
         from matplotlib import pyplot as plt
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         if mp_class == ParametricMidMeasure:
             args = {"wires": Wires([0]), "angle": np.pi / 4, "plane": "XY"}
         else:
             args = {"wires": Wires([0])}
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
             mp_class(**args, reset=True)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        _, ax = qml.draw_mpl(circ)()
+        _, ax = qp.draw_mpl(circ)()
         assert len(ax.texts) == 3  # one wire label, 1 box label on the MCM, one reset box
 
         assert ax.texts[0].get_text() == "0"
@@ -668,19 +668,19 @@ class TestDrawParametricMidMeasure:
     def test_text_drawer(self, mp_class, expected_string):
         """Test that the text drawer works as expected"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         if mp_class == ParametricMidMeasure:
             args = {"wires": Wires([0]), "angle": np.pi / 4, "plane": "XY"}
         else:
             args = {"wires": Wires([0])}
 
-        @qml.qnode(dev, mcm_method="tree-traversal")
+        @qp.qnode(dev, mcm_method="tree-traversal")
         def circ():
             mp_class(**args)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        assert qml.draw(circ)() == expected_string
+        assert qp.draw(circ)() == expected_string
 
 
 class TestDiagonalizeMCMs:
@@ -688,21 +688,21 @@ class TestDiagonalizeMCMs:
         """Test that the diagonalize_mcms transform leaves standard operations
         and MidMeasure on the tape untouched"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(1.2, 0)
-            m = qml.measure(0)
-            qml.cond(m, qml.RY, qml.RX)(1.2, 0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(1.2, 0)
+            m = qp.measure(0)
+            qp.cond(m, qp.RY, qp.RX)(1.2, 0)
 
-        original_tape = qml.tape.QuantumScript.from_queue(q)
-        (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
-        assert qml.equal(original_tape, new_tape)
+        original_tape = qp.tape.QuantumScript.from_queue(q)
+        (new_tape,), _ = diagonalize_mcms(qp.tape.QuantumScript.from_queue(q))
+        assert qp.equal(original_tape, new_tape)
 
     def test_diagonalize_mcm_transform(self):
         """Test that the diagonalize_mcm transform works as expected on a tape
         containing ParametricMidMeasures"""
 
-        tape = qml.tape.QuantumScript(
-            [qml.RY(np.pi / 4, 0), ParametricMidMeasure(Wires([0]), angle=np.pi, plane="XY")]
+        tape = qp.tape.QuantumScript(
+            [qp.RY(np.pi / 4, 0), ParametricMidMeasure(Wires([0]), angle=np.pi, plane="XY")]
         )
         diagonalizing_gates = tape.operations[1].diagonalizing_gates()
 
@@ -721,7 +721,7 @@ class TestDiagonalizeMCMs:
         """Test that the diagonalize_mcm transform preserves postselet on a diagonalized MCM"""
 
         op = ParametricMidMeasure(Wires([0]), angle=np.pi, plane="XY", postselect=postselect)
-        tape = qml.tape.QuantumScript([op])
+        tape = qp.tape.QuantumScript([op])
         (new_tape,), _ = diagonalize_mcms(tape)
 
         assert isinstance(new_tape.operations[-1], MidMeasure)
@@ -732,7 +732,7 @@ class TestDiagonalizeMCMs:
         """Test that the diagonalize_mcm transform preserves reset on a diagonalized MCM"""
 
         op = ParametricMidMeasure(Wires([0]), angle=np.pi, plane="XY", reset=reset)
-        tape = qml.tape.QuantumScript([op])
+        tape = qp.tape.QuantumScript([op])
         (new_tape,), _ = diagonalize_mcms(tape)
 
         assert isinstance(new_tape.operations[-1], MidMeasure)
@@ -743,16 +743,16 @@ class TestDiagonalizeMCMs:
         conditionally applying two ParametricMidMeasures as the true and false
         condition respectively"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(1.2, 0)
-            m = qml.measure(0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(1.2, 0)
+            m = qp.measure(0)
             cond_measure(
                 m == 1,
                 partial(measure_arbitrary_basis, angle=1.2),
                 partial(measure_arbitrary_basis, angle=-1.2),
             )(wires=2, plane="XY")
 
-        original_tape = qml.tape.QuantumScript.from_queue(q)
+        original_tape = qp.tape.QuantumScript.from_queue(q)
         diag_gates_true = ParametricMidMeasure(
             Wires([2]), angle=1.2, plane="XY"
         ).diagonalizing_gates()
@@ -760,14 +760,14 @@ class TestDiagonalizeMCMs:
             Wires([2]), angle=-1.2, plane="XY"
         ).diagonalizing_gates()
 
-        (new_tape,), _ = diagonalize_mcms(qml.tape.QuantumScript.from_queue(q))
+        (new_tape,), _ = diagonalize_mcms(qp.tape.QuantumScript.from_queue(q))
         assert len(new_tape.operations) == 7
         measurement = new_tape.operations[6]
 
         # conditional diagonalizing gates for the true_cond measurement
         original_meas = original_tape.operations[2]
         for gate, expected_base in zip(new_tape.operations[2:4], diag_gates_true):
-            assert isinstance(gate, qml.ops.Conditional)
+            assert isinstance(gate, qp.ops.Conditional)
             assert gate.base == expected_base
             assert gate.wires == original_meas.wires
             assert gate.meas_val.measurements == original_meas.meas_val.measurements
@@ -776,7 +776,7 @@ class TestDiagonalizeMCMs:
         # conditional diagonalizing gates for the false_cond measurement
         original_meas = original_tape.operations[3]
         for gate, expected_base in zip(new_tape.operations[4:6], diag_gates_false):
-            assert isinstance(gate, qml.ops.Conditional)
+            assert isinstance(gate, qp.ops.Conditional)
             assert gate.base == expected_base
             assert gate.wires == original_meas.wires
             assert gate.meas_val.measurements == original_meas.meas_val.measurements
@@ -788,17 +788,17 @@ class TestDiagonalizeMCMs:
 
     def test_diagonalizing_mcm_used_as_cond(self):
         """Test that the measurements in a ``MeasurementValue`` passed to
-        qml.cond are updated when those measurements are replaced by the
+        qp.cond are updated when those measurements are replaced by the
         diagonalize_mcms transform."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(1.2, 0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(1.2, 0)
             mp = ParametricMidMeasure(0, angle=1.2, plane="YZ")
             mv = MeasurementValue([mp], processing_fn=lambda v: v)
-            # using qml.cond and conditionally applying a gate
-            qml.cond(mv == 0, partial(qml.RX, 1.2), partial(qml.RX, 2.4))(wires=2)
+            # using qp.cond and conditionally applying a gate
+            qp.cond(mv == 0, partial(qp.RX, 1.2), partial(qp.RX, 2.4))(wires=2)
 
-        original_tape = qml.tape.QuantumScript.from_queue(q)
+        original_tape = qp.tape.QuantumScript.from_queue(q)
         old_mp = original_tape.operations[1]
         assert isinstance(old_mp, ParametricMidMeasure)
 
@@ -813,7 +813,7 @@ class TestDiagonalizeMCMs:
         # the conditionals' MeasurementValues are mapped to the new, diagonalized mp
         processing_fns = []
         for op in new_tape.operations[3:]:
-            assert isinstance(op, qml.ops.Conditional)
+            assert isinstance(op, qp.ops.Conditional)
             assert op.meas_val.measurements == [new_mp]
             processing_fns.append(op.meas_val.processing_fn)
 
@@ -829,14 +829,14 @@ class TestDiagonalizeMCMs:
             2. the applied MCMs in cond_measure are diagonalized as expected
         """
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(1.2, 0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(1.2, 0)
             mp = ParametricMidMeasure(0, angle=1.2, plane="YZ")
             mv = MeasurementValue([mp], processing_fn=lambda v: v)
             # using cond_measure and conditionally applying measurements
             cond_measure(mv == 0, measure_x, measure_y)(2)
 
-        original_tape = qml.tape.QuantumScript.from_queue(q)
+        original_tape = qp.tape.QuantumScript.from_queue(q)
         old_mp = original_tape.operations[1]
         assert isinstance(old_mp, ParametricMidMeasure)
 
@@ -851,7 +851,7 @@ class TestDiagonalizeMCMs:
         # the conditionals' MeasurementValues are mapped to the new, diagonalized mp
         processing_fns = []
         for op in new_tape.operations[3:6]:
-            assert isinstance(op, qml.ops.Conditional)
+            assert isinstance(op, qp.ops.Conditional)
             assert op.meas_val.measurements == [new_mp]
             processing_fns.append(op.meas_val.processing_fn)
 
@@ -864,9 +864,9 @@ class TestWorkflows:
     @pytest.mark.parametrize(
         "rot_gate, measurement_fn",
         [
-            (partial(qml.RX, 2.345), measure_y),
-            (partial(qml.RY, -2.345), measure_x),
-            (partial(qml.RX, 2.345), partial(measure_arbitrary_basis, angle=np.pi / 2, plane="XY")),
+            (partial(qp.RX, 2.345), measure_y),
+            (partial(qp.RY, -2.345), measure_x),
+            (partial(qp.RX, 2.345), partial(measure_arbitrary_basis, angle=np.pi / 2, plane="XY")),
         ],
     )
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
@@ -874,15 +874,15 @@ class TestWorkflows:
         """Test that we can execute a QNode with a ParametricMidMeasure and produce
         an accurate result"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @diagonalize_mcms
-        @qml.set_shots(shots)
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qp.set_shots(shots)
+        @qp.qnode(dev, mcm_method=mcm_method)
         def circ():
             rot_gate(0)
             measurement_fn(0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         if shots:
             # the result is on the order of 1 (-0.7), and an uncertainty ~1.5-2 orders of magnitude
@@ -894,10 +894,10 @@ class TestWorkflows:
     @pytest.mark.parametrize(
         "rot_gate, measurement_fn",
         [
-            (partial(qml.RX, np.pi / 2), measure_y),
-            (partial(qml.RY, -np.pi / 2), measure_x),
+            (partial(qp.RX, np.pi / 2), measure_y),
+            (partial(qp.RY, -np.pi / 2), measure_x),
             (
-                partial(qml.RX, np.pi / 2),
+                partial(qp.RX, np.pi / 2),
                 partial(measure_arbitrary_basis, angle=np.pi / 2, plane="XY"),
             ),
         ],
@@ -907,17 +907,17 @@ class TestWorkflows:
         """Test that we can execute a QNode with a ParametricMidMeasure as the condition of a conditional,
         and produce an accurate result"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @diagonalize_mcms
-        @qml.set_shots(shots)
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qp.set_shots(shots)
+        @qp.qnode(dev, mcm_method=mcm_method)
         def circ():
             rot_gate(0)
             m = measurement_fn(0)  # always 1
 
-            qml.cond(m, qml.RX)(2.345, 1)
-            return qml.expval(qml.Z(1)), qml.expval(qml.Z(0))
+            qp.cond(m, qp.RX)(2.345, 1)
+            return qp.expval(qp.Z(1)), qp.expval(qp.Z(0))
 
         if shots:
             # both results are on the order of 1 (-0.7, -1), and an uncertainty ~1.5-2 orders
@@ -946,7 +946,7 @@ class TestWorkflows:
             # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
             pytest.skip("TT & jax.jit are incompatible")
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         if angle_type == "numpy":
             angle = array_fn(angle)
@@ -962,14 +962,14 @@ class TestWorkflows:
 
         @jit_wrapper
         @diagonalize_mcms
-        @qml.set_shots(shots)
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qp.set_shots(shots)
+        @qp.qnode(dev, mcm_method=mcm_method)
         def circ(angle):
             m0 = measure_x(0)
             m1 = measure_y(1)
             m2 = measure_arbitrary_basis(2, angle=angle, plane="XY")
 
-            return qml.expval(m0), qml.expval(m1), qml.expval(m2)
+            return qp.expval(m0), qp.expval(m1), qp.expval(m2)
 
         circ(angle)
 
@@ -981,15 +981,15 @@ class TestWorkflows:
         if mcm_method == "one-shot":
             pytest.xfail(reason="not implemented yet")  # sc-90607
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @diagonalize_mcms
-        @qml.set_shots(shots)
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qp.set_shots(shots)
+        @qp.qnode(dev, mcm_method=mcm_method)
         def circ():
-            qml.H(0)
+            qp.H(0)
             m0 = measure_x(0)
             m1 = cond_measure(m0, measure_x, measure_y)(1)
-            return qml.expval(m1)
+            return qp.expval(m1)
 
         circ()

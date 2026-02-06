@@ -209,14 +209,14 @@ class TestComputeJVPSingle:
     @pytest.mark.parametrize("jac, tangent, exp", tests_compute_jvp_single)
     def test_compute_jvp_single(self, jac, tangent, exp):
         """Unit test for compute_jvp_single."""
-        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        jvp = qp.gradients.compute_jvp_single(tangent, jac)
         assert isinstance(jvp, np.ndarray)
         assert np.array_equal(jvp, exp)
 
     @pytest.mark.parametrize("jac, tangent, exp", tests_compute_jvp_multi)
     def test_compute_jvp_multi(self, jac, tangent, exp):
         """Unit test for compute_jvp_multi."""
-        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        jvp = qp.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
         assert all(isinstance(_jvp, np.ndarray) for _jvp in jvp)
         assert all(np.array_equal(_jvp, _exp) for _jvp, _exp in zip(jvp, exp))
@@ -227,7 +227,7 @@ class TestComputeJVPSingle:
         tangent = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
-        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        jvp = qp.gradients.compute_jvp_single(tangent, jac)
         assert jvp is None
 
     def test_jacobian_is_none_multi(self):
@@ -236,12 +236,12 @@ class TestComputeJVPSingle:
         tangent = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
-        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        jvp = qp.gradients.compute_jvp_multi(tangent, jac)
         assert jvp is None
 
         jac = (None, None, None)
 
-        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        jvp = qp.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
         assert all(_jvp is None for _jvp in jvp)
 
@@ -250,7 +250,7 @@ class TestComputeJVPSingle:
         tangent = np.zeros([1])
         jac = np.array(0.1)
 
-        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        jvp = qp.gradients.compute_jvp_single(tangent, jac)
         assert np.all(jvp == np.zeros([1]))
 
     def test_zero_tangent_single_measurement_multi_params(self):
@@ -258,7 +258,7 @@ class TestComputeJVPSingle:
         tangent = np.zeros([2])
         jac = tuple([np.array(0.1), np.array(0.2)])
 
-        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        jvp = qp.gradients.compute_jvp_single(tangent, jac)
 
         assert np.all(jvp == np.zeros([2]))
 
@@ -272,7 +272,7 @@ class TestComputeJVPSingle:
             ]
         )
 
-        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        jvp = qp.gradients.compute_jvp_multi(tangent, jac)
 
         assert isinstance(jvp, tuple)
         assert np.all(jvp[0] == np.zeros([1]))
@@ -292,43 +292,43 @@ class TestComputeJVPSingle:
 
         tangent = jax.numpy.array([1], dtype=dtype1)
         jac = tuple([jax.numpy.array(1, dtype=dtype2), jax.numpy.array([1, 1], dtype=dtype2)])
-        assert qml.gradients.compute_jvp_multi(tangent, jac)[0].dtype == dtype
+        assert qp.gradients.compute_jvp_multi(tangent, jac)[0].dtype == dtype
 
     def test_no_trainable_params_adjoint_single(self):
         """An empty jacobian return empty array."""
         tangent = np.array([1.0, 2.0])
         jac = tuple()
 
-        jvp = qml.gradients.compute_jvp_single(tangent, jac)
-        assert np.allclose(jvp, qml.math.zeros(0))
+        jvp = qp.gradients.compute_jvp_single(tangent, jac)
+        assert np.allclose(jvp, qp.math.zeros(0))
 
     def test_no_trainable_params_adjoint_multi_measurement(self):
         """An empty jacobian return an empty tuple."""
         tangent = np.array([1.0, 2.0])
         jac = tuple()
 
-        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        jvp = qp.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
         assert len(jvp) == 0
 
     def test_no_trainable_params_gradient_transform_single(self):
         """An empty jacobian return empty array."""
         tangent = np.array([1.0, 2.0])
-        jac = qml.math.zeros(0)
+        jac = qp.math.zeros(0)
 
-        jvp = qml.gradients.compute_jvp_single(tangent, jac)
-        assert np.allclose(jvp, qml.math.zeros(0))
+        jvp = qp.gradients.compute_jvp_single(tangent, jac)
+        assert np.allclose(jvp, qp.math.zeros(0))
 
     def test_no_trainable_params_gradient_transform_multi_measurement(self):
         """An empty jacobian return an empty tuple."""
         tangent = np.array([1.0, 2.0])
-        jac = tuple([qml.math.zeros(0), qml.math.zeros(0)])
+        jac = tuple([qp.math.zeros(0), qp.math.zeros(0)])
 
-        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        jvp = qp.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
         assert len(jvp) == 2
         for j in jvp:
-            assert np.allclose(j, qml.math.zeros(0))
+            assert np.allclose(j, qp.math.zeros(0))
 
 
 @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -339,32 +339,32 @@ class TestJVP:
         """A tape with no trainable parameters will simply return None"""
         x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {}
         tangent = np.array([1.0])
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == tuple()
-        assert qml.math.allclose(fn(tapes), np.array(0.0))
+        assert qp.math.allclose(fn(tapes), np.array(0.0))
 
     def test_zero_tangent_single_measurement_single_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
         x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
         tangent = np.array([0.0])
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == []
         assert np.all(fn(tapes) == np.zeros([1]))
@@ -373,16 +373,16 @@ class TestJVP:
         """A zero tangent vector will return no tapes and a zero matrix"""
 
         x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([0.0, 0.0])
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == []
         assert np.all(fn(tapes) == np.zeros([1]))
@@ -391,16 +391,16 @@ class TestJVP:
         """A zero tangent vector will return no tapes and a zero matrix"""
 
         x = 0.6 if batch_dim is None else 0.6 * np.arange(1, 1 + batch_dim)
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.4, wires=0)
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(0.4, wires=0)
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([0.0, 0.0])
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == []
         assert np.all(fn(tapes) == np.zeros([4]))
@@ -409,16 +409,16 @@ class TestJVP:
         """A zero tangent vector will return no tapes and a zero matrix"""
 
         x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.probs(wires=[0])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
         tangent = np.array([0.0])
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
         res = fn(tapes)
 
         assert tapes == []
@@ -436,17 +436,17 @@ class TestJVP:
         """A zero tangent vector will return no tapes and a zero matrix"""
 
         x = 0.4 if batch_dim is None else 0.4 * np.arange(1, 1 + batch_dim)
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.probs(wires=[0])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([0.0, 0.0])
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
         res = fn(tapes)
 
         assert tapes == []
@@ -466,21 +466,21 @@ class TestJVP:
         with a single expval output"""
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([1.0, 1.0])
 
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
 
         res = fn(dev.execute(tapes))
@@ -495,22 +495,22 @@ class TestJVP:
         with multiple expval outputs"""
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliX(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.expval(qp.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([1.0, 2.0])
 
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
 
         res = fn(dev.execute(tapes))
@@ -529,20 +529,20 @@ class TestJVP:
         with prob and expval outputs and a single parameter"""
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.probs(wires=0)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
         tangent = np.array([1.0])
 
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 2
 
         res = fn(dev.execute(tapes))
@@ -564,22 +564,22 @@ class TestJVP:
         with prob and expval outputs and multiple parameters"""
         if batch_dim is not None:
             pytest.skip(reason="JVP computation of batched tapes is disallowed, see #4462")
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([1.0, 1.0])
 
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
         assert len(tapes) == 4
 
         res = fn(dev.execute(tapes))
@@ -609,13 +609,13 @@ class TestJVP:
         x = np.array([0.1], dtype=np.float64)
         x = x if batch_dim is None else np.outer(x, np.arange(1, 1 + batch_dim))
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x[0], wires=0)
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x[0], wires=0)
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         dy = np.zeros(1, dtype=dtype)
-        _, func = qml.gradients.jvp(tape, dy, qml.gradients.param_shift)
+        _, func = qp.gradients.jvp(tape, dy, qp.gradients.param_shift)
 
         assert func([]).dtype == dtype
 
@@ -631,8 +631,8 @@ def expected_probs(params):
 
 def expected_jvp(params, tangent):
     """Expected result of the JVP of the below circuit ansatz."""
-    j = qml.jacobian(expected_probs)(params)
-    if qml.math.ndim(params) > 1:
+    j = qp.jacobian(expected_probs)(params)
+    if qp.math.ndim(params) > 1:
         # If there is broadcasting, take the diagonal over
         # the two axes corresponding to broadcasting
         j = np.stack([j[i, :, i, :] for i in range(len(j))])
@@ -642,10 +642,10 @@ def expected_jvp(params, tangent):
 
 def ansatz(x, y):
     """Circuit ansatz for gradient tests"""
-    qml.RX(x, wires=[0])
-    qml.RY(y, wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.probs(wires=[0, 1])
+    qp.RX(x, wires=[0])
+    qp.RY(y, wires=[1])
+    qp.CNOT(wires=[0, 1])
+    qp.probs(wires=[0, 1])
 
 
 class TestJVPGradients:
@@ -657,27 +657,27 @@ class TestJVPGradients:
     def test_autograd(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using autograd."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
             params = np.outer(np.arange(1, 1 + batch_dim), params, requires_grad=True)
         tangent = np.array([1.0, 0.3], requires_grad=False)
 
         def cost_fn(params, tangent):
-            with qml.queuing.AnnotatedQueue() as q:
+            with qp.queuing.AnnotatedQueue() as q:
                 ansatz(params[..., 0], params[..., 1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+            tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
             return fn(dev.execute(tapes))
 
         res = cost_fn(params, tangent)
         exp = expected_jvp(params, tangent)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        res = qml.jacobian(cost_fn)(params, tangent)
-        exp = qml.jacobian(expected_jvp)(params, tangent)
+        res = qp.jacobian(cost_fn)(params, tangent)
+        exp = qp.jacobian(expected_jvp)(params, tangent)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
     # Include batch_dim!=None cases once #4462 is resolved
@@ -688,7 +688,7 @@ class TestJVPGradients:
         can be differentiated using Torch."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         params_np = np.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
@@ -698,12 +698,12 @@ class TestJVPGradients:
         tangent = torch.tensor(tangent_np, requires_grad=False, dtype=torch.float64)
 
         def cost_fn(params, tangent):
-            with qml.queuing.AnnotatedQueue() as q:
+            with qp.queuing.AnnotatedQueue() as q:
                 ansatz(params[..., 0], params[..., 1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+            tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
             return fn(dev.execute(tapes))
 
         res = cost_fn(params, tangent)
@@ -711,7 +711,7 @@ class TestJVPGradients:
         assert np.allclose(res.detach(), exp, atol=tol, rtol=0)
 
         res = torch.autograd.functional.jacobian(cost_fn, (params, tangent))[0]
-        exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
+        exp = qp.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
     # Include batch_dim!=None cases once #4462 is resolved
@@ -723,7 +723,7 @@ class TestJVPGradients:
         can be differentiated using Tensorflow."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params_np = np.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
             params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
@@ -732,12 +732,12 @@ class TestJVPGradients:
         tangent = tf.constant(tangent_np, dtype=tf.float64)
 
         def cost_fn(params, tangent):
-            with qml.queuing.AnnotatedQueue() as q:
+            with qp.queuing.AnnotatedQueue() as q:
                 ansatz(params[..., 0], params[..., 1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+            tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
             return fn(dev.execute(tapes))
 
         with tf.GradientTape() as t:
@@ -747,7 +747,7 @@ class TestJVPGradients:
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
         res = t.jacobian(res, params)
-        exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
+        exp = qp.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
     # Include batch_dim!=None cases once #4462 is resolved
@@ -759,7 +759,7 @@ class TestJVPGradients:
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         params_np = np.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
             params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
@@ -768,12 +768,12 @@ class TestJVPGradients:
         tangent = jnp.array(tangent_np)
 
         def cost_fn(params, tangent):
-            with qml.queuing.AnnotatedQueue() as q:
+            with qp.queuing.AnnotatedQueue() as q:
                 ansatz(params[..., 0], params[..., 1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+            tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
             return fn(dev.execute(tapes))
 
         res = cost_fn(params, tangent)
@@ -781,7 +781,7 @@ class TestJVPGradients:
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
         res = jax.jacobian(cost_fn)(params, tangent)
-        exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
+        exp = qp.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
 
@@ -791,90 +791,90 @@ class TestBatchJVP:
     @pytest.mark.parametrize("shots", [Shots(None), Shots(10), Shots([20, 10])])
     def test_one_tape_no_trainable_parameters(self, shots):
         """A tape with no trainable parameters will simply return None"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(0.4, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(0.4, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1, shots=shots)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(0.4, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        tape1 = qp.tape.QuantumScript.from_queue(q1, shots=shots)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(0.4, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2, shots=shots)
+        tape2 = qp.tape.QuantumScript.from_queue(q2, shots=shots)
         tape1.trainable_params = {}
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
         tangents = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
+        v_tapes, fn = qp.gradients.batch_jvp(tapes, tangents, param_shift)
 
         # Even though there are 3 parameters, only two contribute
         # to the JVP, so only 2*2=4 quantum evals
         assert len(v_tapes) == 4
         res = fn(dev.execute(v_tapes))
 
-        assert qml.math.allclose(res[0], np.array(0.0))
+        assert qp.math.allclose(res[0], np.array(0.0))
         assert res[1] is not None
 
     @pytest.mark.parametrize("shots", [Shots(None), Shots(10), Shots([20, 10])])
     def test_all_tapes_no_trainable_parameters(self, shots):
         """If all tapes have no trainable parameters all outputs will be None"""
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(0.4, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(0.4, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1, shots=shots)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(0.4, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        tape1 = qp.tape.QuantumScript.from_queue(q1, shots=shots)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(0.4, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2, shots=shots)
+        tape2 = qp.tape.QuantumScript.from_queue(q2, shots=shots)
         tape1.trainable_params = set()
         tape2.trainable_params = set()
 
         tapes = [tape1, tape2]
         tangents = [np.array([1.0, 0.0]), np.array([1.0, 0.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
+        v_tapes, fn = qp.gradients.batch_jvp(tapes, tangents, param_shift)
 
         assert v_tapes == []
-        assert qml.math.allclose(fn([])[0], np.array(0.0))
-        assert qml.math.allclose(fn([])[1], np.array(0.0))
+        assert qp.math.allclose(fn([])[0], np.array(0.0))
+        assert qp.math.allclose(fn([])[1], np.array(0.0))
 
     def test_zero_tangent(self):
         """A zero dy vector will return no tapes and a zero matrix"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(0.4, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(0.4, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(0.4, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        tape1 = qp.tape.QuantumScript.from_queue(q1)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(0.4, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qp.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
         tangents = [np.array([0.0]), np.array([1.0, 1.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
+        v_tapes, fn = qp.gradients.batch_jvp(tapes, tangents, param_shift)
         res = fn(dev.execute(v_tapes))
 
         # Even though there are 3 parameters, only two contribute
@@ -885,28 +885,28 @@ class TestBatchJVP:
 
     def test_reduction_append(self):
         """Test the 'append' reduction strategy"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(0.4, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(0.4, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(0.4, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        tape1 = qp.tape.QuantumScript.from_queue(q1)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(0.4, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qp.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
         tangents = [np.array([1.0]), np.array([1.0, 1.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="append")
+        v_tapes, fn = qp.gradients.batch_jvp(tapes, tangents, param_shift, reduction="append")
         res = fn(dev.execute(v_tapes))
 
         # Returned JVPs will be appended to a list, one JVP per tape
@@ -918,61 +918,61 @@ class TestBatchJVP:
 
     def test_reduction_extend(self):
         """Test the 'extend' reduction strategy"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(0.4, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=0)
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(0.4, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.probs(wires=0)
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(0.4, wires=0)
-            qml.RX(0.6, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=1)
+        tape1 = qp.tape.QuantumScript.from_queue(q1)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(0.4, wires=0)
+            qp.RX(0.6, wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.probs(wires=1)
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qp.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {1}
 
         tapes = [tape1, tape2]
         tangents = [np.array([1.0]), np.array([1.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="extend")
+        v_tapes, fn = qp.gradients.batch_jvp(tapes, tangents, param_shift, reduction="extend")
         res = fn(dev.execute(v_tapes))
         assert len(res) == 4
 
     def test_reduction_extend_special(self):
         """Test the 'extend' reduction strategy"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(0.4, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(0.4, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(0.4, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=0)
+        tape1 = qp.tape.QuantumScript.from_queue(q1)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(0.4, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.probs(wires=0)
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qp.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
         tangents = [np.array([1.0]), np.array([1.0, 1.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(
+        v_tapes, fn = qp.gradients.batch_jvp(
             tapes,
             tangents,
             param_shift,
             reduction=lambda jvps, x: (
-                jvps.extend(qml.math.reshape(x, (1,)))
+                jvps.extend(qp.math.reshape(x, (1,)))
                 if not isinstance(x, tuple) and x.shape == ()
                 else jvps.extend(x)
             ),
@@ -983,29 +983,29 @@ class TestBatchJVP:
 
     def test_reduction_callable(self):
         """Test the callable reduction strategy"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(0.4, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(0.4, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(0.4, wires=0)
-            qml.RX(0.6, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=0)
+        tape1 = qp.tape.QuantumScript.from_queue(q1)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(0.4, wires=0)
+            qp.RX(0.6, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.probs(wires=0)
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qp.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
         tangents = [np.array([1.0]), np.array([1.0, 1.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(
+        v_tapes, fn = qp.gradients.batch_jvp(
             tapes, tangents, param_shift, reduction=lambda jvps, x: jvps.append(x)
         )
         res = fn(dev.execute(v_tapes))

@@ -50,38 +50,38 @@ class TestCaching:
         N = len(params)
 
         def get_cost_tape(x):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x[0], wires=[0])
-                qml.RY(x[1], wires=[1])
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
 
                 for i in range(2, num_params):
-                    qml.RZ(x[i], wires=[i % 2])
+                    qp.RZ(x[i], wires=[i % 2])
 
-                qml.CNOT(wires=[0, 1])
-                qml.var(qml.prod(qml.PauliZ(0), qml.PauliX(1)))
+                qp.CNOT(wires=[0, 1])
+                qp.var(qp.prod(qp.PauliZ(0), qp.PauliX(1)))
 
-            return qml.tape.QuantumScript.from_queue(q)
+            return qp.tape.QuantumScript.from_queue(q)
 
         def cost_no_cache(x):
-            return qml.execute(
+            return qp.execute(
                 [get_cost_tape(x)],
                 dev,
-                diff_method=qml.gradients.param_shift,
+                diff_method=qp.gradients.param_shift,
                 cache=False,
                 max_diff=2,
             )[0]
 
         def cost_cache(x):
-            return qml.execute(
+            return qp.execute(
                 [get_cost_tape(x)],
                 dev,
-                diff_method=qml.gradients.param_shift,
+                diff_method=qp.gradients.param_shift,
                 cache=True,
                 max_diff=2,
             )[0]
 
         # No caching: number of executions is not ideal
-        with qml.Tracker(dev) as tracker:
+        with qp.Tracker(dev) as tracker:
             hess1 = torch.autograd.functional.hessian(cost_no_cache, params)
 
         if num_params == 2:
@@ -115,7 +115,7 @@ class TestCaching:
 
         # Use caching: number of executions is ideal
 
-        with qml.Tracker(dev) as tracker2:
+        with qp.Tracker(dev) as tracker2:
             hess2 = torch.autograd.functional.hessian(cost_cache, params)
         assert torch.allclose(hess1, hess2)
 
@@ -130,7 +130,7 @@ class TestCaching:
 def get_device(dev_name, seed):
     if dev_name == "param_shift.qubit":
         return ParamShiftDerivativesDevice(seed=seed)
-    return qml.device(dev_name, seed=seed)
+    return qp.device(dev_name, seed=seed)
 
 
 # add tests for lightning 2 when possible
@@ -194,11 +194,11 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a, b):
-            ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
-            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+            ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
+            tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
@@ -222,10 +222,10 @@ class TestTorchExecuteIntegration:
         if shots.has_partitioned_shots:
             for shot in range(2):
                 for wire in range(2):
-                    assert qml.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
+                    assert qp.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
         else:
             for wire in range(2):
-                assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
+                assert qp.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
 
     def test_scalar_jacobian(self, execute_kwargs, shots, device_name, seed):
         """Test scalar jacobian calculation"""
@@ -233,14 +233,14 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a):
-            tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+            tape = qp.tape.QuantumScript([qp.RY(a, 0)], [qp.expval(qp.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
             assert res.shape == ()  # pylint: disable=no-member
 
-        expected = -qml.math.sin(a)
+        expected = -qp.math.sin(a)
 
         assert expected.shape == ()
         if shots.has_partitioned_shots:
@@ -259,9 +259,9 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a, b):
-            ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
-            m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
-            tape = qml.tape.QuantumScript(ops, m, shots=shots)
+            ops = [qp.RY(a, wires=0), qp.RX(b, wires=1), qp.CNOT(wires=[0, 1])]
+            m = [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))]
+            tape = qp.tape.QuantumScript(ops, m, shots=shots)
             [res] = execute([tape], device, **execute_kwargs)
             if shots.has_partitioned_shots:
                 return torch.hstack(res[0] + res[1])
@@ -304,32 +304,32 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(params):
-            tape1 = qml.tape.QuantumScript(
-                [qml.Hadamard(0)], [qml.expval(qml.PauliX(0))], shots=shots
+            tape1 = qp.tape.QuantumScript(
+                [qp.Hadamard(0)], [qp.expval(qp.PauliX(0))], shots=shots
             )
 
-            tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5), wires=0)],
-                [qml.expval(qml.PauliZ(0))],
+            tape2 = qp.tape.QuantumScript(
+                [qp.RY(np.array(0.5), wires=0)],
+                [qp.expval(qp.PauliZ(0))],
                 shots=shots,
             )
 
-            tape3 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
-                [qml.expval(qml.PauliZ(0))],
+            tape3 = qp.tape.QuantumScript(
+                [qp.RY(params[0], 0), qp.RX(params[1], 0)],
+                [qp.expval(qp.PauliZ(0))],
                 shots=shots,
             )
 
-            tape4 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5), 0)],
-                [qml.probs(wires=[0, 1])],
+            tape4 = qp.tape.QuantumScript(
+                [qp.RY(np.array(0.5), 0)],
+                [qp.probs(wires=[0, 1])],
                 shots=shots,
             )
             res = execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
             if shots.has_partitioned_shots:
-                res = [qml.math.asarray(ri, like="torch") for r in res for ri in r]
+                res = [qp.math.asarray(ri, like="torch") for r in res for ri in r]
             else:
-                res = [qml.math.asarray(r, like="torch") for r in res]
+                res = [qp.math.asarray(r, like="torch") for r in res]
             return sum(torch.hstack(res))
 
         params = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -360,25 +360,25 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(params):
-            tape1 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
-                [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))],
+            tape1 = qp.tape.QuantumScript(
+                [qp.RY(params[0], 0), qp.RX(params[1], 0)],
+                [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))],
                 shots=shots,
             )
 
-            tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5), 0)],
-                [qml.expval(qml.PauliZ(0))],
+            tape2 = qp.tape.QuantumScript(
+                [qp.RY(np.array(0.5), 0)],
+                [qp.expval(qp.PauliZ(0))],
                 shots=shots,
             )
 
-            tape3 = qml.tape.QuantumScript(
-                [qml.RY(params[0], 0), qml.RX(params[1], 0)],
-                [qml.expval(qml.PauliZ(0))],
+            tape3 = qp.tape.QuantumScript(
+                [qp.RY(params[0], 0), qp.RX(params[1], 0)],
+                [qp.expval(qp.PauliZ(0))],
                 shots=shots,
             )
             res = execute([tape1, tape2, tape3], device, **execute_kwargs)
-            return torch.hstack([qml.math.asarray(r, like="torch") for r in res])
+            return torch.hstack([qp.math.asarray(r, like="torch") for r in res])
 
         params = torch.tensor([0.1, 0.2], requires_grad=True)
         x, y = params.clone().detach()
@@ -412,9 +412,9 @@ class TestTorchExecuteIntegration:
         b = torch.tensor(0.2, requires_grad=True)
         device = get_device(device_name, seed)
 
-        tape = qml.tape.QuantumScript(
-            [qml.RY(a, 0), qml.RX(b, 1), qml.CNOT((0, 1))],
-            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))],
+        tape = qp.tape.QuantumScript(
+            [qp.RY(a, 0), qp.RX(b, 1), qp.CNOT((0, 1))],
+            [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))],
         )
         assert tape.trainable_params == [0, 1]
 
@@ -451,12 +451,12 @@ class TestTorchExecuteIntegration:
 
         def cost(a, b, c):
             ops = [
-                qml.RY(a * c, wires=0),
-                qml.RZ(b, wires=0),
-                qml.RX(c + c**2 + torch.sin(a), wires=0),
+                qp.RY(a * c, wires=0),
+                qp.RZ(b, wires=0),
+                qp.RX(c + c**2 + torch.sin(a), wires=0),
             ]
 
-            tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
+            tape = qp.tape.QuantumScript(ops, [qp.expval(qp.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
         # PyTorch docs suggest a lambda for cost functions with some non-trainable args
@@ -480,9 +480,9 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a, b):
-            ops = [qml.RY(a, 0), qml.RX(b, 0), qml.CNOT((0, 1))]
-            m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-            tape = qml.tape.QuantumScript(ops, m, shots=shots)
+            ops = [qp.RY(a, 0), qp.RX(b, 0), qp.CNOT((0, 1))]
+            m = [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
+            tape = qp.tape.QuantumScript(ops, m, shots=shots)
             return torch.hstack(execute([tape], device, **execute_kwargs)[0])
 
         res = cost(a, b)
@@ -507,8 +507,8 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(a, U):
-            ops = [qml.QubitUnitary(U, wires=0), qml.RY(a, wires=0)]
-            tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+            ops = [qp.QubitUnitary(U, wires=0), qp.RY(a, wires=0)]
+            tape = qp.tape.QuantumScript(ops, [qp.expval(qp.PauliZ(0))])
             return execute([tape], device, **execute_kwargs)[0]
 
         res = cost(a, U)
@@ -524,20 +524,20 @@ class TestTorchExecuteIntegration:
 
         device = get_device(device_name, seed)
 
-        class U3(qml.U3):
+        class U3(qp.U3):
             """Dummy operator."""
 
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
                 return [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
+                    qp.Rot(lam, theta, -lam, wires=wires),
+                    qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
         def cost_fn(a, p):
-            tape = qml.tape.QuantumScript(
-                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+            tape = qp.tape.QuantumScript(
+                [qp.RX(a, wires=0), U3(*p, wires=0)], [qp.expval(qp.PauliX(0))]
             )
             diff_method = execute_kwargs["diff_method"]
             if diff_method is None:
@@ -546,7 +546,7 @@ class TestTorchExecuteIntegration:
                 _gradient_method = diff_method
             else:
                 _gradient_method = "gradient-transform"
-            config = qml.devices.ExecutionConfig(
+            config = qp.devices.ExecutionConfig(
                 interface="autograd",
                 gradient_method=_gradient_method,
                 grad_on_execution=execute_kwargs.get("grad_on_execution", None),
@@ -592,9 +592,9 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(x, y):
-            ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
-            m = [qml.probs(wires=0), qml.probs(wires=1)]
-            tape = qml.tape.QuantumScript(ops, m)
+            ops = [qp.RX(x, 0), qp.RY(y, 1), qp.CNOT((0, 1))]
+            m = [qp.probs(wires=0), qp.probs(wires=1)]
+            tape = qp.tape.QuantumScript(ops, m)
             return torch.hstack(execute([tape], device, **execute_kwargs)[0])
 
         x = torch.tensor(0.543, requires_grad=True)
@@ -645,9 +645,9 @@ class TestTorchExecuteIntegration:
         device = get_device(device_name, seed)
 
         def cost(x, y):
-            ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
-            m = [qml.expval(qml.PauliZ(0)), qml.probs(wires=1)]
-            tape = qml.tape.QuantumScript(ops, m)
+            ops = [qp.RX(x, wires=0), qp.RY(y, 1), qp.CNOT((0, 1))]
+            m = [qp.expval(qp.PauliZ(0)), qp.probs(wires=1)]
+            tape = qp.tape.QuantumScript(ops, m)
             return torch.hstack(execute([tape], device, **execute_kwargs)[0])
 
         x = torch.tensor(0.543, requires_grad=True)
@@ -695,11 +695,11 @@ class TestHigherOrderDerivatives:
         dev = DefaultQubit()
 
         def cost_fn(x):
-            ops1 = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
-            tape1 = qml.tape.QuantumScript(ops1, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))])
+            ops1 = [qp.RX(x[0], 0), qp.RY(x[1], 1), qp.CNOT((0, 1))]
+            tape1 = qp.tape.QuantumScript(ops1, [qp.var(qp.PauliZ(0) @ qp.PauliX(1))])
 
-            ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
+            ops2 = [qp.RX(x[0], 0), qp.RY(x[0], 1), qp.CNOT((0, 1))]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.probs(wires=1)])
             result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=2)
             return result[0] + result[1][0]
 
@@ -730,11 +730,11 @@ class TestHigherOrderDerivatives:
         params = torch.tensor([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            ops = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
-            tape1 = qml.tape.QuantumScript(ops, [qml.var(qml.PauliZ(0) @ qml.PauliX(1))])
+            ops = [qp.RX(x[0], 0), qp.RY(x[1], 1), qp.CNOT((0, 1))]
+            tape1 = qp.tape.QuantumScript(ops, [qp.var(qp.PauliZ(0) @ qp.PauliX(1))])
 
-            ops2 = [qml.RX(x[0], 0), qml.RY(x[0], 1), qml.CNOT((0, 1))]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.probs(wires=1)])
+            ops2 = [qp.RX(x[0], 0), qp.RY(x[0], 1), qp.CNOT((0, 1))]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.probs(wires=1)])
 
             result = execute([tape1, tape2], dev, diff_method=param_shift, max_diff=1)
             return result[0] + result[1][0]
@@ -756,7 +756,7 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device_name", test_matrix)
-@pytest.mark.parametrize("constructor", (qml.Hamiltonian, qml.dot, "dunders"))
+@pytest.mark.parametrize("constructor", (qp.Hamiltonian, qp.dot, "dunders"))
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
@@ -770,25 +770,25 @@ class TestHamiltonianWorkflows:
         def _cost_fn(weights, coeffs1, coeffs2):
             if constructor == "dunders":
                 H1 = (
-                    coeffs1[0] * qml.Z(0) + coeffs1[1] * qml.Z(0) @ qml.X(1) + coeffs1[2] * qml.Y(0)
+                    coeffs1[0] * qp.Z(0) + coeffs1[1] * qp.Z(0) @ qp.X(1) + coeffs1[2] * qp.Y(0)
                 )
-                H2 = coeffs2[0] * qml.Z(0)
+                H2 = coeffs2[0] * qp.Z(0)
             else:
 
-                obs1 = [qml.Z(0), qml.Z(0) @ qml.X(1), qml.Y(0)]
+                obs1 = [qp.Z(0), qp.Z(0) @ qp.X(1), qp.Y(0)]
                 H1 = constructor(coeffs1, obs1)
 
-                obs2 = [qml.PauliZ(0)]
+                obs2 = [qp.PauliZ(0)]
                 H2 = constructor(coeffs2, obs2)
 
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(weights[0], wires=0)
-                qml.RY(weights[1], wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(H1)
-                qml.expval(H2)
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(weights[0], wires=0)
+                qp.RY(weights[1], wires=1)
+                qp.CNOT(wires=[0, 1])
+                qp.expval(H1)
+                qp.expval(H2)
 
-            tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+            tape = qp.tape.QuantumScript.from_queue(q, shots=shots)
             res = execute([tape], device, **execute_kwargs)[0]
             if shots.has_partitioned_shots:
                 return torch.hstack(res[0] + res[1])

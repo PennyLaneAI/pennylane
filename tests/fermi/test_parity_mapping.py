@@ -13,7 +13,7 @@ from pennylane.pauli.conversion import pauli_sentence
 def test_error_is_raised_for_incompatible_type():
     """Test that an error is raised in the input is not a FermiWord or FermiSentence"""
     with pytest.raises(ValueError, match="fermi_operator must be a FermiWord or FermiSentence"):
-        parity_transform(qml.PauliX(0), 10)
+        parity_transform(qp.PauliX(0), 10)
 
 
 def test_error_is_raised_for_dimension_mismatch():
@@ -31,19 +31,19 @@ FERMI_WORDS_AND_OPS = [
         FermiWord({(0, 0): "+"}),
         1,
         # trivial case of a creation operator with one qubit, 0^ -> (X_0 - iY_0) / 2 : Same as Jordan-Wigner
-        ([0.5, -0.5j], [qml.PauliX(0), qml.PauliY(0)]),
+        ([0.5, -0.5j], [qp.PauliX(0), qp.PauliY(0)]),
     ),
     (
         FermiWord({(0, 0): "-"}),
         1,
         # trivial case of an annihilation operator with one qubit , 0 -> (X_0 + iY_0) / 2 : Same as Jordan-Wigner
-        ([(0.5 + 0j), (0.0 + 0.5j)], [qml.PauliX(0), qml.PauliY(0)]),
+        ([(0.5 + 0j), (0.0 + 0.5j)], [qp.PauliX(0), qp.PauliY(0)]),
     ),
     (
         FermiWord({(0, 0): "+"}),
         2,
         # trivial case of a creation operator with two qubits, 0^ -> (X_0 @ X_1 - iY_0 @ X_1) / 2
-        ([0.5, -0.5j], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(0) @ qml.PauliX(1)]),
+        ([0.5, -0.5j], [qp.PauliX(0) @ qp.PauliX(1), qp.PauliY(0) @ qp.PauliX(1)]),
     ),
     (
         FermiWord({(0, 0): "-"}),
@@ -51,7 +51,7 @@ FERMI_WORDS_AND_OPS = [
         # trivial case of an annihilation operator with two qubits , 0 -> (X_0 @ X_1 + iY_0 @ X_1) / 2
         (
             [(0.5 + 0j), (0.0 + 0.5j)],
-            [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(0) @ qml.PauliX(1)],
+            [qp.PauliX(0) @ qp.PauliX(1), qp.PauliY(0) @ qp.PauliX(1)],
         ),
     ),
     (
@@ -59,14 +59,14 @@ FERMI_WORDS_AND_OPS = [
         4,
         # obtained with openfermion using: binary_code_transform(FermionOperator('0^ 0'), parity_code(n_qubits)) for n_qubits = 4
         # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
-        ([(0.5 + 0j), (-0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
+        ([(0.5 + 0j), (-0.5 + 0j)], [qp.Identity(0), qp.PauliZ(0)]),
     ),
     (
         FermiWord({(0, 0): "-", (1, 0): "+"}),
         4,
         # obtained with openfermion using: binary_code_transform(FermionOperator('0 0^'), parity_code(n_qubits)) for n_qubits = 4
         # reformatted the original openfermion output: (0.5+0j) [] + (0.5+0j) [Z0]
-        ([(0.5 + 0j), (0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
+        ([(0.5 + 0j), (0.5 + 0j)], [qp.Identity(0), qp.PauliZ(0)]),
     ),
     (
         FermiWord({(0, 0): "-", (1, 1): "+"}),
@@ -80,10 +80,10 @@ FERMI_WORDS_AND_OPS = [
         (
             [(-0.25 + 0j), 0.25, (-0 - 0.25j), (0.25j)],
             [
-                qml.PauliX(0),
-                qml.PauliX(0) @ qml.PauliZ(1),
-                qml.PauliY(0),
-                qml.PauliY(0) @ qml.PauliZ(1),
+                qp.PauliX(0),
+                qp.PauliX(0) @ qp.PauliZ(1),
+                qp.PauliY(0),
+                qp.PauliY(0) @ qp.PauliZ(1),
             ],
         ),
     ),
@@ -99,10 +99,10 @@ FERMI_WORDS_AND_OPS = [
         (
             [(-0.25 + 0j), 0.25j, (-0 - 0.25j), -0.25],
             [
-                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2),
-                qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2),
+                qp.PauliX(0) @ qp.PauliX(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliX(0) @ qp.PauliX(1) @ qp.PauliY(2),
+                qp.PauliY(0) @ qp.PauliX(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliY(0) @ qp.PauliX(1) @ qp.PauliY(2),
             ],
         ),
     ),
@@ -112,7 +112,7 @@ FERMI_WORDS_AND_OPS = [
         # obtained with openfermion using: binary_code_transform(FermionOperator('5^ 5 5^ 5'), parity_code(n_qubits)) with 6 qubits
         (
             [(0.5 + 0j), (-0.5 + 0j)],
-            [qml.Identity(0), qml.PauliZ(4) @ qml.PauliZ(5)],
+            [qp.Identity(0), qp.PauliZ(4) @ qp.PauliZ(5)],
         ),
     ),
     (
@@ -126,10 +126,10 @@ FERMI_WORDS_AND_OPS = [
         (
             [-0.25, 0.25j, -0.25j, -0.25],
             [
-                qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
-                qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliY(1) @ qml.PauliY(2),
+                qp.PauliZ(0) @ qp.PauliX(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliZ(0) @ qp.PauliX(1) @ qp.PauliY(2),
+                qp.PauliY(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliY(1) @ qp.PauliY(2),
             ],
         ),
     ),
@@ -137,7 +137,7 @@ FERMI_WORDS_AND_OPS = [
         FermiWord({(0, 1): "+", (1, 0): "-", (2, 1): "+", (3, 1): "-"}),
         6,
         # obtained with openfermion using: binary_code_transform(FermionOperator('1^ 0 1^ 1'), parity_code(n_qubits)) with 6 qubits
-        ([0], [qml.Identity(0)]),
+        ([0], [qp.Identity(0)]),
     ),
 ]
 
@@ -158,14 +158,14 @@ FERMI_OPS_COMPLEX = [
         (
             [(-0 - 0.125j), 0.125, 0.125j, 0.125, -0.125, -0.125j, 0.125, -0.125j],
             [
-                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliY(3),
-                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3),
-                qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliX(3),
-                qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(3),
-                qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliY(3),
-                qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(3),
-                qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliX(3),
-                qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(3),
+                qp.PauliX(0) @ qp.PauliX(1) @ qp.PauliZ(2) @ qp.PauliY(3),
+                qp.PauliX(0) @ qp.PauliX(1) @ qp.PauliX(3),
+                qp.PauliX(0) @ qp.PauliY(1) @ qp.PauliZ(2) @ qp.PauliX(3),
+                qp.PauliX(0) @ qp.PauliY(1) @ qp.PauliY(3),
+                qp.PauliY(0) @ qp.PauliX(1) @ qp.PauliZ(2) @ qp.PauliY(3),
+                qp.PauliY(0) @ qp.PauliX(1) @ qp.PauliX(3),
+                qp.PauliY(0) @ qp.PauliY(1) @ qp.PauliZ(2) @ qp.PauliX(3),
+                qp.PauliY(0) @ qp.PauliY(1) @ qp.PauliY(3),
             ],
         ),
     ),
@@ -181,10 +181,10 @@ FERMI_OPS_COMPLEX = [
         (
             [0.25, -0.25j, 0.25j, 0.25],
             [
-                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2),
-                qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2),
+                qp.PauliX(0) @ qp.PauliX(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliX(0) @ qp.PauliX(1) @ qp.PauliY(2),
+                qp.PauliY(0) @ qp.PauliX(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliY(0) @ qp.PauliX(1) @ qp.PauliY(2),
             ],
         ),
     ),
@@ -200,10 +200,10 @@ FERMI_OPS_COMPLEX = [
         (
             [(-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j), (0.25 + 0j)],
             [
-                qml.Identity(0),
-                qml.PauliZ(0) @ qml.PauliZ(1),
-                qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3),
-                qml.PauliZ(2) @ qml.PauliZ(3),
+                qp.Identity(0),
+                qp.PauliZ(0) @ qp.PauliZ(1),
+                qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2) @ qp.PauliZ(3),
+                qp.PauliZ(2) @ qp.PauliZ(3),
             ],
         ),
     ),
@@ -223,14 +223,14 @@ FERMI_OPS_COMPLEX = [
         (
             [0.125, 0.125, 0.125j, 0.125j, -0.125j, -0.125j, 0.125, 0.125],
             [
-                qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliZ(4),
-                qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2),
-                qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliZ(4),
-                qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliZ(3),
-                qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliZ(4),
-                qml.PauliY(1) @ qml.PauliY(2),
-                qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliZ(4),
+                qp.PauliZ(0) @ qp.PauliX(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliZ(0) @ qp.PauliX(1) @ qp.PauliX(2) @ qp.PauliZ(4),
+                qp.PauliZ(0) @ qp.PauliX(1) @ qp.PauliY(2),
+                qp.PauliZ(0) @ qp.PauliX(1) @ qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliZ(4),
+                qp.PauliY(1) @ qp.PauliX(2) @ qp.PauliZ(3),
+                qp.PauliY(1) @ qp.PauliX(2) @ qp.PauliZ(4),
+                qp.PauliY(1) @ qp.PauliY(2),
+                qp.PauliY(1) @ qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliZ(4),
             ],
         ),
     ),
@@ -238,7 +238,7 @@ FERMI_OPS_COMPLEX = [
         FermiWord({(0, 3): "+", (1, 1): "-", (2, 3): "+", (3, 1): "-"}),
         6,
         # obtained with openfermion using: binary_code_transform(FermionOperator('3^ 1 3^ 1'), parity_code(n_qubits)) with 6 qubits
-        ([0], [qml.Identity(3)]),
+        ([0], [qp.Identity(3)]),
     ),
     (
         FermiWord({(0, 1): "+", (1, 0): "+", (2, 4): "-", (3, 5): "-"}),
@@ -280,22 +280,22 @@ FERMI_OPS_COMPLEX = [
                 0.0625,
             ],
             [
-                qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(4),
-                qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliX(0) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliX(0) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliX(0) @ qml.PauliX(4),
-                qml.PauliX(0) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(4),
-                qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliY(0) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliY(0) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliY(0) @ qml.PauliX(4),
-                qml.PauliY(0) @ qml.PauliY(4) @ qml.PauliZ(5),
+                qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliZ(3) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliX(4),
+                qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliX(0) @ qp.PauliZ(3) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliX(0) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliX(0) @ qp.PauliX(4),
+                qp.PauliX(0) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliY(0) @ qp.PauliZ(1) @ qp.PauliZ(3) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliY(0) @ qp.PauliZ(1) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliY(0) @ qp.PauliZ(1) @ qp.PauliX(4),
+                qp.PauliY(0) @ qp.PauliZ(1) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliY(0) @ qp.PauliZ(3) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliY(0) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliY(0) @ qp.PauliX(4),
+                qp.PauliY(0) @ qp.PauliY(4) @ qp.PauliZ(5),
             ],
         ),
     ),
@@ -311,10 +311,10 @@ FERMI_OPS_COMPLEX = [
         (
             [(-0.25 + 0j), 0.25, 0.25j, (-0 - 0.25j)],
             [
-                qml.PauliX(0),
-                qml.PauliX(0) @ qml.PauliZ(1),
-                qml.PauliY(0),
-                qml.PauliY(0) @ qml.PauliZ(1),
+                qp.PauliX(0),
+                qp.PauliX(0) @ qp.PauliZ(1),
+                qp.PauliY(0),
+                qp.PauliY(0) @ qp.PauliZ(1),
             ],
         ),
     ),
@@ -390,48 +390,48 @@ FERMI_OPS_COMPLEX = [
                 -0.03125,
             ],
             [
-                qml.PauliZ(0)
-                @ qml.PauliZ(1)
-                @ qml.PauliX(2)
-                @ qml.PauliZ(3)
-                @ qml.PauliX(4)
-                @ qml.PauliZ(5),
-                qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliX(4),
-                qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                qml.PauliZ(0)
-                @ qml.PauliZ(1)
-                @ qml.PauliY(2)
-                @ qml.PauliZ(3)
-                @ qml.PauliY(4)
-                @ qml.PauliZ(5),
-                qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliY(4),
-                qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliY(4),
-                qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliX(4),
-                qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliY(4),
-                qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliX(4),
-                qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                qml.PauliX(2) @ qml.PauliX(4),
-                qml.PauliX(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliY(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                qml.PauliY(2) @ qml.PauliY(4),
+                qp.PauliZ(0)
+                @ qp.PauliZ(1)
+                @ qp.PauliX(2)
+                @ qp.PauliZ(3)
+                @ qp.PauliX(4)
+                @ qp.PauliZ(5),
+                qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliX(2) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliX(2) @ qp.PauliX(4),
+                qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliX(2) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliX(4),
+                qp.PauliZ(0)
+                @ qp.PauliZ(1)
+                @ qp.PauliY(2)
+                @ qp.PauliZ(3)
+                @ qp.PauliY(4)
+                @ qp.PauliZ(5),
+                qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliY(2) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliY(2) @ qp.PauliY(4),
+                qp.PauliZ(0) @ qp.PauliX(2) @ qp.PauliZ(3) @ qp.PauliX(4),
+                qp.PauliZ(0) @ qp.PauliX(2) @ qp.PauliZ(3) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliZ(0) @ qp.PauliX(2) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliZ(0) @ qp.PauliX(2) @ qp.PauliY(4),
+                qp.PauliZ(0) @ qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliZ(0) @ qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliZ(0) @ qp.PauliY(2) @ qp.PauliX(4),
+                qp.PauliZ(0) @ qp.PauliY(2) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliZ(1) @ qp.PauliX(2) @ qp.PauliZ(3) @ qp.PauliX(4),
+                qp.PauliZ(1) @ qp.PauliX(2) @ qp.PauliZ(3) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliZ(1) @ qp.PauliX(2) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliZ(1) @ qp.PauliX(2) @ qp.PauliY(4),
+                qp.PauliZ(1) @ qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliZ(1) @ qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliZ(1) @ qp.PauliY(2) @ qp.PauliX(4),
+                qp.PauliZ(1) @ qp.PauliY(2) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliX(2) @ qp.PauliZ(3) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliX(2) @ qp.PauliZ(3) @ qp.PauliY(4),
+                qp.PauliX(2) @ qp.PauliX(4),
+                qp.PauliX(2) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliX(4),
+                qp.PauliY(2) @ qp.PauliZ(3) @ qp.PauliY(4) @ qp.PauliZ(5),
+                qp.PauliY(2) @ qp.PauliX(4) @ qp.PauliZ(5),
+                qp.PauliY(2) @ qp.PauliY(4),
             ],
         ),
     ),
@@ -446,7 +446,7 @@ def test_parity_transform_fermi_word_ps(fermionic_op, n_qubits, result):
     qubit_op.simplify()
 
     # get expected op as PauliSentence and simplify
-    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+    expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
     expected_op.simplify()
 
     assert qubit_op == expected_op
@@ -458,15 +458,15 @@ def test_parity_transform_fermi_word_operation(fermionic_op, n_qubits, result):
 
     qubit_op = parity_transform(fermionic_op, n_qubits)
 
-    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+    expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
+    qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
 def test_parity_transform_for_identity():
     """Test that the parity_transform function returns the correct qubit operator for Identity."""
-    qml.assert_equal(parity_transform(FermiWord({}), 2), qml.Identity(0))
+    qp.assert_equal(parity_transform(FermiWord({}), 2), qp.Identity(0))
 
 
 def test_parity_transform_for_identity_ps():
@@ -533,7 +533,7 @@ def test_fermi_sentence_identity():
     assert ps_op == ps
 
     result = ps.operation(wire_order=[0])
-    qml.assert_equal(qubit_op.simplify(), result.simplify())
+    qp.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 FERMI_AND_PAULI_SENTENCES = [
@@ -635,63 +635,63 @@ def test_parity_transform_for_fermi_sentence_operation(fermionic_op, n_qubits, r
     qubit_op = parity_transform(fermionic_op, n_qubits)
     result = result.operation(wires)
 
-    qml.assert_equal(qubit_op.simplify(), result.simplify())
+    qp.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 WIRE_MAP_FOR_FERMI_SENTENCE = [
     (
         None,
         [
-            qml.s_prod(-0.25j, qml.PauliY(0)),
-            qml.s_prod((0.25j), qml.prod(qml.PauliY(0), qml.PauliZ(1))),
-            qml.s_prod((-0.25 + 0j), qml.prod(qml.PauliX(0), qml.PauliZ(1))),
-            qml.s_prod(0.25, qml.PauliX(0)),
-            qml.s_prod((0.5 + 0j), qml.Identity(0)),
-            qml.s_prod((-0.5 + 0j), qml.PauliZ(0)),
+            qp.s_prod(-0.25j, qp.PauliY(0)),
+            qp.s_prod((0.25j), qp.prod(qp.PauliY(0), qp.PauliZ(1))),
+            qp.s_prod((-0.25 + 0j), qp.prod(qp.PauliX(0), qp.PauliZ(1))),
+            qp.s_prod(0.25, qp.PauliX(0)),
+            qp.s_prod((0.5 + 0j), qp.Identity(0)),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ(0)),
         ],
     ),
     (
         {0: 0, 1: 1},
         [
-            qml.s_prod(-0.25j, qml.PauliY(0)),
-            qml.s_prod((0.25j), qml.prod(qml.PauliY(0), qml.PauliZ(1))),
-            qml.s_prod((-0.25 + 0j), qml.prod(qml.PauliX(0), qml.PauliZ(1))),
-            qml.s_prod(0.25, qml.PauliX(0)),
-            qml.s_prod((0.5 + 0j), qml.Identity(0)),
-            qml.s_prod((-0.5 + 0j), qml.PauliZ(0)),
+            qp.s_prod(-0.25j, qp.PauliY(0)),
+            qp.s_prod((0.25j), qp.prod(qp.PauliY(0), qp.PauliZ(1))),
+            qp.s_prod((-0.25 + 0j), qp.prod(qp.PauliX(0), qp.PauliZ(1))),
+            qp.s_prod(0.25, qp.PauliX(0)),
+            qp.s_prod((0.5 + 0j), qp.Identity(0)),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ(0)),
         ],
     ),
     (
         {0: 1, 1: 0},
         [
-            qml.s_prod(-0.25j, qml.PauliY(1)),
-            qml.s_prod((0.25j), qml.prod(qml.PauliY(1), qml.PauliZ(0))),
-            qml.s_prod((-0.25 + 0j), qml.prod(qml.PauliX(1), qml.PauliZ(0))),
-            qml.s_prod(0.25, qml.PauliX(1)),
-            qml.s_prod((0.5 + 0j), qml.Identity(0)),
-            qml.s_prod((-0.5 + 0j), qml.PauliZ(1)),
+            qp.s_prod(-0.25j, qp.PauliY(1)),
+            qp.s_prod((0.25j), qp.prod(qp.PauliY(1), qp.PauliZ(0))),
+            qp.s_prod((-0.25 + 0j), qp.prod(qp.PauliX(1), qp.PauliZ(0))),
+            qp.s_prod(0.25, qp.PauliX(1)),
+            qp.s_prod((0.5 + 0j), qp.Identity(0)),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ(1)),
         ],
     ),
     (
         {0: 3, 1: 2},
         [
-            qml.s_prod(-0.25j, qml.PauliY(3)),
-            qml.s_prod((0.25j), qml.prod(qml.PauliY(3), qml.PauliZ(2))),
-            qml.s_prod((-0.25 + 0j), qml.prod(qml.PauliX(3), qml.PauliZ(2))),
-            qml.s_prod(0.25, qml.PauliX(3)),
-            qml.s_prod((0.5 + 0j), qml.Identity(3)),
-            qml.s_prod((-0.5 + 0j), qml.PauliZ(3)),
+            qp.s_prod(-0.25j, qp.PauliY(3)),
+            qp.s_prod((0.25j), qp.prod(qp.PauliY(3), qp.PauliZ(2))),
+            qp.s_prod((-0.25 + 0j), qp.prod(qp.PauliX(3), qp.PauliZ(2))),
+            qp.s_prod(0.25, qp.PauliX(3)),
+            qp.s_prod((0.5 + 0j), qp.Identity(3)),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ(3)),
         ],
     ),
     (
         {0: "b", 1: "a"},
         [
-            qml.s_prod(-0.25j, qml.PauliY("b")),
-            qml.s_prod((0.25j), qml.prod(qml.PauliY("b"), qml.PauliZ("a"))),
-            qml.s_prod((-0.25 + 0j), qml.prod(qml.PauliX("b"), qml.PauliZ("a"))),
-            qml.s_prod(0.25, qml.PauliX("b")),
-            qml.s_prod((0.5 + 0j), qml.Identity("b")),
-            qml.s_prod((-0.5 + 0j), qml.PauliZ("b")),
+            qp.s_prod(-0.25j, qp.PauliY("b")),
+            qp.s_prod((0.25j), qp.prod(qp.PauliY("b"), qp.PauliZ("a"))),
+            qp.s_prod((-0.25 + 0j), qp.prod(qp.PauliX("b"), qp.PauliZ("a"))),
+            qp.s_prod(0.25, qp.PauliX("b")),
+            qp.s_prod((0.5 + 0j), qp.Identity("b")),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ("b")),
         ],
     ),
 ]
@@ -704,12 +704,12 @@ def test_providing_wire_map_fermi_sentence_to_operation(wire_map, ops):
     )
     n_qubits = 4
     op = parity_transform(fs, n_qubits, wire_map=wire_map)
-    result = qml.sum(*ops)
+    result = qp.sum(*ops)
 
     assert op.wires == result.wires
 
     # converting to Pauli representation for comparison because
-    # qml.equal isn't playing nicely with term ordering
+    # qp.equal isn't playing nicely with term ordering
     assert pauli_sentence(op) == pauli_sentence(result)
 
 
@@ -720,7 +720,7 @@ def test_providing_wire_map_fermi_sentence_to_ps(wire_map, ops):
     )
     n_qubits = 4
     op = parity_transform(fs, n_qubits, wire_map=wire_map, ps=True)
-    result_op = qml.sum(*ops)
+    result_op = qp.sum(*ops)
     ps = pauli_sentence(result_op)
 
     ps.simplify()
@@ -733,28 +733,28 @@ WIRE_MAP_FOR_FERMI_WORDS = [
     (
         None,
         [
-            qml.s_prod(-0.25j, qml.PauliY(0)),
-            qml.s_prod(0.25 + 0j, qml.prod(qml.PauliX(0), qml.PauliZ(1))),
-            qml.s_prod(0.25 + 0j, qml.PauliX(0)),
-            qml.s_prod(-0.25j, qml.prod(qml.PauliY(0), qml.PauliZ(1))),
+            qp.s_prod(-0.25j, qp.PauliY(0)),
+            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX(0), qp.PauliZ(1))),
+            qp.s_prod(0.25 + 0j, qp.PauliX(0)),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY(0), qp.PauliZ(1))),
         ],
     ),
     (
         {0: 3, 1: 2},
         [
-            qml.s_prod(-0.25j, qml.PauliY(3)),
-            qml.s_prod(0.25 + 0j, qml.prod(qml.PauliX(3), qml.PauliZ(2))),
-            qml.s_prod(0.25 + 0j, qml.PauliX(3)),
-            qml.s_prod(-0.25j, qml.prod(qml.PauliY(3), qml.PauliZ(2))),
+            qp.s_prod(-0.25j, qp.PauliY(3)),
+            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX(3), qp.PauliZ(2))),
+            qp.s_prod(0.25 + 0j, qp.PauliX(3)),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY(3), qp.PauliZ(2))),
         ],
     ),
     (
         {0: "b", 1: "a"},
         [
-            qml.s_prod(-0.25j, qml.PauliY("b")),
-            qml.s_prod(0.25 + 0j, qml.prod(qml.PauliX("b"), qml.PauliZ("a"))),
-            qml.s_prod(0.25 + 0j, qml.PauliX("b")),
-            qml.s_prod(-0.25j, qml.prod(qml.PauliY("b"), qml.PauliZ("a"))),
+            qp.s_prod(-0.25j, qp.PauliY("b")),
+            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX("b"), qp.PauliZ("a"))),
+            qp.s_prod(0.25 + 0j, qp.PauliX("b")),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY("b"), qp.PauliZ("a"))),
         ],
     ),
 ]
@@ -765,12 +765,12 @@ def test_providing_wire_map_fermi_word_to_operation(wire_map, ops):
     w = FermiWord({(0, 0): "+", (1, 1): "+"})
     n_qubits = 4
     op = parity_transform(w, n_qubits, wire_map=wire_map)
-    result = qml.sum(*ops)
+    result = qp.sum(*ops)
 
     op.simplify()
 
     # converting to Pauli representation for comparison because
-    # qml.equal isn't playing nicely with term ordering
+    # qp.equal isn't playing nicely with term ordering
     assert pauli_sentence(op) == pauli_sentence(result)
 
 
@@ -779,7 +779,7 @@ def test_providing_wire_map_fermi_word_to_ps(wire_map, ops):
     w = FermiWord({(0, 0): "+", (1, 1): "+"})
     n_qubits = 4
     op = parity_transform(w, n_qubits, wire_map=wire_map, ps=True)
-    result_op = qml.sum(*ops)
+    result_op = qp.sum(*ops)
     ps = pauli_sentence(result_op)
 
     ps.simplify()

@@ -43,20 +43,20 @@ class TestSampleMeasurement:
         class MyMeasurement(SampleMeasurement):
             # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
-                return qml.math.sum(samples[..., self.wires])
+                return qp.math.sum(samples[..., self.wires])
 
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.set_shots(1000)
-        @qml.qnode(dev)
+        @qp.set_shots(1000)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qp.PauliX(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        assert qml.math.allequal(circuit(), [1000, 0])
+        assert qp.math.allequal(circuit(), [1000, 0])
 
     def test_sample_measurement_without_shots(self):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
@@ -64,16 +64,16 @@ class TestSampleMeasurement:
         class MyMeasurement(SampleMeasurement):
             # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
-                return qml.math.sum(samples[..., self.wires])
+                return qp.math.sum(samples[..., self.wires])
 
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(0)
+            qp.PauliX(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
@@ -86,16 +86,16 @@ class TestSampleMeasurement:
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.set_shots(1000)
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.set_shots(1000)
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.PauliX(0)
-            return qml.sample(wires=[0]), qml.sample(wires=[1])
+            qp.PauliX(0)
+            return qp.sample(wires=[0]), qp.sample(wires=[1])
 
         circuit.device._device.measurement_map[SampleMP] = "test_method"
         circuit.device._device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
-        assert qml.math.allequal(circuit(), [2, 2])
+        assert qp.math.allequal(circuit(), [2, 2])
 
 
 class TestStateMeasurement:
@@ -106,11 +106,11 @@ class TestStateMeasurement:
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
-                return qml.math.sum(state)
+                return qp.math.sum(state)
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             return MyMeasurement()
 
@@ -121,12 +121,12 @@ class TestStateMeasurement:
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
-                return qml.math.sum(state)
+                return qp.math.sum(state)
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.set_shots(1000)
-        @qml.qnode(dev)
+        @qp.set_shots(1000)
+        @qp.qnode(dev)
         def circuit():
             return MyMeasurement()
 
@@ -141,9 +141,9 @@ class TestStateMeasurement:
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        @qp.qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit():
-            return qml.state()
+            return qp.state()
 
         circuit.device._device.measurement_map[StateMP] = "test_method"
         circuit.device._device.test_method = lambda obs, shot_range=None, bin_size=None: 2
@@ -163,8 +163,8 @@ class TestMeasurementTransform:
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.set_shots(1000)
-        @qml.qnode(dev)
+        @qp.set_shots(1000)
+        @qp.qnode(dev)
         def circuit():
             return MyMeasurement()
 
@@ -175,10 +175,10 @@ class TestMeasurementTransform:
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.set_shots(1000)
-        @qml.qnode(dev)
+        @qp.set_shots(1000)
+        @qp.qnode(dev)
         def circuit():
-            return qml.classical_shadow(wires=0)
+            return qp.classical_shadow(wires=0)
 
         circuit.device._device.measurement_map[ClassicalShadowMP] = "test_method"
         circuit.device._device.test_method = lambda tape: 2

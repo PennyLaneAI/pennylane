@@ -55,47 +55,47 @@ class TestIndividualGates:
 
     def test_rz_in_mbqc_representation(self, seed):
         """Test that the RZ gate in the MBQC representation gives correct results."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         # Reference RZ circuit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_ref(start_state, angle):
-            qml.StatePrep(start_state, wires=0)
-            qml.RZ(angle, wires=0)
-            return qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.Z(0))
+            qp.StatePrep(start_state, wires=0)
+            qp.RZ(angle, wires=0)
+            return qp.expval(qp.X(0)), qp.expval(qp.Y(0)), qp.expval(qp.Z(0))
 
         # Define the graph structure for the RZ cluster state (omit node 1 for input):
         # 1 -- 2 -- 3 -- 4 -- 5
         lattice = generate_lattice([4], "chain")
 
         # Equivalent RZ circuit in the MBQC representation
-        @qml.ftqc.diagonalize_mcms
-        @qml.qnode(dev, mcm_method="tree-traversal")
+        @qp.ftqc.diagonalize_mcms
+        @qp.qnode(dev, mcm_method="tree-traversal")
         def circuit_mbqc(start_state, angle):
             # prep input node
-            qml.StatePrep(start_state, wires=[1])
+            qp.StatePrep(start_state, wires=[1])
 
             # prep graph state
-            qml.ftqc.GraphStatePrep(lattice.graph, wires=[2, 3, 4, 5])
+            qp.ftqc.GraphStatePrep(lattice.graph, wires=[2, 3, 4, 5])
 
             # entangle input and graph state
-            qml.CZ([1, 2])
+            qp.CZ([1, 2])
 
             # RZ measurement pattern from Raussendorf, Browne & Briegel (2003)
-            m0 = qml.ftqc.measure_x(1)
-            m1 = qml.ftqc.measure_x(2)
-            m2 = qml.ftqc.cond_measure(
+            m0 = qp.ftqc.measure_x(1)
+            m1 = qp.ftqc.measure_x(2)
+            m2 = qp.ftqc.cond_measure(
                 m1,
-                partial(qml.ftqc.measure_arbitrary_basis, angle=angle),
-                partial(qml.ftqc.measure_arbitrary_basis, angle=-angle),
+                partial(qp.ftqc.measure_arbitrary_basis, angle=angle),
+                partial(qp.ftqc.measure_arbitrary_basis, angle=-angle),
             )(plane="XY", wires=3)
-            m3 = qml.ftqc.measure_x(4)
+            m3 = qp.ftqc.measure_x(4)
 
             # corrections based on measurement outcomes
-            qml.cond((m0 + m2) % 2, qml.Z)(5)
-            qml.cond((m1 + m3) % 2, qml.X)(5)
+            qp.cond((m0 + m2) % 2, qp.Z)(5)
+            qp.cond((m1 + m3) % 2, qp.X)(5)
 
-            return qml.expval(qml.X(5)), qml.expval(qml.Y(5)), qml.expval(qml.Z(5))
+            return qp.expval(qp.X(5)), qp.expval(qp.Y(5)), qp.expval(qp.Z(5))
 
         initial_state = generate_random_states(n=1, n_qubit=1, seed=seed)
         rz_angle = generate_random_rotation_angles(n=1, seed=seed)
@@ -107,14 +107,14 @@ class TestIndividualGates:
 
     def test_cnot_in_mbqc_representation(self, seed):
         """Test that the CNOT gate in the MBQC representation gives correct results."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         # Reference CNOT circuit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_ref(start_state):
-            qml.StatePrep(start_state, wires=[0, 1])
-            qml.CNOT([0, 1])
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            qp.StatePrep(start_state, wires=[0, 1])
+            qp.CNOT([0, 1])
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         # Define the graph structure for the CNOT cluster state (omit nodes 1 and 9 for input)
         # 1 -- 2 -- 3 -- 4 -- 5 -- 6 -- 7
@@ -143,46 +143,46 @@ class TestIndividualGates:
         )
 
         # Equivalent CNOT circuit in the MBQC representation
-        @qml.ftqc.diagonalize_mcms
-        @qml.qnode(dev, mcm_method="tree-traversal")
+        @qp.ftqc.diagonalize_mcms
+        @qp.qnode(dev, mcm_method="tree-traversal")
         def circuit_mbqc(start_state):
-            qml.StatePrep(start_state, wires=[1, 9])
+            qp.StatePrep(start_state, wires=[1, 9])
 
             # prep graph state
-            qml.ftqc.GraphStatePrep(g, wires=wires)
+            qp.ftqc.GraphStatePrep(g, wires=wires)
 
             # entangle
-            qml.CZ([1, 2])
-            qml.CZ([9, 10])
+            qp.CZ([1, 2])
+            qp.CZ([9, 10])
 
             # CNOT measurement pattern from Raussendorf, Browne & Briegel (2003)
-            m1 = qml.ftqc.measure_x(1)
-            m2 = qml.ftqc.measure_y(2)
-            m3 = qml.ftqc.measure_y(3)
-            m4 = qml.ftqc.measure_y(4)
-            m5 = qml.ftqc.measure_y(5)
-            m6 = qml.ftqc.measure_y(6)
-            m8 = qml.ftqc.measure_y(8)
-            m9 = qml.ftqc.measure_x(9)
-            m10 = qml.ftqc.measure_x(10)
-            m11 = qml.ftqc.measure_x(11)
-            m12 = qml.ftqc.measure_y(12)
-            m13 = qml.ftqc.measure_x(13)
-            m14 = qml.ftqc.measure_x(14)
+            m1 = qp.ftqc.measure_x(1)
+            m2 = qp.ftqc.measure_y(2)
+            m3 = qp.ftqc.measure_y(3)
+            m4 = qp.ftqc.measure_y(4)
+            m5 = qp.ftqc.measure_y(5)
+            m6 = qp.ftqc.measure_y(6)
+            m8 = qp.ftqc.measure_y(8)
+            m9 = qp.ftqc.measure_x(9)
+            m10 = qp.ftqc.measure_x(10)
+            m11 = qp.ftqc.measure_x(11)
+            m12 = qp.ftqc.measure_y(12)
+            m13 = qp.ftqc.measure_x(13)
+            m14 = qp.ftqc.measure_x(14)
 
             # corrections on controls
             x_cor = m2 + m3 + m5 + m6
             z_cor = m1 + m3 + m4 + m5 + m8 + m9 + m11 + 1
-            qml.cond(z_cor % 2, qml.Z)(7)
-            qml.cond(x_cor % 2, qml.X)(7)
+            qp.cond(z_cor % 2, qp.Z)(7)
+            qp.cond(x_cor % 2, qp.X)(7)
 
             # corrections on target
             x_cor = m2 + m3 + m8 + m10 + m12 + m14
             z_cor = m9 + m11 + m13
-            qml.cond(z_cor % 2, qml.Z)(15)
-            qml.cond(x_cor % 2, qml.X)(15)
+            qp.cond(z_cor % 2, qp.Z)(15)
+            qp.cond(x_cor % 2, qp.X)(15)
 
-            return qml.expval(qml.Z(7)), qml.expval(qml.Z(15))
+            return qp.expval(qp.Z(7)), qp.expval(qp.Z(15))
 
         initial_state = generate_random_states(1, n_qubit=2, seed=seed)
 

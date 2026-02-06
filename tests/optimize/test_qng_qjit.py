@@ -29,9 +29,9 @@ dev_names = (
 
 def circuit(params):
     """Simple circuit to use for testing."""
-    qml.RX(params[0], wires=0)
-    qml.RY(params[1], wires=1)
-    return qml.expval(qml.Z(wires=0))
+    qp.RX(params[0], wires=0)
+    qp.RY(params[1], wires=1)
+    return qp.expval(qp.Z(wires=0))
 
 
 class TestBasics:
@@ -39,21 +39,21 @@ class TestBasics:
 
     def test_initialization_default(self):
         """Test that initializing QNGOptimizerQJIT with default values works."""
-        opt = qml.QNGOptimizerQJIT()
+        opt = qp.QNGOptimizerQJIT()
         assert opt.stepsize == 0.01
         assert opt.approx == "block-diag"
         assert opt.lam == 0
 
     def test_initialization_custom(self):
         """Test that initializing QNGOptimizerQJIT with custom values works."""
-        opt = qml.QNGOptimizerQJIT(stepsize=0.05, approx="diag", lam=1e-9)
+        opt = qp.QNGOptimizerQJIT(stepsize=0.05, approx="diag", lam=1e-9)
         assert opt.stepsize == 0.05
         assert opt.approx == "diag"
         assert opt.lam == 1e-9
 
     def test_init_none_state(self):
         """Test that the QNGOptimizerQJIT state is initialized to `None`."""
-        opt = qml.QNGOptimizerQJIT()
+        opt = qp.QNGOptimizerQJIT()
         assert opt.init([0.1, 0.2]) is None
 
 
@@ -67,10 +67,10 @@ class TestGradients:
         # pylint:disable=protected-access
         import jax.numpy as jnp
 
-        device = qml.device(dev_name, wires=2)
-        qnode = qml.QNode(circuit, device=device)
+        device = qp.device(dev_name, wires=2)
+        qnode = qp.QNode(circuit, device=device)
 
-        opt = qml.QNGOptimizerQJIT()
+        opt = qp.QNGOptimizerQJIT()
         params = [0.1, 0.2]
 
         params_jax = jnp.array(params)
@@ -87,10 +87,10 @@ class TestGradients:
         # pylint:disable=protected-access
         import jax.numpy as jnp
 
-        device = qml.device(dev_name, wires=2)
-        qnode = qml.QNode(circuit, device=device)
+        device = qp.device(dev_name, wires=2)
+        qnode = qp.QNode(circuit, device=device)
 
-        opt = qml.QNGOptimizerQJIT()
+        opt = qp.QNGOptimizerQJIT()
         params = [0.1, 0.2]
 
         params_jax = jnp.array(params)
@@ -113,17 +113,17 @@ class TestMetricTensor:
         # pylint:disable=protected-access
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.RY(eta, wires=0)
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(eta, wires=0)
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         eta = 0.7
         params = jnp.array([0.11, 0.412])
 
-        opt = qml.QNGOptimizerQJIT(approx=None)
+        opt = qp.QNGOptimizerQJIT(approx=None)
         mt = opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
@@ -142,20 +142,20 @@ class TestMetricTensor:
         # pylint:disable=protected-access
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.RY(eta, wires=0)
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(eta, wires=0)
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         eta = 0.7
         params = jnp.array([0.11, 0.412])
 
-        blockdiag_opt = qml.QNGOptimizerQJIT(approx="block-diag")
+        blockdiag_opt = qp.QNGOptimizerQJIT(approx="block-diag")
         blockdiag_mt = blockdiag_opt._get_metric_tensor(circ, params)
 
-        diag_opt = qml.QNGOptimizerQJIT(approx="diag")
+        diag_opt = qp.QNGOptimizerQJIT(approx="diag")
         diag_mt = diag_opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
@@ -175,12 +175,12 @@ class TestMetricTensor:
         # pylint:disable=protected-access
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.RY(eta, wires=0)
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(eta, wires=0)
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         eta = np.pi
         params = jnp.array([eta / 2, 0.412])
@@ -188,12 +188,12 @@ class TestMetricTensor:
         stepsize = 1.0
         lam = 1e-11
 
-        opt_with_lam = qml.QNGOptimizerQJIT(stepsize=stepsize, approx=None, lam=lam)
+        opt_with_lam = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None, lam=lam)
         state_with_lam = opt_with_lam.init(params)
         new_params_with_lam, _ = opt_with_lam.step(circ, params, state_with_lam)
         mt_with_lam = opt_with_lam._get_metric_tensor(circ, params)
 
-        opt = qml.QNGOptimizerQJIT(stepsize=stepsize, approx=None)
+        opt = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None)
         state = opt.init(params)
         new_params, _ = opt.step(circ, params, state)
         mt = opt._get_metric_tensor(circ, params)
@@ -223,15 +223,15 @@ class TestExceptions:
         """Test that if the objective function is not a QNode, an error is raised."""
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(a):
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(a, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def cost(a):
             return circ(a)
 
-        opt = qml.QNGOptimizerQJIT()
+        opt = qp.QNGOptimizerQJIT()
         params = jnp.array(0.5)
         state = opt.init(params)
 
@@ -251,24 +251,24 @@ class TestOptimize:
         """Test that the step and step_and_cost methods are returning the correct result."""
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         params = [0.31, 0.842]
-        params_qml = qml.numpy.array(params)
+        params_qml = qp.numpy.array(params)
         params_jax = jnp.array(params)
 
-        opt = qml.QNGOptimizerQJIT(stepsize=0.05)
+        opt = qp.QNGOptimizerQJIT(stepsize=0.05)
         state = opt.init(params_jax)
 
         new_params1, _ = opt.step(circ, params_jax, state)
         new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
 
         expected_mt = np.array([0.25, (np.cos(params[0]) ** 2) / 4])
-        expected_params = params_qml - opt.stepsize * qml.grad(circ)(params_qml) / expected_mt
+        expected_params = params_qml - opt.stepsize * qp.grad(circ)(params_qml) / expected_mt
         expected_cost = circ(params)
 
         assert np.allclose(new_params1, expected_params)
@@ -282,17 +282,17 @@ class TestOptimize:
         when the generator of an operator is a Hamiltonian."""
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         params = [0.31, 0.842]
-        params_qml = qml.numpy.array(params)
+        params_qml = qp.numpy.array(params)
         params_jax = jnp.array(params)
 
-        opt = qml.QNGOptimizerQJIT(stepsize=0.05)
+        opt = qp.QNGOptimizerQJIT(stepsize=0.05)
         state = opt.init(params_jax)
 
         new_params1, _ = opt.step(circ, params_jax, state)
@@ -300,7 +300,7 @@ class TestOptimize:
 
         expected_cost = circ(params)
         expected_mt = np.array([1 / 16, 1 / 4])
-        expected_params = params_qml - opt.stepsize * qml.grad(circ)(params_qml) / expected_mt
+        expected_params = params_qml - opt.stepsize * qp.grad(circ)(params_qml) / expected_mt
 
         assert np.allclose(cost, expected_cost)
         assert np.allclose(new_params1, expected_params)
@@ -312,11 +312,11 @@ class TestOptimize:
         """Test that a simple qubit rotations circuit gets optimized correctly, checking params and cost at each step."""
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def grad(params):
             """Returns the gradient of the above circuit."""
@@ -324,7 +324,7 @@ class TestOptimize:
             db = -np.cos(params[0]) * np.sin(params[1])
             return np.array([da, db])
 
-        opt = qml.QNGOptimizerQJIT(stepsize=0.1)
+        opt = qp.QNGOptimizerQJIT(stepsize=0.1)
         params = jnp.array([0.011, 0.012])
         expected_params = jnp.array([0.011, 0.012])
         state = opt.init(params)
@@ -348,13 +348,13 @@ class TestOptimize:
         import jax
         import jax.numpy as jnp
 
-        device = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, device=device)
+        device = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, device=device)
 
         params = [0.1, 0.2]
         params = jnp.array(params)
 
-        opt = qml.QNGOptimizerQJIT()
+        opt = qp.QNGOptimizerQJIT()
         state = opt.init(params)
 
         new_params1, state1 = opt.step(qnode, params, state)
@@ -382,25 +382,25 @@ class TestOptimize:
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_qjit(self):
-        """Test optimizer compatibility with qml.qjit compilation."""
+        """Test optimizer compatibility with qp.qjit compilation."""
         import jax.numpy as jnp
 
         pytest.importorskip("catalyst")
 
-        device = qml.device("lightning.qubit", wires=2)
-        qnode = qml.QNode(circuit, device=device)
+        device = qp.device("lightning.qubit", wires=2)
+        qnode = qp.QNode(circuit, device=device)
 
         params = [0.1, 0.2]
         params = jnp.array(params)
 
-        opt = qml.QNGOptimizerQJIT()
+        opt = qp.QNGOptimizerQJIT()
         state = opt.init(params)
 
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
 
-        step = qml.qjit(partial(opt.step, qnode))
-        step_and_cost = qml.qjit(partial(opt.step_and_cost, qnode))
+        step = qp.qjit(partial(opt.step, qnode))
+        step_and_cost = qp.qjit(partial(opt.step_and_cost, qnode))
         new_params1_qjit, state1_qjit = step(params, state)
         new_params2_qjit, state2_qjit, cost_qjit = step_and_cost(params, state)
 

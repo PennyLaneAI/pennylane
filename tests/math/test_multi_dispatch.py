@@ -324,7 +324,7 @@ class TestNorm:
         ],
     )
     def test_autograd_norm_gradient(self, arr):
-        """Test that qml.math.norm has the correct gradient with autograd
+        """Test that qp.math.norm has the correct gradient with autograd
         when the order and axis are not specified."""
         norm = fn.norm(arr)
         expected_norm = onp.linalg.norm(arr)

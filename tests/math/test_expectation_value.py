@@ -60,8 +60,8 @@ class TestExpectationValueMath:
         ops, state_vectors, expected = operator_and_states
         ops = func(ops)
         state_vectors = func(state_vectors)
-        overlap = qml.math.expectation_value(ops, state_vectors)
-        assert qml.math.allclose(expected, overlap)
+        overlap = qp.math.expectation_value(ops, state_vectors)
+        assert qp.math.allclose(expected, overlap)
 
     state_wrong_amp = [
         ([[1, 0], [0, 1]], [0.5, 0]),
@@ -80,7 +80,7 @@ class TestExpectationValueMath:
     def test_state_vector_wrong_amplitudes(self, ops, state_vectors):
         """Test that a message is raised when a state does not have right norm"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qml.math.expectation_value(ops, state_vectors, check_state=True)
+            qp.math.expectation_value(ops, state_vectors, check_state=True)
 
     operator_wrong_shape = [
         ([[1, 0, 0], [0, 0, 1]], [0, 1]),
@@ -95,7 +95,7 @@ class TestExpectationValueMath:
     def test_operator_wrong_shape(self, ops, state_vectors):
         """Test that a message is raised when the state does not have the right shape."""
         with pytest.raises(ValueError, match="Operator matrix must be of shape"):
-            qml.math.expectation_value(ops, state_vectors, check_operator=True)
+            qp.math.expectation_value(ops, state_vectors, check_operator=True)
 
     operator_non_hermitian = [
         ([[1, 1], [0, 0]], [0, 1]),
@@ -109,7 +109,7 @@ class TestExpectationValueMath:
     def test_operator_non_hermitian(self, ops, state_vectors):
         """Test that a message is raised when the state does not have the right shape."""
         with pytest.raises(ValueError, match="The matrix is not Hermitian"):
-            qml.math.expectation_value(ops, state_vectors, check_operator=True)
+            qp.math.expectation_value(ops, state_vectors, check_operator=True)
 
     state_wrong_shape = [
         ([[1, 0], [0, 1]], [0, 1, 0]),
@@ -125,7 +125,7 @@ class TestExpectationValueMath:
     def test_state_vector_wrong_shape(self, ops, state_vectors):
         """Test that a message is raised when the state does not have the right shape."""
         with pytest.raises(ValueError, match="State vector must be of shape"):
-            qml.math.expectation_value(ops, state_vectors, check_state=True)
+            qp.math.expectation_value(ops, state_vectors, check_state=True)
 
     def test_same_number_wires_dm(self):
         """Test that the two states must act on the same number of wires"""
@@ -135,12 +135,12 @@ class TestExpectationValueMath:
             ValueError,
             match="The operator and the state vector must have the same number of wires.",
         ):
-            qml.math.expectation_value(ops, state_vectors, check_state=True, check_operator=True)
+            qp.math.expectation_value(ops, state_vectors, check_state=True, check_operator=True)
 
     @pytest.mark.parametrize("func", array_funcs)
     def test_broadcast_op_sv(self, func):
         """Test simultaneous broadcasting of operators and state vectors works."""
-        ops = qml.math.stack(
+        ops = qp.math.stack(
             (
                 func([[1, 0], [0, 0]]),
                 func([[0.5, 0.5], [0.5, 0.5]]),
@@ -148,7 +148,7 @@ class TestExpectationValueMath:
                 func([[0.40975111, 0.40751457], [0.40751457, 0.59024889]]),
             )
         )
-        state_vectors = qml.math.stack(
+        state_vectors = qp.math.stack(
             [
                 func([0, 1]),
                 func([1, 0]),
@@ -158,14 +158,14 @@ class TestExpectationValueMath:
         )
         expected = [0, 0.5, 0.5, 0.8077935208042251]
 
-        overlap = qml.math.expectation_value(ops, state_vectors)
-        assert qml.math.allclose(overlap, expected)
+        overlap = qp.math.expectation_value(ops, state_vectors)
+        assert qp.math.allclose(overlap, expected)
 
     @pytest.mark.parametrize("func", array_funcs)
     def test_broadcast_op_unbatched(self, func):
         """Test broadcasting works for expectation values when the operators input is unbatched"""
         ops = func([[1, 0], [0, 0]])
-        state_vectors = qml.math.stack(
+        state_vectors = qp.math.stack(
             [
                 func([0, 1]),
                 func([1, 0]),
@@ -175,13 +175,13 @@ class TestExpectationValueMath:
         )
         expected = [0, 1, 0.5, 0.7499999934451599]
 
-        overlap = qml.math.expectation_value(ops, state_vectors)
-        assert qml.math.allclose(overlap, expected)
+        overlap = qp.math.expectation_value(ops, state_vectors)
+        assert qp.math.allclose(overlap, expected)
 
     @pytest.mark.parametrize("func", array_funcs)
     def test_broadcast_sv_unbatched(self, func):
         """Test broadcasting works for expectation values when the state vector input is unbatched"""
-        ops = qml.math.stack(
+        ops = qp.math.stack(
             (
                 func([[1, 0], [0, 0]]),
                 func([[0.5, 0.5], [0.5, 0.5]]),
@@ -192,5 +192,5 @@ class TestExpectationValueMath:
         state_vectors = func([1, 0])
         expected = [1, 0.5, 0, 0.40975111]
 
-        overlap = qml.math.expectation_value(ops, state_vectors)
-        assert qml.math.allclose(overlap, expected)
+        overlap = qp.math.expectation_value(ops, state_vectors)
+        assert qp.math.allclose(overlap, expected)

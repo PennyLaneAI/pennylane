@@ -23,11 +23,11 @@ import pennylane as qp
 def test_switches_with_jax():
     """Test switches and status reporting function."""
 
-    assert qml.capture.enabled() is False
-    assert qml.capture.enable() is None
-    assert qml.capture.enabled() is True
-    assert qml.capture.disable() is None
-    assert qml.capture.enabled() is False
+    assert qp.capture.enabled() is False
+    assert qp.capture.enable() is None
+    assert qp.capture.enabled() is True
+    assert qp.capture.disable() is None
+    assert qp.capture.enabled() is False
 
 
 # pylint: disable=unused-argument
@@ -37,8 +37,8 @@ def test_pause():
     import jax
 
     def f():
-        with qml.capture.pause():
-            qml.X(0)
+        with qp.capture.pause():
+            qp.X(0)
         return 2
 
     jaxpr = jax.make_jaxpr(f)()
@@ -51,14 +51,14 @@ def test_pause_with_error():
     """Test that program capture stays enabled if an error occurs."""
 
     def f():
-        with qml.capture.pause():
+        with qp.capture.pause():
             raise ValueError
         return 2
 
     with pytest.raises(ValueError):
         f()
 
-    assert qml.capture.enabled()
+    assert qp.capture.enabled()
 
 
 def test_switches_without_jax():
@@ -69,9 +69,9 @@ def test_switches_without_jax():
         import jax
     except ImportError:
 
-        assert qml.capture.enabled() is False
+        assert qp.capture.enabled() is False
         with pytest.raises(ImportError, match="plxpr requires JAX to be installed."):
-            qml.capture.enable()
-        assert qml.capture.enabled() is False
-        assert qml.capture.disable() is None
-        assert qml.capture.enabled() is False
+            qp.capture.enable()
+        assert qp.capture.enabled() is False
+        assert qp.capture.disable() is None
+        assert qp.capture.enabled() is False

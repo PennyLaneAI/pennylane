@@ -98,70 +98,70 @@ class TestFourierCoefficientSingleVariable:
         assert np.allclose(coeffs, expected_coeffs)
 
 
-dev_1 = qml.device("default.qubit", wires=1)
-dev_2 = qml.device("default.qubit", wires=2)
+dev_1 = qp.device("default.qubit", wires=1)
+dev_2 = qp.device("default.qubit", wires=2)
 
 
-@qml.qnode(dev_1)
+@qp.qnode(dev_1)
 def circuit_one_qubit_one_param_rx(inpt):
     r"""Circuit with a single-qubit, single-param, output function <Z>.
 
     By-hand calculation of :math:`f(x)` gives :math:`<Z> = cos^2(x/2) - sin^2(x/2) = cos(x)`.
     Fourier coeffs are :math:`c_1 = c_-1 = 0.5`.
     """
-    qml.RX(inpt[0], wires=0)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(inpt[0], wires=0)
+    return qp.expval(qp.PauliZ(0))
 
 
 circuit_one_qubit_one_param_rx.n_inputs = 1
 
 
-@qml.qnode(dev_1)
+@qp.qnode(dev_1)
 def circuit_one_qubit_one_param_h_ry(inpt):
     r"""Circuit with a single-qubit, single-param, output function <Z>.
 
     By-hand calculation of :math:`f(x)` gives :math:`<Z> = -sin(x)`.
     Fourier coeffs are :math:`c_1 = 0.5i, c_-1 = -0.5i`.
     """
-    qml.Hadamard(wires=0)
-    qml.RY(inpt[0], wires=0)
-    return qml.expval(qml.PauliZ(0))
+    qp.Hadamard(wires=0)
+    qp.RY(inpt[0], wires=0)
+    return qp.expval(qp.PauliZ(0))
 
 
 circuit_one_qubit_one_param_h_ry.n_inputs = 1
 
 
-@qml.qnode(dev_1)
+@qp.qnode(dev_1)
 def circuit_one_qubit_one_param_rx_ry(inpt):
     r"""Circuit with a single-qubit, single-param, output function <Z>.
 
     By-hand calculation of :math:`f(x)` gives :math:`<Z> = 1/2 + 1/2 cos(2x)`.
     Fourier coeffs are :math:`c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.5`.
     """
-    qml.RX(inpt[0], wires=0)
-    qml.RY(inpt[0], wires=0)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(inpt[0], wires=0)
+    qp.RY(inpt[0], wires=0)
+    return qp.expval(qp.PauliZ(0))
 
 
 circuit_one_qubit_one_param_rx_ry.n_inputs = 1
 
 
-@qml.qnode(dev_1)
+@qp.qnode(dev_1)
 def circuit_one_qubit_two_params(inpt):
     r"""Circuit with a single-qubit, single-param, output function <Z>.
 
     By-hand calculation of :math:`f(x)` gives :math:`<Z> = cos(x_1) cos(x_2)`
     Fourier coeffs are 0.25 for all :math:`+/-1` combinations, 0 elsewhere.
     """
-    qml.RY(inpt[0], wires=0)
-    qml.RX(inpt[1], wires=0)
-    return qml.expval(qml.PauliZ(0))
+    qp.RY(inpt[0], wires=0)
+    qp.RX(inpt[1], wires=0)
+    return qp.expval(qp.PauliZ(0))
 
 
 circuit_one_qubit_two_params.n_inputs = 2
 
 
-@qml.qnode(dev_2)
+@qp.qnode(dev_2)
 def circuit_two_qubits_repeated_param(inpt):
     r"""Circuit with two qubits, repeated single-param output function :math:`<Z>`
 
@@ -169,16 +169,16 @@ def circuit_two_qubits_repeated_param(inpt):
     Fourier coeffs are :math:`c_0 = 0.5, c_1 = c_-1 = 0, c_2 = c_-2 = 0.25`
     (same as above circuit_one_qubit_one_param_rx_ry, just different qubits).
     """
-    qml.RX(inpt[0], wires=0)
-    qml.RY(inpt[0], wires=1)
-    qml.CNOT(wires=[1, 0])
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(inpt[0], wires=0)
+    qp.RY(inpt[0], wires=1)
+    qp.CNOT(wires=[1, 0])
+    return qp.expval(qp.PauliZ(0))
 
 
 circuit_two_qubits_repeated_param.n_inputs = 1
 
 
-@qml.qnode(dev_2)
+@qp.qnode(dev_2)
 def circuit_two_qubits_two_params(inpt):
     r"""Circuit with a single-qubit, two-param output function :math:`<Z>`.
 
@@ -186,10 +186,10 @@ def circuit_two_qubits_two_params(inpt):
     Fourier coeffs are 0.25 for all :math:`+/-1` combinations, 0 elsewhere
     (Same as the circuit with one qubit and two params)
     """
-    qml.RY(inpt[0], wires=0)
-    qml.RX(inpt[1], wires=1)
-    qml.CNOT(wires=[1, 0])
-    return qml.expval(qml.PauliZ(0))
+    qp.RY(inpt[0], wires=0)
+    qp.RX(inpt[1], wires=1)
+    qp.CNOT(wires=[1, 0])
+    return qp.expval(qp.PauliZ(0))
 
 
 circuit_two_qubits_two_params.n_inputs = 2
@@ -334,14 +334,14 @@ class TestInterfaces:
     @staticmethod
     def circuit(weights, inpt):
         """Testing circuit."""
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.RY(inpt[0], wires=0)
-        qml.RX(inpt[1], wires=1)
-        qml.CNOT(wires=[1, 0])
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.RY(inpt[0], wires=0)
+        qp.RX(inpt[1], wires=1)
+        qp.CNOT(wires=[1, 0])
+        return qp.expval(qp.PauliZ(0))
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
     expected_result = np.array(
         [
@@ -356,7 +356,7 @@ class TestInterfaces:
         """Test that coefficients are correctly computed when using the Tensorflow interface."""
         import tensorflow as tf
 
-        qnode = qml.QNode(self.circuit, self.dev)
+        qnode = qp.QNode(self.circuit, self.dev)
 
         weights = tf.Variable([0.5, 0.2])
 
@@ -369,7 +369,7 @@ class TestInterfaces:
         """Test that coefficients are correctly computed when using the PyTorch interface."""
         import torch
 
-        qnode = qml.QNode(self.circuit, self.dev)
+        qnode = qp.QNode(self.circuit, self.dev)
 
         weights = torch.tensor([0.5, 0.2])
 
@@ -382,7 +382,7 @@ class TestInterfaces:
         """Test that coefficients are correctly computed when using the JAX interface."""
         import jax
 
-        qnode = qml.QNode(self.circuit, self.dev, diff_method="parameter-shift")
+        qnode = qp.QNode(self.circuit, self.dev, diff_method="parameter-shift")
 
         weights = jax.numpy.array([0.5, 0.2])
 

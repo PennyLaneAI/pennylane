@@ -101,19 +101,19 @@ WIRE_MAP_FOR_BOSE_WORDS = [
     (
         {0: 3, 1: 2},
         [
-            qml.s_prod(-0.25j, qml.prod(Y(3), X(2))),
-            qml.s_prod(-0.25 + 0j, qml.prod(Y(3), Y(2))),
-            qml.s_prod(0.25 + 0j, qml.prod(X(3), X(2))),
-            qml.s_prod(-0.25j, qml.prod(X(3), Y(2))),
+            qp.s_prod(-0.25j, qp.prod(Y(3), X(2))),
+            qp.s_prod(-0.25 + 0j, qp.prod(Y(3), Y(2))),
+            qp.s_prod(0.25 + 0j, qp.prod(X(3), X(2))),
+            qp.s_prod(-0.25j, qp.prod(X(3), Y(2))),
         ],
     ),
     (
         {0: "b", 1: "a"},
         [
-            qml.s_prod(-0.25j, qml.prod(Y("b"), X("a"))),
-            qml.s_prod(-0.25 + 0j, qml.prod(Y("b"), Y("a"))),
-            qml.s_prod(0.25 + 0j, qml.prod(X("b"), X("a"))),
-            qml.s_prod(-0.25j, qml.prod(X("b"), Y("a"))),
+            qp.s_prod(-0.25j, qp.prod(Y("b"), X("a"))),
+            qp.s_prod(-0.25 + 0j, qp.prod(Y("b"), Y("a"))),
+            qp.s_prod(0.25 + 0j, qp.prod(X("b"), X("a"))),
+            qp.s_prod(-0.25j, qp.prod(X("b"), Y("a"))),
         ],
     ),
 ]
@@ -129,7 +129,7 @@ class TestBoseWordMapping:
         qubit_op = christiansen_mapping(bosonic_op, ps=True)
         qubit_op.simplify()
 
-        expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+        expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
         expected_op.simplify()
 
         assert qubit_op == expected_op
@@ -142,14 +142,14 @@ class TestBoseWordMapping:
 
         qubit_op = christiansen_mapping(bosonic_op)
 
-        expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
+        expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
         expected_op = expected_op.operation(wires)
 
-        qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
+        qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
     def test_christiansen_mapping_for_identity(self):
         """Test that the christiansen_mapping function returns the correct qubit operator for Identity."""
-        qml.assert_equal(christiansen_mapping(BoseWord({})), I(0))
+        qp.assert_equal(christiansen_mapping(BoseWord({})), I(0))
 
     def test_christiansen_mapping_for_identity_ps(self):
         """Test that the christiansen_mapping function returns the correct PauliSentence for Identity when ps=True."""
@@ -165,7 +165,7 @@ class TestBoseWordMapping:
         w = BoseWord({(0, 0): "+", (1, 1): "+"})
 
         op = christiansen_mapping(w, wire_map=wire_map)
-        result = qml.sum(*ops)
+        result = qp.sum(*ops)
 
         op.simplify()
 
@@ -178,7 +178,7 @@ class TestBoseWordMapping:
         w = BoseWord({(0, 0): "+", (1, 1): "+"})
 
         op = christiansen_mapping(w, wire_map=wire_map, ps=True)
-        result_op = qml.sum(*ops)
+        result_op = qp.sum(*ops)
         ps = pauli_sentence(result_op)
 
         ps.simplify()
@@ -261,23 +261,23 @@ WIRE_MAP_FOR_BOSE_SENTENCE = [
     (
         {0: 3, 1: 2},
         [
-            qml.s_prod(-0.25j, qml.prod(Y(3), X(2))),
-            qml.s_prod((0.25 + 0j), qml.prod(Y(3), Y(2))),
-            qml.s_prod((0.25 + 0j), qml.prod(X(3), X(2))),
-            qml.s_prod(0.25j, qml.prod(X(3), Y(2))),
-            qml.s_prod((0.5 + 0j), I(3)),
-            qml.s_prod((-0.5 + 0j), Z(3)),
+            qp.s_prod(-0.25j, qp.prod(Y(3), X(2))),
+            qp.s_prod((0.25 + 0j), qp.prod(Y(3), Y(2))),
+            qp.s_prod((0.25 + 0j), qp.prod(X(3), X(2))),
+            qp.s_prod(0.25j, qp.prod(X(3), Y(2))),
+            qp.s_prod((0.5 + 0j), I(3)),
+            qp.s_prod((-0.5 + 0j), Z(3)),
         ],
     ),
     (
         {0: "b", 1: "a"},
         [
-            qml.s_prod(-0.25j, qml.prod(Y("b"), X("a"))),
-            qml.s_prod((0.25 + 0j), qml.prod(Y("b"), Y("a"))),
-            qml.s_prod((0.25 + 0j), qml.prod(X("b"), X("a"))),
-            qml.s_prod(0.25j, qml.prod(X("b"), Y("a"))),
-            qml.s_prod((0.5 + 0j), I("b")),
-            qml.s_prod((-0.5 + 0j), Z("b")),
+            qp.s_prod(-0.25j, qp.prod(Y("b"), X("a"))),
+            qp.s_prod((0.25 + 0j), qp.prod(Y("b"), Y("a"))),
+            qp.s_prod((0.25 + 0j), qp.prod(X("b"), X("a"))),
+            qp.s_prod(0.25j, qp.prod(X("b"), Y("a"))),
+            qp.s_prod((0.5 + 0j), I("b")),
+            qp.s_prod((-0.5 + 0j), Z("b")),
         ],
     ),
 ]
@@ -312,7 +312,7 @@ class TestBoseSentencesMapping:
         assert ps_op == ps
 
         result = ps.operation(wire_order=[0])
-        qml.assert_equal(qubit_op.simplify(), result.simplify())
+        qp.assert_equal(qubit_op.simplify(), result.simplify())
 
     @pytest.mark.parametrize("bosonic_op, result", BOSE_AND_PAULI_SENTENCES)
     def test_christiansen_mapping_for_bose_sentence_ps(self, bosonic_op, result):
@@ -330,7 +330,7 @@ class TestBoseSentencesMapping:
         qubit_op = christiansen_mapping(bosonic_op)
         result = result.operation(wires)
 
-        qml.assert_equal(qubit_op.simplify(), result.simplify())
+        qp.assert_equal(qubit_op.simplify(), result.simplify())
 
     @pytest.mark.parametrize("wire_map, ops", WIRE_MAP_FOR_BOSE_SENTENCE)
     def test_providing_wire_map_bose_sentence_to_operation(self, wire_map, ops):
@@ -341,7 +341,7 @@ class TestBoseSentencesMapping:
         )
 
         op = christiansen_mapping(bs, wire_map=wire_map)
-        result = qml.sum(*ops)
+        result = qp.sum(*ops)
 
         assert op.wires == result.wires
 
@@ -356,7 +356,7 @@ class TestBoseSentencesMapping:
         )
 
         op = christiansen_mapping(bs, wire_map=wire_map, ps=True)
-        result_op = qml.sum(*ops)
+        result_op = qp.sum(*ops)
         ps = pauli_sentence(result_op)
 
         ps.simplify()

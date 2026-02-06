@@ -138,7 +138,7 @@ def test_pytree_structure_dump_shots(shots, expect_metadata):
 
 def test_pytree_structure_dump_unserializable_metadata():
     """Test that a ``TypeError`` is raised if a Pytree has unserializable metadata."""
-    _, struct = flatten(CustomNode([1, 2, 4], {"operator": qml.PauliX(0)}))
+    _, struct = flatten(CustomNode([1, 2, 4], {"operator": qp.PauliX(0)}))
 
     with pytest.raises(TypeError, match=r"Could not serialize metadata object: X\(0\)"):
         pytree_structure_dump(struct)
@@ -186,24 +186,24 @@ H_TWO_QUBITS = np.array(
 @pytest.mark.parametrize(
     "obj_in",
     [
-        qml.tape.QuantumScript(
-            [qml.adjoint(qml.RX(0.1, wires=0))],
-            [qml.expval(2 * qml.X(0))],
+        qp.tape.QuantumScript(
+            [qp.adjoint(qp.RX(0.1, wires=0))],
+            [qp.expval(2 * qp.X(0))],
             shots=50,
             trainable_params=[0, 1],
         ),
-        Prod(qml.X(0), qml.RX(0.1, wires=0), qml.X(1), id="id"),
+        Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1), id="id"),
         Sum(
-            qml.Hermitian(H_ONE_QUBIT, 2),
-            qml.Hermitian(H_TWO_QUBITS, [0, 1]),
-            qml.PauliX(1),
-            qml.Identity("a"),
+            qp.Hermitian(H_ONE_QUBIT, 2),
+            qp.Hermitian(H_TWO_QUBITS, [0, 1]),
+            qp.PauliX(1),
+            qp.Identity("a"),
         ),
-        qml.Hamiltonian(
-            (1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))
+        qp.Hamiltonian(
+            (1.1, -0.4, 0.333), (qp.PauliX(0), qp.Hermitian(H_ONE_QUBIT, 2), qp.PauliZ(2))
         ),
-        qml.Hamiltonian(
-            np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]
+        qp.Hamiltonian(
+            np.array([-0.1, 0.5]), [qp.Hermitian(H_TWO_QUBITS, [0, 1]), qp.PauliY(0)]
         ),
     ],
 )
@@ -213,24 +213,24 @@ def test_pennylane_pytree_roundtrip(obj_in: Any):
     data, struct = flatten(obj_in)
     obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
 
-    qml.assert_equal(obj_in, obj_out)
+    qp.assert_equal(obj_in, obj_out)
 
 
 @pytest.mark.parametrize(
     "obj_in",
     [
         [
-            qml.tape.QuantumScript(
-                [qml.adjoint(qml.RX(0.1, wires=0))],
-                [qml.expval(2 * qml.X(0))],
+            qp.tape.QuantumScript(
+                [qp.adjoint(qp.RX(0.1, wires=0))],
+                [qp.expval(2 * qp.X(0))],
                 trainable_params=[0, 1],
             ),
-            Prod(qml.X(0), qml.RX(0.1, wires=0), qml.X(1), id="id"),
+            Prod(qp.X(0), qp.RX(0.1, wires=0), qp.X(1), id="id"),
             Sum(
-                qml.Hermitian(H_ONE_QUBIT, 2),
-                qml.Hermitian(H_TWO_QUBITS, [0, 1]),
-                qml.PauliX(1),
-                qml.Identity("a"),
+                qp.Hermitian(H_ONE_QUBIT, 2),
+                qp.Hermitian(H_TWO_QUBITS, [0, 1]),
+                qp.PauliX(1),
+                qp.Identity("a"),
             ),
         ]
     ],
@@ -241,4 +241,4 @@ def test_pennylane_pytree_roundtrip_list(obj_in: Any):
     data, struct = flatten(obj_in)
     obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
 
-    assert all(qml.equal(in_, out) for in_, out in zip(obj_in, obj_out))
+    assert all(qp.equal(in_, out) for in_, out in zip(obj_in, obj_out))

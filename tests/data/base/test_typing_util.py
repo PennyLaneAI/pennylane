@@ -55,8 +55,8 @@ def test_get_type_str(type_, expect):
         ([1, 2], list),
         (list, list),
         (list[int], list),
-        (qml.RX, qml.RX),
-        (qml.RX(1, [1]), qml.RX),
+        (qp.RX, qp.RX),
+        (qp.RX(1, [1]), qp.RX),
     ],
 )
 def test_get_type(obj, expect):

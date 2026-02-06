@@ -28,7 +28,7 @@ from pennylane.workflow import _cache_transform
 @pytest.fixture
 def tape() -> QuantumScript:
     """Returns a ``QuantumScript`` object."""
-    return QuantumScript([], [qml.expval(qml.Z(0))])
+    return QuantumScript([], [qp.expval(qp.Z(0))])
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def cache() -> MutableMapping:
 @pytest.fixture
 def transform_spy(mocker) -> MagicMock:
     """Returns a spy on the underlying ``_cache_transform()`` function."""
-    return mocker.spy(qml.workflow._cache_transform, "_transform")
+    return mocker.spy(qp.workflow._cache_transform, "_transform")
 
 
 def test_cache_miss_before_cache_hit(tape, cache):
@@ -77,9 +77,9 @@ def test_cache_hit_before_cache_miss(tape, cache):
 
 def test_batch_of_different_tapes(cache):
     """Tests that the results of different tapes are not cached under the same key."""
-    tape_1 = QuantumScript([], [qml.expval(qml.X(0))])
-    tape_2 = QuantumScript([], [qml.expval(qml.Y(0))])
-    tape_3 = QuantumScript([], [qml.expval(qml.Z(0))])
+    tape_1 = QuantumScript([], [qp.expval(qp.X(0))])
+    tape_2 = QuantumScript([], [qp.expval(qp.Y(0))])
+    tape_3 = QuantumScript([], [qp.expval(qp.Z(0))])
 
     batch_tapes, batch_fns = _cache_transform([tape_1, tape_2, tape_3], cache=cache)
     assert len(batch_tapes) == 3
@@ -90,9 +90,9 @@ def test_batch_of_different_tapes(cache):
 
 def test_batch_of_identical_tapes(cache):
     """Tests that the result of identical tapes are cached under the same key."""
-    tape_1 = QuantumScript([], [qml.expval(qml.Z(0))])
-    tape_2 = QuantumScript([], [qml.expval(qml.Z(0))])
-    tape_3 = QuantumScript([], [qml.expval(qml.Z(0))])
+    tape_1 = QuantumScript([], [qp.expval(qp.Z(0))])
+    tape_2 = QuantumScript([], [qp.expval(qp.Z(0))])
+    tape_3 = QuantumScript([], [qp.expval(qp.Z(0))])
 
     batch_tapes, batch_fns = _cache_transform([tape_1, tape_2, tape_3], cache=cache)
     assert len(batch_tapes) == 1
@@ -105,7 +105,7 @@ def test_finite_shots_with_persistent_cache_warning():
     """Tests that a UserWarning is emitted if a cache hit occurs for a tape with
     finite shots that uses a cache.
     """
-    tape = QuantumScript([], [qml.expval(qml.Z(0))], shots=1)
+    tape = QuantumScript([], [qp.expval(qp.Z(0))], shots=1)
 
     batch_tapes, batch_fns = _cache_transform([tape, tape], cache={})
     assert len(batch_tapes) == 1

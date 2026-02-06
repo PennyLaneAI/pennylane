@@ -76,7 +76,7 @@ class TestWiresToJson:
         for in_w, out_w in zip(in_, out):
             assert hash(in_w) == hash(out_w)
 
-    @pytest.mark.parametrize("in_", [[np.float64(1)], [qml.PauliX(1)]])
+    @pytest.mark.parametrize("in_", [[np.float64(1)], [qp.PauliX(1)]])
     def test_unserializable(self, in_):
         """Test that wires_to_json raises an ``UnserializableWiresError`` when
         the wires are not json types or integers."""

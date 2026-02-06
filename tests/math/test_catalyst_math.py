@@ -25,9 +25,9 @@ def test_catalyst_integration():
 
     jnp = pytest.importorskip("jax.numpy")
 
-    @qml.qjit
+    @qp.qjit
     def f(x, y):
-        return qml.math.scatter_element_add(
+        return qp.math.scatter_element_add(
             x, ((0, 1), (0, 1)), y, indices_are_sorted=True, unique_indices=True
         )
 
@@ -36,4 +36,4 @@ def test_catalyst_integration():
 
     out = f(x0, y)
     expected = jnp.array([[1.0, 0.0], [0.0, 2.0]])
-    assert qml.math.allclose(out, expected)
+    assert qp.math.allclose(out, expected)

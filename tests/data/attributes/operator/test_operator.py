@@ -34,50 +34,50 @@ H_TWO_QUBITS = np.array(
 )
 
 hermitian_ops = [
-    qml.Hermitian(H_ONE_QUBIT, 2),
-    qml.Hermitian(H_TWO_QUBITS, [0, 1]),
-    qml.PauliX(1),
-    qml.Identity("a"),
+    qp.Hermitian(H_ONE_QUBIT, 2),
+    qp.Hermitian(H_TWO_QUBITS, [0, 1]),
+    qp.PauliX(1),
+    qp.Identity("a"),
 ]
 
 pauli_ops = [
     op_cls(wires)
-    for op_cls, wires in itertools.product([qml.PauliX, qml.PauliY, qml.PauliZ], [0, 1, "q", [1]])
+    for op_cls, wires in itertools.product([qp.PauliX, qp.PauliY, qp.PauliZ], [0, 1, "q", [1]])
 ]
 
-identity = [qml.Identity(wires) for wires in [0, 1, "q", [1, "a"]]]
+identity = [qp.Identity(wires) for wires in [0, 1, "q", [1, "a"]]]
 
 hamiltonians = [
-    qml.Hamiltonian(*args)
+    qp.Hamiltonian(*args)
     for args in [
         (
             [
                 1.0,
             ],
-            (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
+            (qp.Hermitian(H_TWO_QUBITS, [0, 1]),),
         ),
-        ((-0.8,), (qml.PauliZ(0),)),
-        ((0.6,), (qml.PauliX(0) @ qml.PauliX(1),)),
-        ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
-        ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
-        ((0.5, -1.6), (qml.PauliX("a"), qml.PauliY("b"))),
-        ((1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))),
-        ((-0.4, 0.15), (qml.Hermitian(H_TWO_QUBITS, [0, 2]), qml.PauliZ(1))),
-        ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
-        (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
-        ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
-        ((0.5 + 1.2j, 1.2 + 0.5j), (qml.PauliX(0), qml.PauliY(1))),
-        ((0.7 + 0j, 0 + 1.3j), (qml.PauliX(0), qml.PauliY(1))),
+        ((-0.8,), (qp.PauliZ(0),)),
+        ((0.6,), (qp.PauliX(0) @ qp.PauliX(1),)),
+        ((0.5, -1.6), (qp.PauliX(0), qp.PauliY(1))),
+        ((0.5, -1.6), (qp.PauliX(1), qp.PauliY(1))),
+        ((0.5, -1.6), (qp.PauliX("a"), qp.PauliY("b"))),
+        ((1.1, -0.4, 0.333), (qp.PauliX(0), qp.Hermitian(H_ONE_QUBIT, 2), qp.PauliZ(2))),
+        ((-0.4, 0.15), (qp.Hermitian(H_TWO_QUBITS, [0, 2]), qp.PauliZ(1))),
+        ([1.5, 2.0], [qp.PauliZ(0), qp.PauliY(2)]),
+        (np.array([-0.1, 0.5]), [qp.Hermitian(H_TWO_QUBITS, [0, 1]), qp.PauliY(0)]),
+        ((0.5, 1.2), (qp.PauliX(0), qp.PauliX(0) @ qp.PauliX(1))),
+        ((0.5 + 1.2j, 1.2 + 0.5j), (qp.PauliX(0), qp.PauliY(1))),
+        ((0.7 + 0j, 0 + 1.3j), (qp.PauliX(0), qp.PauliY(1))),
     ]
 ]
 
-tensors = [qml.prod(qml.PauliX(1), qml.PauliY(2))]
+tensors = [qp.prod(qp.PauliX(1), qp.PauliY(2))]
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
 @pytest.mark.parametrize("obs_in", [*hermitian_ops, *pauli_ops, *identity, *hamiltonians, *tensors])
 class TestDatasetOperatorObservable:
-    """Tests serializing Observable operators using the ``qml.equal`` function."""
+    """Tests serializing Observable operators using the ``qp.equal`` function."""
 
     def test_value_init(self, attribute_cls, obs_in):
         """Test that a DatasetOperator can be value-initialized
@@ -90,7 +90,7 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        qml.assert_equal(obs_out, obs_in)
+        qp.assert_equal(obs_out, obs_in)
 
     def test_bind_init(self, attribute_cls, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
@@ -104,22 +104,22 @@ class TestDatasetOperatorObservable:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        qml.assert_equal(obs_out, obs_in)
+        qp.assert_equal(obs_out, obs_in)
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
 @pytest.mark.parametrize(
     "obs_in",
     [
-        qml.ops.LinearCombination([1.0, 2.0], [qml.X(0) @ qml.Z(1), qml.Y(1) @ qml.Z(2)]),
-        qml.ops.sum(qml.X(0), qml.Y(0)),
-        qml.ops.sum(qml.X(0) @ qml.Z(1), 3 * qml.Y(2)),
-        qml.ops.prod(qml.X(0), qml.Y(1)),
-        qml.ops.s_prod(1.2j, qml.X(1) @ qml.Y(2)),
+        qp.ops.LinearCombination([1.0, 2.0], [qp.X(0) @ qp.Z(1), qp.Y(1) @ qp.Z(2)]),
+        qp.ops.sum(qp.X(0), qp.Y(0)),
+        qp.ops.sum(qp.X(0) @ qp.Z(1), 3 * qp.Y(2)),
+        qp.ops.prod(qp.X(0), qp.Y(1)),
+        qp.ops.s_prod(1.2j, qp.X(1) @ qp.Y(2)),
     ],
 )
 class TestDatasetArithmeticOperators:
-    """Tests serializing Observable operators using the ``qml.equal()`` method."""
+    """Tests serializing Observable operators using the ``qp.equal()`` method."""
 
     def test_value_init(self, attribute_cls, obs_in):
         """Test that a DatasetOperator can be value-initialized
@@ -132,7 +132,7 @@ class TestDatasetArithmeticOperators:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        qml.assert_equal(obs_out, obs_in)
+        qp.assert_equal(obs_out, obs_in)
 
     def test_bind_init(self, attribute_cls, obs_in):
         """Test that DatasetOperator can be initialized from a HDF5 group
@@ -146,7 +146,7 @@ class TestDatasetArithmeticOperators:
         assert dset_op.info["py_type"] == get_type_str(type(obs_in))
 
         obs_out = dset_op.get_value()
-        qml.assert_equal(obs_out, obs_in)
+        qp.assert_equal(obs_out, obs_in)
 
 
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
@@ -154,10 +154,10 @@ class TestDatasetOperator:
     @pytest.mark.parametrize(
         "op_in",
         [
-            qml.RX(1.1, 0),
-            qml.FermionicSWAP(1.3, [1, "a"]),
-            qml.Toffoli([1, "a", None]),
-            qml.Hamiltonian([], []),
+            qp.RX(1.1, 0),
+            qp.FermionicSWAP(1.3, [1, "a"]),
+            qp.Toffoli([1, "a", None]),
+            qp.Hamiltonian([], []),
         ],
     )
     def test_value_init(self, attribute_cls, op_in):
@@ -178,10 +178,10 @@ class TestDatasetOperator:
     @pytest.mark.parametrize(
         "op_in",
         [
-            qml.RX(1.1, 0),
-            qml.FermionicSWAP(1.3, [1, "a"]),
-            qml.Toffoli([1, "a", None]),
-            qml.Hamiltonian([], []),
+            qp.RX(1.1, 0),
+            qp.FermionicSWAP(1.3, [1, "a"]),
+            qp.Toffoli([1, "a", None]),
+            qp.Hamiltonian([], []),
         ],
     )
     def test_bind_init(self, attribute_cls, op_in):
@@ -208,14 +208,14 @@ class TestDatasetOperator:
 @pytest.mark.parametrize("attribute_cls", [DatasetOperator, DatasetPyTree])
 def test_op_not_queued_on_deserialization(attribute_cls):
     """Tests that ops are not queued upon deserialization."""
-    d = qml.data.Dataset(op=attribute_cls(qml.PauliX(0)))
-    with qml.queuing.AnnotatedQueue() as q:
+    d = qp.data.Dataset(op=attribute_cls(qp.PauliX(0)))
+    with qp.queuing.AnnotatedQueue() as q:
         _ = d.op
 
     assert len(q) == 0
 
-    with qml.queuing.AnnotatedQueue() as q2:
-        qml.apply(d.op)
+    with qp.queuing.AnnotatedQueue() as q2:
+        qp.apply(d.op)
 
     assert len(q2) == 1
 
@@ -223,9 +223,9 @@ def test_op_not_queued_on_deserialization(attribute_cls):
 def test_consumed_by_pytree():
     """Test that ops are consumed by the ``DatasetPyTree`` type by default."""
 
-    d = qml.data.Dataset()
+    d = qp.data.Dataset()
 
-    d.op = qml.PauliX(0)
+    d.op = qp.PauliX(0)
 
     assert isinstance(d.attrs["op"], DatasetPyTree)
 
@@ -247,7 +247,7 @@ def test_retrieve_operator_from_loaded_data():
     """Test that uploaded data can be downloaded and used to retrieve an
     operation representing the Hamiltonian"""
 
-    h2 = qml.data.load("qchem", molname="H2", bondlength=0.742, basis="STO-3G")[0]
+    h2 = qp.data.load("qchem", molname="H2", bondlength=0.742, basis="STO-3G")[0]
     H = h2.hamiltonian
 
-    assert isinstance(H, qml.ops.LinearCombination)
+    assert isinstance(H, qp.ops.LinearCombination)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Interface independent tests for qml.execute
+Interface independent tests for qp.execute
 """
 
 import pytest
@@ -25,6 +25,6 @@ from pennylane.exceptions import QuantumFunctionError
 def test_old_interface_no_device_jacobian_products():
     """Test that an error is always raised for the old device interface if device jacobian products are requested."""
     dev = DefaultQubitLegacy(wires=2)
-    tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
+    tape = qp.tape.QuantumScript([qp.RX(1.0, wires=0)], [qp.expval(qp.PauliZ(0))])
     with pytest.raises(QuantumFunctionError):
-        qml.execute((tape,), dev, device_vjp=True)
+        qp.execute((tape,), dev, device_vjp=True)

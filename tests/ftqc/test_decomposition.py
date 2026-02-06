@@ -53,13 +53,13 @@ class TestGateSetDecomposition:
         """Test the _rot_to_xzx rule"""
         phi, theta, omega = 1.39, -0.123, np.pi / 7
 
-        mat = qml.Rot.compute_matrix(phi, theta, omega)
+        mat = qp.Rot.compute_matrix(phi, theta, omega)
         a1, a2, a3 = math.decomposition.xzx_rotation_angles(mat)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             _rot_to_xzx(phi, theta, omega, wires=0)
 
-        ops = qml.tape.QuantumScript.from_queue(q).operations
+        ops = qp.tape.QuantumScript.from_queue(q).operations
         assert len(ops) == 1
         assert isinstance(ops[0], RotXZX)
         assert np.allclose(ops[0].data, (a1, a2, a3))
@@ -74,16 +74,16 @@ class TestGateSetDecomposition:
         phi, theta, omega = 1.39, -0.123, np.pi / 7
 
         # rot op and output state
-        rot_op = qml.Rot(phi, theta, omega, wires=0)
+        rot_op = qp.Rot(phi, theta, omega, wires=0)
         expected_state = apply_operation(rot_op, state)
 
         # decomposed op and output state
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             _rot_to_xzx(phi, theta, omega, wires=0)
         xzx_op = q.queue[0]
         base_rot_ops = xzx_op.decomposition()
         for op in base_rot_ops:
-            assert op.__class__ in {qml.RX, qml.RZ}
+            assert op.__class__ in {qp.RX, qp.RZ}
             state = apply_operation(op, state)
 
         assert np.allclose(expected_state, state)
@@ -91,13 +91,13 @@ class TestGateSetDecomposition:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_convert_to_mbqc_gateset(self):
         """Test the convert_to_mbqc_gateset works as expected"""
-        tape = qml.tape.QuantumScript(
-            [qml.Rot(1.2, -0.34, 0.056, wires="a"), qml.RY(0.46, 1), qml.CZ([0, 1])]
+        tape = qp.tape.QuantumScript(
+            [qp.Rot(1.2, -0.34, 0.056, wires="a"), qp.RY(0.46, 1), qp.CZ([0, 1])]
         )
 
         (new_tape,), _ = convert_to_mbqc_gateset(tape)
 
-        expected_ops = [RotXZX, RotXZX, qml.H, qml.CNOT, qml.H]
+        expected_ops = [RotXZX, RotXZX, qp.H, qp.CNOT, qp.H]
         for op, expected_type in zip(new_tape.operations, expected_ops):
             assert isinstance(op, expected_type)
 
@@ -105,8 +105,8 @@ class TestGateSetDecomposition:
         """Test that a clear error is raised if trying to use the convert_to_mbqc_gateset
         transform with the old decomposition method"""
 
-        tape = qml.tape.QuantumScript(
-            [qml.Rot(1.2, -0.34, 0.056, wires="a"), qml.RY(0.46, 1), qml.CZ([0, 1])]
+        tape = qp.tape.QuantumScript(
+            [qp.Rot(1.2, -0.34, 0.056, wires="a"), qp.RY(0.46, 1), qp.CZ([0, 1])]
         )
 
         with pytest.raises(RuntimeError, match="requires the graph-based decomposition method"):
@@ -117,20 +117,20 @@ class TestGateSetDecomposition:
         """Test that a QNode containing Rot and other unsupported gates is decomposed as
         expected by the convert_to_mbqc_gateset"""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.RY(1.23, 0)  # RotXZX
-            qml.RX(0.456, 1)  # RotXZX
-            qml.Rot(np.pi / 3, -0.5, np.pi / 5, 2)  # RotXZX
-            qml.CZ([0, 1])  # H(1), CNOT, H(1)
-            qml.CY([1, 2])  # RotXZX(2), CNOT, RotXZX(2), CNOT, S(1)
-            return qml.state()
+            qp.RY(1.23, 0)  # RotXZX
+            qp.RX(0.456, 1)  # RotXZX
+            qp.Rot(np.pi / 3, -0.5, np.pi / 5, 2)  # RotXZX
+            qp.CZ([0, 1])  # H(1), CNOT, H(1)
+            qp.CY([1, 2])  # RotXZX(2), CNOT, RotXZX(2), CNOT, S(1)
+            return qp.state()
 
         decomposed_circuit = convert_to_mbqc_gateset(circuit)
 
-        tape = qml.workflow.construct_tape(decomposed_circuit)()
+        tape = qp.workflow.construct_tape(decomposed_circuit)()
         expected_ops = (
-            [RotXZX] * 3 + [qml.H, qml.CNOT, qml.H] + [RotXZX, qml.CNOT, RotXZX, qml.CNOT, qml.S]
+            [RotXZX] * 3 + [qp.H, qp.CNOT, qp.H] + [RotXZX, qp.CNOT, RotXZX, qp.CNOT, qp.S]
         )
 
         for op, expected_type in zip(tape.operations, expected_ops):
@@ -142,33 +142,33 @@ class TestGateSetDecomposition:
         """Test that the explicit MBQC implementation of the RotXZX gate that
         a Rot gate decomposes to produces the expected analytic result"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         state = np.random.random(2) + 1j * np.random.random(2)
         state = state / np.linalg.norm(state)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def rot_ref(angles):
             """Reference circuit for applying some state preparation and then
             performing a rotation, expressed using the PL Rot gate (ZYZ)"""
-            qml.StatePrep(state, wires=0)
-            qml.Rot(*angles, wires=0)
-            return qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.Z(0))
+            qp.StatePrep(state, wires=0)
+            qp.Rot(*angles, wires=0)
+            return qp.expval(qp.X(0)), qp.expval(qp.Y(0)), qp.expval(qp.Z(0))
 
         @diagonalize_mcms
-        @qml.qnode(dev, mcm_method="tree-traversal")
+        @qp.qnode(dev, mcm_method="tree-traversal")
         def rot_mbqc(rot_xzx_gate):
             """This circuit accepts a RotXZX gate, and creates a circuit equivalent
             to performing state preparation and then applying the rotation gate,
             with the rotation expressed in the MBQC formalism"""
             # prep input node
-            qml.StatePrep(state, wires=[0])
+            qp.StatePrep(state, wires=[0])
 
             # prep graph state
             GraphStatePrep(nx.grid_graph((4,)), wires=[1, 2, 3, 4])
 
             # entangle input and graph state
-            qml.CZ([0, 1])
+            qp.CZ([0, 1])
 
             # MBQC Z rotation: X, X, +/- angle, X
             angles = rot_xzx_gate.single_qubit_rot_angles()
@@ -190,15 +190,15 @@ class TestGateSetDecomposition:
             )(plane="XY", wires=3)
 
             # corrections based on measurement outcomes
-            qml.cond((m1 + m3) % 2, qml.Z)(4)
-            qml.cond((m2 + m4) % 2, qml.X)(4)
+            qp.cond((m1 + m3) % 2, qp.Z)(4)
+            qp.cond((m2 + m4) % 2, qp.X)(4)
 
-            return qml.expval(qml.X(4)), qml.expval(qml.Y(4)), qml.expval(qml.Z(4))
+            return qp.expval(qp.X(4)), qp.expval(qp.Y(4)), qp.expval(qp.Z(4))
 
         angles = 1.39, -0.123, np.pi / 7
 
         # convert Rot to XZX using the decomposition rule
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             _rot_to_xzx(*angles, wires=0)
         xzx_op = q.queue[0]
 
@@ -209,7 +209,7 @@ class TestMBQCFormalismConversion:
     """Test the transform convert_to_mbqc_formalism, converting to the MBQC formalism with
     online corrections immediately after each gate"""
 
-    @pytest.mark.parametrize("op", [qml.S(7), qml.H(1), qml.RZ(1.2, 2), RotXZX(1.2, 2.3, 3.4, 2)])
+    @pytest.mark.parametrize("op", [qp.S(7), qp.H(1), qp.RZ(1.2, 2), RotXZX(1.2, 2.3, 3.4, 2)])
     def test_queue_measurements(self, op):
         """Test that queue_measurements returns MeasurementValues as expected"""
 
@@ -236,9 +236,9 @@ class TestMBQCFormalismConversion:
         passed an unsupported operation"""
 
         with pytest.raises(NotImplementedError, match="Received unsupported gate of type"):
-            queue_measurements(qml.Identity, wires="a")
+            queue_measurements(qp.Identity, wires="a")
 
-    @pytest.mark.parametrize("op", [qml.S(7), qml.H(1), qml.RZ(1.2, 2), RotXZX(1.2, 2.3, 3.4, 2)])
+    @pytest.mark.parametrize("op", [qp.S(7), qp.H(1), qp.RZ(1.2, 2), RotXZX(1.2, 2.3, 3.4, 2)])
     def test_queue_corrections(self, op):
         """Test that queue_corrections returns byproduct operators as expected."""
 
@@ -248,12 +248,12 @@ class TestMBQCFormalismConversion:
         # measurement selected because it queues at least one correction for all ops
         correction_function = queue_corrections(op, [0, 1, 1, 0])
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             correction_function("a")
 
         assert q.queue
         for byprodcut_op in q.queue:
-            assert qml.equal(byprodcut_op, qml.X("a")) or qml.equal(byprodcut_op, qml.Z("a"))
+            assert qp.equal(byprodcut_op, qp.X("a")) or qp.equal(byprodcut_op, qp.Z("a"))
 
     def test_cnot_corrections(self):
         """Test that the function produced by cnot_corrections queues the byproduct operations as expected"""
@@ -264,28 +264,28 @@ class TestMBQCFormalismConversion:
         # measurement selected because it queues all the correction ops
         correction_function = cnot_corrections([0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0])
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             correction_function(ctrl_wire="ctrl", target_wire="target")
 
         assert len(q.queue) == 4
         for op, expected_op in zip(
-            q.queue, [qml.Z("ctrl"), qml.X("ctrl"), qml.Z("target"), qml.X("target")]
+            q.queue, [qp.Z("ctrl"), qp.X("ctrl"), qp.Z("target"), qp.X("target")]
         ):
-            assert qml.equal(op, expected_op)
+            assert qp.equal(op, expected_op)
 
     def test_queue_corrections_gate_not_implemented(self):
         """Test that a NotImplemented error is raised if queue_single_qubit_gate is
         passed an unsupported operation"""
 
         with pytest.raises(NotImplementedError, match="Received unsupported gate of type"):
-            queue_corrections(qml.Identity, measurements=[0, 0, 0, 0])
+            queue_corrections(qp.Identity, measurements=[0, 0, 0, 0])
 
     def test_invalid_op_in_tape_raises_error(self):
         """Test that a NotImplemented error is raised if the tape isn't valid for conversion
         to the MBQC formalism using this transform"""
 
-        tape = qml.tape.QuantumScript(
-            [qml.H(0), qml.RZ(0.23, 0), qml.RX(1.23, 0)], measurements=[qml.sample(wires=0)]
+        tape = qp.tape.QuantumScript(
+            [qp.H(0), qp.RZ(0.23, 0), qp.RX(1.23, 0)], measurements=[qp.sample(wires=0)]
         )
 
         with pytest.raises(NotImplementedError, match="unsupported gate"):
@@ -293,121 +293,121 @@ class TestMBQCFormalismConversion:
 
     @pytest.mark.parametrize(
         "op",
-        [qml.H(2), qml.S(2), qml.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],
+        [qp.H(2), qp.S(2), qp.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],
     )
     def test_queue_single_qubit_gate(self, op):
         """Test that the queue_single_qubit_gate function queues state preparation, MCMs
         and byproduct corrections that are equivalent to the input operator"""
 
-        dev = qml.device("lightning.qubit", wires=5)
+        dev = qp.device("lightning.qubit", wires=5)
         q_mgr = QubitMgr(num_qubits=5, start_idx=0)
         wire_map = {2: q_mgr.acquire_qubit()}
         w = op.wires[0]
 
-        ref_tape = qml.tape.QuantumScript(
-            [qml.Rot(1.2, 0.34, 0.7, w), op],
-            measurements=[qml.expval(qml.X(w)), qml.expval(qml.Y(w)), qml.expval(qml.Z(w))],
+        ref_tape = qp.tape.QuantumScript(
+            [qp.Rot(1.2, 0.34, 0.7, w), op],
+            measurements=[qp.expval(qp.X(w)), qp.expval(qp.Y(w)), qp.expval(qp.Z(w))],
         )
 
         # queue ops with queue_single_qubit_gate
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rot(1.2, 0.34, 0.7, wire_map[w])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rot(1.2, 0.34, 0.7, wire_map[w])
             wire_map[w], measurements = queue_single_qubit_gate(
                 q_mgr, op=op, in_wire=wire_map[w], diagonalize_mcms=False
             )
             queue_corrections(op, measurements)(wire_map[w])
-            qml.expval(qml.X(wire_map[w]))
-            qml.expval(qml.Y(wire_map[w]))
-            qml.expval(qml.Z(wire_map[w]))
+            qp.expval(qp.X(wire_map[w]))
+            qp.expval(qp.Y(wire_map[w]))
+            qp.expval(qp.Z(wire_map[w]))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=3000)
+        tape = qp.tape.QuantumScript.from_queue(q, shots=3000)
 
         # tape contains expected ops
         assert isinstance(tape.operations[1], GraphStatePrep)
-        assert isinstance(tape.operations[2], qml.CZ)
+        assert isinstance(tape.operations[2], qp.CZ)
         for tape_op in tape.operations[3:]:
-            assert isinstance(tape_op, tuple([qml.ops.MidMeasure, qml.ops.Conditional]))
+            assert isinstance(tape_op, tuple([qp.ops.MidMeasure, qp.ops.Conditional]))
 
         # tape yields expected results
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rot(1.2, 0.34, 0.7, wire_map[w])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rot(1.2, 0.34, 0.7, wire_map[w])
             wire_map[w], measurements = queue_single_qubit_gate(
                 q_mgr, op=op, in_wire=wire_map[w], diagonalize_mcms=True
             )
             queue_corrections(op, measurements)(wire_map[w])
-            qml.expval(qml.X(wire_map[w]))
-            qml.expval(qml.Y(wire_map[w]))
-            qml.expval(qml.Z(wire_map[w]))
+            qp.expval(qp.X(wire_map[w]))
+            qp.expval(qp.Y(wire_map[w]))
+            qp.expval(qp.Z(wire_map[w]))
 
-        diagonalized_tape = qml.tape.QuantumScript.from_queue(q, shots=3000)
-        res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
+        diagonalized_tape = qp.tape.QuantumScript.from_queue(q, shots=3000)
+        res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.05)
 
     def test_queue_cnot(self):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
         corrections that are equivalent to the input operator"""
 
-        dev = qml.device("lightning.qubit", wires=15, seed=42)
+        dev = qp.device("lightning.qubit", wires=15, seed=42)
         q_mgr = QubitMgr(num_qubits=15, start_idx=0)
 
-        op = qml.CNOT([2, 3])
+        op = qp.CNOT([2, 3])
         ctrl = op.wires[0]
         target = op.wires[1]
         wire_map = {w: q_mgr.acquire_qubit() for w in op.wires}
 
-        ref_tape = qml.tape.QuantumScript(
-            [qml.Rot(1.2, 0.34, 0.7, ctrl), qml.Rot(0.65, 0.43, 0.21, target), op],
+        ref_tape = qp.tape.QuantumScript(
+            [qp.Rot(1.2, 0.34, 0.7, ctrl), qp.Rot(0.65, 0.43, 0.21, target), op],
             measurements=[
-                qml.expval(qml.X(ctrl)),
-                qml.expval(qml.Y(ctrl)),
-                qml.expval(qml.Z(ctrl)),
-                qml.expval(qml.X(target)),
-                qml.expval(qml.Y(target)),
-                qml.expval(qml.Z(target)),
+                qp.expval(qp.X(ctrl)),
+                qp.expval(qp.Y(ctrl)),
+                qp.expval(qp.Z(ctrl)),
+                qp.expval(qp.X(target)),
+                qp.expval(qp.Y(target)),
+                qp.expval(qp.Z(target)),
             ],
         )
 
         # queue ops with queue_cnot
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rot(1.2, 0.34, 0.7, wire_map[ctrl])
-            qml.Rot(0.65, 0.43, 0.21, wire_map[target])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rot(1.2, 0.34, 0.7, wire_map[ctrl])
+            qp.Rot(0.65, 0.43, 0.21, wire_map[target])
             wire_map[ctrl], wire_map[target], measurements = queue_cnot(
                 q_mgr, wire_map[ctrl], wire_map[target]
             )
             cnot_corrections(measurements)(wire_map[ctrl], wire_map[target])
-            qml.expval(qml.X(wire_map[ctrl]))
-            qml.expval(qml.Y(wire_map[ctrl]))
-            qml.expval(qml.Z(wire_map[ctrl]))
-            qml.expval(qml.X(wire_map[target]))
-            qml.expval(qml.Y(wire_map[target]))
-            qml.expval(qml.Z(wire_map[target]))
+            qp.expval(qp.X(wire_map[ctrl]))
+            qp.expval(qp.Y(wire_map[ctrl]))
+            qp.expval(qp.Z(wire_map[ctrl]))
+            qp.expval(qp.X(wire_map[target]))
+            qp.expval(qp.Y(wire_map[target]))
+            qp.expval(qp.Z(wire_map[target]))
 
-        tape = qml.tape.QuantumScript.from_queue(q, shots=2000)
+        tape = qp.tape.QuantumScript.from_queue(q, shots=2000)
 
         # tape contains expected ops
         assert isinstance(tape.operations[2], GraphStatePrep)
-        assert isinstance(tape.operations[3], qml.CZ)
-        assert isinstance(tape.operations[4], qml.CZ)
+        assert isinstance(tape.operations[3], qp.CZ)
+        assert isinstance(tape.operations[4], qp.CZ)
         for op in tape.operations[5:]:
-            assert isinstance(op, tuple([qml.ops.MidMeasure, qml.ops.Conditional]))
+            assert isinstance(op, tuple([qp.ops.MidMeasure, qp.ops.Conditional]))
 
         # tape yields expected results
         (diagonalized_tape,), _ = diagonalize_mcms(tape)
 
-        res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
+        res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.1)
 
     @pytest.mark.parametrize(
         "gate, wire",
-        [(qml.X, 2), (qml.Y, 1), (qml.Z, 0)],
+        [(qp.X, 2), (qp.Y, 1), (qp.Z, 0)],
     )
     def test_pauli_gates_are_updated(self, gate, wire):
         """Test that the wires on Pauli operators are updated to match the physical
         location of the state after application of the preceding MCM operations"""
 
-        tape = qml.tape.QuantumScript(
-            [qml.H(wire), gate(wire)],
-            measurements=[qml.sample(wires=[0, 1])],
+        tape = qp.tape.QuantumScript(
+            [qp.H(wire), gate(wire)],
+            measurements=[qp.sample(wires=[0, 1])],
             shots=1000,
         )
 
@@ -421,11 +421,11 @@ class TestMBQCFormalismConversion:
 
         # tape consists of converted Hadamard, and the pauli gate
         assert isinstance(graph_op, GraphStatePrep)
-        assert isinstance(entanglement_op, qml.CZ)
+        assert isinstance(entanglement_op, qp.CZ)
         for m in measurements:
-            assert isinstance(m, qml.ops.MidMeasure)
+            assert isinstance(m, qp.ops.MidMeasure)
         for bp in byproducts:
-            assert isinstance(bp, qml.ops.Conditional)
+            assert isinstance(bp, qp.ops.Conditional)
         assert isinstance(final_op, gate)
 
         # the wire the pauli op is applied on is updated to reflect the
@@ -436,10 +436,10 @@ class TestMBQCFormalismConversion:
     @pytest.mark.parametrize(
         "gate, args",
         [
-            (qml.Identity, [3]),
-            (qml.Identity, []),
-            (qml.GlobalPhase, [1.23]),
-            (qml.GlobalPhase, [1.23, 3]),
+            (qp.Identity, [3]),
+            (qp.Identity, []),
+            (qp.GlobalPhase, [1.23]),
+            (qp.GlobalPhase, [1.23, 3]),
         ],
     )
     def test_identity_gates_are_supported(self, gate, args):
@@ -447,9 +447,9 @@ class TestMBQCFormalismConversion:
 
         initial_op = gate(*args)
 
-        tape = qml.tape.QuantumScript(
-            [qml.H(3), initial_op],
-            measurements=[qml.sample(wires=[0, 1])],
+        tape = qp.tape.QuantumScript(
+            [qp.H(3), initial_op],
+            measurements=[qp.sample(wires=[0, 1])],
             shots=1000,
         )
 
@@ -462,7 +462,7 @@ class TestMBQCFormalismConversion:
         assert isinstance(graph_op, GraphStatePrep)
         assert isinstance(final_op, gate)
 
-        if gate is qml.Identity and initial_op.wires:
+        if gate is qp.Identity and initial_op.wires:
             assert final_op.wires[0] != 3
             assert graph_op.wires[-1] == final_op.wires[0]
         # both GlobalPhases and the no-wire Identity have no wires, phase is retained
@@ -473,15 +473,15 @@ class TestMBQCFormalismConversion:
     @pytest.mark.parametrize(
         "measurements",
         (
-            [qml.expval(qml.X(0))],
-            [qml.sample(wires=0), qml.counts(wires=2)],
-            [qml.sample(wires=0), qml.sample(wires=2)],
+            [qp.expval(qp.X(0))],
+            [qp.sample(wires=0), qp.counts(wires=2)],
+            [qp.sample(wires=0), qp.sample(wires=2)],
         ),
     )
     def test_error_raised_for_bad_measurements(self, measurements):
         """Test that an error is raised if the final output isn't a single sample measurement"""
 
-        tape = qml.tape.QuantumScript([qml.H(1), qml.X(0)], measurements=measurements, shots=1000)
+        tape = qp.tape.QuantumScript([qp.H(1), qp.X(0)], measurements=measurements, shots=1000)
 
         with pytest.raises(
             NotImplementedError,
@@ -489,12 +489,12 @@ class TestMBQCFormalismConversion:
         ):
             _, _ = convert_to_mbqc_formalism(tape)
 
-    @pytest.mark.parametrize("mp", (qml.sample(wires=[2, 3]), qml.sample()))
+    @pytest.mark.parametrize("mp", (qp.sample(wires=[2, 3]), qp.sample()))
     def test_tape_wires_if_no_mp_wires(self, mp):
         """Test that wires are taken the measurement process if possible, and otherwise
         taken from the tape (no wires specified is interpreted as "all tape wires")"""
 
-        tape = qml.tape.QuantumScript([qml.H(1), qml.X(0), qml.Y(2)], measurements=[mp], shots=1000)
+        tape = qp.tape.QuantumScript([qp.H(1), qp.X(0), qp.Y(2)], measurements=[mp], shots=1000)
 
         (transformed_tape,), _ = convert_to_mbqc_formalism(tape)
 
@@ -515,56 +515,56 @@ class TestMBQCFormalismConversion:
         """Test that the transform converts the tape to the expected set of gates
         correctly, and the returned tape continues to produce the expected output"""
 
-        dev = qml.device("lightning.qubit", seed=1234)
+        dev = qp.device("lightning.qubit", seed=1234)
 
         theta = 2.5
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             RotXZX(theta, 0, theta / 2, 0)
             RotXZX(theta / 2, 0, theta / 4, 1)
-            qml.RZ(theta / 3, 0)
-            qml.X(0)
-            qml.H(1)
-            qml.S(1)
-            qml.Y(1)
-            qml.CNOT([0, 1])
+            qp.RZ(theta / 3, 0)
+            qp.X(0)
+            qp.H(1)
+            qp.S(1)
+            qp.Y(1)
+            qp.CNOT([0, 1])
 
-        base_tape = qml.tape.QuantumScript.from_queue(q)
-        tape = base_tape.copy(measurements=[qml.sample(wires=[0, 1])])
+        base_tape = qp.tape.QuantumScript.from_queue(q)
+        tape = base_tape.copy(measurements=[qp.sample(wires=[0, 1])])
         reference_tape = base_tape.copy(
             measurements=[
-                qml.expval(qml.X(0)),
-                qml.expval(qml.X(1)),
-                qml.expval(qml.Y(0)),
-                qml.expval(qml.Y(1)),
-                qml.expval(qml.Z(0)),
-                qml.expval(qml.Z(1)),
+                qp.expval(qp.X(0)),
+                qp.expval(qp.X(1)),
+                qp.expval(qp.Y(0)),
+                qp.expval(qp.Y(1)),
+                qp.expval(qp.Z(0)),
+                qp.expval(qp.Z(1)),
             ]
         )
 
         # after transform, only state prep and MCMs are present on the tape
         (transformed_tape,), _ = convert_to_mbqc_formalism(tape)
-        expected_gates = (GraphStatePrep, qml.CZ, qml.ops.MidMeasure, qml.X, qml.Y)
+        expected_gates = (GraphStatePrep, qp.CZ, qp.ops.MidMeasure, qp.X, qp.Y)
         for op in transformed_tape.operations:
-            if isinstance(op, qml.ops.Conditional):
-                assert isinstance(op.base, (qml.X, qml.Z, qml.ops.MidMeasure))
+            if isinstance(op, qp.ops.Conditional):
+                assert isinstance(op.base, (qp.X, qp.Z, qp.ops.MidMeasure))
             else:
                 assert isinstance(op, expected_gates)
 
         # diagonalize final measurements, convert to the mbqc formalism, and execute
         res = []
-        for obs in (qml.X, qml.Y, qml.Z):
+        for obs in (qp.X, qp.Y, qp.Z):
             ops = base_tape.operations + obs(0).diagonalizing_gates() + obs(1).diagonalizing_gates()
             tape = base_tape.copy(
-                operations=ops, measurements=[qml.sample(wires=[0, 1])], shots=500
+                operations=ops, measurements=[qp.sample(wires=[0, 1])], shots=500
             )
             (diagonalized_tape,), _ = convert_to_mbqc_formalism(tape, diagonalize_mcms=True)
 
-            samples = qml.execute([diagonalized_tape], dev)[0]
+            samples = qp.execute([diagonalized_tape], dev)[0]
             for wire in (0, 1):
-                mp = qml.expval(obs(wire))
+                mp = qp.expval(obs(wire))
                 res.append(mp.process_samples(samples, wire_order=[0, 1]))
 
-        reference_result = qml.execute([reference_tape], dev)[0]
+        reference_result = qp.execute([reference_tape], dev)[0]
 
         # analytic results, to 2 s.f., are (-0.40, 0.95, -0.37, -0.25, 0.82, 6.2e-17)
         # an atol of 0.1 is not ideal for comparing to these results, but it's enough

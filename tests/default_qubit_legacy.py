@@ -83,7 +83,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         This is the legacy implementation of DefaultQubit and is deprecated. It has been replaced by
         :class:`~pennylane.devices.DefaultQubit`, which can be accessed with the familiar constructor,
-        ``qml.device("default.qubit")``, and now supports backpropagation.
+        ``qp.device("default.qubit")``, and now supports backpropagation.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
@@ -251,10 +251,10 @@ class DefaultQubitLegacy(QubitDevice):
             if getattr(obj, "has_matrix", False):
                 # pow operations dont work with backprop or adjoint without decomposition
                 # use class name string so we don't need to use isinstance check
-                return not (obj.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(obj))
+                return not (obj.__class__.__name__[:3] == "Pow" and qp.operation.is_trainable(obj))
             return obj.name in self.observables.union(self.operations)
 
-        return qml.BooleanFn(accepts_obj)
+        return qp.BooleanFn(accepts_obj)
 
     @functools.lru_cache
     def map_wires(self, wires):
@@ -314,10 +314,10 @@ class DefaultQubitLegacy(QubitDevice):
             elif isinstance(operation, Snapshot):
                 if self._debugger and self._debugger.active:
                     if not isinstance(
-                        operation.hyperparameters["measurement"], qml.measurements.StateMP
+                        operation.hyperparameters["measurement"], qp.measurements.StateMP
                     ):
                         raise NotImplementedError(
-                            f"{self.__class__.__name__} only supports `qml.state` measurements."
+                            f"{self.__class__.__name__} only supports `qp.state` measurements."
                         )
                     state_vector = np.array(self._flatten(self._state))
                     if operation.tag:
@@ -379,9 +379,9 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _apply_global_phase(self, state, operation: qml.GlobalPhase):  # pylint: disable=no-self-use
+    def _apply_global_phase(self, state, operation: qp.GlobalPhase):  # pylint: disable=no-self-use
         """Applies a :class:`~.GlobalPhase` operation to the state."""
-        return qml.math.exp(-1j * operation.data[0]) * state
+        return qp.math.exp(-1j * operation.data[0]) * state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
@@ -649,8 +649,8 @@ class DefaultQubitLegacy(QubitDevice):
 
             # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
             # representation of the Pauliword
-            res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
-            interface = qml.math.get_interface(self.state)
+            res = qp.math.cast(qp.math.convert_like(0.0, observable.data), dtype=complex)
+            interface = qp.math.get_interface(self.state)
 
             # Note: it is important that we use the Hamiltonian's data and not the coeffs
             # attribute. This is because the .data attribute may be 'unwrapped' as required by
@@ -658,30 +658,30 @@ class DefaultQubitLegacy(QubitDevice):
             # that the user provided.
             for op, coeff in zip(observable.ops, observable.data):
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                sparse_mat = qml.prod(op).sparse_matrix(wire_order=self.wires)
+                sparse_mat = qp.prod(op).sparse_matrix(wire_order=self.wires)
                 coo = coo_matrix(sparse_mat)
-                Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
+                Hmat = qp.math.cast(qp.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                 product = (
                     self._gather(self._conj(self.state), coo.row)
                     * Hmat
                     * self._gather(self.state, coo.col)
                 )
-                c = qml.math.convert_like(coeff, product)
+                c = qp.math.convert_like(coeff, product)
 
                 if interface == "tensorflow":
-                    c = qml.math.cast(c, "complex128")
+                    c = qp.math.cast(c, "complex128")
 
-                res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
+                res = qp.math.convert_like(res, product) + qp.math.sum(c * product)
 
         else:
             # Coefficients and the state are not trainable, we can be more
             # efficient in how we compute the Hamiltonian sparse matrix.
             Hmat = observable.sparse_matrix(wire_order=self.wires)
 
-            state = qml.math.toarray(self.state)
+            state = qp.math.toarray(self.state)
             if is_state_batched:
-                res = qml.math.array(
+                res = qp.math.array(
                     [
                         csr_matrix.dot(
                             csr_matrix(self._conj(_state)),
@@ -697,7 +697,7 @@ class DefaultQubitLegacy(QubitDevice):
                 ).toarray()[0]
 
         if observable.name in ["Hamiltonian", "LinearCombination"]:
-            res = qml.math.squeeze(res)
+            res = qp.math.squeeze(res)
 
         return self._real(res)
 
@@ -822,8 +822,8 @@ class DefaultQubitLegacy(QubitDevice):
 
         # get computational basis state number
         basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
-        basis_states = qml.math.convert_like(basis_states, state)
-        num = int(qml.math.dot(state, basis_states))
+        basis_states = qp.math.convert_like(basis_states, state)
+        num = int(qp.math.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 
@@ -990,13 +990,13 @@ class DefaultQubitLegacy(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumScript) -> list[Operation]:
+    def _get_diagonalizing_gates(self, circuit: qp.tape.QuantumScript) -> list[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements
-            if m.obs is None or not isinstance(m.obs, qml.ops.LinearCombination)
+            if m.obs is None or not isinstance(m.obs, qp.ops.LinearCombination)
         ]
-        return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
+        return super()._get_diagonalizing_gates(qp.tape.QuantumScript(measurements=meas_filtered))
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -1030,8 +1030,8 @@ class DefaultQubitLegacy(QubitDevice):
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
         if (
-            qml.math.is_abstract(state_probability)
-            and qml.math.get_interface(state_probability) == "jax"
+            qp.math.is_abstract(state_probability)
+            and qp.math.get_interface(state_probability) == "jax"
         ):
             import jax
 
@@ -1045,7 +1045,7 @@ class DefaultQubitLegacy(QubitDevice):
                 )
             return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
 
-        state_probs = qml.math.unwrap(state_probability)
+        state_probs = qp.math.unwrap(state_probability)
         if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
             return np.array([rng.choice(basis_states, shots, p=prob) for prob in state_probs])

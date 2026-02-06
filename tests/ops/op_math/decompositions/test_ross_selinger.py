@@ -41,37 +41,37 @@ from pennylane.ops.op_math.decompositions.ross_selinger import (
 def test_domain_correction(angle, result):
     """Test the functionality to create domain correction"""
     shift, scale = _domain_correction(angle)
-    assert qml.math.allclose(shift, result[0])
+    assert qp.math.allclose(shift, result[0])
     assert scale == result[1]
 
 
 @pytest.mark.parametrize(
     ("op", "epsilon"),
     [
-        (qml.RZ(math.pi / 42, wires=[1]), 1e-4),
-        (qml.RZ(5 * math.pi / 4, wires=[1]), 1e-5),
-        (qml.PhaseShift(math.pi / 7, wires=["a"]), 1e-3),
-        (qml.RZ(math.pi / 3, wires=[1]), 1e-5),
-        (qml.RZ(-math.pi / 3, wires=[1]), 1e-3),
-        (qml.RZ(-math.pi / 4, wires=[1]), 1e-4),
-        (qml.PhaseShift(-math.pi / 6, wires=[0]), 1e-3),
-        (qml.RZ(-math.pi / 5, wires=[0]), 1e-4),
-        (qml.RZ(-math.pi / 7, wires=[1]), 1e-4),
-        (qml.RZ(-math.pi / 8, wires=[2]), 1e-2),
-        (qml.RZ(9 * math.pi / 4, wires=[0]), 1e-3),
-        (qml.RZ(4.434079721283546, wires=[3]), 1e-3),
+        (qp.RZ(math.pi / 42, wires=[1]), 1e-4),
+        (qp.RZ(5 * math.pi / 4, wires=[1]), 1e-5),
+        (qp.PhaseShift(math.pi / 7, wires=["a"]), 1e-3),
+        (qp.RZ(math.pi / 3, wires=[1]), 1e-5),
+        (qp.RZ(-math.pi / 3, wires=[1]), 1e-3),
+        (qp.RZ(-math.pi / 4, wires=[1]), 1e-4),
+        (qp.PhaseShift(-math.pi / 6, wires=[0]), 1e-3),
+        (qp.RZ(-math.pi / 5, wires=[0]), 1e-4),
+        (qp.RZ(-math.pi / 7, wires=[1]), 1e-4),
+        (qp.RZ(-math.pi / 8, wires=[2]), 1e-2),
+        (qp.RZ(9 * math.pi / 4, wires=[0]), 1e-3),
+        (qp.RZ(4.434079721283546, wires=[3]), 1e-3),
     ],
 )
 def test_ross_selinger(op, epsilon):
     """Test Ross-Selinger decomposition method with specified max-depth"""
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         gates = rs_decomposition(op, epsilon=epsilon)
     assert q.queue == gates
 
-    matrix_rs = qml.matrix(qml.tape.QuantumScript(gates))
+    matrix_rs = qp.matrix(qp.tape.QuantumScript(gates))
 
-    assert qml.math.allclose(qml.matrix(op), matrix_rs, atol=epsilon)
-    assert qml.prod(*gates, lazy=False).wires == op.wires
+    assert qp.math.allclose(qp.matrix(op), matrix_rs, atol=epsilon)
+    assert qp.prod(*gates, lazy=False).wires == op.wires
 
 
 @pytest.mark.catalyst
@@ -80,36 +80,36 @@ def test_ross_selinger(op, epsilon):
 @pytest.mark.parametrize(
     ("op", "epsilon", "wires"),
     [
-        (qml.RZ(math.pi / 42, wires=[1]), 1e-4, 2),
-        (qml.RZ(5 * math.pi / 4, wires=[1]), 1e-2, 2),
-        (qml.RZ(math.pi / 3, wires=[1]), 1e-3, 2),
-        (qml.RZ(-math.pi / 3, wires=[1]), 1e-3, 2),
-        (qml.PhaseShift(-math.pi / 6, wires=[0]), 1e-3, 1),
-        (qml.RZ(-math.pi / 8, wires=[2]), 1e-2, 3),
-        (qml.RZ(9 * math.pi / 4, wires=[0]), 1e-3, 1),
-        (qml.RZ(4.434079721283546, wires=[3]), 1e-3, 4),
+        (qp.RZ(math.pi / 42, wires=[1]), 1e-4, 2),
+        (qp.RZ(5 * math.pi / 4, wires=[1]), 1e-2, 2),
+        (qp.RZ(math.pi / 3, wires=[1]), 1e-3, 2),
+        (qp.RZ(-math.pi / 3, wires=[1]), 1e-3, 2),
+        (qp.PhaseShift(-math.pi / 6, wires=[0]), 1e-3, 1),
+        (qp.RZ(-math.pi / 8, wires=[2]), 1e-2, 3),
+        (qp.RZ(9 * math.pi / 4, wires=[0]), 1e-3, 1),
+        (qp.RZ(4.434079721283546, wires=[3]), 1e-3, 4),
     ],
 )
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
 def test_ross_selinger_qjit(op, epsilon, wires):
     """Test Ross-Selinger decomposition method with specified max-depth"""
     pytest.importorskip("catalyst")
-    dev = qml.device("lightning.qubit", wires=wires)
+    dev = qp.device("lightning.qubit", wires=wires)
 
-    @qml.qjit(static_argnums=0)
-    @qml.qnode(dev)
+    @qp.qjit(static_argnums=0)
+    @qp.qnode(dev)
     def circuit(is_qjit):
         rs_decomposition(op, epsilon=epsilon, is_qjit=is_qjit)
-        return qml.state()
+        return qp.state()
 
     qjit_result = circuit(True)
     non_qjit_result = circuit(False)
-    assert qml.math.allclose(qjit_result, non_qjit_result)
+    assert qp.math.allclose(qjit_result, non_qjit_result)
 
 
 def test_epsilon_value_effect():
     """Test that different epsilon values create different decompositions."""
-    op = qml.RZ(math.pi / 5, 0)
+    op = qp.RZ(math.pi / 5, 0)
     decomp_with_error = rs_decomposition(op, 1e-4)
     decomp_less_error = rs_decomposition(op, 1e-2)
     assert len(decomp_with_error) > len(decomp_less_error)
@@ -117,7 +117,7 @@ def test_epsilon_value_effect():
 
 def test_warm_start():
     """Test that warm start is working."""
-    op = qml.RZ(math.pi / 8, 0)
+    op = qp.RZ(math.pi / 8, 0)
     decomp_with_error = rs_decomposition(op, 1e-10, max_search_trials=100)
     decomp_less_error = rs_decomposition(op, 1e-3, max_search_trials=100)
     assert len(decomp_with_error) == len(decomp_less_error)
@@ -125,7 +125,7 @@ def test_warm_start():
 
 def test_exception():
     """Test operation wire exception in Ross-Selinger"""
-    op = qml.SingleExcitation(1.0, wires=[1, 2])
+    op = qp.SingleExcitation(1.0, wires=[1, 2])
 
     with pytest.raises(
         ValueError,
@@ -163,34 +163,34 @@ def test_jit_rs_decomposition(decomposition_info):
     decomposition_info = (has_leading_t, syllable_sequence, clifford_op_idx)
 
     # Get the operations from _jit_rs_decomposition
-    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    @qp.qnode(qp.device("lightning.qubit", wires=1))
     def qjit_circuit():
         _jit_rs_decomposition(0, decomposition_info)
-        return qml.state()
+        return qp.state()
 
-    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    @qp.qnode(qp.device("lightning.qubit", wires=1))
     def non_qjit_circuit():
         if int(decomposition_info[0].item()) == 1:
-            qml.T(0)
+            qp.T(0)
         for i in decomposition_info[1]:
             if i == 0:
-                qml.H(0)
-                qml.T(0)
+                qp.H(0)
+                qp.T(0)
             elif i == 1:
-                qml.S(0)
-                qml.H(0)
-                qml.T(0)
+                qp.S(0)
+                qp.H(0)
+                qp.T(0)
         if decomposition_info[2] == 12:
-            qml.S(0)
-            qml.Y(0)
+            qp.S(0)
+            qp.Y(0)
         elif decomposition_info[2] == 9:
-            qml.H(0)
-            qml.adjoint(qml.S)(0)
+            qp.H(0)
+            qp.adjoint(qp.S)(0)
 
-        return qml.state()
+        return qp.state()
 
-    qjit_result = qml.qjit(qjit_circuit)()
+    qjit_result = qp.qjit(qjit_circuit)()
     # Do not jit the reference circuit; it uses standard Python control flow
     non_qjit_result = non_qjit_circuit()
 
-    assert qml.math.allclose(qjit_result, non_qjit_result)
+    assert qp.math.allclose(qjit_result, non_qjit_result)

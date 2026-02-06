@@ -45,11 +45,11 @@ class TestNormalForms:
             assert isinstance(so3mat, SO3Matrix), "All gates should be SO3Matrix instances"
             assert so3mat.k == 0, f"Gate {gates} should have k=0"
 
-            su2mat = _SU2_transform(qml.matrix(qml.prod(*gates)))[0]
+            su2mat = _SU2_transform(qp.matrix(qp.prod(*gates)))[0]
             w, x, y, z = _quaternion_transform(su2mat)
-            assert qml.math.allclose(
+            assert qp.math.allclose(
                 so3mat.ndarray,
-                qml.math.array(
+                qp.math.array(
                     [
                         [1 - 2 * (y**2 + z**2), 2 * (x * y - w * z), 2 * (x * z + w * y)],
                         [2 * (x * y + w * z), 1 - 2 * (x**2 + z**2), 2 * (y * z - w * x)],
@@ -68,8 +68,8 @@ class TestNormalForms:
             assert isinstance(su2mat, DyadicMatrix), "All gates should be DyadicMatrix instances"
             assert isinstance(phase, float), "Phase should be a float."
 
-            assert qml.math.allclose(
-                su2mat.ndarray, _SU2_transform(qml.matrix(gate))[0]
+            assert qp.math.allclose(
+                su2mat.ndarray, _SU2_transform(qp.matrix(gate))[0]
             ), "SU(2) matrix does not match expected form"
 
     def test_parity_transforms(self):
@@ -80,30 +80,30 @@ class TestNormalForms:
 
         parity_vecs = [(1, 1, 1), (2, 2, 0), (0, 2, 2), (2, 0, 2)]
         for ix, (parity_vec, (so3mat, gates, phase)) in enumerate(parity_transforms.items()):
-            gate = qml.prod(*gates)
+            gate = qp.prod(*gates)
             assert isinstance(so3mat, SO3Matrix), "All transform should have SO3Matrix instances"
             assert isinstance(
-                gate, (qml.ops.Operation, qml.ops.op_math.Prod)
+                gate, (qp.ops.Operation, qp.ops.op_math.Prod)
             ), "Each transform should have a gate"
             assert isinstance(phase, float)
             if parity_vec != (1, 1, 1):  # 0.125 here comes from the matrix form of the T-gate.
-                assert qml.math.allclose(
-                    phase, (0.125 - _SU2_transform(qml.matrix(gate))[1] / math.pi) % 2
+                assert qp.math.allclose(
+                    phase, (0.125 - _SU2_transform(qp.matrix(gate))[1] / math.pi) % 2
                 )
 
-            su2mat = _SU2_transform(qml.matrix(qml.adjoint(gate)))[0]
+            su2mat = _SU2_transform(qp.matrix(qp.adjoint(gate)))[0]
             w, x, y, z = _quaternion_transform(su2mat)
-            so3mat2 = qml.math.array(
+            so3mat2 = qp.math.array(
                 [
                     [1 - 2 * (y**2 + z**2), 2 * (x * y - w * z), 2 * (x * z + w * y)],
                     [2 * (x * y + w * z), 1 - 2 * (x**2 + z**2), 2 * (y * z - w * x)],
                     [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x**2 + y**2)],
                 ]
             )
-            assert qml.math.allclose(
+            assert qp.math.allclose(
                 so3mat.ndarray, so3mat2
             ), "SO(3) matrix does not match expected form"
-            assert qml.math.allclose(parity_vecs[ix], parity_vec)
+            assert qp.math.allclose(parity_vecs[ix], parity_vec)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("klen", [1, 2, 5, 6])
@@ -114,28 +114,28 @@ class TestNormalForms:
 
         clifford_elements = _clifford_group_to_SO3()
         a = int(klen % 2)
-        b = qml.math.random.randint(2, size=klen)
-        c = qml.math.random.randint(len(clifford_elements))
+        b = qp.math.random.randint(2, size=klen)
+        c = qp.math.random.randint(len(clifford_elements))
 
         if a:
             so3mat = SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(c=1)))
-            so3rep = qml.T(0)
+            so3rep = qp.T(0)
         else:
             so3mat = SO3Matrix(DyadicMatrix(ZOmega(d=1), ZOmega(), ZOmega(), ZOmega(d=1)))
-            so3rep = qml.I(0)
+            so3rep = qp.I(0)
 
         for b_ in b:
             if b_:
                 so3mat @= SO3Matrix(
                     DyadicMatrix(ZOmega(d=1), ZOmega(c=1), ZOmega(b=1), ZOmega(a=-1), k=1)
                 )
-                for op_ in (qml.S(0), qml.H(0), qml.T(0)):
+                for op_ in (qp.S(0), qp.H(0), qp.T(0)):
                     so3rep @= op_
             else:
                 so3mat @= SO3Matrix(
                     DyadicMatrix(ZOmega(d=1), ZOmega(c=1), ZOmega(d=1), ZOmega(c=-1), k=1)
                 )
-                for op_ in (qml.H(0), qml.T(0)):
+                for op_ in (qp.H(0), qp.T(0)):
                     so3rep @= op_
 
         cl_list = list(clifford_elements.keys())
@@ -152,6 +152,6 @@ class TestNormalForms:
         assert isinstance(phase, float), "Phase should be a float"
 
         decomposition, phase = _ma_normal_form(so3mat, compressed=False)
-        assert qml.equal(
-            qml.prod(*decomposition), qml.prod(*so3rep[not a :])
+        assert qp.equal(
+            qp.prod(*decomposition), qp.prod(*so3rep[not a :])
         ), "Decomposition does not match expected operator"

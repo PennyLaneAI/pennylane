@@ -43,40 +43,40 @@ def test_gather_non_mcm_unsupported_measurement():
     """Test that gather_non_mcm raises an error on supported measurements."""
 
     with pytest.raises(TypeError, match="does not support"):
-        gather_non_mcm(qml.state(), np.array([0, 0]), np.array([True, True]))
+        gather_non_mcm(qp.state(), np.array([0, 0]), np.array([True, True]))
 
 
 def test_get_legacy_capability():
     dev = DefaultQubitLegacy(wires=[0], shots=1)
     with pytest.warns(
-        qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
     ):
-        dev = qml.devices.LegacyDeviceFacade(dev)
+        dev = qp.devices.LegacyDeviceFacade(dev)
     caps = get_legacy_capabilities(dev)
     assert caps["model"] == "qubit"
     assert not "supports_mid_measure" in caps
     assert not _supports_one_shot(dev)
 
     with pytest.warns(
-        qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
     ):
-        dev2 = qml.devices.DefaultMixed(wires=[0], shots=1)
+        dev2 = qp.devices.DefaultMixed(wires=[0], shots=1)
     assert not _supports_one_shot(dev2)
 
 
 @pytest.mark.parametrize(
     "measurement",
     [
-        qml.state(),
-        qml.density_matrix(0),
-        qml.vn_entropy(0),
-        qml.mutual_info(0, 1),
-        qml.purity(0),
-        qml.classical_shadow(0),
+        qp.state(),
+        qp.density_matrix(0),
+        qp.vn_entropy(0),
+        qp.mutual_info(0, 1),
+        qp.purity(0),
+        qp.classical_shadow(0),
     ],
 )
 def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
-    circuit = qml.tape.QuantumScript([qml.RX(1.0, 0)], [measurement])
+    circuit = qp.tape.QuantumScript([qp.RX(1.0, 0)], [measurement])
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
         parse_native_mid_circuit_measurements(circuit, [circuit], [np.empty((1, 1))])
 
@@ -86,24 +86,24 @@ def test_qnode_transform_error():
 
     with pytest.raises(TransformError, match="cannot be applied directly on a QNode"):
 
-        @qml.dynamic_one_shot
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.dynamic_one_shot
+        @qp.qnode(qp.device("default.qubit"))
         def _():
-            qml.X(0)
-            qml.expval(qml.Z(0))
+            qp.X(0)
+            qp.expval(qp.Z(0))
 
 
 def test_postselect_mode():
     """Test that invalid shots are discarded if requested"""
     shots = 100
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
-    @qml.set_shots(shots)
-    @qml.qnode(dev, postselect_mode="hw-like")
+    @qp.set_shots(shots)
+    @qp.qnode(dev, postselect_mode="hw-like")
     def f(x):
-        qml.RX(x, 0)
-        _ = qml.measure(0, postselect=1)
-        return qml.sample(wires=[0, 1])
+        qp.RX(x, 0)
+        _ = qp.measure(0, postselect=1)
+        return qp.sample(wires=[0, 1])
 
     res = f(np.pi / 2)
     assert len(res) < shots
@@ -119,14 +119,14 @@ def test_hw_like_with_jax(use_jit, diff_method, seed):
     import jax  # pylint: disable=import-outside-toplevel
 
     shots = 10
-    dev = qml.device("default.qubit", seed=jax.random.PRNGKey(seed))
+    dev = qp.device("default.qubit", seed=jax.random.PRNGKey(seed))
 
-    @qml.set_shots(shots)
-    @qml.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
+    @qp.set_shots(shots)
+    @qp.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
     def f(x):
-        qml.RX(x, 0)
-        _ = qml.measure(0, postselect=1)
-        return qml.sample(wires=[0, 1])
+        qp.RX(x, 0)
+        _ = qp.measure(0, postselect=1)
+        return qp.sample(wires=[0, 1])
 
     if use_jit:
         f = jax.jit(f)
@@ -139,31 +139,31 @@ def test_hw_like_with_jax(use_jit, diff_method, seed):
 
 def test_unsupported_measurements():
     """Test that using unsupported measurements raises an error."""
-    tape = qml.tape.QuantumScript([MidMeasure(0)], [qml.state()])
+    tape = qp.tape.QuantumScript([MidMeasure(0)], [qp.state()])
 
     with pytest.raises(
         TypeError,
         match="Native mid-circuit measurement mode does not support StateMP measurements.",
     ):
-        _, _ = qml.dynamic_one_shot(tape)
+        _, _ = qp.dynamic_one_shot(tape)
 
 
 def test_unsupported_shots():
     """Test that using shots=None raises an error."""
-    tape = qml.tape.QuantumScript([MidMeasure(0)], [qml.probs(wires=0)], shots=None)
+    tape = qp.tape.QuantumScript([MidMeasure(0)], [qp.probs(wires=0)], shots=None)
 
     with pytest.raises(
         QuantumFunctionError,
         match="dynamic_one_shot is only supported with finite shots.",
     ):
-        _, _ = qml.dynamic_one_shot(tape)
+        _, _ = qp.dynamic_one_shot(tape)
 
 
 @pytest.mark.parametrize("n_shots", range(1, 10))
 def test_len_tapes(n_shots):
     """Test that the transform produces the correct number of tapes."""
-    tape = qml.tape.QuantumScript([MidMeasure(0)], [qml.expval(qml.PauliZ(0))], shots=n_shots)
-    tapes, _ = qml.dynamic_one_shot(tape)
+    tape = qp.tape.QuantumScript([MidMeasure(0)], [qp.expval(qp.PauliZ(0))], shots=n_shots)
+    tapes, _ = qp.dynamic_one_shot(tape)
     assert len(tapes) == 1
 
 
@@ -172,33 +172,33 @@ def test_len_tapes(n_shots):
 def test_len_tape_batched(n_batch, n_shots):
     """Test that the transform produces the correct number of tapes with batches."""
     params = np.random.rand(n_batch)
-    tape = qml.tape.QuantumScript(
-        [qml.RX(params, 0), MidMeasure(0, postselect=1), qml.CNOT([0, 1])],
-        [qml.expval(qml.PauliZ(0))],
+    tape = qp.tape.QuantumScript(
+        [qp.RX(params, 0), MidMeasure(0, postselect=1), qp.CNOT([0, 1])],
+        [qp.expval(qp.PauliZ(0))],
         shots=n_shots,
     )
-    tapes, _ = qml.dynamic_one_shot(tape)
+    tapes, _ = qp.dynamic_one_shot(tape)
     assert len(tapes) == n_batch
 
 
 @pytest.mark.parametrize(
     "measure, aux_measure, n_meas",
     (
-        (qml.counts, CountsMP, 1),
-        (qml.expval, ExpectationMP, 1),
-        (qml.probs, ProbabilityMP, 1),
-        (qml.sample, SampleMP, 1),
-        (qml.var, SampleMP, 1),
+        (qp.counts, CountsMP, 1),
+        (qp.expval, ExpectationMP, 1),
+        (qp.probs, ProbabilityMP, 1),
+        (qp.sample, SampleMP, 1),
+        (qp.var, SampleMP, 1),
     ),
 )
 def test_len_measurements_obs(measure, aux_measure, n_meas):
     """Test that the transform produces the correct number of measurements in tapes measuring observables."""
     n_shots = 10
     n_mcms = 1
-    tape = qml.tape.QuantumScript(
-        [qml.Hadamard(0)] + [MidMeasure(0)] * n_mcms, [measure(op=qml.PauliZ(0))], shots=n_shots
+    tape = qp.tape.QuantumScript(
+        [qp.Hadamard(0)] + [MidMeasure(0)] * n_mcms, [measure(op=qp.PauliZ(0))], shots=n_shots
     )
-    tapes, _ = qml.dynamic_one_shot(tape)
+    tapes, _ = qp.dynamic_one_shot(tape)
     assert len(tapes) == 1
     aux_tape = tapes[0]
     assert len(aux_tape.measurements) == n_meas + n_mcms
@@ -209,23 +209,23 @@ def test_len_measurements_obs(measure, aux_measure, n_meas):
 @pytest.mark.parametrize(
     "measure, aux_measure, n_meas",
     (
-        (qml.counts, SampleMP, 0),
-        (qml.expval, SampleMP, 0),
-        (qml.probs, SampleMP, 0),
-        (qml.sample, SampleMP, 0),
-        (qml.var, SampleMP, 0),
+        (qp.counts, SampleMP, 0),
+        (qp.expval, SampleMP, 0),
+        (qp.probs, SampleMP, 0),
+        (qp.sample, SampleMP, 0),
+        (qp.var, SampleMP, 0),
     ),
 )
 def test_len_measurements_mcms(measure, aux_measure, n_meas):
     """Test that the transform produces the correct number of measurements in tapes measuring MCMs."""
     n_shots = 10
     n_mcms = 1
-    tape = qml.tape.QuantumScript(
-        [qml.Hadamard(0)] + [MidMeasure(0)] * n_mcms,
+    tape = qp.tape.QuantumScript(
+        [qp.Hadamard(0)] + [MidMeasure(0)] * n_mcms,
         [measure(op=MeasurementValue([MidMeasure(0)], lambda x: x))],
         shots=n_shots,
     )
-    tapes, _ = qml.dynamic_one_shot(tape)
+    tapes, _ = qp.dynamic_one_shot(tape)
     assert len(tapes) == 1
     aux_tape = tapes[0]
     assert len(aux_tape.measurements) == n_meas + n_mcms
@@ -260,11 +260,11 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
 
     if postselect is None:
         # First raw result for a single shot, i.e, result of wires/obs measurement
-        obs_res_single_shot = qml.math.array(
-            [1.0, 0.0] if measure_f == qml.probs else [[1.0]], like=interface
+        obs_res_single_shot = qp.math.array(
+            [1.0, 0.0] if measure_f == qp.probs else [[1.0]], like=interface
         )
         # Result of SampleMP on mid-circuit measurements
-        rest_single_shot = qml.math.array([[1]], like=interface)
+        rest_single_shot = qp.math.array([[1]], like=interface)
         single_shot_res = (obs_res_single_shot,) + (rest_single_shot,) * n_mcms
         # Raw results for each shot are (sample_for_first_measurement,) + (sample for 1st MCM, sample for 2nd MCM, ...)
         raw_results = (single_shot_res,) * shots
@@ -273,28 +273,28 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
         # When postselecting, we start by creating results for two shots as alternating indices
         # will have valid results.
         # Alternating tuple. Only the values at odd indices are valid
-        if measure_f == qml.probs:
+        if measure_f == qp.probs:
             obs_res_two_shot = (
-                qml.math.array([1.0, 0.0], like=interface),
-                qml.math.array([0.0, 1.0], like=interface),
+                qp.math.array([1.0, 0.0], like=interface),
+                qp.math.array([0.0, 1.0], like=interface),
             )
-        elif measure_f == qml.sample:
+        elif measure_f == qp.sample:
             obs_res_two_shot = (
-                qml.math.array([1.0], like=interface),
-                qml.math.array([0.0], like=interface),
+                qp.math.array([1.0], like=interface),
+                qp.math.array([0.0], like=interface),
             )
         else:
             obs_res_two_shot = (
-                qml.math.array(1.0, like=interface),
-                qml.math.array(0.0, like=interface),
+                qp.math.array(1.0, like=interface),
+                qp.math.array(0.0, like=interface),
             )
         obs_res = obs_res_two_shot * (shots // 2)
         # Tuple of alternating 1s and 0s.
         postselect_res = (
-            qml.math.array(int(postselect), like=interface),
-            qml.math.array(int(not postselect), like=interface),
+            qp.math.array(int(postselect), like=interface),
+            qp.math.array(int(not postselect), like=interface),
         ) * (shots // 2)
-        rest = (qml.math.array(1, like=interface),) * shots
+        rest = (qp.math.array(1, like=interface),) * shots
         # Raw results for each shot are (sample_for_first_measurement, sample for 1st MCM, sample for 2nd MCM)
         raw_results = tuple(zip(obs_res, postselect_res, rest))
 
@@ -309,7 +309,7 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
 class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
 
-    @pytest.mark.parametrize("measure_f", (qml.expval, qml.probs, qml.sample, qml.var))
+    @pytest.mark.parametrize("measure_f", (qp.expval, qp.probs, qp.sample, qp.var))
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
     def test_interface_tape_results(
@@ -321,19 +321,19 @@ class TestInterfaces:
 
             seed = PRNGKey(seed)
 
-        dev = qml.device("default.qubit", wires=4, seed=seed)
-        param = qml.math.array(np.pi / 2, like=interface)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
+        param = qp.math.array(np.pi / 2, like=interface)
 
-        mv = qml.measure(0)
+        mv = qp.measure(0)
         mcms = [mv.measurements[0]] + [MidMeasure(0, id=str(i)) for i in range(n_mcms - 1)]
 
-        tape = qml.tape.QuantumScript(
-            [qml.RX(param, 0)] + mcms,
-            [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
+        tape = qp.tape.QuantumScript(
+            [qp.RX(param, 0)] + mcms,
+            [measure_f(op=qp.PauliZ(0)), measure_f(op=mv)],
             shots=shots,
         )
 
-        tapes, _ = qml.dynamic_one_shot(tape)
+        tapes, _ = qp.dynamic_one_shot(tape)
         results = dev.execute(tapes)[0]
 
         # The transformed tape never has a shot vector
@@ -345,16 +345,16 @@ class TestInterfaces:
     @pytest.mark.parametrize(
         "measure_f, expected1, expected2",
         [
-            (qml.expval, 1.0, 1.0),
-            (qml.probs, [1, 0], [0, 1]),
+            (qp.expval, 1.0, 1.0),
+            (qp.probs, [1, 0], [0, 1]),
             (
-                qml.sample,
-                # The expected results provided for qml.sample are
+                qp.sample,
+                # The expected results provided for qp.sample are
                 # just the result of a single shot
                 1,
                 1,
             ),
-            (qml.var, 0.0, 0.0),
+            (qp.var, 0.0, 0.0),
         ],
     )
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
@@ -364,15 +364,15 @@ class TestInterfaces:
     ):
         """Test that the results of tapes are processed correctly for tapes with interface
         parameters"""
-        param = qml.math.array(1.5, like=interface)
-        mv = qml.measure(0)
+        param = qp.math.array(1.5, like=interface)
+        mv = qp.measure(0)
         mcms = [mv.measurements[0]] + [MidMeasure(0)] * (n_mcms - 1)
-        ops = [qml.RX(param, 0)] + mcms
+        ops = [qp.RX(param, 0)] + mcms
 
-        tape = qml.tape.QuantumScript(
-            ops, [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)], shots=shots
+        tape = qp.tape.QuantumScript(
+            ops, [measure_f(op=qp.PauliZ(0)), measure_f(op=mv)], shots=shots
         )
-        _, fn = qml.dynamic_one_shot(tape)
+        _, fn = qp.dynamic_one_shot(tape)
         total_shots = sum(shots) if isinstance(shots, list) else shots
 
         raw_results = generate_dummy_raw_results(
@@ -384,7 +384,7 @@ class TestInterfaces:
         )
         processed_results = fn(raw_results)
 
-        if measure_f is qml.sample:
+        if measure_f is qp.sample:
             # All samples 1
             expected1 = (
                 [[expected1] * s for s in shots] if isinstance(shots, list) else [expected1] * shots
@@ -398,34 +398,34 @@ class TestInterfaces:
 
         if use_interface_for_results:
             expected_interface = "numpy" if interface is None else interface
-            assert qml.math.get_deep_interface(processed_results) == expected_interface
+            assert qp.math.get_deep_interface(processed_results) == expected_interface
         else:
-            assert qml.math.get_deep_interface(processed_results) == "numpy"
+            assert qp.math.get_deep_interface(processed_results) == "numpy"
 
         if isinstance(shots, list):
             assert len(processed_results) == len(shots)
             for r, e1, e2 in zip(processed_results, expected1, expected2):
                 # Expected result is 2-list since we have two measurements in the tape
-                assert qml.math.allclose(r[0], e1)
-                assert qml.math.allclose(r[1], e2)
+                assert qp.math.allclose(r[0], e1)
+                assert qp.math.allclose(r[1], e2)
         else:
             # Expected result is 2-list since we have two measurements in the tape
-            assert qml.math.allclose(processed_results[0], expected1)
-            assert qml.math.allclose(processed_results[1], expected2)
+            assert qp.math.allclose(processed_results[0], expected1)
+            assert qp.math.allclose(processed_results[1], expected2)
 
     @pytest.mark.parametrize(
         "measure_f, expected1, expected2",
         [
-            (qml.expval, 1.0, 1.0),
-            (qml.probs, [1, 0], [0, 1]),
+            (qp.expval, 1.0, 1.0),
+            (qp.probs, [1, 0], [0, 1]),
             (
-                qml.sample,
-                # The expected results provided for qml.sample are
+                qp.sample,
+                # The expected results provided for qp.sample are
                 # just the result of a single shot
                 1,
                 1,
             ),
-            (qml.var, 0.0, 0.0),
+            (qp.var, 0.0, 0.0),
         ],
     )
     @pytest.mark.parametrize("shots", [20, [20, 22]])
@@ -435,16 +435,16 @@ class TestInterfaces:
         """Test that the results of tapes are processed correctly for tapes with interface
         parameters when postselecting"""
         postselect = 1
-        param = qml.math.array(np.pi / 2, like=interface)
-        mv = qml.measure(0, postselect=postselect)
+        param = qp.math.array(np.pi / 2, like=interface)
+        mv = qp.measure(0, postselect=postselect)
         mp = mv.measurements[0]
 
-        tape = qml.tape.QuantumScript(
-            [qml.RX(param, 0), mp, MidMeasure(0)],
-            [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
+        tape = qp.tape.QuantumScript(
+            [qp.RX(param, 0), mp, MidMeasure(0)],
+            [measure_f(op=qp.PauliZ(0)), measure_f(op=mv)],
             shots=shots,
         )
-        _, fn = qml.dynamic_one_shot(
+        _, fn = qp.dynamic_one_shot(
             tape, postselect_mode="pad-invalid-samples" if interface == "jax" else None
         )
         total_shots = sum(shots) if isinstance(shots, list) else shots
@@ -458,7 +458,7 @@ class TestInterfaces:
         )
         processed_results = fn(raw_results)
 
-        if measure_f is qml.sample:
+        if measure_f is qp.sample:
             if interface == "jax":
                 expected1 = [expected1, fill_in_value]
                 expected2 = [expected2, fill_in_value]
@@ -482,17 +482,17 @@ class TestInterfaces:
 
         if use_interface_for_results:
             expected_interface = "numpy" if interface is None else interface
-            assert qml.math.get_deep_interface(processed_results) == expected_interface
+            assert qp.math.get_deep_interface(processed_results) == expected_interface
         else:
-            assert qml.math.get_deep_interface(processed_results) == "numpy"
+            assert qp.math.get_deep_interface(processed_results) == "numpy"
 
         if isinstance(shots, list):
             assert len(processed_results) == len(shots)
             for r, e1, e2 in zip(processed_results, expected1, expected2):
                 # Expected result is 2-list since we have two measurements in the tape
-                assert qml.math.allclose(qml.math.squeeze(r[0]), e1)
-                assert qml.math.allclose(r[1], e2)
+                assert qp.math.allclose(qp.math.squeeze(r[0]), e1)
+                assert qp.math.allclose(r[1], e2)
         else:
             # Expected result is 2-list since we have two measurements in the tape
-            assert qml.math.allclose(qml.math.squeeze(processed_results[0]), expected1)
-            assert qml.math.allclose(processed_results[1], expected2)
+            assert qp.math.allclose(qp.math.squeeze(processed_results[0]), expected1)
+            assert qp.math.allclose(processed_results[1], expected2)

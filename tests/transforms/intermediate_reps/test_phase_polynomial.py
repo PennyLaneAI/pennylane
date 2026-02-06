@@ -20,21 +20,21 @@ import pennylane as qp
 from pennylane.transforms import phase_polynomial
 
 # trivial example
-circ0 = qml.tape.QuantumScript([])
+circ0 = qp.tape.QuantumScript([])
 pmat0 = np.eye(4)
 ptab0 = np.array([])
 angles0 = np.array([])
 
 # example from fig. 1 in https://arxiv.org/abs/2104.00934
-circ1 = qml.tape.QuantumScript(
+circ1 = qp.tape.QuantumScript(
     [
-        qml.CNOT((1, 0)),
-        qml.RZ(1, 0),
-        qml.CNOT((2, 0)),
-        qml.RZ(2, 0),
-        qml.CNOT((0, 1)),
-        qml.CNOT((3, 1)),
-        qml.RZ(3, 1),
+        qp.CNOT((1, 0)),
+        qp.RZ(1, 0),
+        qp.CNOT((2, 0)),
+        qp.RZ(2, 0),
+        qp.CNOT((0, 1)),
+        qp.CNOT((3, 1)),
+        qp.RZ(3, 1),
     ],
     [],
 )
@@ -45,14 +45,14 @@ angles1 = np.array([1, 2, 3])
 
 
 class TestPhasePolynomial:
-    """Tests for qml.labs.dla.phase_polynomials.phase_polynomial"""
+    """Tests for qp.labs.dla.phase_polynomials.phase_polynomial"""
 
     def test_TypeError_input(self):
         """Test that a TypeError is raised for the wrong inputs"""
         with pytest.raises(
             TypeError, match="phase_polynomial can only handle CNOT and RZ operators"
         ):
-            _ = phase_polynomial(qml.tape.QuantumScript([qml.RX(0.5, 0)]))
+            _ = phase_polynomial(qp.tape.QuantumScript([qp.RX(0.5, 0)]))
 
     @pytest.mark.parametrize(
         "circ, res",
@@ -75,7 +75,7 @@ class TestPhasePolynomial:
         """Test wire_order with string wires"""
         wire_order_abcd = ["a", "b", "c", "d"]
 
-        (circ1_abcd,), _ = qml.map_wires(circ1, dict(enumerate(wire_order_abcd)))
+        (circ1_abcd,), _ = qp.map_wires(circ1, dict(enumerate(wire_order_abcd)))
 
         pmat, ptab, angles = phase_polynomial(circ1_abcd, wire_order=["a", "b", "c", "d"])
 
@@ -87,13 +87,13 @@ class TestPhasePolynomial:
         """Test phase_polynomial works for qfunc inputs"""
 
         def qfunc(phi1, phi2):
-            qml.CNOT((0, 1))
-            qml.RZ(phi1, 1)
-            qml.CNOT((1, 2))
-            qml.CNOT((2, 0))
-            qml.RZ(phi2, 0)
+            qp.CNOT((0, 1))
+            qp.RZ(phi1, 1)
+            qp.CNOT((1, 2))
+            qp.CNOT((2, 0))
+            qp.RZ(phi2, 0)
 
-        tape = qml.tape.make_qscript(qfunc)(0.5, 0.3)
+        tape = qp.tape.make_qscript(qfunc)(0.5, 0.3)
 
         pmat, ptab, angles = phase_polynomial(qfunc, wire_order=range(3))(0.5, 0.3)
         pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))
@@ -105,16 +105,16 @@ class TestPhasePolynomial:
     def test_qnode_input(self):
         """Test phase_polynomial works for qnode inputs"""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def qnode(phi1, phi2):
-            qml.CNOT((0, 1))
-            qml.RZ(phi1, 1)
-            qml.CNOT((1, 2))
-            qml.CNOT((2, 0))
-            qml.RZ(phi2, 0)
-            return qml.expval(qml.Z(0))
+            qp.CNOT((0, 1))
+            qp.RZ(phi1, 1)
+            qp.CNOT((1, 2))
+            qp.CNOT((2, 0))
+            qp.RZ(phi2, 0)
+            return qp.expval(qp.Z(0))
 
-        tape = qml.workflow.construct_tape(qnode)(0.5, 0.3)
+        tape = qp.workflow.construct_tape(qnode)(0.5, 0.3)
 
         pmat, ptab, angles = phase_polynomial(qnode, wire_order=range(3))(0.5, 0.3)
         pmat_exp, ptab_exp, angles_exp = phase_polynomial(tape, wire_order=range(3))

@@ -80,14 +80,14 @@ class TestWhileLoops:
     def test_whileloop_qnode(self):
         """Test while-loop used with a qnode"""
 
-        @qml.qnode(qml.device("default.qubit", wires=4))
+        @qp.qnode(qp.device("default.qubit", wires=4))
         def f(p):
             w = int(0)
             while w < 4:
-                qml.RY(p, wires=w)
+                qp.RY(p, wires=w)
                 p *= 0.5
                 w += 1
-            return qml.probs()
+            return qp.probs()
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0.0)

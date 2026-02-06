@@ -36,26 +36,26 @@ class TestOperationRecorder:
             + "===========\n"
         )
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=1)
+            qp.RX(a, wires=0)
+            qp.RY(b, wires=1)
 
-            with qml.tape.OperationRecorder() as recorder:
+            with qp.tape.OperationRecorder() as recorder:
                 ops = [
-                    qml.PauliY(0),
-                    qml.PauliY(1),
-                    qml.RZ(c, wires=0),
-                    qml.RZ(c, wires=1),
-                    qml.CNOT(wires=[0, 1]),
+                    qp.PauliY(0),
+                    qp.PauliY(1),
+                    qp.RZ(c, wires=0),
+                    qp.RZ(c, wires=1),
+                    qp.CNOT(wires=[0, 1]),
                 ]
 
             assert str(recorder) == expected_output
             assert recorder.queue == ops
 
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
 
         circuit(0.1, 0.2, 0.4)
 
@@ -77,13 +77,13 @@ class TestOperationRecorder:
 
         def template(x):
             for i in range(5):
-                qml.RZ(i * x, wires=0)
+                qp.RZ(i * x, wires=0)
 
-        with qml.tape.OperationRecorder() as recorder:
+        with qp.tape.OperationRecorder() as recorder:
             template(3)
 
         assert str(recorder) == expected_output
-        qml.assert_equal(recorder[0], qml.RZ(0, wires=0))
+        qp.assert_equal(recorder[0], qp.RZ(0, wires=0))
 
     def test_template_with_return_integration(self):
         """Tests that the OperationRecorder integrates well with the
@@ -105,11 +105,11 @@ class TestOperationRecorder:
 
         def template(x):
             for i in range(5):
-                qml.RZ(i * x, wires=0)
+                qp.RZ(i * x, wires=0)
 
-            return qml.var(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+            return qp.var(qp.PauliZ(0)), qp.sample(qp.PauliX(1))
 
-        with qml.tape.OperationRecorder() as recorder:
+        with qp.tape.OperationRecorder() as recorder:
             template(3)
 
         assert str(recorder) == expected_output

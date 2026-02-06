@@ -34,13 +34,13 @@ from pennylane.wires import Wires
 def ops_fixture():
     """A fixture of a complex example of operations that depend on previous operations."""
     return [
-        qml.RX(0.43, wires=0),
-        qml.RY(0.35, wires=1),
-        qml.RZ(0.35, wires=2),
-        qml.CNOT(wires=[0, 1]),
-        qml.Hadamard(wires=2),
-        qml.CNOT(wires=[2, 0]),
-        qml.PauliX(wires=1),
+        qp.RX(0.43, wires=0),
+        qp.RY(0.35, wires=1),
+        qp.RZ(0.35, wires=2),
+        qp.CNOT(wires=[0, 1]),
+        qp.Hadamard(wires=2),
+        qp.CNOT(wires=[2, 0]),
+        qp.PauliX(wires=1),
     ]
 
 
@@ -48,8 +48,8 @@ def ops_fixture():
 def obs_fixture():
     """A fixture of observables to go after the queue fixture."""
     return [
-        qml.expval(qml.PauliX(wires=0)),
-        qml.expval(qml.Hermitian(np.identity(4), wires=[1, 2])),
+        qp.expval(qp.PauliX(wires=0)),
+        qp.expval(qp.Hermitian(np.identity(4), wires=[1, 2])),
     ]
 
 
@@ -62,35 +62,35 @@ def circuit_fixture(ops, obs):
 @pytest.fixture(name="parametrized_circuit_gaussian")
 def parametrized_circuit_gaussian_fixture(wires):
     def qfunc(a, b, c, d, e, f):
-        qml.Rotation(a, wires=wires[0])
-        qml.Rotation(b, wires=wires[1])
-        qml.Rotation(c, wires=wires[2])
-        qml.Beamsplitter(d, 1, wires=[wires[0], wires[1]])
-        qml.Rotation(1, wires=wires[0])
-        qml.Rotation(e, wires=wires[1])
-        qml.Rotation(f, wires=wires[2])
+        qp.Rotation(a, wires=wires[0])
+        qp.Rotation(b, wires=wires[1])
+        qp.Rotation(c, wires=wires[2])
+        qp.Beamsplitter(d, 1, wires=[wires[0], wires[1]])
+        qp.Rotation(1, wires=wires[0])
+        qp.Rotation(e, wires=wires[1])
+        qp.Rotation(f, wires=wires[2])
 
-        return qml.expval(qml.ops.NumberOperator(wires=wires[0]))
+        return qp.expval(qp.ops.NumberOperator(wires=wires[0]))
 
     return qfunc
 
 
 def circuit_measure_max_once():
     """A fixture of a circuit that measures wire 0 once."""
-    return qml.expval(qml.PauliX(wires=0))
+    return qp.expval(qp.PauliX(wires=0))
 
 
 def circuit_measure_max_twice():
     """A fixture of a circuit that measures wire 0 twice."""
-    return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=0)
+    return qp.expval(qp.PauliZ(wires=0)), qp.probs(wires=0)
 
 
 def circuit_measure_multiple_with_max_twice():
     """A fixture of a circuit that measures wire 0 twice."""
     return (
-        qml.expval(qml.PauliZ(wires=0)),
-        qml.probs(wires=[0, 1, 2]),
-        qml.var(qml.PauliZ(wires=[1]) @ qml.PauliZ([2])),
+        qp.expval(qp.PauliZ(wires=0)),
+        qp.probs(wires=[0, 1, 2]),
+        qp.var(qp.PauliZ(wires=[1]) @ qp.PauliZ([2])),
     )
 
 
@@ -126,7 +126,7 @@ class TestCircuitGraph:
         """Test case where operations do not depend on each other.
         This should result in a graph with no edges."""
 
-        ops = [qml.RX(0.43, wires=0), qml.RY(0.35, wires=1)]
+        ops = [qp.RX(0.43, wires=0), qp.RY(0.35, wires=1)]
 
         res = CircuitGraph(ops, [], Wires([0, 1])).graph
         assert len(res) == 2
@@ -180,9 +180,9 @@ class TestCircuitGraph:
     def test_ancestors_and_descendents_repeated_op(self, sort):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
 
-        op = qml.X(0)
-        ops = [op, qml.Y(0), op, qml.Z(0), op]
-        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
+        op = qp.X(0)
+        ops = [op, qp.Y(0), op, qp.Z(0), op]
+        graph = CircuitGraph(ops, [], qp.wires.Wires([0, 1, 2]))
 
         with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
             graph.ancestors([op], sort=sort)
@@ -193,7 +193,7 @@ class TestCircuitGraph:
     def test_ancestors_and_descendents_single_op_error(self, sort):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
 
-        op = qml.Z(0)
+        op = qp.Z(0)
         graph = CircuitGraph([op], [], [0, 1, 2])
 
         with pytest.raises(
@@ -209,18 +209,18 @@ class TestCircuitGraph:
         """Changing nodes in the graph."""
 
         circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
-        new = qml.RX(0.1, wires=0)
+        new = qp.RX(0.1, wires=0)
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
-        new_mp = qml.var(qml.Y(0))
+        new_mp = qp.var(qp.Y(0))
         circuit.update_node(obs[0], new_mp)
         assert circuit.observables[0] is new_mp
 
     def test_update_node_error(self, ops, obs):
         """Test that changing nodes in the graph may raise an error."""
         circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
-        new = qml.RX(0.1, wires=0)
-        new = qml.CNOT(wires=[0, 1])
+        new = qp.RX(0.1, wires=0)
+        new = qp.CNOT(wires=[0, 1])
         with pytest.raises(ValueError):
             circuit.update_node(ops[0], new)
 
@@ -247,9 +247,9 @@ class TestCircuitGraph:
     def test_layers(self, parametrized_circuit_gaussian, wires):
         """A test of a simple circuit with 3 layers and 6 trainable parameters"""
 
-        dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parametrized_circuit_gaussian, dev)
-        tape = qml.workflow.construct_tape(qnode)(
+        dev = qp.device("default.gaussian", wires=wires)
+        qnode = qp.QNode(parametrized_circuit_gaussian, dev)
+        tape = qp.workflow.construct_tape(qnode)(
             *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
         )
         circuit = tape.graph
@@ -266,10 +266,10 @@ class TestCircuitGraph:
 
     def test_iterate_layers_repeat_op(self):
         """Test iterate_parametrized_layers can work when the operation is repeated."""
-        op = qml.RX(0.5, 0)
+        op = qp.RX(0.5, 0)
         par_info = [{"op": op, "op_idx": 0, "p_idx": 0}, {"op": op, "op_idx": 2, "p_idx": 0}]
-        graph = qml.CircuitGraph(
-            [op, qml.X(0), op], [], wires=op.wires, trainable_params={0, 1}, par_info=par_info
+        graph = qp.CircuitGraph(
+            [op, qp.X(0), op], [], wires=op.wires, trainable_params={0, 1}, par_info=par_info
         )
         layers = list(graph.iterate_parametrized_layers())
 
@@ -278,20 +278,20 @@ class TestCircuitGraph:
         assert layers[0].pre_ops == []
         assert layers[0].ops == [op]
         assert layers[0].param_inds == (0,)
-        assert layers[0].post_ops == [qml.X(0), op]
+        assert layers[0].post_ops == [qp.X(0), op]
 
         assert layers[1].ops == [op]
         assert layers[1].param_inds == (1,)
-        assert layers[1].pre_ops == [op, qml.X(0)]
+        assert layers[1].pre_ops == [op, qp.X(0)]
         assert layers[1].post_ops == []
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
     def test_iterate_layers(self, parametrized_circuit_gaussian, wires):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
-        dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parametrized_circuit_gaussian, dev)
-        tape = qml.workflow.construct_tape(qnode)(
+        dev = qp.device("default.gaussian", wires=wires)
+        qnode = qp.QNode(parametrized_circuit_gaussian, dev)
+        tape = qp.workflow.construct_tape(qnode)(
             *pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True)
         )
         circuit = tape.graph
@@ -325,41 +325,41 @@ class TestCircuitGraph:
         """A test for getting the maximum number of measurements on any wire in
         the circuit graph."""
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circ, dev)
-        tape = qml.workflow.construct_tape(qnode)()
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circ, dev)
+        tape = qp.workflow.construct_tape(qnode)()
         circuit = tape.graph
         assert circuit.max_simultaneous_measurements == expected
 
     def test_str_print(self):
         """Tests if the circuit prints correct."""
-        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
+        ops = [qp.Hadamard(wires=0), qp.CNOT(wires=[0, 1])]
+        obs_w_wires = [qp.measurements.sample(op=None, wires=[0, 1, 2])]
 
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])\n"""
         assert str(circuit_w_wires) == expected
 
     tape_depth = (
-        ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 2),
-        ([qml.X(0)] * 4, 4),
-        ([qml.Hadamard(0), qml.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
+        ([qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)], 2),
+        ([qp.X(0)] * 4, 4),
+        ([qp.Hadamard(0), qp.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
         (
             [
-                qml.RX(1.23, 0),
-                qml.RZ(-0.45, 0),
+                qp.RX(1.23, 0),
+                qp.RZ(-0.45, 0),
                 CustomOpDepth3(wires=[3, 4]),
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.Hadamard(2),
-                qml.Hadamard(3),
-                qml.Hadamard(4),
+                qp.Hadamard(0),
+                qp.Hadamard(1),
+                qp.Hadamard(2),
+                qp.Hadamard(3),
+                qp.Hadamard(4),
                 CustomOpDepth2(wires=[1, 2, 3]),
-                qml.RZ(-1, 4),
-                qml.RX(0.5, 4),
-                qml.RX(0.5, 3),
+                qp.RZ(-1, 4),
+                qp.RX(0.5, 4),
+                qp.RX(0.5, 3),
                 CustomOpDepth4(wires=[0, 1]),
-                qml.CNOT(wires=[3, 4]),
+                qp.CNOT(wires=[3, 4]),
             ],
             10,
         ),
@@ -375,7 +375,7 @@ class TestCircuitGraph:
 def test_has_path():
     """Test has_path and has_path_idx."""
 
-    ops = [qml.X(0), qml.X(3), qml.CNOT((0, 1)), qml.X(1), qml.X(3)]
+    ops = [qp.X(0), qp.X(3), qp.CNOT((0, 1)), qp.X(1), qp.X(3)]
     graph = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4, 5])
 
     assert graph.has_path(ops[0], ops[2])
@@ -388,7 +388,7 @@ def test_path_from_mcm_to_conditional():
     mcm = MidMeasure(wires=Wires([0]))
     ppm = PauliMeasure("XY", wires=Wires([0, 1]))
     m0 = MeasurementValue([mcm, ppm])
-    ops = [mcm, ppm, Conditional(m0, qml.Z(0))]
+    ops = [mcm, ppm, Conditional(m0, qp.Z(0))]
     graph = CircuitGraph(ops, [], wires=Wires([0, 1, 2]))
     assert graph.has_path(mcm, ops[2])
     assert graph.has_path(ppm, ops[2])
@@ -397,8 +397,8 @@ def test_path_from_mcm_to_conditional():
 def test_has_path_repeated_ops():
     """Test has_path and has_path_idx when an operation is repeated."""
 
-    op = qml.X(0)
-    ops = [op, qml.CNOT((0, 1)), op, qml.Y(1)]
+    op = qp.X(0)
+    ops = [op, qp.CNOT((0, 1)), op, qp.Y(1)]
 
     graph = CircuitGraph(ops, [], [0, 1, 2, 3])
 

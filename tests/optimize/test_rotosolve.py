@@ -86,7 +86,7 @@ def test_error_missing_frequency_info_single_par():
     opt = RotosolveOptimizer()
 
     def sum_named_arg(x):
-        return qml.math.sum(x)
+        return qp.math.sum(x)
 
     x = np.arange(4, requires_grad=True)
     nums_frequency = {"x": {(0,): 1, (1,): 1}}
@@ -419,40 +419,40 @@ class TestDeactivatedTrainingWithClassicalFunctions:
 
 
 num_wires = 3
-dev = qml.device("default.qubit", wires=num_wires)
+dev = qp.device("default.qubit", wires=num_wires)
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def scalar_qnode(x):
     for w in dev.wires:
-        qml.RX(x, wires=w)
-    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+        qp.RX(x, wires=w)
+    return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def array_qnode(x, y, z):
     for _x, w in zip(x, dev.wires):
-        qml.RX(_x, wires=w)
+        qp.RX(_x, wires=w)
 
     for i in range(num_wires):
-        qml.CRY(y, wires=[i, (i + 1) % num_wires])
+        qp.CRY(y, wires=[i, (i + 1) % num_wires])
 
-    qml.RZ(z[0], wires=0)
-    qml.RZ(z[1], wires=1)
-    qml.RZ(z[1], wires=2)  # z[1] is used twice on purpose
+    qp.RZ(z[0], wires=0)
+    qp.RZ(z[1], wires=1)
+    qp.RZ(z[1], wires=2)  # z[1] is used twice on purpose
 
-    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+    return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def _postprocessing_qnode(x, y, z):
     for w in dev.wires:
-        qml.RX(x, wires=w)
+        qp.RX(x, wires=w)
     for w in dev.wires:
-        qml.RY(y, wires=w)
+        qp.RY(y, wires=w)
     for w in dev.wires:
-        qml.RZ(z, wires=w)
-    return [qml.expval(qml.PauliZ(w)) for w in dev.wires]
+        qp.RZ(z, wires=w)
+    return [qp.expval(qp.PauliZ(w)) for w in dev.wires]
 
 
 def postprocessing_qnode(x, y, z):

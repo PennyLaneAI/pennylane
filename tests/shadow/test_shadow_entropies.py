@@ -25,15 +25,15 @@ from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     """maximally entangled state preparation circuit"""
-    dev = qml.device("default.qubit", wires=wires)
+    dev = qp.device("default.qubit", wires=wires)
 
-    @qml.set_shots(shots)
-    @qml.qnode(dev, interface=interface)
+    @qp.set_shots(shots)
+    @qp.qnode(dev, interface=interface)
     def circuit():
-        qml.Hadamard(wires=0)
+        qp.Hadamard(wires=0)
         for i in range(1, wires):
-            qml.CNOT(wires=[0, i])
-        return qml.classical_shadow(wires=range(wires))
+            qp.CNOT(wires=[0, i])
+        return qp.classical_shadow(wires=range(wires))
 
     return circuit
 
@@ -47,10 +47,10 @@ def expected_entropy_ising_xx(param, alpha):
     eigs = [eig_1, eig_2]
     eigs = np.array([eig for eig in eigs if eig > 0])
 
-    if alpha == 1 or qml.math.isclose(alpha, 1):
-        return qml.math.entr(eigs)
+    if alpha == 1 or qp.math.isclose(alpha, 1):
+        return qp.math.entr(eigs)
 
-    return qml.math.log(qml.math.sum(eigs**alpha)) / (1 - alpha)
+    return qp.math.log(qp.math.sum(eigs**alpha)) / (1 - alpha)
 
 
 class TestShadowEntropies:
@@ -73,30 +73,30 @@ class TestShadowEntropies:
         """Test entropies match roughly with exact solution for a non-constant distribution using other PennyLane functionalities"""
         n_wires = 4
         # exact solution
-        dev_exact = qml.device("default.qubit", wires=range(n_wires))
-        dev = qml.device("default.qubit", wires=range(n_wires))
+        dev_exact = qp.device("default.qubit", wires=range(n_wires))
+        dev = qp.device("default.qubit", wires=range(n_wires))
 
-        @qml.qnode(dev_exact)
+        @qp.qnode(dev_exact)
         def qnode_exact(x):
             for i in range(n_wires):
-                qml.RY(x[i], wires=i)
+                qp.RY(x[i], wires=i)
 
             for i in range(n_wires - 1):
-                qml.CNOT((i, i + 1))
+                qp.CNOT((i, i + 1))
 
-            return qml.state()
+            return qp.state()
 
         # classical shadow qnode
-        @qml.set_shots(100000)
-        @qml.qnode(dev)
+        @qp.set_shots(100000)
+        @qp.qnode(dev)
         def qnode(x):
             for i in range(n_wires):
-                qml.RY(x[i], wires=i)
+                qp.RY(x[i], wires=i)
 
             for i in range(n_wires - 1):
-                qml.CNOT((i, i + 1))
+                qp.CNOT((i, i + 1))
 
-            return qml.classical_shadow(wires=dev.wires)
+            return qp.classical_shadow(wires=dev.wires)
 
         x = np.arange(n_wires, requires_grad=True)
 
@@ -105,24 +105,24 @@ class TestShadowEntropies:
 
         # Get the full dm of the qnode_exact
         state = qnode_exact(x)
-        rho = qml.math.dm_from_state_vector(state)
+        rho = qp.math.dm_from_state_vector(state)
 
         # Check for the correct entropies for all possible 2-site reduced density matrix (rdm)
         for rdm_wires in [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]:
             # this is intentionally not done in a parametrize loop because this would re-execute the quantum function
 
             # exact solution
-            rdm = qml.math.reduce_dm(rho, indices=rdm_wires)
-            evs = qml.math.eigvalsh(rdm)
+            rdm = qp.math.reduce_dm(rho, indices=rdm_wires)
+            evs = qp.math.eigvalsh(rdm)
 
             evs = evs[np.where(evs > 0)]
 
             exact_2 = -np.log(np.trace(rdm @ rdm))
 
             alpha = 1.5
-            exact_alpha = qml.math.log(qml.math.sum(evs**alpha)) / (1 - alpha)
+            exact_alpha = qp.math.log(qp.math.sum(evs**alpha)) / (1 - alpha)
 
-            exact_vn = qml.math.entr(evs)
+            exact_vn = qp.math.entr(evs)
             exact = [exact_vn, exact_alpha, exact_2]
 
             # shadow estimate
@@ -134,17 +134,17 @@ class TestShadowEntropies:
     @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
     def test_analytic_entropy(self, interface):
         """Test entropies on analytic results"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(100000)
-        @qml.qnode(dev, interface=interface)
+        @qp.set_shots(100000)
+        @qp.qnode(dev, interface=interface)
         def circuit():
-            qml.IsingXX(0.5, wires=[0, 1])
-            return qml.classical_shadow(wires=range(2))
+            qp.IsingXX(0.5, wires=[0, 1])
+            return qp.classical_shadow(wires=range(2))
 
         param = 0.5
         bits, recipes = circuit()
-        shadow = qml.ClassicalShadow(bits, recipes)
+        shadow = qp.ClassicalShadow(bits, recipes)
 
         # explicitly not use pytest parametrize to reuse the same measurements
         for alpha in [1, 2, 3]:
@@ -154,27 +154,27 @@ class TestShadowEntropies:
 
                     expected_entropy = expected_entropy_ising_xx(param, alpha) / np.log(base)
 
-                    assert qml.math.allclose(entropy, expected_entropy, atol=1e-1)
+                    assert qp.math.allclose(entropy, expected_entropy, atol=1e-1)
 
     def test_closest_density_matrix(self):
         """Test that the closest density matrix from the estimator is valid"""
         wires = 3
-        dev = qml.device("default.qubit", wires=range(wires))
+        dev = qp.device("default.qubit", wires=range(wires))
 
         # Just a simple circuit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def qnode(x):
             for i in range(wires):
-                qml.RY(x[i], wires=i)
+                qp.RY(x[i], wires=i)
 
             for i in range(wires - 1):
-                qml.CNOT((i, i + 1))
+                qp.CNOT((i, i + 1))
 
-            return qml.state()
+            return qp.state()
 
         x = np.linspace(0.5, 1.5, num=wires)
         state = qnode(x)
-        rho = qml.math.dm_from_state_vector(state)
+        rho = qp.math.dm_from_state_vector(state)
         lambdas = _project_density_matrix_spectrum(rho)
         assert np.isclose(np.sum(lambdas), 1.0)
         assert all(lambdas > 0)
@@ -191,4 +191,4 @@ rho2 = np.diag([-0.1, -0.1, 0.1, 1.1])
 def test_project_density_matrix_spectrum(rho):
     """Test the function _project_density_matrix_spectrum behaves as expected for trivial case"""
     new_lambdas = _project_density_matrix_spectrum(rho)
-    assert qml.math.allclose(new_lambdas, [1.0])
+    assert qp.math.allclose(new_lambdas, [1.0])

@@ -32,26 +32,26 @@ class TestRotoselectOptimizer:
         """Test that the correct cost is returned via the step_and_cost method for the
         Rotoselect momentum optimizer"""
         rotoselect_opt = RotoselectOptimizer()
-        generators = [qml.RY, qml.RX]
-        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        generators = [qp.RY, qp.RX]
+        possible_generators = [qp.RX, qp.RY, qp.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
             generators[1](params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         def cost_fn(params, generators):
             Z_1, Y_2 = circuit_1(params, generators=generators)
@@ -66,7 +66,7 @@ class TestRotoselectOptimizer:
     @pytest.mark.slow
     @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
     @pytest.mark.parametrize(
-        "generators", [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)]
+        "generators", [list(tup) for tup in it.product([qp.RX, qp.RY, qp.RZ], repeat=2)]
     )
     def test_rotoselect_optimizer(self, x_start, generators, tol):
         """Tests that rotoselect optimizer finds the optimal generators and parameters for the
@@ -76,26 +76,26 @@ class TestRotoselectOptimizer:
         # the optimal generators for the 2-qubit VQE circuit
         # H = 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
         rotoselect_opt = RotoselectOptimizer()
-        optimal_generators = [qml.RY, qml.RX]
-        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        optimal_generators = [qp.RY, qp.RX]
+        possible_generators = [qp.RX, qp.RY, qp.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
             generators[1](params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         def cost_fn(params, generators):
             Z_1, Y_2 = circuit_1(params, generators=generators)
@@ -123,33 +123,33 @@ class TestRotoselectOptimizer:
             return None
 
         with pytest.raises(ValueError, match="must be equal to the number of generators"):
-            rotoselect_opt.step(cost_fn, [0.2], [qml.PauliX, qml.PauliZ])
+            rotoselect_opt.step(cost_fn, [0.2], [qp.PauliX, qp.PauliZ])
 
     @pytest.mark.slow
     @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
     def test_keywords_rotoselect(self, x_start, tol):
         """test rotoselect accepts keywords"""
         rotoselect_opt = RotoselectOptimizer()
-        generators = [qml.RY, qml.RX]
-        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        generators = [qp.RY, qp.RX]
+        possible_generators = [qp.RX, qp.RY, qp.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
             generators[1](params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         def cost_fn(params, generators, shift=0.0):
             Z_1, Y_2 = circuit_1(params, generators=generators)

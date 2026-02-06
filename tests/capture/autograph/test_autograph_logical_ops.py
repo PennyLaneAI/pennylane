@@ -110,13 +110,13 @@ class TestAnd:
     def test_qnode_integration(self, a, b):
         """Test that the logical AND operation can be used in a PennyLane circuit."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x: bool, y: bool):
             if x and y:
-                qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+                qp.PauliX(0)
+            return qp.expval(qp.PauliZ(0))
 
         result = run_autograph(circuit)(x=a, y=b)
         assert result == -1.0 if (a and b) else 1.0
@@ -251,13 +251,13 @@ class TestOr:
     def test_qnode_integration(self, a, b):
         """Test that the logical OR operation can be used in a PennyLane circuit."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x: bool, y: bool):
             if x or y:
-                qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+                qp.PauliX(0)
+            return qp.expval(qp.PauliZ(0))
 
         result = run_autograph(circuit)(x=a, y=b)
         assert result == -1.0 if (a or b) else 1.0
@@ -387,13 +387,13 @@ class TestNot:
     def test_qnode_integration(self, a):
         """Test that the logical NOT operation can be used in a PennyLane circuit."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x: bool):
             if not x:
-                qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+                qp.PauliX(0)
+            return qp.expval(qp.PauliZ(0))
 
         result = run_autograph(circuit)(x=a)
         assert result == -1.0 if (not a) else 1.0

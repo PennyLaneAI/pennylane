@@ -29,27 +29,27 @@ from pennylane.wires import Wires
 @pytest.mark.external
 @pytest.mark.catalyst
 def test_measure_catalyst_dispatch():
-    """Test that qml.measure can be used with qjit and capture disabled."""
+    """Test that qp.measure can be used with qjit and capture disabled."""
 
     pytest.importorskip("catalyst")
 
-    @qml.qjit
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
     def c():
-        qml.X(0)
-        m = qml.measure(0, reset=True, postselect=True)
+        qp.X(0)
+        m = qp.measure(0, reset=True, postselect=True)
 
         def f():
-            qml.X(1)
+            qp.X(1)
 
-        qml.cond(m, f)()
+        qp.cond(m, f)()
 
-        return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+        return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
     z0, z1 = c()
 
-    assert qml.math.allclose(z0, 1)
-    assert qml.math.allclose(z1, -1)
+    assert qp.math.allclose(z0, 1)
+    assert qp.math.allclose(z1, -1)
 
 
 class TestMeasure:
@@ -62,7 +62,7 @@ class TestMeasure:
             QuantumFunctionError,
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
-            qml.measure(wires=[0, 1])
+            qp.measure(wires=[0, 1])
 
     def test_hash(self):
         """Test that the hash for `MidMeasure` is defined correctly."""
@@ -263,12 +263,12 @@ class TestMeasurementValueManipulation:
         """Test the __inv__ dunder method."""
         m = MeasurementValue([mp1], lambda v: v)
         m_inversion = ~m
-        assert qml.math.allclose(m_inversion[0], True)
-        assert qml.math.allclose(m_inversion[1], False)
+        assert qp.math.allclose(m_inversion[0], True)
+        assert qp.math.allclose(m_inversion[1], False)
         values = {mp1: True}
-        assert qml.math.allclose(m_inversion.concretize(values), False)
+        assert qp.math.allclose(m_inversion.concretize(values), False)
         values = {mp1: False}
-        assert qml.math.allclose(m_inversion.concretize(values), True)
+        assert qp.math.allclose(m_inversion.concretize(values), True)
         values = {mp1: np.random.rand(10) < 0.5}
         assert all(m_inversion.concretize(values) != np.array(values.values()))
 
@@ -432,7 +432,7 @@ class TestMeasurementValueManipulation:
 
     def test_repr(self):
         """Test that the output of the __repr__ dunder method is as expected."""
-        m = qml.measure(0)
+        m = qp.measure(0)
         assert repr(m) == "MeasurementValue(wires=[0])"
 
     def test_complex_repr(self):

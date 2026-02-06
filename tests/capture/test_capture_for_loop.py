@@ -43,7 +43,7 @@ class TestCaptureForLoop:
 
             a = jax.numpy.ones(arg.shape)
 
-            @qml.for_loop(0, 10, 2)
+            @qp.for_loop(0, 10, 2)
             def loop(_, a):
                 return a
 
@@ -67,15 +67,15 @@ class TestCaptureForLoop:
 
             a = jax.numpy.ones(arg.shape)
 
-            @qml.for_loop(0, 10, 1)
+            @qp.for_loop(0, 10, 1)
             def loop1(_, a):
                 return a
 
-            @qml.for_loop(10, 1)
+            @qp.for_loop(10, 1)
             def loop2(_, a):
                 return a
 
-            @qml.for_loop(10)
+            @qp.for_loop(10)
             def loop3(_, a):
                 return a
 
@@ -105,15 +105,15 @@ class TestCaptureForLoop:
             stop = arg.shape[0]
             a = jax.numpy.ones(stop)
 
-            @qml.for_loop(0, stop, 1)
+            @qp.for_loop(0, stop, 1)
             def loop1(i, a):
                 return a.at[i].set(i**2)
 
-            @qml.for_loop(0, stop)
+            @qp.for_loop(0, stop)
             def loop2(i, a):
                 return a.at[i].set(i**2)
 
-            @qml.for_loop(stop)
+            @qp.for_loop(stop)
             def loop3(i, a):
                 return a.at[i].set(i**2)
 
@@ -131,25 +131,25 @@ class TestCaptureForLoop:
         """Test simple for-loop primitive with gradient."""
         from pennylane.capture.primitives import jacobian_prim
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def inner_func(x):
 
-            @qml.for_loop(0, 2)
+            @qp.for_loop(0, 2)
             def loop(w):
-                qml.RX(x * w, w)
+                qp.RX(x * w, w)
 
             loop()
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
         def func_qml(x):
-            return qml.grad(inner_func)(x)
+            return qp.grad(inner_func)(x)
 
         def func_jax(x):
             return jax.grad(inner_func)(x)
 
         x = 0.7
         jax_out = func_jax(x)
-        assert qml.math.allclose(func_qml(x), jax_out)
+        assert qp.math.allclose(func_qml(x), jax_out)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qml)(x)
@@ -171,7 +171,7 @@ class TestCaptureForLoop:
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 
         manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qml.math.allclose(manual_eval, jax_out)
+        assert qp.math.allclose(manual_eval, jax_out)
 
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_shared_indbidx(self, array):
@@ -182,7 +182,7 @@ class TestCaptureForLoop:
             a = jax.numpy.ones(arg.shape, dtype=float)
             b = jax.numpy.ones(arg.shape, dtype=float)
 
-            @qml.for_loop(0, 10, 2)
+            @qp.for_loop(0, 10, 2)
             def loop(_, a, b):
                 return (a, b)
 
@@ -206,7 +206,7 @@ class TestCaptureForLoop:
 
         def fn(lower_bound, upper_bound, step, arg):
 
-            @qml.for_loop(lower_bound, upper_bound, step)
+            @qp.for_loop(lower_bound, upper_bound, step)
             def loop_body(i, arg):
                 return arg + i**2
 
@@ -228,7 +228,7 @@ class TestCaptureForLoop:
 
         def fn(array):
 
-            @qml.for_loop(0, 4, 1)
+            @qp.for_loop(0, 4, 1)
             def loop_body(i, array, sum_val):
                 return array, sum_val + array[i]
 
@@ -254,7 +254,7 @@ class TestDynamicShapes:
         def f(x):
             n = jax.numpy.shape(x)[0]
 
-            @qml.for_loop(n)
+            @qp.for_loop(n)
             def g(_, y):
                 return y + y
 
@@ -262,10 +262,10 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(5))
 
-        [shape, output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
+        [shape, output] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
-        assert qml.math.allclose(shape, 3)
+        assert qp.math.allclose(shape, 3)
 
     # pylint: disable=unused-argument
     def test_dynamic_array_creation(self):
@@ -276,17 +276,17 @@ class TestDynamicShapes:
             return jax.numpy.sum(y)
 
         def w():
-            return qml.for_loop(4)(f)(0)
+            return qp.for_loop(4)(f)(0)
 
         jaxpr = jax.make_jaxpr(w)()
-        [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
+        [r] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qp.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
 
     def test_error_if_resizing_when_forbidden(self):
         """Test that a useful error is raised if the shape pattern changes with
         allow_array_resizing=False"""
 
-        @qml.for_loop(3, allow_array_resizing=False)
+        @qp.for_loop(3, allow_array_resizing=False)
         def f(i, a, b):
             a_size = a.shape[0]
             b_size = b.shape[0]
@@ -297,7 +297,7 @@ class TestDynamicShapes:
             return f(a0, b0)
 
         with pytest.warns(
-            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
+            qp.exceptions.CaptureWarning, match="Structured capture of qp.for_loop failed"
         ):
             jaxpr = jax.make_jaxpr(w)(1)
 
@@ -306,7 +306,7 @@ class TestDynamicShapes:
     def test_error_is_combining_independent_shapes(self):
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
 
-        @qml.for_loop(3, allow_array_resizing=True)
+        @qp.for_loop(3, allow_array_resizing=True)
         def f(i, a, b):
             return a * b, 2 * b
 
@@ -315,7 +315,7 @@ class TestDynamicShapes:
             return f(a0, b0)
 
         with pytest.warns(
-            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
+            qp.exceptions.CaptureWarning, match="Structured capture of qp.for_loop failed"
         ):
             jaxpr = jax.make_jaxpr(w)(2)
 
@@ -325,7 +325,7 @@ class TestDynamicShapes:
         """Test that one argument can have a shape that matches another argument, but
         can be resized independently of that arg."""
 
-        @qml.for_loop(3)
+        @qp.for_loop(3)
         def f(i, j, a):
             return j + i, 2 * a
 
@@ -333,10 +333,10 @@ class TestDynamicShapes:
             return f(i0, jnp.ones(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [a_size, final_j, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(a_size, 2)  # what it was initialized with
-        assert qml.math.allclose(final_j, 5)  # 2 +3
-        assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
+        [a_size, final_j, final_a] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qp.math.allclose(a_size, 2)  # what it was initialized with
+        assert qp.math.allclose(final_j, 5)  # 2 +3
+        assert qp.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**3
 
     @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
     def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
@@ -347,14 +347,14 @@ class TestDynamicShapes:
         def w(i0):
             c = jnp.arange(i0)
 
-            @qml.for_loop(3, allow_array_resizing=allow_array_resizing)
+            @qp.for_loop(3, allow_array_resizing=allow_array_resizing)
             def f(i, a):
                 return c * a
 
             return f(jnp.arange(i0))
 
         with pytest.warns(
-            qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
+            qp.exceptions.CaptureWarning, match="Structured capture of qp.for_loop failed"
         ):
             jaxpr = jax.make_jaxpr(w)(3)
         assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
@@ -363,7 +363,7 @@ class TestDynamicShapes:
     def test_loop_with_argument_combining(self, allow_array_resizing):
         """Test that arguments with dynamic shapes can be combined if allow_array_resizing=auto or False."""
 
-        @qml.for_loop(4, allow_array_resizing=allow_array_resizing)
+        @qp.for_loop(4, allow_array_resizing=allow_array_resizing)
         def f(i, a, b):
             return a + i, a + b
 
@@ -372,16 +372,16 @@ class TestDynamicShapes:
             return f(a0, b0)
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(dynamic_shape, 2)  # the initial size
-        assert qml.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
-        assert qml.math.allclose(b, jnp.array([9, 9]))  # 1 + 1 + 1 + 2 + 4
+        [dynamic_shape, a, b] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qp.math.allclose(dynamic_shape, 2)  # the initial size
+        assert qp.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
+        assert qp.math.allclose(b, jnp.array([9, 9]))  # 1 + 1 + 1 + 2 + 4
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
     def test_loop_args_resized_together(self, allow_array_resizing):
         """Test that arrays can be resized as long as they are resized together."""
 
-        @qml.for_loop(2, allow_array_resizing=allow_array_resizing)
+        @qp.for_loop(2, allow_array_resizing=allow_array_resizing)
         def f(i, x, y):
             x = jnp.ones(x.shape[0] + y.shape[0])
             return x, (i + 2) * x
@@ -392,17 +392,17 @@ class TestDynamicShapes:
             return f(x0, y0)
 
         jaxpr = jax.make_jaxpr(workflow)(2)
-        [s, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
-        assert qml.math.allclose(s, 8)
+        [s, x, y] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qp.math.allclose(s, 8)
         x_expected = jnp.ones(8)
-        assert qml.math.allclose(x, x_expected)
-        assert qml.math.allclose(y, 3 * x_expected)
+        assert qp.math.allclose(x, x_expected)
+        assert qp.math.allclose(y, 3 * x_expected)
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", True))
     def test_independent_resizing(self, allow_array_resizing):
         """Test that two arrays can be resized independently of each other."""
 
-        @qml.for_loop(4, allow_array_resizing=allow_array_resizing)
+        @qp.for_loop(4, allow_array_resizing=allow_array_resizing)
         def f(i, a, b):
             return jnp.ones(a.shape[0] + b.shape[0]), b + 1
 
@@ -410,7 +410,7 @@ class TestDynamicShapes:
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
         jaxpr = jax.make_jaxpr(w)(2)
-        [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        [shape1, shape2, a, b] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(shape1, 15)
         assert jnp.allclose(shape2, 3)
         expected = jnp.ones(15)
@@ -424,18 +424,18 @@ class TestCaptureCircuitsForLoop:
     def test_for_loop_capture(self):
         """Test that a for loop is correctly captured into a jaxpr."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
 
-            @qml.for_loop(0, 3, 1)
+            @qp.for_loop(0, 3, 1)
             def loop_fn(i):
-                qml.RX(i, wires=0)
+                qp.RX(i, wires=0)
 
             loop_fn()
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         result = circuit()
         expected = np.cos(0 + 1 + 2)
@@ -449,22 +449,22 @@ class TestCaptureCircuitsForLoop:
     def test_circuit_args(self, arg, expected):
         """Test that a for loop with arguments is correctly captured into a jaxpr."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(arg):
 
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
 
-            @qml.for_loop(0, 10, 1)
+            @qp.for_loop(0, 10, 1)
             def loop_body(i, x):
-                qml.RX(x, wires=0)
-                qml.RY(jax.numpy.sin(x), wires=0)
+                qp.RX(x, wires=0)
+                qp.RY(jax.numpy.sin(x), wires=0)
                 return x + i**2
 
             loop_body(arg)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         result = circuit(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -477,27 +477,27 @@ class TestCaptureCircuitsForLoop:
     def test_circuit_consts(self, arg, expected):
         """Test that a for loop with jaxpr constants is correctly captured into a jaxpr."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(arg):
 
             # these are captured as consts
             arg1 = arg + 0.1
             arg2 = arg + 0.2
 
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
 
-            @qml.for_loop(0, 10, 1)
+            @qp.for_loop(0, 10, 1)
             def loop_body(i, x):
-                qml.RX(arg1, wires=0)
-                qml.RX(arg2, wires=0)
-                qml.RY(jax.numpy.sin(x), wires=0)
+                qp.RX(arg1, wires=0)
+                qp.RX(arg2, wires=0)
+                qp.RY(jax.numpy.sin(x), wires=0)
                 return x + i**2
 
             loop_body(arg)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         result = circuit(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -513,22 +513,22 @@ class TestCaptureCircuitsForLoop:
     def test_dynamic_circuit_arg(self, lower_bound, upper_bound, step, arg, expected):
         """Test that a for loop with dynamic bounds and argument is correctly captured into a jaxpr."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(lower_bound, upper_bound, step, arg):
 
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
 
-            @qml.for_loop(lower_bound, upper_bound, step)
+            @qp.for_loop(lower_bound, upper_bound, step)
             def loop_body(i, x):
-                qml.RX(x, wires=0)
-                qml.RY(jax.numpy.sin(x), wires=0)
+                qp.RX(x, wires=0)
+                qp.RY(jax.numpy.sin(x), wires=0)
                 return x + i**2
 
             loop_body(arg)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         args = [lower_bound, upper_bound, step, arg]
         result = circuit(*args)
@@ -544,27 +544,27 @@ class TestCaptureCircuitsForLoop:
     def test_for_loop_nested(self, upper_bound, arg, expected):
         """Test that a nested for loop is correctly captured into a jaxpr."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(upper_bound, arg):
 
             # for loop with dynamic bounds
-            @qml.for_loop(0, upper_bound, 1)
+            @qp.for_loop(0, upper_bound, 1)
             def loop_fn(i):
-                qml.Hadamard(wires=i)
+                qp.Hadamard(wires=i)
 
             # nested for loops.
             # outer for loop updates x
-            @qml.for_loop(0, upper_bound, 1)
+            @qp.for_loop(0, upper_bound, 1)
             def loop_fn_returns(i, x):
-                qml.RX(x, wires=i)
+                qp.RX(x, wires=i)
 
                 # inner for loop
-                @qml.for_loop(i + 1, upper_bound, 1)
+                @qp.for_loop(i + 1, upper_bound, 1)
                 def inner(j):
-                    qml.RZ(j, wires=0)
-                    qml.RY(x**2, wires=0)
+                    qp.RZ(j, wires=0)
+                    qp.RY(x**2, wires=0)
 
                 inner()
 
@@ -573,7 +573,7 @@ class TestCaptureCircuitsForLoop:
             loop_fn()
             loop_fn_returns(arg)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         args = [upper_bound, arg]
         result = circuit(*args)
@@ -588,26 +588,26 @@ class TestCaptureCircuitsForLoop:
     )
     def test_nested_for_and_while_loop(self, upper_bound, arg, expected):
         """Test that a nested for loop and while loop is correctly captured into a jaxpr."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(upper_bound, arg):
 
             # for loop with dynamic bounds
-            @qml.for_loop(0, upper_bound, 1)
+            @qp.for_loop(0, upper_bound, 1)
             def loop_fn(i):
-                qml.Hadamard(wires=i)
+                qp.Hadamard(wires=i)
 
             # nested for-while loops.
-            @qml.for_loop(0, upper_bound, 1)
+            @qp.for_loop(0, upper_bound, 1)
             def loop_fn_returns(i, x):
-                qml.RX(x, wires=i)
+                qp.RX(x, wires=i)
 
                 # inner while loop
-                @qml.while_loop(lambda j: j < upper_bound)
+                @qp.while_loop(lambda j: j < upper_bound)
                 def inner(j):
-                    qml.RZ(j, wires=0)
-                    qml.RY(x**2, wires=0)
+                    qp.RZ(j, wires=0)
+                    qp.RY(x**2, wires=0)
                     return j + 1
 
                 inner(i + 1)
@@ -617,7 +617,7 @@ class TestCaptureCircuitsForLoop:
             loop_fn()
             loop_fn_returns(arg)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         args = [upper_bound, arg]
         result = circuit(*args)
@@ -631,11 +631,11 @@ class TestCaptureCircuitsForLoop:
 def test_pytree_inputs():
     """Test that for_loop works with pytree inputs and outputs."""
 
-    @qml.for_loop(1, 7, 2)
+    @qp.for_loop(1, 7, 2)
     def f(i, x):
         return {"x": i + x["x"]}
 
     x = {"x": 0}
     out = f(x)
     assert list(out.keys()) == ["x"]
-    assert qml.math.allclose(out["x"], 9)  # 1 + 3 + 5 = 9
+    assert qp.math.allclose(out["x"], 9)  # 1 + 3 + 5 = 9

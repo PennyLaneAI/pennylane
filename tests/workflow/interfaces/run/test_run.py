@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the `run` helper function in the `qml.workflow` module."""
+"""Unit tests for the `run` helper function in the `qp.workflow` module."""
 
 # pylint: disable=too-few-public-methods
 import pytest
@@ -32,17 +32,17 @@ class TestNoInterfaceRequired:
         """Test that tapes are executed correctly with the NumPy interface."""
         container = BoundTransform(merge_rotations)
         inner_tp = CompilePipeline(container)
-        device = qml.device("default.qubit", seed=seed)
+        device = qp.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
-                [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
+                [qp.RX(pnp.pi, wires=0), qp.RX(pnp.pi, wires=0)], [qp.expval(qp.PauliZ(0))]
             )
         ]
-        config = ExecutionConfig(interface="numpy", gradient_method=qml.gradients.param_shift)
+        config = ExecutionConfig(interface="numpy", gradient_method=qp.gradients.param_shift)
         results = run(tapes, device, config, inner_tp)
 
-        assert qml.math.get_interface(results) == "numpy"
-        assert qml.math.allclose(results[0], 1.0)
+        assert qp.math.get_interface(results) == "numpy"
+        assert qp.math.allclose(results[0], 1.0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -53,17 +53,17 @@ class TestNoInterfaceRequired:
         """Test that tapes execute without an ML boundary when no gradient computation is required."""
         container = BoundTransform(merge_rotations)
         inner_tp = CompilePipeline(container)
-        device = qml.device("default.qubit", seed=seed)
+        device = qp.device("default.qubit", seed=seed)
         tapes = [
             QuantumScript(
-                [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
+                [qp.RX(pnp.pi, wires=0), qp.RX(pnp.pi, wires=0)], [qp.expval(qp.PauliZ(0))]
             )
         ]
         config = ExecutionConfig(interface=interface, gradient_method=gradient_method)
         results = run(tapes, device, config, inner_tp)
 
-        assert qml.math.get_interface(results) == "numpy"
-        assert qml.math.allclose(results[0], 1.0)
+        assert qp.math.get_interface(results) == "numpy"
+        assert qp.math.allclose(results[0], 1.0)
 
 
 @pytest.mark.all_interfaces
@@ -71,15 +71,15 @@ class TestNoInterfaceRequired:
 def test_grad_on_execution_error(interface):
     """Tests that a ValueError is raised if the config uses grad_on_execution."""
     inner_tp = CompilePipeline()
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
     tapes = [
         QuantumScript(
-            [qml.RX(pnp.pi, wires=0), qml.RX(pnp.pi, wires=0)], [qml.expval(qml.PauliZ(0))]
+            [qp.RX(pnp.pi, wires=0), qp.RX(pnp.pi, wires=0)], [qp.expval(qp.PauliZ(0))]
         )
     ]
     config = ExecutionConfig(
         interface=interface,
-        gradient_method=qml.gradients.param_shift,
+        gradient_method=qp.gradients.param_shift,
         grad_on_execution=True,
         use_device_jacobian_product=False,
         use_device_gradient=False,

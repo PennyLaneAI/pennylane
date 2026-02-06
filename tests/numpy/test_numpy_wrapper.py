@@ -444,7 +444,7 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnums=[0])
+        grad_fn = qp.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0])
 
         res = grad_fn(arr1)
@@ -458,7 +458,7 @@ class TestAutogradIntegration:
         def cost(x):
             return np.sum(np.sin(x))
 
-        grad_fn = qml.grad(cost, argnums=[0])
+        grad_fn = qp.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=False)
 
         with pytest.raises(pennylane.exceptions.NonDifferentiableError, match="non-differentiable"):
@@ -536,18 +536,18 @@ class TestNumpyConversion:
     def test_single_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes an
         unwrapped tensor as the argument to a gate taking a single parameter"""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(phi=None):
             for y in phi:
                 for idx, x in enumerate(y):
-                    qml.RX(x, wires=idx)
-            return qml.expval(qml.PauliZ(0))
+                    qp.RX(x, wires=idx)
+            return qp.expval(qp.PauliZ(0))
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
-        tape = qml.workflow.construct_tape(circuit)(phi)
+        tape = qp.workflow.construct_tape(circuit)(phi)
 
         ops = tape.operations
         assert len(ops) == 4
@@ -560,17 +560,17 @@ class TestNumpyConversion:
     def test_multiple_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes arguments
         as unwrapped tensors to a gate taking multiple parameters"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(phi=None):
             for idx, x in enumerate(phi):
-                qml.Rot(*x, wires=idx)
-            return qml.expval(qml.PauliZ(0))
+                qp.Rot(*x, wires=idx)
+            return qp.expval(qp.PauliZ(0))
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
 
-        tape = qml.workflow.construct_tape(circuit)(phi)
+        tape = qp.workflow.construct_tape(circuit)(phi)
 
         # Test the rotation applied
         ops = tape.operations

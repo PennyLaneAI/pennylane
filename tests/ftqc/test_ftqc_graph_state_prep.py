@@ -33,13 +33,13 @@ class TestGraphStatePrep:
 
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph(lattice.graph)
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(q):
             GraphStatePrep(graph=q)
-            return qml.probs()
+            return qp.probs()
 
         circuit(q)
 
@@ -49,14 +49,14 @@ class TestGraphStatePrep:
 
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph(lattice.graph)
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
             GraphStatePrep(q, wires=[0, 1, 2, 3])
-            qml.RX(x, 3)
-            return qml.probs()
+            qp.RX(x, 3)
+            return qp.probs()
 
         circuit(1.23)
 
@@ -81,12 +81,12 @@ class TestGraphStatePrep:
         """Test if a quantum function accepts GraphStatePrep."""
         lattice = generate_lattice(dims, shape)
         q = QubitGraph(lattice.graph)
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(q):
             GraphStatePrep(graph=q, wires=wires)
-            return qml.probs()
+            return qp.probs()
 
         res = circuit(q)
         assert len(res) == 2 ** len(lattice.graph)
@@ -169,13 +169,13 @@ class TestGraphStatePrep:
     )
     def test_circuit_accept_graph_state_prep_with_nx_wires(self, dims, shape, wires):
         """Test if GraphStatePrep can be created with nx.Graph and user provided wires."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         lattice = generate_lattice(dims, shape).graph
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(lattice, wires):
             GraphStatePrep(graph=lattice, wires=wires)
-            return qml.probs()
+            return qp.probs()
 
         res = circuit(lattice, wires)
         assert len(res) == 2 ** len(lattice)
@@ -203,8 +203,8 @@ class TestGraphStatePrep:
     @pytest.mark.parametrize(
         "one_qubit_ops, two_qubit_ops",
         [
-            (qml.H, qml.CZ),
-            (qml.X, qml.CNOT),
+            (qp.H, qp.CZ),
+            (qp.X, qp.CNOT),
         ],
     )
     def test_decompose(self, one_qubit_ops, two_qubit_ops):
@@ -252,8 +252,8 @@ class TestGraphStatePrep:
     @pytest.mark.parametrize(
         "one_qubit_ops, two_qubit_ops",
         [
-            (qml.H, qml.CZ),
-            (qml.X, qml.CNOT),
+            (qp.H, qp.CZ),
+            (qp.X, qp.CNOT),
         ],
     )
     def test_wires_graph_mismatch(self, one_qubit_ops, two_qubit_ops):
@@ -299,15 +299,15 @@ class TestMakeGraphState:
         lattice = generate_lattice([2, 2], "square")
         q_graph = QubitGraph(lattice.graph)
 
-        spy = mocker.spy(qml.ftqc.graph_state_preparation, "GraphStatePrep")
+        spy = mocker.spy(qp.ftqc.graph_state_preparation, "GraphStatePrep")
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             make_graph_state(q_graph, [0, 1, 2, 3])
 
         assert len(q) == 1
         assert isinstance(q.queue[0], GraphStatePrep)
         spy.assert_called_with(
-            graph=q_graph, one_qubit_ops=qml.H, two_qubit_ops=qml.CZ, wires=[0, 1, 2, 3]
+            graph=q_graph, one_qubit_ops=qp.H, two_qubit_ops=qp.CZ, wires=[0, 1, 2, 3]
         )
 
     def test_passing_operations_no_capture(self, mocker):
@@ -317,15 +317,15 @@ class TestMakeGraphState:
         lattice = generate_lattice([2, 2], "square")
         q_graph = QubitGraph(lattice.graph)
 
-        spy = mocker.spy(qml.ftqc.graph_state_preparation, "GraphStatePrep")
+        spy = mocker.spy(qp.ftqc.graph_state_preparation, "GraphStatePrep")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            make_graph_state(q_graph, [0, 1, 2, 3], one_qubit_ops=qml.X, two_qubit_ops=qml.CNOT)
+        with qp.queuing.AnnotatedQueue() as q:
+            make_graph_state(q_graph, [0, 1, 2, 3], one_qubit_ops=qp.X, two_qubit_ops=qp.CNOT)
 
         assert len(q) == 1
         assert isinstance(q.queue[0], GraphStatePrep)
         spy.assert_called_with(
-            graph=q_graph, one_qubit_ops=qml.X, two_qubit_ops=qml.CNOT, wires=[0, 1, 2, 3]
+            graph=q_graph, one_qubit_ops=qp.X, two_qubit_ops=qp.CNOT, wires=[0, 1, 2, 3]
         )
 
     @pytest.mark.capture
@@ -333,7 +333,7 @@ class TestMakeGraphState:
         """Test that make_graph_state adds the decomposed graph state to the plxpr"""
         import jax
 
-        spy = mocker.spy(qml.ftqc.graph_state_preparation.GraphStatePrep, "compute_decomposition")
+        spy = mocker.spy(qp.ftqc.graph_state_preparation.GraphStatePrep, "compute_decomposition")
 
         lattice = generate_lattice([2, 2], "square")
         q_graph = QubitGraph(lattice.graph)
@@ -352,7 +352,7 @@ class TestMakeGraphState:
             assert "CZ" in str(eq)
 
         # the queue was generated by the expected method
-        spy.assert_called_with([0, 1, 2, 3], q_graph, qml.H, qml.CZ)
+        spy.assert_called_with([0, 1, 2, 3], q_graph, qp.H, qp.CZ)
 
     @pytest.mark.capture
     def test_passing_operations_with_capture(self, mocker):
@@ -363,15 +363,15 @@ class TestMakeGraphState:
         lattice = generate_lattice([2, 2], "square")
         q_graph = QubitGraph(lattice.graph)
 
-        spy = mocker.spy(qml.ftqc.graph_state_preparation.GraphStatePrep, "compute_decomposition")
+        spy = mocker.spy(qp.ftqc.graph_state_preparation.GraphStatePrep, "compute_decomposition")
 
         def func():
-            make_graph_state(q_graph, [0, 1, 2, 3], one_qubit_ops=qml.X, two_qubit_ops=qml.CNOT)
+            make_graph_state(q_graph, [0, 1, 2, 3], one_qubit_ops=qp.X, two_qubit_ops=qp.CNOT)
 
         plxpr = jax.make_jaxpr(func)()
 
         assert len(plxpr.eqns) == 8
-        spy.assert_called_with([0, 1, 2, 3], q_graph, qml.X, qml.CNOT)
+        spy.assert_called_with([0, 1, 2, 3], q_graph, qp.X, qp.CNOT)
 
 
 class TestGraphStateInvariantUnderInternalGraphOrdering:
@@ -404,8 +404,8 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph({1: {0, 2}, 0: {1}, 2: {1, 3}, 3: {2}}),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
-    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    @pytest.mark.parametrize("one_qubit_op", [qp.H, qp.X, qp.Y, qp.Z, qp.S, qp.SX])
+    @pytest.mark.parametrize("two_qubit_op", [qp.CZ])
     def test_graph_state_invariant_under_internal_ordering_1d_chain_same_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
     ):
@@ -434,8 +434,8 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph({"b": {"a", "c"}, "a": {"b"}, "c": {"b", "d"}, "d": {"c"}}),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
-    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    @pytest.mark.parametrize("one_qubit_op", [qp.H, qp.X, qp.Y, qp.Z, qp.S, qp.SX])
+    @pytest.mark.parametrize("two_qubit_op", [qp.CZ])
     def test_graph_state_invariant_under_internal_ordering_1d_chain_diff_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
     ):
@@ -464,8 +464,8 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             nx.Graph({1: {0, 3}, 0: {1, 2}, 2: {0, 3}, 3: {1, 2}}),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
-    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    @pytest.mark.parametrize("one_qubit_op", [qp.H, qp.X, qp.Y, qp.Z, qp.S, qp.SX])
+    @pytest.mark.parametrize("two_qubit_op", [qp.CZ])
     def test_graph_state_invariant_under_internal_ordering_2d_grid_same_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
     ):
@@ -514,8 +514,8 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             ),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
-    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    @pytest.mark.parametrize("one_qubit_op", [qp.H, qp.X, qp.Y, qp.Z, qp.S, qp.SX])
+    @pytest.mark.parametrize("two_qubit_op", [qp.CZ])
     def test_graph_state_invariant_under_internal_ordering_2d_grid_diff_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
     ):
@@ -631,8 +631,8 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             ),
         ],
     )
-    @pytest.mark.parametrize("one_qubit_op", [qml.H, qml.X, qml.Y, qml.Z, qml.S, qml.SX])
-    @pytest.mark.parametrize("two_qubit_op", [qml.CZ])
+    @pytest.mark.parametrize("one_qubit_op", [qp.H, qp.X, qp.Y, qp.Z, qp.S, qp.SX])
+    @pytest.mark.parametrize("two_qubit_op", [qp.CZ])
     def test_graph_state_invariant_under_internal_ordering_3d_grid_same_wires_indices(
         self, graph, one_qubit_op, two_qubit_op
     ):
@@ -679,14 +679,14 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
             graph.adj == graph_ref.adj
         ), "Internal error: all graphs defined in this test should have the same adjacency list"
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(graph):
             GraphStatePrep(
                 graph=graph, wires=wires, one_qubit_ops=one_qubit_op, two_qubit_ops=two_qubit_op
             )
-            return qml.state()
+            return qp.state()
 
         result_ref = circuit(graph_ref)
         result = circuit(graph)
@@ -698,12 +698,12 @@ class TestGraphStateInvariantUnderInternalGraphOrdering:
         """
         # Graph structure: (0) -- (a) -- (1)
         graph = nx.Graph({0: {"a"}, "a": (0, 1), 1: {"a"}})
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             GraphStatePrep(graph=graph, wires=[0, 1, 2])
-            return qml.state()
+            return qp.state()
 
         with pytest.raises(
             TypeError,

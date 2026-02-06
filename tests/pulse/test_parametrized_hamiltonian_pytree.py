@@ -43,10 +43,10 @@ def f2(p, t):
     return np.cos(p * t**2)
 
 
-PH = qml.dot([1, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.Hadamard(3)])
+PH = qp.dot([1, f1, f2], [qp.PauliX(0), qp.PauliY(1), qp.Hadamard(3)])
 
 RH = drive(amplitude=f1, phase=f2, wires=[0, 1, 2])
-RH += qml.dot([1.0], [qml.PauliZ(0)])
+RH += qp.dot([1.0], [qp.PauliZ(0)])
 
 # Hamiltonians and the parameters for the individual coefficients
 HAMILTONIANS_WITH_COEFF_PARAMETERS = [
@@ -76,7 +76,7 @@ class TestParametrizedHamiltonianPytree:
 
         assert isinstance(H_pytree.mat_fixed, sparse.BCSR)
         assert isinstance(H_pytree.mats_parametrized, tuple)
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             [c(p, 2) for c, p in zip(H_pytree.coeffs_parametrized, params)],
             [c(p, 2) for c, p in zip(coeffs_callable, params)],
             atol=1e-7,
@@ -93,7 +93,7 @@ class TestParametrizedHamiltonianPytree:
         res = H_pytree(params, t=time)
 
         assert isinstance(res, LazyDotPytree)
-        assert qml.math.allclose(res.coeffs, (1, f1(params[0], time), f2(params[1], time)))
+        assert qp.math.allclose(res.coeffs, (1, f1(params[0], time), f2(params[1], time)))
 
     def test_call_method_rydberg_hamiltonian(self):
         """Test that the call method works correctly."""
@@ -105,7 +105,7 @@ class TestParametrizedHamiltonianPytree:
         res = H_pytree(params, t=time)
 
         assert isinstance(res, LazyDotPytree)
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             res.coeffs,
             (
                 1.0,
@@ -154,8 +154,8 @@ class TestLazyDotPytree:
     def test_initialization(self):
         """Test that a LazyDotPytree is initialized correctly."""
         coeffs = [1, 2, 3]
-        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        mats = [qml.matrix(o) for o in ops]
+        ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)]
+        mats = [qp.matrix(o) for o in ops]
         D = LazyDotPytree(coeffs=coeffs, mats=mats)
 
         assert D.coeffs == coeffs
@@ -164,21 +164,21 @@ class TestLazyDotPytree:
     def test_matmul(self):
         """Test the __matmul__ method."""
         coeffs = [1, 2, 3]
-        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        mats = [qml.matrix(o) for o in ops]
+        ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)]
+        mats = [qp.matrix(o) for o in ops]
         D = LazyDotPytree(coeffs=coeffs, mats=mats)
 
-        another_matrix = qml.matrix(qml.PauliX(0))
+        another_matrix = qp.matrix(qp.PauliX(0))
         res = D @ another_matrix
 
-        assert qml.math.allclose(res, qml.matrix(qml.dot(coeffs, ops)) @ another_matrix)
+        assert qp.math.allclose(res, qp.matrix(qp.dot(coeffs, ops)) @ another_matrix)
 
     def test_rmul(self):
         """Test the __rmul__ method"""
 
         coeffs = [1, 2, 3]
-        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        mats = [qml.matrix(o) for o in ops]
+        ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)]
+        mats = [qp.matrix(o) for o in ops]
         D = LazyDotPytree(coeffs=coeffs, mats=mats)
 
         assert isinstance(3 * D, LazyDotPytree)
@@ -190,8 +190,8 @@ class TestLazyDotPytree:
     def test_flatten_method(self):
         """Test the tree_flatten method."""
         coeffs = [1, 2, 3]
-        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        mats = [qml.matrix(o) for o in ops]
+        ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)]
+        mats = [qp.matrix(o) for o in ops]
         D = LazyDotPytree(coeffs=coeffs, mats=mats)
 
         flat_tree = D.tree_flatten()
@@ -203,8 +203,8 @@ class TestLazyDotPytree:
     def test_unflatten_method(self):
         """Test the tree_unflatten method."""
         coeffs = [1, 2, 3]
-        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-        mats = [qml.matrix(o) for o in ops]
+        ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)]
+        mats = [qp.matrix(o) for o in ops]
         D = LazyDotPytree(coeffs=coeffs, mats=mats)
 
         flat_tree = D.tree_flatten()

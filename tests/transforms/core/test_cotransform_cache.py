@@ -162,14 +162,14 @@ def test_no_argnums_if_no_classical_cotransform():
     """Test argnums is None if there is no classical cotransform."""
     import jax
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def c(x, y):
-        qml.RX(x[0], 0)
-        qml.RX(y, 0)
-        qml.RY(x[1], 0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x[0], 0)
+        qp.RX(y, 0)
+        qp.RY(x[1], 0)
+        return qp.expval(qp.Z(0))
 
-    c = qml.transforms.merge_rotations(c)
+    c = qp.transforms.merge_rotations(c)
 
     container = c.transform_program[-1]
     x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
@@ -182,17 +182,17 @@ def test_no_argnums_if_no_classical_cotransform():
 def test_no_argnums_nonjax_interface():
     """Test that the trainable params are None if the interface isn't jax."""
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def c(x, y):
-        qml.RX(x[0], 0)
-        qml.RX(y, 0)
-        qml.RY(x[1], 0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x[0], 0)
+        qp.RX(y, 0)
+        qp.RY(x[1], 0)
+        return qp.expval(qp.Z(0))
 
-    c = qml.gradients.param_shift(c, argnum=[0])
+    c = qp.gradients.param_shift(c, argnum=[0])
 
     ps_container = c.transform_program[-1]
-    x, y = qml.numpy.array([0.5, 0.7]), qml.numpy.array(3.0)
+    x, y = qp.numpy.array([0.5, 0.7]), qp.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
     assert cc.get_argnums(ps_container) is None

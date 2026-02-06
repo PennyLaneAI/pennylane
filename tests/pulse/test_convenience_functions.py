@@ -33,7 +33,7 @@ def test_error_raised_if_jax_not_installed():
         pytest.skip()
     except ImportError:
         with pytest.raises(ImportError, match="Module jax is required"):
-            qml.pulse.rect(x=10, windows=[(2, 8)])
+            qp.pulse.rect(x=10, windows=[(2, 8)])
 
 
 @pytest.mark.jax
@@ -43,9 +43,9 @@ class TestConstant:
     def test_constant_signature(self):
         """Test that the ``constant`` convenience function returns a callable with two arguments
         corresponding to the trainable parameters and time."""
-        argspec = inspect.getfullargspec(qml.pulse.constant)
+        argspec = inspect.getfullargspec(qp.pulse.constant)
 
-        assert callable(qml.pulse.constant)
+        assert callable(qp.pulse.constant)
         assert argspec.args == ["scalar", "time"]
 
     def test_constant_returns_correct_value(self):
@@ -54,13 +54,13 @@ class TestConstant:
         times = np.arange(0, 10, step=1e-2)
         scalar = 1.23
         for t in times:
-            assert qml.pulse.constant(scalar, time=t) == scalar
+            assert qp.pulse.constant(scalar, time=t) == scalar
 
     def test_constant_is_jittable(self):
         """Test that the callable returned by the ``constant`` function is jittable."""
         import jax
 
-        c = jax.jit(qml.pulse.constant)
+        c = jax.jit(qp.pulse.constant)
 
         scalar = 1.23
         times = np.arange(0, 10, step=1e-2)
@@ -75,7 +75,7 @@ class TestRect:
     def test_rect_returns_callable(self):
         """Test that the ``rect`` convenience function returns a callable with two arguments
         corresponding to the trainable parameters and time."""
-        c = qml.pulse.rect(x=10, windows=[0, 10])  # return 10 when time is between 0 and 10
+        c = qp.pulse.rect(x=10, windows=[0, 10])  # return 10 when time is between 0 and 10
         argspec = inspect.getfullargspec(c)
 
         assert callable(c)
@@ -85,7 +85,7 @@ class TestRect:
     def test_rect_returns_correct_value_single_window(self, windows):
         """Test that the ``rect`` function returns the correct value only when t is inside
         the window."""
-        c = qml.pulse.rect(x=10, windows=windows)
+        c = qp.pulse.rect(x=10, windows=windows)
 
         times = np.arange(0, 10, step=1e-2)
         for t in times:
@@ -98,7 +98,7 @@ class TestRect:
     def test_rect_raises_invalid_windows(self, windows):
         """Test that the ``rect`` function raises a ValueError for ill-formatted windows."""
         with pytest.raises(ValueError, match="At least one provided window"):
-            _ = qml.pulse.rect(x=10, windows=windows)
+            _ = qp.pulse.rect(x=10, windows=windows)
 
     def test_rect_returns_correct_value_multiple_windows(self):
         """Test that the ``rect`` function returns the correct value only when t is inside
@@ -107,13 +107,13 @@ class TestRect:
         def f(p, t):
             return p * t
 
-        c = qml.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)])
+        c = qp.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)])
 
         times = np.arange(0, 10, step=1e-2)
         param = 10
         for t in times:
             if 4 <= t <= 8 or 0 <= t <= 1 or 9 <= t <= 10:
-                assert qml.math.allclose(c(p=param, t=t), f(param, t))
+                assert qp.math.allclose(c(p=param, t=t), f(param, t))
             else:
                 assert c(p=param, t=t) == 0
 
@@ -124,7 +124,7 @@ class TestRect:
         def f(p, t):
             return p * t
 
-        c = qml.pulse.rect(x=f)
+        c = qp.pulse.rect(x=f)
 
         times = np.arange(0, 10, step=1e-2)
         for t in times:
@@ -138,13 +138,13 @@ class TestRect:
         def f(p, t):
             return p * t
 
-        c = jax.jit(qml.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)]))
+        c = jax.jit(qp.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)]))
 
         times = np.arange(0, 10, step=1e-2)
         param = 10
         for t in times:
             if 4 <= t <= 8 or 0 <= t <= 1 or 9 <= t <= 10:
-                assert qml.math.allclose(c(p=param, t=t), f(param, t))
+                assert qp.math.allclose(c(p=param, t=t), f(param, t))
             else:
                 assert c(p=param, t=t) == 0
 
@@ -161,17 +161,17 @@ class TestIntegration:
 
         windows1 = [(0, 0.5), (1, 1.5)]
 
-        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
-        ops = [qml.PauliX(0), qml.PauliY(1)]
-        H = qml.dot(coeffs, ops)
+        coeffs = [qp.pulse.rect(f1, windows1), qp.pulse.constant]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
+        H = qp.dot(coeffs, ops)
 
         assert isinstance(H, ParametrizedHamiltonian)
         # assert that at t=0.3 both coefficients are non-zero
-        true_mat = qml.matrix(f1(1, 0.3) * qml.PauliX(0) + 2 * qml.PauliY(1), wire_order=[0, 1])
-        assert qml.math.allclose(qml.matrix(H(params=[1, 2], t=0.3)), true_mat)
+        true_mat = qp.matrix(f1(1, 0.3) * qp.PauliX(0) + 2 * qp.PauliY(1), wire_order=[0, 1])
+        assert qp.math.allclose(qp.matrix(H(params=[1, 2], t=0.3)), true_mat)
         # assert that at t=0.7 only the second coefficient is non-zero
-        true_mat = qml.matrix(2 * qml.PauliY(1), wire_order=[0, 1])
-        assert qml.math.allclose(qml.matrix(H(params=[1, 2], t=0.7)), true_mat)
+        true_mat = qp.matrix(2 * qp.PauliY(1), wire_order=[0, 1])
+        assert qp.math.allclose(qp.matrix(H(params=[1, 2], t=0.7)), true_mat)
 
     @pytest.mark.slow
     @pytest.mark.jax
@@ -186,9 +186,9 @@ class TestIntegration:
 
         windows1 = [(0, 0.5), (1, 1.5)]
 
-        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
-        ops = [qml.PauliX(0), qml.PauliY(1)]
-        H = qml.dot(coeffs, ops)
+        coeffs = [qp.pulse.rect(f1, windows1), qp.pulse.constant]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
+        H = qp.dot(coeffs, ops)
 
         t = (1, 1.1)
 
@@ -196,34 +196,34 @@ class TestIntegration:
             time_step = 1e-3
             times = jnp.arange(*t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+                yield jax.scipy.linalg.expm(-1j * time_step * qp.matrix(H(params, t=ti)))
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
-            qml.QubitUnitary(U=true_mat, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.QubitUnitary(U=true_mat, wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         params = jnp.array([1.0, 2.0])
 
-        assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
-        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
-        assert qml.math.allclose(
+        assert qp.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
+        assert qp.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
+        assert qp.math.allclose(
             jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )

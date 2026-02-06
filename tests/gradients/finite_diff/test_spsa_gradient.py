@@ -158,9 +158,9 @@ class TestSpsaGradient:
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        tape = qml.tape.QuantumTape([qml.RX(0.5, wires=0)], [qml.expval(qml.PauliZ(0))])
+        tape = qp.tape.QuantumTape([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))])
 
         results = []
         for sampler in [sampler_required_arg_or_kwarg, sampler_required_kwarg]:
@@ -169,7 +169,7 @@ class TestSpsaGradient:
                 tape, sampler=sampler, num_directions=100, sampler_rng=sampler_rng
             )
 
-            res = qml.execute(tapes, dev)
+            res = qp.execute(tapes, dev)
             results.append(proc_fn(res))
 
         assert np.isclose(results[0], results[1], atol=0.1)
@@ -182,21 +182,21 @@ class TestSpsaGradient:
 
     def test_invalid_sampler_rng(self):
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="spsa", gradient_kwargs={"sampler_rng": "foo"})
+        @qp.qnode(dev, diff_method="spsa", gradient_kwargs={"sampler_rng": "foo"})
         def circuit(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(param, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         expected_message = "The argument sampler_rng is expected to be a NumPy PRNG"
         with pytest.raises(ValueError, match=expected_message):
-            qml.grad(circuit)(pnp.array(1.0))
+            qp.grad(circuit)(pnp.array(1.0))
 
     def test_trainable_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
         parameter is differentiated."""
-        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qp.tape.QuantumScript([qp.RX([0.4, 0.2], 0)], [qp.expval(qp.PauliZ(0))])
         _match = r"Computing the gradient of broadcasted tapes .* using the SPSA gradient transform"
         with pytest.raises(NotImplementedError, match=_match):
             spsa_grad(tape)
@@ -205,16 +205,16 @@ class TestSpsaGradient:
         """Test that no error is raised for a broadcasted/batched tape if the broadcasted
         parameter is not differentiated, and that the results correspond to the stacked
         results of the single-tape derivatives."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         x = [0.4, 0.2]
-        tape = qml.tape.QuantumScript(
-            [qml.RY(0.6, 0), qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+        tape = qp.tape.QuantumScript(
+            [qp.RY(0.6, 0), qp.RX(x, 0)], [qp.expval(qp.PauliZ(0))], trainable_params=[0]
         )
         batched_tapes, batched_fn = spsa_grad(tape)
         batched_grad = batched_fn(dev.execute(batched_tapes))
         separate_tapes = [
-            qml.tape.QuantumScript(
-                [qml.RY(0.6, 0), qml.RX(_x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0]
+            qp.tape.QuantumScript(
+                [qp.RY(0.6, 0), qp.RX(_x, 0)], [qp.expval(qp.PauliZ(0))], trainable_params=[0]
             )
             for _x in x
         ]
@@ -227,14 +227,14 @@ class TestSpsaGradient:
         respect to a non-differentiable argument"""
         psi = pnp.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.StatePrep(psi, wires=[0, 1])
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # by default all parameters are assumed to be trainable
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
@@ -243,7 +243,7 @@ class TestSpsaGradient:
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape)
 
         res = fn(dev.execute(tapes))
@@ -260,15 +260,15 @@ class TestSpsaGradient:
     def test_independent_parameter(self, num_directions, mocker):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
-        spy = mocker.spy(qml.gradients.spsa_gradient, "generate_multishifted_tapes")
+        spy = mocker.spy(qp.gradients.spsa_gradient, "generate_multishifted_tapes")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[1])
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.qubit", wires=2)
+        tape = qp.tape.QuantumScript.from_queue(q)
+        dev = qp.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape, num_directions=num_directions)
         res = fn(dev.execute(tapes))
 
@@ -289,20 +289,20 @@ class TestSpsaGradient:
     def test_no_trainable_params_tape(self):
         """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         weights = [0.1, 0.2]
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(weights[0], wires=0)
+            qp.RY(weights[1], wires=0)
+            qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = spsa_grad(tape)
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        res = post_processing(qp.execute(g_tapes, dev, None))
 
         assert g_tapes == []
         assert isinstance(res, np.ndarray)
@@ -311,20 +311,20 @@ class TestSpsaGradient:
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         weights = [0.1, 0.2]
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(weights[0], wires=0)
+            qp.RY(weights[1], wires=0)
+            qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = spsa_grad(tape)
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        res = post_processing(qp.execute(g_tapes, dev, None))
 
         assert g_tapes == []
         assert isinstance(res, tuple)
@@ -336,13 +336,13 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.RX(weights[0], wires=0)
+            qp.RY(weights[1], wires=0)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
@@ -352,13 +352,13 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_torch(self):
         """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.RX(weights[0], wires=0)
+            qp.RY(weights[1], wires=0)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
@@ -368,13 +368,13 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_tf(self):
         """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.RX(weights[0], wires=0)
+            qp.RY(weights[1], wires=0)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
@@ -384,13 +384,13 @@ class TestSpsaGradient:
     def test_no_trainable_params_qnode_jax(self):
         """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.RX(weights[0], wires=0)
+            qp.RY(weights[1], wires=0)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
@@ -399,12 +399,12 @@ class TestSpsaGradient:
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.Rot(*params, wires=0)
-            return qml.probs([2, 3])
+            qp.Rot(*params, wires=0)
+            return qp.probs([2, 3])
 
         params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
@@ -418,12 +418,12 @@ class TestSpsaGradient:
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated, with multiple return values."""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.Rot(*params, wires=0)
-            return qml.expval(qml.PauliZ(wires=2)), qml.probs([2, 3])
+            qp.Rot(*params, wires=0)
+            return qp.expval(qp.PauliZ(wires=2)), qp.probs([2, 3])
 
         params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
 
@@ -441,12 +441,12 @@ class TestSpsaGradient:
         """Test that if first order finite differences is underlying the SPSA, then
         the tape is executed only once using the current parameter values."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[0])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[0])
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         n = 13
         tapes, _ = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n)
 
@@ -455,14 +455,14 @@ class TestSpsaGradient:
 
     def test_y0_provided(self):
         """Test that by providing y0 the number of tapes is equal the number of parameters."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[0])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[0])
+            qp.expval(qp.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         f0 = dev.execute(tape)
         n = 9
         tapes, _ = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n, f0=f0)
@@ -473,25 +473,25 @@ class TestSpsaGradient:
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
         rng = np.random.default_rng(seed)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q1:
-            qml.RX(1.0, wires=[0])
-            qml.RX(1.0, wires=[1])
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q1:
+            qp.RX(1.0, wires=[0])
+            qp.RX(1.0, wires=[1])
+            qp.expval(qp.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
-        with qml.queuing.AnnotatedQueue() as q2:
-            qml.RX(1.0, wires=[0])
-            qml.RX(1.0, wires=[1])
-            qml.expval(qml.PauliZ(1))
+        tape1 = qp.tape.QuantumScript.from_queue(q1)
+        with qp.queuing.AnnotatedQueue() as q2:
+            qp.RX(1.0, wires=[0])
+            qp.RX(1.0, wires=[1])
+            qp.expval(qp.PauliZ(1))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qp.tape.QuantumScript.from_queue(q2)
         n1 = 5
         tapes, fn = spsa_grad(
             tape1, approx_order=1, strategy="forward", num_directions=n1, sampler_rng=rng
         )
-        with qml.Tracker(dev) as tracker:
+        with qp.Tracker(dev) as tracker:
             j1 = fn(dev.execute(tapes))
 
         assert len(tapes) == tracker.totals["executions"] == n1 + 1
@@ -511,36 +511,36 @@ class TestSpsaGradient:
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
         def cost1(x):
-            qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Rot(x[0], 0.3 * x[1], x[2], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def cost2(x):
-            qml.Rot(*x, wires=0)
-            return [qml.expval(qml.PauliZ(0))]
+            qp.Rot(*x, wires=0)
+            return [qp.expval(qp.PauliZ(0))]
 
         def cost3(x):
-            qml.Rot(*x, wires=0)
-            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+            qp.Rot(*x, wires=0)
+            return [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
 
         def cost4(x):
-            qml.Rot(*x, wires=0)
-            return qml.probs([0, 1])
+            qp.Rot(*x, wires=0)
+            return qp.probs([0, 1])
 
         def cost5(x):
-            qml.Rot(*x, wires=0)
-            return [qml.probs([0, 1])]
+            qp.Rot(*x, wires=0)
+            return [qp.probs([0, 1])]
 
         def cost6(x):
-            qml.Rot(*x, wires=0)
-            return qml.probs([0, 1]), qml.probs([2, 3])
+            qp.Rot(*x, wires=0)
+            return qp.probs([0, 1]), qp.probs([2, 3])
 
         x = pnp.random.rand(3)
-        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+        circuits = [qp.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
-        transform = [qml.math.shape(spsa_grad(c)(x)) for c in circuits]
+        transform = [qp.math.shape(spsa_grad(c)(x)) for c in circuits]
 
         expected = [
             (3,),
@@ -578,7 +578,7 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(qml.operation.Operator):
+        class SpecialObservable(qp.operation.Operator):
             """SpecialObservable"""
 
             # pylint:disable=too-few-public-methods
@@ -607,27 +607,27 @@ class TestSpsaGradient:
                 """Compute the expectation value by returning a SpecialObject
                 if the observable is a SpecialObservable and the device is analytic."""
                 if self.analytic and isinstance(observable, SpecialObservable):
-                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    val = super().expval(qp.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
 
                 return super().expval(observable, **kwargs)
 
         dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
-        @qml.qnode(dev, diff_method="spsa")
+        @qp.qnode(dev, diff_method="spsa")
         def qnode(x):
-            qml.RY(x, wires=0)
-            return qml.expval(SpecialObservable(wires=0))
+            qp.RY(x, wires=0)
+            return qp.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method="spsa")
+        @qp.qnode(dev, diff_method="spsa")
         def reference_qnode(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.RY(x, wires=0)
+            return qp.expval(qp.PauliZ(wires=0))
 
         par = pnp.array(0.2, requires_grad=True)
         assert np.isclose(qnode(par).item().val, reference_qnode(par).item())
         assert np.isclose(
-            qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par).item()
+            qp.jacobian(qnode)(par).item().val, qp.jacobian(reference_qnode)(par).item()
         )
 
 
@@ -639,18 +639,18 @@ class TestSpsaGradientIntegration:
 
     def test_ragged_output(self, approx_order, strategy, validate):
         """Test that the Jacobian is correctly returned for a tape with ragged output"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(params[0], wires=[0])
-            qml.RY(params[1], wires=[1])
-            qml.RZ(params[2], wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=0)
-            qml.probs(wires=[1, 2])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(params[0], wires=[0])
+            qp.RY(params[1], wires=[1])
+            qp.RZ(params[2], wires=[2])
+            qp.CNOT(wires=[0, 1])
+            qp.probs(wires=0)
+            qp.probs(wires=[1, 2])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -677,17 +677,17 @@ class TestSpsaGradientIntegration:
     def test_single_expectation_value(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(
             tape,
             h=1e-6,
@@ -705,7 +705,7 @@ class TestSpsaGradientIntegration:
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res = tuple(qml.math.convert_like(r * 2, r) for r in res)
+        res = tuple(qp.math.convert_like(r * 2, r) for r in res)
 
         assert isinstance(res[0], np.ndarray)
         assert res[0].shape == ()
@@ -720,17 +720,17 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # we choose both trainable parameters
         tapes, fn = spsa_grad(
             tape,
@@ -749,7 +749,7 @@ class TestSpsaGradientIntegration:
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res = tuple(qml.math.convert_like(r * 2, r) for r in res)
+        res = tuple(qp.math.convert_like(r * 2, r) for r in res)
 
         assert isinstance(res[0], np.ndarray)
         assert res[0].shape == ()
@@ -768,17 +768,17 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # we choose only 1 trainable parameter - do not need to account for the multiplicative
         # error of using the coordinate_sampler
         tapes, fn = spsa_grad(
@@ -813,18 +813,18 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # we choose only 1 trainable parameter - do not need to account for the multiplicative
         # error of using the coordinate_sampler
         tapes, fn = spsa_grad(
@@ -846,18 +846,18 @@ class TestSpsaGradientIntegration:
     def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliX(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.expval(qp.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -874,7 +874,7 @@ class TestSpsaGradientIntegration:
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res = tuple(tuple(qml.math.convert_like(_r * 2, _r) for _r in r) for r in res)
+        res = tuple(tuple(qp.math.convert_like(_r * 2, _r) for _r in r) for r in res)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
@@ -891,18 +891,18 @@ class TestSpsaGradientIntegration:
     def test_var_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.var(qml.PauliX(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.var(qp.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -919,7 +919,7 @@ class TestSpsaGradientIntegration:
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res = tuple(tuple(qml.math.convert_like(_r * 2, _r) for _r in r) for r in res)
+        res = tuple(tuple(qp.math.convert_like(_r * 2, _r) for _r in r) for r in res)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
@@ -936,18 +936,18 @@ class TestSpsaGradientIntegration:
     def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.expval(qp.PauliZ(0))
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(
             tape,
             approx_order=approx_order,
@@ -964,7 +964,7 @@ class TestSpsaGradientIntegration:
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res = tuple(tuple(qml.math.convert_like(_r * 2, _r) for _r in r) for r in res)
+        res = tuple(tuple(qp.math.convert_like(_r * 2, _r) for _r in r) for r in res)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
@@ -1011,18 +1011,18 @@ class TestSpsaGradientDifferentiation:
     def test_autograd(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params = pnp.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(seed)
 
         def cost_fn(x):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x[0], wires=[0])
-                qml.RY(x[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
@@ -1032,7 +1032,7 @@ class TestSpsaGradientDifferentiation:
                 jac *= 2
             return jac
 
-        res = qml.jacobian(cost_fn)(params)
+        res = qp.jacobian(cost_fn)(params)
         x, y = params
         expected = np.array(
             [
@@ -1047,19 +1047,19 @@ class TestSpsaGradientDifferentiation:
     def test_autograd_ragged(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params = pnp.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(seed)
 
         def cost_fn(x):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x[0], wires=[0])
-                qml.RY(x[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0))
-                qml.probs(wires=[1])
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0))
+                qp.probs(wires=[1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
@@ -1070,7 +1070,7 @@ class TestSpsaGradientDifferentiation:
             return jac[1][0]
 
         x, y = params
-        res = qml.jacobian(cost_fn)(params)[0]
+        res = qp.jacobian(cost_fn)(params)[0]
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=atol, rtol=0)
 
@@ -1081,18 +1081,18 @@ class TestSpsaGradientDifferentiation:
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         rng = np.random.default_rng(seed)
 
         with tf.GradientTape(persistent=True) as t:
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(params[0], wires=[0])
-                qml.RY(params[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(params[0], wires=[0])
+                qp.RY(params[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
@@ -1122,19 +1122,19 @@ class TestSpsaGradientDifferentiation:
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         rng = np.random.default_rng(seed)
 
         with tf.GradientTape(persistent=True) as t:
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(params[0], wires=[0])
-                qml.RY(params[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0))
-                qml.probs(wires=[1])
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(params[0], wires=[0])
+                qp.RY(params[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0))
+                qp.probs(wires=[1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
@@ -1158,18 +1158,18 @@ class TestSpsaGradientDifferentiation:
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
         rng = np.random.default_rng(seed)
 
         def cost_fn(params):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(params[0], wires=[0])
-                qml.RY(params[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(params[0], wires=[0])
+                qp.RY(params[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tapes, fn = spsa_grad(
                 tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
             )
@@ -1199,18 +1199,18 @@ class TestSpsaGradientDifferentiation:
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])
         rng = np.random.default_rng(seed)
 
         def cost_fn(x):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x[0], wires=[0])
-                qml.RY(x[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(
                 tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng

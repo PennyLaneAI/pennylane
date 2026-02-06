@@ -35,38 +35,38 @@ class TestSnapshotTape:
     @pytest.mark.parametrize("shots", [None, 100])
     def test_snapshot_output_tapes(self, shots):
         ops = [
-            qml.Snapshot(),
-            qml.Hadamard(wires=0),
-            qml.Snapshot("very_important_state"),
-            qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(measurement=qml.probs()),
-            qml.Snapshot(measurement=qml.sample(), shots=10),
+            qp.Snapshot(),
+            qp.Hadamard(wires=0),
+            qp.Snapshot("very_important_state"),
+            qp.CNOT(wires=[0, 1]),
+            qp.Snapshot(measurement=qp.probs()),
+            qp.Snapshot(measurement=qp.sample(), shots=10),
         ]
 
-        measurements = [qml.expval(qml.PauliX(0))]
+        measurements = [qp.expval(qp.PauliX(0))]
 
-        num_snapshots = len(tuple(filter(lambda x: isinstance(x, qml.Snapshot), ops)))
+        num_snapshots = len(tuple(filter(lambda x: isinstance(x, qp.Snapshot), ops)))
 
         expected_tapes = [
-            qml.tape.QuantumTape([], [qml.state()], shots=None),
-            qml.tape.QuantumTape([qml.Hadamard(0)], [qml.state()], shots=None),
-            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.probs()], shots=shots),
-            qml.tape.QuantumTape([qml.Hadamard(0), qml.CNOT((0, 1))], [qml.sample()], shots=10),
-            qml.tape.QuantumTape(
-                [qml.Hadamard(0), qml.CNOT((0, 1))], [qml.expval(qml.X(0))], shots=shots
+            qp.tape.QuantumTape([], [qp.state()], shots=None),
+            qp.tape.QuantumTape([qp.Hadamard(0)], [qp.state()], shots=None),
+            qp.tape.QuantumTape([qp.Hadamard(0), qp.CNOT((0, 1))], [qp.probs()], shots=shots),
+            qp.tape.QuantumTape([qp.Hadamard(0), qp.CNOT((0, 1))], [qp.sample()], shots=10),
+            qp.tape.QuantumTape(
+                [qp.Hadamard(0), qp.CNOT((0, 1))], [qp.expval(qp.X(0))], shots=shots
             ),
         ]
 
-        tape = qml.tape.QuantumTape(ops, measurements, shots=shots)
-        tapes, _ = qml.snapshots(tape)
+        tape = qp.tape.QuantumTape(ops, measurements, shots=shots)
+        tapes, _ = qp.snapshots(tape)
 
         assert len(tapes) == num_snapshots + 1
 
         for out, expected in zip(tapes, expected_tapes):
             assert_equal(out, expected)
 
-        tape_no_meas = qml.tape.QuantumTape(ops, shots=shots)
-        tapes_no_meas, _ = qml.snapshots(tape_no_meas)
+        tape_no_meas = qp.tape.QuantumTape(ops, shots=shots)
+        tapes_no_meas, _ = qp.snapshots(tape_no_meas)
 
         assert len(tapes_no_meas) == num_snapshots
 
@@ -75,20 +75,20 @@ class TestSnapshotTape:
 
     def test_snapshot_postprocessing_fn(self):
         ops = [
-            qml.Snapshot(),
-            qml.Hadamard(wires=0),
-            qml.Snapshot("very_important_state"),
-            qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
+            qp.Snapshot(),
+            qp.Hadamard(wires=0),
+            qp.Snapshot("very_important_state"),
+            qp.CNOT(wires=[0, 1]),
+            qp.Snapshot(),
         ]
 
-        measurements = [qml.expval(qml.PauliX(0))]
+        measurements = [qp.expval(qp.PauliX(0))]
 
-        num_snapshots = len(tuple(filter(lambda x: isinstance(x, qml.Snapshot), ops)))
+        num_snapshots = len(tuple(filter(lambda x: isinstance(x, qp.Snapshot), ops)))
 
-        tape = qml.tape.QuantumTape(ops, measurements)
+        tape = qp.tape.QuantumTape(ops, measurements)
 
-        _, fn = qml.snapshots(tape)
+        _, fn = qp.snapshots(tape)
 
         expected_keys = [0, 2, "very_important_state", "execution_results"]
         assert "snapshot_tags" in fn.keywords
@@ -101,9 +101,9 @@ class TestSnapshotTape:
             "execution_results": [],
         }
 
-        tape_no_meas = qml.tape.QuantumScript(ops)
+        tape_no_meas = qp.tape.QuantumScript(ops)
 
-        _, fn_no_meas = qml.snapshots(tape_no_meas)
+        _, fn_no_meas = qp.snapshots(tape_no_meas)
 
         expected_keys.remove("execution_results")
         assert "snapshot_tags" in fn.keywords
@@ -117,95 +117,95 @@ class TestSnapshotTape:
 
     def test_snapshot_fails_with_non_str_tags(self):
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):
-            qml.Snapshot(np.array(0.0), qml.state())
+            qp.Snapshot(np.array(0.0), qp.state())
 
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):
-            qml.Snapshot(qml.state())
+            qp.Snapshot(qp.state())
 
     @pytest.mark.parametrize(
-        "dev", (qml.device("default.qubit"), qml.device("default.qutrit", wires=2))
+        "dev", (qp.device("default.qubit"), qp.device("default.qutrit", wires=2))
     )
     def test_int_tag_fails_during_transform(self, dev):
         """Test ValueError is raised if user provided a int snapshot tag."""
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def c():
-            qml.Snapshot(2)
-            return qml.expval(qml.Z(0))
+            qp.Snapshot(2)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(ValueError, match="can only be of type 'str'"):
-            qml.snapshots(c)()
+            qp.snapshots(c)()
 
 
 @pytest.mark.parametrize(
     "dev",
     [
         # Two supported devices
-        qml.device("default.qubit"),
-        qml.device("default.mixed", wires=2),
+        qp.device("default.qubit"),
+        qp.device("default.mixed", wires=2),
         # Two non-supported devices
-        qml.device("default.qutrit", wires=2),
-        qml.device("lightning.qubit", wires=2),
+        qp.device("default.qutrit", wires=2),
+        qp.device("lightning.qubit", wires=2),
     ],
 )
 class TestSnapshotGeneral:
     def test_sample_measurement_with_analytical_device_fails(self, dev):
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.sample())
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(0)
+            qp.Snapshot(measurement=qp.sample())
+            return qp.expval(qp.PauliZ(0))
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the analytical device
         with pytest.raises(DeviceError):
-            qml.snapshots(circuit)()
+            qp.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
-        @qml.set_shots(shots=200)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=200)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.mutual_info(0, 1))
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(0)
+            qp.Snapshot(measurement=qp.mutual_info(0, 1))
+            return qp.expval(qp.PauliZ(0))
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
         with pytest.raises(DeviceError):
-            qml.snapshots(circuit)()
+            qp.snapshots(circuit)()
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
         if "lightning" in dev.name or "mixed" in dev.name:
             pytest.skip()
 
-        @qml.set_shots(shots=200)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=200)
+        @qp.qnode(dev)
         def circuit():
-            qml.Snapshot(measurement=qml.state())
-            qml.Snapshot()
+            qp.Snapshot(measurement=qp.state())
+            qp.Snapshot()
 
-            if isinstance(dev, qml.devices.QutritDevice):
-                return qml.expval(qml.GellMann(0, 1))
+            if isinstance(dev, qp.devices.QutritDevice):
+                return qp.expval(qp.GellMann(0, 1))
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
-        _ = qml.snapshots(circuit)()
+        _ = qp.snapshots(circuit)()
 
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
-        if isinstance(dev, (qml.devices.default_mixed.DefaultMixed, qml.devices.QutritDevice)):
+        if isinstance(dev, (qp.devices.default_mixed.DefaultMixed, qp.devices.QutritDevice)):
             pytest.skip()
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
-            qml.RX(x, wires=0)
-            qml.Snapshot(measurement=qml.var(qml.PauliZ(0)))
-            qml.Snapshot(measurement=qml.probs(0))
-            qml.Snapshot(measurement=qml.state())
+            qp.Snapshot(measurement=qp.expval(qp.PauliZ(0)))
+            qp.RX(x, wires=0)
+            qp.Snapshot(measurement=qp.var(qp.PauliZ(0)))
+            qp.Snapshot(measurement=qp.probs(0))
+            qp.Snapshot(measurement=qp.state())
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         phi = 0.1
         with (
@@ -213,7 +213,7 @@ class TestSnapshotGeneral:
             if "lightning" in dev.name
             else nullcontext()
         ):
-            result = qml.snapshots(circuit)(phi)
+            result = qp.snapshots(circuit)(phi)
 
         expected = {
             0: np.array(1),
@@ -231,17 +231,17 @@ class TestSnapshotGeneral:
     def test_empty_snapshots(self, dev):
         """Test that snapshots function in the absence of any Snapshot operations."""
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            if isinstance(dev, qml.devices.QutritDevice):
-                qml.THadamard(wires=0)
-                return qml.expval(qml.GellMann(0, index=6))
+            if isinstance(dev, qp.devices.QutritDevice):
+                qp.THadamard(wires=0)
+                return qp.expval(qp.GellMann(0, index=6))
 
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliX(0))
+            qp.Hadamard(wires=0)
+            return qp.expval(qp.PauliX(0))
 
-        result = qml.snapshots(circuit)()
-        if isinstance(dev, qml.devices.QutritDevice):
+        result = qp.snapshots(circuit)()
+        if isinstance(dev, qp.devices.QutritDevice):
             expected = {"execution_results": np.array(0.66666667)}
         else:
             expected = {"execution_results": np.array(1.0)}
@@ -251,22 +251,22 @@ class TestSnapshotGeneral:
     def test_override_shots(self, dev):
         """Test that override shots allow snapshots to work with different numbers of measurements."""
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def c():
             if dev.name != "default.qutrit":
-                qml.H(0)
-            qml.Snapshot("sample", qml.sample(wires=0), shots=5)
-            qml.Snapshot("counts", qml.counts(wires=0, all_outcomes=True), shots=20)
-            qml.Snapshot("probs", qml.probs(wires=0), shots=21)
-            return qml.state()
+                qp.H(0)
+            qp.Snapshot("sample", qp.sample(wires=0), shots=5)
+            qp.Snapshot("counts", qp.counts(wires=0, all_outcomes=True), shots=20)
+            qp.Snapshot("probs", qp.probs(wires=0), shots=21)
+            return qp.state()
 
-        out = qml.snapshots(c)()
+        out = qp.snapshots(c)()
 
         assert out["sample"].shape == (5, 1)
         assert out["counts"]["0"] + out["counts"].get("1", 0) == 20
         if dev.name != "default.qutrit":
             # very rare that it will be *exactly* [0.5, 0.5] if 20 shots
-            assert not qml.math.allclose(out["probs"], np.array([0.5, 0.5]), atol=1e-8)
+            assert not qp.math.allclose(out["probs"], np.array([0.5, 0.5]), atol=1e-8)
 
     def test_override_analytic(self, dev):
         """Test that finite shots can be written with analytic calculations."""
@@ -274,18 +274,18 @@ class TestSnapshotGeneral:
         if dev.name == "default.qutrit":
             pytest.skip("hard to write generic test that works with qutrits.")
 
-        @qml.transform
+        @qp.transform
         def set_shots(tape, shots):
             return (tape.copy(shots=shots),), lambda res: res[0]
 
-        @qml.qnode(dev, diff_method=None)
+        @qp.qnode(dev, diff_method=None)
         def c():
-            qml.H(0)
-            qml.Snapshot("probs", qml.probs(wires=0), shots=None)
-            return qml.sample(wires=0)
+            qp.H(0)
+            qp.Snapshot("probs", qp.probs(wires=0), shots=None)
+            return qp.sample(wires=0)
 
-        out = qml.snapshots(set_shots(c, shots=10))()
-        assert qml.math.allclose(out["probs"], np.array([0.5, 0.5]))
+        out = qp.snapshots(set_shots(c, shots=10))()
+        assert qp.math.allclose(out["probs"], np.array([0.5, 0.5]))
         assert out["execution_results"].shape == (10, 1)
 
 
@@ -295,24 +295,24 @@ class TestSnapshotSupportedQNode:
     # pylint: disable=protected-access
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_default_qubit_with_backprob_and_adjoint(self, diff_method):
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
+        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.Snapshot("important_expval", measurement=qml.expval(qml.PauliX(0)))
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            return qml.expval(qml.PauliX(0))
+            qp.Hadamard(wires=0)
+            qp.Snapshot("important_expval", measurement=qp.expval(qp.PauliX(0)))
+            qp.CNOT(wires=[0, 1])
+            qp.Snapshot()
+            return qp.expval(qp.PauliX(0))
 
         circuit()
         assert dev._debugger is None
         if diff_method is not None:
             assert circuit.interface == "auto"
 
-        result = qml.snapshots(circuit)()
+        result = qp.snapshots(circuit)()
         expected = {
             "important_expval": np.array(1.0),
             1: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
@@ -325,23 +325,23 @@ class TestSnapshotSupportedQNode:
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_mixed(self, method):
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qp.device("default.mixed", wires=2)
 
-        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
+        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
 
-        @qml.qnode(dev, diff_method=method)
+        @qp.qnode(dev, diff_method=method)
         def circuit():
-            qml.Snapshot(measurement=qml.expval(qml.PauliX(0)))
-            qml.Hadamard(wires=0)
-            qml.Snapshot("very_important_state")
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot(measurement=qml.probs())
-            return qml.expval(qml.PauliX(0))
+            qp.Snapshot(measurement=qp.expval(qp.PauliX(0)))
+            qp.Hadamard(wires=0)
+            qp.Snapshot("very_important_state")
+            qp.CNOT(wires=[0, 1])
+            qp.Snapshot(measurement=qp.probs())
+            return qp.expval(qp.PauliX(0))
 
         circuit()
         assert dev._debugger is None
 
-        result = qml.snapshots(circuit)()
+        result = qp.snapshots(circuit)()
         expected = {
             0: np.array(0),
             2: np.array([0.5, 0.0, 0.0, 0.5]),
@@ -357,23 +357,23 @@ class TestSnapshotSupportedQNode:
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_gaussian(self, method):
         """Test that multiple snapshots are returned correctly on the CV simulator."""
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
+        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
 
-        @qml.qnode(dev, diff_method=method)
+        @qp.qnode(dev, diff_method=method)
         def circuit():
-            qml.Snapshot()
-            qml.Displacement(0.5, 0, wires=0)
-            qml.Snapshot("very_important_state")
-            qml.Beamsplitter(0.5, 0.7, wires=[0, 1])
-            qml.Snapshot()
-            return qml.expval(qml.QuadX(0))
+            qp.Snapshot()
+            qp.Displacement(0.5, 0, wires=0)
+            qp.Snapshot("very_important_state")
+            qp.Beamsplitter(0.5, 0.7, wires=[0, 1])
+            qp.Snapshot()
+            return qp.expval(qp.QuadX(0))
 
         circuit()
         assert dev._debugger is None
 
-        result = qml.snapshots(circuit)()
+        result = qp.snapshots(circuit)()
         expected = {
             0: {
                 "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
@@ -411,28 +411,28 @@ class TestSnapshotSupportedQNode:
         # TODO: not sure what to do with this test so leaving this here for now.
         np.random.seed(9872653)
 
-        dev = qml.device("default.qutrit.mixed", wires=2)
+        dev = qp.device("default.qutrit.mixed", wires=2)
 
-        assert qml.debugging.snapshot._is_snapshot_compatible(dev)
+        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
 
-        @qml.set_shots(100)
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.set_shots(100)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(add_bad_snapshot: bool):
-            qml.THadamard(wires=0)
-            qml.Snapshot(measurement=qml.counts())
-            qml.TSWAP(wires=[0, 1])
+            qp.THadamard(wires=0)
+            qp.Snapshot(measurement=qp.counts())
+            qp.TSWAP(wires=[0, 1])
             if add_bad_snapshot:
-                qml.Snapshot(measurement=qml.probs())
-            qml.Snapshot()
-            return qml.counts()
+                qp.Snapshot(measurement=qp.probs())
+            qp.Snapshot()
+            return qp.counts()
 
         circuit(False)
         assert dev._debugger is None
         # This should fail since finite-shot probs() isn't supported
         with pytest.raises(NotImplementedError):
-            qml.snapshots(circuit)(add_bad_snapshot=True)
+            qp.snapshots(circuit)(add_bad_snapshot=True)
 
-        result = qml.snapshots(circuit)(add_bad_snapshot=False)
+        result = qp.snapshots(circuit)(add_bad_snapshot=False)
         expected = {
             0: {"00": 34, "10": 37, "20": 29},
             "execution_results": {"00": 37, "01": 33, "02": 30},
@@ -446,7 +446,7 @@ class TestSnapshotSupportedQNode:
         assert result["execution_results"] == expected["execution_results"]
 
         # Make sure shots are overridden correctly
-        result = qml.snapshots(qml.set_shots(shots=200)(circuit))(add_bad_snapshot=False)
+        result = qp.snapshots(qp.set_shots(shots=200)(circuit))(add_bad_snapshot=False)
         assert result[0] == {"00": 74, "10": 58, "20": 68}
 
     @pytest.mark.parametrize(
@@ -468,26 +468,26 @@ class TestSnapshotSupportedQNode:
 
         # Since we can't spy on `get_snapshots`, we do it the other way around
         # and verify that the default transform function is(not) called
-        spy = mocker.spy(qml.debugging.snapshots, "default_qnode_transform")
+        spy = mocker.spy(qp.debugging.snapshots, "default_qnode_transform")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=None)
+        @qp.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot()
-            qml.Hadamard(wires=0)
-            qml.Snapshot("very_important_state")
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
+            qp.Snapshot()
+            qp.Hadamard(wires=0)
+            qp.Snapshot("very_important_state")
+            qp.CNOT(wires=[0, 1])
+            qp.Snapshot()
             if m == "expval":
-                return qml.expval(qml.PauliZ(0))
+                return qp.expval(qp.PauliZ(0))
             if m == "var":
-                return qml.var(qml.PauliY(1))
+                return qp.var(qp.PauliY(1))
             if m == "probs":
-                return qml.probs([0, 1])
-            return qml.state()
+                return qp.probs([0, 1])
+            return qp.state()
 
-        result = qml.snapshots(circuit)()
+        result = qp.snapshots(circuit)()
         expected = {
             0: np.array([1, 0, 0, 0]),
             "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
@@ -504,22 +504,22 @@ class TestSnapshotSupportedQNode:
 
     def test_controlled_circuit(self):
         """Test that snapshots are returned correctly even with a controlled circuit."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(params, wire):
-            qml.Hadamard(wire)
-            qml.Snapshot()
-            qml.Snapshot(measurement=qml.probs())
-            qml.Rot(*params, wire)
+            qp.Hadamard(wire)
+            qp.Snapshot()
+            qp.Snapshot(measurement=qp.probs())
+            qp.Rot(*params, wire)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def qnode(params):
-            qml.Hadamard(0)
-            qml.ctrl(circuit, 0)(params, wire=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(0)
+            qp.ctrl(circuit, 0)(params, wire=1)
+            return qp.expval(qp.PauliZ(1))
 
         params = np.array([1.3, 1.4, 0.2])
-        result = qml.snapshots(qnode)(params)
+        result = qp.snapshots(qnode)(params)
         expected = {
             0: np.array([1 / np.sqrt(2), 0, 0.5, 0.5]),
             1: np.array([0.5, 0.0, 0.25, 0.25]),
@@ -534,22 +534,22 @@ class TestSnapshotSupportedQNode:
         # TODO: not sure what to do with this test so leaving this here for now.
         np.random.seed(9872653)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         def circuit(params, wire):
-            qml.Rot(*params, wire)
-            qml.Snapshot()
-            qml.Snapshot(measurement=qml.probs())
-            qml.Hadamard(wire)
+            qp.Rot(*params, wire)
+            qp.Snapshot()
+            qp.Snapshot(measurement=qp.probs())
+            qp.Hadamard(wire)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def qnode(params):
-            qml.Hadamard(0)
-            qml.adjoint(circuit, 0)(params, wire=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(0)
+            qp.adjoint(circuit, 0)(params, wire=1)
+            return qp.expval(qp.PauliZ(1))
 
         params = np.array([1.3, 1.4, 0.2])
-        result = qml.snapshots(qnode)(params)
+        result = qp.snapshots(qnode)(params)
         expected = {
             0: np.array([0.25, 0.25, 0.25, 0.25]),
             1: np.array([0.5, 0.5, 0.5, 0.5]),
@@ -564,23 +564,23 @@ class TestSnapshotSupportedQNode:
         # TODO: The fact that this entire test depends on a global seed is not good
         np.random.seed(9872653)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.set_shots(10)
-        @qml.qnode(dev)
+        @qp.set_shots(10)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
             # Shot-based measurements
-            qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
-            qml.Snapshot(measurement=qml.var(qml.PauliZ(0)))
-            qml.Snapshot(measurement=qml.probs(0))
-            qml.Snapshot(measurement=qml.counts(wires=0))
-            qml.Snapshot(measurement=qml.sample(wires=0))
-            qml.Snapshot()
+            qp.Snapshot(measurement=qp.expval(qp.PauliZ(0)))
+            qp.Snapshot(measurement=qp.var(qp.PauliZ(0)))
+            qp.Snapshot(measurement=qp.probs(0))
+            qp.Snapshot(measurement=qp.counts(wires=0))
+            qp.Snapshot(measurement=qp.sample(wires=0))
+            qp.Snapshot()
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
-        result = qml.snapshots(circuit)()
+        result = qp.snapshots(circuit)()
 
         expected = {
             0: -0.6,
@@ -600,46 +600,46 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-        result = qml.snapshots(qml.set_shots(circuit, shots=200))()
+        result = qp.snapshots(qp.set_shots(circuit, shots=200))()
         assert result[3] == {"0": 98, "1": 102}
         assert np.allclose(result[5], expected[5])
 
     def test_unsupported_snapshot_measurement(self):
         """Test that an exception is raised when an unsupported measurement is provided to the snapshot."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
+            qp.Hadamard(0)
             with pytest.raises(
                 ValueError,
                 match="The measurement PauliZ is not supported as it is not an instance "
                 "of <class 'pennylane.measurements.measurements.MeasurementProcess'>",
             ):
-                qml.Snapshot(measurement=qml.PauliZ(0))
-            return qml.expval(qml.PauliZ(0))
+                qp.Snapshot(measurement=qp.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
-        qml.snapshots(circuit)()
+        qp.snapshots(circuit)()
 
 
 class TestSnapshotUnsupportedQNode:
-    """Unit tests for qml.snapshots when using with qnodes with unsupported devices"""
+    """Unit tests for qp.snapshots when using with qnodes with unsupported devices"""
 
     def test_unsupported_device_warning(self):
         """Test that a warning is raised when the device being used by a qnode does not natively support
-        qml.Snapshot"""
+        qp.Snapshot"""
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
-            qml.Snapshot()
-            qml.CNOT([0, 1])
-            return qml.expval(qml.Z(1))
+            qp.Hadamard(0)
+            qp.Snapshot()
+            qp.CNOT([0, 1])
+            return qp.expval(qp.Z(1))
 
         with pytest.warns(UserWarning, match="Snapshots are not supported"):
-            _ = qml.snapshots(circuit)
+            _ = qp.snapshots(circuit)
 
     # Improper ttest_ind usage, but leaving it here for now;
     # should be revised and fixed soon
@@ -647,76 +647,76 @@ class TestSnapshotUnsupportedQNode:
     # FIXME: [sc-92966]
     @pytest.mark.local_salt(2)
     def test_lightning_qubit_finite_shots(self, seed):
-        dev = qml.device("lightning.qubit", wires=2, seed=seed)
+        dev = qp.device("lightning.qubit", wires=2, seed=seed)
 
-        @qml.set_shots(500)
-        @qml.qnode(dev, diff_method=None)
+        @qp.set_shots(500)
+        @qp.qnode(dev, diff_method=None)
         def circuit():
-            qml.Hadamard(0)
-            qml.Snapshot(measurement=qml.counts(wires=0))
-            return qml.expval(qml.PauliX(1))
+            qp.Hadamard(0)
+            qp.Snapshot(measurement=qp.counts(wires=0))
+            return qp.expval(qp.PauliX(1))
 
         # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
-        counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
+        counts, expvals = tuple(zip(*(qp.snapshots(circuit)().values() for _ in range(50))))
         assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overridden correctly
         counts, _ = tuple(
-            zip(*(qml.snapshots(qml.set_shots(circuit, shots=1000))().values() for _ in range(50)))
+            zip(*(qp.snapshots(qp.set_shots(circuit, shots=1000))().values() for _ in range(50)))
         )
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_lightning_qubit_fails_for_state_snapshots_with_adjoint_and_backprop(self, diff_method):
         """Test lightning with backprop and adjoint differentiation fails with default snapshot as it
-        falls to qml.state() which is not supported"""
+        falls to qp.state() which is not supported"""
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
         with pytest.raises(
             QuantumFunctionError,
             match=f"does not support {diff_method} with requested circuit",
         ):
 
-            @qml.qnode(dev, diff_method=diff_method)
+            @qp.qnode(dev, diff_method=diff_method)
             def circuit():
-                qml.Snapshot()
-                return qml.expval(qml.PauliX(0))
+                qp.Snapshot()
+                return qp.expval(qp.PauliX(0))
 
-            qml.snapshots(circuit)()
+            qp.snapshots(circuit)()
 
     def test_state_wire_order_preservation(self):
         """Test that the snapshots wire order reflects the wire order on the device."""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circuit():
-            qml.X(1)
-            qml.Snapshot()
-            return qml.state()
+            qp.X(1)
+            qp.Snapshot()
+            return qp.state()
 
-        out = qml.snapshots(circuit)()
+        out = qp.snapshots(circuit)()
 
-        assert qml.math.allclose(out[0], out["execution_results"])
+        assert qp.math.allclose(out[0], out["execution_results"])
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_qutrit(self, method):
         """Test that multiple snapshots are returned correctly on the pure qutrit simulator."""
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        assert not qml.debugging.snapshot._is_snapshot_compatible(dev)
+        assert not qp.debugging.snapshot._is_snapshot_compatible(dev)
 
-        @qml.qnode(dev, diff_method=method)
+        @qp.qnode(dev, diff_method=method)
         def circuit():
-            qml.THadamard(wires=0)
-            qml.Snapshot(measurement=qml.probs())
-            qml.TSWAP(wires=[0, 1])
-            return qml.probs()
+            qp.THadamard(wires=0)
+            qp.Snapshot(measurement=qp.probs())
+            qp.TSWAP(wires=[0, 1])
+            return qp.probs()
 
         with pytest.warns(UserWarning, match="Snapshots are not supported for the given device"):
-            circuit = qml.snapshots(circuit)
+            circuit = qp.snapshots(circuit)
 
         result = circuit()
         analytic_result = np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0])
@@ -751,55 +751,55 @@ class TestSnapshotMCMS:
     def test_default_qubit_tree_traversal(self):
         """Test that tree-traversal can be used with snapshots on DQ."""
 
-        @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal")
+        @qp.qnode(qp.device("default.qubit"), mcm_method="tree-traversal")
         def c():
-            qml.H(0)
-            qml.measure(0)
-            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
-            qml.H(0)
-            qml.measure(0, reset=True)
-            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
-            qml.H(0)
-            qml.measure(0, postselect=True)
-            qml.Snapshot("tag", measurement=qml.expval(qml.Z(0)))
+            qp.H(0)
+            qp.measure(0)
+            qp.Snapshot(measurement=qp.expval(qp.Z(0)))
+            qp.H(0)
+            qp.measure(0, reset=True)
+            qp.Snapshot(measurement=qp.expval(qp.Z(0)))
+            qp.H(0)
+            qp.measure(0, postselect=True)
+            qp.Snapshot("tag", measurement=qp.expval(qp.Z(0)))
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        results = qml.snapshots(c)()
+        results = qp.snapshots(c)()
 
         assert len(results[0]) == 2
-        assert qml.math.allclose(results[0], [1, -1])
+        assert qp.math.allclose(results[0], [1, -1])
         assert len(results[1]) == 4
-        assert qml.math.allclose(results[1], [1, 1, 1, 1])  # reset into zero state
+        assert qp.math.allclose(results[1], [1, 1, 1, 1])  # reset into zero state
 
         assert len(results["tag"]) == 4
-        assert qml.math.allclose(results["tag"], [-1, -1, -1, -1])  # postselected into one state
+        assert qp.math.allclose(results["tag"], [-1, -1, -1, -1])  # postselected into one state
 
     def test_default_qubit_one_shot(self):
         """Test that one shot can be used with snapshots."""
 
-        @qml.qnode(qml.device("default.qubit"), mcm_method="one-shot", shots=1000)
+        @qp.qnode(qp.device("default.qubit"), mcm_method="one-shot", shots=1000)
         def c():
-            qml.H(0)
-            qml.measure(0)
-            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
-            qml.H(0)
-            qml.measure(0, reset=True)
-            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
-            qml.H(0)
-            qml.measure(0, postselect=True)
-            qml.Snapshot("tag", measurement=qml.expval(qml.Z(0)))
+            qp.H(0)
+            qp.measure(0)
+            qp.Snapshot(measurement=qp.expval(qp.Z(0)))
+            qp.H(0)
+            qp.measure(0, reset=True)
+            qp.Snapshot(measurement=qp.expval(qp.Z(0)))
+            qp.H(0)
+            qp.measure(0, postselect=True)
+            qp.Snapshot("tag", measurement=qp.expval(qp.Z(0)))
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        res = qml.snapshots(c)()
+        res = qp.snapshots(c)()
 
         assert len(res[0]) == 1000
-        assert qml.math.allclose(qml.math.mean(res[0]), 0, atol=0.1)
+        assert qp.math.allclose(qp.math.mean(res[0]), 0, atol=0.1)
 
         assert len(res[1]) == 1000
-        assert qml.math.allclose(qml.math.mean(res[1]), 1)
+        assert qp.math.allclose(qp.math.mean(res[1]), 1)
 
         # postselection not applied to snapshots
         assert len(res["tag"]) == 1000
-        assert qml.math.allclose(qml.math.mean(res["tag"]), 0, atol=0.1)
+        assert qp.math.allclose(qp.math.mean(res["tag"]), 0, atol=0.1)

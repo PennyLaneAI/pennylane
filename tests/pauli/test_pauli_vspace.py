@@ -96,17 +96,17 @@ class TestPauliVSpace:
 
     def test_init_with_ops(self):
         """Test that initialization with PennyLane operators, PauliWord and PauliSentence works"""
-        ops = [qml.X(0), PauliWord({1: "X"})]
-        vspace = qml.pauli.PauliVSpace(ops)
-        vspace.add(qml.Y(0))
+        ops = [qp.X(0), PauliWord({1: "X"})]
+        vspace = qp.pauli.PauliVSpace(ops)
+        vspace.add(qp.Y(0))
 
-        true_res = qml.pauli.PauliVSpace([qml.X(0), qml.X(1), qml.Y(0)])
+        true_res = qp.pauli.PauliVSpace([qp.X(0), qp.X(1), qp.Y(0)])
         assert vspace == true_res
 
     ADD_LINEAR_INDEPENDENT = (
         (ops2, PauliWord({10: "Y"}), ops2plusY10),
         (ops2, PauliSentence({PauliWord({10: "Y"}): 1.0}), ops2plusY10),
-        (ops2, qml.PauliY(10), ops2plusY10),
+        (ops2, qp.PauliY(10), ops2plusY10),
     )
 
     def test_repr(self):
@@ -126,7 +126,7 @@ class TestPauliVSpace:
     ADD_LINEAR_DEPENDENT = (
         (ops2, PauliWord({0: "Y", 1: "Y"}), ops2),
         (ops2, PauliSentence({PauliWord({0: "Y", 1: "Y"}): 1.0}), ops2),
-        (ops2, qml.PauliY(0) @ qml.PauliY(1), ops2),
+        (ops2, qp.PauliY(0) @ qp.PauliY(1), ops2),
         (ops2, 0.5 * ops2[0], ops2),
         (ops2, 0.5 * ops2[1], ops2),
     )
@@ -305,7 +305,7 @@ class TestPauliVSpace:
 
         is_independent = v1.is_independent(op, tol=tol)
         assert is_independent == is_independent_true
-        assert qml.math.allclose(v1._M, vcopy._M)
+        assert qp.math.allclose(v1._M, vcopy._M)
         assert v1._pw_to_idx == vcopy._pw_to_idx
         assert v1._rank == vcopy._rank
         assert v1._num_pw == vcopy._num_pw

@@ -33,8 +33,8 @@ variances = [0.73058343, 0.03283723]  # obtained with the upper bound var(pauli_
 )
 def test_estimate_shots(coefficients, err, shots_, var):
     r"""Test that the estimate_shots function returns the correct number of measurements."""
-    m_novar = qml.estimator.estimate_shots(coefficients, error=err)
-    m_var = qml.estimator.estimate_shots(coefficients, variances=var, error=err)
+    m_novar = qp.estimator.estimate_shots(coefficients, error=err)
+    m_var = qp.estimator.estimate_shots(coefficients, variances=var, error=err)
 
     assert m_novar == shots_
     assert m_var == shots_
@@ -48,8 +48,8 @@ def test_estimate_shots(coefficients, err, shots_, var):
 )
 def test_estimate_error(coefficients, err, shots_, var):
     r"""Test that the estimate_error function returns the correct error."""
-    e_novar = qml.estimator.estimate_error(coefficients, shots=shots_)
-    e_var = qml.estimator.estimate_error(coefficients, variances=var, shots=shots_)
+    e_novar = qp.estimator.estimate_error(coefficients, shots=shots_)
+    e_var = qp.estimator.estimate_error(coefficients, variances=var, shots=shots_)
 
     assert np.allclose(e_novar, err)
     assert np.allclose(e_var, err)

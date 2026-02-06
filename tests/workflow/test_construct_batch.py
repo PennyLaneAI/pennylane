@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains tests for the `qml.workflow.get_transform_program` getter and `construct_batch`.
+Contains tests for the `qp.workflow.get_transform_program` getter and `construct_batch`.
 
 """
 
@@ -30,10 +30,10 @@ class TestMarker:
     def test_level_not_found(self):
         """Test the error message when a requested level is not found."""
 
-        @qml.marker(level="something")
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.marker(level="something")
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            return qml.state()
+            return qp.state()
 
         expected = (
             r"level bla not found in transform program. "
@@ -46,68 +46,68 @@ class TestMarker:
     def test_accessing_custom_level(self):
         """Test that custom levels can be specified and accessed."""
 
-        @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.transforms.merge_rotations
+        @qp.marker(level="my_level")
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            qml.RX(0.2, 0)
-            qml.X(0)
-            qml.X(0)
-            qml.RX(0.2, 0)
-            return qml.state()
+            qp.RX(0.2, 0)
+            qp.X(0)
+            qp.X(0)
+            qp.RX(0.2, 0)
+            return qp.state()
 
         (tape,), _ = construct_batch(c, level="my_level")()
-        expected = qml.tape.QuantumScript([qml.RX(0.2, 0), qml.RX(0.2, 0)], [qml.state()])
-        qml.assert_equal(tape, expected)
+        expected = qp.tape.QuantumScript([qp.RX(0.2, 0), qp.RX(0.2, 0)], [qp.state()])
+        qp.assert_equal(tape, expected)
 
     def test_custom_level_as_arg(self):
         """Test that custom levels can be specified as positional arg and accessed."""
 
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            qml.RX(0.2, 0)
-            qml.X(0)
-            qml.X(0)
-            qml.RX(0.2, 0)
-            return qml.state()
+            qp.RX(0.2, 0)
+            qp.X(0)
+            qp.X(0)
+            qp.RX(0.2, 0)
+            return qp.state()
 
-        c = qml.marker(c, "my_level")
-        c = qml.transforms.merge_rotations(c)
+        c = qp.marker(c, "my_level")
+        c = qp.transforms.merge_rotations(c)
 
         (tape,), _ = construct_batch(c, level="my_level")()
-        expected = qml.tape.QuantumScript([qml.RX(0.2, 0), qml.RX(0.2, 0)], [qml.state()])
-        qml.assert_equal(tape, expected)
+        expected = qp.tape.QuantumScript([qp.RX(0.2, 0), qp.RX(0.2, 0)], [qp.state()])
+        qp.assert_equal(tape, expected)
 
     def test_execution_with_marker_transform(self):
         """Test that the marker transform does not effect execution results."""
 
-        @qml.marker(level="my_level")
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.marker(level="my_level")
+        @qp.qnode(qp.device("default.qubit"))
         def c(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
         res = c(0.5)
-        assert qml.math.allclose(res, np.cos(0.5))
+        assert qp.math.allclose(res, np.cos(0.5))
 
     def test_tape_application(self):
         """Test that the tape transform leaves the input unaffected."""
 
-        input = qml.tape.QuantumScript([qml.X(0)], [qml.state()])
-        (out,), fn = qml.marker(input, level="level")
+        input = qp.tape.QuantumScript([qp.X(0)], [qp.state()])
+        (out,), fn = qp.marker(input, level="level")
         assert input is out
         assert fn(("a",)) == "a"
 
     def test_uniqueness_checking(self):
         """Test an error is raised if a level is not unique."""
 
-        @qml.marker(level="something")
-        @qml.marker(level="something")
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.marker(level="something")
+        @qp.marker(level="something")
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            return qml.state()
+            return qp.state()
 
         with pytest.raises(ValueError, match="Found multiple markers for level something"):
             construct_batch(c)()
@@ -115,10 +115,10 @@ class TestMarker:
     def test_protected_levels(self):
         """Test an error is raised for using a protected level."""
 
-        @qml.marker(level="gradient")
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.marker(level="gradient")
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            return qml.state()
+            return qp.state()
 
         with pytest.raises(ValueError, match="Found marker for protected level gradient."):
             construct_batch(c)()
@@ -128,9 +128,9 @@ class TestCompilePipelineGetter:
     def test_bad_string_key(self):
         """Test a value error is raised if a bad string key is provided."""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            return qml.state()
+            return qp.state()
 
         with pytest.raises(ValueError, match=r"level bla not found in transform program."):
             get_transform_program(circuit, level="bla")
@@ -138,9 +138,9 @@ class TestCompilePipelineGetter:
     def test_bad_other_key(self):
         """Test a value error is raised if a bad, unrecognized key is provided."""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            return qml.state()
+            return qp.state()
 
         with pytest.raises(ValueError, match=r"not recognized."):
             get_transform_program(circuit, level=["bah"])
@@ -148,21 +148,21 @@ class TestCompilePipelineGetter:
     def test_get_transform_program_diff_method_transform(self):
         """Tests for the transform program when the diff_method is a transform."""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.transforms.compile(num_passes=2)
-        @qml.transforms.merge_rotations(atol=1e-5)
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
+        @qp.transforms.compile(num_passes=2)
+        @qp.transforms.merge_rotations(atol=1e-5)
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
         def circuit():
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
-        expected_p0 = BoundTransform(qml.transforms.cancel_inverses)
-        expected_p1 = BoundTransform(qml.transforms.merge_rotations, kwargs={"atol": 1e-5})
-        expected_p2 = BoundTransform(qml.transforms.compile, kwargs={"num_passes": 2})
+        expected_p0 = BoundTransform(qp.transforms.cancel_inverses)
+        expected_p1 = BoundTransform(qp.transforms.merge_rotations, kwargs={"atol": 1e-5})
+        expected_p2 = BoundTransform(qp.transforms.compile, kwargs={"num_passes": 2})
 
         ps_expand_fn = BoundTransform(
-            qml.transform(qml.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
+            qp.transform(qp.gradients.param_shift.expand_transform), kwargs={"shifts": 2}
         )
 
         p0 = get_transform_program(circuit, level=0)
@@ -184,49 +184,49 @@ class TestCompilePipelineGetter:
         assert p_dev == p_default
 
         assert len(p_dev) == 10
-        config = qml.devices.ExecutionConfig(
+        config = qp.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
-            mcm_config=qml.devices.MCMConfig(mcm_method="deferred"),
+            mcm_config=qp.devices.MCMConfig(mcm_method="deferred"),
         )
         assert p_dev == p_grad + dev.preprocess_transforms(config)
 
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
-        assert p_sliced[0].tape_transform == qml.compile.tape_transform
+        assert p_sliced[0].tape_transform == qp.compile.tape_transform
         assert (
             p_sliced[2].tape_transform
-            == qml.devices.preprocess.device_resolve_dynamic_wires.tape_transform
+            == qp.devices.preprocess.device_resolve_dynamic_wires.tape_transform
         )
-        assert p_sliced[1].tape_transform == qml.defer_measurements.tape_transform
+        assert p_sliced[1].tape_transform == qp.defer_measurements.tape_transform
 
     def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
 
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
         def circuit():
-            return qml.state()
+            return qp.state()
 
         prog = get_transform_program(circuit, level="gradient")
         assert len(prog) == 1
-        assert qml.transforms.cancel_inverses in prog
+        assert qp.transforms.cancel_inverses in prog
 
     def test_get_transform_program_device_gradient(self):
         """Test the trnsform program contents when using a device derivative."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.transforms.split_non_commuting
-        @qml.qnode(dev, diff_method="adjoint", device_vjp=False)
+        @qp.transforms.split_non_commuting
+        @qp.qnode(dev, diff_method="adjoint", device_vjp=False)
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         full_prog = get_transform_program(circuit)
         assert len(full_prog) == 14
 
-        config = qml.devices.ExecutionConfig(
+        config = qp.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
             gradient_method="adjoint",
             use_device_jacobian_product=False,
@@ -235,7 +235,7 @@ class TestCompilePipelineGetter:
         dev_program = dev.preprocess_transforms(config)
 
         expected = CompilePipeline()
-        expected.add_transform(qml.transforms.split_non_commuting)
+        expected.add_transform(qp.transforms.split_non_commuting)
         expected += dev_program
         assert full_prog == expected
 
@@ -244,18 +244,18 @@ class TestCompilePipelineGetter:
 
         dev = DefaultQubitLegacy(wires=5)
 
-        @qml.transforms.merge_rotations
-        @qml.qnode(dev, diff_method="backprop")
+        @qp.transforms.merge_rotations
+        @qp.qnode(dev, diff_method="backprop")
         def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         program = get_transform_program(circuit)
 
-        m1 = BoundTransform(qml.transforms.merge_rotations)
+        m1 = BoundTransform(qp.transforms.merge_rotations)
         assert program[:1] == CompilePipeline([m1])
 
-        m2 = BoundTransform(qml.devices.legacy_facade.legacy_device_batch_transform)
+        m2 = BoundTransform(qp.devices.legacy_facade.legacy_device_batch_transform)
         assert program[1].tape_transform == m2.tape_transform
         assert program[1].kwargs["device"] == dev
 
@@ -263,57 +263,57 @@ class TestCompilePipelineGetter:
         # this is the best proxy I can find
         assert (
             program[2].tape_transform
-            == qml.devices.legacy_facade.legacy_device_expand_fn.tape_transform
+            == qp.devices.legacy_facade.legacy_device_expand_fn.tape_transform
         )
 
     def test_get_transform_program_final_transform(self):
         """Test that gradient preprocessing and device transform occur before a final transform."""
 
-        @qml.metric_tensor
-        @qml.compile
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        @qp.metric_tensor
+        @qp.compile
+        @qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
         def circuit():
-            qml.IsingXX(1.234, wires=(0, 1))
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
+            qp.IsingXX(1.234, wires=(0, 1))
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         user_program = get_transform_program(circuit, level="user")
         assert len(user_program) == 3
-        assert user_program[0].tape_transform == qml.compile.tape_transform
-        assert user_program[1].tape_transform == qml.metric_tensor.expand_transform
-        assert user_program[2].tape_transform == qml.metric_tensor.tape_transform
+        assert user_program[0].tape_transform == qp.compile.tape_transform
+        assert user_program[1].tape_transform == qp.metric_tensor.expand_transform
+        assert user_program[2].tape_transform == qp.metric_tensor.tape_transform
 
         grad_program = get_transform_program(circuit, level="gradient")
         assert len(grad_program) == 4
-        assert grad_program[0].tape_transform == qml.compile.tape_transform
-        assert grad_program[1].tape_transform == qml.gradients.param_shift.expand_transform
-        assert grad_program[2].tape_transform == qml.metric_tensor.expand_transform
-        assert grad_program[3].tape_transform == qml.metric_tensor.tape_transform
+        assert grad_program[0].tape_transform == qp.compile.tape_transform
+        assert grad_program[1].tape_transform == qp.gradients.param_shift.expand_transform
+        assert grad_program[2].tape_transform == qp.metric_tensor.expand_transform
+        assert grad_program[3].tape_transform == qp.metric_tensor.tape_transform
 
         dev_program = get_transform_program(circuit, level="device")
-        config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        config = qml.device("default.qubit").setup_execution_config(config)
+        config = qp.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
+        config = qp.device("default.qubit").setup_execution_config(config)
         assert len(dev_program) == 4 + len(
             circuit.device.preprocess_transforms(config)
         )  # currently 8
-        assert dev_program[-1].tape_transform == qml.metric_tensor.tape_transform
+        assert dev_program[-1].tape_transform == qp.metric_tensor.tape_transform
 
         full_program = get_transform_program(circuit)
-        assert full_program[-1].tape_transform == qml.metric_tensor.tape_transform
+        assert full_program[-1].tape_transform == qp.metric_tensor.tape_transform
 
         assert dev_program == full_program
 
 
-@qml.transforms.merge_rotations
-@qml.transforms.cancel_inverses
-@qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+@qp.transforms.merge_rotations
+@qp.transforms.cancel_inverses
+@qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
 def circuit1(weights, order):
-    qml.RandomLayers(weights, wires=(0, 1))
-    qml.Permute(order, wires=(0, 1, 2))
-    qml.PauliX(0)
-    qml.PauliX(0)
-    qml.RX(0.1, wires=0)
-    qml.RX(-0.1, wires=0)
-    return qml.expval(qml.PauliX(0))
+    qp.RandomLayers(weights, wires=(0, 1))
+    qp.Permute(order, wires=(0, 1, 2))
+    qp.PauliX(0)
+    qp.PauliX(0)
+    qp.RX(0.1, wires=0)
+    qp.RX(-0.1, wires=0)
+    return qp.expval(qp.PauliX(0))
 
 
 class TestConstructBatch:
@@ -324,22 +324,22 @@ class TestConstructBatch:
 
         order = [2, 1, 0]
         weights = np.array([[1.0, 20]])
-        batch, fn = construct_batch(qml.set_shots(circuit1, shots=10), level=0)(weights, order)
+        batch, fn = construct_batch(qp.set_shots(circuit1, shots=10), level=0)(weights, order)
 
         assert len(batch) == 1
         expected_ops = [
-            qml.RandomLayers(weights, wires=(0, 1)),
-            qml.Permute(order, wires=(0, 1, 2)),
-            qml.PauliX(0),
-            qml.PauliX(0),
-            qml.RX(0.1, wires=0),
-            qml.RX(-0.1, wires=0),
+            qp.RandomLayers(weights, wires=(0, 1)),
+            qp.Permute(order, wires=(0, 1, 2)),
+            qp.PauliX(0),
+            qp.PauliX(0),
+            qp.RX(0.1, wires=0),
+            qp.RX(-0.1, wires=0),
         ]
 
-        expected = qml.tape.QuantumScript(
-            expected_ops, [qml.expval(qml.PauliX(0))], shots=10, trainable_params=[]
+        expected = qp.tape.QuantumScript(
+            expected_ops, [qp.expval(qp.PauliX(0))], shots=10, trainable_params=[]
         )
-        qml.assert_equal(batch[0], expected)
+        qp.assert_equal(batch[0], expected)
 
         assert fn(("a",)) == ("a",)
 
@@ -349,21 +349,21 @@ class TestConstructBatch:
         weights = np.array([[1.0, 2.0]])
         order = [2, 1, 0]
 
-        batch, fn = construct_batch(qml.set_shots(circuit1, shots=50), level=1)(
+        batch, fn = construct_batch(qp.set_shots(circuit1, shots=50), level=1)(
             weights, order=order
         )
         assert len(batch) == 1
 
         expected_ops = [
-            qml.RandomLayers(weights, wires=(0, 1)),
-            qml.Permute(order, wires=(0, 1, 2)),
+            qp.RandomLayers(weights, wires=(0, 1)),
+            qp.Permute(order, wires=(0, 1, 2)),
             # cancel inverses
-            qml.RX(0.1, wires=0),
-            qml.RX(-0.1, wires=0),
+            qp.RX(0.1, wires=0),
+            qp.RX(-0.1, wires=0),
         ]
 
-        expected = qml.tape.QuantumScript(expected_ops, [qml.expval(qml.PauliX(0))], shots=50)
-        qml.assert_equal(batch[0], expected)
+        expected = qp.tape.QuantumScript(expected_ops, [qp.expval(qp.PauliX(0))], shots=50)
+        qp.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
     @pytest.mark.parametrize("level", (2, "user"))
@@ -373,38 +373,38 @@ class TestConstructBatch:
         weights = np.array([[1.0, 2.0]])
         order = [2, 1, 0]
 
-        batch, fn = construct_batch(qml.set_shots(circuit1, shots=50), level=level)(
+        batch, fn = construct_batch(qp.set_shots(circuit1, shots=50), level=level)(
             weights, order=order
         )
         assert len(batch) == 1
 
         expected_ops = [
-            qml.RandomLayers(weights, wires=(0, 1)),
-            qml.Permute(order, wires=(0, 1, 2)),
+            qp.RandomLayers(weights, wires=(0, 1)),
+            qp.Permute(order, wires=(0, 1, 2)),
             # cancel inverses
             # merge rotations
         ]
 
-        expected = qml.tape.QuantumScript(expected_ops, [qml.expval(qml.PauliX(0))], shots=50)
-        qml.assert_equal(batch[0], expected)
+        expected = qp.tape.QuantumScript(expected_ops, [qp.expval(qp.PauliX(0))], shots=50)
+        qp.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
     @pytest.mark.parametrize("level", (3, "gradient"))
     def test_gradient_transforms(self, level):
         """Test that the gradient transform can be selected with an integer or keyword."""
-        weights = qml.numpy.array([[1.0, 2.0]], requires_grad=True)
+        weights = qp.numpy.array([[1.0, 2.0]], requires_grad=True)
         order = [2, 1, 0]
         batch, fn = construct_batch(circuit1, level=level)(weights=weights, order=order)
 
-        expected = qml.tape.QuantumScript(
+        expected = qp.tape.QuantumScript(
             [
-                qml.RY(qml.numpy.array(1), 0),
-                qml.RX(qml.numpy.array(2), 1),
-                qml.Permute(order, (0, 1, 2)),
+                qp.RY(qp.numpy.array(1), 0),
+                qp.RX(qp.numpy.array(2), 1),
+                qp.Permute(order, (0, 1, 2)),
             ],
-            [qml.expval(qml.PauliX(0))],
+            [qp.expval(qp.PauliX(0))],
         )
-        qml.assert_equal(batch[0], expected)
+        qp.assert_equal(batch[0], expected)
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
@@ -416,35 +416,35 @@ class TestConstructBatch:
 
         batch, fn = construct_batch(circuit1, level="device")(weights, order)
 
-        expected = qml.tape.QuantumScript(
-            [qml.RY(1, 0), qml.RX(2, 1), qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))]
+        expected = qp.tape.QuantumScript(
+            [qp.RY(1, 0), qp.RX(2, 1), qp.SWAP((0, 2))], [qp.expval(qp.PauliX(0))]
         )
-        qml.assert_equal(batch[0], expected)
+        qp.assert_equal(batch[0], expected)
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
     def test_device_transforms_legacy_interface(self):
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
-        @qml.transforms.cancel_inverses
-        @qml.set_shots(50)
-        @qml.qnode(DefaultQubitLegacy(wires=2))
+        @qp.transforms.cancel_inverses
+        @qp.set_shots(50)
+        @qp.qnode(DefaultQubitLegacy(wires=2))
         def circuit(order):
-            qml.Permute(order, wires=(0, 1, 2))
-            qml.X(0)
-            qml.X(0)
-            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
+            qp.Permute(order, wires=(0, 1, 2))
+            qp.X(0)
+            qp.X(0)
+            return [qp.expval(qp.PauliX(0)), qp.expval(qp.PauliY(0))]
 
-        batch, fn = qml.workflow.construct_batch(circuit, level="device")((2, 1, 0))
+        batch, fn = qp.workflow.construct_batch(circuit, level="device")((2, 1, 0))
 
-        expected0 = qml.tape.QuantumScript(
-            [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
+        expected0 = qp.tape.QuantumScript(
+            [qp.SWAP((0, 2))], [qp.expval(qp.PauliX(0))], shots=50
         )
-        qml.assert_equal(expected0, batch[0])
-        expected1 = qml.tape.QuantumScript(
-            [qml.SWAP((0, 2))], [qml.expval(qml.PauliY(0))], shots=50
+        qp.assert_equal(expected0, batch[0])
+        expected1 = qp.tape.QuantumScript(
+            [qp.SWAP((0, 2))], [qp.expval(qp.PauliY(0))], shots=50
         )
-        qml.assert_equal(expected1, batch[1])
+        qp.assert_equal(expected1, batch[1])
         assert len(batch) == 2
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
@@ -452,49 +452,49 @@ class TestConstructBatch:
     def test_final_transform(self):
         """Test that the final transform is included when level="device"."""
 
-        @qml.gradients.param_shift
-        @qml.transforms.merge_rotations
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.gradients.param_shift
+        @qp.transforms.merge_rotations
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(x):
-            qml.RX(x, 0)
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         batch, fn = construct_batch(circuit, level="device")(0.5)
         assert len(batch) == 2
-        expected0 = qml.tape.QuantumScript(
-            [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
+        expected0 = qp.tape.QuantumScript(
+            [qp.RX(1.0 + np.pi / 2, 0)], [qp.expval(qp.PauliZ(0))]
         )
-        qml.assert_equal(batch[0], expected0)
-        expected1 = qml.tape.QuantumScript(
-            [qml.RX(1.0 - np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
+        qp.assert_equal(batch[0], expected0)
+        expected1 = qp.tape.QuantumScript(
+            [qp.RX(1.0 - np.pi / 2, 0)], [qp.expval(qp.PauliZ(0))]
         )
-        qml.assert_equal(batch[1], expected1)
+        qp.assert_equal(batch[1], expected1)
 
         dummy_res = (1.0, 2.0)
         expected_res = (1.0 - 2.0) / 2
-        assert qml.numpy.allclose(fn(dummy_res)[0], expected_res)
+        assert qp.numpy.allclose(fn(dummy_res)[0], expected_res)
 
     def test_user_transform_multiple_tapes(self):
         """Test a user transform that creates multiple tapes."""
 
-        @qml.transforms.split_non_commuting
-        @qml.set_shots(shots=10)
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.split_non_commuting
+        @qp.set_shots(shots=10)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.S(0)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+            qp.S(0)
+            return qp.expval(qp.PauliX(0)), qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(1))
 
         batch, fn = construct_batch(circuit, level="user")()
 
         assert len(batch) == 2
-        expected0 = qml.tape.QuantumScript(
-            [qml.S(0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))], shots=10
+        expected0 = qp.tape.QuantumScript(
+            [qp.S(0)], [qp.expval(qp.PauliX(0)), qp.expval(qp.PauliX(1))], shots=10
         )
-        qml.assert_equal(expected0, batch[0])
+        qp.assert_equal(expected0, batch[0])
 
-        expected1 = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=10)
-        qml.assert_equal(expected1, batch[1])
+        expected1 = qp.tape.QuantumScript([qp.S(0)], [qp.expval(qp.PauliZ(0))], shots=10)
+        qp.assert_equal(expected1, batch[1])
 
         dummy_res = (("x0", "x1"), "z0")
         expected_res = (("x0", "z0", "x1"),)
@@ -503,60 +503,60 @@ class TestConstructBatch:
     def test_slicing_level(self):
         """Test that the level can be a slice."""
 
-        @qml.transforms.merge_rotations
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.transforms.merge_rotations
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(x):
-            qml.RX(x, 0)
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         # by slicing starting at one, we do not run the merge rotations transform
         batch, fn = construct_batch(circuit, slice(1, None))(0.5)
 
         assert len(batch) == 1
-        expected = qml.tape.QuantumScript(
-            [qml.RX(0.5, 0), qml.RX(0.5, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[]
+        expected = qp.tape.QuantumScript(
+            [qp.RX(0.5, 0), qp.RX(0.5, 0)], [qp.expval(qp.PauliZ(0))], trainable_params=[]
         )
 
-        qml.assert_equal(batch[0], expected)
+        qp.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
     def test_qfunc_with_shots_arg(self):
         """Test that the tape uses device shots only when qfunc has a shots kwarg"""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
 
-            @qml.set_shots(shots=100)
-            @qml.qnode(dev)
+            @qp.set_shots(shots=100)
+            @qp.qnode(dev)
             def circuit(shots):
                 for _ in range(shots):
-                    qml.S(0)
-                return qml.expval(qml.PauliZ(0))
+                    qp.S(0)
+                return qp.expval(qp.PauliZ(0))
 
         batch, fn = construct_batch(circuit, level="device")(shots=2)
 
         assert len(batch) == 1
-        expected = qml.tape.QuantumScript(
-            [qml.S(0), qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=100
+        expected = qp.tape.QuantumScript(
+            [qp.S(0), qp.S(0)], [qp.expval(qp.PauliZ(0))], shots=100
         )
-        qml.assert_equal(batch[0], expected)
+        qp.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
 
     @pytest.mark.parametrize(
         "mcm_method, expected_op",
-        [("deferred", qml.CNOT), ("tree-traversal", qml.ops.MidMeasure)],
+        [("deferred", qp.CNOT), ("tree-traversal", qp.ops.MidMeasure)],
     )
     def test_mcm_method(self, mcm_method, expected_op):
         """Test that the tape is constructed using the mcm_method specified on the QNode"""
 
-        @qml.qnode(qml.device("default.qubit"), mcm_method=mcm_method)
+        @qp.qnode(qp.device("default.qubit"), mcm_method=mcm_method)
         def circuit():
-            qml.measure(0)
-            return qml.expval(qml.Z(0))
+            qp.measure(0)
+            return qp.expval(qp.Z(0))
 
-        (tape,), _ = qml.workflow.construct_batch(circuit, level="device")()
+        (tape,), _ = qp.workflow.construct_batch(circuit, level="device")()
 
         assert len(tape.operations) == 1
         assert isinstance(tape.operations[0], expected_op)

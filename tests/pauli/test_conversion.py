@@ -50,21 +50,21 @@ test_diff_matrix2 = [[[-2, -2 + 1j], [-2 - 1j, 0]], [[2.5, -0.5], [-0.5, 2.5]]]
 
 hamiltonian_ps = (
     (
-        qml.Hamiltonian([], []),
+        qp.Hamiltonian([], []),
         PauliSentence(),
     ),
     (
-        qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
+        qp.Hamiltonian([2], [qp.PauliZ(wires=0)]),
         PauliSentence({PauliWord({0: "Z"}): 2}),
     ),
     (
-        qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
+        qp.Hamiltonian([2], [qp.PauliZ(wires=0)]),
         PauliSentence({PauliWord({0: "Z"}): 2}),
     ),
     (
-        qml.Hamiltonian(
+        qp.Hamiltonian(
             [2, -0.5],
-            [qml.PauliZ(wires=0), qml.prod(qml.X(wires=0), qml.Z(wires=1))],
+            [qp.PauliZ(wires=0), qp.prod(qp.X(wires=0), qp.Z(wires=1))],
         ),
         PauliSentence(
             {
@@ -74,12 +74,12 @@ hamiltonian_ps = (
         ),
     ),
     (
-        qml.Hamiltonian(
+        qp.Hamiltonian(
             [2, -0.5, 3.14],
             [
-                qml.PauliZ(wires=0),
-                qml.prod(qml.X(wires=0), qml.Z(wires="a")),
-                qml.Identity(wires="b"),
+                qp.PauliZ(wires=0),
+                qp.prod(qp.X(wires=0), qp.Z(wires="a")),
+                qp.Identity(wires="b"),
             ],
         ),
         PauliSentence(
@@ -105,20 +105,20 @@ class TestDecomposition:
             ValueError,
             match="The matrix should have shape",
         ):
-            qml.pauli_decompose(hamiltonian)
+            qp.pauli_decompose(hamiltonian)
 
     def test_not_hermitian(self):
         """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
         equal to its own conjugate transpose"""
         with pytest.raises(ValueError, match="The matrix is not Hermitian"):
-            qml.pauli_decompose(np.array([[1, 2], [3, 4]]))
+            qp.pauli_decompose(np.array([[1, 2], [3, 4]]))
 
     def test_hide_identity_true(self):
         """Tests that there are no Identity observables in the tensor products
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
-        _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
-        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
+        _, obs_list = qp.pauli_decompose(H, hide_identity=True).terms()
+        tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), obs_list)
 
         for tensor in tensors:
             all_identities = all(isinstance(o, Identity) for o in tensor.operands)
@@ -128,8 +128,8 @@ class TestDecomposition:
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
-        _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
-        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
+        _, obs_list = qp.pauli_decompose(H, hide_identity=True).terms()
+        tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), obs_list)
 
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.operands)
@@ -138,19 +138,19 @@ class TestDecomposition:
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
         """Tests that the Hamiltonian decomposes into a linear combination of Pauli words."""
-        allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
+        allowed_obs = (qp.ops.Prod, Identity, PauliX, PauliY, PauliZ)
 
-        _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
+        _, decomposed_obs = qp.pauli_decompose(hamiltonian, hide_identity).terms()
         assert all(isinstance(o, allowed_obs) for o in decomposed_obs)
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
         """Tests that tensors are composed of a number of terms equal to the number
         of qubits."""
-        _, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
+        _, decomposed_obs = qp.pauli_decompose(hamiltonian).terms()
         n = int(np.log2(len(hamiltonian)))
 
-        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
+        tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
     # pylint: disable = consider-using-generator
@@ -158,7 +158,7 @@ class TestDecomposition:
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
+        decomposed_coeff, decomposed_obs = qp.pauli_decompose(hamiltonian).terms()
 
         linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
         assert np.allclose(hamiltonian, linear_comb)
@@ -166,10 +166,10 @@ class TestDecomposition:
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_to_paulisentence(self, hamiltonian):
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
-        ps = qml.pauli_decompose(hamiltonian, pauli=True)
+        ps = qp.pauli_decompose(hamiltonian, pauli=True)
         num_qubits = int(np.log2(len(hamiltonian)))
 
-        assert isinstance(ps, qml.pauli.PauliSentence)
+        assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
     def test_wire_order(self):
@@ -181,8 +181,8 @@ class TestDecomposition:
         )
 
         for wire_order in (wire_order1, wire_order2):
-            h = qml.pauli_decompose(hamiltonian, wire_order=wire_order)
-            ps = qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
+            h = qp.pauli_decompose(hamiltonian, wire_order=wire_order)
+            ps = qp.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
 
             assert set(ps.wires) == set(wire_order)
             assert h.wires.toset() == set(wire_order)
@@ -198,7 +198,7 @@ class TestDecomposition:
         with pytest.raises(
             ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
-            qml.pauli_decompose(hamiltonian, pauli=pauli, wire_order=wire_order)
+            qp.pauli_decompose(hamiltonian, pauli=pauli, wire_order=wire_order)
 
     @pytest.mark.jax
     def test_jit(self):
@@ -207,7 +207,7 @@ class TestDecomposition:
 
         @jax.jit
         def decompose_non_hermitian(m):
-            coeffs, unitaries = qml.pauli_decompose(m, check_hermitian=False).terms()
+            coeffs, unitaries = qp.pauli_decompose(m, check_hermitian=False).terms()
             return coeffs, unitaries
 
         x = jax.numpy.array([[1 + 42j, 5.678 - 1.234j], [5.678 + 1.234j, -1 + 42j]])
@@ -215,7 +215,7 @@ class TestDecomposition:
 
         @jax.jit
         def decompose_hermitian(m):
-            coeffs, unitaries = qml.pauli_decompose(m).terms()
+            coeffs, unitaries = qp.pauli_decompose(m).terms()
             return coeffs, unitaries
 
         x = jax.numpy.array([[2, 1 - 1j], [1 + 1j, 0]])
@@ -233,7 +233,7 @@ class TestDecomposition:
         sparse_class = getattr(sps, sparse_type)
         sparse_hamiltonian = sparse_class(hamiltonian)
 
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(sparse_hamiltonian).terms()
+        decomposed_coeff, decomposed_obs = qp.pauli_decompose(sparse_hamiltonian).terms()
 
         linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
         assert np.allclose(hamiltonian, linear_comb)
@@ -247,10 +247,10 @@ class TestDecomposition:
         sparse_class = getattr(sps, sparse_type)
         sparse_hamiltonian = sparse_class(hamiltonian)
 
-        ps = qml.pauli_decompose(sparse_hamiltonian, pauli=True)
+        ps = qp.pauli_decompose(sparse_hamiltonian, pauli=True)
         num_qubits = int(np.log2(hamiltonian.shape[0]))
 
-        assert isinstance(ps, qml.pauli.PauliSentence)
+        assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
     def test_sparse_matrix_wire_order(self):
@@ -263,8 +263,8 @@ class TestDecomposition:
         )
         sparse_hamiltonian = sps.csr_matrix(hamiltonian)
 
-        h = qml.pauli_decompose(sparse_hamiltonian, wire_order=wire_order)
-        ps = qml.pauli_decompose(sparse_hamiltonian, pauli=True, wire_order=wire_order)
+        h = qp.pauli_decompose(sparse_hamiltonian, wire_order=wire_order)
+        ps = qp.pauli_decompose(sparse_hamiltonian, pauli=True, wire_order=wire_order)
 
         assert set(ps.wires) == set(wire_order)
         assert h.wires.toset() == set(wire_order)
@@ -274,8 +274,8 @@ class TestDecomposition:
         import scipy.sparse as sps
 
         H = sps.csr_matrix(np.diag([0, 0, 0, 1]))
-        _, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
-        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
+        _, obs_list = qp.pauli_decompose(H, hide_identity=True).terms()
+        tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), obs_list)
 
         for tensor in tensors:
             all_identities = all(isinstance(o, Identity) for o in tensor.operands)
@@ -288,14 +288,14 @@ class TestDecomposition:
 
         base = sps.csr_matrix(np.diag([1, -1, -1, 1]))
         dense_reference = base.toarray().copy()
-        expected_sentence = qml.pauli_decompose(dense_reference, pauli=True)
+        expected_sentence = qp.pauli_decompose(dense_reference, pauli=True)
 
         def raise_toarray(self, *args, **kwargs):
             raise AssertionError("dense conversion attempted")
 
         monkeypatch.setattr(base.__class__, "toarray", raise_toarray, raising=False)
 
-        sentence = qml.pauli_decompose(base, pauli=True)
+        sentence = qp.pauli_decompose(base, pauli=True)
         assert isinstance(sentence, PauliSentence)
         assert sentence == expected_sentence
 
@@ -315,7 +315,7 @@ class TestDecomposition:
         dense_matrix = sentence.to_mat(range(num_qubits))
         sparse_matrix = sps.coo_matrix(dense_matrix)
 
-        result = qml.pauli_decompose(sparse_matrix, pauli=True, check_hermitian=False)
+        result = qp.pauli_decompose(sparse_matrix, pauli=True, check_hermitian=False)
 
         assert isinstance(result, PauliSentence)
         assert len(result) == len(sentence)
@@ -329,7 +329,7 @@ class TestDecomposition:
 
         non_hermitian = np.array([[1, 2j], [3j, 4]])
         sparse_nh = sps.csr_matrix(non_hermitian)
-        result = qml.pauli_decompose(sparse_nh, pauli=True, check_hermitian=False)
+        result = qp.pauli_decompose(sparse_nh, pauli=True, check_hermitian=False)
         assert isinstance(result, PauliSentence)
         reconstructed = result.to_mat(range(1))
         assert np.allclose(reconstructed, non_hermitian)
@@ -340,7 +340,7 @@ class TestDecomposition:
 
         empty_matrix = sps.csr_matrix((0, 0))
         with pytest.raises(ValueError, match="Cannot decompose an empty matrix"):
-            qml.pauli_decompose(empty_matrix, check_hermitian=False)
+            qp.pauli_decompose(empty_matrix, check_hermitian=False)
 
     def test_sparse_empty_matrix_error_direct(self):
         """Test that an exception is raised if the sparse matrix is empty when calling
@@ -360,11 +360,11 @@ class TestDecomposition:
         sparse_class = getattr(sps, sparse_type)
         non_square = sparse_class(np.ones((4, 2)))
         with pytest.raises(ValueError, match="The matrix should be square"):
-            qml.pauli_decompose(non_square, check_hermitian=False)
+            qp.pauli_decompose(non_square, check_hermitian=False)
 
         non_power2 = sparse_class(np.eye(3))
         with pytest.raises(ValueError, match="Dimension of the matrix should be a power of 2"):
-            qml.pauli_decompose(non_power2, check_hermitian=False)
+            qp.pauli_decompose(non_power2, check_hermitian=False)
 
     def test_sparse_duplicate_entries(self):
         """Test that sparse matrices with duplicate entries are handled correctly."""
@@ -374,7 +374,7 @@ class TestDecomposition:
         cols = np.array([0, 0, 1])
         data = np.array([1.0, 2.0, 3.0])
         sparse_dup = sps.coo_matrix((data, (rows, cols)), shape=(2, 2))
-        result = qml.pauli_decompose(sparse_dup, pauli=True, check_hermitian=False)
+        result = qp.pauli_decompose(sparse_dup, pauli=True, check_hermitian=False)
         assert isinstance(result, PauliSentence)
         reconstructed = result.to_mat(range(1))
         expected = np.array([[3.0, 0.0], [0.0, 3.0]])
@@ -418,7 +418,7 @@ class TestDecomposition:
         empty_matrix = sps.coo_matrix((0, 0))
         result = _generalized_pauli_decompose_sparse(empty_matrix, padding=True, pauli=True)
 
-        assert isinstance(result[0], qml.numpy.ndarray)
+        assert isinstance(result[0], qp.numpy.ndarray)
         assert len(result[0]) == 0
         assert len(result[1]) == 0
 
@@ -431,7 +431,7 @@ class TestDecomposition:
 
         result = _generalized_pauli_decompose_sparse(sparse_mat, padding=True, pauli=True)
 
-        assert isinstance(result[0], qml.numpy.ndarray)
+        assert isinstance(result[0], qp.numpy.ndarray)
         assert isinstance(result[1], list)
         assert len(result[0]) > 0
 
@@ -446,7 +446,7 @@ class TestDecomposition:
 
         result = _generalized_pauli_decompose_sparse(sparse_mat, pauli=True)
 
-        assert isinstance(result[0], qml.numpy.ndarray)
+        assert isinstance(result[0], qp.numpy.ndarray)
         assert len(result[0]) > 0
 
     def test_sparse_zero_value_skipped(self):
@@ -500,8 +500,8 @@ class TestPhasedDecomposition:
         """Tests that there are no Identity observables in the tensor products
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
-        _, obs_list = qml.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
-        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
+        _, obs_list = qp.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
+        tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), obs_list)
 
         for tensor in tensors:
             all_identities = all(isinstance(o, Identity) for o in tensor.operands)
@@ -511,8 +511,8 @@ class TestPhasedDecomposition:
     def test_hide_identity_true_all_identities(self):
         """Tests that the all identity operator remains even with hide_identity = True."""
         H = np.eye(4)
-        _, obs_list = qml.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
-        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), obs_list)
+        _, obs_list = qp.pauli_decompose(H, hide_identity=True, check_hermitian=False).terms()
+        tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), obs_list)
 
         for tensor in tensors:
             assert all(isinstance(o, Identity) for o in tensor.operands)
@@ -522,9 +522,9 @@ class TestPhasedDecomposition:
     def test_observable_types(self, hamiltonian, hide_identity):
         """Tests that the Hamiltonian decomposes into a linear combination of tensors,
         the identity matrix, and Pauli matrices."""
-        allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
+        allowed_obs = (qp.ops.Prod, Identity, PauliX, PauliY, PauliZ)
 
-        _, decomposed_obs = qml.pauli_decompose(
+        _, decomposed_obs = qp.pauli_decompose(
             hamiltonian, hide_identity, check_hermitian=False
         ).terms()
         assert all(isinstance(o, allowed_obs) for o in decomposed_obs)
@@ -533,10 +533,10 @@ class TestPhasedDecomposition:
     def test_result_length(self, hamiltonian):
         """Tests that tensors are composed of a number of terms equal to the number
         of qubits."""
-        _, decomposed_obs = qml.pauli_decompose(hamiltonian, check_hermitian=False).terms()
+        _, decomposed_obs = qp.pauli_decompose(hamiltonian, check_hermitian=False).terms()
         n = int(np.log2(len(hamiltonian)))
 
-        tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
+        tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
     # pylint: disable = consider-using-generator
@@ -544,14 +544,14 @@ class TestPhasedDecomposition:
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(
+        decomposed_coeff, decomposed_obs = qp.pauli_decompose(
             hamiltonian, check_hermitian=False
         ).terms()
         n = range(int(np.log2(len(hamiltonian))))
 
         linear_comb = sum(
             [
-                decomposed_coeff[i] * qml.matrix(o, wire_order=n)
+                decomposed_coeff[i] * qp.matrix(o, wire_order=n)
                 for i, o in enumerate(decomposed_obs)
             ]
         )
@@ -560,10 +560,10 @@ class TestPhasedDecomposition:
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_to_paulisentence(self, hamiltonian):
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
-        ps = qml.pauli_decompose(hamiltonian, pauli=True, check_hermitian=False)
+        ps = qp.pauli_decompose(hamiltonian, pauli=True, check_hermitian=False)
         num_qubits = int(np.log2(len(hamiltonian)))
 
-        assert isinstance(ps, qml.pauli.PauliSentence)
+        assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
     # pylint: disable = consider-using-generator
@@ -575,9 +575,9 @@ class TestPhasedDecomposition:
         the identity matrix, and Pauli matrices."""
         shape = matrix.shape
         num_qubits = int(np.ceil(np.log2(max(shape))))
-        allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
+        allowed_obs = (qp.ops.Prod, Identity, PauliX, PauliY, PauliZ)
 
-        decomposed_coeff, decomposed_obs = qml.pauli_decompose(
+        decomposed_coeff, decomposed_obs = qp.pauli_decompose(
             matrix, hide_identity, check_hermitian=False
         ).terms()
 
@@ -585,14 +585,14 @@ class TestPhasedDecomposition:
 
         linear_comb = sum(
             [
-                decomposed_coeff[i] * qml.matrix(o, wire_order=range(num_qubits))
+                decomposed_coeff[i] * qp.matrix(o, wire_order=range(num_qubits))
                 for i, o in enumerate(decomposed_obs)
             ]
         )
         assert np.allclose(matrix, linear_comb[: shape[0], : shape[1]])
 
         if not hide_identity:
-            tensors = filter(lambda obs: isinstance(obs, qml.ops.Prod), decomposed_obs)
+            tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
             assert all(len(tensor.wires) == num_qubits for tensor in tensors)
 
     @pytest.mark.parametrize("matrix", test_general_matrix)
@@ -600,9 +600,9 @@ class TestPhasedDecomposition:
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
         shape = matrix.shape
         num_qubits = int(np.ceil(np.log2(max(shape))))
-        ps = qml.pauli_decompose(matrix, pauli=True, check_hermitian=False)
+        ps = qp.pauli_decompose(matrix, pauli=True, check_hermitian=False)
 
-        assert isinstance(ps, qml.pauli.PauliSentence)
+        assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(matrix, ps.to_mat(range(num_qubits))[: shape[0], : shape[1]])
 
     def test_wire_order(self):
@@ -614,9 +614,9 @@ class TestPhasedDecomposition:
         )
 
         for wire_order in (wire_order1, wire_order2):
-            h = qml.pauli_decompose(hamiltonian, wire_order=wire_order, check_hermitian=False)
+            h = qp.pauli_decompose(hamiltonian, wire_order=wire_order, check_hermitian=False)
 
-            ps = qml.pauli_decompose(
+            ps = qp.pauli_decompose(
                 hamiltonian, wire_order=wire_order, pauli=True, check_hermitian=False
             )
 
@@ -634,7 +634,7 @@ class TestPhasedDecomposition:
         with pytest.raises(
             ValueError, match="number of wires 1 is not compatible with the number of qubits 2"
         ):
-            qml.pauli_decompose(hamiltonian, wire_order=wire_order, check_hermitian=False)
+            qp.pauli_decompose(hamiltonian, wire_order=wire_order, check_hermitian=False)
 
     # Multiple interfaces will be tested
     @pytest.mark.all_interfaces
@@ -650,8 +650,8 @@ class TestPhasedDecomposition:
 
         interfaces = ["numpy", "jax", "torch"]
         for mat, interface in zip(matrices, interfaces):
-            coeffs = qml.pauli_decompose(mat).coeffs
-            assert qml.math.get_interface(coeffs[0]) == interface
+            coeffs = qp.pauli_decompose(mat).coeffs
+            assert qp.math.get_interface(coeffs[0]) == interface
 
     # pylint: disable = superfluous-parens
     # Multiple interfaces will be tested with math module
@@ -669,17 +669,17 @@ class TestPhasedDecomposition:
         import jax
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(A):
-            coeffs, _ = qml.pauli_decompose(A, check_hermitian=check_hermitian).terms()
-            qml.RX(qml.math.real(coeffs[1]), 0)
-            return qml.expval(qml.PauliZ(0))
+            coeffs, _ = qp.pauli_decompose(A, check_hermitian=check_hermitian).terms()
+            qp.RX(qp.math.real(coeffs[1]), 0)
+            return qp.expval(qp.PauliZ(0))
 
         for matrix in matrices:
             # NumPy Interface
-            grad_numpy = qml.grad(circuit)(qml.numpy.array(matrix))
+            grad_numpy = qp.grad(circuit)(qp.numpy.array(matrix))
 
             # Jax Interface
             grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
@@ -691,18 +691,18 @@ class TestPhasedDecomposition:
             grad_torch = A.grad
 
             # Comparisons - note: https://github.com/google/jax/issues/9110
-            assert qml.math.allclose(grad_numpy, grad_jax)
-            assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
+            assert qp.math.allclose(grad_numpy, grad_jax)
+            assert qp.math.allclose(grad_numpy, qp.math.conjugate(grad_torch))
 
 
 class TestPauliSentence:
     """Test the pauli_sentence function."""
 
     pauli_op_ps = (
-        (qml.PauliX(wires=0), PauliSentence({PauliWord({0: "X"}): 1})),
-        (qml.PauliY(wires=1), PauliSentence({PauliWord({1: "Y"}): 1})),
-        (qml.PauliZ(wires="a"), PauliSentence({PauliWord({"a": "Z"}): 1})),
-        (qml.Identity(wires=0), PauliSentence({PauliWord({}): 1})),
+        (qp.PauliX(wires=0), PauliSentence({PauliWord({0: "X"}): 1})),
+        (qp.PauliY(wires=1), PauliSentence({PauliWord({1: "Y"}): 1})),
+        (qp.PauliZ(wires="a"), PauliSentence({PauliWord({"a": "Z"}): 1})),
+        (qp.Identity(wires=0), PauliSentence({PauliWord({}): 1})),
     )
 
     @pytest.mark.parametrize("op, ps", pauli_op_ps)
@@ -712,18 +712,18 @@ class TestPauliSentence:
 
     tensor_ps = (
         (
-            qml.PauliX(wires=0) @ qml.PauliZ(wires=1),
+            qp.PauliX(wires=0) @ qp.PauliZ(wires=1),
             PauliSentence({PauliWord({0: "X", 1: "Z"}): 1}),
         ),
-        (qml.PauliX(wires=0) @ qml.Identity(wires=1), PauliSentence({PauliWord({0: "X"}): 1})),
+        (qp.PauliX(wires=0) @ qp.Identity(wires=1), PauliSentence({PauliWord({0: "X"}): 1})),
         (
-            qml.PauliX(wires=0)
-            @ qml.PauliY(wires="a")
-            @ qml.PauliZ(wires=1)
-            @ qml.Identity(wires="b"),
+            qp.PauliX(wires=0)
+            @ qp.PauliY(wires="a")
+            @ qp.PauliZ(wires=1)
+            @ qp.Identity(wires="b"),
             PauliSentence({PauliWord({0: "X", "a": "Y", 1: "Z"}): 1}),
         ),
-        (qml.PauliX(wires=0) @ qml.PauliY(wires=0), PauliSentence({PauliWord({0: "Z"}): 1j})),
+        (qp.PauliX(wires=0) @ qp.PauliY(wires=0), PauliSentence({PauliWord({0: "Z"}): 1j})),
     )
 
     @pytest.mark.parametrize("op, ps", tensor_ps)
@@ -734,8 +734,8 @@ class TestPauliSentence:
     def test_tensor_raises_error(self):
         """Test that Tensors of non-Pauli ops raise error when cast to a PauliSentence."""
         h_mat = np.array([[1, 1], [1, -1]])
-        h_op = qml.Hermitian(h_mat, wires=1)
-        op = qml.PauliX(wires=0) @ h_op
+        h_op = qp.Hermitian(h_mat, wires=1)
+        op = qp.PauliX(wires=0) @ h_op
 
         with pytest.raises(ValueError, match="Op must be a linear combination of"):
             pauli_sentence(op)
@@ -747,17 +747,17 @@ class TestPauliSentence:
 
     operator_ps = (
         (
-            qml.sum(qml.s_prod(2, qml.PauliZ(wires=0)), qml.PauliX(wires=1)),
+            qp.sum(qp.s_prod(2, qp.PauliZ(wires=0)), qp.PauliX(wires=1)),
             PauliSentence({PauliWord({0: "Z"}): 2, PauliWord({1: "X"}): 1}),
         ),
         (
-            qml.sum(qml.s_prod(2, qml.PauliZ(wires=0)), qml.PauliY(wires=1)),
+            qp.sum(qp.s_prod(2, qp.PauliZ(wires=0)), qp.PauliY(wires=1)),
             PauliSentence({PauliWord({0: "Z"}): 2, PauliWord({1: "Y"}): 1}),
         ),
         (
-            qml.sum(
-                qml.s_prod(2, qml.PauliZ(wires=0)),
-                -0.5 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires=1)),
+            qp.sum(
+                qp.s_prod(2, qp.PauliZ(wires=0)),
+                -0.5 * qp.prod(qp.PauliX(wires=0), qp.PauliZ(wires=1)),
             ),
             PauliSentence(
                 {
@@ -767,11 +767,11 @@ class TestPauliSentence:
             ),
         ),
         (
-            qml.sum(
-                qml.s_prod(2, qml.PauliZ(wires=0)),
-                -0.5 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires="a")),
-                qml.s_prod(2.14, qml.Identity(wires=0)),
-                qml.Identity(wires="a"),
+            qp.sum(
+                qp.s_prod(2, qp.PauliZ(wires=0)),
+                -0.5 * qp.prod(qp.PauliX(wires=0), qp.PauliZ(wires="a")),
+                qp.s_prod(2.14, qp.Identity(wires=0)),
+                qp.Identity(wires="a"),
             ),
             PauliSentence(
                 {
@@ -792,14 +792,14 @@ class TestPauliSentence:
     def test_operator_private_ps(self, op, ps):
         """Test that a correct pauli sentence is computed when passing an arithmetic operator and not
         relying on the saved op.pauli_rep attribute."""
-        assert qml.pauli.conversion._pauli_sentence(op) == ps  # pylint: disable=protected-access
+        assert qp.pauli.conversion._pauli_sentence(op) == ps  # pylint: disable=protected-access
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         error_ps = (
-            qml.Hadamard(wires=0),
-            qml.Hamiltonian([1, 2], [qml.Projector([0], wires=0), qml.PauliZ(wires=1)]),
-            qml.RX(1.23, wires="a") + qml.PauliZ(wires=0),
+            qp.Hadamard(wires=0),
+            qp.Hamiltonian([1, 2], [qp.Projector([0], wires=0), qp.PauliZ(wires=1)]),
+            qp.RX(1.23, wires="a") + qp.PauliZ(wires=0),
         )
 
     @pytest.mark.parametrize("op", error_ps)

@@ -64,7 +64,7 @@ def test_bad_predicate_shape():
     """Test that an error is raised if the predicate is not a scalar."""
 
     def f(pred):
-        qml.cond(pred, qml.X, qml.Z)(0)
+        qp.cond(pred, qp.X, qp.Z)(0)
 
     with pytest.raises(ValueError, match="predicate must be a scalar"):
         jax.make_jaxpr(f)(np.array([0, 0]))
@@ -72,7 +72,7 @@ def test_bad_predicate_shape():
 
 @pytest.mark.parametrize("decorator", [True, False])
 class TestCond:
-    """Tests for conditional functions using qml.cond."""
+    """Tests for conditional functions using qp.cond."""
 
     @pytest.mark.parametrize(
         "selector, arg, expected",
@@ -91,7 +91,7 @@ class TestCond:
 
         def test_func(pred):
             if decorator:
-                conditional = qml.cond(pred > 0)(true_fn)
+                conditional = qp.cond(pred > 0)(true_fn)
                 conditional.else_if(pred == -1)(elif_fn1)
                 conditional.else_if(pred == -2)(elif_fn2)
                 conditional.else_if(pred == -3)(elif_fn3)
@@ -99,7 +99,7 @@ class TestCond:
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qml.cond(
+            return qp.cond(
                 pred > 0,
                 true_fn,
                 false_fn,
@@ -136,11 +136,11 @@ class TestCond:
 
         def test_func(pred):
             if decorator:
-                conditional = qml.cond(pred > 0)(true_fn)
+                conditional = qp.cond(pred > 0)(true_fn)
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qml.cond(
+            return qp.cond(
                 pred > 0,
                 true_fn,
                 false_fn,
@@ -168,17 +168,17 @@ class TestCond:
 
         def func(pred):
             if decorator:
-                conditional = qml.cond(pred > 0)(true_fn)
+                conditional = qp.cond(pred > 0)(true_fn)
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qml.cond(
+            return qp.cond(
                 pred > 0,
                 true_fn,
                 false_fn,
             )
 
-        test_func = qml.grad(func(selector))
+        test_func = qp.grad(func(selector))
 
         jaxpr = jax.make_jaxpr(test_func)(arg)
         assert len(jaxpr.eqns) == 1
@@ -209,11 +209,11 @@ class TestCond:
 
         def test_func(pred):
             if decorator:
-                conditional = qml.cond(pred > 0)(true_fn)
+                conditional = qp.cond(pred > 0)(true_fn)
                 conditional.otherwise(false_fn)
                 return conditional
 
-            return qml.cond(
+            return qp.cond(
                 pred > 0,
                 true_fn,
                 false_fn,
@@ -227,26 +227,26 @@ class TestCond:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     def test_mcm_return_error(self, decorator):
-        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        """Test that an error is raised if executing a quantum function that uses qp.cond with
         mid-circuit measurement predicates where the conditional functions return something."""
 
         def true_fn(arg):
-            qml.RX(arg, 0)
+            qp.RX(arg, 0)
             return 0
 
         def false_fn(arg):
-            qml.RY(arg, 0)
+            qp.RY(arg, 0)
             return 1
 
         def f(x):
-            m1 = qml.measure(0)
+            m1 = qp.measure(0)
             if decorator:
-                conditional = qml.cond(m1)(true_fn)
+                conditional = qp.cond(m1)(true_fn)
                 conditional.otherwise(false_fn)
                 conditional(x)
             else:
-                qml.cond(m1, true_fn, false_fn)(x)
-            return qml.expval(qml.Z(0))
+                qp.cond(m1, true_fn, false_fn)(x)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.23)
         with pytest.raises(
@@ -255,33 +255,33 @@ class TestCond:
             _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
     def test_mcm_mixed_conds_error(self, decorator):
-        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        """Test that an error is raised if executing a quantum function that uses qp.cond with
         a combination of mid-circuit measurement and other predicates."""
 
         def true_fn(arg):
-            qml.RX(arg, 0)
+            qp.RX(arg, 0)
 
         def elif_fn(arg):
-            qml.RZ(arg, 0)
+            qp.RZ(arg, 0)
 
         def false_fn(arg):
-            qml.RY(arg, 0)
+            qp.RY(arg, 0)
 
         def f(x):
-            m1 = qml.measure(0)
+            m1 = qp.measure(0)
             if decorator:
-                conditional = qml.cond(m1)(true_fn)
+                conditional = qp.cond(m1)(true_fn)
                 conditional.else_if(x > 1.5)(elif_fn)
                 conditional.otherwise(false_fn)
                 conditional(x)
             else:
-                qml.cond(m1, true_fn, false_fn, elifs=(x > 1.5, elif_fn))(x)
-            return qml.expval(qml.Z(0))
+                qp.cond(m1, true_fn, false_fn, elifs=(x > 1.5, elif_fn))(x)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(1.23)
         with pytest.raises(
             ConditionalTransformError,
-            match="Cannot use qml.cond with a combination of mid-circuit measurements",
+            match="Cannot use qp.cond with a combination of mid-circuit measurements",
         ):
             _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
@@ -291,13 +291,13 @@ def test_keyword_argument():
 
     def f(pred, x):
 
-        @qml.cond(pred)
+        @qp.cond(pred)
         def b(*, x):
-            qml.RX(x, 0)
+            qp.RX(x, 0)
 
         @b.otherwise
         def _(*, x):
-            qml.RZ(x, 0)
+            qp.RZ(x, 0)
 
         return b(x=x)
 
@@ -450,8 +450,8 @@ class TestCondReturns:
         the cond simply has no output."""
 
         def f(pred):
-            fn = partial(qml.X) if partial_operator else qml.X
-            qml.cond(pred, fn)(0)
+            fn = partial(qp.X) if partial_operator else qp.X
+            qp.cond(pred, fn)(0)
 
         jaxpr = jax.make_jaxpr(f)(True)
         assert jaxpr.eqns[0].primitive == cond_prim
@@ -459,71 +459,71 @@ class TestCondReturns:
 
         true_fn = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(true_fn.outvars) == 0
-        assert true_fn.eqns[0].primitive == qml.X._primitive  # pylint: disable=protected-access
+        assert true_fn.eqns[0].primitive == qp.X._primitive  # pylint: disable=protected-access
 
         false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
         assert len(false_fn.eqns) == 0
         assert len(false_fn.outvars) == 0
 
 
-dev = qml.device("default.qubit", wires=3)
+dev = qp.device("default.qubit", wires=3)
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def circuit(pred):
     """Quantum circuit with only a true branch."""
 
     def true_fn():
-        qml.RX(0.1, wires=0)
+        qp.RX(0.1, wires=0)
 
-    qml.cond(pred > 0, true_fn)()
-    return qml.expval(qml.Z(wires=0))
+    qp.cond(pred > 0, true_fn)()
+    return qp.expval(qp.Z(wires=0))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def circuit_branches(pred, arg1, arg2):
     """Quantum circuit with conditional branches."""
 
-    qml.RX(0.10, wires=0)
+    qp.RX(0.10, wires=0)
 
     def true_fn(arg1, arg2):
-        qml.RY(arg1, wires=0)
-        qml.RX(arg2, wires=0)
-        qml.RZ(arg1, wires=0)
+        qp.RY(arg1, wires=0)
+        qp.RX(arg2, wires=0)
+        qp.RZ(arg1, wires=0)
 
     def false_fn(arg1, arg2):
-        qml.RX(arg1, wires=0)
-        qml.RX(arg2, wires=0)
+        qp.RX(arg1, wires=0)
+        qp.RX(arg2, wires=0)
 
     def elif_fn1(arg1, arg2):
-        qml.RZ(arg2, wires=0)
-        qml.RX(arg1, wires=0)
+        qp.RZ(arg2, wires=0)
+        qp.RX(arg1, wires=0)
 
-    qml.cond(pred > 0, true_fn, false_fn, elifs=(pred == -1, elif_fn1))(arg1, arg2)
-    qml.RX(0.10, wires=0)
-    return qml.expval(qml.Z(wires=0))
+    qp.cond(pred > 0, true_fn, false_fn, elifs=(pred == -1, elif_fn1))(arg1, arg2)
+    qp.RX(0.10, wires=0)
+    return qp.expval(qp.Z(wires=0))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
 
-    qml.RX(0.10, wires=0)
+    qp.RX(0.10, wires=0)
 
     def true_fn(arg1, arg2):
-        qml.RY(arg1, wires=0)
-        return 7, 4.6, qml.RY(arg2, wires=0), True
+        qp.RY(arg1, wires=0)
+        return 7, 4.6, qp.RY(arg2, wires=0), True
 
     def false_fn(arg1, arg2):
-        qml.RZ(arg2, wires=0)
-        return 2, 2.2, qml.RZ(arg1, wires=0), False
+        qp.RZ(arg2, wires=0)
+        return 2, 2.2, qp.RZ(arg1, wires=0), False
 
-    qml.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
-    qml.RX(0.10, wires=0)
-    return qml.expval(qml.Z(wires=0))
+    qp.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
+    qp.RX(0.10, wires=0)
+    return qp.expval(qp.Z(wires=0))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def circuit_multiple_cond(tmp_pred, tmp_arg):
     """Quantum circuit with multiple dynamic conditional branches."""
 
@@ -531,25 +531,25 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     arg = tmp_arg
 
     def true_fn_1(arg):
-        return True, qml.RX(arg, wires=0)
+        return True, qp.RX(arg, wires=0)
 
     # pylint: disable=unused-argument
     def false_fn_1(arg):
-        return False, qml.RY(0.1, wires=0)
+        return False, qp.RY(0.1, wires=0)
 
     def true_fn_2(arg):
-        return qml.RX(arg, wires=0)
+        return qp.RX(arg, wires=0)
 
     # pylint: disable=unused-argument
     def false_fn_2(arg):
-        return qml.RY(0.1, wires=0)
+        return qp.RY(0.1, wires=0)
 
-    dyn_pred_2, _ = qml.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
-    qml.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
-    return qml.expval(qml.Z(0))
+    dyn_pred_2, _ = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
+    qp.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
+    return qp.expval(qp.Z(0))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def circuit_with_consts(pred, arg):
     """Quantum circuit with jaxpr constants."""
 
@@ -562,20 +562,20 @@ def circuit_with_consts(pred, arg):
     arg6 = arg + 0.6
 
     def true_fn():
-        qml.RX(arg1, 0)
+        qp.RX(arg1, 0)
 
     def false_fn():
-        qml.RX(arg2, 0)
-        qml.RX(arg3, 0)
+        qp.RX(arg2, 0)
+        qp.RX(arg3, 0)
 
     def elif_fn1():
-        qml.RX(arg4, 0)
-        qml.RX(arg5, 0)
-        qml.RX(arg6, 0)
+        qp.RX(arg4, 0)
+        qp.RX(arg5, 0)
+        qp.RX(arg6, 0)
 
-    qml.cond(pred > 0, true_fn, false_fn, elifs=((pred == 0, elif_fn1),))()
+    qp.cond(pred > 0, true_fn, false_fn, elifs=((pred == 0, elif_fn1),))()
 
-    return qml.expval(qml.Z(0))
+    return qp.expval(qp.Z(0))
 
 
 class TestCondCircuits:
@@ -675,27 +675,27 @@ class TestCondCircuits:
     @pytest.mark.parametrize("shots", [None, 20])
     def test_mcm_predicate_execution(self, reset, postselect, shots, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
-        qml.cond give correct results."""
-        device = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        qp.cond give correct results."""
+        device = qp.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
         def true_fn(arg):
-            qml.RX(arg, 0)
+            qp.RX(arg, 0)
 
         def false_fn(arg):
-            qml.RY(3 * arg, 0)
+            qp.RY(3 * arg, 0)
 
-        @qml.set_shots(shots)
-        @qml.qnode(device)
+        @qp.set_shots(shots)
+        @qp.qnode(device)
         def f(x, y):
-            qml.RX(x, 0)
-            m = qml.measure(0, reset=reset, postselect=postselect)
+            qp.RX(x, 0)
+            m = qp.measure(0, reset=reset, postselect=postselect)
 
-            qml.cond(m, true_fn, false_fn)(y)
-            return qml.expval(qml.Z(0))
+            qp.cond(m, true_fn, false_fn)(y)
+            return qp.expval(qp.Z(0))
 
         params = [2.5, 4.0]
         res = f(*params)
-        qml.capture.disable()
+        qp.capture.disable()
         expected = f(*params)
 
         assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
@@ -719,42 +719,42 @@ class TestCondCircuits:
     )
     def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
-        qml.cond give correct results when there are also elifs present."""
+        qp.cond give correct results when there are also elifs present."""
         # pylint: disable=expression-not-assigned
-        device = qml.device("default.qubit", wires=5, seed=jax.random.PRNGKey(seed))
+        device = qp.device("default.qubit", wires=5, seed=jax.random.PRNGKey(seed))
 
         def true_fn():
             # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
-            [qml.adjoint(op) for op in qml.Hadamard.compute_diagonalizing_gates(0)[::-1]]
+            [qp.adjoint(op) for op in qp.Hadamard.compute_diagonalizing_gates(0)[::-1]]
 
         def elif_fn1():
             # Adjoint PauliX diagonalizing gates to get X basis state
-            [qml.adjoint(op) for op in qml.X.compute_diagonalizing_gates(0)[::-1]]
+            [qp.adjoint(op) for op in qp.X.compute_diagonalizing_gates(0)[::-1]]
 
         def elif_fn2():
             # Adjoint PauliY diagonalizing gates to get Y basis state
-            [qml.adjoint(op) for op in qml.Y.compute_diagonalizing_gates(0)[::-1]]
+            [qp.adjoint(op) for op in qp.Y.compute_diagonalizing_gates(0)[::-1]]
 
         def false_fn():
             # Adjoint PauliZ diagonalizing gates to get Z basis state
             return
 
-        @qml.set_shots(shots)
-        @qml.qnode(device)
+        @qp.set_shots(shots)
+        @qp.qnode(device)
         def f(*x):
-            qml.RX(x[0], 0)
-            m1 = qml.measure(0, reset=True)
-            qml.RX(x[1], 0)
-            m2 = qml.measure(0, reset=True)
-            qml.RX(x[2], 0)
-            m3 = qml.measure(0, reset=True)
+            qp.RX(x[0], 0)
+            m1 = qp.measure(0, reset=True)
+            qp.RX(x[1], 0)
+            m2 = qp.measure(0, reset=True)
+            qp.RX(x[2], 0)
+            m3 = qp.measure(0, reset=True)
 
-            qml.cond(m1, true_fn, false_fn, elifs=((m2, elif_fn1), (m3, elif_fn2)))()
+            qp.cond(m1, true_fn, false_fn, elifs=((m2, elif_fn1), (m3, elif_fn2)))()
             return (
-                qml.expval(qml.Hadamard(0)),
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(0)),
-                qml.expval(qml.Z(0)),
+                qp.expval(qp.Hadamard(0)),
+                qp.expval(qp.X(0)),
+                qp.expval(qp.Y(0)),
+                qp.expval(qp.Z(0)),
             )
 
         res = f(*params)
@@ -767,52 +767,52 @@ class TestCondCircuits:
     def test_nested_cond_for_while_loop(self, upper_bound, arg):
         """Test that a nested control flows are correctly captured into a jaxpr."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        # Control flow for qml.conds
+        # Control flow for qp.conds
         def true_fn(_):
-            @qml.for_loop(0, upper_bound, 1)
+            @qp.for_loop(0, upper_bound, 1)
             def loop_fn(i):
-                qml.Hadamard(wires=i)
+                qp.Hadamard(wires=i)
 
             loop_fn()
 
         def elif_fn(arg):
-            qml.RY(arg**2, wires=[2])
+            qp.RY(arg**2, wires=[2])
 
         def false_fn(arg):
-            qml.RY(-arg, wires=[2])
+            qp.RY(-arg, wires=[2])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(upper_bound, arg):
-            qml.RY(-np.pi / 2, wires=[2])
-            m_0 = qml.measure(2)
+            qp.RY(-np.pi / 2, wires=[2])
+            m_0 = qp.measure(2)
 
-            # NOTE: qml.cond(m_0, qml.RX)(arg[1], wires=1) doesn't work
+            # NOTE: qp.cond(m_0, qp.RX)(arg[1], wires=1) doesn't work
             def rx_fn():
-                qml.RX(arg[1], wires=1)
+                qp.RX(arg[1], wires=1)
 
-            qml.cond(m_0, rx_fn)()
+            qp.cond(m_0, rx_fn)()
 
             def ry_fn():
-                qml.RY(arg[1] ** 3, wires=1)
+                qp.RY(arg[1] ** 3, wires=1)
 
             # nested for loops.
             # outer for loop updates x
-            @qml.for_loop(0, upper_bound, 1)
+            @qp.for_loop(0, upper_bound, 1)
             def loop_fn_returns(i, x):
-                qml.RX(x, wires=i)
-                m_1 = qml.measure(0)
-                # NOTE: qml.cond(m_0, qml.RY)(arg[1], wires=1) doesn't work
-                qml.cond(m_1, ry_fn)()
+                qp.RX(x, wires=i)
+                m_1 = qp.measure(0)
+                # NOTE: qp.cond(m_0, qp.RY)(arg[1], wires=1) doesn't work
+                qp.cond(m_1, ry_fn)()
 
                 # inner while loop
-                @qml.while_loop(lambda j: j < upper_bound)
+                @qp.while_loop(lambda j: j < upper_bound)
                 def inner(j):
-                    qml.RZ(j, wires=0)
-                    qml.RY(x**2, wires=0)
-                    m_2 = qml.measure(0)
-                    qml.cond(m_2, true_fn=true_fn, false_fn=false_fn, elifs=((m_1, elif_fn)))(
+                    qp.RZ(j, wires=0)
+                    qp.RY(x**2, wires=0)
+                    m_2 = qp.measure(0)
+                    qp.cond(m_2, true_fn=true_fn, false_fn=false_fn, elifs=((m_1, elif_fn)))(
                         arg[0]
                     )
                     return j + 1
@@ -822,7 +822,7 @@ class TestCondCircuits:
 
             loop_fn_returns(arg[2])
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         args = [upper_bound, arg]
         result = circuit(*args)
@@ -846,32 +846,32 @@ class TestPytree:
         def h(x):
             return {"val": x["h"]}
 
-        res_true = qml.cond(True, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+        res_true = qp.cond(True, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
         assert res_true == {"val": 1}
 
-        res_elif = qml.cond(False, f, false_fn=g, elifs=(True, h))({"1": 1, "2": 2, "h": 3})
+        res_elif = qp.cond(False, f, false_fn=g, elifs=(True, h))({"1": 1, "2": 2, "h": 3})
         assert res_elif == {"val": 3}
 
-        res_false = qml.cond(False, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+        res_false = qp.cond(False, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
         assert res_false == {"val": 2}
 
     def test_pytree_measurment_value(self):
         """Test that pytree args can be used when the condition is on a measurement value."""
 
         def g(x):
-            qml.RX(x["x"], x["wire"])
+            qp.RX(x["x"], x["wire"])
 
         def f(x):
-            m0 = qml.measure(0)
-            qml.cond(m0, g)(x)
+            m0 = qp.measure(0)
+            qp.cond(m0, g)(x)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             f({"x": 0.5, "wire": 0})
 
         assert len(q) == 2
-        assert isinstance(q.queue[0], qml.ops.MidMeasure)
-        assert isinstance(q.queue[1], qml.ops.Conditional)
-        qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
+        assert isinstance(q.queue[0], qp.ops.MidMeasure)
+        assert isinstance(q.queue[1], qp.ops.Conditional)
+        qp.assert_equal(q.queue[1].base, qp.RX(0.5, 0))
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
@@ -881,13 +881,13 @@ class TestDynamicShapeValidation:
         """Test an error is raised if the outvals have different types."""
 
         def true_fn():
-            return qml.X(0)
+            return qp.X(0)
 
         def false_fn():
             return jax.numpy.array(3)
 
         def f(val):
-            return qml.cond(val, true_fn, false_fn=false_fn)()
+            return qp.cond(val, true_fn, false_fn=false_fn)()
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             jax.make_jaxpr(f)(True)
@@ -902,7 +902,7 @@ class TestDynamicShapeValidation:
             return jax.numpy.arange(n, dtype=float)
 
         def f(val, n):
-            return qml.cond(val, true_fn, false_fn=false_fn)(n)
+            return qp.cond(val, true_fn, false_fn=false_fn)(n)
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             jax.make_jaxpr(f)(True, 3)
@@ -917,7 +917,7 @@ class TestDynamicShapeValidation:
             return jax.numpy.ones((n, 2))
 
         def f(val, n):
-            return qml.cond(val, true_fn, false_fn=false_fn)(n)
+            return qp.cond(val, true_fn, false_fn=false_fn)(n)
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             jax.make_jaxpr(f)(True, 3)
@@ -932,7 +932,7 @@ class TestDynamicShapeValidation:
             return jax.numpy.ones(4)
 
         def f(val):
-            return qml.cond(val, true_fn, false_fn=false_fn)()
+            return qp.cond(val, true_fn, false_fn=false_fn)()
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
             jax.make_jaxpr(f)(True)
@@ -947,7 +947,7 @@ class TestDynamicShapeValidation:
             return jax.numpy.ones(n)
 
         def f(val, n):
-            return qml.cond(val, true_fn, false_fn=false_fn)(n)
+            return qp.cond(val, true_fn, false_fn=false_fn)(n)
 
         with pytest.raises(ValueError, match="may be due to different sized shapes"):
             jax.make_jaxpr(f)(True, 4)
@@ -960,31 +960,31 @@ class TestDynamicShapes:
         """Test that cond can have empty returns when dynamic shapes are enabled."""
 
         def rx(x, w):
-            qml.RX(x, w)
+            qp.RX(x, w)
 
         def ry(x, w):
-            qml.RY(x, w)
+            qp.RY(x, w)
 
         def f(condition):
-            qml.cond(condition == 2, rx, ry)(0.5, 1)
+            qp.cond(condition == 2, rx, ry)(0.5, 1)
 
         jaxpr = jax.make_jaxpr(f)(0)
-        [op] = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
-        qml.assert_equal(op, qml.RY(0.5, 1))
+        [op] = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
+        qp.assert_equal(op, qp.RY(0.5, 1))
 
     def test_cond_abstracted_axes(self):
         """Test cond can accept inputs with dynamic shapes."""
 
         def workflow(x, predicate):
-            return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
+            return qp.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
 
         jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
 
         output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
-        assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
+        assert qp.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
 
         output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
-        assert qml.math.allclose(output_false[0], 0)  # 0 * 1
+        assert qp.math.allclose(output_false[0], 0)  # 0 * 1
 
     def test_cond_dynamic_shape_output(self):
         """test that cond can return dynamic shapes."""
@@ -996,39 +996,39 @@ class TestDynamicShapes:
             return jax.numpy.zeros(n**2, dtype=int)
 
         def f(val, n):
-            return {"result": qml.cond(val, true_fn, false_fn=false_fn)(n)}
+            return {"result": qp.cond(val, true_fn, false_fn=false_fn)(n)}
 
         jaxpr = jax.make_jaxpr(f)(True, 3)
 
         assert len(jaxpr.jaxpr.outvars) == 2
         assert jaxpr.jaxpr.outvars[1].aval.shape[0] is jaxpr.jaxpr.outvars[0]
 
-        [a, b] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, True, 4)
+        [a, b] = qp.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, True, 4)
 
         assert a == 4
-        assert qml.math.allclose(b, true_fn(4))
+        assert qp.math.allclose(b, true_fn(4))
 
-        [c, d] = qml.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, False, 7)
+        [c, d] = qp.capture.PlxprInterpreter().eval(jaxpr.jaxpr, jaxpr.consts, False, 7)
         assert c == 49
-        assert qml.math.allclose(d, false_fn(7))
+        assert qp.math.allclose(d, false_fn(7))
 
         res = f(True, 6)  # slicing out the shape variable
-        assert qml.math.allclose(res["result"], jax.numpy.arange(6))
+        assert qp.math.allclose(res["result"], jax.numpy.arange(6))
 
     def test_return_operators_with_dynamic_enabled(self):
         """Test that we can return operators when dynamic shapes are enabled."""
 
         def f(val, w):
-            return qml.cond(val, qml.X, false_fn=qml.Y)(w)
+            return qp.cond(val, qp.X, false_fn=qp.Y)(w)
 
         x_op = f(True, 0)
-        qml.assert_equal(x_op, qml.X(0))
+        qp.assert_equal(x_op, qp.X(0))
         y_op = f(False, 3)
-        qml.assert_equal(y_op, qml.Y(3))
+        qp.assert_equal(y_op, qp.Y(3))
 
         jaxpr = jax.make_jaxpr(f)(False, 3)
         [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
-        qml.assert_equal(x_op2, qml.X(3))
+        qp.assert_equal(x_op2, qp.X(3))
 
     def test_cond_dynamic_array_creation(self):
         """Test that arrays with dynamic shapes can be created within branches."""
@@ -1040,34 +1040,34 @@ class TestDynamicShapes:
             return jax.numpy.sum(jax.numpy.arange(i), dtype=int)
 
         def f(condition, i):
-            return qml.cond(condition, true_fn, false_fn)(i)
+            return qp.cond(condition, true_fn, false_fn)(i)
 
         jaxpr = jax.make_jaxpr(f)(True, 2)
-        [res_true] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 4)
-        assert qml.math.allclose(res_true, 4)
+        [res_true] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 4)
+        assert qp.math.allclose(res_true, 4)
 
-        [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
-        assert qml.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
+        [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
+        assert qp.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
     def test_dynamic_shape_matches_arg(self):
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 
         def t(i, x):
-            return qml.RX(x, i)
+            return qp.RX(x, i)
 
         def f(i, x):
-            return qml.RY(x, i)
+            return qp.RY(x, i)
 
         def w(val, i):
-            return qml.cond(val, t, f)(i, jax.numpy.arange(i))
+            return qp.cond(val, t, f)(i, jax.numpy.arange(i))
 
         jaxpr = jax.make_jaxpr(w)(True, 3)
 
-        [res_true] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2)
+        [res_true] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2)
 
-        expected = qml.RX(jax.numpy.arange(2), 2)
-        qml.assert_equal(res_true, expected)
+        expected = qp.RX(jax.numpy.arange(2), 2)
+        qp.assert_equal(res_true, expected)
 
-        [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 3)
-        expected_false = qml.RY(jax.numpy.arange(3), 3)
-        qml.assert_equal(res_false, expected_false)
+        [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 3)
+        expected_false = qp.RY(jax.numpy.arange(3), 3)
+        qp.assert_equal(res_false, expected_false)

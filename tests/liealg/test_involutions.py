@@ -48,7 +48,7 @@ class TestMatrixConstructors:
     def test_J_qubit_cases(self, num_wires, wire):
         """Test J matrix constructor for qubit cases."""
         out = J(2**num_wires, wire)
-        op = qml.Y(0 if wire is None else wire)
+        op = qp.Y(0 if wire is None else wire)
         expected = op.matrix(wire_order=range(num_wires + 1))
         assert np.allclose(out, expected)
 
@@ -70,7 +70,7 @@ class TestMatrixConstructors:
         """Test I_pq matrix constructor for qubit cases."""
         p = 2**num_wires
         out = Ipq(p, p, wire)
-        op = qml.Z(0 if wire is None else wire)
+        op = qp.Z(0 if wire is None else wire)
         expected = op.matrix(wire_order=range(num_wires + 1))
         assert np.allclose(out, expected)
 
@@ -89,7 +89,7 @@ class TestMatrixConstructors:
         """Test K_pq matrix constructor for qubit cases."""
         p = 2**num_wires
         out = Kpq(p, p, wire)
-        op = qml.Z(1 if wire is None else wire)
+        op = qp.Z(1 if wire is None else wire)
         expected = op.matrix(wire_order=range(num_wires + 1))
         assert np.allclose(out, expected)
 
@@ -144,7 +144,7 @@ class TestInvolutionExceptions:
     )
     def test_NotImplemented(self, inv_func):
         """Test NotImplementedErrors in involutions"""
-        op = [qml.Hadamard(0) @ qml.Hadamard(1)]
+        op = [qp.Hadamard(0) @ qp.Hadamard(1)]
         with pytest.raises(NotImplementedError, match="Involution not implemented"):
             _ = inv_func(op)
 
@@ -206,7 +206,7 @@ class TestInvolutions:
 
     def run_test_case(self, op, expected, invol):
         """Run a generic test case for a given operator and involution"""
-        inputs = [op, op.pauli_rep, qml.matrix(op, wire_order=[0, 1, 2])]
+        inputs = [op, op.pauli_rep, qp.matrix(op, wire_order=[0, 1, 2])]
         outputs = [invol(_input) for _input in inputs]
         if expected:
             assert all(outputs)
@@ -230,11 +230,11 @@ class TestInvolutions:
 
     def test_AIII_non_qubit(self):
         """Test non-qubit case of AIII involution"""
-        op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Y", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
-        assert not qml.liealg.AIII(op, p=4, q=12)
+        op = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "Y", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
+        assert not qp.liealg.AIII(op, p=4, q=12)
 
-        op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
-        assert qml.liealg.AIII(op, p=4, q=12)
+        op = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "Z", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
+        assert qp.liealg.AIII(op, p=4, q=12)
 
     @pytest.mark.parametrize("op, expected", BDI_cases)
     def test_BDI(self, op, expected):
@@ -253,11 +253,11 @@ class TestInvolutions:
 
     def test_CII_non_qubit(self):
         """Test non-qubit case of CII involution"""
-        op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "X", 2: "X", 3: "X"}): 1.0})
-        assert not qml.liealg.CII(op, p=4 // 2, q=12 // 2)
+        op = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "X", 2: "X", 3: "X"}): 1.0})
+        assert not qp.liealg.CII(op, p=4 // 2, q=12 // 2)
 
-        op = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Y", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
-        assert qml.liealg.CII(op, p=4 // 2, q=12 // 2)
+        op = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "Y", 1: "Z", 2: "Z", 3: "Z"}): 1.0})
+        assert qp.liealg.CII(op, p=4 // 2, q=12 // 2)
 
     @pytest.mark.parametrize("op, expected", DIII_cases)
     def test_DIII(self, op, expected):

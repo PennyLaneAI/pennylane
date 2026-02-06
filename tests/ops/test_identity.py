@@ -31,30 +31,30 @@ class TestIdentity:
         op = Identity(wires)
         data, metadata = op._flatten()
         assert data == tuple()
-        assert metadata[0] == qml.wires.Wires(wires)
+        assert metadata[0] == qp.wires.Wires(wires)
         assert metadata[1] == tuple()
 
         new_op = Identity._unflatten(*op._flatten())
-        qml.assert_equal(op, new_op)
+        qp.assert_equal(op, new_op)
 
     def test_class_name(self, wires):
         """Test the class name of either I and Identity is by default 'Identity'"""
-        assert qml.I.__name__ == "Identity"
-        assert qml.Identity.__name__ == "Identity"
+        assert qp.I.__name__ == "Identity"
+        assert qp.Identity.__name__ == "Identity"
 
-        assert qml.I(wires).name == "Identity"
-        assert qml.Identity(wires).name == "Identity"
+        assert qp.I(wires).name == "Identity"
+        assert qp.Identity(wires).name == "Identity"
 
     @pytest.mark.jax
     def test_jax_pytree_integration(self, wires):
         """Test that identity is a pytree by jitting a function of it."""
         import jax
 
-        op = qml.Identity(wires)
+        op = qp.Identity(wires)
 
-        adj_op = jax.jit(lambda op: qml.adjoint(op, lazy=False))(op)
+        adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
 
-        qml.assert_equal(op, adj_op)
+        qp.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""
@@ -92,12 +92,12 @@ class TestIdentity:
     def test_sparse_matrix_format(self, wires):
         from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
-        op = qml.Identity(wires=wires)
+        op = qp.Identity(wires=wires)
         assert isinstance(op.sparse_matrix(), csr_matrix)
         assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
         assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
         assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
-        assert qml.math.allclose(op.matrix(), op.sparse_matrix().toarray())
+        assert qp.math.allclose(op.matrix(), op.sparse_matrix().toarray())
 
 
 @pytest.mark.parametrize("wires, expected_repr", op_params)

@@ -327,4 +327,4 @@ def test_set_unitary_matrix(jax, unitary_matrix, index, value, like, expected_ma
         expected_matrix = jnp.array(expected_matrix)
 
     new_unitary_matrix = _set_unitary_matrix(unitary_matrix, index, value, like)
-    assert qml.math.allclose(new_unitary_matrix, expected_matrix)
+    assert qp.math.allclose(new_unitary_matrix, expected_matrix)

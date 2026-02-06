@@ -33,7 +33,7 @@ jnp = jax.numpy
 def test_error_with_non_scalar_function():
     """Test that an error is raised if the differentiated function has non-scalar outputs."""
     with pytest.raises(TypeError, match="Grad only applies to scalar-output functions."):
-        jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
+        jax.make_jaxpr(qp.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
 def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
@@ -57,9 +57,9 @@ def diff_eqn_assertions(eqn, scalar_out, argnums=None, n_consts=0, fn=None):
         assert eqn.params["fn"] == fn
 
 
-@pytest.mark.parametrize("grad_fn", (qml.grad, qml.jacobian))
+@pytest.mark.parametrize("grad_fn", (qp.grad, qp.jacobian))
 class TestGradJacobian:
-    """Test for capturing both qml.grad and qml.jacobian."""
+    """Test for capturing both qp.grad and qp.jacobian."""
 
     @pytest.mark.parametrize("argnums", (1, 2, (0, 1)))
     def test_error_on_big_argnum(self, grad_fn, argnums):
@@ -103,24 +103,24 @@ class TestGradJacobian:
 
 
 class TestGrad:
-    """Tests for capturing `qml.grad`."""
+    """Tests for capturing `qp.grad`."""
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1], 0, 1))
     def test_classical_grad(self, argnums):
-        """Test that the qml.grad primitive can be captured with classical nodes."""
+        """Test that the qp.grad primitive can be captured with classical nodes."""
 
         def inner_func(x, y):
             return jnp.prod(jnp.sin(x) * jnp.cos(y) ** 2)
 
         def func_qml(x):
-            return qml.grad(inner_func, argnums=argnums)(x, 0.4 * jnp.sqrt(x))
+            return qp.grad(inner_func, argnums=argnums)(x, 0.4 * jnp.sqrt(x))
 
         def func_jax(x):
             return jax.grad(inner_func, argnums=argnums)(x, 0.4 * jnp.sqrt(x))
 
         x = 0.7
         jax_out = func_jax(x)
-        assert qml.math.allclose(func_qml(x), jax_out)
+        assert qp.math.allclose(func_qml(x), jax_out)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qml)(x)
@@ -138,10 +138,10 @@ class TestGrad:
         assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
         manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qml.math.allclose(manual_eval, jax_out)
+        assert qp.math.allclose(manual_eval, jax_out)
 
     def test_nested_grad(self):
-        """Test that nested qml.grad primitives can be captured.
+        """Test that nested qp.grad primitives can be captured.
         We use the function
         f(x) = sin(x)^3
         f'(x) = 3 sin(x)^2 cos(x)
@@ -156,9 +156,9 @@ class TestGrad:
         x = 0.7
 
         # 1st order
-        qml_func_1 = qml.grad(func)
+        qml_func_1 = qp.grad(func)
         expected_1 = 3 * jnp.sin(x) ** 2 * jnp.cos(x)
-        assert qml.math.allclose(qml_func_1(x), expected_1)
+        assert qp.math.allclose(qml_func_1(x), expected_1)
 
         jaxpr_1 = jax.make_jaxpr(qml_func_1)(x)
         assert jaxpr_1.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
@@ -171,10 +171,10 @@ class TestGrad:
         assert len(grad_eqn.params["jaxpr"].eqns) == 2
 
         manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
-        assert qml.math.allclose(manual_eval_1, expected_1)
+        assert qp.math.allclose(manual_eval_1, expected_1)
 
         # 2nd order
-        qml_func_2 = qml.grad(qml_func_1)
+        qml_func_2 = qp.grad(qml_func_1)
 
         jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
         assert jaxpr_2.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
@@ -188,7 +188,7 @@ class TestGrad:
         assert grad_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         # 3rd order
-        qml_func_3 = qml.grad(qml_func_2)
+        qml_func_3 = qp.grad(qml_func_2)
 
         jaxpr_3 = jax.make_jaxpr(qml_func_3)(x)
         assert jaxpr_3.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
@@ -203,10 +203,10 @@ class TestGrad:
 
         # jax v0.5.3 broke this
         # expected_2 = 6 * jnp.sin(x) * jnp.cos(x) ** 2 - 3 * jnp.sin(x) ** 3
-        # assert qml.math.allclose(qml_func_2(x), expected_2)
+        # assert qp.math.allclose(qml_func_2(x), expected_2)
 
         # manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
-        # assert qml.math.allclose(manual_eval_2, expected_2)
+        # assert qp.math.allclose(manual_eval_2, expected_2)
 
         # expected_3 = (
         #    6 * jnp.cos(x) ** 3
@@ -214,9 +214,9 @@ class TestGrad:
         #    - 9 * jnp.sin(x) ** 2 * jnp.cos(x)
         # )
 
-        # assert qml.math.allclose(qml_func_3(x), expected_3)
+        # assert qp.math.allclose(qml_func_3(x), expected_3)
         # manual_eval_3 = jax.core.eval_jaxpr(jaxpr_3.jaxpr, jaxpr_3.consts, x)
-        # assert qml.math.allclose(manual_eval_3, expected_3)
+        # assert qp.math.allclose(manual_eval_3, expected_3)
 
     @pytest.mark.parametrize(
         "diff_method", ("backprop", pytest.param("parameter-shift", marks=pytest.mark.xfail))
@@ -226,15 +226,15 @@ class TestGrad:
         # pylint: disable=protected-access
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1] ** 2, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1] ** 2, wires=0)
+            return qp.expval(qp.Z(0))
 
-        g_circuit = qml.grad(circuit)
+        g_circuit = qp.grad(circuit)
 
         x = jnp.array([0.5, 0.9])
         res = g_circuit(x)
@@ -242,7 +242,7 @@ class TestGrad:
             -jnp.sin(x[0]) * jnp.cos(x[1] ** 2),
             -2 * x[1] * jnp.sin(x[1] ** 2) * jnp.cos(x[0]),
         )
-        assert qml.math.allclose(res, expected_res)
+        assert qp.math.allclose(res, expected_res)
 
         jaxpr = jax.make_jaxpr(g_circuit)(x)
 
@@ -262,10 +262,10 @@ class TestGrad:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing and preprocessing
-        assert qfunc_jaxpr.eqns[2].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[7].primitive == qml.Z._primitive
-        assert qfunc_jaxpr.eqns[8].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qp.RY._primitive
+        assert qfunc_jaxpr.eqns[7].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[8].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 1
         assert qnode_eqn.outvars[0].aval == jax.core.ShapedArray((), fdtype)
@@ -274,11 +274,11 @@ class TestGrad:
         assert grad_eqn.outvars[0].aval == jax.core.ShapedArray((2,), fdtype)
 
         manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qml.math.allclose(manual_res, expected_res)
+        assert qp.math.allclose(manual_res, expected_res)
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1]))
     def test_jacobian_pytree_input(self, argnums):
-        """Test that the qml.grad primitive can be captured with pytree inputs."""
+        """Test that the qp.grad primitive can be captured with pytree inputs."""
 
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
@@ -286,7 +286,7 @@ class TestGrad:
             return jnp.prod(jnp.sin(x["a"]) * jnp.cos(y[0]["b"][1]) ** 2)
 
         def func_qml(x):
-            return qml.grad(inner_func, argnums=argnums)(
+            return qp.grad(inner_func, argnums=argnums)(
                 {"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]},)
             )
 
@@ -300,7 +300,7 @@ class TestGrad:
         jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
         qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(func_qml(x))
         assert jax_out_tree == qml_out_tree
-        assert qml.math.allclose(jax_out_flat, qml_out_flat)
+        assert qp.math.allclose(jax_out_flat, qml_out_flat)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qml)(x)
@@ -318,7 +318,7 @@ class TestGrad:
         manual_out_flat, manual_out_tree = jax.tree_util.tree_flatten(manual_out)
         # Assert that the output from the manual evaluation is flat
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
-        assert qml.math.allclose(jax_out_flat, manual_out_flat)
+        assert qp.math.allclose(jax_out_flat, manual_out_flat)
 
     @pytest.mark.parametrize("argnums", ([0, 1, 2], [0, 2], [1], 0))
     def test_grad_qnode_with_pytrees(self, argnums):
@@ -326,16 +326,16 @@ class TestGrad:
         # pylint: disable=protected-access
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qp.qnode(dev, diff_method="backprop")
         def circuit(x, y, z):
-            qml.RX(x["a"], wires=0)
-            qml.RY(y, wires=0)
-            qml.RZ(z[1][0], wires=0)
-            return qml.expval(qml.X(0))
+            qp.RX(x["a"], wires=0)
+            qp.RY(y, wires=0)
+            qp.RZ(z[1][0], wires=0)
+            return qp.expval(qp.X(0))
 
-        dcircuit = qml.grad(circuit, argnums=argnums)
+        dcircuit = qp.grad(circuit, argnums=argnums)
         x = {"a": 0.6, "b": 0.9}
         y = 0.6
         z = ({"c": 0.5}, [0.2, 0.3])
@@ -344,7 +344,7 @@ class TestGrad:
         jax_out = jax.grad(circuit, argnums=argnums)(x, y, z)
         jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
         assert jax_out_tree == qml_out_tree
-        assert qml.math.allclose(jax_out_flat, qml_out_flat)
+        assert qp.math.allclose(jax_out_flat, qml_out_flat)
 
         jaxpr = jax.make_jaxpr(dcircuit)(x, y, z)
 
@@ -368,18 +368,18 @@ class TestGrad:
         manual_out_flat, manual_out_tree = jax.tree_util.tree_flatten(manual_out)
         # Assert that the output from the manual evaluation is flat
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
-        assert qml.math.allclose(jax_out_flat, manual_out_flat)
+        assert qp.math.allclose(jax_out_flat, manual_out_flat)
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_grad_dynamic_shape_inputs(self, same_dynamic_shape):
-        """Test that qml.grad can handle dynamic shapes"""
+        """Test that qp.grad can handle dynamic shapes"""
 
-        @qml.qnode(qml.device("default.qubit", wires=4))
+        @qp.qnode(qp.device("default.qubit", wires=4))
         def c(x, y):
-            qml.RX(x, 0)
-            qml.RY(y, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            qp.RY(y, 0)
+            return qp.expval(qp.Z(0))
 
         def w(n):
             x = jnp.arange(n)
@@ -387,7 +387,7 @@ class TestGrad:
                 y = jnp.arange(n)
             else:
                 y = jnp.arange(n + 1)
-            return qml.grad(c, argnums=(0, 1))(x, y)
+            return qp.grad(c, argnums=(0, 1))(x, y)
 
         jaxpr = jax.make_jaxpr(w)(2)
         grad_eqn = jaxpr.eqns[2] if same_dynamic_shape else jaxpr.eqns[3]
@@ -403,7 +403,7 @@ class TestGrad:
 def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
     """Test that two Jacobians, given as nested sequences of arrays, are equal."""
     if num_axes == 0:
-        return qml.math.allclose(jac1, jac2, atol=atol)
+        return qp.math.allclose(jac1, jac2, atol=atol)
     if len(jac1) != len(jac2):
         return False
     return all(
@@ -412,11 +412,11 @@ def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
 
 
 class TestJacobian:
-    """Tests for capturing `qml.jacobian`."""
+    """Tests for capturing `qp.jacobian`."""
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1], 0, 1))
     def test_classical_jacobian(self, argnums):
-        """Test that the qml.jacobian primitive can be captured with classical nodes."""
+        """Test that the qp.jacobian primitive can be captured with classical nodes."""
         fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
 
         def shaped_array(shape):
@@ -435,7 +435,7 @@ class TestJacobian:
 
         x = jnp.array([0.3, 0.2, 0.1, 0.6])
         y = jnp.array([[0.4, -0.7, 0.2], [1.2, -7.2, 0.2]])
-        func_qml = qml.jacobian(inner_func, argnums=argnums)
+        func_qml = qp.jacobian(inner_func, argnums=argnums)
         func_jax = jax.jacobian(inner_func, argnums=argnums)
 
         jax_out = func_jax(x, y)
@@ -471,7 +471,7 @@ class TestJacobian:
         assert _jac_allclose(manual_eval, jax_out, num_axes)
 
     def test_nested_jacobian(self):
-        r"""Test that nested qml.jacobian primitives can be captured.
+        r"""Test that nested qp.jacobian primitives can be captured.
         We use the function
         f(x) = (prod(x) * sin(x), sum(x**2))
         f'(x) = (prod(x)/x_i * sin(x) + prod(x) cos(x) e_i, 2 x_i)
@@ -491,7 +491,7 @@ class TestJacobian:
         eye = jnp.eye(dim)
 
         # 1st order
-        qml_func_1 = qml.jacobian(func)
+        qml_func_1 = qp.jacobian(func)
         jaxpr_1 = jax.make_jaxpr(qml_func_1)(x)
         assert jaxpr_1.in_avals == [jax.core.ShapedArray((dim,), fdtype)]
         assert len(jaxpr_1.eqns) == 1
@@ -510,7 +510,7 @@ class TestJacobian:
         assert _jac_allclose(qml_func_1(x), expected_1, 1)
 
         # 2nd order
-        qml_func_2 = qml.jacobian(qml_func_1)
+        qml_func_2 = qp.jacobian(qml_func_1)
 
         manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
         assert _jac_allclose(manual_eval_1, expected_1, 1)
@@ -529,7 +529,7 @@ class TestJacobian:
         assert jac_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         # broken by jax 0.5.3
-        # hyperdiag = qml.numpy.zeros((4, 4, 4))
+        # hyperdiag = qp.numpy.zeros((4, 4, 4))
         # for i in range(4):
         #    hyperdiag[i, i, i] = 1
         # expected_2 = (
@@ -555,15 +555,15 @@ class TestJacobian:
         # pylint: disable=protected-access
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         # Note the decorator
-        @qml.jacobian
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.jacobian
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            return qml.expval(qml.Z(0)), qml.probs(0)
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=0)
+            return qp.expval(qp.Z(0)), qp.probs(0)
 
         x = jnp.array([0.5, 0.9])
         res = circuit(x)
@@ -590,10 +590,10 @@ class TestJacobian:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing
-        assert qfunc_jaxpr.eqns[2].primitive == qml.RX._primitive
-        assert qfunc_jaxpr.eqns[5].primitive == qml.RY._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qml.Z._primitive
-        assert qfunc_jaxpr.eqns[7].primitive == qml.measurements.ExpectationMP._obs_primitive
+        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert qfunc_jaxpr.eqns[5].primitive == qp.RY._primitive
+        assert qfunc_jaxpr.eqns[6].primitive == qp.Z._primitive
+        assert qfunc_jaxpr.eqns[7].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 2
         assert qnode_eqn.outvars[0].aval == jax.core.ShapedArray((), fdtype)
@@ -606,7 +606,7 @@ class TestJacobian:
 
     @pytest.mark.parametrize("argnums", ([0, 1], [0], [1]))
     def test_jacobian_pytrees(self, argnums):
-        """Test that the qml.jacobian primitive can be captured with
+        """Test that the qp.jacobian primitive can be captured with
         pytree inputs and outputs."""
 
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
@@ -618,7 +618,7 @@ class TestJacobian:
             }
 
         def func_qml(x):
-            return qml.jacobian(inner_func, argnums=argnums)(
+            return qp.jacobian(inner_func, argnums=argnums)(
                 {"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]}, {"c": 0.5})
             )
 
@@ -632,7 +632,7 @@ class TestJacobian:
         jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
         qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(func_qml(x))
         assert jax_out_tree == qml_out_tree
-        assert qml.math.allclose(jax_out_flat, qml_out_flat)
+        assert qp.math.allclose(jax_out_flat, qml_out_flat)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qml)(x)
@@ -655,18 +655,18 @@ class TestJacobian:
         manual_out_flat, manual_out_tree = jax.tree_util.tree_flatten(manual_out)
         # Assert that the output from the manual evaluation is flat
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
-        assert qml.math.allclose(jax_out_flat, manual_out_flat)
+        assert qp.math.allclose(jax_out_flat, manual_out_flat)
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     @pytest.mark.parametrize("same_dynamic_shape", (True, False))
     def test_jacobian_dynamic_shape_inputs(self, same_dynamic_shape):
-        """Test that qml.jacobian can handle dynamic shapes"""
+        """Test that qp.jacobian can handle dynamic shapes"""
 
-        @qml.qnode(qml.device("default.qubit", wires=4))
+        @qp.qnode(qp.device("default.qubit", wires=4))
         def c(x, y):
-            qml.RX(x, 0)
-            qml.RY(y, 0)
-            return qml.probs(wires=(0, 1))
+            qp.RX(x, 0)
+            qp.RY(y, 0)
+            return qp.probs(wires=(0, 1))
 
         def w(n):
             x = jnp.arange(n)
@@ -674,7 +674,7 @@ class TestJacobian:
                 y = jnp.arange(n)
             else:
                 y = jnp.arange(n + 1)
-            return qml.jacobian(c, argnums=(0, 1))(x, y)
+            return qp.jacobian(c, argnums=(0, 1))(x, y)
 
         jaxpr = jax.make_jaxpr(w)(2)
         grad_eqn = jaxpr.eqns[2] if same_dynamic_shape else jaxpr.eqns[3]

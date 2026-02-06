@@ -61,7 +61,7 @@ class TestPennyLaneTransformer:
 
         def bad_circuit():
 
-            @qml.while_loop(lambda x: x < 10)
+            @qp.while_loop(lambda x: x < 10)
             def loop(i):
                 return i + 1
 
@@ -71,7 +71,7 @@ class TestPennyLaneTransformer:
 
             condition = lambda x: x < 10
 
-            @qml.while_loop(condition)
+            @qp.while_loop(condition)
             def loop(i):
                 return i + 1
 
@@ -79,7 +79,7 @@ class TestPennyLaneTransformer:
 
         with pytest.raises(
             AutoGraphError,
-            match="AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`.",
+            match="AutoGraph currently does not support lambda functions as a loop condition for `qp.while_loop`.",
         ):
             transformer.transform(bad_circuit, user_context)
 
@@ -117,10 +117,10 @@ class TestPennyLaneTransformer:
         transformer = PennyLaneTransformer()
         user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qp.qnode(qp.device("default.qubit", wires=3))
         def circ(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
         new_circ, _, _ = transformer.transform(circ, user_context)
 
@@ -250,10 +250,10 @@ class TestIntegration:
     def test_qnode(self):
         """Test autograph on a QNode."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circ(x: float):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         ag_fn = run_autograph(circ)
         assert ag_fn(np.pi) == -1
@@ -264,10 +264,10 @@ class TestIntegration:
     def test_indirect_qnode(self):
         """Test autograph on a QNode called from within a classical function."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def inner(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def fn(x: float):
             return inner(x)
@@ -282,15 +282,15 @@ class TestIntegration:
     def test_multiple_qnode(self):
         """Test autograph on multiple QNodes called from different classical functions."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def inner1(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def inner2(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def fn(x: float):
             return inner1(x) + inner2(x)
@@ -306,60 +306,60 @@ class TestIntegration:
     def test_adjoint_of_operator_instance(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circ():
-            qml.adjoint(qml.X(0))
-            return qml.expval(qml.Z(0))
+            qp.adjoint(qp.X(0))
+            return qp.expval(qp.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_adjoint_of_operator_type(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circ():
-            qml.adjoint(qml.X)(0)
-            return qml.expval(qml.Z(0))
+            qp.adjoint(qp.X)(0)
+            return qp.expval(qp.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_adjoint_no_argument(self):
-        """Test that passing no argument to qml.adjoint raises an error."""
-        dev = qml.device("default.qubit", wires=2)
+        """Test that passing no argument to qp.adjoint raises an error."""
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.adjoint()
-            return qml.probs(wires=0)
+            qp.adjoint()
+            return qp.probs(wires=0)
 
         with pytest.raises(ValueError, match="adjoint requires at least one argument"):
-            _ = qml.capture.make_plxpr(circ, autograph=True)()
+            _ = qp.capture.make_plxpr(circ, autograph=True)()
 
     def test_adjoint_wrong_argument(self):
-        """Test that passing an invalid argument to qml.adjoint raises an error."""
-        dev = qml.device("default.qubit", wires=2)
+        """Test that passing an invalid argument to qp.adjoint raises an error."""
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.adjoint(3)
-            return qml.probs(wires=0)
+            qp.adjoint(3)
+            return qp.probs(wires=0)
 
         with pytest.raises(
             ValueError, match="First argument to adjoint must be callable or an Operation"
         ):
-            _ = qml.capture.make_plxpr(circ, autograph=True)()
+            _ = qp.capture.make_plxpr(circ, autograph=True)()
 
     @pytest.mark.parametrize(
         "func1, func2, prim1, prim2",
         [
-            (qml.adjoint, partial(qml.ctrl, control=0), "adjoint_transform", "ctrl_transform"),
-            (partial(qml.ctrl, control=0), qml.adjoint, "ctrl_transform", "adjoint_transform"),
-            (qml.adjoint, qml.adjoint, "adjoint_transform", "adjoint_transform"),
+            (qp.adjoint, partial(qp.ctrl, control=0), "adjoint_transform", "ctrl_transform"),
+            (partial(qp.ctrl, control=0), qp.adjoint, "ctrl_transform", "adjoint_transform"),
+            (qp.adjoint, qp.adjoint, "adjoint_transform", "adjoint_transform"),
             (
-                partial(qml.ctrl, control=0),
-                partial(qml.ctrl, control=1),
+                partial(qp.ctrl, control=0),
+                partial(qp.ctrl, control=1),
                 "ctrl_transform",
                 "ctrl_transform",
             ),
@@ -369,15 +369,15 @@ class TestIntegration:
         """Test that nested adjoint and ctrl successfully pass through autograph"""
 
         # Build the nested operator
-        op = func2(qml.X)
+        op = func2(qp.X)
         final_op = func1(op)
 
-        @qml.qnode(qml.device("default.qubit", wires=3))
+        @qp.qnode(qp.device("default.qubit", wires=3))
         def circ():
             final_op(wires=2)
-            return qml.state()
+            return qp.state()
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         qfunc_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
         hop_outer = qfunc_jaxpr.eqns[0].primitive
         hop_inner = qfunc_jaxpr.eqns[0].params["jaxpr"].eqns[0].primitive
@@ -387,13 +387,13 @@ class TestIntegration:
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circ():
-            qml.H(0)
-            qml.ctrl(qml.X(1), control=0)
-            return qml.state()
+            qp.H(0)
+            qp.ctrl(qp.X(1), control=0)
+            return qp.state()
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
         result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
         assert jax.numpy.allclose(result, expected_state)
@@ -401,58 +401,58 @@ class TestIntegration:
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circ():
-            qml.H(0)
-            qml.ctrl(qml.X, control=0)(1)
-            return qml.state()
+            qp.H(0)
+            qp.ctrl(qp.X, control=0)(1)
+            return qp.state()
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
         result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
         assert jax.numpy.allclose(result, expected_state)
 
     def test_ctrl_no_argument(self):
-        """Test that passing no argument to qml.ctrl raises an error."""
-        dev = qml.device("default.qubit", wires=2)
+        """Test that passing no argument to qp.ctrl raises an error."""
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.ctrl()
-            return qml.probs(wires=0)
+            qp.ctrl()
+            return qp.probs(wires=0)
 
         with pytest.raises(ValueError, match="ctrl requires at least one argument"):
-            _ = qml.capture.make_plxpr(circ, autograph=True)()
+            _ = qp.capture.make_plxpr(circ, autograph=True)()
 
     def test_ctrl_wrong_argument(self):
-        """Test that passing an invalid argument to qml.ctrl raises an error."""
-        dev = qml.device("default.qubit", wires=2)
+        """Test that passing an invalid argument to qp.ctrl raises an error."""
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.ctrl(3)
-            return qml.probs(wires=0)
+            qp.ctrl(3)
+            return qp.probs(wires=0)
 
         with pytest.raises(
             ValueError, match="First argument to ctrl must be callable or an Operation"
         ):
-            _ = qml.capture.make_plxpr(circ, autograph=True)()
+            _ = qp.capture.make_plxpr(circ, autograph=True)()
 
     def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
         def inner(x):
             if x > 0:
-                qml.I(wires=0)  # Test will only pass if this is hit
+                qp.I(wires=0)  # Test will only pass if this is hit
             else:
-                qml.RY(x, wires=0)
-            qml.RY(x, wires=0)
+                qp.RY(x, wires=0)
+            qp.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def circ(x: float):
             inner(x * 2)
-            qml.adjoint(inner)(x)
-            return qml.probs()
+            qp.adjoint(inner)(x)
+            return qp.probs()
 
         ag_fn = run_autograph(circ)
         phi = np.pi / 2
@@ -468,16 +468,16 @@ class TestIntegration:
 
         def inner(x):
             if x == np.pi:
-                qml.I(wires=0)  # Test will only pass if this is hit
+                qp.I(wires=0)  # Test will only pass if this is hit
             else:
-                qml.RX(x, wires=0)
-            qml.RY(x, wires=0)
+                qp.RX(x, wires=0)
+            qp.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circ(x: float):
-            qml.PauliX(1)
-            qml.ctrl(inner, control=1)(x)
-            return qml.probs()
+            qp.PauliX(1)
+            qp.ctrl(inner, control=1)(x)
+            return qp.probs()
 
         ag_fn = run_autograph(circ)
         assert np.allclose(ag_fn(np.pi), [0.0, 0.0, 0.0, 1.0])
@@ -521,18 +521,18 @@ class TestIntegration:
     def test_tape_transform(self):
         """Test if tape transform is applied when autograph is on."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.transform
+        @qp.transform
         def my_quantum_transform(tape):
             raise NotImplementedError
 
         @my_quantum_transform
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x, wires=0)
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x, wires=0)
+            qp.RX(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         ag_fn = run_autograph(circuit)
 
@@ -545,14 +545,14 @@ class TestIntegration:
     )
     def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("default.qubit", wires=5, seed=seed)
+        dev = qp.device("default.qubit", wires=5, seed=seed)
 
-        @qml.set_shots(20)
-        @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
+        @qp.set_shots(20)
+        @qp.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
         def circ(x):
-            qml.RX(x, wires=0)
+            qp.RX(x, wires=0)
             measure(0, postselect=1)
-            return qml.sample(wires=0)
+            return qp.sample(wires=0)
 
         ag_fn = run_autograph(circ)
         # If transforms are missed, the output will be all ones.
@@ -564,7 +564,7 @@ class TestIntegration:
     def test_custom_operation(self):
         """Test that autograph can be applied to circuits with custom operations."""
 
-        class MyOperation(qml.operation.Operation):
+        class MyOperation(qp.operation.Operation):
             pass
 
         def f(x):
@@ -627,10 +627,10 @@ class TestCodePrinting:
     def test_qnode(self):
         """Test printing on a QNode."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def fn(x: float):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         fn = run_autograph(fn)
 
@@ -639,10 +639,10 @@ class TestCodePrinting:
     def test_indirect_qnode(self):
         """Test printing on a QNode called from within a classical function."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def inner(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def fn(x: float):
             return inner(x)
@@ -658,15 +658,15 @@ class TestCodePrinting:
     def test_multiple_qnode(self):
         """Test printing on multiple QNodes called from different classical functions."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def inner1(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
+        @qp.qnode(qp.device("default.qubit", wires=1))
         def inner2(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def fn(x: float):
             return inner1(x) + inner2(x)

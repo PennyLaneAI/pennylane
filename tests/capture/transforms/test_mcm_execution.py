@@ -31,114 +31,114 @@ pytestmark = [
 
 
 def create_execution_config(postselect_mode=None):
-    return qml.devices.ExecutionConfig(
+    return qp.devices.ExecutionConfig(
         mcm_config={"mcm_method": "deferred", "postselect_mode": postselect_mode}
     )
 
 
 class TestExecutionAnalytic:
-    """Tests for executing analytic circuits that are transformed by qml.defer_measurements
+    """Tests for executing analytic circuits that are transformed by qp.defer_measurements
     with default.qubit."""
 
     def test_single_mcm(self):
         """Test that applying a single MCM works."""
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         @DeferMeasurementsInterpreter(num_wires=5)
         def f():
-            qml.Hadamard(0)
-            qml.measure(0)
-            qml.Hadamard(0)
-            return qml.expval(qml.PauliX(0))
+            qp.Hadamard(0)
+            qp.measure(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.PauliX(0))
 
         jaxpr = jax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
-        assert qml.math.allclose(res, 0)
+        assert qp.math.allclose(res, 0)
 
     def test_qubit_reset(self):
         """Test that resetting a qubit works as expected."""
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         @DeferMeasurementsInterpreter(num_wires=5)
         def f():
-            qml.PauliX(0)
-            qml.measure(0, reset=True)
-            return qml.expval(qml.PauliZ(0))
+            qp.PauliX(0)
+            qp.measure(0, reset=True)
+            return qp.expval(qp.PauliZ(0))
 
         jaxpr = jax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
-        assert qml.math.allclose(res, 1)
+        assert qp.math.allclose(res, 1)
 
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("postselect", [0, 1])
     def test_postselection(self, reset, postselect):
         """Test that postselection works as expected."""
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         @DeferMeasurementsInterpreter(num_wires=5)
         def f():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            qml.measure(0, reset=reset, postselect=postselect)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Z(1))
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            qp.measure(0, reset=reset, postselect=postselect)
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.Z(1))
 
         jaxpr = jax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
 
         eigval = -2 * postselect + 1
         if reset:
-            assert qml.math.allclose(res, [1, eigval])
+            assert qp.math.allclose(res, [1, eigval])
         else:
-            assert qml.math.allclose(res, [eigval, eigval])
+            assert qp.math.allclose(res, [eigval, eigval])
 
     def test_mcms_as_gate_parameters(self):
         """Test that using MCMs as gate parameters works as expected."""
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         @DeferMeasurementsInterpreter(num_wires=5)
         def f():
-            qml.Hadamard(0)
-            m = qml.measure(0)
-            qml.RX(m * jnp.pi, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(0)
+            m = qp.measure(0)
+            qp.RX(m * jnp.pi, 0)
+            return qp.expval(qp.PauliZ(0))
 
         jaxpr = jax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
         # If 0 measured, RX does nothing, so state is |0>. If 1 measured, RX(pi)
         # makes state |1> -> |0>, so <Z> will always be 1
-        assert qml.math.allclose(res, 1)
+        assert qp.math.allclose(res, 1)
 
     def test_cond(self):
-        """Test that using qml.cond with MCM predicates works as expected."""
+        """Test that using qp.cond with MCM predicates works as expected."""
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         @DeferMeasurementsInterpreter(num_wires=5)
         def f(x):
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            m0 = qml.measure(0)
-            m1 = qml.measure(1)
+            qp.Hadamard(0)
+            qp.Hadamard(1)
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
 
-            @qml.cond(m0 == 0)
+            @qp.cond(m0 == 0)
             def cond_fn(y):
-                qml.RY(y, 0)
+                qp.RY(y, 0)
 
             @cond_fn.else_if(m1 == 0)
             def _else_if(y):
-                qml.RY(2 * y, 0)
+                qp.RY(2 * y, 0)
 
             @cond_fn.otherwise
             def _else(y):
-                qml.RY(3 * y, 0)
+                qp.RY(3 * y, 0)
 
             cond_fn(x)
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         phi = jnp.pi / 3
         jaxpr = jax.make_jaxpr(f)(phi)
@@ -146,39 +146,39 @@ class TestExecutionAnalytic:
             jaxpr.jaxpr, jaxpr.consts, phi, execution_config=create_execution_config()
         )
         expected = 0.5 * (jnp.cos(phi) + jnp.sin(phi) ** 2)
-        assert qml.math.allclose(res, expected)
+        assert qp.math.allclose(res, expected)
 
     def test_cond_non_mcm(self):
-        """Test that using qml.cond with non-MCM predicates works as expected."""
+        """Test that using qp.cond with non-MCM predicates works as expected."""
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         @DeferMeasurementsInterpreter(num_wires=5)
         def f(x):
-            qml.Hadamard(0)
-            m0 = qml.measure(0)
+            qp.Hadamard(0)
+            m0 = qp.measure(0)
 
-            @qml.cond(x > 2.5)
+            @qp.cond(x > 2.5)
             def cond_fn():
-                qml.RX(m0 * jnp.pi, 0)
+                qp.RX(m0 * jnp.pi, 0)
                 # Final state |0>
 
             @cond_fn.else_if(x > 1.5)
             def _else_if():
-                qml.PauliZ(0)
+                qp.PauliZ(0)
                 # Equal prob of |0> and |1>
 
             @cond_fn.otherwise
             def _else():
-                qml.Hadamard(0)
-                m1 = qml.measure(0)
-                qml.RX(m1 * jnp.pi, 0)
-                qml.X(0)
+                qp.Hadamard(0)
+                m1 = qp.measure(0)
+                qp.RX(m1 * jnp.pi, 0)
+                qp.X(0)
                 # Final state |1>
 
             cond_fn()
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5)
 
@@ -186,42 +186,42 @@ class TestExecutionAnalytic:
         res = dev.eval_jaxpr(
             jaxpr.jaxpr, jaxpr.consts, arg_true, execution_config=create_execution_config()
         )
-        assert qml.math.allclose(res, 1)  # Final state |0>; <Z> = 1
+        assert qp.math.allclose(res, 1)  # Final state |0>; <Z> = 1
 
         arg_elif = 2.0
         res = dev.eval_jaxpr(
             jaxpr.jaxpr, jaxpr.consts, arg_elif, execution_config=create_execution_config()
         )
-        assert qml.math.allclose(res, 0)  # Equal prob of |0>, |1>; <Z> = 1
+        assert qp.math.allclose(res, 0)  # Equal prob of |0>, |1>; <Z> = 1
 
         arg_true = 1.0
         res = dev.eval_jaxpr(
             jaxpr.jaxpr, jaxpr.consts, arg_true, execution_config=create_execution_config()
         )
-        assert qml.math.allclose(res, -1)  # Final state |1>, <Z> = -1
+        assert qp.math.allclose(res, -1)  # Final state |1>, <Z> = -1
 
     @pytest.mark.parametrize(
         "mp_fn",
-        [qml.expval, qml.var, qml.probs],
+        [qp.expval, qp.var, qp.probs],
     )
     def test_mcm_statistics(self, mp_fn):
         """Test that collecting statistics on MCMs is handled correctly."""
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
         def processing_fn(m1, m2):
             return 2.5 * m1 - m2
 
         def f():
-            qml.Hadamard(0)
-            m0 = qml.measure(0)
-            qml.Hadamard(0)
-            m1 = qml.measure(0)
-            qml.Hadamard(0)
-            m2 = qml.measure(0)
+            qp.Hadamard(0)
+            m0 = qp.measure(0)
+            qp.Hadamard(0)
+            m1 = qp.measure(0)
+            qp.Hadamard(0)
+            m2 = qp.measure(0)
 
             outs = (mp_fn(op=m0),)
-            if mp_fn is qml.probs:
+            if mp_fn is qp.probs:
                 outs += (mp_fn(op=[m0, m1, m2]),)
             else:
                 outs += (mp_fn(op=processing_fn(m1, m2)),)
@@ -233,12 +233,12 @@ class TestExecutionAnalytic:
         jaxpr = jax.make_jaxpr(transformed_f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
 
-        with qml.capture.pause():
-            qnode_f = qml.QNode(f, dev, mcm_method="deferred")
+        with qp.capture.pause():
+            qnode_f = qp.QNode(f, dev, mcm_method="deferred")
             expected = qnode_f()
 
         for r, e in zip(res, expected, strict=True):
-            assert qml.math.allclose(r, e)
+            assert qp.math.allclose(r, e)
 
 
 # pylint: disable=too-few-public-methods
@@ -251,25 +251,25 @@ class TestExecutionFiniteShots:
     def test_hw_like_samples(self, postselect, n_postselects):
         """Test that postselect_mode="hw-like" updates the number of samples as expected."""
         num_wires = 5
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
+        dev = qp.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
         config = create_execution_config(postselect_mode="hw-like")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
         def f():
             for _ in range(n_postselects):
-                qml.Hadamard(0)
-                qml.measure(0, postselect=postselect)
-            return qml.sample(wires=[0])
+                qp.Hadamard(0)
+                qp.measure(0, postselect=postselect)
+            return qp.sample(wires=[0])
 
         jaxpr = jax.make_jaxpr(f)()
         res = tuple(
             dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=1000)[0]
             for _ in range(10)
         )
-        assert all(qml.math.allclose(r, postselect) for r in res)
+        assert all(qp.math.allclose(r, postselect) for r in res)
         lens = [len(r) for r in res]
-        assert qml.math.allclose(
-            qml.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 + 2 * n_postselects, rtol=0
+        assert qp.math.allclose(
+            qp.math.mean(lens), int(1000 / (2**n_postselects)), atol=5 + 2 * n_postselects, rtol=0
         )
 
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
@@ -277,57 +277,57 @@ class TestExecutionFiniteShots:
     def test_fill_shots_samples(self, postselect, n_postselects):
         """Test that postselect_mode="fill-shots" updates the number of samples as expected."""
         num_wires = 5
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
+        dev = qp.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode="fill-shots")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
         def f():
             for _ in range(n_postselects):
-                qml.Hadamard(0)
-                qml.measure(0, postselect=postselect)
-            return qml.sample(wires=[0])
+                qp.Hadamard(0)
+                qp.measure(0, postselect=postselect)
+            return qp.sample(wires=[0])
 
         jaxpr = jax.make_jaxpr(f)()
         res = tuple(
             dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=1000)[0]
             for _ in range(5)
         )
-        assert all(qml.math.allclose(r, postselect) for r in res)
+        assert all(qp.math.allclose(r, postselect) for r in res)
         lens = [len(r) for r in res]
         assert all(l == 1000 for l in lens)
 
     def test_correct_sampling(self, mocker):
         """Test that sampling is performed with the correct pipeline."""
         num_wires = 5
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
+        dev = qp.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode="fill-shots")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
         def f():
             for i in range(4):
-                qml.Hadamard(0)
-                qml.measure(0, reset=bool(i % 2))
+                qp.Hadamard(0)
+                qp.measure(0, reset=bool(i % 2))
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)()
 
-        expected_state = qml.math.zeros(2**num_wires, dtype=complex)
+        expected_state = qp.math.zeros(2**num_wires, dtype=complex)
         # Last MCM resets state, so only first half of state-vector will be non-zero,
         # corresponding to |0> on wire 0. Uniform superposition with real amplitudes
         # because we only used Hadamard.
         expected_state[:16] = 1
         # Computed which indices will have negative amplitude by hand
         expected_state[[3, 7, 11, 12, 13, 14]] = -1
-        expected_state /= qml.math.norm(expected_state)
-        expected_state = qml.math.reshape(expected_state, (2,) * num_wires)
+        expected_state /= qp.math.norm(expected_state)
+        expected_state = qp.math.reshape(expected_state, (2,) * num_wires)
         measure_spy = mocker.spy(sampling, "sample_state")
 
         _ = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=100)
         measure_spy.assert_called()
         state = measure_spy.call_args.args[0]
         shots = measure_spy.call_args.kwargs["shots"]
-        assert qml.math.allclose(state, expected_state)
+        assert qp.math.allclose(state, expected_state)
         assert shots == 100
 
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
@@ -335,16 +335,16 @@ class TestExecutionFiniteShots:
     def test_correct_sampling_postselection(self, postselect_mode, n_postselects, mocker):
         """Test that sampling is performed using the correct pipeline with postselection."""
         num_wires = 4
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
+        dev = qp.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
         config = create_execution_config(postselect_mode=postselect_mode)
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
         def f():
             for _ in range(n_postselects):
-                qml.Hadamard(0)
-                qml.measure(0, postselect=1)
+                qp.Hadamard(0)
+                qp.measure(0, postselect=1)
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)()
 
@@ -353,9 +353,9 @@ class TestExecutionFiniteShots:
         postselect_inds_and_vals = {1: (9, 1), 2: (11, -1), 3: (15, 1)}
         ind, val = postselect_inds_and_vals[n_postselects]
 
-        expected_state = qml.math.zeros(2**num_wires, dtype=complex)
+        expected_state = qp.math.zeros(2**num_wires, dtype=complex)
         expected_state[ind] = val
-        expected_state = qml.math.reshape(expected_state, (2,) * num_wires)
+        expected_state = qp.math.reshape(expected_state, (2,) * num_wires)
         measure_spy = mocker.spy(sampling, "sample_state")
 
         for _ in range(5):
@@ -365,15 +365,15 @@ class TestExecutionFiniteShots:
             state = measure_spy.call_args.args[0]
             shots = measure_spy.call_args.kwargs["shots"]
             spied_shots.append(shots)
-            assert qml.math.allclose(state, expected_state)
+            assert qp.math.allclose(state, expected_state)
 
             measure_spy.reset_mock()
 
         if postselect_mode == "fill-shots":
             assert all(s == 1000 for s in spied_shots)
         else:
-            assert qml.math.allclose(
-                qml.math.mean(spied_shots),
+            assert qp.math.allclose(
+                qp.math.mean(spied_shots),
                 1000 / (2**n_postselects),
                 atol=5 + 2 * n_postselects,
                 rtol=0,
@@ -384,26 +384,26 @@ class TestExecutionFiniteShots:
     def test_mcm_samples_shape(self, postselect_mode, n_iters):
         """Test that returning samples of mcms has the correct shape."""
         num_wires = 4
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
+        dev = qp.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode=postselect_mode)
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
         def f():
             ms = []
             for _ in range(n_iters):
-                qml.Hadamard(0)
-                ms.append(qml.measure(0, postselect=1))
+                qp.Hadamard(0)
+                ms.append(qp.measure(0, postselect=1))
 
-            return qml.sample(op=ms)
+            return qp.sample(op=ms)
 
         jaxpr = jax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=100)
 
         if postselect_mode == "fill-shots":
-            assert qml.math.shape(res[0]) == (100, n_iters)
+            assert qp.math.shape(res[0]) == (100, n_iters)
 
         if postselect_mode == "hw-like":
-            shape = qml.math.shape(res[0])
+            shape = qp.math.shape(res[0])
             # Other tests have verified that the _number_ of samples
             # will be consisent with the expected behaviour of hw-like
             # execution, so we only verify the n_mcms dimension

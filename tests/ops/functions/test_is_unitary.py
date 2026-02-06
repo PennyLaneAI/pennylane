@@ -12,76 +12,76 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the qml.is_unitary function
+Unit tests for the qp.is_unitary function
 """
 import pytest
 
 import pennylane as qp
 
 unitary_ops = (
-    qml.Identity(0),
-    qml.Hadamard(0),
-    qml.PauliX(0),
-    qml.PauliY(0),
-    qml.PauliZ(0),
-    qml.CNOT([0, 1]),
-    qml.CZ([0, 1]),
-    qml.CY([0, 1]),
-    qml.SWAP([0, 1]),
-    qml.CSWAP([0, 1, 2]),
-    qml.Toffoli([0, 1, 2]),
-    qml.S(0),
-    qml.T(0),
-    qml.SX(0),
-    qml.ISWAP([0, 1]),
-    qml.SISWAP([0, 1]),
-    qml.RX(1.23, 0),
-    qml.RY(1.23, 0),
-    qml.RZ(1.23, 0),
-    qml.PhaseShift(1.23, 0),
-    qml.Rot(1.23, 1.23, 1.23, 0),
-    qml.U1(1.23, 0),
-    qml.U2(1.23, 1.23, 0),
-    qml.U3(1.23, 1.23, 1.23, 0),
-    qml.CRX(1.23, [0, 1]),
-    qml.CRY(1.23, [0, 1]),
-    qml.CRZ(1.23, [0, 1]),
-    qml.CRot(1.23, 1.23, 1.23, [0, 1]),
-    qml.IsingXX(1.23, [0, 1]),
-    qml.IsingYY(1.23, [0, 1]),
-    qml.IsingZZ(1.23, [0, 1]),
+    qp.Identity(0),
+    qp.Hadamard(0),
+    qp.PauliX(0),
+    qp.PauliY(0),
+    qp.PauliZ(0),
+    qp.CNOT([0, 1]),
+    qp.CZ([0, 1]),
+    qp.CY([0, 1]),
+    qp.SWAP([0, 1]),
+    qp.CSWAP([0, 1, 2]),
+    qp.Toffoli([0, 1, 2]),
+    qp.S(0),
+    qp.T(0),
+    qp.SX(0),
+    qp.ISWAP([0, 1]),
+    qp.SISWAP([0, 1]),
+    qp.RX(1.23, 0),
+    qp.RY(1.23, 0),
+    qp.RZ(1.23, 0),
+    qp.PhaseShift(1.23, 0),
+    qp.Rot(1.23, 1.23, 1.23, 0),
+    qp.U1(1.23, 0),
+    qp.U2(1.23, 1.23, 0),
+    qp.U3(1.23, 1.23, 1.23, 0),
+    qp.CRX(1.23, [0, 1]),
+    qp.CRY(1.23, [0, 1]),
+    qp.CRZ(1.23, [0, 1]),
+    qp.CRot(1.23, 1.23, 1.23, [0, 1]),
+    qp.IsingXX(1.23, [0, 1]),
+    qp.IsingYY(1.23, [0, 1]),
+    qp.IsingZZ(1.23, [0, 1]),
 )
 
 ops = (
-    (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.RX(1.23, 0)),
-    (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
+    (qp.PauliX(wires=0), qp.PauliZ(wires=0), qp.RX(1.23, 0)),
+    (qp.CNOT(wires=[0, 1]), qp.RX(1.23, wires=1), qp.Identity(wires=0)),
     (
-        qml.IsingXX(4.56, wires=[2, 3]),
-        qml.Toffoli(wires=[1, 2, 3]),
-        qml.Rot(0.34, 1.0, 0, wires=0),
+        qp.IsingXX(4.56, wires=[2, 3]),
+        qp.Toffoli(wires=[1, 2, 3]),
+        qp.Rot(0.34, 1.0, 0, wires=0),
     ),
 )
 
 
 class TestIsUnitary:
-    """Tests for the qml.is_unitary function."""
+    """Tests for the qp.is_unitary function."""
 
     @pytest.mark.parametrize("op", unitary_ops)
     def test_unitary_ops(self, op):
         """Test that all the non-parametric ops are unitary."""
-        assert qml.is_unitary(op)
+        assert qp.is_unitary(op)
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
     def test_arithmetic_ops(self, arithmetic_ops):
         """Test unitary check with Prod and Sum arithmetic operations."""
-        assert qml.is_unitary(qml.prod(*arithmetic_ops))
-        assert not qml.is_unitary(qml.sum(*arithmetic_ops))
+        assert qp.is_unitary(qp.prod(*arithmetic_ops))
+        assert not qp.is_unitary(qp.sum(*arithmetic_ops))
 
     @pytest.mark.parametrize("op", unitary_ops)
     def test_s_prod(self, op):
         """Test the hermitian check with scalar products of hermitian operators."""
-        assert qml.is_unitary(qml.s_prod(1, op))
-        assert not qml.is_unitary(qml.s_prod(2, op))
+        assert qp.is_unitary(qp.s_prod(1, op))
+        assert not qp.is_unitary(qp.s_prod(2, op))
 
     @pytest.mark.all_interfaces
     def test_all_interfaces(self):
@@ -93,4 +93,4 @@ class TestIsUnitary:
         jax_param = jax.numpy.array(1.23)
 
         for param in [torch_param, jax_param]:
-            assert qml.is_unitary(qml.RX(param, 0))
+            assert qp.is_unitary(qp.RX(param, 0))

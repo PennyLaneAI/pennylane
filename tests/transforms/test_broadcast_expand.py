@@ -25,17 +25,17 @@ from pennylane import numpy as pnp
 
 def get_device(name="default.qubit", wires=2, seed=None):
     assert seed is not None, "Please use the pytest-rng provided seed"
-    return qml.device(name, wires=wires, seed=seed)
+    return qp.device(name, wires=wires, seed=seed)
 
 
 def make_ops(x, y, z):
     """Queue three parametrized and two unparametrized operations and return them."""
     ops = [
-        qml.RX(x, wires=0),
-        qml.PauliY(0),
-        qml.RX(y, wires=1),
-        qml.RZ(z, wires=1),
-        qml.Hadamard(1),
+        qp.RX(x, wires=0),
+        qp.PauliY(0),
+        qp.RX(y, wires=1),
+        qp.RZ(z, wires=1),
+        qp.Hadamard(1),
     ]
     return ops
 
@@ -52,16 +52,16 @@ parameters = [
 sizes = [3, 1, 2]
 
 coeffs0 = [0.3, -5.1]
-H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
+H0 = qp.Hamiltonian(qp.math.array(coeffs0), [qp.PauliZ(0), qp.PauliY(1)])
 
 
 # Here we exploit the product structure of our circuit
 def exp_fn_Z0(x, y, z):
-    return -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
+    return -qp.math.cos(x) * qp.math.ones_like(y) * qp.math.ones_like(z)
 
 
 def exp_fn_Y1(x, y, z):
-    return qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
+    return qp.math.sin(y) * qp.math.cos(z) * qp.math.ones_like(x)
 
 
 def exp_fn_Z0Y1(x, y, z):
@@ -69,7 +69,7 @@ def exp_fn_Z0Y1(x, y, z):
 
 
 def exp_fn_Z0_and_Y1(x, y, z):
-    return qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
+    return qp.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
 
 
 def exp_fn_H0(x, y, z):
@@ -77,9 +77,9 @@ def exp_fn_H0(x, y, z):
 
 
 observables_and_exp_fns = [
-    ([qml.PauliZ(0)], exp_fn_Z0),
-    ([qml.PauliZ(0) @ qml.PauliY(1)], exp_fn_Z0Y1),
-    ([qml.PauliZ(0), qml.PauliY(1)], exp_fn_Z0_and_Y1),
+    ([qp.PauliZ(0)], exp_fn_Z0),
+    ([qp.PauliZ(0) @ qp.PauliY(1)], exp_fn_Z0Y1),
+    ([qp.PauliZ(0), qp.PauliY(1)], exp_fn_Z0_and_Y1),
     ([H0], exp_fn_H0),
 ]
 
@@ -94,51 +94,51 @@ class TestBroadcastExpand:
     def test_expansion(self, params, size, obs, exp_fn, seed):
         """Test that the expansion works as expected."""
         ops = make_ops(*params)
-        expvals = [qml.expval(ob) for ob in obs]
-        tape = qml.tape.QuantumScript(ops, expvals)
+        expvals = [qp.expval(ob) for ob in obs]
+        tape = qp.tape.QuantumScript(ops, expvals)
         assert tape.batch_size == size
 
-        tapes, fn = qml.transforms.broadcast_expand(tape)
+        tapes, fn = qp.transforms.broadcast_expand(tape)
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(seed=seed), None))
+        result = fn(qp.execute(tapes, get_device(seed=seed), None))
         expected = exp_fn(*params)
 
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion_qnode(self, params, obs, exp_fn, seed):
         """Test that the transform integrates correctly with the transform program"""
 
-        @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(seed=seed))
+        @qp.transforms.broadcast_expand
+        @qp.qnode(get_device(seed=seed))
         def circuit(x, y, z, obs):
-            qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
+            qp.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
             _ = make_ops(x, y, z)
-            return [qml.expval(ob) for ob in obs]
+            return [qp.expval(ob) for ob in obs]
 
         result = circuit(*params, obs)
         expected = exp_fn(*params)
 
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
-        expvals = [qml.expval(ob) for ob in obs]
+        expvals = [qp.expval(ob) for ob in obs]
         shots = [30000, 30001]
-        tape = qml.tape.QuantumScript(ops, expvals, shots=shots)
+        tape = qp.tape.QuantumScript(ops, expvals, shots=shots)
         assert tape.batch_size == size
 
-        tapes, fn = qml.transforms.broadcast_expand(tape)
+        tapes, fn = qp.transforms.broadcast_expand(tape)
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(seed=seed), None))
+        result = fn(qp.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
         # Note: Analytic accuracy is tested in test_expansion() above.
         # This test focuses on shot vector structure/batching behavior only.
@@ -147,56 +147,56 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize(
         "args, shapes",
         [
-            ([{"op": qml.PauliZ(0)}, {"op": qml.PauliX(1)}], [2, 2]),
+            ([{"op": qp.PauliZ(0)}, {"op": qp.PauliX(1)}], [2, 2]),
             ([{"wires": 0}, {"wires": 1}], [2, 2]),
-            ([{"op": qml.PauliZ(0)}, {"wires": [0, 1]}], [2, 4]),
+            ([{"op": qp.PauliZ(0)}, {"wires": [0, 1]}], [2, 4]),
         ],
     )
     def test_shot_vector_probs(self, params, size, args, shapes, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
-        mps = [qml.probs(**a) for a in args]
+        mps = [qp.probs(**a) for a in args]
         shots = [10, 5, 4]
-        tape = qml.tape.QuantumScript(ops, mps, shots=shots)
+        tape = qp.tape.QuantumScript(ops, mps, shots=shots)
         assert tape.batch_size == size
 
-        tapes, fn = qml.transforms.broadcast_expand(tape)
+        tapes, fn = qp.transforms.broadcast_expand(tape)
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(seed=seed), None))
+        result = fn(qp.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
         for r in result:
             for i, _r in enumerate(r):
-                assert qml.math.shape(_r) == (size, shapes[i]) if size > 1 else (shapes[i],)
+                assert qp.math.shape(_r) == (size, shapes[i]) if size > 1 else (shapes[i],)
 
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize(
         "args, shapes",
         [
-            ([{"op": qml.PauliZ(0)}, {"op": qml.PauliX(1)}], [(), ()]),
+            ([{"op": qp.PauliZ(0)}, {"op": qp.PauliX(1)}], [(), ()]),
             ([{"wires": 0}, {"wires": 1}], [(1,), (1,)]),
-            ([{"op": qml.PauliZ(0)}, {"wires": [0, 1]}], [(), (2,)]),
+            ([{"op": qp.PauliZ(0)}, {"wires": [0, 1]}], [(), (2,)]),
         ],
     )
     def test_shot_vector_sample(self, params, size, args, shapes, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
-        mps = [qml.sample(**a) for a in args]
+        mps = [qp.sample(**a) for a in args]
         shots = [10, 5, 4]
-        tape = qml.tape.QuantumScript(ops, mps, shots=shots)
+        tape = qp.tape.QuantumScript(ops, mps, shots=shots)
         assert tape.batch_size == size
 
-        tapes, fn = qml.transforms.broadcast_expand(tape)
+        tapes, fn = qp.transforms.broadcast_expand(tape)
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(seed=seed), None))
+        result = fn(qp.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
         for i, r in enumerate(result):
             for j, _r in enumerate(r):
                 assert (
-                    qml.math.shape(_r) == (size, shots[i], *shapes[j])
+                    qp.math.shape(_r) == (size, shots[i], *shapes[j])
                     if size > 1
                     else (shots[i], *shapes[j])
                 )
@@ -205,24 +205,24 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize(
         "args",
         [
-            [{"op": qml.PauliZ(0)}, {"op": qml.PauliX(1)}],
+            [{"op": qp.PauliZ(0)}, {"op": qp.PauliX(1)}],
             [{"wires": 0}, {"wires": 1}],
-            [{"op": qml.PauliZ(0)}, {"wires": [0, 1]}],
+            [{"op": qp.PauliZ(0)}, {"wires": [0, 1]}],
         ],
     )
     def test_shot_vector_counts(self, params, size, args, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
-        mps = [qml.counts(**a) for a in args]
+        mps = [qp.counts(**a) for a in args]
         shots = [10, 5, 4]
-        tape = qml.tape.QuantumScript(ops, mps, shots=shots)
+        tape = qp.tape.QuantumScript(ops, mps, shots=shots)
         assert tape.batch_size == size
 
-        tapes, fn = qml.transforms.broadcast_expand(tape)
+        tapes, fn = qp.transforms.broadcast_expand(tape)
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
-        result = fn(qml.execute(tapes, get_device(seed=seed), None))
+        result = fn(qp.execute(tapes, get_device(seed=seed), None))
         assert len(result) == len(shots)
         for r in result:
             for _r in r:
@@ -235,30 +235,30 @@ class TestBroadcastExpand:
 
     def test_state_prep(self, seed):
         """Test that expansion works for state preparations"""
-        ops = [qml.CNOT([0, 1])]
-        meas = [qml.expval(qml.PauliZ(1))]
-        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
-        tape = qml.tape.QuantumScript(prep + ops, meas)
+        ops = [qp.CNOT([0, 1])]
+        meas = [qp.expval(qp.PauliZ(1))]
+        prep = [qp.StatePrep(np.eye(4), wires=[0, 1])]
+        tape = qp.tape.QuantumScript(prep + ops, meas)
 
-        tapes, fn = qml.transforms.broadcast_expand(tape)
+        tapes, fn = qp.transforms.broadcast_expand(tape)
         assert len(tapes) == 4
         assert all(t.batch_size is None for t in tapes)
 
-        result = fn(qml.execute(tapes, get_device(seed=seed), None))
+        result = fn(qp.execute(tapes, get_device(seed=seed), None))
         expected = np.array([1, -1, -1, 1])
 
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     def test_not_copied(self):
         """Test that unbroadcasted operators are not copied"""
         x = np.array([0.5, 0.7, 0.9])
         y = np.array(1.5)
 
-        ops = [qml.RX(x, wires=0), qml.RY(y, wires=0)]
-        meas = [qml.expval(qml.PauliZ(0))]
-        tape = qml.tape.QuantumScript(ops, meas)
+        ops = [qp.RX(x, wires=0), qp.RY(y, wires=0)]
+        meas = [qp.expval(qp.PauliZ(0))]
+        tape = qp.tape.QuantumScript(ops, meas)
 
-        tapes = qml.transforms.broadcast_expand(tape)[0]
+        tapes = qp.transforms.broadcast_expand(tape)[0]
         assert len(tapes) == 3
         assert all(t.batch_size is None for t in tapes)
 
@@ -278,20 +278,20 @@ class TestBroadcastExpand:
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
 
-        @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(seed=seed), interface="autograd", diff_method=diff_method)
+        @qp.transforms.broadcast_expand
+        @qp.qnode(get_device(seed=seed), interface="autograd", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
-            return qml.math.stack([qml.expval(ob) for ob in obs])
+            return qp.math.stack([qp.expval(ob) for ob in obs])
 
         expected = exp_fn(*params)
 
-        assert qml.math.allclose(cost(*params), expected)
+        assert qp.math.allclose(cost(*params), expected)
 
-        jac = qml.jacobian(cost)(*params)
-        exp_jac = qml.jacobian(exp_fn)(*params)
+        jac = qp.jacobian(cost)(*params)
+        exp_jac = qp.jacobian(exp_fn)(*params)
 
-        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -307,28 +307,28 @@ class TestBroadcastExpand:
 
         params = tuple(jax.numpy.array(p) for p in params)
 
-        @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(seed=seed), interface="jax", diff_method=diff_method)
+        @qp.transforms.broadcast_expand
+        @qp.qnode(get_device(seed=seed), interface="jax", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
-            return tuple(qml.expval(ob) for ob in obs)
+            return tuple(qp.expval(ob) for ob in obs)
 
         if use_jit:
             cost = jax.jit(cost)
 
         expected = exp_fn(*params)
 
-        assert qml.math.allclose(cost(*params), expected)
+        assert qp.math.allclose(cost(*params), expected)
 
         jac = jax.jacobian(cost, argnums=[0, 1, 2])(*params)
 
         exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
         if len(obs) > 1:
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac[0]))
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac[1]))
+            assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac[0]))
+            assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac[1]))
         else:
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac))
+            assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac))
 
     @pytest.mark.slow
     @pytest.mark.tf
@@ -340,11 +340,11 @@ class TestBroadcastExpand:
 
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
 
-        @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(seed=seed), interface="tensorflow")
+        @qp.transforms.broadcast_expand
+        @qp.qnode(get_device(seed=seed), interface="tensorflow")
         def cost(*params):
             make_ops(*params)
-            return tuple(qml.expval(ob) for ob in obs)
+            return tuple(qp.expval(ob) for ob in obs)
 
         with tf.GradientTape(persistent=True) as t:
             out = tf.stack(cost(*params))
@@ -355,9 +355,9 @@ class TestBroadcastExpand:
 
         for _jac, e_jac in zip(jac, exp_jac):
             if e_jac is None:
-                assert qml.math.allclose(_jac, 0.0)
+                assert qp.math.allclose(_jac, 0.0)
             else:
-                assert qml.math.allclose(_jac, e_jac)
+                assert qp.math.allclose(_jac, e_jac)
 
     @pytest.mark.torch
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
@@ -373,25 +373,25 @@ class TestBroadcastExpand:
         )
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
 
-        @qml.transforms.broadcast_expand
-        @qml.qnode(get_device(seed=seed), interface="torch", diff_method=diff_method)
+        @qp.transforms.broadcast_expand
+        @qp.qnode(get_device(seed=seed), interface="torch", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
-            return tuple(qml.expval(ob) for ob in obs)
+            return tuple(qp.expval(ob) for ob in obs)
 
         res = cost(*torch_params)
         jac = torch.autograd.functional.jacobian(cost, torch_params)
         exp_jac = torch.autograd.functional.jacobian(exp_fn, torch_params)
 
         if len(obs) > 1:
-            assert all(qml.math.allclose(r, e) for r, e in zip(res, exp_fn(*params)))
+            assert all(qp.math.allclose(r, e) for r, e in zip(res, exp_fn(*params)))
             # Need to perform a transpose because the broadcast_expand transform pulls out the
             # broadcasting axis, which the `exp_fn` does not do.
             jac = tuple(
-                qml.math.stack([jac[i][j] for i in range(len(obs))]) for j in range(len(params))
+                qp.math.stack([jac[i][j] for i in range(len(obs))]) for j in range(len(params))
             )
         else:
-            assert qml.math.allclose(res[0], exp_fn(*params))
+            assert qp.math.allclose(res[0], exp_fn(*params))
             jac = jac[0]
 
-        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))

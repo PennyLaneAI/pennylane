@@ -36,10 +36,10 @@ def test_supported_gradient_kwargs():
     methods_to_skip = ("metric_tensor", "classical_fisher", "quantum_fisher")
 
     grad_transforms = []
-    for attr in dir(qml.gradients):
+    for attr in dir(qp.gradients):
         if attr in methods_to_skip:
             continue
-        obj = getattr(qml.gradients, attr)
+        obj = getattr(qp.gradients, attr)
         if isinstance(obj, Transform):
             grad_transforms.append(obj)
 
@@ -62,9 +62,9 @@ def test_supported_gradient_kwargs():
 
 def test_repr():
     """Test the repr method of gradient transforms."""
-    assert repr(qml.gradients.param_shift) == "<transform: param_shift>"
-    assert repr(qml.gradients.spsa_grad) == "<transform: spsa_grad>"
-    assert repr(qml.gradients.finite_diff) == "<transform: finite_diff>"
+    assert repr(qp.gradients.param_shift) == "<transform: param_shift>"
+    assert repr(qp.gradients.spsa_grad) == "<transform: spsa_grad>"
+    assert repr(qp.gradients.finite_diff) == "<transform: finite_diff>"
 
 
 class TestGradAnalysis:
@@ -77,14 +77,14 @@ class TestGradAnalysis:
 
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.StatePrep(psi, wires=[0, 1])
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params)
 
@@ -96,12 +96,12 @@ class TestGradAnalysis:
         """Test that an independent variable is properly marked
         as having a zero gradient"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliY(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[1])
+            qp.expval(qp.PauliY(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params)
 
@@ -112,12 +112,12 @@ class TestGradAnalysis:
         """In non-graph mode, it is impossible to determine
         if a parameter is independent or not"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliY(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[1])
+            qp.expval(qp.PauliY(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params, use_graph=False)
 
@@ -127,18 +127,18 @@ class TestGradAnalysis:
     def test_finite_diff(self, monkeypatch):
         """If an op has grad_method=F, this should be respected"""
 
-        monkeypatch.setattr(qml.RX, "grad_method", "F")
+        monkeypatch.setattr(qp.RX, "grad_method", "F")
 
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.StatePrep(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.StatePrep(psi, wires=[0, 1])
+            qp.RX(0.543, wires=[0])
+            qp.RY(-0.654, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            qp.probs(wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods(tape, trainable_params)
 
@@ -156,11 +156,11 @@ class TestGradMethodValidation:
     def test_with_nondiff_parameters(self, method):
         """Test that trainable parameters without grad_method
         are detected correctly, raising an exception."""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
-            qml.expval(qml.PauliZ(0))
-        tape = qml.tape.QuantumScript.from_queue(q)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(np.array(0.1, requires_grad=True), wires=0)
+            qp.RX(np.array(0.1, requires_grad=True), wires=0)
+            qp.expval(qp.PauliZ(0))
+        tape = qp.tape.QuantumScript.from_queue(q)
         diff_methods = {0: "A", 1: None}
         with pytest.raises(ValueError, match="Cannot differentiate with respect"):
             _validate_gradient_methods(tape, method, diff_methods)
@@ -168,11 +168,11 @@ class TestGradMethodValidation:
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
         together with ``method="analytic"`` raises an exception."""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
-            qml.RX(np.array(0.1, requires_grad=True), wires=0)
-            qml.expval(qml.PauliZ(0))
-        tape = qml.tape.QuantumScript.from_queue(q)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RX(np.array(0.1, requires_grad=True), wires=0)
+            qp.RX(np.array(0.1, requires_grad=True), wires=0)
+            qp.expval(qp.PauliZ(0))
+        tape = qp.tape.QuantumScript.from_queue(q)
         diff_methods = {
             0: "A",
             1: "F",
@@ -186,9 +186,9 @@ class TestChooseParams:
 
     def test_without_argnum(self):
         """Test that the method returns all params when used with ``argnum=None``."""
-        tape = qml.tape.QuantumScript(
-            [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-            [qml.expval(qml.PauliZ(0))],
+        tape = qp.tape.QuantumScript(
+            [qp.RX(1.2, wires=0), qp.RY(2.3, wires=0), qp.RZ(3.4, wires=0)],
+            [qp.expval(qp.PauliZ(0))],
             trainable_params=[1, 2],
         )
         chosen = choose_trainable_param_indices(tape, None)
@@ -197,9 +197,9 @@ class TestChooseParams:
     def test_with_integer_argnum(self):
         """Test that the method returns the correct single param when
         used with an integer ``argnum``."""
-        tape = qml.tape.QuantumScript(
-            [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-            [qml.expval(qml.PauliZ(0))],
+        tape = qp.tape.QuantumScript(
+            [qp.RX(1.2, wires=0), qp.RY(2.3, wires=0), qp.RZ(3.4, wires=0)],
+            [qp.expval(qp.PauliZ(0))],
             trainable_params=[1, 2],
         )
         chosen = choose_trainable_param_indices(tape, argnum=1)
@@ -208,9 +208,9 @@ class TestChooseParams:
     def test_warning_with_empty_argnum(self):
         """Test that the method raises a warning when an empty iterable
         is passed as ``argnum``."""
-        tape = qml.tape.QuantumScript(
-            [qml.RX(1.2, wires=0), qml.RY(2.3, wires=0), qml.RZ(3.4, wires=0)],
-            [qml.expval(qml.PauliZ(0))],
+        tape = qp.tape.QuantumScript(
+            [qp.RX(1.2, wires=0), qp.RY(2.3, wires=0), qp.RZ(3.4, wires=0)],
+            [qp.expval(qp.PauliZ(0))],
             trainable_params=[1, 2],
         )
         with pytest.warns(UserWarning, match="No trainable parameters were specified"):
@@ -226,18 +226,18 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_single_param(self, shots, slicing, prefactor, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(shots)
-        @qml.qnode(dev)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
         def circuit(weights):
             if slicing:
-                qml.RX(prefactor * weights[0], wires=[0])
+                qp.RX(prefactor * weights[0], wires=[0])
             else:
-                qml.RX(prefactor * weights, wires=[0])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+                qp.RX(prefactor * weights, wires=[0])
+            return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit)
+        grad_fn = qp.gradients.param_shift(circuit)
 
         w = np.array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
@@ -256,17 +256,17 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol, seed):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
 
-        dev = qml.device("default.qubit", wires=2, seed=seed)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
 
-        @qml.set_shots(shots)
-        @qml.qnode(dev)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0], wires=[0])
-            qml.RY(prefactor * weights[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+            qp.RX(weights[0], wires=[0])
+            qp.RY(prefactor * weights[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(1))
 
-        grad_fn = qml.gradients.param_shift(circuit)
+        grad_fn = qp.gradients.param_shift(circuit)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -292,17 +292,17 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters
         in both the tape and the QNode correctly"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.set_shots(shots)
-        @qml.qnode(dev)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
         def circuit(weight0, weight1):
-            qml.RX(weight0, wires=[0])
-            qml.RY(weight1[0], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+            qp.RX(weight0, wires=[0])
+            qp.RY(weight1[0], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit)
+        grad_fn = qp.gradients.param_shift(circuit)
 
         w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
         res = grad_fn(*w)
@@ -321,15 +321,15 @@ class TestGradientTransformIntegration:
     def test_decorator(self, tol):
         """Test that a gradient transform decorating a QNode
         acts correctly"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.gradients.param_shift
-        @qml.qnode(dev)
+        @qp.gradients.param_shift
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0], wires=[0])
-            qml.RY(weights[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+            qp.RX(weights[0], wires=[0])
+            qp.RY(weights[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliX(1))
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = circuit(w)
@@ -341,18 +341,18 @@ class TestGradientTransformIntegration:
     def test_passing_arguments(self, mocker, tol):
         """Test that a gradient transform correctly
         passes arguments"""
-        dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+        dev = qp.device("default.qubit", wires=2)
+        spy = mocker.spy(qp.gradients.parameter_shift, "expval_param_shift")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0], wires=[0])
-            qml.RY(weights[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+            qp.RX(weights[0], wires=[0])
+            qp.RY(weights[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliX(1))
 
         shifts = [(np.pi / 4,), (np.pi / 3,)]
-        grad_fn = qml.gradients.param_shift(circuit, shifts=shifts)
+        grad_fn = qp.gradients.param_shift(circuit, shifts=shifts)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -366,11 +366,11 @@ class TestGradientTransformIntegration:
     def test_expansion(self, mocker, tol):
         """Test that a gradient transform correctly
         expands gates with no gradient recipe"""
-        dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+        dev = qp.device("default.qubit", wires=2)
+        spy = mocker.spy(qp.gradients.parameter_shift, "expval_param_shift")
 
         # pylint: disable=too-few-public-methods
-        class NonDiffRXGate(qml.RX):
+        class NonDiffRXGate(qp.RX):
             """A non-differentiable gate that decomposes into RX."""
 
             grad_method = None
@@ -380,18 +380,18 @@ class TestGradientTransformIntegration:
 
             @staticmethod
             def compute_decomposition(phi, wires):
-                """Decompose into a qml.RX gate."""
-                return [qml.RX(phi, wires=wires)]
+                """Decompose into a qp.RX gate."""
+                return [qp.RX(phi, wires=wires)]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
             """A quantum circuit using the above non-differentiable RX gate."""
             NonDiffRXGate(weights[0], wires=[0])
-            qml.RY(weights[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+            qp.RY(weights[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit)
+        grad_fn = qp.gradients.param_shift(circuit)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -404,151 +404,151 @@ class TestGradientTransformIntegration:
     def test_permuted_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are permuted"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[1], wires=[0])
-            qml.RY(weights[0], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+            qp.RX(weights[1], wires=[0])
+            qp.RY(weights[0], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliX(1))
 
         def cost(w):
-            return qml.math.stack(circuit(w))
+            return qp.math.stack(circuit(w))
 
         w = np.array([-0.654, 0.543], requires_grad=True)
-        res = qml.gradients.param_shift(circuit)(w)
+        res = qp.gradients.param_shift(circuit)(w)
 
-        expected = qml.jacobian(cost)(w)
+        expected = qp.jacobian(cost)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_tensor_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(y[0, 0], wires=0)
-            qml.RZ(x[1, 0], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RX(x[0, 0], wires=0)
+            qp.RY(y[0, 0], wires=0)
+            qp.RZ(x[1, 0], wires=0)
+            return qp.probs(wires=[0, 1])
 
         x = np.array([[0.1, 0.3], [0.2, -0.1]], requires_grad=True)
         y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
-        expected = qml.jacobian(circuit)(x, y)
+        expected = qp.jacobian(circuit)(x, y)
         # pylint:disable=unexpected-keyword-arg
-        res = qml.gradients.param_shift(circuit)(x, y)
+        res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(y[0, 0], wires=0)
-            qml.RZ(x[1, 0], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RX(x[0, 0], wires=0)
+            qp.RY(y[0, 0], wires=0)
+            qp.RZ(x[1, 0], wires=0)
+            return qp.probs(wires=[0, 1])
 
         x = np.array([[0.1], [0.2]], requires_grad=True)
         y = np.array([[0.2], [0.3]], requires_grad=True)
 
-        expected = qml.jacobian(circuit)(x, y)
-        res = qml.gradients.param_shift(circuit)(x, y)
+        expected = qp.jacobian(circuit)(x, y)
+        res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         for _r, _e in zip(res, expected):
-            assert qml.math.allclose(_r, _e, atol=tol, rtol=0)
+            assert qp.math.allclose(_r, _e, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x[0, 0] / 2, wires=0)
-            qml.RX(x[0, 0] / 2, wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RX(x[0, 0] / 2, wires=0)
+            qp.RX(x[0, 0] / 2, wires=0)
+            return qp.probs(wires=[0, 1])
 
         x = np.array([[0.1, 0.1], [0.1, 0.1]], requires_grad=True)
 
-        expected = qml.jacobian(circuit)(x)
-        res = qml.gradients.param_shift(circuit)(x)
+        expected = qp.jacobian(circuit)(x)
+        res = qp.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x[0, 0], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RX(x[0, 0], wires=0)
+            return qp.probs(wires=[0, 1])
 
         x = np.array([[0.1]], requires_grad=True)
 
-        expected = qml.jacobian(circuit)(x)
-        res = qml.gradients.param_shift(circuit)(x)
+        expected = qp.jacobian(circuit)(x)
+        res = qp.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="autograd")
         def circuit(x):
-            qml.RX(x[0], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RX(x[0], wires=0)
+            return qp.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2], requires_grad=True)
 
-        expected = qml.jacobian(circuit)(x)
-        res = qml.gradients.param_shift(circuit)(x)
+        expected = qp.jacobian(circuit)(x)
+        res = qp.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_first_non_trainable_argument(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the first argument is non-trainable"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
             """A quantum circuit that does not use its first parameter."""
             # pylint: disable=unused-argument
-            qml.RX(y[0], wires=0)
-            qml.RY(y[0], wires=0)
-            qml.RZ(y[1], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RX(y[0], wires=0)
+            qp.RY(y[0], wires=0)
+            qp.RZ(y[1], wires=0)
+            return qp.probs(wires=[0, 1])
 
         x = np.array([0.1], requires_grad=False)
         y = np.array([0.2, 0.3], requires_grad=True)
 
-        expected = qml.jacobian(circuit)(x, y)
-        res = qml.gradients.param_shift(circuit)(x, y)
+        expected = qp.jacobian(circuit)(x, y)
+        res = qp.gradients.param_shift(circuit)(x, y)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0] ** 2, wires=[0])
-            qml.RY(weights[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(weights[0] ** 2, wires=[0])
+            qp.RY(weights[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         w = np.array([0.543, -0.654], requires_grad=True)
-        res = qml.gradients.param_shift(circuit)(w)
+        res = qp.gradients.param_shift(circuit)(w)
 
         x, _ = w
         expected = [-2 * x * np.sin(x**2), 0]
@@ -557,22 +557,22 @@ class TestGradientTransformIntegration:
     def test_classical_processing_multiple_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple QNode arguments are classically processed"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(data, weights):
-            qml.RY(np.cos(data), wires=0)
-            qml.RX(weights[0] ** 2, wires=[0])
-            qml.RY(weights[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(np.cos(data), wires=0)
+            qp.RX(weights[0] ** 2, wires=[0])
+            qp.RY(weights[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         # set d as non-differentiable
         d = np.array(0.56, requires_grad=False)
         w = np.array([0.543, -0.654], requires_grad=True)
         x, _ = w
 
-        res = qml.gradients.param_shift(circuit)(d, w)
+        res = qp.gradients.param_shift(circuit)(d, w)
 
         expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -581,7 +581,7 @@ class TestGradientTransformIntegration:
         d = np.array(0.56, requires_grad=True)
         w = np.array([0.543, -0.654], requires_grad=True)
 
-        res = qml.gradients.param_shift(circuit)(d, w)
+        res = qp.gradients.param_shift(circuit)(d, w)
 
         expected_dd = np.cos(x**2) * np.sin(d) * np.sin(np.cos(d))
         expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
@@ -592,31 +592,31 @@ class TestGradientTransformIntegration:
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed,
         and the input weights and the output weights have weird shape."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.RX(weights[0, 0] ** 2, wires=[0])
-            qml.RY(weights[0, 1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0, 1])
+            qp.RX(weights[0, 0] ** 2, wires=[0])
+            qp.RY(weights[0, 1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.probs(wires=[0, 1])
 
         w = np.array([[0.543, -0.654], [0.0, 0.0]], requires_grad=True)
-        res = qml.gradients.param_shift(circuit)(w)
+        res = qp.gradients.param_shift(circuit)(w)
         assert res.shape == (4, 2, 2)
 
-        expected = qml.jacobian(circuit)(w)
+        expected = qp.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit1(weights):
-            qml.RX(weights[0], wires=[0])
-            qml.RY(weights[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0, 1])
+            qp.RX(weights[0], wires=[0])
+            qp.RY(weights[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.probs(wires=[0, 1])
 
         w = np.array([0.543**2, -0.654], requires_grad=True)
-        expected = qml.jacobian(circuit1)(w)
+        expected = qp.jacobian(circuit1)(w)
 
         assert np.allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
         assert np.allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
@@ -624,18 +624,18 @@ class TestGradientTransformIntegration:
     def test_template_integration(self, tol):
         """Test that the gradient transform acts on QNodes
         correctly when the QNode contains a template"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1])
+            qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+            return qp.probs(wires=[0, 1])
 
         weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
-        res = qml.gradients.param_shift(circuit)(weights)
+        res = qp.gradients.param_shift(circuit)(weights)
         assert res.shape == (4, 2, 3, 3)
 
-        expected = qml.jacobian(circuit)(weights)
+        expected = qp.jacobian(circuit)(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     # pylint: disable=unexpected-keyword-arg
@@ -643,25 +643,25 @@ class TestGradientTransformIntegration:
         """Test that setting the number of shots works correctly for
         a gradient transform"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.set_shots(shots=1000)
-        @qml.qnode(dev)
+        @qp.set_shots(shots=1000)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         x = np.array(0.543, requires_grad=True)
 
         # the gradient function can be called with different shot values
-        grad_fn = qml.gradients.param_shift(circuit)
+        grad_fn = qp.gradients.param_shift(circuit)
         assert grad_fn(x).shape == ()
 
-        assert len(qml.set_shots(shots=[(1, 1000)])(grad_fn)(x)) == 1000
+        assert len(qp.set_shots(shots=[(1, 1000)])(grad_fn)(x)) == 1000
 
         # the original QNode is unaffected
         assert circuit(x).shape == tuple()
-        assert qml.set_shots(shots=1000)(circuit)(x).shape == tuple()
+        assert qp.set_shots(shots=1000)(circuit)(x).shape == tuple()
 
     @pytest.mark.parametrize(
         "interface",
@@ -675,29 +675,29 @@ class TestGradientTransformIntegration:
     def test_use_with_batch_transform(self, interface):
         """Test that a gradient transform can be chained with a batch transform."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        # @qml.transforms.split_non_commuting
-        @qml.qnode(dev)
+        # @qp.transforms.split_non_commuting
+        @qp.qnode(dev)
         def c(x):
-            qml.RX(x**2, 0)
-            return qml.expval(qml.Z(0)), qml.expval(qml.Y(0)), qml.expval(qml.X(0))
+            qp.RX(x**2, 0)
+            return qp.expval(qp.Z(0)), qp.expval(qp.Y(0)), qp.expval(qp.X(0))
 
-        x = qml.math.asarray(0.5, like=interface, requires_grad=True)
+        x = qp.math.asarray(0.5, like=interface, requires_grad=True)
 
         if interface == "tensorflow":
             import tensorflow as tf
 
             with tf.GradientTape():  # need to make x trainable
-                grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+                grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
         else:
-            grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+            grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
 
-        expected_z = -2 * x * qml.math.sin(x**2)
-        expected_y = -2 * x * qml.math.cos(x**2)
-        assert qml.math.allclose(expected_z, grad_z)
-        assert qml.math.allclose(grad_y, expected_y)
-        assert qml.math.allclose(grad_x, 0)
+        expected_z = -2 * x * qp.math.sin(x**2)
+        expected_y = -2 * x * qp.math.cos(x**2)
+        assert qp.math.allclose(expected_z, grad_z)
+        assert qp.math.allclose(grad_y, expected_y)
+        assert qp.math.allclose(grad_x, 0)
 
 
 class TestInterfaceIntegration:
@@ -708,14 +708,14 @@ class TestInterfaceIntegration:
     def test_autograd(self, tol):
         """Test that a gradient transform remains differentiable
         with autograd"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.gradients.param_shift
-        @qml.qnode(dev)
+        @qp.gradients.param_shift
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x**2, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliX(1))
+            qp.RY(x**2, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliX(1))
 
         x = np.array(-0.654, requires_grad=True)
 
@@ -723,7 +723,7 @@ class TestInterfaceIntegration:
         expected = -4 * x * np.cos(x**2) * np.sin(x**2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.grad(circuit)(x)
+        res = qp.grad(circuit)(x)
         expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -733,14 +733,14 @@ class TestInterfaceIntegration:
         with TF"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.gradients.param_shift
-        @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
+        @qp.gradients.param_shift
+        @qp.qnode(dev, interface="tf", diff_method="parameter-shift")
         def circuit(x):
-            qml.RY(x**2, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliX(1))
+            qp.RY(x**2, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliX(1))
 
         x_ = -0.654
         x = tf.Variable(x_, dtype=tf.float64)
@@ -761,14 +761,14 @@ class TestInterfaceIntegration:
         with PyTorch"""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.gradients.param_shift
-        @qml.qnode(dev, interface="torch")
+        @qp.gradients.param_shift
+        @qp.qnode(dev, interface="torch")
         def circuit(x):
-            qml.RY(x, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliX(1))
+            qp.RY(x, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliX(1))
 
         x_ = -0.654
         x = torch.tensor(x_, dtype=torch.float64, requires_grad=True)
@@ -788,14 +788,14 @@ class TestInterfaceIntegration:
         import jax
 
         jnp = jax.numpy
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.gradients.param_shift
-        @qml.qnode(dev, interface="jax")
+        @qp.gradients.param_shift
+        @qp.qnode(dev, interface="jax")
         def circuit(x):
-            qml.RY(x**2, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliX(1))
+            qp.RY(x**2, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliX(1))
 
         x = jnp.array(-0.654)
 

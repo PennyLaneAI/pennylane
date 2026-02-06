@@ -50,12 +50,12 @@ def test_join_spectra(spectrum1, spectrum2, expected):
 @pytest.mark.parametrize(
     "op, expected",
     [
-        (qml.RX(0.1, wires=0), [0, 1]),  # generator is a class
-        (qml.RY(0.1, wires=0), [0, 1]),  # generator is a class
-        (qml.RZ(0.1, wires=0), [0, 1]),  # generator is a class
-        (qml.PhaseShift(0.5, wires=0), [0, 1]),  # generator is an array
-        (qml.CRX(0.2, wires=[0, 1]), [0, 0.5, 1]),  # generator is an array
-        (qml.ControlledPhaseShift(0.5, wires=[0, 1]), [0, 1]),  # generator is an array
+        (qp.RX(0.1, wires=0), [0, 1]),  # generator is a class
+        (qp.RY(0.1, wires=0), [0, 1]),  # generator is a class
+        (qp.RZ(0.1, wires=0), [0, 1]),  # generator is a class
+        (qp.PhaseShift(0.5, wires=0), [0, 1]),  # generator is an array
+        (qp.CRX(0.2, wires=[0, 1]), [0, 0.5, 1]),  # generator is an array
+        (qp.ControlledPhaseShift(0.5, wires=[0, 1]), [0, 1]),  # generator is an array
     ],
 )
 def test_get_spectrum(op, expected):
@@ -68,9 +68,9 @@ def test_get_spectrum_complains_no_generator():
     """Test that an error is raised if the operator has no generator defined."""
 
     # pylint: disable=too-few-public-methods
-    class CustomOp(qml.operation.Operation):
+    class CustomOp(qp.operation.Operation):
         num_wires = 1
         num_params = 1
 
-    with pytest.raises(qml.operation.GeneratorUndefinedError, match="does not have a generator"):
+    with pytest.raises(qp.operation.GeneratorUndefinedError, match="does not have a generator"):
         get_spectrum(CustomOp(0.5, wires=0), decimals=10)

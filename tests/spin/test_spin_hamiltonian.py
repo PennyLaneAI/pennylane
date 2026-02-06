@@ -163,7 +163,7 @@ def test_ising_hamiltonian(shape, n_cells, j, h, expected_ham):
 
     ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=j, h=h, neighbour_order=1)
 
-    qml.assert_equal(ising_ham, expected_ham)
+    qp.assert_equal(ising_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
@@ -198,7 +198,7 @@ def test_ising_hamiltonian_matrix(shape, n_cells, j, h, expected_ham):
 
     ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=j, h=h, neighbour_order=1)
 
-    qml.assert_equal(ising_ham, expected_ham)
+    qp.assert_equal(ising_ham, expected_ham)
 
 
 def test_coupling_error_heisenberg():
@@ -383,7 +383,7 @@ def test_heisenberg_hamiltonian(shape, n_cells, j, expected_ham):
     r"""Test that the correct Hamiltonian is generated compared to the datasets"""
     heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=j, neighbour_order=1)
 
-    qml.assert_equal(heisenberg_ham, expected_ham)
+    qp.assert_equal(heisenberg_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
@@ -436,7 +436,7 @@ def test_heisenberg_hamiltonian_matrix(shape, n_cells, j, expected_ham):
 
     heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=j)
 
-    qml.assert_equal(heisenberg_ham, expected_ham)
+    qp.assert_equal(heisenberg_ham, expected_ham)
 
 
 def test_hopping_error_fermi_hubbard():
@@ -466,7 +466,7 @@ def test_mapping_error_fermi_hubbard():
     # PennyLane format using from_openfermion
     # ham = openfermion.hamiltonians.fermi_hubbard(xaxis=n_cells[0], yaxis=n_cells[1], tunneling=hopping, coulomb=coulomb)
     # jw_ham = openfermion.transforms.jordan_wigner(ham)
-    # pl_ham = qml.from_openfermion(jw_ham)
+    # pl_ham = qp.from_openfermion(jw_ham)
     ("shape", "n_cells", "hopping", "coulomb", "expected_ham"),
     [
         (
@@ -631,7 +631,7 @@ def test_fermi_hubbard_hamiltonian(shape, n_cells, hopping, coulomb, expected_ha
         lattice=shape, n_cells=n_cells, hopping=hopping, coulomb=coulomb, neighbour_order=1
     )
 
-    qml.assert_equal(fermi_hubbard_ham, expected_ham)
+    qp.assert_equal(fermi_hubbard_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
@@ -639,7 +639,7 @@ def test_fermi_hubbard_hamiltonian(shape, n_cells, hopping, coulomb, expected_ha
     # PennyLane format using from_openfermion
     # ham = openfermion.hamiltonians.fermi_hubbard(xaxis=n_cells[0], yaxis=n_cells[1], tunneling=hopping, coulomb=coulomb)
     # jw_ham = openfermion.transforms.jordan_wigner(ham)
-    # pl_ham = qml.from_openfermion(jw_ham)
+    # pl_ham = qp.from_openfermion(jw_ham)
     ("shape", "n_cells", "hopping", "mapping", "expected_ham"),
     [
         (
@@ -717,7 +717,7 @@ def test_fermi_hubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
         lattice=shape, n_cells=n_cells, hopping=hopping, mapping=mapping
     )
 
-    qml.assert_equal(fermi_hubbard_ham, expected_ham)
+    qp.assert_equal(fermi_hubbard_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
@@ -790,7 +790,7 @@ def test_fermi_hubbard_hamiltonian_matrix(shape, n_cells, t, coulomb, expected_h
 
     fermi_hub_ham = fermi_hubbard(lattice=shape, n_cells=n_cells, hopping=t, coulomb=coulomb)
 
-    qml.assert_equal(fermi_hub_ham, expected_ham)
+    qp.assert_equal(fermi_hub_ham, expected_ham)
 
 
 def test_interaction_parameter_error_emery():
@@ -953,7 +953,7 @@ def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected
         boundary_condition=boundary_condition,
     )
 
-    qml.assert_equal(emery_ham, expected_ham)
+    qp.assert_equal(emery_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
@@ -1078,7 +1078,7 @@ def test_emery_hamiltonian_matrix(shape, n_cells, t, u, v, expected_ham):
 
     emery_ham = emery(lattice=shape, n_cells=n_cells, hopping=t, coulomb=u, intersite_coupling=v)
 
-    qml.assert_equal(emery_ham, expected_ham)
+    qp.assert_equal(emery_ham, expected_ham)
 
 
 def test_hopping_error_haldane():
@@ -1308,7 +1308,7 @@ def test_haldane_hamiltonian_matrix(shape, n_cells, t1, t2, phi, boundary_condit
         boundary_condition=boundary_condition,
     )
 
-    qml.assert_equal(haldane_ham, expected_ham)
+    qp.assert_equal(haldane_ham, expected_ham)
 
 
 def test_coupling_error_kitaev():
@@ -1401,7 +1401,7 @@ def test_kitaev_hamiltonian(n_cells, j, boundary_condition, expected_ham):
     r"""Test that the correct Hamiltonian is generated"""
     kitaev_ham = kitaev(n_cells=n_cells, coupling=j, boundary_condition=boundary_condition)
 
-    qml.assert_equal(kitaev_ham, expected_ham)
+    qp.assert_equal(kitaev_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
@@ -1477,7 +1477,7 @@ def test_spin_hamiltonian(lattice, expected_ham):
     r"""Test that the correct Hamiltonian is generated from a given Lattice"""
     spin_ham = spin_hamiltonian(lattice=lattice)
 
-    qml.assert_equal(spin_ham, expected_ham)
+    qp.assert_equal(spin_ham, expected_ham)
 
 
 def test_spin_hamiltonian_error():

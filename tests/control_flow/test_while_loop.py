@@ -19,13 +19,13 @@ import pennylane as qp
 
 
 def test_while_loop_python_fallback():
-    """Test that qml.while_loop fallsback to
+    """Test that qp.while_loop fallsback to
     Python without qjit"""
 
     def f(n, m):
-        @qml.while_loop(lambda i, _: i < n)
+        @qp.while_loop(lambda i, _: i < n)
         def outer(i, sm):
-            @qml.while_loop(lambda j: j < m)
+            @qp.while_loop(lambda j: j < m)
             def inner(j):
                 return j + 1
 
@@ -38,22 +38,22 @@ def test_while_loop_python_fallback():
 
 
 def test_fallback_while_loop_qnode():
-    """Test that qml.while_loop inside a qnode falls back to
+    """Test that qp.while_loop inside a qnode falls back to
     Python without qjit"""
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(n):
-        @qml.while_loop(lambda v: v[0] < v[1])
+        @qp.while_loop(lambda v: v[0] < v[1])
         def loop(v):
-            qml.PauliX(wires=0)
+            qp.PauliX(wires=0)
             return v[0] + 1, v[1]
 
         loop((0, n))
-        return qml.expval(qml.PauliZ(0))
+        return qp.expval(qp.PauliZ(0))
 
-    assert qml.math.allclose(circuit(1), -1.0)
+    assert qp.math.allclose(circuit(1), -1.0)
 
-    tape = qml.workflow.construct_tape(circuit)(1)
-    expected = [qml.PauliX(0) for i in range(4)]
-    _ = [qml.assert_equal(i, j) for i, j in zip(tape.operations, expected)]
+    tape = qp.workflow.construct_tape(circuit)(1)
+    expected = [qp.PauliX(0) for i in range(4)]
+    _ = [qp.assert_equal(i, j) for i, j in zip(tape.operations, expected)]

@@ -35,7 +35,7 @@ from pennylane.wires import Wires
 
 def amp_phase_freq(amp, phase, freq, t, wire=0):
     """Compute the transmon drive term for given amplitude, phase and frequency."""
-    return amp * (np.sin(phase + freq * t) * qml.PauliY(wire))
+    return amp * (np.sin(phase + freq * t) * qp.PauliY(wire))
 
 
 class TestTransmonDrive:
@@ -71,7 +71,7 @@ class TestTransmonDrive:
             return amp_phase_freq(a, phase, fr, t, wire)
 
         assert H.coeffs[0].func.__name__ == "no_callable"
-        assert qml.math.allclose(qml.matrix(H([], t)), qml.matrix(expected(amp, phase, freq, t)))
+        assert qp.math.allclose(qp.matrix(H([], t)), qp.matrix(expected(amp, phase, freq, t)))
 
     @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
     @pytest.mark.parametrize("phase", 0.5 * np.arange(2, dtype=float))
@@ -90,8 +90,8 @@ class TestTransmonDrive:
         params = [p]
 
         assert H.coeffs[0].func.__name__ == "callable_amp"
-        assert qml.math.allclose(
-            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
+        assert qp.math.allclose(
+            qp.matrix(H(params, t)), qp.matrix(expected(amp, phase, freq, params, t))
         )
 
     @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
@@ -112,8 +112,8 @@ class TestTransmonDrive:
         params = [p]
 
         assert H.coeffs[0].func.__name__ == "callable_phase"
-        assert qml.math.allclose(
-            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
+        assert qp.math.allclose(
+            qp.matrix(H(params, t)), qp.matrix(expected(amp, phase, freq, params, t))
         )
 
     @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
@@ -133,8 +133,8 @@ class TestTransmonDrive:
         params = [p]
 
         assert H.coeffs[0].func.__name__ == "callable_freq"
-        assert qml.math.allclose(
-            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
+        assert qp.math.allclose(
+            qp.matrix(H(params, t)), qp.matrix(expected(amp, phase, freq, params, t))
         )
 
     @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
@@ -155,8 +155,8 @@ class TestTransmonDrive:
         params = [p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_freq"
-        assert qml.math.allclose(
-            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
+        assert qp.math.allclose(
+            qp.matrix(H(params, t)), qp.matrix(expected(amp, phase, freq, *params, t))
         )
 
     @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
@@ -178,8 +178,8 @@ class TestTransmonDrive:
         params = [p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_phase"
-        assert qml.math.allclose(
-            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
+        assert qp.math.allclose(
+            qp.matrix(H(params, t)), qp.matrix(expected(amp, phase, freq, *params, t))
         )
 
     @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
@@ -201,8 +201,8 @@ class TestTransmonDrive:
         params = [p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_phase_and_freq"
-        assert qml.math.allclose(
-            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
+        assert qp.math.allclose(
+            qp.matrix(H(params, t)), qp.matrix(expected(amp, phase, freq, *params, t))
         )
 
     @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
@@ -225,7 +225,7 @@ class TestTransmonDrive:
         params = [p0, p1, p2]
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_phase_and_freq"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(params, t)))
+        assert qp.math.allclose(qp.matrix(H(params, t)), qp.matrix(expected(params, t)))
 
     def test_multiple_drives(self):
         """Test that the sum of two transmon drive Hamiltonians behaves correctly."""
@@ -243,8 +243,8 @@ class TestTransmonDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.dot([1.0, 1.0], [qml.PauliY(1), qml.PauliY(2)]),
-            qml.dot([1.0, 1.0], [qml.PauliY(0), qml.PauliY(3)]),
+            qp.dot([1.0, 1.0], [qp.PauliY(1), qp.PauliY(2)]),
+            qp.dot([1.0, 1.0], [qp.PauliY(0), qp.PauliY(3)]),
         ]
         coeffs_expected = [
             AmplitudeAndPhaseAndFreq(np.sin, amp, phase0, freq0),
@@ -270,7 +270,7 @@ class TestTransmonDrive:
             HardwarePulse(1, phase1, freq1, wires=[1, 2]),
         ]
         # Hamiltonian is as expected
-        assert qml.math.allclose(qml.matrix(Hd([0.5], t=6)), qml.matrix(H_expected([0.5], t=6)))
+        assert qp.math.allclose(qp.matrix(Hd([0.5], t=6)), qp.matrix(H_expected([0.5], t=6)))
 
     def test_transmon_drive_with_regular_Parametrized_Hamiltonian(self):
         """Test call works as expected for regular parametrized Hamiltonian"""
@@ -279,16 +279,16 @@ class TestTransmonDrive:
             return np.sin(p * t)
 
         H = transmon_drive(f, f, f, wires=[0])
-        H += np.polyval * qml.PauliZ(0)
+        H += np.polyval * qp.PauliZ(0)
 
         t = 5.0
         params = [1.0, 2.0, 3.0, [0.5]]
         expected = amp_phase_freq(
             f(params[0], t) * (2 * np.pi), f(params[1], t), f(params[2], t) * (2 * np.pi), t, wire=0
         )
-        expected += np.polyval(params[3], t) * qml.PauliZ(0)
+        expected += np.polyval(params[3], t) * qp.PauliZ(0)
 
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected))
+        assert qp.math.allclose(qp.matrix(H(params, t)), qp.matrix(expected))
 
 
 connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
@@ -326,7 +326,7 @@ class TestTransmonInteraction:
 
     def test_coeffs(self):
         """Test that the generated coefficients are correct."""
-        Hd = qml.pulse.transmon_interaction(
+        Hd = qp.pulse.transmon_interaction(
             qubit_freq, connections, coupling, wires=wires, anharmonicity=anharmonicity, d=2
         )
         omega = 2 * np.pi * qubit_freq
@@ -336,7 +336,7 @@ class TestTransmonInteraction:
     @pytest.mark.skip
     def test_coeffs_d(self):
         """Test that generated coefficients are correct for d>2"""
-        Hd2 = qml.pulse.transmon_interaction(
+        Hd2 = qp.pulse.transmon_interaction(
             qubit_freq=qubit_freq,
             connections=connections,
             coupling=coupling,
@@ -349,7 +349,7 @@ class TestTransmonInteraction:
     def test_float_qubit_freq_with_explicit_wires(self):
         """Test that a single float qubit_freq with explicit wires yields the correct Hamiltonian"""
         wires = range(6)
-        H = qml.pulse.transmon_interaction(
+        H = qp.pulse.transmon_interaction(
             qubit_freq=1.0, connections=connections, coupling=coupling, wires=wires
         )
 
@@ -357,14 +357,14 @@ class TestTransmonInteraction:
         assert H.coeffs[:6] == [2 * np.pi] * 6
         assert all(H.coeffs[6:] == g)
         for o1, o2 in zip(H.ops[:6], [ad(i, 2) @ a(i, 2) for i in wires]):
-            qml.assert_equal(o1, o2)
+            qp.assert_equal(o1, o2)
 
     def test_single_callable_qubit_freq_with_explicit_wires(self):
         """Test that a single callable qubit_freq with explicit wires yields the correct Hamiltonian"""
         wires0 = np.arange(10)
         coupling = 0.5
 
-        H = qml.pulse.transmon_interaction(
+        H = qp.pulse.transmon_interaction(
             qubit_freq=np.polyval,
             connections=[[i, (i + 1) % 10] for i in wires0],
             coupling=coupling,
@@ -374,11 +374,11 @@ class TestTransmonInteraction:
         g = 2 * np.pi * coupling
         omega = callable_freq_to_angular(np.polyval)
 
-        assert qml.math.allclose(H.coeffs[:10], g)
+        assert qp.math.allclose(H.coeffs[:10], g)
         for coeff in H.coeffs[10:]:
             assert coeff([3, 4, 5], 6) == omega([3, 4, 5], 6)
         for o1, o2 in zip(H.ops[10:], [ad(i, 2) @ a(i, 2) for i in wires0]):
-            qml.assert_equal(o1, o2)
+            qp.assert_equal(o1, o2)
 
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
@@ -406,12 +406,12 @@ class TestTransmonInteraction:
     ):
         """Test that when wires and connections to not contain each other, a warning is raised"""
         with pytest.warns(UserWarning, match="Caution, wires and connections do not match."):
-            _ = qml.pulse.transmon_interaction(
+            _ = qp.pulse.transmon_interaction(
                 qubit_freq=0.5, connections=[[0, 1], [2, 3]], coupling=0.5, wires=[4, 5, 6]
             )
 
         with pytest.warns(UserWarning, match="Caution, wires and connections do not match."):
-            _ = qml.pulse.transmon_interaction(
+            _ = qp.pulse.transmon_interaction(
                 qubit_freq=0.5, connections=[[0, 1], [2, 3]], coupling=0.5, wires=[0, 1, 2]
             )
 
@@ -421,16 +421,16 @@ class TestTransmonInteraction:
             qubit_freq = 0.5 * np.arange(len(wires))
             coupling = 0.1 * np.arange(len(connections))
 
-            H = qml.pulse.transmon_interaction(qubit_freq, connections, coupling, wires)
+            H = qp.pulse.transmon_interaction(qubit_freq, connections, coupling, wires)
             assert H.wires == Wires(["a", "b", "c", "d", "e", "f"])
 
     def test_functional_form(self):
         """Test that the matrices of the transmon drive and a manually constructed
         operator with the same functional form are equal."""
         Hd = transmon_drive(1.0, 1.0, 1.0, wires=[0])
-        expected = qml.s_prod(2 * np.pi * np.sin(2 * np.pi * 1.0 + 1), qml.PauliY(0))
+        expected = qp.s_prod(2 * np.pi * np.sin(2 * np.pi * 1.0 + 1), qp.PauliY(0))
 
-        assert qml.math.allclose(qml.matrix(Hd([], 1.0)), qml.matrix(expected))
+        assert qp.math.allclose(qp.matrix(Hd([], 1.0)), qp.matrix(expected))
 
 
 # For transmon settings test
@@ -510,15 +510,15 @@ class TestIntegration:
         Hd = transmon_drive(amplitude=fa, phase=fb, freq=0.5, wires=[0])
         H = Hi + Hd
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(H)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(H)(params, ts)
+            return qp.expval(H_obj)
 
         qnode_jit = jax.jit(qnode)
 
@@ -528,7 +528,7 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert qml.math.isclose(res, res_jit)
+        assert qp.math.isclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(
@@ -557,15 +557,15 @@ class TestIntegration:
         H2 = transmon_drive(amplitude=fc, phase=3 * jnp.pi, freq=0, wires=4)
         H3 = transmon_drive(amplitude=0, phase=fd, freq=3.0, wires=[3, 0])
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hi + H1 + H2 + H3)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hi + H1 + H2 + H3)(params, ts)
+            return qp.expval(H_obj)
 
         qnode_jit = jax.jit(qnode)
 
@@ -579,7 +579,7 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert qml.math.isclose(res, res_jit)
+        assert qp.math.isclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
@@ -603,15 +603,15 @@ class TestIntegration:
 
         H_drive = transmon_drive(amplitude=fa, phase=fb, freq=fc, wires=1)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(H_drift + H_drive)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(H_drift + H_drive)(params, ts)
+            return qp.expval(H_obj)
 
         qnode_jit = jax.jit(qnode)
 
@@ -620,4 +620,4 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert qml.math.isclose(res, res_jit)
+        assert qp.math.isclose(res, res_jit)

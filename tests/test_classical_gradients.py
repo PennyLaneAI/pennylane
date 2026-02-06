@@ -24,17 +24,17 @@ from pennylane import numpy as np
 def test_grad_no_ints():
     """Test that grad raises a `ValueError` if the trainable parameter is an int."""
 
-    x = qml.numpy.array(2)
+    x = qp.numpy.array(2)
 
     def f(x):
         return x**2
 
     with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
-        qml.grad(f)(x)
+        qp.grad(f)(x)
 
-    y = qml.numpy.array([2, 2])
+    y = qp.numpy.array([2, 2])
     with pytest.raises(ValueError, match="Autograd does not support differentiation of ints."):
-        qml.jacobian(f)(y)
+        qp.jacobian(f)(y)
 
 
 class TestGradientUnivar:
@@ -43,7 +43,7 @@ class TestGradientUnivar:
     def test_sin(self, tol):
         """Tests with sin function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
-        g = qml.grad(np.sin, 0)
+        g = qp.grad(np.sin, 0)
         auto_grad = [g(x) for x in x_vals]
         correct_grad = np.cos(x_vals)
 
@@ -53,7 +53,7 @@ class TestGradientUnivar:
         """Tests exp function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
         func = lambda x: np.exp(x / 10.0) / 10.0
-        g = qml.grad(func, 0)
+        g = qp.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
         correct_grad = np.exp(x_vals / 10.0) / 100.0
 
@@ -63,7 +63,7 @@ class TestGradientUnivar:
         """Tests a polynomial function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
         func = lambda x: 2 * x**2 + 3 * x + 4
-        g = qml.grad(func, 0)
+        g = qp.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
         correct_grad = 4 * x_vals + 3
 
@@ -79,7 +79,7 @@ class TestGradientMultiVar:
         grad_multi_var = lambda x: np.array([np.cos(x[0]), -np.sin(x[1])])
 
         x_vec = [1.5, -2.5]
-        g = qml.grad(multi_var, 0)
+        g = qp.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
 
@@ -95,7 +95,7 @@ class TestGradientMultiVar:
             ]
         )
         x_vec = np.random.uniform(-5, 5, size=2)
-        g = qml.grad(multi_var, 0)
+        g = qp.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
 
@@ -106,7 +106,7 @@ class TestGradientMultiVar:
         multi_var = lambda x: np.sum([x_**2 for x_ in x])
         grad_multi_var = lambda x: np.array([2 * x_ for x_ in x])
         x_vec = np.random.uniform(-5, 5, size=2)
-        g = qml.grad(multi_var, 0)
+        g = qp.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
 
@@ -124,20 +124,20 @@ class TestGradientMultiargs:
         f = lambda x, y: np.sin(x) + np.cos(y)
 
         # gradient wrt first argument
-        gx = qml.grad(f, 0)
+        gx = qp.grad(f, 0)
 
         auto_gradx = gx(x, y)
         correct_gradx = gradf(x, y)[0]
         assert np.allclose(auto_gradx, correct_gradx, atol=tol, rtol=0)
 
         # gradient wrt second argument
-        gy = qml.grad(f, 1)
+        gy = qp.grad(f, 1)
         auto_grady = gy(x, y)
         correct_grady = gradf(x, y)[1]
         assert np.allclose(auto_grady, correct_grady, atol=tol, rtol=0)
 
         # gradient wrt both arguments
-        gxy = qml.grad(f, [0, 1])
+        gxy = qp.grad(f, [0, 1])
         auto_gradxy = gxy(x, y)
         correct_gradxy = gradf(x, y)
         assert np.allclose(auto_gradxy, correct_gradxy, atol=tol, rtol=0)
@@ -153,19 +153,19 @@ class TestGradientMultiargs:
         f = lambda x, y: np.exp(x / 3) * np.tanh(y)
 
         # gradient wrt first argument
-        gx = qml.grad(f, 0)
+        gx = qp.grad(f, 0)
         auto_gradx = gx(x, y)
         correct_gradx = gradf(x, y)[0]
         assert np.allclose(auto_gradx, correct_gradx, atol=tol, rtol=0)
 
         # gradient wrt second argument
-        gy = qml.grad(f, 1)
+        gy = qp.grad(f, 1)
         auto_grady = gy(x, y)
         correct_grady = gradf(x, y)[1]
         assert np.allclose(auto_grady, correct_grady, atol=tol, rtol=0)
 
         # gradient wrt both arguments
-        gxy = qml.grad(f, [0, 1])
+        gxy = qp.grad(f, [0, 1])
         auto_gradxy = gxy(x, y)
         correct_gradxy = gradf(x, y)
         assert np.allclose(auto_gradxy, correct_gradxy, atol=tol, rtol=0)
@@ -178,19 +178,19 @@ class TestGradientMultiargs:
         f = lambda x, y: np.sum([x_**2 for x_ in [x, y]])
 
         # gradient wrt first argument
-        gx = qml.grad(f, 0)
+        gx = qp.grad(f, 0)
         auto_gradx = gx(x, y)
         correct_gradx = gradf(x, y)[0]
         assert np.allclose(auto_gradx, correct_gradx, atol=tol, rtol=0)
 
         # gradient wrt second argument
-        gy = qml.grad(f, 1)
+        gy = qp.grad(f, 1)
         auto_grady = gy(x, y)
         correct_grady = gradf(x, y)[1]
         assert np.allclose(auto_grady, correct_grady, atol=tol, rtol=0)
 
         # gradient wrt both arguments
-        gxy = qml.grad(f, [0, 1])
+        gxy = qp.grad(f, [0, 1])
         auto_gradxy = gxy(x, y)
         correct_gradxy = gradf(x, y)
         assert np.allclose(auto_gradxy, correct_gradxy, atol=tol, rtol=0)
@@ -207,7 +207,7 @@ class TestGradientMultivarMultidim:
         gradf = lambda x: ([[np.cos(x[0, 0])], [-np.sin(x[[1]])]])
         f = lambda x: np.sin(x[0, 0]) + np.cos(x[1, 0])
 
-        g = qml.grad(f, 0)
+        g = qp.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
         assert np.allclose(auto_grad[0], correct_grad[0], atol=tol, rtol=0)
@@ -226,7 +226,7 @@ class TestGradientMultivarMultidim:
         )
         f = lambda x: np.exp(x[0, 0] / 3) * np.tanh(x[1, 0])
 
-        g = qml.grad(f, 0)
+        g = qp.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
@@ -239,7 +239,7 @@ class TestGradientMultivarMultidim:
         gradf = lambda x: np.array([[2 * x_[0]] for x_ in x])
         f = lambda x: np.sum([x_[0] ** 2 for x_ in x])
 
-        g = qml.grad(f, 0)
+        g = qp.grad(f, 0)
         auto_grad = g(x_vec_multidim)
         correct_grad = gradf(x_vec_multidim)
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
@@ -254,7 +254,7 @@ class TestGrad:
         def cost(x):
             return np.sin(x)
 
-        grad_fn = qml.grad(cost, argnums=[0])
+        grad_fn = qp.grad(cost, argnums=[0])
         arr1 = np.array([0.0, 1.0, 2.0], requires_grad=True)
 
         with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
@@ -267,7 +267,7 @@ class TestGrad:
         def cost(x):
             return np.sum(np.sin(x) * x[0] ** 3)
 
-        grad_fn = qml.grad(cost)
+        grad_fn = qp.grad(cost)
         params = np.array([0.5, 1.0, 2.0], requires_grad=True)
         res = grad_fn(params)
         expected = autograd.grad(cost)(params)
@@ -280,7 +280,7 @@ class TestGrad:
         def cost(x):
             return np.sum(np.sin(x) * x[0] ** 3)
 
-        grad_fn = qml.grad(cost)
+        grad_fn = qp.grad(cost)
         params = np.array([-0.654, 1.0, 2.0], requires_grad=True)
 
         assert grad_fn.forward is None
@@ -300,13 +300,13 @@ class TestGrad:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_no_argnum_grad(self, mocker, tol):
-        """Test the qml.grad function for inferred argnums"""
+        """Test the qp.grad function for inferred argnums"""
         cost_fn = lambda x, y: np.sin(x) * np.cos(y) + x * y**2
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        grad_fn = qml.grad(cost_fn)
+        grad_fn = qp.grad(cost_fn)
         spy = mocker.spy(grad_fn, "_grad_with_forward")
 
         res = grad_fn(x, y)
@@ -328,25 +328,25 @@ class TestJacobian:
     """Tests for the jacobian function"""
 
     def test_single_argnums_jacobian(self, tol):
-        """Test the qml.jacobian function for a single argnums"""
+        """Test the qp.jacobian function for a single argnums"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        jac_fn = qml.jacobian(cost_fn, argnums=0)
+        jac_fn = qp.jacobian(cost_fn, argnums=0)
         res = jac_fn(x, y)
         expected = np.array([np.cos(x) * np.cos(y), y**2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_argnums_jacobian(self, tol):
-        """Test the qml.jacobian function for multiple argnumss"""
+        """Test the qp.jacobian function for multiple argnumss"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        jac_fn = qml.jacobian(cost_fn, argnums=[0, 1])
+        jac_fn = qp.jacobian(cost_fn, argnums=[0, 1])
         res = jac_fn(x, y)
         expected = (
             np.array([np.cos(x) * np.cos(y), y**2]),
@@ -355,13 +355,13 @@ class TestJacobian:
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_no_argnums_jacobian(self, tol):
-        """Test the qml.jacobian function for inferred argnumss"""
+        """Test the qp.jacobian function for inferred argnumss"""
         cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
-        jac_fn = qml.jacobian(cost_fn)
+        jac_fn = qp.jacobian(cost_fn)
         res = jac_fn(x, y)
         expected = (
             np.array([np.cos(x) * np.cos(y), y**2]),

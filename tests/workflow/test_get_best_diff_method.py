@@ -21,8 +21,8 @@ from pennylane.workflow import get_best_diff_method
 
 def dummy_cv_func(x):
     """A dummy CV function with continuous-variable operations."""
-    qml.Displacement(x, 0.1, wires=0)
-    return qml.expval(qml.X(0))
+    qp.Displacement(x, 0.1, wires=0)
+    return qp.expval(qp.X(0))
 
 
 def dummyfunc():
@@ -31,7 +31,7 @@ def dummyfunc():
 
 
 # pylint: disable=unused-argument
-class CustomDevice(qml.devices.Device):
+class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
@@ -41,7 +41,7 @@ class CustomDevice(qml.devices.Device):
         return (0,)
 
 
-class CustomDeviceWithDiffMethod(qml.devices.Device):
+class CustomDeviceWithDiffMethod(qp.devices.Device):
     """A device that defines a derivative."""
 
     def execute(self, circuits, execution_config=None):
@@ -58,12 +58,12 @@ class TestValidation:
     @pytest.mark.jax
     def test_best_method_is_device(self):
         """Test that the method for determining the best diff method
-        for a device that is a child of qml.devices.Device and has a
+        for a device that is a child of qp.devices.Device and has a
         compute_derivatives method defined returns 'device'"""
 
         dev = CustomDeviceWithDiffMethod()
-        qn_jax = qml.QNode(dummyfunc, dev, "jax")
-        qn_none = qml.QNode(dummyfunc, dev)
+        qn_jax = qp.QNode(dummyfunc, dev, "jax")
+        qn_none = qp.QNode(dummyfunc, dev)
 
         res = get_best_diff_method(qn_jax)()
         assert res == "device"
@@ -77,8 +77,8 @@ class TestValidation:
         """Test that the method for determining the best diff method
         for the default.qubit device and a valid interface returns back-propagation"""
 
-        dev = qml.device("default.qubit", wires=1)
-        qn = qml.QNode(dummyfunc, dev, interface)
+        dev = qp.device("default.qubit", wires=1)
+        qn = qp.QNode(dummyfunc, dev, interface)
 
         # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
         res = get_best_diff_method(qn)()
@@ -91,22 +91,22 @@ class TestValidation:
 
         # null device has no info - fall back on parameter-shift
         dev = CustomDevice()
-        qn = qml.QNode(dummyfunc, dev)
+        qn = qp.QNode(dummyfunc, dev)
 
         res = get_best_diff_method(qn)()
         assert res == "parameter-shift"
 
         # no interface - fall back on parameter-shift
-        dev2 = qml.device("default.qubit", wires=1)
-        qn = qml.QNode(dummyfunc, dev2)
-        res2 = get_best_diff_method(qml.set_shots(qn, shots=50))()
+        dev2 = qp.device("default.qubit", wires=1)
+        qn = qp.QNode(dummyfunc, dev2)
+        res2 = get_best_diff_method(qp.set_shots(qn, shots=50))()
         assert res2 == "parameter-shift"
 
     def test_best_method_is_param_shift_cv(self):
         """Tests that the method returns 'parameter-shift' when CV operations are in the QNode."""
 
-        dev = qml.device("default.gaussian", wires=1)
-        qn = qml.QNode(dummy_cv_func, dev, interface=None)
+        dev = qp.device("default.gaussian", wires=1)
+        qn = qp.QNode(dummy_cv_func, dev, interface=None)
 
         res = get_best_diff_method(qn)(0.5)
         assert res == "parameter-shift"
@@ -114,15 +114,15 @@ class TestValidation:
     def test_best_method_with_transforms(self):
         """Test that transforms and execution parameters affect the supported differentiation method."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
-        x = qml.numpy.array(0.5)
+        x = qp.numpy.array(0.5)
 
         original_method = get_best_diff_method(circuit)(x)
-        metric_tensor_method = get_best_diff_method(qml.metric_tensor(circuit))(x)
+        metric_tensor_method = get_best_diff_method(qp.metric_tensor(circuit))(x)
 
         assert original_method == "adjoint"
 

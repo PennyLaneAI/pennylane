@@ -25,7 +25,7 @@ def test_early_exit():
     """Test we exit early when start==stop."""
     import jax
 
-    @qml.for_loop(0)
+    @qp.for_loop(0)
     def inner_loop(i, x):  # pylint: disable=unused-argument
         x += 1
         return x
@@ -36,28 +36,28 @@ def test_early_exit():
 
 
 def test_for_loop_python_fallback():
-    """Test that qml.for_loop fallsback to Python
+    """Test that qp.for_loop fallsback to Python
     interpretation if Catalyst is not available"""
-    dev = qml.device("default.qubit", wires=3)
+    dev = qp.device("default.qubit", wires=3)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x, n):
 
         # for loop with dynamic bounds
-        @qml.for_loop(0, n, 1)
+        @qp.for_loop(0, n, 1)
         def loop_fn(i):
-            qml.Hadamard(wires=i)
+            qp.Hadamard(wires=i)
 
         # nested for loops.
         # outer for loop updates x
-        @qml.for_loop(0, n, 1)
+        @qp.for_loop(0, n, 1)
         def loop_fn_returns(i, x):
-            qml.RX(x, wires=i)
+            qp.RX(x, wires=i)
 
             # inner for loop
-            @qml.for_loop(i + 1, n, 1)
+            @qp.for_loop(i + 1, n, 1)
             def inner(j):
-                qml.CRY(x**2, [i, j])
+                qp.CRY(x**2, [i, j])
 
             inner()
 
@@ -66,21 +66,21 @@ def test_for_loop_python_fallback():
         loop_fn()
         loop_fn_returns(x)
 
-        return qml.expval(qml.PauliZ(0))
+        return qp.expval(qp.PauliZ(0))
 
     x = 0.5
 
-    res = qml.workflow.construct_tape(circuit)(x, 3).operations
+    res = qp.workflow.construct_tape(circuit)(x, 3).operations
     expected = [
-        qml.Hadamard(wires=[0]),
-        qml.Hadamard(wires=[1]),
-        qml.Hadamard(wires=[2]),
-        qml.RX(0.5, wires=[0]),
-        qml.CRY(0.25, wires=[0, 1]),
-        qml.CRY(0.25, wires=[0, 2]),
-        qml.RX(0.6, wires=[1]),
-        qml.CRY(0.36, wires=[1, 2]),
-        qml.RX(0.7, wires=[2]),
+        qp.Hadamard(wires=[0]),
+        qp.Hadamard(wires=[1]),
+        qp.Hadamard(wires=[2]),
+        qp.RX(0.5, wires=[0]),
+        qp.CRY(0.25, wires=[0, 1]),
+        qp.CRY(0.25, wires=[0, 2]),
+        qp.RX(0.6, wires=[1]),
+        qp.CRY(0.36, wires=[1, 2]),
+        qp.RX(0.7, wires=[2]),
     ]
 
-    _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
+    _ = [qp.assert_equal(i, j) for i, j in zip(res, expected)]

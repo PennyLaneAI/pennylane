@@ -186,14 +186,14 @@ def test_for_loop_integration():
 def test_qnode_with_python_array_assignment():
     """Test a QNode where a python array argument is modified."""
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(new_val):
         angles = [0.1, 0.2, 0.3]
         angles[0] = new_val
-        qml.RX(angles[0], wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(angles[0], wires=0)
+        return qp.expval(qp.Z(0))
 
     ag_circuit = run_autograph(circuit)
     new_angle = jnp.pi
@@ -212,13 +212,13 @@ def test_qnode_with_python_array_assignment():
 def test_qnode_with_jax_array_assignment():
     """Test a QNode where a JAX array argument is modified."""
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(angles, new_val):
         angles[0] = new_val
-        qml.RX(angles[0], wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(angles[0], wires=0)
+        return qp.expval(qp.Z(0))
 
     ag_circuit = run_autograph(circuit)
     angles_in = jnp.array([0.1, 0.2, 0.3])

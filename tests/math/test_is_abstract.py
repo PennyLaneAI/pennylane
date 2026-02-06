@@ -36,18 +36,18 @@ class TestTensorFlow:
 
             assert tf.executing_eagerly()
 
-            assert not qml.math.is_abstract(w)
-            assert not qml.math.is_abstract(x)
-            assert not qml.math.is_abstract(y)
-            assert not qml.math.is_abstract(z)
+            assert not qp.math.is_abstract(w)
+            assert not qp.math.is_abstract(x)
+            assert not qp.math.is_abstract(y)
+            assert not qp.math.is_abstract(z)
 
             return tf.reduce_sum(y)
 
         x = tf.Variable([0.5, 0.1])
         w = tf.constant(0.1)
 
-        assert not qml.math.is_abstract(w)
-        assert not qml.math.is_abstract(x)
+        assert not qp.math.is_abstract(w)
+        assert not qp.math.is_abstract(x)
 
         with tf.GradientTape() as tape:
             res = cost(x, w)
@@ -69,18 +69,18 @@ class TestTensorFlow:
 
             assert not tf.executing_eagerly()
 
-            assert qml.math.is_abstract(w)
-            assert qml.math.is_abstract(x)
-            assert qml.math.is_abstract(y)
-            assert qml.math.is_abstract(z)
+            assert qp.math.is_abstract(w)
+            assert qp.math.is_abstract(x)
+            assert qp.math.is_abstract(y)
+            assert qp.math.is_abstract(z)
 
             return tf.reduce_sum(y)
 
         x = tf.Variable([0.5, 0.1])
         w = tf.constant(0.1)
 
-        assert not qml.math.is_abstract(w)
-        assert not qml.math.is_abstract(x)
+        assert not qp.math.is_abstract(w)
+        assert not qp.math.is_abstract(x)
 
         with tf.GradientTape() as tape:
             res = cost(x, w)
@@ -104,18 +104,18 @@ class TestJAX:
             y = x**2
             z = jnp.ones([2, 2])
 
-            assert not qml.math.is_abstract(w)
-            assert not qml.math.is_abstract(x)
-            assert not qml.math.is_abstract(y)
-            assert not qml.math.is_abstract(z)
+            assert not qp.math.is_abstract(w)
+            assert not qp.math.is_abstract(x)
+            assert not qp.math.is_abstract(y)
+            assert not qp.math.is_abstract(z)
 
             return jnp.sum(y)
 
         x = jnp.array([0.5, 0.1])
         w = jnp.array(0.1)
 
-        assert not qml.math.is_abstract(w)
-        assert not qml.math.is_abstract(x)
+        assert not qp.math.is_abstract(w)
+        assert not qp.math.is_abstract(x)
 
         res = cost(x, w)
         assert res == 0.26
@@ -135,19 +135,19 @@ class TestJAX:
             y = x**2
             z = jnp.ones([2, 2])
 
-            assert qml.math.is_abstract(w) == w_is_abstract
+            assert qp.math.is_abstract(w) == w_is_abstract
 
-            assert qml.math.is_abstract(x)
-            assert qml.math.is_abstract(y)
-            assert qml.math.is_abstract(z)
+            assert qp.math.is_abstract(x)
+            assert qp.math.is_abstract(y)
+            assert qp.math.is_abstract(z)
 
             return jnp.sum(y)
 
         x = jnp.array([0.5, 0.1])
         w = jnp.array(0.1)
 
-        assert not qml.math.is_abstract(w)
-        assert not qml.math.is_abstract(x)
+        assert not qp.math.is_abstract(w)
+        assert not qp.math.is_abstract(x)
 
         res = cost(x, w)
         assert res == 0.26

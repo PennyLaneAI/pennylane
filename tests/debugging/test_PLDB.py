@@ -40,16 +40,16 @@ class TestPLDB:
         with pytest.raises(
             RuntimeError, match="Can't call breakpoint outside of a qnode execution"
         ):
-            with qml.queuing.AnnotatedQueue() as _:
-                qml.X(0)
-                qml.breakpoint()
-                qml.Hadamard(0)
+            with qp.queuing.AnnotatedQueue() as _:
+                qp.X(0)
+                qp.breakpoint()
+                qp.Hadamard(0)
 
         def my_qfunc():
-            qml.X(0)
-            qml.breakpoint()
-            qml.Hadamard(0)
-            return qml.expval(qml.Z(0))
+            qp.X(0)
+            qp.breakpoint()
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(
             RuntimeError, match="Can't call breakpoint outside of a qnode execution"
@@ -59,14 +59,14 @@ class TestPLDB:
     def test_valid_context_not_compatible_device(self):
         """Test that valid_context raises an error when breakpoint
         is called with an incompatible device."""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qp.device("default.mixed", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def my_circ():
-            qml.X(0)
-            qml.breakpoint()
-            qml.Hadamard(0)
-            return qml.expval(qml.Z(0))
+            qp.X(0)
+            qp.breakpoint()
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
 
         with pytest.raises(TypeError, match="Breakpoints not supported on this device"):
             _ = my_circ()
@@ -78,9 +78,9 @@ class TestPLDB:
         assert not PLDB.has_active_dev()
 
         dev1, dev2, dev3 = (
-            qml.device("default.qubit", wires=3),
-            qml.device("default.qubit"),
-            qml.device("lightning.qubit", wires=1),
+            qp.device("default.qubit", wires=3),
+            qp.device("default.qubit"),
+            qp.device("lightning.qubit", wires=1),
         )
 
         PLDB.add_device(dev1)
@@ -101,7 +101,7 @@ class TestPLDB:
     @pytest.mark.parametrize("device_name", dev_names)
     def test_get_active_device(self, device_name):
         """Test that we can access the active device."""
-        dev = qml.device(device_name, wires=2)
+        dev = qp.device(device_name, wires=2)
         with pldb_device_manager(dev) as _:
             assert PLDB.get_active_device() is dev
 
@@ -116,7 +116,7 @@ class TestPLDB:
     @pytest.mark.parametrize("device_name", dev_names)
     def test_reset_active_device(self, device_name):
         """Test that we can reset the global active device list."""
-        dev = qml.device(device_name, wires=2)
+        dev = qp.device(device_name, wires=2)
         PLDB.add_device(dev)
         assert PLDB.get_active_device() == dev
 
@@ -127,7 +127,7 @@ class TestPLDB:
         """Test that we can determine if there is an active device."""
         assert getattr(PLDB, "_PLDB__active_dev") is None
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         PLDB.add_device(dev)
         assert PLDB.has_active_dev()
 
@@ -135,25 +135,25 @@ class TestPLDB:
         assert not PLDB.has_active_dev()
 
     tapes = (
-        qml.tape.QuantumScript(
-            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
-            measurements=[qml.state()],
+        qp.tape.QuantumScript(
+            ops=[qp.Hadamard(0), qp.CNOT([0, 1])],
+            measurements=[qp.state()],
         ),
-        qml.tape.QuantumScript(
-            ops=[qml.Hadamard(0), qml.X(1)],
-            measurements=[qml.expval(qml.Z(1))],
+        qp.tape.QuantumScript(
+            ops=[qp.Hadamard(0), qp.X(1)],
+            measurements=[qp.expval(qp.Z(1))],
         ),
-        qml.tape.QuantumScript(
-            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
-            measurements=[qml.probs()],
+        qp.tape.QuantumScript(
+            ops=[qp.Hadamard(0), qp.CNOT([0, 1])],
+            measurements=[qp.probs()],
         ),
-        qml.tape.QuantumScript(
-            ops=[qml.Hadamard(0), qml.CNOT([0, 1])],
-            measurements=[qml.probs(wires=[0])],
+        qp.tape.QuantumScript(
+            ops=[qp.Hadamard(0), qp.CNOT([0, 1])],
+            measurements=[qp.probs(wires=[0])],
         ),
-        qml.tape.QuantumScript(
-            ops=[qml.Hadamard(0)],
-            measurements=[qml.state()],
+        qp.tape.QuantumScript(
+            ops=[qp.Hadamard(0)],
+            measurements=[qp.state()],
         ),  # Test that state expands to number of device wires
     )
 
@@ -167,7 +167,7 @@ class TestPLDB:
 
     @pytest.mark.parametrize("tape, expected_result", zip(tapes, results))
     @pytest.mark.parametrize(
-        "dev", (qml.device("default.qubit", wires=2), qml.device("lightning.qubit", wires=2))
+        "dev", (qp.device("default.qubit", wires=2), qp.device("lightning.qubit", wires=2))
     )
     def test_execute(self, dev, tape, expected_result):
         """Test that the _execute method works as expected."""
@@ -179,40 +179,40 @@ class TestPLDB:
 
 def test_tape():
     """Test that we can access the tape from the active queue."""
-    with qml.queuing.AnnotatedQueue() as queue:
-        qml.X(0)
+    with qp.queuing.AnnotatedQueue() as queue:
+        qp.X(0)
 
         for i in range(3):
-            qml.Hadamard(i)
+            qp.Hadamard(i)
 
-        qml.Y(1)
-        qml.Z(0)
-        qml.expval(qml.Z(0))
+        qp.Y(1)
+        qp.Z(0)
+        qp.expval(qp.Z(0))
 
-        executed_tape = qml.debug_tape()
+        executed_tape = qp.debug_tape()
 
-    expected_tape = qml.tape.QuantumScript.from_queue(queue)
-    qml.assert_equal(expected_tape, executed_tape)
+    expected_tape = qp.tape.QuantumScript.from_queue(queue)
+    qp.assert_equal(expected_tape, executed_tape)
 
 
-@pytest.mark.parametrize("measurement_process", (qml.expval(qml.Z(0)), qml.state(), qml.probs()))
+@pytest.mark.parametrize("measurement_process", (qp.expval(qp.Z(0)), qp.state(), qp.probs()))
 @patch.object(PLDB, "_execute")
 def test_measure(mock_method, measurement_process):
     """Test that the private measure function doesn't modify the active queue"""
-    with qml.queuing.AnnotatedQueue() as queue:
-        ops = [qml.X(0), qml.Y(1), qml.Z(0)] + [qml.Hadamard(i) for i in range(3)]
-        measurements = [qml.expval(qml.X(2)), qml.state(), qml.probs(), qml.var(qml.Z(3))]
-        qml.debugging.debugger._measure(measurement_process)
+    with qp.queuing.AnnotatedQueue() as queue:
+        ops = [qp.X(0), qp.Y(1), qp.Z(0)] + [qp.Hadamard(i) for i in range(3)]
+        measurements = [qp.expval(qp.X(2)), qp.state(), qp.probs(), qp.var(qp.Z(3))]
+        qp.debugging.debugger._measure(measurement_process)
 
-    executed_tape = qml.tape.QuantumScript.from_queue(queue)
-    expected_tape = qml.tape.QuantumScript(ops, measurements)
+    executed_tape = qp.tape.QuantumScript.from_queue(queue)
+    expected_tape = qp.tape.QuantumScript(ops, measurements)
 
-    qml.assert_equal(expected_tape, executed_tape)  # no unexpected queuing
+    qp.assert_equal(expected_tape, executed_tape)  # no unexpected queuing
 
-    expected_debugging_tape = qml.tape.QuantumScript(ops, measurements + [measurement_process])
+    expected_debugging_tape = qp.tape.QuantumScript(ops, measurements + [measurement_process])
     executed_debugging_tape = mock_method.call_args.args[0][0]
 
-    qml.assert_equal(
+    qp.assert_equal(
         expected_debugging_tape, executed_debugging_tape
     )  # _execute was called with new measurements
 
@@ -220,45 +220,45 @@ def test_measure(mock_method, measurement_process):
 @patch.object(PLDB, "_execute")
 def test_state(_mock_method):
     """Test that the state function works as expected."""
-    with qml.queuing.AnnotatedQueue() as queue:
-        qml.RX(1.23, 0)
-        qml.RY(0.45, 2)
-        qml.sample()
+    with qp.queuing.AnnotatedQueue() as queue:
+        qp.RX(1.23, 0)
+        qp.RY(0.45, 2)
+        qp.sample()
 
-        qml.debug_state()
+        qp.debug_state()
 
-    assert qml.state() not in queue
+    assert qp.state() not in queue
 
 
 @patch.object(PLDB, "_execute")
 def test_expval(_mock_method):
     """Test that the expval function works as expected."""
-    for op in [qml.X(0), qml.Y(1), qml.Z(2), qml.Hadamard(0)]:
-        with qml.queuing.AnnotatedQueue() as queue:
-            qml.RX(1.23, 0)
-            qml.RY(0.45, 2)
-            qml.sample()
+    for op in [qp.X(0), qp.Y(1), qp.Z(2), qp.Hadamard(0)]:
+        with qp.queuing.AnnotatedQueue() as queue:
+            qp.RX(1.23, 0)
+            qp.RY(0.45, 2)
+            qp.sample()
 
-            qml.debug_expval(op)
+            qp.debug_expval(op)
 
         assert op not in queue
-        assert qml.expval(op) not in queue
+        assert qp.expval(op) not in queue
 
 
 @patch.object(PLDB, "_execute")
 def test_probs_with_op(_mock_method):
     """Test that the probs function works as expected."""
 
-    for op in [None, qml.X(0), qml.Y(1), qml.Z(2)]:
-        with qml.queuing.AnnotatedQueue() as queue:
-            qml.RX(1.23, 0)
-            qml.RY(0.45, 2)
-            qml.sample()
+    for op in [None, qp.X(0), qp.Y(1), qp.Z(2)]:
+        with qp.queuing.AnnotatedQueue() as queue:
+            qp.RX(1.23, 0)
+            qp.RY(0.45, 2)
+            qp.sample()
 
-            qml.debug_probs(op=op)
+            qp.debug_probs(op=op)
 
         assert op not in queue
-        assert qml.probs(op=op) not in queue
+        assert qp.probs(op=op) not in queue
 
 
 @patch.object(PLDB, "_execute")
@@ -266,21 +266,21 @@ def test_probs_with_wires(_mock_method):
     """Test that the probs function works as expected."""
 
     for wires in [None, [0, 1], [2]]:
-        with qml.queuing.AnnotatedQueue() as queue:
-            qml.RX(1.23, 0)
-            qml.RY(0.45, 2)
-            qml.sample()
+        with qp.queuing.AnnotatedQueue() as queue:
+            qp.RX(1.23, 0)
+            qp.RY(0.45, 2)
+            qp.sample()
 
-            qml.debug_probs(wires=wires)
+            qp.debug_probs(wires=wires)
 
-        assert qml.probs(wires=wires) not in queue
+        assert qp.probs(wires=wires) not in queue
 
 
 @pytest.mark.parametrize("device_name", ("default.qubit", "lightning.qubit"))
 def test_pldb_device_manager(device_name):
     """Test that the context manager works as expected."""
     assert not PLDB.has_active_dev()
-    dev = qml.device(device_name, wires=2)
+    dev = qp.device(device_name, wires=2)
 
     with pldb_device_manager(dev) as _:
         assert PLDB.get_active_device() == dev
@@ -290,15 +290,15 @@ def test_pldb_device_manager(device_name):
 
 @patch.object(PLDB, "set_trace")
 def test_breakpoint_integration(mock_method):
-    """Test that qml.breakpoint behaves as expected"""
-    dev = qml.device("default.qubit")
+    """Test that qp.breakpoint behaves as expected"""
+    dev = qp.device("default.qubit")
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def my_circ():
-        qml.Hadamard(0)
-        qml.CNOT([0, 1])
-        qml.breakpoint()
-        return qml.expval(qml.Z(1))
+        qp.Hadamard(0)
+        qp.CNOT([0, 1])
+        qp.breakpoint()
+        return qp.expval(qp.Z(1))
 
     mock_method.assert_not_called()  # Did not hit breakpoint
     my_circ()
@@ -307,15 +307,15 @@ def test_breakpoint_integration(mock_method):
 
 @patch.object(PLDB, "set_trace")
 def test_breakpoint_integration_with_valid_context_error(mock_method):
-    """Test that the PLDB.valid_context() integrates well with qml.breakpoint"""
-    dev = qml.device("default.mixed", wires=2)
+    """Test that the PLDB.valid_context() integrates well with qp.breakpoint"""
+    dev = qp.device("default.mixed", wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def my_circ():
-        qml.Hadamard(0)
-        qml.CNOT([0, 1])
-        qml.breakpoint()
-        return qml.expval(qml.Z(1))
+        qp.Hadamard(0)
+        qp.CNOT([0, 1])
+        qp.breakpoint()
+        return qp.expval(qp.Z(1))
 
     with pytest.raises(TypeError, match="Breakpoints not supported on this device"):
         _ = my_circ()

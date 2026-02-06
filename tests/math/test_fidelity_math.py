@@ -61,8 +61,8 @@ class TestFidelityMath:
         state0 = func(state0)
         state1 = func(state1)
 
-        fidelity = qml.math.fidelity_statevector(state0, state1, check_state)
-        assert qml.math.allclose(fid, fidelity)
+        fidelity = qp.math.fidelity_statevector(state0, state1, check_state)
+        assert qp.math.allclose(fid, fidelity)
 
     @pytest.mark.parametrize("states_fid", density_mats)
     @pytest.mark.parametrize("check_state", check_state)
@@ -73,8 +73,8 @@ class TestFidelityMath:
         state0 = func(state0)
         state1 = func(state1)
 
-        fidelity = qml.math.fidelity(state0, state1, check_state)
-        assert qml.math.allclose(fid, fidelity)
+        fidelity = qp.math.fidelity(state0, state1, check_state)
+        assert qp.math.allclose(fid, fidelity)
 
     state_wrong_amp = [([0.5, 0], [0, 1]), ([0, 1], [0.5, 0])]
 
@@ -82,7 +82,7 @@ class TestFidelityMath:
     def test_state_vector_wrong_amplitudes(self, state0, state1):
         """Test that a message is raised when a state does not have right norm"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qml.math.fidelity_statevector(state0, state1, check_state=True)
+            qp.math.fidelity_statevector(state0, state1, check_state=True)
 
     state_wrong_shape = [([0, 1, 1], [0, 1]), ([0, 1], [0, 1, 1])]
 
@@ -90,7 +90,7 @@ class TestFidelityMath:
     def test_state_vector_wrong_shape(self, state0, state1):
         """Test that a message is raised when the state does not have the right shape."""
         with pytest.raises(ValueError, match="State vector must be of shape"):
-            qml.math.fidelity_statevector(state0, state1, check_state=True)
+            qp.math.fidelity_statevector(state0, state1, check_state=True)
 
     d_mat_wrong_shape = [
         ([[1, 0, 0], [0, 0, 0], [0, 0, 0]], [[1, 0], [0, 0]]),
@@ -101,7 +101,7 @@ class TestFidelityMath:
     def test_density_matrix_wrong_shape(self, state0, state1):
         """Test that a message is raised when the density matrix does not have the right shape."""
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
-            qml.math.fidelity(state0, state1, check_state=True)
+            qp.math.fidelity(state0, state1, check_state=True)
 
     d_mat_wrong_trace = [
         ([[1, 0], [0, -1]], [[1, 0], [0, 0]]),
@@ -112,7 +112,7 @@ class TestFidelityMath:
     def test_density_matrix_wrong_trace(self, state0, state1):
         """Test that a message is raised when the density matrix does not have the right trace."""
         with pytest.raises(ValueError, match="The trace of the density matrix should be one"):
-            qml.math.fidelity(state0, state1, check_state=True)
+            qp.math.fidelity(state0, state1, check_state=True)
 
     d_mat_not_hermitian = [
         ([[1, 1], [0, 0]], [[1, 0], [0, 0]]),
@@ -123,7 +123,7 @@ class TestFidelityMath:
     def test_density_matrix_not_hermitian(self, state0, state1):
         """Test that a message is raised when the density matrix is not Hermitian."""
         with pytest.raises(ValueError, match="The matrix is not Hermitian"):
-            qml.math.fidelity(state0, state1, check_state=True)
+            qp.math.fidelity(state0, state1, check_state=True)
 
     d_mat_not_positive = [
         ([[2, 0], [0, -1]], [[1, 0], [0, 0]]),
@@ -134,21 +134,21 @@ class TestFidelityMath:
     def test_density_matrix_not_positive_semi_def(self, state0, state1):
         """Test that a message is raised when the density matrix is not positive semi def."""
         with pytest.raises(ValueError, match="The matrix is not positive semi"):
-            qml.math.fidelity(state0, state1, check_state=True)
+            qp.math.fidelity(state0, state1, check_state=True)
 
     def test_same_number_wires(self):
         """Test that the two states must act on the same number of wires"""
         state0 = [0, 1, 0, 0]
         state1 = [1, 0]
         with pytest.raises(ValueError, match="The two states must have the same number of wires"):
-            qml.math.fidelity_statevector(state0, state1, check_state=True)
+            qp.math.fidelity_statevector(state0, state1, check_state=True)
 
     def test_same_number_wires_dm(self):
         """Test that the two states must act on the same number of wires"""
         state0 = np.diag([0, 1, 0, 0])
         state1 = [[1, 0], [0, 0]]
         with pytest.raises(ValueError, match="The two states must have the same number of wires"):
-            qml.math.fidelity(state0, state1, check_state=True)
+            qp.math.fidelity(state0, state1, check_state=True)
 
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
@@ -158,8 +158,8 @@ class TestFidelityMath:
         state1 = func([[0, 1], [0, 1], [1, 1] / np.sqrt(2)])
         expected = [0, 1, 0.5]
 
-        fidelity = qml.math.fidelity_statevector(state0, state1, check_state)
-        assert qml.math.allclose(fidelity, expected)
+        fidelity = qp.math.fidelity_statevector(state0, state1, check_state)
+        assert qp.math.allclose(fidelity, expected)
 
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
@@ -169,8 +169,8 @@ class TestFidelityMath:
         state1 = func([[0, 1], [1, 0], [1, 1] / np.sqrt(2)])
         expected = [0, 1, 0.5]
 
-        fidelity = qml.math.fidelity_statevector(state0, state1, check_state)
-        assert qml.math.allclose(fidelity, expected)
+        fidelity = qp.math.fidelity_statevector(state0, state1, check_state)
+        assert qp.math.allclose(fidelity, expected)
 
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
@@ -187,8 +187,8 @@ class TestFidelityMath:
         )
         expected = [0.5, 0.5, 0.5, 0.5]
 
-        fidelity = qml.math.fidelity(state0, state1, check_state)
-        assert qml.math.allclose(fidelity, expected)
+        fidelity = qp.math.fidelity(state0, state1, check_state)
+        assert qp.math.allclose(fidelity, expected)
 
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
@@ -206,91 +206,91 @@ class TestFidelityMath:
 
         expected = [0, 1, 0.5, 0.5]
 
-        fidelity = qml.math.fidelity(state0, state1, check_state)
-        assert qml.math.allclose(fidelity, expected)
+        fidelity = qp.math.fidelity(state0, state1, check_state)
+        assert qp.math.allclose(fidelity, expected)
 
 
 def cost_fn_single(x):
-    first_term = qml.math.convert_like(qml.math.diag([1.0, 0]), x)
-    second_term = qml.math.convert_like(qml.math.diag([0, 1.0]), x)
+    first_term = qp.math.convert_like(qp.math.diag([1.0, 0]), x)
+    second_term = qp.math.convert_like(qp.math.diag([0, 1.0]), x)
 
-    x = qml.math.cast_like(x, first_term)
-    if len(qml.math.shape(x)) == 0:
-        state1 = qml.math.cos(x / 2) ** 2 * first_term + qml.math.sin(x / 2) ** 2 * second_term
+    x = qp.math.cast_like(x, first_term)
+    if len(qp.math.shape(x)) == 0:
+        state1 = qp.math.cos(x / 2) ** 2 * first_term + qp.math.sin(x / 2) ** 2 * second_term
     else:
         # broadcasting
         x = x[:, None, None]
-        state1 = qml.math.cos(x / 2) ** 2 * first_term + qml.math.sin(x / 2) ** 2 * second_term
+        state1 = qp.math.cos(x / 2) ** 2 * first_term + qp.math.sin(x / 2) ** 2 * second_term
 
-    state2 = qml.math.convert_like(qml.math.diag([1, 0]), state1)
+    state2 = qp.math.convert_like(qp.math.diag([1, 0]), state1)
 
-    return qml.math.fidelity(state1, state2) + qml.math.fidelity(state2, state1)
+    return qp.math.fidelity(state1, state2) + qp.math.fidelity(state2, state1)
 
 
 def cost_fn_multi1(x):
-    first_term = qml.math.convert_like(qml.math.diag([1.0, 0, 0, 0]), x)
-    second_term = qml.math.convert_like(qml.math.diag([0, 0, 0, 1.0]), x)
+    first_term = qp.math.convert_like(qp.math.diag([1.0, 0, 0, 0]), x)
+    second_term = qp.math.convert_like(qp.math.diag([0, 0, 0, 1.0]), x)
 
-    x = qml.math.cast_like(x, first_term)
+    x = qp.math.cast_like(x, first_term)
 
-    if len(qml.math.shape(x)) == 0:
-        state1 = qml.math.cos(x / 2) ** 2 * first_term + qml.math.sin(x / 2) ** 2 * second_term
+    if len(qp.math.shape(x)) == 0:
+        state1 = qp.math.cos(x / 2) ** 2 * first_term + qp.math.sin(x / 2) ** 2 * second_term
     else:
         # broadcasting
         x = x[:, None, None]
-        state1 = qml.math.cos(x / 2) ** 2 * first_term + qml.math.sin(x / 2) ** 2 * second_term
+        state1 = qp.math.cos(x / 2) ** 2 * first_term + qp.math.sin(x / 2) ** 2 * second_term
 
-    state2 = qml.math.convert_like(qml.math.diag([1, 0, 0, 0]), state1)
+    state2 = qp.math.convert_like(qp.math.diag([1, 0, 0, 0]), state1)
 
-    return qml.math.fidelity(state1, state2) + qml.math.fidelity(state2, state1)
+    return qp.math.fidelity(state1, state2) + qp.math.fidelity(state2, state1)
 
 
 def cost_fn_multi2(x):
-    first_term = qml.math.convert_like(np.ones((4, 4)) / 4, x)
+    first_term = qp.math.convert_like(np.ones((4, 4)) / 4, x)
     second_term = np.zeros((4, 4))
     second_term[1:3, 1:3] = np.array([[1, -1], [-1, 1]]) / 2
-    second_term = qml.math.convert_like(second_term, x)
+    second_term = qp.math.convert_like(second_term, x)
 
-    x = qml.math.cast_like(x, first_term)
+    x = qp.math.cast_like(x, first_term)
 
-    if len(qml.math.shape(x)) == 0:
-        state1 = qml.math.cos(x / 2) ** 2 * first_term + qml.math.sin(x / 2) ** 2 * second_term
+    if len(qp.math.shape(x)) == 0:
+        state1 = qp.math.cos(x / 2) ** 2 * first_term + qp.math.sin(x / 2) ** 2 * second_term
     else:
         # broadcasting
         x = x[:, None, None]
-        state1 = qml.math.cos(x / 2) ** 2 * first_term + qml.math.sin(x / 2) ** 2 * second_term
+        state1 = qp.math.cos(x / 2) ** 2 * first_term + qp.math.sin(x / 2) ** 2 * second_term
 
-    state2 = qml.math.convert_like(qml.math.diag([1, 0, 0, 0]), state1)
+    state2 = qp.math.convert_like(qp.math.diag([1, 0, 0, 0]), state1)
 
-    return qml.math.fidelity(state1, state2) + qml.math.fidelity(state2, state1)
+    return qp.math.fidelity(state1, state2) + qp.math.fidelity(state2, state1)
 
 
 def expected_res_single(x):
-    return 2 * qml.math.cos(x / 2) ** 2
+    return 2 * qp.math.cos(x / 2) ** 2
 
 
 def expected_res_multi1(x):
-    return 2 * qml.math.cos(x / 2) ** 2
+    return 2 * qp.math.cos(x / 2) ** 2
 
 
 def expected_res_multi2(x):
-    return qml.math.cos(x / 2) ** 2 / 2
+    return qp.math.cos(x / 2) ** 2 / 2
 
 
 def expected_grad_single(x):
-    return -qml.math.sin(x)
+    return -qp.math.sin(x)
 
 
 def expected_grad_multi1(x):
-    return -qml.math.sin(x)
+    return -qp.math.sin(x)
 
 
 def expected_grad_multi2(x):
-    return -qml.math.sin(x) / 4
+    return -qp.math.sin(x) / 4
 
 
 class TestGradient:
-    """Test the gradient of qml.math.fidelity"""
+    """Test the gradient of qp.math.fidelity"""
 
     # pylint: disable=too-many-arguments
 
@@ -307,10 +307,10 @@ class TestGradient:
         """Test gradients are correct for autograd"""
         x = np.array(x)
         res = cost_fn(x)
-        grad = qml.grad(cost_fn)(x)
+        grad = qp.grad(cost_fn)(x)
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
@@ -321,8 +321,8 @@ class TestGradient:
         res = cost_fn(x)
         grad = jax.grad(cost_fn)(x)
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
@@ -335,8 +335,8 @@ class TestGradient:
         res = jitted_cost(x)
         grad = jax.grad(jitted_cost)(x)
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("x", [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
@@ -348,8 +348,8 @@ class TestGradient:
         res.backward()
         grad = x.grad
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
@@ -357,10 +357,10 @@ class TestGradient:
         """Test gradients are correct for a broadcasted input for autograd"""
         x = np.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
         res = cost_fn(x)
-        grad = qml.math.diag(qml.jacobian(cost_fn)(x))
+        grad = qp.math.diag(qp.jacobian(cost_fn)(x))
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
@@ -368,10 +368,10 @@ class TestGradient:
         """Test gradients are correct for a broadcasted input for jax"""
         x = jnp.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
         res = cost_fn(x)
-        grad = qml.math.diag(jax.jacobian(cost_fn)(x))
+        grad = qp.math.diag(jax.jacobian(cost_fn)(x))
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
@@ -381,10 +381,10 @@ class TestGradient:
 
         jitted_cost = jax.jit(cost_fn)
         res = jitted_cost(x)
-        grad = qml.math.diag(jax.jacobian(jitted_cost)(x))
+        grad = qp.math.diag(jax.jacobian(jitted_cost)(x))
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
@@ -395,7 +395,7 @@ class TestGradient:
         ).requires_grad_()
 
         res = cost_fn(x)
-        grad = qml.math.diag(torch.autograd.functional.jacobian(cost_fn, x))
+        grad = qp.math.diag(torch.autograd.functional.jacobian(cost_fn, x))
 
-        assert qml.math.allclose(res, expected_res(x), tol)
-        assert qml.math.allclose(grad, expected_grad(x), tol)
+        assert qp.math.allclose(res, expected_res(x), tol)
+        assert qp.math.allclose(grad, expected_grad(x), tol)

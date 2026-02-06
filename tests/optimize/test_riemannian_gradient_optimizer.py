@@ -24,46 +24,46 @@ from pennylane.optimize import RiemannianGradientOptimizer
 
 def circuit_1():
     """Simple circuit."""
-    qml.Hadamard(wires=[0])
-    qml.Hadamard(wires=[1])
+    qp.Hadamard(wires=[0])
+    qp.Hadamard(wires=[1])
 
 
 def circuit_2():
     """Simply parametrized circuit."""
-    qml.RX(0.1, wires=[0])
-    qml.RY(0.5, wires=[1])
-    qml.CNOT(wires=[0, 1])
-    qml.RY(0.6, wires=[0])
+    qp.RX(0.1, wires=[0])
+    qp.RY(0.5, wires=[1])
+    qp.CNOT(wires=[0, 1])
+    qp.RY(0.6, wires=[0])
 
 
 def circuit_3():
     """Three-qubit circuit."""
-    qml.RY(0.5, wires=[0])
-    qml.RY(0.6, wires=[1])
-    qml.RY(0.7, wires=[2])
-    qml.CNOT(wires=[0, 1])
-    qml.CNOT(wires=[1, 2])
-    qml.RX(-0.6, wires=[0])
-    qml.RX(-0.3, wires=[1])
-    qml.RX(-0.2, wires=[2])
+    qp.RY(0.5, wires=[0])
+    qp.RY(0.6, wires=[1])
+    qp.RY(0.7, wires=[2])
+    qp.CNOT(wires=[0, 1])
+    qp.CNOT(wires=[1, 2])
+    qp.RX(-0.6, wires=[0])
+    qp.RX(-0.3, wires=[1])
+    qp.RX(-0.2, wires=[2])
 
 
-hamiltonian_1 = qml.Hamiltonian(
+hamiltonian_1 = qp.Hamiltonian(
     coeffs=[-1.0] * 3,
-    observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+    observables=[qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0) @ qp.PauliX(1)],
 )
 
-hamiltonian_2 = qml.Hamiltonian(
+hamiltonian_2 = qp.Hamiltonian(
     coeffs=[-0.2, 0.3, -0.15],
     observables=[
-        qml.PauliY(1),
-        qml.PauliZ(0) @ qml.PauliZ(1),
-        qml.PauliX(0) @ qml.PauliX(1),
+        qp.PauliY(1),
+        qp.PauliZ(0) @ qp.PauliZ(1),
+        qp.PauliX(0) @ qp.PauliX(1),
     ],
 )
 
-hamiltonian_3 = qml.Hamiltonian(
-    coeffs=[-2.0], observables=[qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2)]
+hamiltonian_3 = qp.Hamiltonian(
+    coeffs=[-2.0], observables=[qp.PauliY(0) @ qp.PauliY(1) @ qp.PauliY(2)]
 )
 
 
@@ -83,17 +83,17 @@ def test_riemannian_gradient_omegas(circuit, hamiltonian):
 
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
     wires = range(nqubits)
-    dev = qml.device("default.qubit", wires=nqubits)
+    dev = qp.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def get_state():
         circuit()
-        return qml.state()
+        return qp.state()
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def test_circuit():
         circuit()
-        return qml.expval(hamiltonian)
+        return qp.expval(hamiltonian)
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
@@ -103,7 +103,7 @@ def test_riemannian_gradient_omegas(circuit, hamiltonian):
     ops = opt.get_su_n_operators(None)[0]
     omegas_np = []
     for op in ops:
-        op = qml.math.expand_matrix(op.matrix(), op.wires, wires)
+        op = qp.math.expand_matrix(op.matrix(), op.wires, wires)
         omegas_np.append(1j * np.trace(riemannian_gradient_np @ op))
     omegas = opt.get_omegas()
     assert np.allclose(omegas, omegas_np)
@@ -124,33 +124,33 @@ def test_riemannian_gradient_omegas_restricted(circuit, hamiltonian):
     # pylint: disable=no-member
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
     wires = range(nqubits)
-    dev = qml.device("default.qubit", wires=nqubits)
+    dev = qp.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def get_state():
         circuit()
-        return qml.state()
+        return qp.state()
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def test_circuit():
         circuit()
-        return qml.expval(hamiltonian)
+        return qp.expval(hamiltonian)
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
     hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     riemannian_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
-    restriction = qml.Hamiltonian(
+    restriction = qp.Hamiltonian(
         coeffs=[1.0] * 3,
-        observables=[qml.PauliX(0), qml.PauliY(1), qml.PauliY(0) @ qml.PauliY(1)],
+        observables=[qp.PauliX(0), qp.PauliY(1), qp.PauliY(0) @ qp.PauliY(1)],
     )
 
     opt = RiemannianGradientOptimizer(circuit=test_circuit, restriction=restriction)
     ops = opt.get_su_n_operators(restriction)[0]
     omegas_np = []
     for op in ops:
-        op = qml.math.expand_matrix(op.matrix(), op.wires, wires)
+        op = qp.math.expand_matrix(op.matrix(), op.wires, wires)
         omegas_np.append(1j * np.trace(riemannian_gradient_np @ op))
     omegas = opt.get_omegas()
 
@@ -171,17 +171,17 @@ def test_riemannian_gradient_evolution(circuit, hamiltonian):
     # pylint: disable=no-member
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
     wires = range(nqubits)
-    dev = qml.device("default.qubit", wires=nqubits)
+    dev = qp.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def get_state():
         circuit()
-        return qml.state()
+        return qp.state()
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def test_circuit():
         circuit()
-        return qml.expval(hamiltonian)
+        return qp.expval(hamiltonian)
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
@@ -211,12 +211,12 @@ def test_riemannian_gradient_step(circuit, hamiltonian):
     """Test that we can take subsequent steps with the optimizer."""
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
 
-    dev = qml.device("default.qubit", wires=nqubits)
+    dev = qp.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def test_circuit():
         circuit()
-        return qml.expval(hamiltonian)
+        return qp.expval(hamiltonian)
 
     opt = RiemannianGradientOptimizer(circuit=test_circuit)
     opt.step()
@@ -237,12 +237,12 @@ def test_riemannian_gradient_step_trotterstep(circuit, hamiltonian):
     """Test that we can take subsequent steps with the optimizer."""
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
 
-    dev = qml.device("default.qubit", wires=nqubits)
+    dev = qp.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def test_circuit():
         circuit()
-        return qml.expval(hamiltonian)
+        return qp.expval(hamiltonian)
 
     opt = RiemannianGradientOptimizer(circuit=test_circuit, trottersteps=3)
     opt.step()
@@ -253,7 +253,7 @@ def test_riemannian_gradient_circuit_input_1_check():
     """Test that a type error is raise for non-QNode circuits."""
 
     def circuit():
-        qml.RY(0.5, wires=0)
+        qp.RY(0.5, wires=0)
 
     with pytest.raises(TypeError, match="circuit must be a QNode"):
         RiemannianGradientOptimizer(circuit=circuit, stepsize=0.001)
@@ -262,10 +262,10 @@ def test_riemannian_gradient_circuit_input_1_check():
 def test_riemannian_gradient_hamiltonian_input_1_check():
     """Test that a type error is raise for non-QNode circuits."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3))
+    @qp.qnode(qp.device("default.qubit", wires=3))
     def circuit():
-        qml.RY(0.5, wires=0)
-        return qml.state()
+        qp.RY(0.5, wires=0)
+        return qp.state()
 
     with pytest.raises(
         TypeError,
@@ -277,10 +277,10 @@ def test_riemannian_gradient_hamiltonian_input_1_check():
 def test_riemannian_gradient_nqubits_check():
     """Test that we warn if the system is too big."""
 
-    @qml.qnode(qml.device("default.qubit", wires=5))
+    @qp.qnode(qp.device("default.qubit", wires=5))
     def circuit():
-        qml.RY(0.5, wires=0)
-        return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
+        qp.RY(0.5, wires=0)
+        return qp.expval(qp.Hamiltonian(coeffs=[-1.0], observables=[qp.PauliX(0)]))
 
     with pytest.warns(UserWarning, match="The exact Riemannian gradient is exponentially"):
         RiemannianGradientOptimizer(circuit=circuit, stepsize=0.001)
@@ -289,10 +289,10 @@ def test_riemannian_gradient_nqubits_check():
 def test_riemannian_gradient_restriction_check():
     """Test that a type error is raise for non-QNode circuits."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3))
+    @qp.qnode(qp.device("default.qubit", wires=3))
     def circuit():
-        qml.RY(0.5, wires=0)
-        return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
+        qp.RY(0.5, wires=0)
+        return qp.expval(qp.Hamiltonian(coeffs=[-1.0], observables=[qp.PauliX(0)]))
 
     restriction = "not_a_hamiltonian"
     with pytest.raises(
@@ -305,18 +305,18 @@ def test_riemannian_gradient_restriction_check():
 @pytest.mark.slow
 def test_docstring_example():
     """Test the docstring example with Trotterized evolution."""
-    hamiltonian = qml.Hamiltonian(
+    hamiltonian = qp.Hamiltonian(
         coeffs=[-1.0] * 3,
-        observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+        observables=[qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0) @ qp.PauliX(1)],
     )
 
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def quant_fun():
-        qml.RX(0.1, wires=[0])
-        qml.RY(0.5, wires=[1])
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.6, wires=[0])
-        return qml.expval(hamiltonian)
+        qp.RX(0.1, wires=[0])
+        qp.RY(0.5, wires=[1])
+        qp.CNOT(wires=[0, 1])
+        qp.RY(0.6, wires=[0])
+        return qp.expval(hamiltonian)
 
     opt = RiemannianGradientOptimizer(circuit=quant_fun, stepsize=0.1)
 
@@ -329,18 +329,18 @@ def test_docstring_example():
 def test_docstring_example_exact():
     """Test that the optimizer works with matrix exponential."""
 
-    hamiltonian = qml.Hamiltonian(
+    hamiltonian = qp.Hamiltonian(
         coeffs=[-1.0] * 3,
-        observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+        observables=[qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0) @ qp.PauliX(1)],
     )
 
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def quant_fun():
-        qml.RX(0.1, wires=[0])
-        qml.RY(0.5, wires=[1])
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.6, wires=[0])
-        return qml.expval(hamiltonian)
+        qp.RX(0.1, wires=[0])
+        qp.RY(0.5, wires=[1])
+        qp.CNOT(wires=[0, 1])
+        qp.RY(0.6, wires=[0])
+        return qp.expval(hamiltonian)
 
     opt = RiemannianGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
@@ -352,18 +352,18 @@ def test_docstring_example_exact():
 
 def test_example_shots():
     """Test that the optimizer works with finite shots."""
-    hamiltonian = qml.Hamiltonian(
+    hamiltonian = qp.Hamiltonian(
         coeffs=[-1.0] * 3,
-        observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+        observables=[qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0) @ qp.PauliX(1)],
     )
 
-    @qml.qnode(qml.device("default.qubit", wires=2), diff_method=None, shots=1000)
+    @qp.qnode(qp.device("default.qubit", wires=2), diff_method=None, shots=1000)
     def quant_fun():
-        qml.RX(0.1, wires=[0])
-        qml.RY(0.5, wires=[1])
-        qml.CNOT(wires=[0, 1])
-        qml.RY(0.6, wires=[0])
-        return qml.expval(hamiltonian)
+        qp.RX(0.1, wires=[0])
+        qp.RY(0.5, wires=[1])
+        qp.CNOT(wires=[0, 1])
+        qp.RY(0.6, wires=[0])
+        return qp.expval(hamiltonian)
 
     opt = RiemannianGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
 

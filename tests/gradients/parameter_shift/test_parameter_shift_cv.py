@@ -39,13 +39,13 @@ class TestGradAnalysis:
         """Test that a non-differentiable parameter is
         correctly marked"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.FockState(1, wires=0)
-            qml.Displacement(0.543, 0, wires=[1])
-            qml.Beamsplitter(0, 0, wires=[0, 1])
-            qml.expval(qml.QuadX(wires=[0]))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.FockState(1, wires=0)
+            qp.Displacement(0.543, 0, wires=[1])
+            qp.Beamsplitter(0, 0, wires=[0, 1])
+            qp.expval(qp.QuadX(wires=[0]))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) is None
         assert _grad_method_cv(tape, 1) == "A"
         assert _grad_method_cv(tape, 2) == "A"
@@ -65,12 +65,12 @@ class TestGradAnalysis:
         """Test that an independent variable is properly marked
         as having a zero gradient"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(0.543, wires=[0])
-            qml.Rotation(-0.654, wires=[1])
-            qml.expval(qml.QuadP(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(0.543, wires=[0])
+            qp.Rotation(-0.654, wires=[1])
+            qp.expval(qp.QuadP(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) == "A"
         assert _grad_method_cv(tape, 1) == "0"
 
@@ -82,15 +82,15 @@ class TestGradAnalysis:
 
     def test_finite_diff(self, monkeypatch):
         """If an op has grad_method=F, this should be respected
-        by the qml.tape.QuantumScript"""
-        monkeypatch.setattr(qml.Rotation, "grad_method", "F")
+        by the qp.tape.QuantumScript"""
+        monkeypatch.setattr(qp.Rotation, "grad_method", "F")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(0.543, wires=[0])
-            qml.Squeezing(0.543, 0, wires=[0])
-            qml.expval(qml.QuadP(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(0.543, wires=[0])
+            qp.Squeezing(0.543, 0, wires=[0])
+            qp.expval(qp.QuadP(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) == "F"
         assert _grad_method_cv(tape, 1) == "A"
         assert _grad_method_cv(tape, 2) == "A"
@@ -100,15 +100,15 @@ class TestGradAnalysis:
         a differentiable Gaussian operation results in
         numeric differentiation."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.Rotation(1.0, wires=[1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.Rotation(1.0, wires=[1])
             # Non-Gaussian
-            qml.Kerr(1.0, wires=[1])
-            qml.expval(qml.QuadP(0))
-            qml.expval(qml.QuadX(1))
+            qp.Kerr(1.0, wires=[1])
+            qp.expval(qp.QuadP(0))
+            qp.expval(qp.QuadX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # First rotation gate has no succeeding non-Gaussian operation
         assert _grad_method_cv(tape, 0) == "A"
         # Second rotation gate does no succeeding non-Gaussian operation
@@ -116,17 +116,17 @@ class TestGradAnalysis:
         # Kerr gate does not support the parameter-shift rule
         assert _grad_method_cv(tape, 2) == "F"
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.Rotation(1.0, wires=[1])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.Rotation(1.0, wires=[1])
             # entangle the modes
-            qml.Beamsplitter(1.0, 0.0, wires=[0, 1])
+            qp.Beamsplitter(1.0, 0.0, wires=[0, 1])
             # Non-Gaussian
-            qml.Kerr(1.0, wires=[1])
-            qml.expval(qml.QuadP(0))
-            qml.expval(qml.QuadX(1))
+            qp.Kerr(1.0, wires=[1])
+            qp.expval(qp.QuadP(0))
+            qp.expval(qp.QuadX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # After entangling the modes, the Kerr gate now succeeds
         # both initial rotations
         assert _grad_method_cv(tape, 0) == "F"
@@ -137,12 +137,12 @@ class TestGradAnalysis:
         """Probability is the expectation value of a
         higher order observable, and thus only supports numerical
         differentiation"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(0.543, wires=[0])
-            qml.Squeezing(0.543, 0, wires=[0])
-            qml.probs(wires=0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(0.543, wires=[0])
+            qp.Squeezing(0.543, 0, wires=[0])
+            qp.probs(wires=0)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) == "F"
         assert _grad_method_cv(tape, 1) == "F"
         assert _grad_method_cv(tape, 2) == "F"
@@ -152,28 +152,28 @@ class TestGradAnalysis:
         parameter-shift is supported. If the observable is second order,
         however, only finite-differences is supported."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.var(qml.QuadP(0))  # first order
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.var(qp.QuadP(0))  # first order
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) == "A"
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.var(qml.NumberOperator(0))  # second order
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.var(qp.NumberOperator(0))  # second order
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) == "F"
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.Rotation(1.0, wires=[1])
-            qml.Beamsplitter(0.5, 0.0, wires=[0, 1])
-            qml.var(qml.NumberOperator(0))  # fourth order
-            qml.expval(qml.NumberOperator(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.Rotation(1.0, wires=[1])
+            qp.Beamsplitter(0.5, 0.0, wires=[0, 1])
+            qp.var(qp.NumberOperator(0))  # fourth order
+            qp.expval(qp.NumberOperator(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) == "F"
         assert _grad_method_cv(tape, 1) == "F"
         assert _grad_method_cv(tape, 2) == "F"
@@ -183,24 +183,24 @@ class TestGradAnalysis:
         """Test that the expectation of a second-order observable forces
         the gradient method to use the second-order parameter-shift rule"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.expval(qml.NumberOperator(0))  # second order
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.expval(qp.NumberOperator(0))  # second order
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         assert _grad_method_cv(tape, 0) == "A2"
 
     def test_unknown_op_grad_method(self, monkeypatch):
         """Test that an exception is raised if an operator has a
         grad method defined that the CV parameter-shift tape
         doesn't recognize"""
-        monkeypatch.setattr(qml.Rotation, "grad_method", "B")
+        monkeypatch.setattr(qp.Rotation, "grad_method", "B")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=0)
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=0)
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="unknown gradient method"):
             _grad_method_cv(tape, 0)
 
@@ -211,17 +211,17 @@ class TestTransformObservable:
     def test_incorrect_heisenberg_size(self, monkeypatch):
         """The number of dimensions of a CV observable Heisenberg representation does
         not match the ev_order attribute."""
-        monkeypatch.setattr(qml.QuadP, "ev_order", 2)
+        monkeypatch.setattr(qp.QuadP, "ev_order", 2)
 
         with pytest.raises(ValueError, match="Mismatch between the polynomial order"):
-            _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
+            _transform_observable(qp.QuadP(0), np.identity(3), device_wires=[0])
 
     def test_higher_order_observable(self, monkeypatch):
         """An exception should be raised if the observable is higher than 2nd order."""
-        monkeypatch.setattr(qml.QuadP, "ev_order", 3)
+        monkeypatch.setattr(qp.QuadP, "ev_order", 3)
 
         with pytest.raises(NotImplementedError, match="order > 2 not implemented"):
-            _transform_observable(qml.QuadP(0), np.identity(3), device_wires=[0])
+            _transform_observable(qp.QuadP(0), np.identity(3), device_wires=[0])
 
     def test_first_order_transform(self, tol):
         """Test that a first order observable is transformed correctly"""
@@ -229,14 +229,14 @@ class TestTransformObservable:
         Z = np.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
-        obs = qml.QuadX(0)
+        obs = qp.QuadX(0)
         res = _transform_observable(obs, Z, device_wires=[0])
 
         # The Heisenberg representation of the X
         # operator is simply... X
         expected = np.array([0, 1, 0]) @ Z
 
-        assert isinstance(res, qml.PolyXP)
+        assert isinstance(res, qp.PolyXP)
         assert res.wires.labels == (0,)
         assert np.allclose(res.data[0], expected, atol=tol, rtol=0)
 
@@ -246,7 +246,7 @@ class TestTransformObservable:
         Z = np.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
-        obs = qml.NumberOperator(0)
+        obs = qp.NumberOperator(0)
         res = _transform_observable(obs, Z, device_wires=[0])
 
         # The Heisenberg representation of the number operator
@@ -254,7 +254,7 @@ class TestTransformObservable:
         A = np.array([[-0.5, 0, 0], [0, 0.25, 0], [0, 0, 0.25]])
         expected = A @ Z + Z @ A
 
-        assert isinstance(res, qml.PolyXP)
+        assert isinstance(res, qp.PolyXP)
         assert res.wires.labels == (0,)
         assert np.allclose(res.data[0], expected, atol=tol, rtol=0)
 
@@ -264,13 +264,13 @@ class TestTransformObservable:
         than the observable."""
 
         # create a 3-mode symmetric transformation
-        wires = qml.wires.Wires([0, "a", 2])
+        wires = qp.wires.Wires([0, "a", 2])
         ndim = 1 + 2 * len(wires)
 
         Z = np.arange(ndim**2).reshape(ndim, ndim)
         Z = Z.T + Z
 
-        obs = qml.NumberOperator(0)
+        obs = qp.NumberOperator(0)
         res = _transform_observable(obs, Z, device_wires=wires)
 
         # The Heisenberg representation of the number operator
@@ -279,7 +279,7 @@ class TestTransformObservable:
         A = np.diag([-0.5, 0.25, 0.25, 0, 0, 0, 0])
         expected = A @ Z + Z @ A
 
-        assert isinstance(res, qml.PolyXP)
+        assert isinstance(res, qp.PolyXP)
         assert res.wires == wires
         assert np.allclose(res.data[0], expected, atol=tol, rtol=0)
 
@@ -292,87 +292,87 @@ class TestParameterShiftLogic:
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        @qml.qnode(device=dev, interface="autograd")
+        @qp.qnode(device=dev, interface="autograd")
         def circuit(weights):
-            qml.Displacement(weights[0], 0.0, wires=[0])
-            qml.Rotation(weights[1], wires=[0])
-            return qml.expval(qml.QuadX(0))
+            qp.Displacement(weights[0], 0.0, wires=[0])
+            qp.Rotation(weights[1], wires=[0])
+            return qp.expval(qp.QuadX(0))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit, dev)(weights)
+            qp.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qp.qnode(dev, interface="torch")
         def circuit(weights):
-            qml.Displacement(weights[0], 0.0, wires=[0])
-            qml.Rotation(weights[1], wires=[0])
-            return qml.expval(qml.QuadX(0))
+            qp.Displacement(weights[0], 0.0, wires=[0])
+            qp.Rotation(weights[1], wires=[0])
+            return qp.expval(qp.QuadX(0))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit, dev)(weights)
+            qp.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qp.qnode(dev, interface="tf")
         def circuit(weights):
-            qml.Displacement(weights[0], 0.0, wires=[0])
-            qml.Rotation(weights[1], wires=[0])
-            return qml.expval(qml.QuadX(0))
+            qp.Displacement(weights[0], 0.0, wires=[0])
+            qp.Rotation(weights[1], wires=[0])
+            return qp.expval(qp.QuadX(0))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit, dev)(weights)
+            qp.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        @qml.qnode(device=dev, interface="jax")
+        @qp.qnode(device=dev, interface="jax")
         def circuit(weights):
-            qml.Displacement(weights[0], 0.0, wires=[0])
-            qml.Rotation(weights[1], wires=[0])
-            return qml.expval(qml.QuadX(0))
+            qp.Displacement(weights[0], 0.0, wires=[0])
+            qp.Rotation(weights[1], wires=[0])
+            return qp.expval(qp.QuadX(0))
 
         weights = [0.1, 0.2]
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit, dev)(weights)
+            qp.gradients.param_shift_cv(circuit, dev)(weights)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
         weights = [0.1, 0.2]
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(weights[0], 0.0, wires=[0])
-            qml.Rotation(weights[1], wires=[0])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(weights[0], 0.0, wires=[0])
+            qp.Rotation(weights[1], wires=[0])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.param_shift_cv(tape, dev)
-        res = post_processing(qml.execute(g_tapes, dev, None))
+            g_tapes, post_processing = qp.gradients.param_shift_cv(tape, dev)
+        res = post_processing(qp.execute(g_tapes, dev, None))
 
         assert g_tapes == []
         assert res.shape == (0,)
@@ -380,54 +380,54 @@ class TestParameterShiftLogic:
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.Rotation(params[0], wires=0)
-            return qml.expval(qml.QuadX(1))
+            qp.Rotation(params[0], wires=0)
+            return qp.expval(qp.QuadX(1))
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.param_shift_cv(circuit, dev)(params)
+        result = qp.gradients.param_shift_cv(circuit, dev)(params)
         assert np.allclose(result, np.zeros(3), atol=0, rtol=0)
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a state"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.state()
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.state()
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match=r"return the state is not supported"):
-            qml.gradients.param_shift_cv(tape, None)
+            qp.gradients.param_shift_cv(tape, None)
 
     def test_force_order2(self, mocker):
         """Test that if the force_order2 keyword argument is provided,
         the second order parameter shift rule is forced"""
-        spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(1.0, 0.0, wires=[0])
-            qml.Rotation(2.0, wires=[0])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(1.0, 0.0, wires=[0])
+            qp.Rotation(2.0, wires=[0])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1, 2}
 
-        qml.gradients.param_shift_cv(tape, dev, force_order2=False)
+        qp.gradients.param_shift_cv(tape, dev, force_order2=False)
         spy.assert_not_called()
 
-        qml.gradients.param_shift_cv(tape, dev, force_order2=True)
+        qp.gradients.param_shift_cv(tape, dev, force_order2=True)
         spy.assert_called()
 
     def test_force_order2_dim_2(self, mocker, monkeypatch):
         """Test that if the force_order2 keyword argument is provided, the
         second order parameter shift rule is forced for an observable with
         2-dimensional parameters"""
-        spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
         def _mock_transform_observable(obs, Z, device_wires):  # pylint: disable=unused-argument
             """A mock version of the _transform_observable internal function
@@ -435,51 +435,51 @@ class TestParameterShiftLogic:
             returned. This function is created such that when definining ``A =
             transformed_obs.parameters[0]`` the condition ``len(A.nonzero()[0])
             == 1 and A.ndim == 2 and A[0, 0] != 0`` is ``True``."""
-            iden = qml.Identity(0)
+            iden = qp.Identity(0)
             iden.data = (np.array([[1, 0], [0, 0]]),)
             return iden
 
         monkeypatch.setattr(
-            qml.gradients.parameter_shift_cv,
+            qp.gradients.parameter_shift_cv,
             "_transform_observable",
             _mock_transform_observable,
         )
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(1.0, 0.0, wires=[0])
-            qml.Rotation(2.0, wires=[0])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(1.0, 0.0, wires=[0])
+            qp.Rotation(2.0, wires=[0])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1, 2}
 
-        qml.gradients.param_shift_cv(tape, dev, force_order2=False)
+        qp.gradients.param_shift_cv(tape, dev, force_order2=False)
         spy.assert_not_called()
 
-        qml.gradients.param_shift_cv(tape, dev, force_order2=True)
+        qp.gradients.param_shift_cv(tape, dev, force_order2=True)
         spy.assert_called()
 
     def test_no_poly_xp_support(self, mocker, monkeypatch):
         """Test that if a device does not support PolyXP
         and the second-order parameter-shift rule is required,
         we fallback to finite differences."""
-        spy_second_order = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy_second_order = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         monkeypatch.delitem(dev._observable_map, "PolyXP")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.expval(qml.NumberOperator(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.expval(qp.NumberOperator(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
 
         with pytest.warns(UserWarning, match="does not support the PolyXP observable"):
-            qml.gradients.param_shift_cv(tape, dev)
+            qp.gradients.param_shift_cv(tape, dev)
 
         spy_second_order.assert_not_called()
 
@@ -487,36 +487,36 @@ class TestParameterShiftLogic:
         """Test that if a device does not support PolyXP
         and the variance parameter-shift rule is required,
         we fallback to finite differences."""
-        spy = mocker.spy(qml.gradients.parameter_shift_cv, "var_param_shift")
-        dev = qml.device("default.gaussian", wires=1)
+        spy = mocker.spy(qp.gradients.parameter_shift_cv, "var_param_shift")
+        dev = qp.device("default.gaussian", wires=1)
 
         monkeypatch.delitem(dev._observable_map, "PolyXP")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Rotation(1.0, wires=[0])
-            qml.var(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Rotation(1.0, wires=[0])
+            qp.var(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
 
         with pytest.warns(UserWarning, match="does not support the PolyXP observable"):
-            qml.gradients.param_shift_cv(tape, dev)
+            qp.gradients.param_shift_cv(tape, dev)
 
         spy.assert_not_called()
 
     def test_independent_parameters_analytic(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(1.0, 0.0, wires=[1])
-            qml.Displacement(1.0, 0.0, wires=[0])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(1.0, 0.0, wires=[1])
+            qp.Displacement(1.0, 0.0, wires=[0])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
-        tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        tapes, fn = qp.gradients.param_shift_cv(tape, dev)
 
         # We should only be executing the device to differentiate 1 parameter
         # (first order, so 2 executions)
@@ -526,7 +526,7 @@ class TestParameterShiftLogic:
         assert np.allclose(res, [0, 2])
 
         tape.trainable_params = {0, 2}
-        tapes, fn = qml.gradients.param_shift_cv(tape, dev, force_order2=True)
+        tapes, fn = qp.gradients.param_shift_cv(tape, dev, force_order2=True)
 
         # We should only be executing the device to differentiate 1 parameter
         # (second order, so 0 executions)
@@ -537,16 +537,16 @@ class TestParameterShiftLogic:
 
     def test_all_independent(self):
         """Test the case where expectation values are independent of all parameters."""
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(1, 0, wires=[1])
-            qml.Displacement(1, 0, wires=[1])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(1, 0, wires=[1])
+            qp.Displacement(1, 0, wires=[1])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
-        tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        tapes, fn = qp.gradients.param_shift_cv(tape, dev)
         assert len(tapes) == 0
 
         grad = fn(dev.batch_execute(tapes))
@@ -563,20 +563,20 @@ class TestExpectationQuantumGradients:
     )
     def test_rotation_gradient(self, gradient_recipes, mocker, tol):
         """Test the gradient of the rotation gate"""
-        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=2, hbar=hbar)
 
         alpha = 0.5643
         theta = 0.23354
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(alpha, 0.0, wires=[0])
-            qml.Rotation(theta, wires=[0])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(alpha, 0.0, wires=[0])
+            qp.Rotation(theta, wires=[0])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {2}
 
-        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy2 = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes)
         grad_A = fn(dev.batch_execute(tapes))
@@ -592,20 +592,20 @@ class TestExpectationQuantumGradients:
 
     def test_beamsplitter_gradient(self, mocker, tol):
         """Test the gradient of the beamsplitter gate"""
-        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=2, hbar=hbar)
 
         alpha = 0.5643
         theta = 0.23354
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(alpha, 0.0, wires=[0])
-            qml.Beamsplitter(theta, 0.0, wires=[0, 1])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(alpha, 0.0, wires=[0])
+            qp.Beamsplitter(theta, 0.0, wires=[0, 1])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {2}
 
-        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy2 = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev)
         grad_A = fn(dev.batch_execute(tapes))
@@ -621,19 +621,19 @@ class TestExpectationQuantumGradients:
 
     def test_displacement_gradient(self, mocker, tol):
         """Test the gradient of the displacement gate"""
-        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=2, hbar=hbar)
 
         r = 0.5643
         phi = 0.23354
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(r, phi, wires=[0])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(r, phi, wires=[0])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
 
-        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy2 = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev)
         grad_A = fn(dev.batch_execute(tapes))
@@ -651,10 +651,10 @@ class TestExpectationQuantumGradients:
         """Test the gradient of the squeezed gate. We also
         ensure that the gradient is correct even when an operation
         with no Heisenberg representation is a descendent."""
-        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=2, hbar=hbar)
 
         # pylint: disable=too-few-public-methods
-        class Rotation(qml.operation.CVOperation):
+        class Rotation(qp.operation.CVOperation):
             """Dummy operation that does not support
             heisenberg representation"""
 
@@ -665,21 +665,21 @@ class TestExpectationQuantumGradients:
         alpha = 0.5643
         r = 0.23354
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(alpha, 0.0, wires=[0])
-            qml.Squeezing(r, 0.0, wires=[0])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(alpha, 0.0, wires=[0])
+            qp.Squeezing(r, 0.0, wires=[0])
 
             # The following two gates have no effect
             # on the circuit gradient and expectation value
-            qml.Beamsplitter(0.0, 0.0, wires=[0, 1])
+            qp.Beamsplitter(0.0, 0.0, wires=[0, 1])
             Rotation(0.543, wires=[1])
 
-            qml.expval(qml.QuadX(0))
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {2}
 
-        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy2 = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
 
         tapes, fn = param_shift_cv(tape, dev)
         grad_A = fn(dev.batch_execute(tapes))
@@ -696,20 +696,20 @@ class TestExpectationQuantumGradients:
     def test_squeezed_number_state_gradient(self, mocker, tol):
         """Test the numerical gradient of the squeeze gate with
         with number state expectation is correct"""
-        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=2, hbar=hbar)
 
         r = 0.23354
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Squeezing(r, 0.0, wires=[0])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Squeezing(r, 0.0, wires=[0])
             # the fock state projector is a 'non-Gaussian' observable
-            qml.expval(qml.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
+            qp.expval(qp.FockStateProjector(np.array([2, 0]), wires=[0, 1]))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
 
-        spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
-        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
+        spy = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
+        spy2 = mocker.spy(qp.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
 
         tapes, fn = param_shift_cv(tape, dev)
         grad = fn(dev.batch_execute(tapes))
@@ -724,17 +724,17 @@ class TestExpectationQuantumGradients:
     def test_multiple_squeezing_gradient(self, mocker, tol):
         """Test that the gradient of a circuit with two squeeze
         gates is correct."""
-        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=2, hbar=hbar)
 
         r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Squeezing(r0, phi0, wires=[0])
-            qml.Squeezing(r1, phi1, wires=[0])
-            qml.expval(qml.NumberOperator(0))  # second order
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Squeezing(r0, phi0, wires=[0])
+            qp.Squeezing(r1, phi1, wires=[0])
+            qp.expval(qp.NumberOperator(0))  # second order
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        spy2 = mocker.spy(qp.gradients.parameter_shift_cv, "second_order_param_shift")
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
@@ -756,51 +756,51 @@ class TestExpectationQuantumGradients:
         """Test that the gradient of a circuit with multiple
         second order observables is correct"""
 
-        dev = qml.device("default.gaussian", wires=2, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=2, hbar=hbar)
         r = [0.4, -0.7, 0.1, 0.2]
         p = [0.1, 0.2, 0.3, 0.4]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Squeezing(r[0], p[0], wires=[0])
-            qml.Squeezing(r[1], p[1], wires=[0])
-            qml.Squeezing(r[2], p[2], wires=[1])
-            qml.Squeezing(r[3], p[3], wires=[1])
-            qml.expval(qml.NumberOperator(0))  # second order
-            qml.expval(qml.NumberOperator(1))  # second order
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Squeezing(r[0], p[0], wires=[0])
+            qp.Squeezing(r[1], p[1], wires=[0])
+            qp.Squeezing(r[2], p[2], wires=[1])
+            qp.Squeezing(r[3], p[3], wires=[1])
+            qp.expval(qp.NumberOperator(0))  # second order
+            qp.expval(qp.NumberOperator(1))  # second order
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
 
         with pytest.raises(
             ValueError, match="Computing the gradient of CV circuits that return more"
         ):
             param_shift_cv(tape, dev)
 
-    @pytest.mark.parametrize("obs", [qml.QuadP, qml.Identity])
+    @pytest.mark.parametrize("obs", [qp.QuadP, qp.Identity])
     @pytest.mark.parametrize(
-        "op", [qml.Displacement(0.1, 0.2, wires=0), qml.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])]
+        "op", [qp.Displacement(0.1, 0.2, wires=0), qp.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])]
     )
     def test_gradients_gaussian_circuit(self, mocker, op, obs, tol):
         """Tests that the gradients of circuits of gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(0.5, 0, wires=0)
-            qml.apply(op)
-            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
-            qml.Displacement(-0.5, 0.1, wires=0)
-            qml.Squeezing(0.5, -1.5, wires=0)
-            qml.Rotation(-1.1, wires=0)
-            qml.expval(obs(wires=0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(0.5, 0, wires=0)
+            qp.apply(op)
+            qp.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qp.Displacement(-0.5, 0.1, wires=0)
+            qp.Squeezing(0.5, -1.5, wires=0)
+            qp.Rotation(-1.1, wires=0)
+            qp.expval(obs(wires=0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.gaussian", wires=2)
+        tape = qp.tape.QuantumScript.from_queue(q)
+        dev = qp.device("default.gaussian", wires=2)
 
         tape.trainable_params = set(range(2, 2 + op.num_params))
 
-        spy = mocker.spy(qml.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
+        spy = mocker.spy(qp.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
 
-        tapes, fn = qml.gradients.finite_diff(tape)
+        tapes, fn = qp.gradients.finite_diff(tape)
         grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev, force_order2=True)
@@ -826,8 +826,8 @@ class TestExpectationQuantumGradients:
         This ensures that, assuming their _heisenberg_rep is defined, the quantum
         gradient analytic method can still be used, and returns the correct result.
 
-        Currently, the only such operation is qml.InterferometerUnitary. In the future,
-        we may consider adding a qml.GaussianTransfom operator.
+        Currently, the only such operation is qp.InterferometerUnitary. In the future,
+        we may consider adding a qp.GaussianTransfom operator.
         """
 
         if t == 1:
@@ -838,16 +838,16 @@ class TestExpectationQuantumGradients:
 
             # Note: this bug currently affects PL core as well:
             #
-            # dev = qml.device("default.gaussian", wires=2)
+            # dev = qp.device("default.gaussian", wires=2)
             #
             # U = np.array([[ 0.51310276+0.81702166j,  0.13649626+0.22487759j],
             #         [ 0.26300233+0.00556194j, -0.96414101-0.03508489j]])
             #
-            # @qml.qnode(dev)
+            # @qp.qnode(dev)
             # def circuit(r, phi):
-            #     qml.Displacement(r, phi, wires=0)
-            #     qml.InterferometerUnitary(U, wires=[0, 1])
-            #     return qml.expval(qml.QuadX(0))
+            #     qp.Displacement(r, phi, wires=0)
+            #     qp.InterferometerUnitary(U, wires=[0, 1])
+            #     return qp.expval(qp.QuadX(0))
             #
             # r = 0.543
             # phi = 0.
@@ -865,19 +865,19 @@ class TestExpectationQuantumGradients:
             requires_grad=False,
         )
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(0.543, 0, wires=0)
-            qml.InterferometerUnitary(U, wires=[0, 1])
-            qml.expval(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(0.543, 0, wires=0)
+            qp.InterferometerUnitary(U, wires=[0, 1])
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {t}
 
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        spy = mocker.spy(qml.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
+        spy = mocker.spy(qp.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
 
-        tapes, fn = qml.gradients.finite_diff(tape)
+        tapes, fn = qp.gradients.finite_diff(tape)
         grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev)
@@ -899,25 +899,25 @@ class TestVarianceQuantumGradients:
 
     def test_first_order_observable(self, tol):
         """Test variance of a first order CV observable"""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         r = 0.543
         phi = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Squeezing(r, 0, wires=0)
-            qml.Rotation(phi, wires=0)
-            qml.var(qml.QuadX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Squeezing(r, 0, wires=0)
+            qp.Rotation(phi, wires=0)
+            qp.var(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
 
-        res = qml.execute([tape], dev, None)
+        res = qp.execute([tape], dev, None)
         expected = np.exp(2 * r) * np.sin(phi) ** 2 + np.exp(-2 * r) * np.cos(phi) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
-        tapes, fn = qml.gradients.finite_diff(tape)
+        tapes, fn = qp.gradients.finite_diff(tape)
         grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev)
@@ -936,25 +936,25 @@ class TestVarianceQuantumGradients:
 
     def test_second_order_cv(self, tol):
         """Test variance of a second order CV expectation value"""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         n = 0.12
         a = 0.765
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.ThermalState(n, wires=0)
-            qml.Displacement(a, 0, wires=0)
-            qml.var(qml.NumberOperator(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.ThermalState(n, wires=0)
+            qp.Displacement(a, 0, wires=0)
+            qp.var(qp.NumberOperator(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
 
-        res = qml.execute([tape], dev, None)
+        res = qp.execute([tape], dev, None)
         expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
-        tapes, fn = qml.gradients.finite_diff(tape)
+        tapes, fn = qp.gradients.finite_diff(tape)
         grad_F = fn(dev.batch_execute(tapes))
 
         expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
@@ -963,22 +963,22 @@ class TestVarianceQuantumGradients:
     def test_expval_and_variance(self):
         """Test that the gradient works for a combination of CV expectation
         values and variances"""
-        dev = qml.device("default.gaussian", wires=3)
+        dev = qp.device("default.gaussian", wires=3)
 
         a, b = [0.54, -0.423]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(0.5, 0, wires=0)
-            qml.Squeezing(a, 0, wires=0)
-            qml.Squeezing(b, 0, wires=1)
-            qml.Beamsplitter(0.6, -0.3, wires=[0, 1])
-            qml.Squeezing(-0.3, 0, wires=2)
-            qml.Beamsplitter(1.4, 0.5, wires=[1, 2])
-            qml.var(qml.QuadX(0))
-            qml.expval(qml.QuadX(1))
-            qml.var(qml.QuadX(2))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(0.5, 0, wires=0)
+            qp.Squeezing(a, 0, wires=0)
+            qp.Squeezing(b, 0, wires=1)
+            qp.Beamsplitter(0.6, -0.3, wires=[0, 1])
+            qp.Squeezing(-0.3, 0, wires=2)
+            qp.Beamsplitter(1.4, 0.5, wires=[1, 2])
+            qp.var(qp.QuadX(0))
+            qp.expval(qp.QuadX(1))
+            qp.var(qp.QuadX(2))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {2, 4}
 
         with pytest.raises(
@@ -989,13 +989,13 @@ class TestVarianceQuantumGradients:
     def test_error_analytic_second_order(self):
         """Test exception raised if attempting to use a second
         order observable to compute the variance derivative analytically"""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(1.0, 0, wires=0)
-            qml.var(qml.NumberOperator(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(1.0, 0, wires=0)
+            qp.var(qp.NumberOperator(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
 
         with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \[0\]"):
@@ -1008,7 +1008,7 @@ class TestVarianceQuantumGradients:
         contains an operation with more than two terms in the gradient recipe"""
 
         # pylint: disable=too-few-public-methods
-        class DummyOp(qml.operation.CVOperation):
+        class DummyOp(qp.operation.CVOperation):
             """Dummy op"""
 
             num_wires = 1
@@ -1016,48 +1016,48 @@ class TestVarianceQuantumGradients:
             grad_method = "A"
             grad_recipe = ([[1, 1, 1], [1, 1, 1], [1, 1, 1]],)
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         dev.operations.add(DummyOp)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             DummyOp(1, wires=[0])
-            qml.expval(qml.QuadX(0))
+            qp.expval(qp.QuadX(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
 
         with pytest.raises(
             NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
         ):
             param_shift_cv(tape, dev, force_order2=True)
 
-    @pytest.mark.parametrize("obs", [qml.QuadX, qml.NumberOperator])
+    @pytest.mark.parametrize("obs", [qp.QuadX, qp.NumberOperator])
     @pytest.mark.parametrize(
-        "op", [qml.Squeezing(0.1, 0.2, wires=0), qml.Beamsplitter(0.1, 0.2, wires=[0, 1])]
+        "op", [qp.Squeezing(0.1, 0.2, wires=0), qp.Beamsplitter(0.1, 0.2, wires=[0, 1])]
     )
     def test_gradients_gaussian_circuit(self, mocker, op, obs, tol):
         """Tests that the gradients of circuits of selected gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Displacement(0.5, 0, wires=0)
-            qml.apply(op)
-            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
-            qml.Displacement(-0.5, 0.1, wires=0)
-            qml.Squeezing(0.5, -1.5, wires=0)
-            qml.Rotation(-1.1, wires=0)
-            qml.var(obs(wires=0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Displacement(0.5, 0, wires=0)
+            qp.apply(op)
+            qp.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qp.Displacement(-0.5, 0.1, wires=0)
+            qp.Squeezing(0.5, -1.5, wires=0)
+            qp.Rotation(-1.1, wires=0)
+            qp.var(obs(wires=0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.gaussian", wires=2)
+        tape = qp.tape.QuantumScript.from_queue(q)
+        dev = qp.device("default.gaussian", wires=2)
 
         tape.trainable_params = set(range(2, 2 + op.num_params))
 
-        spy = mocker.spy(qml.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
+        spy = mocker.spy(qp.gradients.parameter_shift_cv, "_find_gradient_methods_cv")
 
         # jacobians must match
-        tapes, fn = qml.gradients.finite_diff(tape)
+        tapes, fn = qp.gradients.finite_diff(tape)
         grad_F = fn(dev.batch_execute(tapes))
 
         tapes, fn = param_shift_cv(tape, dev)
@@ -1069,22 +1069,22 @@ class TestVarianceQuantumGradients:
         assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
-        if obs != qml.NumberOperator:
+        if obs != qp.NumberOperator:
             assert all(m == "A" for m in spy.spy_return.values())
 
     def test_squeezed_mean_photon_variance(self, tol):
         """Test gradient of the photon variance of a displaced thermal state"""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         r = 0.12
         phi = 0.105
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Squeezing(r, 0, wires=0)
-            qml.Rotation(phi, wires=0)
-            qml.var(qml.QuadX(wires=[0]))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Squeezing(r, 0, wires=0)
+            qp.Rotation(phi, wires=0)
+            qp.var(qp.QuadX(wires=[0]))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
         tapes, fn = param_shift_cv(tape, dev)
         grad = fn(dev.batch_execute(tapes))
@@ -1098,17 +1098,17 @@ class TestVarianceQuantumGradients:
 
     def test_displaced_thermal_mean_photon_variance(self, tol):
         """Test gradient of the photon variance of a displaced thermal state"""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         n = 0.12
         a = 0.105
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.ThermalState(n, wires=0)
-            qml.Displacement(a, 0, wires=0)
-            qml.var(qml.TensorN(wires=[0]))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.ThermalState(n, wires=0)
+            qp.Displacement(a, 0, wires=0)
+            qp.var(qp.TensorN(wires=[0]))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tapes, fn = param_shift_cv(tape, dev)
         grad = fn(dev.batch_execute(tapes))
@@ -1123,20 +1123,20 @@ class TestParamShiftInterfaces:
     def test_autograd_gradient(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using autograd."""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         r = 0.12
         phi = 0.105
 
-        @qml.qnode(device=dev, interface="autograd", max_diff=2)
+        @qp.qnode(device=dev, interface="autograd", max_diff=2)
         def cost_fn(x):
-            qml.Squeezing(x[0], 0, wires=0)
-            qml.Rotation(x[1], wires=0)
-            return qml.var(qml.QuadX(wires=[0]))
+            qp.Squeezing(x[0], 0, wires=0)
+            qp.Rotation(x[1], wires=0)
+            return qp.var(qp.QuadX(wires=[0]))
 
         params = np.array([r, phi], requires_grad=True)
 
-        grad = qml.jacobian(cost_fn)(params)
+        grad = qp.jacobian(cost_fn)(params)
         expected = np.array(
             [
                 2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
@@ -1151,20 +1151,20 @@ class TestParamShiftInterfaces:
         can be executed using TF"""
         import tensorflow as tf
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.Squeezing(params[0], 0, wires=0)
-                qml.Rotation(params[1], wires=0)
-                qml.var(qml.QuadX(wires=[0]))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.Squeezing(params[0], 0, wires=0)
+                qp.Rotation(params[1], wires=0)
+                qp.var(qp.QuadX(wires=[0]))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 2}
             tapes, fn = param_shift_cv(tape, dev)
             jac = fn(
-                qml.execute(
+                qp.execute(
                     tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="tf"
                 )
             )
@@ -1192,19 +1192,19 @@ class TestParamShiftInterfaces:
         can be executed using Torch."""
         import torch
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Squeezing(params[0], 0, wires=0)
-            qml.Rotation(params[1], wires=0)
-            qml.var(qml.QuadX(wires=[0]))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Squeezing(params[0], 0, wires=0)
+            qp.Rotation(params[1], wires=0)
+            qp.var(qp.QuadX(wires=[0]))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 2}
-        tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+        tapes, fn = qp.gradients.param_shift_cv(tape, dev)
         jac = fn(
-            qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="torch")
+            qp.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="torch")
         )
 
         r, phi = params.detach().numpy()
@@ -1234,20 +1234,20 @@ class TestParamShiftInterfaces:
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.Squeezing(x[0], 0, wires=0)
-                qml.Rotation(x[1], wires=0)
-                qml.var(qml.QuadX(wires=[0]))
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.Squeezing(x[0], 0, wires=0)
+                qp.Rotation(x[1], wires=0)
+                qp.var(qp.QuadX(wires=[0]))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 2}
-            tapes, fn = qml.gradients.param_shift_cv(tape, dev)
+            tapes, fn = qp.gradients.param_shift_cv(tape, dev)
             jac = fn(
-                qml.execute(
+                qp.execute(
                     tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="jax"
                 )
             )

@@ -27,67 +27,67 @@ from pennylane.measurements import SampleMP, StateMP, VarianceMP
 
 
 def circuit_0(a):
-    _ = [qml.RX(a, wires=0) for i in range(4)]
-    qml.Hadamard(0)
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(a, wires=0) for i in range(4)]
+    qp.Hadamard(0)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_1(a, b):
-    qml.RZ(-a / 3, wires=0)
-    qml.RX(a / 5, wires=1)
-    qml.CRZ(0.3, wires=[1, 0])
-    qml.CNOT(wires=[0, 1])
-    qml.RY(b * 2, wires=1)
-    qml.RZ(-b, wires=1)
-    return qml.expval(qml.PauliZ(0))
+    qp.RZ(-a / 3, wires=0)
+    qp.RX(a / 5, wires=1)
+    qp.CRZ(0.3, wires=[1, 0])
+    qp.CNOT(wires=[0, 1])
+    qp.RY(b * 2, wires=1)
+    qp.RZ(-b, wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_2(x):
-    _ = [qml.RX(x[i], wires=0) for i in range(3)]
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(x[i], wires=0) for i in range(3)]
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_3(x, y):
-    _ = [qml.RX(0.1 * (i + 1) * x[i], wires=0) for i in range(3)]
+    _ = [qp.RX(0.1 * (i + 1) * x[i], wires=0) for i in range(3)]
     for i in range(2):
-        _ = [qml.RY((i + j) * y[i, j], wires=1) for j in range(2)]
-    qml.Hadamard(0)
-    return qml.expval(qml.PauliZ(0))
+        _ = [qp.RY((i + j) * y[i, j], wires=1) for j in range(2)]
+    qp.Hadamard(0)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_4(x, y):
     perm_4 = ([2, 0, 1], [1, 2, 0, 3])
     for i, j in enumerate(perm_4[0]):
-        qml.RX(1.2 * (i + 1) * x[j], wires=0)
+        qp.RX(1.2 * (i + 1) * x[j], wires=0)
     for j in perm_4[1]:
-        qml.RY((j // 2 + (j % 2)) * y[j // 2, j % 2], wires=1)
-    return qml.expval(qml.PauliZ(0))
+        qp.RY((j // 2 + (j % 2)) * y[j // 2, j % 2], wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_5(x, y, z):
-    _ = [qml.RX(i * x[i], wires=0) for i in range(3)]
-    qml.RZ(y[0, 1] - y[1, 0], wires=1)
-    qml.RY(z[0] + 0.2 * z[1], wires=1)
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(i * x[i], wires=0) for i in range(3)]
+    qp.RZ(y[0, 1] - y[1, 0], wires=1)
+    qp.RY(z[0] + 0.2 * z[1], wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_6(x, y, z):
-    _ = [qml.RX(x[i] ** i, wires=0) for i in range(3)]
-    qml.RZ(y[0, 1] / y[1, 0], wires=1)
-    qml.RY(z[0] + 0.2 ** z[1], wires=1)
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(x[i] ** i, wires=0) for i in range(3)]
+    qp.RZ(y[0, 1] / y[1, 0], wires=1)
+    qp.RY(z[0] + 0.2 ** z[1], wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_7(a):
-    qml.Hadamard(0)
-    _ = [qml.RX(qml.math.sin(a), wires=0) for i in range(4)]
-    return qml.expval(qml.PauliZ(0))
+    qp.Hadamard(0)
+    _ = [qp.RX(qp.math.sin(a), wires=0) for i in range(4)]
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_8(a, x):
-    _ = [qml.RX(a, wires=0) for i in range(4)]
-    _ = [qml.RX(x[i] * a, wires=1) for i in range(3)]
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(a, wires=0) for i in range(4)]
+    _ = [qp.RX(x[i] * a, wires=1) for i in range(3)]
+    return qp.expval(qp.PauliZ(0))
 
 
 circuits_linear = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
@@ -203,8 +203,8 @@ class TestHelpers:
         process_id_cases,
     )
     def test_process_ids(self, circuit, enc_args, argnum, enc_args_exp, argnum_exp):
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev)
         encoding_args, argnum = _process_ids(enc_args, argnum, qnode)
         assert encoding_args == enc_args_exp
         assert all(np.issubdtype(type(num), int) for num in argnum)
@@ -215,14 +215,14 @@ class TestHelpers:
         process_id_cases_unknown_arg,
     )
     def test_process_ids_unknown_arg(self, circuit, enc_args, argnum):
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev)
         with pytest.raises(ValueError, match="Not all names in"):
             _process_ids(enc_args, argnum, qnode)
 
     def test_process_ids_index_error(self):
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit_0, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit_0, dev)
         with pytest.raises(IndexError, match="x"):
             _process_ids(None, [5], qnode)
 
@@ -236,8 +236,8 @@ class TestCircuits:
     )
     def test_various_circuits(self, circuit, args, expected):
         """Test the spectrum for some simple standard circuits."""
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev)
         spec = qnode_spectrum(qnode)(*args)
         assert qnode.interface == "auto"
         assert spec.keys() == expected.keys()
@@ -251,15 +251,15 @@ class TestCircuits:
         """Test that the spectrum grows linearly with the number of
         encoding gates if we use Pauli rotation encoding."""
 
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qp.device("default.qubit", wires=n_qubits)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
             for _ in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x, wires=i)
-                    qml.RY(0.4, wires=i)
-            return qml.expval(qml.PauliZ(wires=0))
+                    qp.RX(x, wires=i)
+                    qp.RY(0.4, wires=i)
+            return qp.expval(qp.PauliZ(wires=0))
 
         res = qnode_spectrum(circuit)(pnp.array(0.1, requires_grad=True))
         expected_degree = n_qubits * n_layers
@@ -268,14 +268,14 @@ class TestCircuits:
 
     def test_argnum(self):
         """Test that the spectrum is computed for the arguments specified by ``argnum``."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(0.2 * y, wires=0)
-            qml.RY(3 * y, wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.RX(x, wires=0)
+            qp.RY(0.2 * y, wires=0)
+            qp.RY(3 * y, wires=1)
+            return qp.expval(qp.PauliZ(wires=0))
 
         x, y = pnp.array([0.2, 0.1], requires_grad=True)
         y_freq = [-3.2, -3.0, -2.8, -0.2, 0.0, 0.2, 2.8, 3.0, 3.2]
@@ -292,15 +292,15 @@ class TestCircuits:
     def test_encoding_args(self):
         """Test that the spectrum is computed for the arguments
         specified by ``encoding_args``."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
         z_0 = 2.1
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, Y, z=z_0):
-            qml.RX(z * x, wires=0)
-            qml.RY(0.2 * Y[0, 1, 0], wires=0)
-            qml.RY(3 * Y[0, 0, 0], wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.RX(z * x, wires=0)
+            qp.RY(0.2 * Y[0, 1, 0], wires=0)
+            qp.RY(3 * Y[0, 0, 0], wires=1)
+            return qp.expval(qp.PauliZ(wires=0))
 
         x = pnp.array(-1.5, requires_grad=True)
         Y = pnp.array([0.2, -1.2, 9.2, -0.2, 1.1, 4, -0.201, 0.8], requires_grad=True).reshape(
@@ -324,15 +324,15 @@ class TestCircuits:
         """Test that the spectrum changes per call if a qnode keyword argument
         changes the circuit architecture."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, last_gate=False):
-            qml.RX(x, wires=0)
-            qml.RX(x, wires=1)
+            qp.RX(x, wires=0)
+            qp.RX(x, wires=1)
             if last_gate:
-                qml.RX(x, wires=2)
-            return qml.expval(qml.PauliZ(wires=0))
+                qp.RX(x, wires=2)
+            return qp.expval(qp.PauliZ(wires=0))
 
         x = pnp.array(0.9, requires_grad=True)
         res_true = qnode_spectrum(circuit, argnum=[0])(x, last_gate=True)
@@ -345,14 +345,14 @@ class TestCircuits:
         """Test that the spectrum computation raises an error with pure numpy inputs
         and the "auto" interface."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            qml.RX(y, wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.RX(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            qp.RX(y, wires=1)
+            return qp.expval(qp.PauliZ(wires=0))
 
         x = np.array([0.9, 0.7])
         y = -0.5
@@ -362,19 +362,19 @@ class TestCircuits:
     def test_multi_par_error(self):
         """Test that an error is thrown if the spectrum of
         a multi-parameter gate that cannot be decomposed is requested."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        class nondecompRot(qml.Rot):
+        class nondecompRot(qp.Rot):
             @staticmethod
             def compute_decomposition(phi, theta, omega, wires):
                 """Pseudo-decomposition: Just return the gate itself."""
                 return [nondecompRot(phi, theta, omega, wires=wires)]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
+            qp.RX(x, wires=0)
             nondecompRot(0.2, x, 0.4, wires=1)
-            return qml.expval(qml.PauliZ(wires=0))
+            return qp.expval(qp.PauliZ(wires=0))
 
         with pytest.raises(
             RecursionError, match="Reached recursion limit trying to decompose operations."
@@ -383,17 +383,17 @@ class TestCircuits:
 
     @pytest.mark.parametrize(
         "measurement",
-        [StateMP(), SampleMP(obs=qml.PauliZ(0)), VarianceMP(obs=qml.PauliZ(0))],
+        [StateMP(), SampleMP(obs=qp.PauliZ(0)), VarianceMP(obs=qp.PauliZ(0))],
     )
     def test_wrong_return_type_error(self, measurement):
         """Test that an error is thrown if the QNode has a ``MeasurementProcess``
         with an inadmissable ``return_type``."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RX(x, wires=0)
-            return [qml.expval(qml.PauliX(1)), qml.apply(measurement)]
+            qp.RX(x, wires=0)
+            return [qp.expval(qp.PauliX(1)), qp.apply(measurement)]
 
         with pytest.raises(ValueError, match=f"{measurement.__class__.__name__} is not supported"):
             qnode_spectrum(circuit)(pnp.array(1.5))
@@ -403,12 +403,12 @@ def circuit9(x, w):
     """Test circuit"""
     for l in range(2):
         for i in range(3):
-            qml.RX(x[i], wires=0)
-            qml.RY(w[l][i], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-    qml.RZ(x[0], wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+            qp.RX(x[i], wires=0)
+            qp.RY(w[l][i], wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+    qp.RZ(x[0], wires=0)
+    return qp.expval(qp.PauliZ(wires=0))
 
 
 expected_result = {
@@ -429,8 +429,8 @@ class TestAutograd:
         x = pnp.array([1.0, 2.0, 3.0], requires_grad=True)
         w = pnp.array([[-1, -2, -3], [-4, -5, -6]], dtype=float, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit9, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit9, dev)
 
         res = qnode_spectrum(qnode, argnum=0)(x, w)
         assert res
@@ -440,8 +440,8 @@ class TestAutograd:
     def test_nonlinear_error(self, circuit, args):
         """Test that an error is raised if non-linear
         preprocessing happens in a circuit."""
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
 
@@ -456,8 +456,8 @@ class TestTorch:
         x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], dtype=float)
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit9, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit9, dev)
 
         with pytest.warns(UserWarning, match=r"is_independent"):
             res = qnode_spectrum(qnode, argnum=0)(x, w)
@@ -471,8 +471,8 @@ class TestTorch:
         import torch
 
         args = tuple(torch.tensor(arg) for arg in args)
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             with pytest.warns(UserWarning, match=r"is_independent"):
                 qnode_spectrum(qnode)(*args)
@@ -485,8 +485,8 @@ class TestTensorflow:
         in the tf interface."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit9, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit9, dev)
 
         x = tf.Variable([1.0, 2.0, 3.0])
         w = tf.constant([[-1, -2, -3], [-4, -5, -6]], dtype=float)
@@ -502,8 +502,8 @@ class TestTensorflow:
         import tensorflow as tf
 
         args = tuple(tf.Variable(arg, dtype=np.float64) for arg in args)
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
 
@@ -518,8 +518,8 @@ class TestJax:
         x = jax.numpy.array([1.0, 2.0, 3.0])
         w = jax.numpy.array([[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]])
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit9, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit9, dev)
 
         res = qnode_spectrum(qnode, argnum=0)(x, w)
 
@@ -530,7 +530,7 @@ class TestJax:
     def test_nonlinear_error(self, circuit, args):
         """Test that an error is raised if non-linear
         preprocessing happens in a circuit."""
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)

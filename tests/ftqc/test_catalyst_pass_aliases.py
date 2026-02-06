@@ -54,13 +54,13 @@ pytestmark = pytest.mark.external
 def test_pass_is_captured(pass_fn):
 
     @pass_fn
-    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    @qp.qnode(qp.device("lightning.qubit", wires=3), shots=1000)
     def circ():
-        qml.H(0)
-        qml.S(0)
-        qml.T(1)
-        qml.CNOT([0, 1])
-        return qml.sample()
+        qp.H(0)
+        qp.S(0)
+        qp.T(1)
+        qp.CNOT([0, 1])
+        return qp.sample()
 
     plxpr = make_plxpr(circ)()
     prim = plxpr.eqns[0].primitive
@@ -88,15 +88,15 @@ def test_converstion_to_mlir(pass_fn, pass_name):
     """Test that we can generate MLIR from the captured circuit and that the generated MLIR
     includes the pass name we are mapping to"""
 
-    @qml.qjit(target="mlir")
+    @qp.qjit(target="mlir")
     @pass_fn
-    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    @qp.qnode(qp.device("lightning.qubit", wires=3), shots=1000)
     def circ():
-        qml.H(0)
-        qml.S(0)
-        qml.T(1)
-        qml.CNOT([0, 1])
-        return qml.sample()
+        qp.H(0)
+        qp.S(0)
+        qp.T(1)
+        qp.CNOT([0, 1])
+        return qp.sample()
 
     assert pass_name in circ.mlir
 
@@ -120,13 +120,13 @@ def test_pass_without_qjit_raises_error(pass_fn):
     """Test that trying to apply the transform without QJIT raises an error"""
 
     @pass_fn
-    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
+    @qp.qnode(qp.device("lightning.qubit", wires=3), shots=1000)
     def circ():
-        qml.H(0)
-        qml.S(0)
-        qml.T(1)
-        qml.CNOT([0, 1])
-        return qml.sample()
+        qp.H(0)
+        qp.S(0)
+        qp.T(1)
+        qp.CNOT([0, 1])
+        return qp.sample()
 
     with pytest.raises(NotImplementedError, match="only implemented when using capture and QJIT"):
         circ()

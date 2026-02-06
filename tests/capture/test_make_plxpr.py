@@ -34,13 +34,13 @@ from jax import numpy as jnp  # pylint: disable=wrong-import-position, wrong-imp
 def test_error_is_raised_with_capture_disabled():
     """Test that an error is raised."""
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circ(x):
-        qml.RX(x, 0)
-        qml.Hadamard(0)
-        return qml.expval(qml.X(0))
+        qp.RX(x, 0)
+        qp.Hadamard(0)
+        return qp.expval(qp.X(0))
 
     with pytest.raises(RuntimeError, match="requires PennyLane capture to be enabled"):
         _ = make_plxpr(circ)(1.2)
@@ -54,15 +54,15 @@ class TestMakePLxPR:
         """Test that make_plxpr uses make_jaxpr, and returns a callable that will
         create a jaxpr representation of the qnode"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(x):
-            qml.RX(x, 0)
-            qml.Hadamard(0)
-            return qml.expval(qml.X(0))
+            qp.RX(x, 0)
+            qp.Hadamard(0)
+            return qp.expval(qp.X(0))
 
         plxpr = make_plxpr(circ)(1.2)
 
@@ -75,16 +75,16 @@ class TestMakePLxPR:
     def test_static_argnums(self, static_argnums, autograph, mocker):
         """Test that passing static_argnums works as expected"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ(x, y):
-            qml.RX(x, 0)
-            qml.RY(y, 0)
-            qml.Hadamard(0)
-            return qml.expval(qml.X(0))
+            qp.RX(x, 0)
+            qp.RY(y, 0)
+            qp.Hadamard(0)
+            return qp.expval(qp.X(0))
 
         params = [1.2, 2.3]
         non_static_params = [params[i] for i in (0, 1) if i not in static_argnums]
@@ -103,14 +103,14 @@ class TestMakePLxPR:
     def test_kwargs(self, mocker, autograph):
         """Test additional kwargs are passed through to make_jaxpr"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
         spy = mocker.spy(jax, "make_jaxpr")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.Hadamard(0)
-            return qml.expval(qml.X(0))
+            qp.Hadamard(0)
+            return qp.expval(qp.X(0))
 
         output = make_plxpr(circ, autograph=autograph, return_shape=True)()
 
@@ -137,16 +137,16 @@ class TestAutoGraphIntegration:
 
         def func(x):
             if x > 1.967:
-                qml.Hadamard(0)
+                qp.Hadamard(0)
             else:
-                qml.Y(0)
-            return qml.state()
+                qp.Y(0)
+            return qp.state()
 
-        dev = qml.device("default.qubit", wires=1)
-        qnode = qml.QNode(func, dev)
+        dev = qp.device("default.qubit", wires=1)
+        qnode = qp.QNode(func, dev)
 
-        plxpr1 = qml.capture.make_plxpr(func)(2)
-        plxpr2 = qml.capture.make_plxpr(qnode)(2)
+        plxpr1 = qp.capture.make_plxpr(func)(2)
+        plxpr2 = qp.capture.make_plxpr(qnode)(2)
 
         # the plxpr includes a representation of a `cond` function
         assert "cond[" in str(plxpr1)
@@ -164,16 +164,16 @@ class TestAutoGraphIntegration:
 
         def func(counter):
             while counter < 10:
-                qml.RX(np.pi * 0.1, wires=0)
+                qp.RX(np.pi * 0.1, wires=0)
                 counter += 1
 
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(func, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(func, dev)
 
-        plxpr1 = qml.capture.make_plxpr(func)(0)
-        plxpr2 = qml.capture.make_plxpr(qnode)(0)
+        plxpr1 = qp.capture.make_plxpr(func)(0)
+        plxpr2 = qp.capture.make_plxpr(qnode)(0)
 
         # the plxpr includes a representation of a `while_loop` function
         assert "while_loop[" in str(plxpr1)
@@ -191,15 +191,15 @@ class TestAutoGraphIntegration:
 
         def func(angles):
             for i, x in enumerate(angles):
-                qml.RX(x, wires=i)
+                qp.RX(x, wires=i)
 
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(func, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(func, dev)
 
-        plxpr1 = qml.capture.make_plxpr(func)(jnp.array([0.0, 0.0]))
-        plxpr2 = qml.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
+        plxpr1 = qp.capture.make_plxpr(func)(jnp.array([0.0, 0.0]))
+        plxpr2 = qp.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
 
         # the plxpr includes a representation of a `for_loop` function
         assert "for_loop[" in str(plxpr1)

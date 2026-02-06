@@ -94,14 +94,14 @@ class TestHardwareHamiltonian:
         """Test that the __add__ dunder method works correctly."""
         rm1 = HardwareHamiltonian(
             coeffs=[1, 2],
-            observables=[qml.PauliX(4), qml.PauliZ(8)],
+            observables=[qp.PauliX(4), qp.PauliZ(8)],
             pulses=[HardwarePulse(1, 2, 3, [4, 8])],
             settings=settings,
             reorder_fn=_reorder_parameters,
         )
         rm2 = HardwareHamiltonian(
             coeffs=[2],
-            observables=[qml.PauliY(8)],
+            observables=[qp.PauliY(8)],
             pulses=[HardwarePulse(5, 6, 7, 8)],
             reorder_fn=_reorder_parameters,
         )
@@ -109,9 +109,9 @@ class TestHardwareHamiltonian:
         sum_rm = rm1 + rm2
 
         assert isinstance(sum_rm, HardwareHamiltonian)
-        assert qml.math.allequal(sum_rm.coeffs, [1, 2, 2])
-        for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)]):
-            qml.assert_equal(op1, op2)
+        assert qp.math.allequal(sum_rm.coeffs, [1, 2, 2])
+        for op1, op2 in zip(sum_rm.ops, [qp.PauliX(4), qp.PauliZ(8), qp.PauliY(8)]):
+            qp.assert_equal(op1, op2)
         assert sum_rm.pulses == [
             HardwarePulse(1, 2, 3, [4, 8]),
             HardwarePulse(5, 6, 7, 8),
@@ -122,7 +122,7 @@ class TestHardwareHamiltonian:
         """Test repr method returns expected string"""
         test_example = HardwareHamiltonian(
             coeffs=[2],
-            observables=[qml.PauliY(8)],
+            observables=[qp.PauliY(8)],
             pulses=[HardwarePulse(5, 6, 7, 8)],
             reorder_fn=_reorder_parameters,
         )
@@ -133,7 +133,7 @@ class TestHardwareHamiltonian:
         """Tests that adding a `HardwareHamiltonian` and `ParametrizedHamiltonian` works as
         expected."""
         coeffs = [2, 3]
-        ops = [qml.PauliZ(0), qml.PauliX(2)]
+        ops = [qp.PauliZ(0), qp.PauliX(2)]
         h_wires = [0, 2]
 
         rh = HardwareHamiltonian(
@@ -141,7 +141,7 @@ class TestHardwareHamiltonian:
             observables=[ops[0]],
             pulses=[HardwarePulse(5, 6, 7, 8)],
         )
-        ph = qml.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
+        ph = qp.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
 
         res1 = rh + ph
         res2 = ph + rh
@@ -150,9 +150,9 @@ class TestHardwareHamiltonian:
         assert res1.coeffs_fixed == coeffs
         assert res1.coeffs_parametrized == []
         for op1, op2 in zip(res1.ops_fixed, ops):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
         assert res1.ops_parametrized == []
-        assert res1.wires == qml.wires.Wires(h_wires)
+        assert res1.wires == qp.wires.Wires(h_wires)
 
         coeffs.reverse()
         ops.reverse()
@@ -162,57 +162,57 @@ class TestHardwareHamiltonian:
         assert res2.coeffs_fixed == coeffs
         assert res2.coeffs_parametrized == []
         for op1, op2 in zip(res2.ops_fixed, ops):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
         assert res2.ops_parametrized == []
-        assert res2.wires == qml.wires.Wires(h_wires)
+        assert res2.wires == qp.wires.Wires(h_wires)
 
     @pytest.mark.parametrize("scalars", [(0.2, 1), (0.9, 0.2), (1, 5), (3, 0.5)])
     def test_add_scalar(self, scalars):
         """Test that adding a scalar/number to a `HardwareHamiltonian` works as expected."""
         coeffs = [2, 3]
-        ops = [qml.PauliZ(2), qml.PauliX(0)]
+        ops = [qp.PauliZ(2), qp.PauliX(0)]
 
         H = HardwareHamiltonian(
             coeffs=coeffs,
             observables=ops,
-            pulses=[HardwarePulse(qml.pulse.constant, 6, 7, 8)],
+            pulses=[HardwarePulse(qp.pulse.constant, 6, 7, 8)],
         )
-        orig_matrix = qml.matrix(H([0.3], 0.1))
+        orig_matrix = qp.matrix(H([0.3], 0.1))
         H1 = H + scalars[0]
         assert len(H1.ops) == len(H1.coeffs) == 3
-        qml.assert_equal(H1.ops[-1], qml.Identity(2))
-        assert qml.math.allclose(qml.matrix(H1([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
+        qp.assert_equal(H1.ops[-1], qp.Identity(2))
+        assert qp.math.allclose(qp.matrix(H1([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
         H2 = scalars[1] + H1
         assert len(H2.ops) == len(H2.coeffs) == 4
-        qml.assert_equal(H2.ops[-2], qml.Identity(2))
-        qml.assert_equal(H2.ops[-1], qml.Identity(2))
-        assert qml.math.allclose(
-            qml.matrix(H2([0.3], 0.1)), orig_matrix + np.eye(4) * (scalars[0] + scalars[1])
+        qp.assert_equal(H2.ops[-2], qp.Identity(2))
+        qp.assert_equal(H2.ops[-1], qp.Identity(2))
+        assert qp.math.allclose(
+            qp.matrix(H2([0.3], 0.1)), orig_matrix + np.eye(4) * (scalars[0] + scalars[1])
         )
         H += scalars[0]
         assert len(H.ops) == len(H.coeffs) == 3
-        qml.assert_equal(H.ops[-1], qml.Identity(2))
-        assert qml.math.allclose(qml.matrix(H([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
+        qp.assert_equal(H.ops[-1], qp.Identity(2))
+        assert qp.math.allclose(qp.matrix(H([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
 
     def test_add_zero(self):
         """Test that adding an int or a float that is zero to a `HardwareHamiltonian`
         returns an unchanged copy."""
         coeffs = [2, 3]
-        ops = [qml.PauliZ(2), qml.PauliX(0)]
+        ops = [qp.PauliZ(2), qp.PauliX(0)]
 
         H = HardwareHamiltonian(
             coeffs=coeffs,
             observables=ops,
-            pulses=[HardwarePulse(qml.pulse.constant, 6, 7, 8)],
+            pulses=[HardwarePulse(qp.pulse.constant, 6, 7, 8)],
         )
-        orig_matrix = qml.matrix(H([0.3], 0.1))
+        orig_matrix = qp.matrix(H([0.3], 0.1))
         H1 = H + 0
         assert len(H1.ops) == len(H1.coeffs) == 2
-        assert qml.math.allclose(qml.matrix(H1([0.3], 0.1)), orig_matrix)
+        assert qp.math.allclose(qp.matrix(H1([0.3], 0.1)), orig_matrix)
         assert H1 is not H
         H2 = 0.0 + H
         assert len(H2.ops) == len(H2.coeffs) == 2
-        assert qml.math.allclose(qml.matrix(H2([0.3], 0.1)), orig_matrix)
+        assert qp.math.allclose(qp.matrix(H2([0.3], 0.1)), orig_matrix)
         assert H2 is not H
 
     @pytest.mark.xfail
@@ -248,9 +248,9 @@ class TestHardwareHamiltonian:
         def phase(p, t):
             return p * t
 
-        H_global = qml.pulse.drive(amp, phase, wires=[0])
-        H_global += qml.pulse.drive(amp, phase, wires=[0])
-        H_global += np.polyval * qml.PauliX(0)
+        H_global = qp.pulse.drive(amp, phase, wires=[0])
+        H_global += qp.pulse.drive(amp, phase, wires=[0])
+        H_global += np.polyval * qp.PauliX(0)
 
         # start with HardwareHamiltonians, then add ParametrizedHamiltonian
         params = [np.array([1.2, 2.3, 3.4]), 4.5]
@@ -273,9 +273,9 @@ class TestHardwareHamiltonian:
             return p * t
 
         # start with ParametrizedHamiltonian, add on HardwareHamiltonians
-        H_global = np.polyval * qml.PauliX(0)
-        H_global += qml.pulse.drive(amp, phase, wires=[0])
-        H_global += qml.pulse.drive(amp, phase, wires=[0])
+        H_global = np.polyval * qp.PauliX(0)
+        H_global += qp.pulse.drive(amp, phase, wires=[0])
+        H_global += qp.pulse.drive(amp, phase, wires=[0])
 
         params = [np.ones(2)]
         params += [np.array([1.2, 2.3, 3.4]), 4.5]
@@ -291,15 +291,15 @@ class TestInteractionWithOperators:
     expected."""
 
     ops_with_coeffs = (
-        (qml.Hamiltonian([2], [qml.PauliZ(0)]), 2),
-        (qml.Hamiltonian([1.7], [qml.PauliZ(0)]), 1.7),
-        (3 * qml.PauliZ(0), 3),
-        (qml.ops.SProd(3, qml.PauliZ(0)), 3),
+        (qp.Hamiltonian([2], [qp.PauliZ(0)]), 2),
+        (qp.Hamiltonian([1.7], [qp.PauliZ(0)]), 1.7),
+        (3 * qp.PauliZ(0), 3),
+        (qp.ops.SProd(3, qp.PauliZ(0)), 3),
     )
     ops = (
-        qml.PauliX(2),
-        qml.PauliX(2) @ qml.PauliX(3),
-        qml.CNOT([0, 1]),
+        qp.PauliX(2),
+        qp.PauliX(2) @ qp.PauliX(3),
+        qp.CNOT([0, 1]),
     )
 
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
@@ -313,16 +313,16 @@ class TestInteractionWithOperators:
         new_pH = R + H
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        qp.assert_equal(new_pH.H_fixed(), qp.s_prod(coeff, qp.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
-        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
+        assert qp.math.allequal(new_pH(params, t=0.5).matrix(), qp.matrix(R(params, t=0.5) + H))
         # Adding on the left
         new_pH = H + R
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        qp.assert_equal(new_pH.H_fixed(), qp.s_prod(coeff, qp.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
-        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
+        assert qp.math.allequal(new_pH(params, t=0.5).matrix(), qp.matrix(R(params, t=0.5) + H))
 
     @pytest.mark.parametrize("op", ops)
     def test_add_other_operators(self, op):
@@ -335,20 +335,20 @@ class TestInteractionWithOperators:
         new_pH = R + op
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(1, op))
+        qp.assert_equal(new_pH.H_fixed(), qp.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
         # Adding on the left
         new_pH = op + R
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(1, op))
+        qp.assert_equal(new_pH.H_fixed(), qp.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
     def test_adding_scalar_does_not_queue_id(self):
         """Test that no additional Identity operation is queued when adding a scalar."""
         R = drive(amplitude=f1, phase=0, wires=[0, 1])
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             R += 3
         assert len(q) == 0
 
@@ -383,10 +383,10 @@ class TestDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
-            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
+            qp.Hamiltonian([0.5, 0.5], [qp.PauliX(1), qp.PauliX(2)]),
+            qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(1), qp.PauliY(2)]),
+            qp.Hamiltonian([0.5, 0.5], [qp.PauliX(0), qp.PauliX(3)]),
+            qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(0), qp.PauliY(3)]),
         ]
         coeffs_expected = [
             np.cos(3),
@@ -414,7 +414,7 @@ class TestDrive:
         assert Hd.pulses == []
 
         # Hamiltonian is as expected
-        qml.assert_equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
+        qp.assert_equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
 
 def callable_amp(p, t):
@@ -516,11 +516,11 @@ class TestAmplitudeAndPhase:
 
         c1 = np.sin(3.4 * t) * (2 * np.pi) * np.cos(np.cos(5.6 * t))
         c2 = np.sin(3.4 * t) * (2 * np.pi) * np.sin(np.cos(5.6 * t))
-        expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
+        expected_H_parametrized = qp.sum(
+            qp.s_prod(c1, qp.Hamiltonian([0.5, 0.5], [qp.PauliX(0), qp.PauliX(1)])),
+            qp.s_prod(c2, qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(0), qp.PauliY(1)])),
         )
-        qml.assert_equal(evaluated_H, expected_H_parametrized)
+        qp.assert_equal(evaluated_H, expected_H_parametrized)
 
     def test_callable_phase_hamiltonian(self):
         """Test that using callable phase in drive creates AmplitudeAndPhase
@@ -537,12 +537,12 @@ class TestAmplitudeAndPhase:
 
         c1 = 7.2 * np.cos(np.sin(5.6 * t))
         c2 = 7.2 * np.sin(np.sin(5.6 * t))
-        expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
+        expected_H_parametrized = qp.sum(
+            qp.s_prod(c1, qp.Hamiltonian([0.5, 0.5], [qp.PauliX(0), qp.PauliX(1)])),
+            qp.s_prod(c2, qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(0), qp.PauliY(1)])),
         )
 
-        qml.assert_equal(evaluated_H, expected_H_parametrized)
+        qp.assert_equal(evaluated_H, expected_H_parametrized)
 
     def test_callable_amplitude_hamiltonian(self):
         """Test that using callable amplitude in drive creates AmplitudeAndPhase
@@ -559,12 +559,12 @@ class TestAmplitudeAndPhase:
 
         c1 = np.sin(3.4 * t) * (2 * np.pi) * np.cos(4.3)
         c2 = np.sin(3.4 * t) * (2 * np.pi) * np.sin(4.3)
-        expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
+        expected_H_parametrized = qp.sum(
+            qp.s_prod(c1, qp.Hamiltonian([0.5, 0.5], [qp.PauliX(0), qp.PauliX(1)])),
+            qp.s_prod(c2, qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(0), qp.PauliY(1)])),
         )
 
-        qml.assert_equal(evaluated_H, expected_H_parametrized)
+        qp.assert_equal(evaluated_H, expected_H_parametrized)
 
     COEFFS_AND_PARAMS = [
         (
@@ -641,28 +641,28 @@ class TestIntegration:
 
         Ht = drive(amplitude=fa, phase=0, wires=1)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hd + Ht)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + Ht)(params, ts)
+            return qp.expval(H_obj)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode_jit(params):
-            qml.evolve(Hd + Ht)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + Ht)(params, ts)
+            return qp.expval(H_obj)
 
         params = (jnp.ones(5), jnp.array([1.0]))
         res = qnode(params)
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert qml.math.allclose(res, res_jit)
+        assert qp.math.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
@@ -683,21 +683,21 @@ class TestIntegration:
         H2 = drive(amplitude=fc, phase=3 * jnp.pi, wires=4)
         H3 = drive(amplitude=1.0, phase=0, wires=[3, 0])
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + H1 + H2 + H3)(params, ts)
+            return qp.expval(H_obj)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode_jit(params):
-            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + H1 + H2 + H3)(params, ts)
+            return qp.expval(H_obj)
 
         params = (
             jnp.array([1.0, jnp.pi]),
@@ -707,7 +707,7 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert qml.math.allclose(res, res_jit)
+        assert qp.math.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
@@ -726,25 +726,25 @@ class TestIntegration:
 
         H_drive = drive(amplitude=fa, phase=fb, wires=1)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(H_drift + H_drive)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(H_drift + H_drive)(params, ts)
+            return qp.expval(H_obj)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode_jit(params):
-            qml.evolve(H_drift + H_drive)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(H_drift + H_drive)(params, ts)
+            return qp.expval(H_obj)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
         res = qnode(params)
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert qml.math.allclose(res, res_jit)
+        assert qp.math.allclose(res, res_jit)

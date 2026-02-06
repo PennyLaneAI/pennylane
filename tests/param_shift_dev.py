@@ -22,13 +22,13 @@ import pennylane as qp
 
 
 # pylint: disable=unused-argument
-class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
+class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
     """This device provides derivatives via parameter shift."""
 
     name = "param_shift.qubit"
 
     def setup_execution_config(self, config=None, circuit=None):
-        config = config or qml.devices.ExecutionConfig()
+        config = config or qp.devices.ExecutionConfig()
         if config.gradient_method in {"device", "parameter-shift"}:
             config = dataclasses.replace(config, use_device_gradient=True)
             if config.use_device_jacobian_product is None:
@@ -39,7 +39,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
 
     def preprocess_transforms(self, execution_config=None):
         program = super().preprocess_transforms(execution_config)
-        program.add_transform(qml.transform(qml.gradients.param_shift.expand_transform))
+        program.add_transform(qp.transform(qp.gradients.param_shift.expand_transform))
         return program
 
     def supports_derivatives(self, execution_config=None, circuit=None):
@@ -49,7 +49,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
 
     def compute_derivatives(self, circuits, execution_config=None):
         is_single_circuit = False
-        if isinstance(circuits, qml.tape.QuantumScript):
+        if isinstance(circuits, qp.tape.QuantumScript):
             is_single_circuit = True
             circuits = (circuits,)
 
@@ -57,7 +57,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        diff_batch, fn = qml.gradients.param_shift(circuits)
+        diff_batch, fn = qp.gradients.param_shift(circuits)
         diff_results = self.execute(diff_batch)
 
         jacs = fn(diff_results)
@@ -65,7 +65,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
 
     def execute_and_compute_derivatives(self, circuits, execution_config=None):
         is_single_circuit = False
-        if isinstance(circuits, qml.tape.QuantumScript):
+        if isinstance(circuits, qp.tape.QuantumScript):
             is_single_circuit = True
             circuits = (circuits,)
 
@@ -78,7 +78,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             )
             self.tracker.record()
 
-        diff_batch, fn = qml.gradients.param_shift(circuits)
+        diff_batch, fn = qp.gradients.param_shift(circuits)
         combined_batch = tuple(circuits) + tuple(diff_batch)
         all_results = self.execute(combined_batch)
         results = all_results[: len(circuits)]
@@ -86,10 +86,10 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
     def compute_jvp(
-        self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+        self, circuits, tangents, execution_config: Optional[qp.devices.ExecutionConfig] = None
     ):
         is_single_circuit = False
-        if isinstance(circuits, qml.tape.QuantumScript):
+        if isinstance(circuits, qp.tape.QuantumScript):
             is_single_circuit = True
             circuits = (circuits,)
             tangents = (tangents,)
@@ -98,15 +98,15 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             self.tracker.update(jvp_batches=1, jvps=len(circuits))
             self.tracker.record()
 
-        batch, fn = qml.gradients.batch_jvp(circuits, tangents, qml.gradients.param_shift)
+        batch, fn = qp.gradients.batch_jvp(circuits, tangents, qp.gradients.param_shift)
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_jvp(
-        self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+        self, circuits, tangents, execution_config: Optional[qp.devices.ExecutionConfig] = None
     ):
         is_single_circuit = False
-        if isinstance(circuits, qml.tape.QuantumScript):
+        if isinstance(circuits, qp.tape.QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
             tangents = [tangents]
@@ -119,7 +119,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             )
             self.tracker.record()
 
-        batch, fn = qml.gradients.batch_jvp(circuits, tangents, qml.gradients.param_shift)
+        batch, fn = qp.gradients.batch_jvp(circuits, tangents, qp.gradients.param_shift)
         full_batch = tuple(circuits) + tuple(batch)
         all_results = self.execute(full_batch)
         results = all_results[: len(circuits)]
@@ -127,10 +127,10 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return (results[0], jvps[0]) if is_single_circuit else results, jvps
 
     def compute_vjp(
-        self, circuits, cotangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+        self, circuits, cotangents, execution_config: Optional[qp.devices.ExecutionConfig] = None
     ):
         is_single_circuit = False
-        if isinstance(circuits, qml.tape.QuantumScript):
+        if isinstance(circuits, qp.tape.QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
             cotangents = [cotangents]
@@ -139,15 +139,15 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             self.tracker.update(vjp_batches=1, vjps=len(circuits))
             self.tracker.record()
 
-        batch, fn = qml.gradients.batch_vjp(circuits, cotangents, qml.gradients.param_shift)
+        batch, fn = qp.gradients.batch_vjp(circuits, cotangents, qp.gradients.param_shift)
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_vjp(
-        self, circuits, cotangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+        self, circuits, cotangents, execution_config: Optional[qp.devices.ExecutionConfig] = None
     ):
         is_single_circuit = False
-        if isinstance(circuits, qml.tape.QuantumScript):
+        if isinstance(circuits, qp.tape.QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
             cotangents = [cotangents]
@@ -160,7 +160,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             )
             self.tracker.record()
 
-        batch, fn = qml.gradients.batch_vjp(circuits, cotangents, qml.gradients.param_shift)
+        batch, fn = qp.gradients.batch_vjp(circuits, cotangents, qp.gradients.param_shift)
         full_batch = tuple(circuits) + tuple(batch)
         all_results = self.execute(full_batch)
         results = all_results[: len(circuits)]

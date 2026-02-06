@@ -25,7 +25,7 @@ class TestBasics:
 
     def test_initialization_default(self):
         """Test that initializing MomentumQNGOptimizer with default values works."""
-        opt = qml.MomentumQNGOptimizer()
+        opt = qp.MomentumQNGOptimizer()
         assert opt.stepsize == 0.01
         assert opt.approx == "block-diag"
         assert opt.lam == 0
@@ -35,7 +35,7 @@ class TestBasics:
 
     def test_initialization_custom_values(self):
         """Test that initializing MomentumQNGOptimizer with custom values works."""
-        opt = qml.MomentumQNGOptimizer(stepsize=0.05, momentum=0.8, approx="diag", lam=1e-9)
+        opt = qp.MomentumQNGOptimizer(stepsize=0.05, momentum=0.8, approx="diag", lam=1e-9)
         assert opt.stepsize == 0.05
         assert opt.approx == "diag"
         assert opt.lam == 1e-9
@@ -51,20 +51,20 @@ class TestOptimize:
     def test_step_and_cost(self, rho):
         """Test that the correct cost and step is returned after 8 optimization steps via the
         step_and_cost method for the MomentumQNG optimizer"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         var = np.array([0.11, 0.412])
         stepsize = 0.01
         # Create two optimizers so that the opt.accumulation state does not
         # interact between tests for step_and_cost and for step.
-        opt1 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=rho)
-        opt2 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=rho)
+        opt1 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=rho)
+        opt2 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=rho)
 
         var1 = var2 = var
         accum = np.zeros_like(var)
@@ -77,7 +77,7 @@ class TestOptimize:
             assert np.allclose(circuit(var), res)
             assert np.allclose(opt1.metric_tensor, np.diag(mt))
             assert np.allclose(opt2.metric_tensor, np.diag(mt))
-            accum = rho * accum + stepsize * qml.grad(circuit)(var) / mt
+            accum = rho * accum + stepsize * qp.grad(circuit)(var) / mt
             var -= accum
             assert np.allclose([var1, var2], var)
 
@@ -86,21 +86,21 @@ class TestOptimize:
         step_and_cost method for the MomentumQNG optimizer when the generator
         of an operator is a Hamiltonian"""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         var = np.array([0.311, -0.52])
         stepsize = 0.05
         momentum = 0.7
         # Create two optimizers so that the opt.accumulation state does not
         # interact between tests for step_and_cost and for step.
-        opt1 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
-        opt2 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
+        opt1 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
+        opt2 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
 
         var1 = var2 = var
         accum = np.zeros_like(var)
@@ -113,7 +113,7 @@ class TestOptimize:
             assert np.allclose(circuit(var), res)
             assert np.allclose(opt1.metric_tensor, np.diag(expected_mt))
             assert np.allclose(opt2.metric_tensor, np.diag(expected_mt))
-            accum = momentum * accum + stepsize * qml.grad(circuit)(var) / expected_mt
+            accum = momentum * accum + stepsize * qp.grad(circuit)(var) / expected_mt
             var -= accum
             assert np.allclose([var1, var2], var)
 
@@ -122,7 +122,7 @@ class TestOptimize:
         """Test that the correct cost and update is returned after 8 optimization steps via the step_and_cost
         method for the MomentumQNG optimizer when providing an explicit grad_fn.
         Using a circuit with a single input containing all parameters."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
         # Flat variables used for split_input=True and False
         var = np.array([0.911, 0.512])
@@ -130,20 +130,20 @@ class TestOptimize:
 
         if split_input:
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(params_0, params_1):
-                qml.RX(params_0, wires=0)
-                qml.RY(params_1, wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qp.RX(params_0, wires=0)
+                qp.RY(params_1, wires=0)
+                return qp.expval(qp.PauliZ(0))
 
             args = var
         else:
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(params):
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qp.RX(params[0], wires=0)
+                qp.RY(params[1], wires=0)
+                return qp.expval(qp.PauliZ(0))
 
             args = (var,)
 
@@ -151,15 +151,15 @@ class TestOptimize:
         momentum = 0.7
         # Create multiple optimizers so that the opt.accumulation state does not
         # interact between tests for step_and_cost and for step.
-        opt1 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
-        opt2 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
-        opt3 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
-        opt4 = qml.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
+        opt1 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
+        opt2 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
+        opt3 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
+        opt4 = qp.MomentumQNGOptimizer(stepsize=stepsize, momentum=momentum)
 
         args1 = args2 = args3 = args4 = args
 
         # With autograd gradient function
-        grad_fn1 = qml.grad(circuit)
+        grad_fn1 = qp.grad(circuit)
         for _ in range(4):
             args1, cost1 = opt1.step_and_cost(circuit, *args1, grad_fn=grad_fn1)
             args2 = opt2.step(circuit, *args2, grad_fn=grad_fn1)
@@ -172,7 +172,7 @@ class TestOptimize:
 
         # With more custom gradient function, forward has to be computed explicitly.
         def grad_fn2(*args):
-            return np.array(qml.grad(circuit)(*args))
+            return np.array(qp.grad(circuit)(*args))
 
         for _ in range(4):
             args3, cost2 = opt3.step_and_cost(circuit, *args3, grad_fn=grad_fn2)
@@ -209,20 +209,20 @@ class TestOptimize:
         method for the MomentumQNG optimizer when providing an explicit grad_fn or not.
         Using a circuit with multiple inputs, one of which is trainable."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
             """A cost function with two arguments."""
-            qml.RX(x, 0)
-            qml.RY(-y, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            qp.RY(-y, 0)
+            return qp.expval(qp.Z(0))
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
 
         params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
         params[trainable_idx].requires_grad = True
-        opt = qml.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
+        opt = qp.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
 
         params1 = params2 = params3 = params
 
@@ -230,7 +230,7 @@ class TestOptimize:
         for _ in range(4):
             params1, cost1 = opt.step_and_cost(circuit, *params1)
 
-        opt = qml.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
+        opt = qp.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
         for _ in range(4):
             params2 = opt.step(circuit, *params2)
 
@@ -262,13 +262,13 @@ class TestOptimize:
         """Test qubit rotation has the correct Momentum-QNG value
         every step, the correct parameter updates,
         and correct cost after a few steps"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def gradient(params):
             """Returns the gradient of the above circuit"""
@@ -281,7 +281,7 @@ class TestOptimize:
         init_params = np.array([0.011, 0.012])
         num_steps = 80
 
-        opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
+        opt = qp.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
         theta = init_params
         dtheta = np.zeros_like(init_params)
 
@@ -304,20 +304,20 @@ class TestOptimize:
         assert np.allclose(circuit(theta), -1, atol=1e-4)
 
     def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol):
-        """Test single-qubit VQE by returning qml.expval(H) in the QNode and
+        """Test single-qubit VQE by returning qp.expval(H) in the QNode and
         check for the correct MomentumQNG value every step, the correct parameter updates, and
         correct cost after a few steps"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
         coeffs = [1, 1]
-        obs_list = [qml.PauliX(0), qml.PauliZ(0)]
+        obs_list = [qp.PauliX(0), qp.PauliZ(0)]
 
-        H = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
+        H = qp.Hamiltonian(coeffs=coeffs, observables=obs_list)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y, wires=0):
-            qml.RX(x, wires=wires)
-            qml.RY(y, wires=wires)
-            return qml.expval(H)
+            qp.RX(x, wires=wires)
+            qp.RY(y, wires=wires)
+            return qp.expval(H)
 
         eta = 0.02
         rho = 0.7
@@ -332,7 +332,7 @@ class TestOptimize:
 
         num_steps = 30
 
-        opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
+        opt = qp.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
 
         theta = np.array([x, y])
         dtheta = np.zeros_like(theta)
@@ -354,4 +354,4 @@ class TestOptimize:
             assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost
-        assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
+        assert np.allclose(circuit(x, y), qp.eigvals(H).min(), atol=tol, rtol=0)

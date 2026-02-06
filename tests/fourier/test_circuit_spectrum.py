@@ -30,15 +30,15 @@ class TestCircuits:
         """Test that the spectrum grows linearly with the number of
         encoding gates if we use Pauli rotation encoding."""
 
-        dev = qml.device("default.qubit", wires=n_qubits)
+        dev = qp.device("default.qubit", wires=n_qubits)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def _circuit(x):
             for _ in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x, wires=i, id="x")
-                    qml.RY(0.4, wires=i)
-            return qml.expval(qml.PauliZ(wires=0))
+                    qp.RX(x, wires=i, id="x")
+                    qp.RY(0.4, wires=i)
+            return qp.expval(qp.PauliZ(wires=0))
 
         res = circuit_spectrum(_circuit)(0.1)
         expected_degree = n_qubits * n_layers
@@ -48,13 +48,13 @@ class TestCircuits:
         """Test that the spectrum contains the ids provided in encoding_gates, or
         all ids if encoding_gates is None."""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def _circuit(x):
-            qml.RX(x, wires=0, id="x")
-            qml.RY(0.4, wires=0, id="other")
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.RX(x, wires=0, id="x")
+            qp.RY(0.4, wires=0, id="other")
+            return qp.expval(qp.PauliZ(wires=0))
 
         res = circuit_spectrum(_circuit, encoding_gates=["x"])(0.1)
         assert res == {"x": [-1.0, 0.0, 1.0]}
@@ -72,15 +72,15 @@ class TestCircuits:
         """Test that the spectrum changes per call if a qnode argument changes the
         circuit architecture."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def _circuit(last_gate):
-            qml.RX(0.1, wires=0, id="x")
-            qml.RX(0.2, wires=1, id="x")
+            qp.RX(0.1, wires=0, id="x")
+            qp.RX(0.2, wires=1, id="x")
             if last_gate:
-                qml.RX(0.3, wires=2, id="x")
-            return qml.expval(qml.PauliZ(wires=0))
+                qp.RX(0.3, wires=2, id="x")
+            return qp.expval(qp.PauliZ(wires=0))
 
         res_true = circuit_spectrum(_circuit)(True)
         assert np.allclose(res_true["x"], range(-3, 4))
@@ -92,13 +92,13 @@ class TestCircuits:
         """Test that an error is thrown if gates marked as encoding gates
         are not single-parameter gates."""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def _circuit():
-            qml.RX(0.1, wires=0, id="x")
-            qml.Rot(0.2, 0.3, 0.4, wires=1, id="x")
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.RX(0.1, wires=0, id="x")
+            qp.Rot(0.2, 0.3, 0.4, wires=1, id="x")
+            return qp.expval(qp.PauliZ(wires=0))
 
         with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
             circuit_spectrum(_circuit)()
@@ -108,12 +108,12 @@ def circuit(x, w):
     """Test circuit"""
     for l in range(2):
         for i in range(3):
-            qml.RX(x[i], wires=0, id="x" + str(i))
-            qml.RY(w[l][i], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-    qml.RZ(x[0], wires=0, id="x0")
-    return qml.expval(qml.PauliZ(wires=0))
+            qp.RX(x[i], wires=0, id="x" + str(i))
+            qp.RY(w[l][i], wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+    qp.RZ(x[0], wires=0, id="x0")
+    return qp.expval(qp.PauliZ(wires=0))
 
 
 expected_result = {
@@ -135,8 +135,8 @@ class TestInterfaces:
         x = pnp.array([1.0, 2.0, 3.0], requires_grad=False)
         w = pnp.array([[-1, -2, -3], [-4, -5, -6]], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit, dev)
 
         res = circuit_spectrum(qnode)(x, w)
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
@@ -153,8 +153,8 @@ class TestInterfaces:
         x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], requires_grad=False)
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit, dev)
 
         res = circuit_spectrum(qnode)(x, w)
         assert res
@@ -168,8 +168,8 @@ class TestInterfaces:
         in the tf interface."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit, dev)
 
         x = tf.Variable([1.0, 2.0, 3.0])
         w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
@@ -189,8 +189,8 @@ class TestInterfaces:
         x = jnp.array([1.0, 2.0, 3.0])
         w = [[-1, -2, -3], [-4, -5, -6]]
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev)
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(circuit, dev)
 
         res = circuit_spectrum(qnode)(x, w)
 

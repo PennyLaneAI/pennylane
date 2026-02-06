@@ -28,18 +28,18 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
-    [qml.device("default.qubit"), "finite-diff", False, False],
-    [qml.device("default.qubit"), "parameter-shift", False, False],
-    [qml.device("default.qubit"), "backprop", True, False],
-    [qml.device("default.qubit"), "adjoint", True, False],
-    [qml.device("default.qubit"), "adjoint", False, False],
-    [qml.device("default.qubit"), "spsa", False, False],
-    [qml.device("default.qubit"), "hadamard", False, False],
+    [qp.device("default.qubit"), "finite-diff", False, False],
+    [qp.device("default.qubit"), "parameter-shift", False, False],
+    [qp.device("default.qubit"), "backprop", True, False],
+    [qp.device("default.qubit"), "adjoint", True, False],
+    [qp.device("default.qubit"), "adjoint", False, False],
+    [qp.device("default.qubit"), "spsa", False, False],
+    [qp.device("default.qubit"), "hadamard", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, False],
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
-    [qml.device("reference.qubit"), "parameter-shift", False, False],
+    [qp.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 interface_qubit_device_and_diff_method = [
@@ -52,10 +52,10 @@ interface_qubit_device_and_diff_method = [
     ["autograd", DefaultQubit(), "adjoint", False, True],
     ["autograd", DefaultQubit(), "spsa", False, False],
     ["autograd", DefaultQubit(), "hadamard", False, False],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, True],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, True],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
-    ["autograd", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+    ["autograd", qp.device("lightning.qubit", wires=5), "adjoint", False, True],
+    ["autograd", qp.device("lightning.qubit", wires=5), "adjoint", True, True],
+    ["autograd", qp.device("lightning.qubit", wires=5), "adjoint", False, False],
+    ["autograd", qp.device("lightning.qubit", wires=5), "adjoint", True, False],
     ["auto", DefaultQubit(), "finite-diff", False, False],
     ["auto", DefaultQubit(), "parameter-shift", False, False],
     ["auto", DefaultQubit(), "backprop", True, False],
@@ -63,9 +63,9 @@ interface_qubit_device_and_diff_method = [
     ["auto", DefaultQubit(), "adjoint", False, False],
     ["auto", DefaultQubit(), "spsa", False, False],
     ["auto", DefaultQubit(), "hadamard", False, False],
-    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", False, False],
-    ["auto", qml.device("lightning.qubit", wires=5), "adjoint", True, False],
-    ["auto", qml.device("reference.qubit"), "parameter-shift", False, False],
+    ["auto", qp.device("lightning.qubit", wires=5), "adjoint", False, False],
+    ["auto", qp.device("lightning.qubit", wires=5), "adjoint", True, False],
+    ["auto", qp.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -96,14 +96,14 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
         assert circuit.interface == interface
         # gradients should work
-        grad = qml.grad(circuit)(a)
+        grad = qp.grad(circuit)(a)
 
         assert grad.shape == tuple()
 
@@ -126,10 +126,10 @@ class TestQNode:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
         res = circuit(a, b)
 
@@ -142,7 +142,7 @@ class TestQNode:
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.jacobian(cost)(a, b)
+        res = qp.jacobian(cost)(a, b)
         assert isinstance(res, tuple) and len(res) == 2
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert isinstance(res[0], np.ndarray)
@@ -173,15 +173,15 @@ class TestQNode:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
         def cost(x, y):
             return autograd.numpy.hstack(circuit(x, y))
 
-        jac_fn = qml.jacobian(cost)
+        jac_fn = qp.jacobian(cost)
         res = jac_fn(a, b)
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
@@ -213,11 +213,11 @@ class TestQNode:
             gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        qml.jacobian(circuit)(a)
+        qp.jacobian(circuit)(a)
 
     def test_changing_trainability(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol
@@ -238,15 +238,15 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
         def loss(a, b):
             return np.sum(autograd.numpy.hstack(circuit(a, b)))
 
-        grad_fn = qml.grad(loss)
+        grad_fn = qp.grad(loss)
         res = grad_fn(a, b)
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -280,12 +280,12 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(a, b, c):
-            qml.RY(a * c, wires=0)
-            qml.RZ(b, wires=0)
-            qml.RX(c + c**2 + np.sin(a), wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a * c, wires=0)
+            qp.RZ(b, wires=0)
+            qp.RX(c + c**2 + np.sin(a), wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        res = qml.jacobian(circuit)(a, b, c)
+        res = qp.jacobian(circuit)(a, b, c)
 
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == ()
@@ -304,10 +304,10 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
 
         a = np.array(0.1, requires_grad=False)
         b = np.array(0.2, requires_grad=False)
@@ -321,13 +321,13 @@ class TestQNode:
             return autograd.numpy.hstack(circuit(x, y))
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            assert not qml.jacobian(cost)(a, b)
+            assert not qp.jacobian(cost)(a, b)
 
         def cost2(a, b):
             return np.sum(circuit(a, b))
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            grad = qml.grad(cost2)(a, b)
+            grad = qp.grad(cost2)(a, b)
 
         assert grad == tuple()
 
@@ -347,13 +347,13 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(U, a):
-            qml.QubitUnitary(U, wires=0)
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.QubitUnitary(U, wires=0)
+            qp.RY(a, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         res = circuit(U, a)
 
-        res = qml.grad(circuit)(U, a)
+        res = qp.grad(circuit)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
     def test_gradient_non_differentiable_exception(
@@ -370,13 +370,13 @@ class TestQNode:
             device_vjp=device_vjp,
         )
         def circuit(data1):
-            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.templates.AmplitudeEmbedding(data1, wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
-        grad_fn = qml.grad(circuit, argnums=0)
+        grad_fn = qp.grad(circuit, argnums=0)
         data1 = np.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
 
-        with pytest.raises(qml.numpy.NonDifferentiableError, match="is non-differentiable"):
+        with pytest.raises(qp.numpy.NonDifferentiableError, match="is non-differentiable"):
             grad_fn(data1)
 
     def test_differentiable_expand(
@@ -397,15 +397,15 @@ class TestQNode:
             tol = TOL_FOR_SPSA
 
         # pylint: disable=too-few-public-methods
-        class U3(qml.U3):
+        class U3(qp.U3):
             """Custom U3."""
 
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
                 return [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
+                    qp.Rot(lam, theta, -lam, wires=wires),
+                    qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
         a = np.array(0.1, requires_grad=False)
@@ -413,9 +413,9 @@ class TestQNode:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(a, p):
-            qml.RX(a, wires=0)
+            qp.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         res = circuit(a, p)
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
@@ -425,7 +425,7 @@ class TestQNode:
         # assert res.shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.grad(circuit)(a, p)
+        res = qp.grad(circuit)(a, p)
 
         # assert isinstance(res, np.ndarray)
         # assert len(res) == 3
@@ -453,12 +453,12 @@ class TestShotsIntegration:
         dev = DefaultQubit()
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        @qnode(dev, diff_method=qml.gradients.param_shift)
+        @qnode(dev, diff_method=qp.gradients.param_shift)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(wires=(0, 1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.sample(wires=(0, 1))
 
         # execute with device default shots (None)
         with pytest.raises(DeviceError):
@@ -475,17 +475,17 @@ class TestShotsIntegration:
         dev = DefaultQubit()
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        @qnode(dev, diff_method=qml.gradients.param_shift)
+        @qnode(dev, diff_method=qp.gradients.param_shift)
         def cost_fn(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliY(1))
 
         # TODO: fix the shot vectors issue
         # wrap cost_fn with shot vector for gradient computation
-        cost_fn_shots = qml.set_shots(shots=[10000, 10000, 10000])(cost_fn)
-        res = qml.jacobian(cost_fn_shots)(a, b)
+        cost_fn_shots = qp.set_shots(shots=[10000, 10000, 10000])(cost_fn)
+        res = qp.jacobian(cost_fn_shots)(a, b)
         assert dev.shots is None
         assert isinstance(res, tuple) and len(res) == 2
         assert all(r.shape == (3,) for r in res)
@@ -503,20 +503,20 @@ class TestShotsIntegration:
 
         @qnode(dev)
         def cost_fn(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(1))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliY(1))
 
         with dev.tracker:
-            cost_fn100 = qml.set_shots(shots=100)(cost_fn)
-            qml.grad(cost_fn100)(a, b)
+            cost_fn100 = qp.set_shots(shots=100)(cost_fn)
+            qp.grad(cost_fn100)(a, b)
         # since we are using finite shots, use parameter shift
         assert dev.tracker.totals["executions"] == 5
 
         # if we use the default shots value of None, backprop can now be used
         with dev.tracker:
-            qml.grad(cost_fn)(a, b)
+            qp.grad(cost_fn)(a, b)
         assert dev.tracker.totals["executions"] == 1
 
 
@@ -551,12 +551,12 @@ class TestQubitIntegration:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.probs(wires=[1])
 
-        res = qml.jacobian(circuit)(x, y)
+        res = qp.jacobian(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
 
         expected = (
@@ -589,10 +589,10 @@ class TestQubitIntegration:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0]), qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.probs(wires=[0]), qp.probs(wires=[1])
 
         res = circuit(x, y)
 
@@ -607,7 +607,7 @@ class TestQubitIntegration:
         def cost(x, y):
             return autograd.numpy.hstack(circuit(x, y))
 
-        res = qml.jacobian(cost)(x, y)
+        res = qp.jacobian(cost)(x, y)
 
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (4,)
@@ -657,10 +657,10 @@ class TestQubitIntegration:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[1])
 
         res = circuit(x, y)
         assert isinstance(res, tuple)
@@ -671,7 +671,7 @@ class TestQubitIntegration:
         def cost(x, y):
             return autograd.numpy.hstack(circuit(x, y))
 
-        res = qml.jacobian(cost)(x, y)
+        res = qp.jacobian(cost)(x, y)
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -711,10 +711,10 @@ class TestQubitIntegration:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0)), qml.probs(wires=[1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0)), qp.probs(wires=[1])
 
         res = circuit(x, y)
 
@@ -737,7 +737,7 @@ class TestQubitIntegration:
         def cost(x, y):
             return autograd.numpy.hstack(circuit(x, y))
 
-        jac = qml.jacobian(cost)(x, y)
+        jac = qp.jacobian(cost)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
 
         expected = (
@@ -760,18 +760,18 @@ class TestQubitIntegration:
         """Test that the gradient of chained QNodes works without error"""
 
         # pylint: disable=too-few-public-methods
-        class Template(qml.templates.StronglyEntanglingLayers):
+        class Template(qp.templates.StronglyEntanglingLayers):
             """Custom template."""
 
             def decomposition(self):
-                return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
+                return [qp.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit1(weights):
             Template(weights, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))
 
         @qnode(
             dev,
@@ -781,24 +781,24 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def circuit2(data, weights):
-            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qp.templates.AngleEmbedding(data, wires=[0, 1])
             Template(weights, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         def cost(w1, w2):
             c1 = circuit1(w1)
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
 
-        w1 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
-        w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
+        w1 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
+        w2 = qp.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
         weights = [
             np.random.random(w1, requires_grad=True),
             np.random.random(w2, requires_grad=True),
         ]
 
-        grad_fn = qml.grad(cost)
+        grad_fn = qp.grad(cost)
         res = grad_fn(*weights)
 
         assert len(res) == 2
@@ -819,16 +819,16 @@ class TestQubitIntegration:
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
-        dev1 = qml.device("default.qubit")
+        dev1 = qp.device("default.qubit")
 
         @qnode(dev1, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit1(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.RX(c, wires=2)
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
+            qp.RX(a, wires=0)
+            qp.RX(b, wires=1)
+            qp.RX(c, wires=2)
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 2])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(2))
 
         dev2 = dev
 
@@ -836,18 +836,18 @@ class TestQubitIntegration:
             dev2, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit2(data, weights):
-            qml.RX(data[0], wires=0)
-            qml.RX(data[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(weights[0], wires=0)
-            qml.RZ(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+            qp.RX(data[0], wires=0)
+            qp.RX(data[1], wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RZ(weights[0], wires=0)
+            qp.RZ(weights[1], wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliX(0) @ qp.PauliY(1))
 
         def cost(a, b, c, weights):
             return circuit2(circuit1(a, b, c), weights)
 
-        grad_fn = qml.grad(cost)
+        grad_fn = qp.grad(cost)
 
         # Set the first parameter of circuit1 as non-differentiable.
         a = np.array(0.4, requires_grad=False)
@@ -911,14 +911,14 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         x = np.array([1.0, 2.0], requires_grad=True)
         res = circuit(x)
-        g = qml.grad(circuit)(x)
-        g2 = qml.grad(lambda x: np.sum(qml.grad(circuit)(x)))(x)
+        g = qp.grad(circuit)(x)
+        g2 = qp.grad(lambda x: np.sum(qp.grad(circuit)(x)))(x)
 
         a, b = x
 
@@ -952,9 +952,9 @@ class TestQubitIntegration:
             max_diff=2,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         x = np.array([1.0, 2.0], requires_grad=True)
         res = circuit(x)
@@ -967,7 +967,7 @@ class TestQubitIntegration:
         # assert res.shape == ()
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         g = grad_fn(x)
 
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
@@ -976,7 +976,7 @@ class TestQubitIntegration:
         assert g.shape == (2,)
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-        hess = qml.jacobian(grad_fn)(x)
+        hess = qp.jacobian(grad_fn)(x)
 
         expected_hess = [
             [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
@@ -1007,8 +1007,8 @@ class TestQubitIntegration:
             max_diff=2,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(x[0], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         x = np.array([1.0, 2.0], requires_grad=True)
         res = circuit(x)
@@ -1018,9 +1018,9 @@ class TestQubitIntegration:
         expected_res = np.cos(a)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
 
-        hess = qml.jacobian(grad_fn)(x)
+        hess = qp.jacobian(grad_fn)(x)
 
         expected_hess = [
             [-np.cos(a), 0],
@@ -1049,9 +1049,9 @@ class TestQubitIntegration:
             max_diff=2,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            return qml.probs(wires=0)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            return qp.probs(wires=0)
 
         x = np.array([1.0, 2.0], requires_grad=True)
         res = circuit(x)
@@ -1064,7 +1064,7 @@ class TestQubitIntegration:
         assert res.shape == (2,)  # pylint: disable=comparison-with-callable
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
-        jac_fn = qml.jacobian(circuit)
+        jac_fn = qp.jacobian(circuit)
         jac = jac_fn(x)
 
         expected_res = [
@@ -1076,7 +1076,7 @@ class TestQubitIntegration:
         assert jac.shape == (2, 2)
         assert np.allclose(jac, expected_res, atol=tol, rtol=0)
 
-        hess = qml.jacobian(jac_fn)(x)
+        hess = qp.jacobian(jac_fn)(x)
 
         expected_hess = [
             [
@@ -1113,9 +1113,9 @@ class TestQubitIntegration:
             max_diff=2,
         )
         def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+            qp.RX(x[0], wires=0)
+            qp.RY(x[1], wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(0))
 
         def cost_fn(x):
             return x @ autograd.numpy.hstack(circuit(x))
@@ -1131,7 +1131,7 @@ class TestQubitIntegration:
         assert res.shape == ()
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
-        hess = qml.jacobian(qml.grad(cost_fn))(x)
+        hess = qp.jacobian(qp.grad(cost_fn))(x)
 
         expected_hess = [
             [
@@ -1167,9 +1167,9 @@ class TestQubitIntegration:
             max_diff=2,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.probs(wires=0)
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.probs(wires=0)
 
         a = np.array(1.0, requires_grad=True)
         b = np.array(2.0, requires_grad=True)
@@ -1180,7 +1180,7 @@ class TestQubitIntegration:
         assert res.shape == (2,)  # pylint: disable=comparison-with-callable
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
-        jac_fn = qml.jacobian(circuit)
+        jac_fn = qp.jacobian(circuit)
         g = jac_fn(a, b)
         assert isinstance(g, tuple) and len(g) == 2
 
@@ -1200,8 +1200,8 @@ class TestQubitIntegration:
         def jac_fn_b(*args):
             return jac_fn(*args)[1]
 
-        hess_a = qml.jacobian(jac_fn_a)(a, b)
-        hess_b = qml.jacobian(jac_fn_b)(a, b)
+        hess_a = qp.jacobian(jac_fn_a)(a, b)
+        hess_b = qp.jacobian(jac_fn_b)(a, b)
         assert isinstance(hess_a, tuple) and len(hess_a) == 2
         assert isinstance(hess_b, tuple) and len(hess_b) == 2
 
@@ -1235,11 +1235,11 @@ class TestQubitIntegration:
             max_diff=2,
         )
         def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
-            qml.RY(x[0], wires=1)
-            qml.RX(x[1], wires=1)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=1)
+            qp.RY(x[0], wires=0)
+            qp.RX(x[1], wires=0)
+            qp.RY(x[0], wires=1)
+            qp.RX(x[1], wires=1)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=1)
 
         x = np.array([1.0, 2.0], requires_grad=True)
 
@@ -1255,11 +1255,11 @@ class TestQubitIntegration:
             return autograd.numpy.hstack(circuit(x))
 
         res = cost_fn(x)
-        assert qml.math.allclose(res, expected_res)
+        assert qp.math.allclose(res, expected_res)
 
-        jac_fn = qml.jacobian(cost_fn)
+        jac_fn = qp.jacobian(cost_fn)
 
-        hess = qml.jacobian(jac_fn)(x)
+        hess = qp.jacobian(jac_fn)(x)
         expected_hess = [
             [
                 [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
@@ -1297,10 +1297,10 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.state()
 
         def cost_fn(x, y):
             res = circuit(x, y)
@@ -1313,7 +1313,7 @@ class TestQubitIntegration:
         if diff_method not in {"backprop"}:
             pytest.skip("Test only supports backprop")
 
-        res = qml.jacobian(cost_fn)(x, y)
+        res = qp.jacobian(cost_fn)(x, y)
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -1352,10 +1352,10 @@ class TestQubitIntegration:
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.Projector(P, wires=0) @ qp.PauliX(1))
 
         res = circuit(x, y)
         expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
@@ -1363,7 +1363,7 @@ class TestQubitIntegration:
         # assert res.shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac = qml.jacobian(circuit)(x, y)
+        jac = qp.jacobian(circuit)(x, y)
         expected = np.array(
             [
                 [
@@ -1394,7 +1394,7 @@ class TestQubitIntegration:
         if dev.name == "reference.qubit":
             pytest.skip("reference.qubit does not support postselection.")
 
-        @qml.qnode(
+        @qp.qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
@@ -1402,13 +1402,13 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def circuit(phi, theta):
-            qml.RX(phi, wires=0)
-            qml.CNOT([0, 1])
-            qml.measure(wires=0, postselect=1)
-            qml.RX(theta, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.RX(phi, wires=0)
+            qp.CNOT([0, 1])
+            qp.measure(wires=0, postselect=1)
+            qp.RX(theta, wires=1)
+            return qp.expval(qp.PauliZ(1))
 
-        @qml.qnode(
+        @qp.qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
@@ -1416,17 +1416,17 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
         def expected_circuit(theta):
-            qml.PauliX(1)
-            qml.RX(theta, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.PauliX(1)
+            qp.RX(theta, wires=1)
+            return qp.expval(qp.PauliZ(1))
 
         phi = np.array(1.23, requires_grad=True)
         theta = np.array(4.56, requires_grad=True)
 
         assert np.allclose(circuit(phi, theta), expected_circuit(theta))
 
-        gradient = qml.grad(circuit)(phi, theta)
-        exp_theta_grad = qml.grad(expected_circuit)(theta)
+        gradient = qp.grad(circuit)(phi, theta)
+        exp_theta_grad = qp.grad(expected_circuit)(theta)
         assert np.allclose(gradient, [0.0, exp_theta_grad])
 
 
@@ -1449,13 +1449,13 @@ class TestTapeExpansion:
             pytest.skip("Max diff > 1 not supported for Hadamard gradient.")
 
         # pylint: disable=too-few-public-methods
-        class PhaseShift(qml.PhaseShift):
+        class PhaseShift(qp.PhaseShift):
             """dummy phase shift."""
 
             grad_method = None
 
             def decomposition(self):
-                return [qml.RY(3 * self.data[0], wires=self.wires)]
+                return [qp.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(
             dev,
@@ -1465,16 +1465,16 @@ class TestTapeExpansion:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
             PhaseShift(x, wires=0)
             PhaseShift(2 * y, wires=0)
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.7, requires_grad=False)
         circuit(x, y)
 
-        _ = qml.grad(circuit)(x, y)
+        _ = qp.grad(circuit)(x, y)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
@@ -1497,14 +1497,14 @@ class TestTapeExpansion:
             gradient_kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliZ(1)]
 
         @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
-            qml.templates.AngleEmbedding(data, wires=[0, 1])
-            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
-            return qml.expval(qml.Hamiltonian(coeffs, obs))
+            qp.templates.AngleEmbedding(data, wires=[0, 1])
+            qp.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            return qp.expval(qp.Hamiltonian(coeffs, obs))
 
         d = np.array([0.1, 0.2], requires_grad=False)
         w = np.array([0.654, -0.734], requires_grad=True)
@@ -1516,7 +1516,7 @@ class TestTapeExpansion:
         assert np.allclose(res, expected, atol=tol)
 
         # test gradients
-        grad = qml.grad(circuit)(d, w, c)
+        grad = qp.grad(circuit)(d, w, c)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -1533,12 +1533,12 @@ class TestTapeExpansion:
         ):
             if diff_method == "backprop":
                 with pytest.warns(UserWarning, match=r"Output seems independent of input."):
-                    grad2_c = qml.jacobian(qml.grad(circuit, argnums=2), argnums=2)(d, w, c)
+                    grad2_c = qp.jacobian(qp.grad(circuit, argnums=2), argnums=2)(d, w, c)
             else:
-                grad2_c = qml.jacobian(qml.grad(circuit, argnums=2), argnums=2)(d, w, c)
+                grad2_c = qp.jacobian(qp.grad(circuit, argnums=2), argnums=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)
 
-            grad2_w_c = qml.jacobian(qml.grad(circuit, argnums=1), argnums=2)(d, w, c)
+            grad2_w_c = qp.jacobian(qp.grad(circuit, argnums=1), argnums=2)(d, w, c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
                 0,
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
@@ -1568,9 +1568,9 @@ class TestTapeExpansion:
         elif diff_method == "finite-diff":
             gradient_kwargs = {"h": 0.05}
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliZ(1)]
 
-        @qml.set_shots(shots=50000)
+        @qp.set_shots(shots=50000)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -1581,11 +1581,11 @@ class TestTapeExpansion:
         )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
-            qml.templates.AngleEmbedding(data, wires=[0, 1])
-            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
-            H = qml.Hamiltonian(coeffs, obs)
+            qp.templates.AngleEmbedding(data, wires=[0, 1])
+            qp.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            H = qp.Hamiltonian(coeffs, obs)
             H.compute_grouping()
-            return qml.expval(H)
+            return qp.expval(H)
 
         d = np.array([0.1, 0.2], requires_grad=False)
         w = np.array([0.654, -0.734], requires_grad=True)
@@ -1600,7 +1600,7 @@ class TestTapeExpansion:
         if diff_method in ["finite-diff", "spsa"]:
             pytest.skip(f"{diff_method} not compatible")
 
-        grad = qml.grad(circuit)(d, w, c)
+        grad = qp.grad(circuit)(d, w, c)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -1611,10 +1611,10 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2 and dev.name != "param_shift.qubit":
-            grad2_c = qml.jacobian(qml.grad(circuit, argnums=2), argnums=2)(d, w, c)
+            grad2_c = qp.jacobian(qp.grad(circuit, argnums=2), argnums=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)
 
-            grad2_w_c = qml.jacobian(qml.grad(circuit, argnums=1), argnums=2)(d, w, c)
+            grad2_w_c = qp.jacobian(qp.grad(circuit, argnums=1), argnums=2)(d, w, c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
                 0,
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
@@ -1630,11 +1630,11 @@ class TestSample:
         """Test that sampling in backpropagation grad_on_execution raises an error"""
         dev = DefaultQubit()
 
-        @qml.set_shots(shots=10)
+        @qp.set_shots(shots=10)
         @qnode(dev, diff_method="backprop")
         def circuit():
-            qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+            qp.RX(0.54, wires=0)
+            return qp.sample(qp.PauliZ(0)), qp.sample(qp.PauliX(1))
 
         with pytest.raises(QuantumFunctionError, match="does not support backprop with requested"):
             circuit()
@@ -1645,11 +1645,11 @@ class TestSample:
 
         dev = DefaultQubit()
 
-        @qml.set_shots(shots=n_sample)
+        @qp.set_shots(shots=n_sample)
         @qnode(dev, diff_method=None)
         def circuit():
-            qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+            qp.RX(0.54, wires=0)
+            return qp.sample(qp.PauliZ(0)), qp.sample(qp.PauliX(1))
 
         res = circuit()
 
@@ -1669,12 +1669,12 @@ class TestSample:
 
         dev = DefaultQubit()
 
-        @qml.set_shots(shots=n_sample)
+        @qp.set_shots(shots=n_sample)
         @qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.RX(0.54, wires=0)
+            qp.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
+            return qp.sample(qp.PauliZ(0)), qp.expval(qp.PauliX(1)), qp.var(qp.PauliY(2))
 
         result = circuit()
 
@@ -1692,12 +1692,12 @@ class TestSample:
 
         dev = DefaultQubit()
 
-        @qml.set_shots(shots=n_sample)
+        @qp.set_shots(shots=n_sample)
         @qnode(dev, diff_method=None)
         def circuit():
-            qml.RX(0.54, wires=0)
+            qp.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0))
+            return qp.sample(qp.PauliZ(0))
 
         result = circuit()
 
@@ -1711,10 +1711,10 @@ class TestSample:
 
         dev = DefaultQubit()
 
-        @qml.set_shots(shots=n_sample)
+        @qp.set_shots(shots=n_sample)
         @qnode(dev, diff_method=None)
         def circuit():
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
+            return qp.sample(qp.PauliZ(0)), qp.sample(qp.PauliZ(1)), qp.sample(qp.PauliZ(2))
 
         result = circuit()
 
@@ -1749,13 +1749,13 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
 
-        grad = qml.grad(circuit)(a)
+        grad = qp.grad(circuit)(a)
 
         assert isinstance(grad, np.tensor if diff_method == "backprop" else float)
 
@@ -1772,14 +1772,14 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        grad = qml.grad(circuit)(a, b)
+        grad = qp.grad(circuit)(a, b)
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
@@ -1799,13 +1799,13 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
-        grad = qml.grad(circuit)(a)
+        grad = qp.grad(circuit)(a)
 
         assert isinstance(grad, np.ndarray)
         assert len(grad) == 2
@@ -1825,13 +1825,13 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = np.array(0.1, requires_grad=True)
 
-        jac = qml.jacobian(circuit)(a)
+        jac = qp.jacobian(circuit)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (4,)
@@ -1850,14 +1850,14 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        jac = qml.jacobian(circuit)(a, b)
+        jac = qp.jacobian(circuit)(a, b)
 
         assert isinstance(jac, tuple)
 
@@ -1880,12 +1880,12 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = np.array([0.1, 0.2], requires_grad=True)
-        jac = qml.jacobian(circuit)(a)
+        jac = qp.jacobian(circuit)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (4, 2)
@@ -1903,16 +1903,16 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = np.array(0.1, requires_grad=True)
 
         def cost(x):
             return anp.hstack(circuit(x))
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (5,)
@@ -1930,9 +1930,9 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -1940,7 +1940,7 @@ class TestReturn:
         def cost(x, y):
             return anp.hstack(circuit(x, y))
 
-        jac = qml.jacobian(cost)(a, b)
+        jac = qp.jacobian(cost)(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1964,16 +1964,16 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
         def cost(x):
             return anp.hstack(circuit(x))
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (5, 2)
@@ -1984,8 +1984,8 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support second-order diff.")
 
-        par_0 = qml.numpy.array(0.1, requires_grad=True)
-        par_1 = qml.numpy.array(0.2, requires_grad=True)
+        par_0 = qp.numpy.array(0.1, requires_grad=True)
+        par_1 = qp.numpy.array(0.2, requires_grad=True)
 
         @qnode(
             dev,
@@ -1996,15 +1996,15 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         def cost(x, y):
-            return anp.hstack(qml.grad(circuit)(x, y))
+            return anp.hstack(qp.grad(circuit)(x, y))
 
-        hess = qml.jacobian(cost)(par_0, par_1)
+        hess = qp.jacobian(cost)(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2023,7 +2023,7 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support second-order diff.")
 
-        params = qml.numpy.array([0.1, 0.2], requires_grad=True)
+        params = qp.numpy.array([0.1, 0.2], requires_grad=True)
 
         @qnode(
             dev,
@@ -2034,12 +2034,12 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        hess = qml.jacobian(qml.grad(circuit))(params)
+        hess = qp.jacobian(qp.grad(circuit))(params)
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (2, 2)
@@ -2052,8 +2052,8 @@ class TestReturn:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
 
-        par_0 = qml.numpy.array(0.1, requires_grad=True)
-        par_1 = qml.numpy.array(0.2, requires_grad=True)
+        par_0 = qp.numpy.array(0.1, requires_grad=True)
+        par_1 = qp.numpy.array(0.2, requires_grad=True)
 
         @qnode(
             dev,
@@ -2064,15 +2064,15 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1))
 
         def cost(x, y):
-            return anp.hstack(qml.grad(circuit)(x, y))
+            return anp.hstack(qp.grad(circuit)(x, y))
 
-        hess = qml.jacobian(cost)(par_0, par_1)
+        hess = qp.jacobian(cost)(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2092,7 +2092,7 @@ class TestReturn:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
 
-        params = qml.numpy.array([0.1, 0.2], requires_grad=True)
+        params = qp.numpy.array([0.1, 0.2], requires_grad=True)
 
         @qnode(
             dev,
@@ -2103,12 +2103,12 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1))
 
-        hess = qml.jacobian(qml.grad(circuit))(params)
+        hess = qp.jacobian(qp.grad(circuit))(params)
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (2, 2)
@@ -2120,8 +2120,8 @@ class TestReturn:
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The adjoint method does not currently support second-order diff.")
 
-        par_0 = qml.numpy.array(0.1, requires_grad=True)
-        par_1 = qml.numpy.array(0.2, requires_grad=True)
+        par_0 = qp.numpy.array(0.1, requires_grad=True)
+        par_1 = qp.numpy.array(0.2, requires_grad=True)
 
         @qnode(
             dev,
@@ -2132,18 +2132,18 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def circuit_stack(x, y):
             return anp.hstack(circuit(x, y))
 
         def cost(x, y):
-            return anp.hstack(qml.jacobian(circuit_stack)(x, y))
+            return anp.hstack(qp.jacobian(circuit_stack)(x, y))
 
-        hess = qml.jacobian(cost)(par_0, par_1)
+        hess = qp.jacobian(cost)(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2162,7 +2162,7 @@ class TestReturn:
         if diff_method in ["adjoint", "hadamard"]:
             pytest.skip("The adjoint method does not currently support second-order diff.")
 
-        params = qml.numpy.array([0.1, 0.2], requires_grad=True)
+        params = qp.numpy.array([0.1, 0.2], requires_grad=True)
 
         @qnode(
             dev,
@@ -2173,15 +2173,15 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def cost(x):
             return anp.hstack(circuit(x))
 
-        hess = qml.jacobian(qml.jacobian(cost))(params)
+        hess = qp.jacobian(qp.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
@@ -2196,8 +2196,8 @@ class TestReturn:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
 
-        par_0 = qml.numpy.array(0.1, requires_grad=True)
-        par_1 = qml.numpy.array(0.2, requires_grad=True)
+        par_0 = qp.numpy.array(0.1, requires_grad=True)
+        par_1 = qp.numpy.array(0.2, requires_grad=True)
 
         @qnode(
             dev,
@@ -2208,18 +2208,18 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def circuit_stack(x, y):
             return anp.hstack(circuit(x, y))
 
         def cost(x, y):
-            return anp.hstack(qml.jacobian(circuit_stack)(x, y))
+            return anp.hstack(qp.jacobian(circuit_stack)(x, y))
 
-        hess = qml.jacobian(cost)(par_0, par_1)
+        hess = qp.jacobian(cost)(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2239,7 +2239,7 @@ class TestReturn:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
 
-        params = qml.numpy.array([0.1, 0.2], requires_grad=True)
+        params = qp.numpy.array([0.1, 0.2], requires_grad=True)
 
         @qnode(
             dev,
@@ -2250,15 +2250,15 @@ class TestReturn:
             device_vjp=device_vjp,
         )
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def cost(x):
             return anp.hstack(circuit(x))
 
-        hess = qml.jacobian(qml.jacobian(cost))(params)
+        hess = qp.jacobian(qp.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
@@ -2270,10 +2270,10 @@ def test_no_ops():
 
     dev = DefaultQubit()
 
-    @qml.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="autograd")
     def circuit():
-        qml.Hadamard(wires=0)
-        return qml.state()
+        qp.Hadamard(wires=0)
+        return qp.state()
 
     res = circuit()
     assert isinstance(res, np.tensor)

@@ -1423,7 +1423,7 @@ class TestResourceSelect:
     def test_select_factor_errors(self):
         """Test that the correct error is raised when invalid ops are provided."""
         with pytest.raises(ValueError, match="All factors of the Select must be instances of"):
-            qre.Select(ops=[qml.X(0), qre.Y(), qre.Z()])
+            qre.Select(ops=[qp.X(0), qre.Y(), qre.Z()])
 
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
@@ -2917,7 +2917,7 @@ class TestResourceQubitization:
         sel = qre.Select([qre.X(wires=1), qre.Z(wires=1)], wires=[0])
         op = qre.Qubitization(prep, sel)
 
-        assert op.wires == qml.wires.Wires([0, 1])
+        assert op.wires == qp.wires.Wires([0, 1])
         assert op.num_wires == 2
 
     @pytest.mark.parametrize(

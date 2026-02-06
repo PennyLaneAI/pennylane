@@ -20,16 +20,16 @@ import pennylane as qp
 from pennylane.pauli import pauli_word_prefactor
 
 ops_factors = (
-    (qml.PauliX(0), 1),
-    (qml.PauliY(1), 1),
-    (qml.PauliZ("a"), 1),
-    (qml.Identity(0), 1),
-    (qml.PauliX(0) @ qml.PauliY(1), 1),
-    (qml.PauliX(0) @ qml.PauliY(0), 1j),
-    (qml.Hamiltonian([-1.23], [qml.PauliZ(0)]), -1.23),
-    (qml.prod(qml.PauliX(0), qml.PauliY(1)), 1),
-    (qml.prod(qml.X(0), qml.Y(0)), 1j),
-    (qml.s_prod(1.23, qml.s_prod(-1j, qml.PauliZ(0))), -1.23j),
+    (qp.PauliX(0), 1),
+    (qp.PauliY(1), 1),
+    (qp.PauliZ("a"), 1),
+    (qp.Identity(0), 1),
+    (qp.PauliX(0) @ qp.PauliY(1), 1),
+    (qp.PauliX(0) @ qp.PauliY(0), 1j),
+    (qp.Hamiltonian([-1.23], [qp.PauliZ(0)]), -1.23),
+    (qp.prod(qp.PauliX(0), qp.PauliY(1)), 1),
+    (qp.prod(qp.X(0), qp.Y(0)), 1j),
+    (qp.s_prod(1.23, qp.s_prod(-1j, qp.PauliZ(0))), -1.23j),
 )
 
 
@@ -40,13 +40,13 @@ def test_pauli_word_prefactor(op, true_prefactor):
 
 
 ops = (
-    qml.Hadamard(0),
-    qml.Hadamard(0) @ qml.PauliZ(1),
-    qml.Hamiltonian([], []),
-    qml.Hamiltonian([1.23, 0.45], [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(1)]),
-    qml.prod(qml.PauliX(0), qml.Hadamard(1)),
-    qml.prod(qml.sum(qml.PauliX(0), qml.PauliY(0)), qml.PauliZ(1)),
-    qml.s_prod(1.23, qml.sum(qml.PauliX(0), qml.PauliY(0))),
+    qp.Hadamard(0),
+    qp.Hadamard(0) @ qp.PauliZ(1),
+    qp.Hamiltonian([], []),
+    qp.Hamiltonian([1.23, 0.45], [qp.PauliX(0) @ qp.PauliY(1), qp.PauliZ(1)]),
+    qp.prod(qp.PauliX(0), qp.Hadamard(1)),
+    qp.prod(qp.sum(qp.PauliX(0), qp.PauliY(0)), qp.PauliZ(1)),
+    qp.s_prod(1.23, qp.sum(qp.PauliX(0), qp.PauliY(0))),
 )
 
 

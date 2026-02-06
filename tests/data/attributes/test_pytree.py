@@ -111,6 +111,6 @@ class TestDatasetPyTree:
 @pytest.mark.parametrize("shots", [None, 1, [1, 2]])
 def test_quantum_scripts(shots):
     """Test that ``QuantumScript`` can be serialized as Pytrees."""
-    script = qml.tape.QuantumScript([qml.X(0)], shots=shots)
+    script = qp.tape.QuantumScript([qp.X(0)], shots=shots)
 
-    qml.assert_equal(DatasetPyTree(script).get_value(), script)
+    qp.assert_equal(DatasetPyTree(script).get_value(), script)

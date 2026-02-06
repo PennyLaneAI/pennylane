@@ -25,9 +25,9 @@ from pennylane.liealg import (
     even_odd_involution,
 )
 
-Ising2 = qml.lie_closure([X(0), X(1), Z(0) @ Z(1)])
-Ising3 = qml.lie_closure([X(0), X(1), X(2), Z(0) @ Z(1), Z(1) @ Z(2)])
-Heisenberg3 = qml.lie_closure(
+Ising2 = qp.lie_closure([X(0), X(1), Z(0) @ Z(1)])
+Ising3 = qp.lie_closure([X(0), X(1), X(2), Z(0) @ Z(1), Z(1) @ Z(2)])
+Heisenberg3 = qp.lie_closure(
     [X(0) @ X(1), X(1) @ X(2), Y(0) @ Y(1), Y(1) @ Y(2), Z(0) @ Z(1), Z(1) @ Z(2)]
 )
 
@@ -44,8 +44,8 @@ class TestCartanDecomposition:
         assert all(involution(op) is True for op in k)
         assert all(involution(op) is False for op in m)
 
-        k_space = qml.pauli.PauliVSpace(k)
-        m_space = qml.pauli.PauliVSpace(m)
+        k_space = qp.pauli.PauliVSpace(k)
+        m_space = qp.pauli.PauliVSpace(m)
 
         # Commutation relations for Cartan pair
         assert check_commutation_relation(k, k, k_space)
@@ -57,15 +57,15 @@ class TestCartanDecomposition:
     def test_cartan_decomp_dense(self, g, involution):
         """Test basic properties and Cartan decomposition definitions using dense representations"""
 
-        g = [qml.matrix(op, wire_order=range(3)) for op in g]
+        g = [qp.matrix(op, wire_order=range(3)) for op in g]
         k, m = cartan_decomp(g, involution)
 
         assert all(involution(op) is True for op in k)
         assert all(involution(op) is False for op in m)
 
         # check currently only works with pauli sentences
-        k_space = qml.pauli.PauliVSpace([qml.pauli_decompose(op).pauli_rep for op in k])
-        m_space = qml.pauli.PauliVSpace([qml.pauli_decompose(op).pauli_rep for op in m])
+        k_space = qp.pauli.PauliVSpace([qp.pauli_decompose(op).pauli_rep for op in k])
+        m_space = qp.pauli.PauliVSpace([qp.pauli_decompose(op).pauli_rep for op in m])
 
         # Commutation relations for Cartan pair
         assert check_commutation_relation(k_space.basis, k_space.basis, k_space)
@@ -83,8 +83,8 @@ involution_ops = [
 
 k0 = [Z(0) @ Y(1), Y(0) @ Z(1)]
 m0 = [Z(0) @ Z(1), Y(0) @ Y(1), X(0), X(1)]
-k0_m = [qml.matrix(op, wire_order=range(2)) for op in k0]
-m0_m = [qml.matrix(op, wire_order=range(2)) for op in m0]
+k0_m = [qp.matrix(op, wire_order=range(2)) for op in k0]
+m0_m = [qp.matrix(op, wire_order=range(2)) for op in m0]
 
 
 class TestCheckFunctions:
@@ -96,13 +96,13 @@ class TestCheckFunctions:
             _ = check_cartan_decomp(m0, k0_m)
 
         with pytest.raises(TypeError, match=r"All inputs `k`, `m`"):
-            _ = check_cartan_decomp(m0, qml.numpy.array(k0_m))
+            _ = check_cartan_decomp(m0, qp.numpy.array(k0_m))
 
         with pytest.raises(TypeError, match=r"All inputs `k`, `m`"):
             _ = check_cartan_decomp(m0_m, k0)
 
         with pytest.raises(TypeError, match=r"All inputs `k`, `m`"):
-            _ = check_cartan_decomp(qml.numpy.array(m0_m), k0)
+            _ = check_cartan_decomp(qp.numpy.array(m0_m), k0)
 
     def test_check_commutation_relation_mixed_inputs_raises_TypeError(self):
         """Test that mixing operators and matrices raises an error in check_cartan_decomp"""

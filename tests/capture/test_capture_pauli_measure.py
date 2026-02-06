@@ -37,10 +37,10 @@ class TestPauliMeasure:
 
     @pytest.mark.unit
     def test_pauli_measure(self, pauli_word, postselect):
-        """Tests that a basic qml.pauli_measure can be captured."""
+        """Tests that a basic qp.pauli_measure can be captured."""
 
         def f(wires):
-            m0 = qml.pauli_measure(pauli_word, wires=wires, postselect=postselect)
+            m0 = qp.pauli_measure(pauli_word, wires=wires, postselect=postselect)
             return m0
 
         wires = jnp.array(range(len(pauli_word)))
@@ -62,10 +62,10 @@ class TestPauliMeasure:
 
         wires = [0, 1] if len(pauli_word) == 2 else 1
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def f():
-            m0 = qml.pauli_measure(pauli_word, wires=wires, postselect=postselect)
-            return qml.expval(m0)
+            m0 = qp.pauli_measure(pauli_word, wires=wires, postselect=postselect)
+            return qp.expval(m0)
 
         jaxpr = jax.make_jaxpr(f)()
         tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)

@@ -187,27 +187,27 @@ def test_kernel(binary_matrix, result):
     [
         (
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(1)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(3)]),
             ],
             4,
-            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qp.PauliX(wires=[1]), qp.PauliX(wires=[2]), qp.PauliX(wires=[3])],
         ),
     ],
 )
 def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
-    pauli_ops = qml.paulix_ops(generators, num_qubits)
+    pauli_ops = qp.paulix_ops(generators, num_qubits)
     for p1, p2 in zip(pauli_ops, result):
-        qml.assert_equal(p1, p2)
+        qp.assert_equal(p1, p2)
 
     # test arithmetic op compatibility:
     generators_as_ops = [pauli_sentence(g).operation() for g in generators]
-    assert not any(isinstance(g, qml.Hamiltonian) for g in generators_as_ops)
+    assert not any(isinstance(g, qp.Hamiltonian) for g in generators_as_ops)
 
     for p1, p2 in zip(pauli_ops, result):
-        qml.assert_equal(p1, p2)
+        qp.assert_equal(p1, p2)
 
 
 @pytest.mark.parametrize(
@@ -217,9 +217,9 @@ def test_generate_paulis(generators, num_qubits, result):
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(1)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(3)]),
             ],
         ),
     ],
@@ -227,9 +227,9 @@ def test_generate_paulis(generators, num_qubits, result):
 def test_symmetry_generators(symbols, geometry, res_generators):
     r"""Test that symmetry_generators returns the correct result."""
 
-    mol = qml.qchem.Molecule(symbols, geometry)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)()
-    generators = qml.symmetry_generators(hamiltonian)
+    mol = qp.qchem.Molecule(symbols, geometry)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)()
+    generators = qp.symmetry_generators(hamiltonian)
     for g1, g2 in zip(generators, res_generators):
         assert pauli_sentence(g1) == pauli_sentence(g2)
 
@@ -239,11 +239,11 @@ def test_symmetry_generators(symbols, geometry, res_generators):
     [
         (
             [
-                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(0)]),
-                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(1)]),
+                qp.Hamiltonian(np.array([1.0]), [qp.PauliZ(0)]),
+                qp.Hamiltonian(np.array([1.0]), [qp.PauliZ(1)]),
             ],
-            [qml.PauliX(0), qml.PauliX(1)],
-            qml.Hamiltonian(
+            [qp.PauliX(0), qp.PauliX(1)],
+            qp.Hamiltonian(
                 np.array(
                     [
                         (1 / np.sqrt(2)) ** 2,
@@ -253,10 +253,10 @@ def test_symmetry_generators(symbols, geometry, res_generators):
                     ]
                 ),
                 [
-                    qml.PauliZ(0) @ qml.PauliZ(1),
-                    qml.PauliZ(0) @ qml.PauliX(1),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(0) @ qml.PauliX(1),
+                    qp.PauliZ(0) @ qp.PauliZ(1),
+                    qp.PauliZ(0) @ qp.PauliX(1),
+                    qp.PauliX(0) @ qp.PauliZ(1),
+                    qp.PauliX(0) @ qp.PauliX(1),
                 ],
             ),
         ),
@@ -280,24 +280,24 @@ def test_clifford(generator, paulixops, result):
             ["H", "H"],
             np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False),
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(1)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(3)]),
             ],
-            [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
+            [qp.PauliX(1), qp.PauliX(2), qp.PauliX(3)],
             [1, -1, -1],
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 np.array([-0.3210344, 0.18092703, 0.79596785]),
-                [qml.Identity(0), qml.PauliX(0), qml.PauliZ(0)],
+                [qp.Identity(0), qp.PauliX(0), qp.PauliZ(0)],
             ),
         ),
     ],
 )
 def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_sector, ham_ref):
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
-    mol = qml.qchem.Molecule(symbols, geometry)
-    h = qml.qchem.diff_hamiltonian(mol)()
-    ham_calc = qml.taper(h, generator, paulixops, paulix_sector)
+    mol = qp.qchem.Molecule(symbols, geometry)
+    h = qp.qchem.diff_hamiltonian(mol)()
+    ham_calc = qp.taper(h, generator, paulixops, paulix_sector)
     # sort Hamiltonian terms and then compare with reference
     sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
     hamref_terms = list(zip(*ham_ref.terms()))
@@ -315,9 +315,9 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             0,
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(1)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(3)]),
             ],
             2,
             [1, -1, -1],
@@ -327,8 +327,8 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]], requires_grad=False),
             1,
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(1) @ qp.PauliZ(3)]),
             ],
             1,
             [-1, 1],
@@ -341,8 +341,8 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
             ),
             1,
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2) @ qp.PauliZ(4)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(1) @ qp.PauliZ(3) @ qp.PauliZ(5)]),
             ],
             2,
             [-1, -1],
@@ -351,8 +351,8 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
 )
 def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, result):
     r"""Test that find_optimal_sector returns the correct result."""
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)()
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)()
 
     perm = optimal_sector(hamiltonian, generators, num_electrons)
     assert perm == result
@@ -365,9 +365,9 @@ def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, re
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(1)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(3)]),
             ],
         ),
     ],
@@ -381,8 +381,8 @@ def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, re
 )
 def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons, msg_match):
     r"""Test that find_optimal_sector returns the correct result."""
-    mol = qml.qchem.Molecule(symbols, geometry)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)()
+    mol = qp.qchem.Molecule(symbols, geometry)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)()
 
     with pytest.raises(ValueError, match=msg_match):
         optimal_sector(hamiltonian, generators, num_electrons)
@@ -393,11 +393,11 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
     [
         (
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(1)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(3)]),
             ],
-            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qp.PauliX(wires=[1]), qp.PauliX(wires=[2]), qp.PauliX(wires=[3])],
             (1, -1, -1),
             2,
             4,
@@ -405,10 +405,10 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
         ),
         (
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2) @ qp.PauliZ(4)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(1) @ qp.PauliZ(3) @ qp.PauliZ(5)]),
             ],
-            [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qp.PauliX(wires=[2]), qp.PauliX(wires=[3])],
             (-1, -1),
             2,
             6,
@@ -416,36 +416,36 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
         ),
         (
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(6) @ qml.PauliZ(7)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(8) @ qml.PauliZ(9)]),
-                qml.Hamiltonian(
+                qp.Hamiltonian([1.0], [qp.PauliZ(6) @ qp.PauliZ(7)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(8) @ qp.PauliZ(9)]),
+                qp.Hamiltonian(
                     [1.0],
                     [
-                        qml.PauliZ(wires=[0])
-                        @ qml.PauliZ(wires=[2])
-                        @ qml.PauliZ(wires=[4])
-                        @ qml.PauliZ(wires=[6])
-                        @ qml.PauliZ(wires=[8])
-                        @ qml.PauliZ(wires=[10])
+                        qp.PauliZ(wires=[0])
+                        @ qp.PauliZ(wires=[2])
+                        @ qp.PauliZ(wires=[4])
+                        @ qp.PauliZ(wires=[6])
+                        @ qp.PauliZ(wires=[8])
+                        @ qp.PauliZ(wires=[10])
                     ],
                 ),
-                qml.Hamiltonian(
+                qp.Hamiltonian(
                     [1.0],
                     [
-                        qml.PauliZ(wires=[1])
-                        @ qml.PauliZ(wires=[3])
-                        @ qml.PauliZ(wires=[5])
-                        @ qml.PauliZ(wires=[6])
-                        @ qml.PauliZ(wires=[8])
-                        @ qml.PauliZ(wires=[11])
+                        qp.PauliZ(wires=[1])
+                        @ qp.PauliZ(wires=[3])
+                        @ qp.PauliZ(wires=[5])
+                        @ qp.PauliZ(wires=[6])
+                        @ qp.PauliZ(wires=[8])
+                        @ qp.PauliZ(wires=[11])
                     ],
                 ),
             ],
             [
-                qml.PauliX(wires=[7]),
-                qml.PauliX(wires=[9]),
-                qml.PauliX(wires=[0]),
-                qml.PauliX(wires=[1]),
+                qp.PauliX(wires=[7]),
+                qp.PauliX(wires=[9]),
+                qp.PauliX(wires=[0]),
+                qp.PauliX(wires=[1]),
             ],
             (1, 1, 1, 1),
             4,
@@ -505,11 +505,11 @@ def test_taper_obs(symbols, geometry, charge):
     r"""Test that the expectation values of tapered observables with respect to the
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
 
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     hf_state_tapered = taper_hf(
         generators, paulixops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
@@ -523,14 +523,14 @@ def test_taper_obs(symbols, geometry, charge):
 
     observables = [
         hamiltonian,
-        qml.qchem.particle_number(len(hamiltonian.wires)),
-        qml.qchem.spin2(mol.n_electrons, len(hamiltonian.wires)),
-        qml.qchem.spinz(len(hamiltonian.wires)),
+        qp.qchem.particle_number(len(hamiltonian.wires)),
+        qp.qchem.spin2(mol.n_electrons, len(hamiltonian.wires)),
+        qp.qchem.spinz(len(hamiltonian.wires)),
     ]
     for observable in observables:
 
-        obs_ps = qml.pauli.pauli_sentence(observable)
-        tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
+        obs_ps = qp.pauli.pauli_sentence(observable)
+        tapered_obs = qp.taper(observable, generators, paulixops, paulix_sector)
         tapered_ps = _taper_pauli_sentence(obs_ps, generators, paulixops, paulix_sector)
 
         obs_val = (
@@ -545,7 +545,7 @@ def test_taper_obs(symbols, geometry, charge):
         ).toarray()
 
         assert np.isclose(obs_val, obs_val_tapered)
-        qml.assert_equal(tapered_obs, tapered_ps)
+        qp.assert_equal(tapered_obs, tapered_ps)
 
 
 @pytest.mark.parametrize(
@@ -556,11 +556,11 @@ def test_taper_obs(symbols, geometry, charge):
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
             0,
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(1)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(3)]),
             ],
-            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qp.PauliX(wires=[1]), qp.PauliX(wires=[2]), qp.PauliX(wires=[3])],
             (1, -1, -1),
             (0, 1),
         ),
@@ -572,10 +572,10 @@ def test_taper_obs(symbols, geometry, charge):
             ),
             1,
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(1) @ qp.PauliZ(3)]),
             ],
-            [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            [qp.PauliX(wires=[2]), qp.PauliX(wires=[3])],
             (-1, -1),
             (2, 1),
         ),
@@ -587,10 +587,10 @@ def test_taper_obs(symbols, geometry, charge):
             ),
             1,
             [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(0) @ qp.PauliZ(2) @ qp.PauliZ(4)]),
+                qp.Hamiltonian([1.0], [qp.PauliZ(1) @ qp.PauliZ(3) @ qp.PauliZ(5)]),
             ],
-            [qml.PauliX(wires=[4]), qml.PauliX(wires=[5])],
+            [qp.PauliX(wires=[4]), qp.PauliX(wires=[5])],
             (-1, -1),
             (4, 4),
         ),
@@ -602,20 +602,20 @@ def test_taper_excitations(
     r"""Test that the tapered excitation operators using :func:`~.taper_operation`
     are consistent with the tapered Hartree-Fock state."""
 
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
     num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
     hf_state = np.where(np.arange(num_wires) < num_electrons, 1, 0)
     hf_tapered = taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires)
 
     observables = [
-        qml.qchem.diff_hamiltonian(mol)(geometry),
-        qml.qchem.particle_number(num_wires),
-        qml.qchem.spin2(num_electrons, num_wires),
-        qml.qchem.spinz(num_wires),
+        qp.qchem.diff_hamiltonian(mol)(geometry),
+        qp.qchem.particle_number(num_wires),
+        qp.qchem.spin2(num_electrons, num_wires),
+        qp.qchem.spinz(num_wires),
     ]
 
     tapered_obs = [
-        qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
+        qp.taper(observale, generators, paulixops, paulix_sector) for observale in observables
     ]
 
     o = np.array([1, 0])
@@ -623,8 +623,8 @@ def test_taper_excitations(
     state = functools.reduce(np.kron, [l if s else o for s in hf_state])
     state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
 
-    singles, doubles = qml.qchem.excitations(num_electrons, num_wires)
-    exc_fnc = [qml.SingleExcitation, qml.DoubleExcitation]
+    singles, doubles = qp.qchem.excitations(num_electrons, num_wires)
+    exc_fnc = [qp.SingleExcitation, qp.DoubleExcitation]
     exc_obs, exc_tap = [[], []], [[], []]
     for idx, exc in enumerate([singles, doubles]):
         exc_obs[idx] = [exc_fnc[idx](np.pi, wires=wire) for wire in exc]
@@ -639,10 +639,10 @@ def test_taper_excitations(
     obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
     for op_all, op_tap in zip(obs_all, obs_tap):
         if op_tap:
-            excited_state = np.matmul(qml.matrix(op_all, wire_order=range(len(hf_state))), state)
+            excited_state = np.matmul(qp.matrix(op_all, wire_order=range(len(hf_state))), state)
             ob_tap_mat = functools.reduce(
                 np.matmul,
-                [qml.matrix(op, wire_order=range(len(hf_tapered))) for op in op_tap],
+                [qp.matrix(op, wire_order=range(len(hf_tapered))) for op in op_tap],
             )
             excited_state_tapered = np.matmul(ob_tap_mat, state_tapered)
             # check if tapered excitation gates remains spin and particle-number conserving,
@@ -664,15 +664,15 @@ def test_taper_excitations(
 @pytest.mark.parametrize(
     ("operation", "op_gen", "message_match"),
     [
-        (qml.U2(1, 1, 2), None, "is not implemented, please provide it with 'op_gen' args"),
+        (qp.U2(1, 1, 2), None, "is not implemented, please provide it with 'op_gen' args"),
         (
-            qml.U2(1, 1, 2),
+            qp.U2(1, 1, 2),
             np.identity(16),
             "Generator for the operation needs to be a valid operator",
         ),
         (
-            qml.U2(1, 1, 2),
-            qml.Hamiltonian([1], [qml.Identity(2)]),
+            qp.U2(1, 1, 2),
+            qp.Hamiltonian([1], [qp.Identity(2)]),
             "doesn't seem to be the correct generator for the",
         ),
     ],
@@ -685,11 +685,11 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
         np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
 
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     wire_order = hamiltonian.wires
 
@@ -700,31 +700,31 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
 @pytest.mark.parametrize(
     ("operation", "op_gen"),
     [
-        (qml.PauliX(1), qml.Hamiltonian((np.pi / 2,), [qml.PauliX(wires=[1])])),
-        (qml.PauliY(2), qml.Hamiltonian((np.pi / 2,), [qml.PauliY(wires=[2])])),
-        (qml.PauliZ(3), qml.Hamiltonian((np.pi / 2,), [qml.PauliZ(wires=[3])])),
+        (qp.PauliX(1), qp.Hamiltonian((np.pi / 2,), [qp.PauliX(wires=[1])])),
+        (qp.PauliY(2), qp.Hamiltonian((np.pi / 2,), [qp.PauliY(wires=[2])])),
+        (qp.PauliZ(3), qp.Hamiltonian((np.pi / 2,), [qp.PauliZ(wires=[3])])),
         (
-            qml.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]),
-            qml.Hamiltonian(
+            qp.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]),
+            qp.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
+                    qp.PauliX(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliY(wires=[2]),
+                    qp.PauliY(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliX(wires=[2]),
+                    qp.PauliX(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliY(wires=[3]),
+                    qp.PauliY(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliX(wires=[3]),
                 ],
             ),
         ),
         (
-            qml.FermionicSWAP(np.pi, wires=[0, 1]),
-            qml.Hamiltonian(
+            qp.FermionicSWAP(np.pi, wires=[0, 1]),
+            qp.Hamiltonian(
                 (0.5, -0.25, -0.25, -0.25, -0.25),
                 [
-                    qml.Identity(wires=[0]) @ qml.Identity(wires=[1]),
-                    qml.Identity(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]),
-                    qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]),
-                    qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]),
+                    qp.Identity(wires=[0]) @ qp.Identity(wires=[1]),
+                    qp.Identity(wires=[0]) @ qp.PauliZ(wires=[1]),
+                    qp.PauliZ(wires=[0]) @ qp.Identity(wires=[1]),
+                    qp.PauliX(wires=[0]) @ qp.PauliX(wires=[1]),
+                    qp.PauliY(wires=[0]) @ qp.PauliY(wires=[1]),
                 ],
             ),
         ),
@@ -738,11 +738,11 @@ def test_consistent_taper_ops(operation, op_gen):
         np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
 
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     wire_order = hamiltonian.wires
 
@@ -753,33 +753,33 @@ def test_consistent_taper_ops(operation, op_gen):
         operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen
     )
     for op1, op2 in zip(taper_op1, taper_op2):
-        qml.assert_equal(op1.base, op2.base)
+        qp.assert_equal(op1.base, op2.base)
 
-    with qml.queuing.AnnotatedQueue() as q_tape1:
+    with qp.queuing.AnnotatedQueue() as q_tape1:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=None)
-    with qml.queuing.AnnotatedQueue() as q_tape2:
+    with qp.queuing.AnnotatedQueue() as q_tape2:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
-    tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
-    tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
+    tape1 = qp.tape.QuantumScript.from_queue(q_tape1)
+    tape2 = qp.tape.QuantumScript.from_queue(q_tape2)
     taper_circuit1 = [x for x in tape1.circuit if x.label() != "I"]
     taper_circuit2 = [x for x in tape2.circuit if x.label() != "I"]
 
     assert len(taper_op1) == len(taper_circuit1)
     assert len(taper_op2) == len(taper_circuit2)
     for op1, op2 in zip(taper_circuit1, taper_op1):
-        qml.assert_equal(op1.base, op2.base)
+        qp.assert_equal(op1.base, op2.base)
     for op1, op2 in zip(taper_circuit2, taper_op2):
-        qml.assert_equal(op1.base, op2.base)
+        qp.assert_equal(op1.base, op2.base)
 
     if taper_op1:
         observables = [
             hamiltonian,  # for energy
-            sum(qml.PauliZ(wire) for wire in hamiltonian.wires),  # for local-cost 1
+            sum(qp.PauliZ(wire) for wire in hamiltonian.wires),  # for local-cost 1
             # for local-cost 2
-            sum(qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in hamiltonian.wires[:-1]),
+            sum(qp.PauliZ(wire) @ qp.PauliZ(wire + 1) for wire in hamiltonian.wires[:-1]),
         ]
         tapered_obs = [
-            qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
+            qp.taper(observale, generators, paulixops, paulix_sector) for observale in observables
         ]
 
         hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
@@ -789,22 +789,22 @@ def test_consistent_taper_ops(operation, op_gen):
         o, l = np.array([1, 0]), np.array([0, 1])
         state = functools.reduce(np.kron, [l if s else o for s in hf_state])
         state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
-        evolved_state = np.matmul(qml.matrix(operation, wire_order=range(len(hf_state))), state)
+        evolved_state = np.matmul(qp.matrix(operation, wire_order=range(len(hf_state))), state)
         ob_tap_mat = functools.reduce(
             np.matmul,
-            [qml.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],
+            [qp.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],
         )
         evolved_state_tapered = np.matmul(ob_tap_mat, state_tapered)
 
         for obs, tap_obs in zip(observables, tapered_obs):
             expec_val = (
                 scipy.sparse.coo_matrix(evolved_state)
-                @ scipy.sparse.coo_matrix(qml.matrix(obs, wire_order=range(len(hf_state))))
+                @ scipy.sparse.coo_matrix(qp.matrix(obs, wire_order=range(len(hf_state))))
                 @ scipy.sparse.coo_matrix(evolved_state).getH()
             ).toarray()
             expec_val_tapered = (
                 scipy.sparse.coo_matrix(evolved_state_tapered)
-                @ scipy.sparse.coo_matrix(qml.matrix(tap_obs, wire_order=range(len(hf_tapered))))
+                @ scipy.sparse.coo_matrix(qp.matrix(tap_obs, wire_order=range(len(hf_tapered))))
                 @ scipy.sparse.coo_matrix(evolved_state_tapered).getH()
             ).toarray()
             assert np.isclose(expec_val, expec_val_tapered)
@@ -813,19 +813,19 @@ def test_consistent_taper_ops(operation, op_gen):
 @pytest.mark.parametrize(
     ("operation", "op_wires", "op_gen"),
     [
-        (qml.RZ, [3], None),
-        (qml.RY, [2], qml.Hamiltonian([-0.5], [qml.PauliY(wires=[2])])),
-        (qml.SingleExcitation, [0, 2], None),
+        (qp.RZ, [3], None),
+        (qp.RY, [2], qp.Hamiltonian([-0.5], [qp.PauliY(wires=[2])])),
+        (qp.SingleExcitation, [0, 2], None),
         (
-            qml.OrbitalRotation,
+            qp.OrbitalRotation,
             [0, 1, 2, 3],
-            lambda wires: qml.Hamiltonian(
+            lambda wires: qp.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
+                    qp.PauliX(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliY(wires=[2]),
+                    qp.PauliY(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliX(wires=[2]),
+                    qp.PauliX(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliY(wires=[3]),
+                    qp.PauliY(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliX(wires=[3]),
                 ],
             ),
         ),
@@ -839,11 +839,11 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
         np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
 
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     wire_order = hamiltonian.wires
 
@@ -865,26 +865,26 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
             op_gen=op_gen,
         )
         for op1, op2 in zip(taper_op_fn(params), taper_op):
-            qml.assert_equal(op1.base, op2.base)
+            qp.assert_equal(op1.base, op2.base)
 
 
 @pytest.mark.parametrize(
     ("operation", "op_wires", "op_gen"),
     [
         (
-            lambda phi, wires: qml.QubitUnitary(
-                qml.math.array(
+            lambda phi, wires: qp.QubitUnitary(
+                qp.math.array(
                     [
-                        [qml.math.cos(phi / 2), 0, 0, -1j * qml.math.sin(phi / 2)],
-                        [0, qml.math.cos(phi / 2), -1j * qml.math.sin(phi / 2), 0],
-                        [0, -1j * qml.math.sin(phi / 2), qml.math.cos(phi / 2), 0],
-                        [-1j * qml.math.sin(phi / 2), 0, 0, qml.math.cos(phi / 2)],
+                        [qp.math.cos(phi / 2), 0, 0, -1j * qp.math.sin(phi / 2)],
+                        [0, qp.math.cos(phi / 2), -1j * qp.math.sin(phi / 2), 0],
+                        [0, -1j * qp.math.sin(phi / 2), qp.math.cos(phi / 2), 0],
+                        [-1j * qp.math.sin(phi / 2), 0, 0, qp.math.cos(phi / 2)],
                     ]
                 ),
                 wires=wires,
             ),
             [0, 2],
-            lambda phi, wires: -0.5 * phi * qml.PauliX(wires=wires[0]) @ qml.PauliX(wires=wires[1]),
+            lambda phi, wires: -0.5 * phi * qp.PauliX(wires=wires[0]) @ qp.PauliX(wires=wires[1]),
         ),
     ],
 )
@@ -896,16 +896,16 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
         np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
 
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     wire_order = hamiltonian.wires
 
     taper_op1 = taper_operation(
-        qml.IsingXX,
+        qp.IsingXX,
         generators,
         paulixops,
         paulix_sector,
@@ -925,28 +925,28 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
             op_gen=functools.partial(op_gen, phi=params),
         )
         for op1, op2 in zip(taper_op1(params), taper_op2):
-            qml.assert_equal(op1.base, op2.base)
+            qp.assert_equal(op1.base, op2.base)
 
 
 @pytest.mark.parametrize(
     ("operation", "op_wires", "op_gen", "message_match"),
     [
         (
-            qml.SingleExcitation,
+            qp.SingleExcitation,
             None,
             None,
             "Wires for the operation must be provided with 'op_wires' args if either of 'operation' or 'op_gen' is a callable",
         ),
         (
-            qml.OrbitalRotation,
+            qp.OrbitalRotation,
             [0, 1, 2, 3],
-            lambda: qml.Hamiltonian(
+            lambda: qp.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliX(wires=[3]),
+                    qp.PauliX(wires=[0]) @ qp.PauliY(wires=[2]),
+                    qp.PauliY(wires=[0]) @ qp.PauliX(wires=[2]),
+                    qp.PauliX(wires=[1]) @ qp.PauliY(wires=[3]),
+                    qp.PauliY(wires=[1]) @ qp.PauliX(wires=[3]),
                 ],
             ),
             "Generator function provided with 'op_gen' should have 'wires' as its only required keyword argument.",
@@ -961,11 +961,11 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
         np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
         1,
     )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
 
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
     wire_order = hamiltonian.wires
 
@@ -979,8 +979,8 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
 def test_split_pauli_sentence(ps_size, max_size):
     """Test that _split_pauli_sentence splits the PauliSentence objects into correct chunks."""
 
-    sentence = qml.pauli.PauliSentence(
-        {qml.pauli.PauliWord({i: "X", i + 1: "Y", i + 2: "Z"}): i for i in range(ps_size)}
+    sentence = qp.pauli.PauliSentence(
+        {qp.pauli.PauliWord({i: "X", i + 1: "Y", i + 2: "Z"}): i for i in range(ps_size)}
     )
 
     split_sentence = {}
@@ -988,7 +988,7 @@ def test_split_pauli_sentence(ps_size, max_size):
         assert len(ps) <= max_size
         split_sentence = {**split_sentence, **ps}
 
-    assert sentence == qml.pauli.PauliSentence(split_sentence)
+    assert sentence == qp.pauli.PauliSentence(split_sentence)
 
 
 @pytest.mark.parametrize(
@@ -998,14 +998,14 @@ def test_split_pauli_sentence(ps_size, max_size):
 def test_taper_wire_order(symbols, geometry):
     r"""Test that a tapering workflow results in correct order of wires."""
 
-    molecule = qml.qchem.Molecule(symbols, geometry)
-    hamiltonian, num_wires = qml.qchem.molecular_hamiltonian(molecule)
+    molecule = qp.qchem.Molecule(symbols, geometry)
+    hamiltonian, num_wires = qp.qchem.molecular_hamiltonian(molecule)
 
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, num_wires)
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, num_wires)
     paulix_sector = optimal_sector(hamiltonian, generators, molecule.n_electrons)
 
-    tapered_ham = qml.taper(hamiltonian, generators, paulixops, paulix_sector)
+    tapered_ham = qp.taper(hamiltonian, generators, paulixops, paulix_sector)
     assert tapered_ham.wires.tolist() == list(sorted(tapered_ham.wires))
 
 
@@ -1033,18 +1033,18 @@ def test_taper_jax_jit(symbols, geometry, charge):
 
     import jax
 
-    molecule = qml.qchem.Molecule(symbols, jax.numpy.array(geometry), charge)
-    hamiltonian, num_wires = qml.qchem.molecular_hamiltonian(molecule)
+    molecule = qp.qchem.Molecule(symbols, jax.numpy.array(geometry), charge)
+    hamiltonian, num_wires = qp.qchem.molecular_hamiltonian(molecule)
 
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, num_wires)
+    generators = qp.symmetry_generators(hamiltonian)
+    paulixops = qp.paulix_ops(generators, num_wires)
     paulix_sector = tuple(optimal_sector(hamiltonian, generators, molecule.n_electrons))
 
-    tapered_ham1 = qml.simplify(qml.taper(hamiltonian, generators, paulixops, paulix_sector))
-    tapered_ham2 = qml.simplify(
-        jax.jit(qml.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
+    tapered_ham1 = qp.simplify(qp.taper(hamiltonian, generators, paulixops, paulix_sector))
+    tapered_ham2 = qp.simplify(
+        jax.jit(qp.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
     )
 
-    assert qml.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"
-    assert qml.math.get_deep_interface(tapered_ham2.terms()[0]) == "jax"
-    qml.assert_equal(tapered_ham1, tapered_ham2)
+    assert qp.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"
+    assert qp.math.get_deep_interface(tapered_ham2.terms()[0]) == "jax"
+    qp.assert_equal(tapered_ham1, tapered_ham2)

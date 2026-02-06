@@ -44,11 +44,11 @@ class TestTorchRun:
         config = replace(config, interface="torch")
 
         def cost(a, b):
-            ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
-            tape1 = qml.tape.QuantumScript(ops1, [qml.expval(qml.PauliZ(0))], shots=shots)
+            ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
+            tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
-            tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
 
             resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
             inner_tp = _setup_transform_program(device, resolved_config)[1]
@@ -76,10 +76,10 @@ class TestTorchRun:
         if shots.has_partitioned_shots:
             for shot in range(2):
                 for wire in range(2):
-                    assert qml.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
+                    assert qp.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
         else:
             for wire in range(2):
-                assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
+                assert qp.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
 
     def test_scalar_jacobian(self, device, config, shots, seed):
         """Test scalar jacobian calculation"""
@@ -87,7 +87,7 @@ class TestTorchRun:
         config = replace(config, interface="torch")
 
         def cost(a):
-            tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+            tape = qp.tape.QuantumScript([qp.RY(a, 0)], [qp.expval(qp.PauliZ(0))], shots=shots)
             resolved_config = _resolve_execution_config(config, device, [tape])
             _, inner_tp = _setup_transform_program(device, resolved_config)
             return run([tape], device, resolved_config, inner_tp)[0]
@@ -98,7 +98,7 @@ class TestTorchRun:
         if not shots.has_partitioned_shots:
             assert res.shape == ()  # pylint: disable=no-member
 
-        expected = -qml.math.sin(a)
+        expected = -qp.math.sin(a)
 
         assert expected.shape == ()
         if shots.has_partitioned_shots:
@@ -115,9 +115,9 @@ class TestTorchRun:
         config = replace(config, interface="torch")
 
         def cost(a, b):
-            ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
-            m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
-            tape = qml.tape.QuantumScript(ops, m, shots=shots)
+            ops = [qp.RY(a, wires=0), qp.RX(b, wires=1), qp.CNOT(wires=[0, 1])]
+            m = [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))]
+            tape = qp.tape.QuantumScript(ops, m, shots=shots)
 
             resolved_config = _resolve_execution_config(config, device, [tape])
             _, inner_tp = _setup_transform_program(device, resolved_config)

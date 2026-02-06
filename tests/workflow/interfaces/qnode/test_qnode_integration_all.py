@@ -33,16 +33,16 @@ class TestHadamardGradients:
     def test_nonstandard_device_wires(self, interface, diff_method):
         """Test that we can automatically determine a work wire with nonstandard wire labels."""
 
-        dev = qml.device("default.qubit", wires=("a", "b"))
+        dev = qp.device("default.qubit", wires=("a", "b"))
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
-            qml.RX(x, "a")
-            return qml.expval(qml.Z("a"))
+            qp.RX(x, "a")
+            return qp.expval(qp.Z("a"))
 
-        x = qml.math.asarray(0.5, requires_grad=True, like=interface)
-        result = qml.math.grad(circuit)(x)
-        assert qml.math.allclose(result, -qml.math.sin(x))
+        x = qp.math.asarray(0.5, requires_grad=True, like=interface)
+        result = qp.math.grad(circuit)(x)
+        assert qp.math.allclose(result, -qp.math.sin(x))
 
     @pytest.mark.parametrize(
         "diff_method, num_executions",
@@ -55,19 +55,19 @@ class TestHadamardGradients:
     )
     def test_hamiltonian_generator(self, diff_method, interface, num_executions):
         """Check that we perform the expected number of executions when having a hamiltonian generator."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def c(x):
-            qml.evolve(qml.X(0) + qml.X(1), x)
-            return qml.expval(qml.Z(0))
+            qp.evolve(qp.X(0) + qp.X(1), x)
+            return qp.expval(qp.Z(0))
 
-        x = qml.math.asarray(1.2, requires_grad=True, like=interface)
+        x = qp.math.asarray(1.2, requires_grad=True, like=interface)
 
         with dev.tracker:
-            result = qml.math.grad(c)(x)
+            result = qp.math.grad(c)(x)
 
-        expected = -2 * qml.math.sin(2 * x)
-        assert qml.math.allclose(result, expected)
+        expected = -2 * qp.math.sin(2 * x)
+        assert qp.math.allclose(result, expected)
 
         assert dev.tracker.totals["executions"] == num_executions

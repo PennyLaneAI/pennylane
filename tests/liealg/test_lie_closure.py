@@ -55,7 +55,7 @@ dla11 = [
 
 
 class TestLieClosure:
-    """Tests for qml.lie_closure()"""
+    """Tests for qp.lie_closure()"""
 
     @pytest.mark.parametrize("matrix", [False, True])
     def test_verbose(self, capsys, matrix):
@@ -123,10 +123,10 @@ class TestLieClosure:
     def test_lie_closure_with_pl_ops(self):
         """Test that lie_closure works properly with PennyLane ops instead of PauliSentences"""
         dla = [
-            qml.sum(qml.prod(X(0), X(1)), qml.prod(Y(0), Y(1))),
+            qp.sum(qp.prod(X(0), X(1)), qp.prod(Y(0), Y(1))),
             Z(0),
             Z(1),
-            qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1.0, qml.prod(X(0), Y(1)))),
+            qp.sum(qp.prod(Y(0), X(1)), qp.s_prod(-1.0, qp.prod(X(0), Y(1)))),
         ]
         gen11 = dla[:-1]
         res11 = lie_closure(gen11)
@@ -264,8 +264,8 @@ class TestLieClosure:
         genYY = [Y(i) @ Y(i + 1) for i in range(n - 1)]
         genZZ = [Z(i) @ Z(i + 1) for i in range(n - 1)]
 
-        generators = [qml.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ)]
-        g = qml.lie_closure(generators, matrix=matrix)
+        generators = [qp.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ)]
+        g = qp.lie_closure(generators, matrix=matrix)
         assert len(g) == res
 
     @pytest.mark.parametrize("matrix", [False, True])
@@ -279,7 +279,7 @@ class TestLieClosure:
             (I(i) - Z(i)) @ (I(i + 1) - X(i + 1)) for i in range(n - 1)
         ]  # generator of CNOT gate
 
-        vspace = qml.lie_closure(generators, matrix=matrix)
+        vspace = qp.lie_closure(generators, matrix=matrix)
 
         assert len(vspace) == 4**3
 
@@ -325,36 +325,36 @@ class TestLieClosureDense:
 
         gen12 = dla12[:-1]
         res12 = lie_closure(gen12, matrix=True)
-        res12 = [qml.pauli_decompose(op) for op in res12]
-        assert qml.pauli.PauliVSpace(res12) == qml.pauli.PauliVSpace(dla12)
+        res12 = [qp.pauli_decompose(op) for op in res12]
+        assert qp.pauli.PauliVSpace(res12) == qp.pauli.PauliVSpace(dla12)
 
     def test_lie_closure_dense_with_pl_ops(self):
         """Test that lie_closure_dense works properly with PennyLane ops instead of PauliSentences"""
         dla = [
-            qml.sum(qml.prod(X(0), X(1)), qml.prod(Y(0), Y(1))),
+            qp.sum(qp.prod(X(0), X(1)), qp.prod(Y(0), Y(1))),
             Z(0),
             Z(1),
-            qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1.0, qml.prod(X(0), Y(1)))),
+            qp.sum(qp.prod(Y(0), X(1)), qp.s_prod(-1.0, qp.prod(X(0), Y(1)))),
         ]
         gen11 = dla[:-1]
         res11 = lie_closure(gen11, matrix=True)
 
-        res11 = [qml.pauli_decompose(op) for op in res11]  # back to pauli_rep for easier comparison
+        res11 = [qp.pauli_decompose(op) for op in res11]  # back to pauli_rep for easier comparison
         assert PauliVSpace(res11) == PauliVSpace(dla11)
 
     def test_lie_closure_dense_with_ndarrays(self):
         """Test that lie_closure_dense works properly with ndarray inputs"""
         dla = [
-            qml.sum(qml.prod(X(0), X(1)), qml.prod(Y(0), Y(1))),
+            qp.sum(qp.prod(X(0), X(1)), qp.prod(Y(0), Y(1))),
             Z(0),
             Z(1),
-            qml.sum(qml.prod(Y(0), X(1)), qml.s_prod(-1.0, qml.prod(X(0), Y(1)))),
+            qp.sum(qp.prod(Y(0), X(1)), qp.s_prod(-1.0, qp.prod(X(0), Y(1)))),
         ]
-        dla = [qml.matrix(op, wire_order=range(2)) for op in dla]
+        dla = [qp.matrix(op, wire_order=range(2)) for op in dla]
         gen11 = dla[:-1]
         res11 = lie_closure(gen11, matrix=True)
 
-        res11 = [qml.pauli_decompose(op) for op in res11]  # back to pauli_rep for easier comparison
+        res11 = [qp.pauli_decompose(op) for op in res11]  # back to pauli_rep for easier comparison
         assert PauliVSpace(res11) == PauliVSpace(dla11)
 
     def test_lie_closure_dense_with_PauliWords(self):
@@ -373,7 +373,7 @@ class TestLieClosureDense:
 
         res = lie_closure(gen, matrix=True)
 
-        res = [qml.pauli_decompose(op) for op in res]  # convert to pauli_rep for easier comparison
+        res = [qp.pauli_decompose(op) for op in res]  # convert to pauli_rep for easier comparison
         assert PauliVSpace(res) == PauliVSpace(dla)
 
     def test_lie_closure_dense_with_sentences(self):
@@ -391,7 +391,7 @@ class TestLieClosureDense:
         gen += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)]
 
         res = lie_closure(gen, matrix=True)
-        res = [qml.pauli_decompose(op) for op in res]
+        res = [qp.pauli_decompose(op) for op in res]
         true_res = [
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
             PauliSentence({PauliWord({1: "X", 2: "X"}): 1.0, PauliWord({1: "Y", 2: "Y"}): 1.0}),
@@ -419,12 +419,12 @@ class TestLieClosureDense:
         """Test that an error is raised for non-Hermitian input"""
         ops = [np.array([[0.0, 1.0], [0.0, 0.0]])]
         with pytest.raises(ValueError, match="At least one basis matrix"):
-            _ = qml.lie_closure(ops, matrix=True)
+            _ = qp.lie_closure(ops, matrix=True)
 
 
-X0 = qml.matrix(X(0))
-Y0 = qml.matrix(Y(0))
-Z0 = qml.matrix(Z(0))
+X0 = qp.matrix(X(0))
+Y0 = qp.matrix(Y(0))
+Z0 = qp.matrix(Z(0))
 
 
 class TestLieClosureInterfaces:
@@ -440,11 +440,11 @@ class TestLieClosureInterfaces:
 
         gens = jnp.array([X0, Y0])
 
-        res = qml.lie_closure(gens, matrix=True)
-        assert qml.math.allclose(res, su2)
+        res = qp.lie_closure(gens, matrix=True)
+        assert qp.math.allclose(res, su2)
 
-        res_list = qml.lie_closure(gens_list, matrix=True)
-        assert qml.math.allclose(res_list, su2)
+        res_list = qp.lie_closure(gens_list, matrix=True)
+        assert qp.math.allclose(res_list, su2)
 
     @pytest.mark.torch
     def test_torch_lie_closure_matrix(self):
@@ -456,27 +456,27 @@ class TestLieClosureInterfaces:
 
         gens = torch.tensor(np.array([X0, Y0]))
 
-        res = qml.lie_closure(gens, matrix=True)
-        assert qml.math.allclose(res, su2)
+        res = qp.lie_closure(gens, matrix=True)
+        assert qp.math.allclose(res, su2)
 
-        res_list = qml.lie_closure(gens_list, matrix=True)
-        assert qml.math.allclose(res_list, su2)
+        res_list = qp.lie_closure(gens_list, matrix=True)
+        assert qp.math.allclose(res_list, su2)
 
     @pytest.mark.tf
     def test_tf_lie_closure_matrix(self):
         """Test lie_closure can handle tf inputs in matrix mode"""
         import tensorflow as tf
 
-        su2 = qml.math.stack([X0, Y0, -Z0], like="tensorflow")
+        su2 = qp.math.stack([X0, Y0, -Z0], like="tensorflow")
         gens_list = [tf.constant(X0), tf.constant(Y0)]
 
-        gens = qml.math.stack([tf.constant(X0), tf.constant(Y0)])
+        gens = qp.math.stack([tf.constant(X0), tf.constant(Y0)])
 
-        res = qml.lie_closure(gens, matrix=True)
-        assert qml.math.allclose(res, su2)
+        res = qp.lie_closure(gens, matrix=True)
+        assert qp.math.allclose(res, su2)
 
-        res_list = qml.lie_closure(gens_list, matrix=True)
-        assert qml.math.allclose(res_list, su2)
+        res_list = qp.lie_closure(gens_list, matrix=True)
+        assert qp.math.allclose(res_list, su2)
 
     @pytest.mark.autograd
     def test_autograd_lie_closure_matrix(self):
@@ -488,8 +488,8 @@ class TestLieClosureInterfaces:
 
         gens = pnp.array([X0, Y0])
 
-        res = qml.lie_closure(gens, matrix=True)
-        assert qml.math.allclose(res, su2)
+        res = qp.lie_closure(gens, matrix=True)
+        assert qp.math.allclose(res, su2)
 
-        res_list = qml.lie_closure(gens_list, matrix=True)
-        assert qml.math.allclose(res_list, su2)
+        res_list = qp.lie_closure(gens_list, matrix=True)
+        assert qp.math.allclose(res_list, su2)

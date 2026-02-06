@@ -673,14 +673,14 @@ class TestQubitGraphWorkflows:
         q0.init_graph_nd_grid((2,))
         q1.init_graph_nd_grid((2,))
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RZ(1.618, wires=q0)
-            qml.CNOT(wires=[q0, q1])
-            qml.RY(1.618, wires=q1)
-            return qml.expval(qml.PauliZ(q1))
+            qp.RZ(1.618, wires=q0)
+            qp.CNOT(wires=[q0, q1])
+            qp.RY(1.618, wires=q1)
+            return qp.expval(qp.PauliZ(q1))
 
         circuit()
         assert True  # Only check that we can execute the circuit without failure

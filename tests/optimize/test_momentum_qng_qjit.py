@@ -28,9 +28,9 @@ dev_names = (
 
 def circuit(params):
     """Simple circuit to use for testing."""
-    qml.RX(params[0], wires=0)
-    qml.RY(params[1], wires=1)
-    return qml.expval(qml.Z(wires=0))
+    qp.RX(params[0], wires=0)
+    qp.RY(params[1], wires=1)
+    return qp.expval(qp.Z(wires=0))
 
 
 class TestBasics:
@@ -38,7 +38,7 @@ class TestBasics:
 
     def test_initialization_default(self):
         """Test that initializing MomentumQNGOptimizerQJIT with default values works."""
-        opt = qml.MomentumQNGOptimizerQJIT()
+        opt = qp.MomentumQNGOptimizerQJIT()
         assert opt.stepsize == 0.01
         assert opt.momentum == 0.9
         assert opt.approx == "block-diag"
@@ -46,7 +46,7 @@ class TestBasics:
 
     def test_initialization_custom(self):
         """Test that initializing MomentumQNGOptimizerQJIT with custom values works."""
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.05, momentum=0.8, approx="diag", lam=1e-9)
+        opt = qp.MomentumQNGOptimizerQJIT(stepsize=0.05, momentum=0.8, approx="diag", lam=1e-9)
         assert opt.stepsize == 0.05
         assert opt.momentum == 0.8
         assert opt.approx == "diag"
@@ -54,7 +54,7 @@ class TestBasics:
 
     def test_init_zero_state(self):
         """Test that the MomentumQNGOptimizerQJIT state is initialized to an array of zeros."""
-        opt = qml.MomentumQNGOptimizerQJIT()
+        opt = qp.MomentumQNGOptimizerQJIT()
         params = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
         state = opt.init(params)
         assert np.all(state == np.zeros_like(params))
@@ -69,24 +69,24 @@ class TestOptimize:
         """Test that the step and step_and_cost methods are returning the correct result."""
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.4)
+        opt = qp.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.4)
         params = jnp.array([0.11, 0.412])
         state = jnp.array([[-0.31, 0.842]])
 
         new_params1, state1 = opt.step(circ, params, state)
         new_params2, state2, cost = opt.step_and_cost(circ, params, state)
 
-        exp_params = qml.numpy.array(params)
+        exp_params = qp.numpy.array(params)
         exp_state = np.array([-0.31, 0.842])
         exp_cost = circ(exp_params)
         exp_mt = np.array([0.25, (np.cos(exp_params[0]) ** 2) / 4])
-        exp_state = opt.momentum * exp_state + opt.stepsize * qml.grad(circ)(exp_params) / exp_mt
+        exp_state = opt.momentum * exp_state + opt.stepsize * qp.grad(circ)(exp_params) / exp_mt
         exp_params -= exp_state
 
         assert np.allclose(new_params1, exp_params)
@@ -102,24 +102,24 @@ class TestOptimize:
         when the generator of an operator is a Hamiltonian."""
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name, wires=4))
+        @qp.qnode(qp.device(dev_name, wires=4))
         def circ(params):
-            qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.4)
+        opt = qp.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.4)
         params = jnp.array([0.11, 0.412])
         state = jnp.array([[-0.31, 0.842]])
 
         new_params1, state1 = opt.step(circ, params, state)
         new_params2, state2, cost = opt.step_and_cost(circ, params, state)
 
-        exp_params = qml.numpy.array(params)
+        exp_params = qp.numpy.array(params)
         exp_state = np.array([-0.31, 0.842])
         exp_cost = circ(exp_params)
         exp_mt = np.array([1 / 16, 1 / 4])
-        exp_state = opt.momentum * exp_state + opt.stepsize * qml.grad(circ)(exp_params) / exp_mt
+        exp_state = opt.momentum * exp_state + opt.stepsize * qp.grad(circ)(exp_params) / exp_mt
         exp_params -= exp_state
 
         assert np.allclose(new_params1, exp_params)
@@ -134,11 +134,11 @@ class TestOptimize:
         """Test that a simple qubit rotations circuit gets optimized correctly, checking params and cost at each step."""
         import jax.numpy as jnp
 
-        @qml.qnode(qml.device(dev_name))
+        @qp.qnode(qp.device(dev_name))
         def circ(params):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params[0], wires=0)
+            qp.RY(params[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def grad(params):
             """Returns the gradient of the above circuit."""
@@ -146,7 +146,7 @@ class TestOptimize:
             db = -np.cos(params[0]) * np.sin(params[1])
             return np.array([da, db])
 
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.2, momentum=0.3)
+        opt = qp.MomentumQNGOptimizerQJIT(stepsize=0.2, momentum=0.3)
         params = jnp.array([0.011, 0.012])
         state = opt.init(params)
 
@@ -174,10 +174,10 @@ class TestOptimize:
         import jax
         import jax.numpy as jnp
 
-        device = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, device=device)
+        device = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, device=device)
 
-        opt = qml.MomentumQNGOptimizerQJIT()
+        opt = qp.MomentumQNGOptimizerQJIT()
         params = jnp.array([0.1, 0.2])
         state = opt.init(params)
 
@@ -206,23 +206,23 @@ class TestOptimize:
     @pytest.mark.catalyst
     @pytest.mark.external
     def test_qjit(self):
-        """Test optimizer compatibility with qml.qjit compilation."""
+        """Test optimizer compatibility with qp.qjit compilation."""
         import jax.numpy as jnp
 
         pytest.importorskip("catalyst")
 
-        device = qml.device("lightning.qubit", wires=2)
-        qnode = qml.QNode(circuit, device=device)
+        device = qp.device("lightning.qubit", wires=2)
+        qnode = qp.QNode(circuit, device=device)
 
-        opt = qml.MomentumQNGOptimizerQJIT()
+        opt = qp.MomentumQNGOptimizerQJIT()
         params = jnp.array([0.1, 0.2])
         state = opt.init(params)
 
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
 
-        step = qml.qjit(partial(opt.step, qnode))
-        step_and_cost = qml.qjit(partial(opt.step_and_cost, qnode))
+        step = qp.qjit(partial(opt.step, qnode))
+        step_and_cost = qp.qjit(partial(opt.step_and_cost, qnode))
         new_params1_qjit, state1_qjit = step(params, state)
         new_params2_qjit, state2_qjit, cost_qjit = step_and_cost(params, state)
 

@@ -31,20 +31,20 @@ from pennylane.pauli import trace_inner_product
 )
 def test_trace_inner_product(op1, op2, true_res):
     """Test the results from the trace inner product"""
-    res = qml.pauli.trace_inner_product(op1, op2)
+    res = qp.pauli.trace_inner_product(op1, op2)
     assert np.allclose(res, true_res)
 
 
 def test_trace_inner_product_broadcast():
     """Test the broadcasting of the trace inner product for dense inputs"""
-    paulis = [qml.matrix(op, wire_order=range(2)) for op in qml.pauli.pauli_group(2)]
-    res = qml.pauli.trace_inner_product(paulis, paulis)
+    paulis = [qp.matrix(op, wire_order=range(2)) for op in qp.pauli.pauli_group(2)]
+    res = qp.pauli.trace_inner_product(paulis, paulis)
     assert np.allclose(res, np.eye(4**2))
 
-    res = qml.pauli.trace_inner_product(paulis, qml.matrix(X(0), wire_order=range(2)))
+    res = qp.pauli.trace_inner_product(paulis, qp.matrix(X(0), wire_order=range(2)))
     assert np.allclose(res, [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0])
 
-    res = qml.pauli.trace_inner_product(qml.matrix(X(0), wire_order=range(2)), paulis)
+    res = qp.pauli.trace_inner_product(qp.matrix(X(0), wire_order=range(2)), paulis)
     assert np.allclose(res, [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0])
 
 
@@ -55,7 +55,7 @@ def test_trace_inner_product_broadcast():
 def test_trace_inner_product_consistency(op1, op2):
     """Test that the trace inner product norm for different operators is consistent"""
     res1 = trace_inner_product(
-        qml.matrix(op1, wire_order=range(3)), qml.matrix(op2, wire_order=range(3))
+        qp.matrix(op1, wire_order=range(3)), qp.matrix(op2, wire_order=range(3))
     )
     res2 = trace_inner_product(op1.pauli_rep, op2.pauli_rep)
     res3 = trace_inner_product(op1, op2)
@@ -69,7 +69,7 @@ def test_NotImplementedError():
     with pytest.raises(
         NotImplementedError, match="Inputs to pennylane.pauli.trace_inner_product need"
     ):
-        _ = qml.pauli.trace_inner_product(qml.CNOT((0, 1)), qml.X(0))
+        _ = qp.pauli.trace_inner_product(qp.CNOT((0, 1)), qp.X(0))
 
 
 class TestTraceInnerProductInterfaces:
@@ -79,11 +79,11 @@ class TestTraceInnerProductInterfaces:
 
         import pennylane.numpy as pnp
 
-        A = pnp.array([qml.matrix(X(0)), qml.matrix(X(0))])
-        B = pnp.array([qml.matrix(Y(0)), qml.matrix(Y(0))])
+        A = pnp.array([qp.matrix(X(0)), qp.matrix(X(0))])
+        B = pnp.array([qp.matrix(Y(0)), qp.matrix(Y(0))])
 
-        assert qml.math.allclose(trace_inner_product(A, B), 0)
-        assert qml.math.allclose(trace_inner_product(A, A), 1)
+        assert qp.math.allclose(trace_inner_product(A, B), 0)
+        assert qp.math.allclose(trace_inner_product(A, A), 1)
 
     @pytest.mark.jax
     def test_jax_jit_input(self):
@@ -91,8 +91,8 @@ class TestTraceInnerProductInterfaces:
         import jax
         import jax.numpy as jnp
 
-        A = jnp.array([qml.matrix(X(0)), qml.matrix(X(0))])
-        B = jnp.array([qml.matrix(Y(0)), qml.matrix(Y(0))])
+        A = jnp.array([qp.matrix(X(0)), qp.matrix(X(0))])
+        B = jnp.array([qp.matrix(Y(0)), qp.matrix(Y(0))])
 
         @jax.jit
         def f(A, B):
@@ -106,19 +106,19 @@ class TestTraceInnerProductInterfaces:
         """Test torch inputs are handled correctly"""
         import torch
 
-        A = torch.tensor(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
-        B = torch.tensor(np.array([qml.matrix(Y(0)), qml.matrix(Y(0))]))
+        A = torch.tensor(np.array([qp.matrix(X(0)), qp.matrix(X(0))]))
+        B = torch.tensor(np.array([qp.matrix(Y(0)), qp.matrix(Y(0))]))
 
-        assert qml.math.allclose(trace_inner_product(A, B), 0)
-        assert qml.math.allclose(trace_inner_product(A, A), 1)
+        assert qp.math.allclose(trace_inner_product(A, B), 0)
+        assert qp.math.allclose(trace_inner_product(A, A), 1)
 
     @pytest.mark.tf
     def test_tf_input(self):
         """Test tf inputs are handled correctly"""
         import tensorflow as tf
 
-        A = tf.constant(np.array([qml.matrix(X(0)), qml.matrix(X(0))]))
-        B = tf.constant(np.array([qml.matrix(Y(0)), qml.matrix(Y(0))]))
+        A = tf.constant(np.array([qp.matrix(X(0)), qp.matrix(X(0))]))
+        B = tf.constant(np.array([qp.matrix(Y(0)), qp.matrix(Y(0))]))
 
-        assert qml.math.allclose(trace_inner_product(A, B), 0)
-        assert qml.math.allclose(trace_inner_product(A, A), 1)
+        assert qp.math.allclose(trace_inner_product(A, B), 0)
+        assert qp.math.allclose(trace_inner_product(A, A), 1)

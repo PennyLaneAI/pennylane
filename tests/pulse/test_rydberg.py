@@ -38,7 +38,7 @@ class TestRydbergInteraction:
 
     def test_queuing(self):
         """Test that the function does not queue any objects."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
 
         assert len(q) == 0
@@ -98,7 +98,7 @@ class TestRydbergInteraction:
 
         # Only 3 of the interactions will be non-negligible
         assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
-        qml.assert_equal(H_res([], t=5), H_exp([], t=5))
+        qp.assert_equal(H_res([], t=5), H_exp([], t=5))
 
 
 class TestRydbergDrive:
@@ -131,17 +131,17 @@ class TestRydbergDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [-0.5 * (2 * np.pi), -0.5 * (2 * np.pi), 0.5 * (2 * np.pi), 0.5 * (2 * np.pi)],
-                [qml.Identity(0), qml.Identity(3), qml.PauliZ(0), qml.PauliZ(3)],
+                [qp.Identity(0), qp.Identity(3), qp.PauliZ(0), qp.PauliZ(3)],
             ),
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
-            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
-            qml.Hamiltonian(
+            qp.Hamiltonian([0.5, 0.5], [qp.PauliX(1), qp.PauliX(2)]),
+            qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(1), qp.PauliY(2)]),
+            qp.Hamiltonian([0.5, 0.5], [qp.PauliX(0), qp.PauliX(3)]),
+            qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(0), qp.PauliY(3)]),
+            qp.Hamiltonian(
                 [-0.5 * (2 * np.pi), -0.5 * (2 * np.pi), 0.5 * (2 * np.pi), 0.5 * (2 * np.pi)],
-                [qml.Identity(1), qml.Identity(2), qml.PauliZ(1), qml.PauliZ(2)],
+                [qp.Identity(1), qp.Identity(2), qp.PauliZ(1), qp.PauliZ(2)],
             ),
         ]
         coeffs_expected = [
@@ -174,7 +174,7 @@ class TestRydbergDrive:
         # Hamiltonian is as expected
         actual = Hd([0.5, -0.5], t=5).simplify()
         expected = H_expected([0.5, -0.5], t=5).simplify()
-        qml.assert_equal(actual, expected)
+        qp.assert_equal(actual, expected)
 
     def test_no_amplitude(self):
         """Test that when amplitude is not specified, the drive term is correctly defined."""
@@ -186,9 +186,9 @@ class TestRydbergDrive:
         Hd = rydberg_drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
 
         ops_expected = [
-            qml.Hamiltonian(
+            qp.Hamiltonian(
                 [-0.5 * (2 * np.pi), -0.5 * (2 * np.pi), 0.5 * (2 * np.pi), 0.5 * (2 * np.pi)],
-                [qml.Identity(0), qml.Identity(3), qml.PauliZ(0), qml.PauliZ(3)],
+                [qp.Identity(0), qp.Identity(3), qp.PauliZ(0), qp.PauliZ(3)],
             )
         ]
         coeffs_expected = [f]
@@ -196,14 +196,14 @@ class TestRydbergDrive:
 
         actual = Hd([0.1], 10).simplify()
         expected = H_expected([0.1], 10).simplify()
-        qml.assert_equal(actual, expected)
+        qp.assert_equal(actual, expected)
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([0, 3])
         assert Hd.settings is None
         assert len(Hd.coeffs) == 1
         assert Hd.coeffs[0] is f
         assert len(Hd.ops) == 1
-        qml.assert_equal(Hd.ops[0], ops_expected[0])
+        qp.assert_equal(Hd.ops[0], ops_expected[0])
 
     def test_no_detuning(self):
         """Test that when detuning not specified, the drive term is correctly defined."""
@@ -214,8 +214,8 @@ class TestRydbergDrive:
         Hd = rydberg_drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
 
         ops_expected = [
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
+            qp.Hamiltonian([0.5, 0.5], [qp.PauliX(0), qp.PauliX(3)]),
+            qp.Hamiltonian([-0.5, -0.5], [qp.PauliY(0), qp.PauliY(3)]),
         ]
         coeffs_expected = [
             AmplitudeAndPhase(np.cos, f, 1),
@@ -223,14 +223,14 @@ class TestRydbergDrive:
         ]
         H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
-        qml.assert_equal(Hd([0.1], 10), H_expected([0.1], 10))
+        qp.assert_equal(Hd([0.1], 10), H_expected([0.1], 10))
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([0, 3])
         assert Hd.settings is None
         assert all(isinstance(coeff, AmplitudeAndPhase) for coeff in Hd.coeffs)
         assert len(Hd.coeffs) == 2
         for op, op_expected in zip(Hd.ops, ops_expected):
-            qml.assert_equal(op, op_expected)
+            qp.assert_equal(op, op_expected)
 
     def test_no_amplitude_no_detuning(self):
         """Test that the correct error is raised if both amplitude and detuning are trivial."""
@@ -306,21 +306,21 @@ class TestIntegration:
 
         Ht = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hd + Ht)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + Ht)(params, ts)
+            return qp.expval(H_obj)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode_jit(params):
-            qml.evolve(Hd + Ht)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + Ht)(params, ts)
+            return qp.expval(H_obj)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
         res = qnode(params)
@@ -354,21 +354,21 @@ class TestIntegration:
         H2 = rydberg_drive(amplitude=fc, phase=3 * jnp.pi, detuning=0, wires=4)
         H3 = rydberg_drive(amplitude=0, phase=0, detuning=fd, wires=[3, 0])
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + H1 + H2 + H3)(params, ts)
+            return qp.expval(H_obj)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode_jit(params):
-            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(Hd + H1 + H2 + H3)(params, ts)
+            return qp.expval(H_obj)
 
         params = (
             jnp.ones(5),
@@ -402,21 +402,21 @@ class TestIntegration:
 
         H_drive = rydberg_drive(amplitude=fa, phase=fb, detuning=fc, wires=1)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
-        H_obj = sum(qml.PauliZ(i) for i in range(2))
+        H_obj = sum(qp.PauliZ(i) for i in range(2))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(H_drift + H_drive)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(H_drift + H_drive)(params, ts)
+            return qp.expval(H_obj)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def qnode_jit(params):
-            qml.evolve(H_drift + H_drive)(params, ts)
-            return qml.expval(H_obj)
+            qp.evolve(H_drift + H_drive)(params, ts)
+            return qp.expval(H_obj)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
         res = qnode(params)
@@ -433,26 +433,26 @@ class TestIntegration:
 
         def exact(H, H_obj, t):
             psi0 = jnp.eye(2 ** len(H.wires))[0]
-            U_exact = jax.scipy.linalg.expm(-1j * t * qml.matrix(H([], 1)))
+            U_exact = jax.scipy.linalg.expm(-1j * t * qp.matrix(H([], 1)))
             return (
-                psi0 @ U_exact.conj().T @ qml.matrix(H_obj, wire_order=[0, 1, 2]) @ U_exact @ psi0
+                psi0 @ U_exact.conj().T @ qp.matrix(H_obj, wire_order=[0, 1, 2]) @ U_exact @ psi0
             )
 
-        default_qubit = qml.device("default.qubit", wires=3)
+        default_qubit = qp.device("default.qubit", wires=3)
 
         coordinates = [[0, 0], [0, 5], [5, 0]]
 
-        H_i = qml.pulse.rydberg_interaction(coordinates)
+        H_i = qp.pulse.rydberg_interaction(coordinates)
 
-        H = H_i + qml.pulse.rydberg_drive(3, 2, 4, [0, 1, 2])
+        H = H_i + qp.pulse.rydberg_drive(3, 2, 4, [0, 1, 2])
 
-        H_obj = qml.PauliZ(0)
+        H_obj = qp.PauliZ(0)
 
         @jax.jit
-        @qml.qnode(default_qubit, interface="jax")
+        @qp.qnode(default_qubit, interface="jax")
         def circuit(t):
-            qml.evolve(H)([], t)
-            return qml.expval(H_obj)
+            qp.evolve(H)([], t)
+            return qp.expval(H_obj)
 
         t = jnp.linspace(0.05, 1.55, 151)
 

@@ -27,8 +27,8 @@ from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.tape import QuantumTape
 
 
-class MyOp(qml.RX):
-    """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
+class MyOp(qp.RX):
+    """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
     has_adjoint = False
@@ -44,26 +44,26 @@ def amp1(p, t):
     return p[0] * t + p[1]
 
 
-H0 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp0 * qml.PauliY(1)
+H0 = qp.PauliX(1) + amp0 * qp.PauliZ(0) + amp0 * qp.PauliY(1)
 params0_ = [0.5, 0.5]
 
-H1 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp1 * qml.PauliY(1)
+H1 = qp.PauliX(1) + amp0 * qp.PauliZ(0) + amp1 * qp.PauliY(1)
 params1_ = (0.5, [0.5, 0.5])
 
 example_pytree_evolutions = [
-    qml.pulse.ParametrizedEvolution(H0),
-    qml.pulse.ParametrizedEvolution(H0, params0_),
-    qml.pulse.ParametrizedEvolution(H0, t=0.3),
-    qml.pulse.ParametrizedEvolution(H0, params0_, t=0.5),
-    qml.pulse.ParametrizedEvolution(H0, params0_, t=[0.5, 1.0]),
-    qml.pulse.ParametrizedEvolution(H0, params0_, t=0.5, return_intermediate=True),
-    qml.pulse.ParametrizedEvolution(
+    qp.pulse.ParametrizedEvolution(H0),
+    qp.pulse.ParametrizedEvolution(H0, params0_),
+    qp.pulse.ParametrizedEvolution(H0, t=0.3),
+    qp.pulse.ParametrizedEvolution(H0, params0_, t=0.5),
+    qp.pulse.ParametrizedEvolution(H0, params0_, t=[0.5, 1.0]),
+    qp.pulse.ParametrizedEvolution(H0, params0_, t=0.5, return_intermediate=True),
+    qp.pulse.ParametrizedEvolution(
         H0, params0_, t=0.5, return_intermediate=True, complementary=True
     ),
-    qml.pulse.ParametrizedEvolution(
+    qp.pulse.ParametrizedEvolution(
         H0, params0_, t=0.5, return_intermediate=True, complementary=True, atol=1e-4, rtol=1e-4
     ),
-    qml.pulse.ParametrizedEvolution(
+    qp.pulse.ParametrizedEvolution(
         H0,
         params0_,
         t=0.5,
@@ -73,8 +73,8 @@ example_pytree_evolutions = [
         rtol=1e-4,
         dense=True,
     ),
-    qml.pulse.ParametrizedEvolution(H1, params1_, t=0.5),
-    qml.pulse.ParametrizedEvolution(H1, params1_, t=0.5, return_intermediate=True),
+    qp.pulse.ParametrizedEvolution(H1, params1_, t=0.5),
+    qp.pulse.ParametrizedEvolution(H1, params1_, t=0.5, return_intermediate=True),
 ]
 
 
@@ -96,16 +96,16 @@ def test_standard_validity():
     def f1(p, t):
         return p * t
 
-    H = f1 * qml.PauliY(0)
+    H = f1 * qp.PauliY(0)
     params = (0.5,)
 
-    ev = qml.pulse.ParametrizedEvolution(H, params, 0.5)
-    qml.ops.functions.assert_valid(ev, skip_pickle=True)
+    ev = qp.pulse.ParametrizedEvolution(H, params, 0.5)
+    qp.ops.functions.assert_valid(ev, skip_pickle=True)
 
 
 def time_independent_hamiltonian():
     """Create a time-independent Hamiltonian on two qubits."""
-    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+    ops = [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0), qp.PauliX(1)]
 
     def f1(params, t):
         return params  # constant
@@ -122,7 +122,7 @@ def time_dependent_hamiltonian():
     """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
     import jax.numpy as jnp
 
-    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+    ops = [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0), qp.PauliX(1)]
 
     def f1(params, t):
         return params * t
@@ -139,16 +139,16 @@ class TestInitialization:
     """Unit tests for the ParametrizedEvolution class."""
 
     @pytest.mark.parametrize(
-        "coeffs, params", [([1, 2], []), ([1, 2], None), ([qml.pulse.constant] * 2, [1, 2])]
+        "coeffs, params", [([1, 2], []), ([1, 2], None), ([qp.pulse.constant] * 2, [1, 2])]
     )
     def test_init(self, params, coeffs):
         """Test the initialization."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, params=params, t=2, dense=True)
 
         assert ev.H is H
-        assert qml.math.allequal(ev.t, [0, 2])
+        assert qp.math.allequal(ev.t, [0, 2])
 
         assert ev.wires == H.wires
         assert ev.num_wires is None
@@ -156,14 +156,14 @@ class TestInitialization:
         assert ev.id is None
 
         exp_params = [] if params is None else params
-        assert qml.math.allequal(ev.data, exp_params)
-        assert qml.math.allequal(ev.parameters, exp_params)
+        assert qp.math.allequal(ev.data, exp_params)
+        assert qp.math.allequal(ev.parameters, exp_params)
         assert ev.num_params == len(exp_params)
         assert ev.dense is True
 
     def test_set_dense(self):
         """Test that flag dense is set correctly"""
-        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
         coeffs = [1, 2, 3]
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, params=None, t=2)
@@ -181,7 +181,7 @@ class TestInitialization:
     @pytest.mark.parametrize("dense_bool", [True, False])
     def test_updating_dense_in_call(self, dense_bool):
         """Test that the flag dense updated correctly if set when calling ParametrizedEvolution"""
-        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
         coeffs = [1, 2, 3]
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, params=None, t=2)
@@ -201,7 +201,7 @@ class TestInitialization:
         """Test that the keyword arguments return_intermediate and complementary are taken into
         account correctly at initialization and when calling. This includes testing
         inheritance when calling without explicitly providing these kwargs."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         t = [0.1, 0.2, 0.9]  # avoid warning because of simple time argument+return_intermediate
         H = ParametrizedHamiltonian(coeffs, ops)
@@ -225,7 +225,7 @@ class TestInitialization:
     @pytest.mark.parametrize("len_t", [3, 8])
     def test_batch_size_with_return_intermediate(self, len_t):
         """Test that the batch size is correctly set for intermediate time values."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         t = np.linspace(0, 1, len_t)
         H = ParametrizedHamiltonian(coeffs, ops)
@@ -241,7 +241,7 @@ class TestInitialization:
     def test_warns_with_complementary_without_ret_intermediate(self):
         """Test that a warning is raised if the keyword argument complementary is activated
         without return_intermediate being activated."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
         with pytest.warns(UserWarning, match="The keyword argument complementary"):
@@ -254,7 +254,7 @@ class TestInitialization:
 
     def test_odeint_kwargs(self):
         """Test the initialization with odeint kwargs."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, params=[], t=2, mxstep=10, hmax=1, atol=1e-3, rtol=1e-6)
@@ -264,7 +264,7 @@ class TestInitialization:
     def test_update_attributes(self):
         """Test that the ``ParametrizedEvolution`` attributes can be updated
         using the ``__call__`` method."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, mxstep=10)
@@ -279,20 +279,20 @@ class TestInitialization:
         new_ev = ev(params, t, atol=1e-6, rtol=1e-4)
 
         assert new_ev is not ev
-        assert qml.math.allequal(new_ev.parameters, params)
+        assert qp.math.allequal(new_ev.parameters, params)
         assert new_ev.num_params == 0
-        assert qml.math.allequal(new_ev.t, [0, 6])
+        assert qp.math.allequal(new_ev.t, [0, 6])
         assert new_ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
 
     def test_update_attributes_inside_queuing_context(self):
         """Make sure that updating a ``ParametrizedEvolution`` inside a queuing context, the initial
         operator is removed from the queue."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
 
         with QuantumTape() as tape:
-            op = qml.evolve(H)
+            op = qp.evolve(H)
             op2 = op(params=[], t=6)
 
         assert len(tape) == 1
@@ -303,7 +303,7 @@ class TestInitialization:
         """Test the initialization."""
         import jax.numpy as jnp
 
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
         t = {
@@ -312,15 +312,15 @@ class TestInitialization:
             "numpy": np.arange(0, 10, 0.01),
         }[time_interface]
         ev = ParametrizedEvolution(H=H, params=[], t=t)
-        exp_time_type = {"jax": jnp.ndarray, "python": qml.numpy.ndarray, "numpy": np.ndarray}
+        exp_time_type = {"jax": jnp.ndarray, "python": qp.numpy.ndarray, "numpy": np.ndarray}
 
         assert isinstance(ev.t, exp_time_type[time_interface])
-        assert qml.math.allclose(ev.t, t)
+        assert qp.math.allclose(ev.t, t)
 
     def test_has_matrix(self):
         """Test that a parametrized evolution has ``has_matrix=True`` only when `t` and `params` are
         defined."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
+        ops = [qp.PauliX(0), qp.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H)
@@ -331,7 +331,7 @@ class TestInitialization:
     def test_evolve_with_operator_without_matrix_raises_error(self):
         """Test that an error is raised when an ``ParametrizedEvolution`` operator is initialized with a
         ``ParametrizedHamiltonian`` that contains an operator without a matrix defined."""
-        ops = [qml.PauliX(0), MyOp(phi=0, wires=0)]
+        ops = [qp.PauliX(0), MyOp(phi=0, wires=0)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
         with pytest.raises(
@@ -343,8 +343,8 @@ class TestInitialization:
     def test_hash_with_data(self):
         """Test that the hash of a ParametrizedEvolution takes all attributes into account."""
 
-        H_0 = 0.2 * qml.PauliZ(0) + qml.pulse.constant * (qml.PauliX(0) @ qml.PauliY(1))
-        H_1 = 0.2 * qml.PauliX(0) + qml.pulse.constant * (qml.PauliX(0) @ qml.PauliY(1))
+        H_0 = 0.2 * qp.PauliZ(0) + qp.pulse.constant * (qp.PauliX(0) @ qp.PauliY(1))
+        H_1 = 0.2 * qp.PauliX(0) + qp.pulse.constant * (qp.PauliX(0) @ qp.PauliY(1))
 
         params_0 = [np.array(0.4)]
         params_1 = [np.array(0.43)]
@@ -383,12 +383,12 @@ class TestInitialization:
     def test_label(self, params):
         """Test that the label displays correctly with and without decimal and base_label"""
         H = (
-            qml.PauliX(1)
-            + qml.pulse.constant * qml.PauliY(0)
-            + np.polyval * qml.PauliY(1)
-            + np.polyval * qml.PauliY(1)
+            qp.PauliX(1)
+            + qp.pulse.constant * qp.PauliY(0)
+            + np.polyval * qp.PauliY(1)
+            + np.polyval * qp.PauliY(1)
         )
-        op = qml.evolve(H)(params, 2)
+        op = qp.evolve(H)(params, 2)
         cache = {"matrices": []}
 
         assert op.label() == "Parametrized\nEvolution"
@@ -406,12 +406,12 @@ class TestInitialization:
     def test_label_no_params(self):
         """Test that the label displays correctly with and without decimal and base_label"""
         H = (
-            qml.PauliX(1)
-            + qml.pulse.constant * qml.PauliY(0)
-            + np.polyval * qml.PauliY(1)
-            + np.polyval * qml.PauliY(1)
+            qp.PauliX(1)
+            + qp.pulse.constant * qp.PauliY(0)
+            + np.polyval * qp.PauliY(1)
+            + np.polyval * qp.PauliY(1)
         )
-        op = qml.evolve(H)
+        op = qp.evolve(H)
         cache = {"matrices": []}
 
         assert op.label() == "Parametrized\nEvolution"
@@ -425,17 +425,17 @@ class TestInitialization:
         of being added to the cache a second time"""
 
         H = (
-            qml.PauliX(1)
-            + qml.pulse.constant * qml.PauliY(0)
-            + np.polyval * qml.PauliY(1)
-            + np.polyval * qml.PauliY(2)
+            qp.PauliX(1)
+            + qp.pulse.constant * qp.PauliY(0)
+            + np.polyval * qp.PauliY(1)
+            + np.polyval * qp.PauliY(2)
         )
         cache = {"matrices": []}
 
         params1 = [3, np.array([0.23, 0.47, 5]), np.array([3.4, 6.8])]
         params2 = [5.67, np.array([0.23, 0.47, 5]), np.array([[3.7, 6.2], [1.2, 4.6]])]
-        op1 = qml.evolve(H)(params1, 2)
-        op2 = qml.evolve(H)(params2, 2)
+        op1 = qp.evolve(H)(params1, 2)
+        op2 = qp.evolve(H)(params2, 2)
 
         assert (
             op1.label(decimals=2, cache=cache)
@@ -464,8 +464,8 @@ class TestInitialization:
         params = (np.array(0.2),)
         with pytest.raises(ValueError, match="The length of the params argument and the number"):
             # Instantiating
-            qml.pulse.ParametrizedEvolution(H, params=params, t=0.2)
-        op = qml.evolve(H)
+            qp.pulse.ParametrizedEvolution(H, params=params, t=0.2)
+        op = qp.evolve(H)
         with pytest.raises(ValueError, match="The length of the params argument and the number"):
             # Calling
             op(params, 0.2)
@@ -487,8 +487,8 @@ class TestMatrix:
         t = np.arange(0, 4, 0.001)
         params = [1, 2]
         ev = ParametrizedEvolution(H=H, params=params, t=t, hmax=1, mxstep=1e4)
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=max(t))) * max(t))
-        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
+        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=max(t))) * max(t))
+        assert qp.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
     @pytest.mark.slow
     def test_time_dependent_hamiltonian(self):
@@ -506,11 +506,11 @@ class TestMatrix:
 
         def generator(params):
             for ti in t:
-                yield jax.scipy.linalg.expm(-1j * 0.001 * qml.matrix(H(params, t=ti)))
+                yield jax.scipy.linalg.expm(-1j * 0.001 * qp.matrix(H(params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
-        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
+        assert qp.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
     @pytest.mark.parametrize("comp", [False, True])
     @pytest.mark.parametrize("len_t", [2, 6])
@@ -531,12 +531,12 @@ class TestMatrix:
         assert isinstance(matrices, jnp.ndarray)
         assert matrices.shape == (len_t, 4, 4)
 
-        H_mat = qml.matrix(H(params, t=t[-1]))
+        H_mat = qp.matrix(H(params, t=t[-1]))
         if comp:
-            true_matrices = [qml.math.expm(-1j * H_mat * (t[-1] - _t)) for _t in t]
+            true_matrices = [qp.math.expm(-1j * H_mat * (t[-1] - _t)) for _t in t]
         else:
-            true_matrices = [qml.math.expm(-1j * H_mat * (_t - t[0])) for _t in t]
-        assert qml.math.allclose(matrices, true_matrices, atol=1e-6, rtol=0.0)
+            true_matrices = [qp.math.expm(-1j * H_mat * (_t - t[0])) for _t in t]
+        assert qp.math.allclose(matrices, true_matrices, atol=1e-6, rtol=0.0)
 
 
 @pytest.mark.jax
@@ -554,21 +554,21 @@ class TestIntegration:
             time = jnp.array(time)
         elif time_interface == "numpy":
             time = np.array(time)
-        H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
+        H = qp.pulse.ParametrizedHamiltonian([2], [qp.PauliX(0)])
 
         dev = DefaultQubit(wires=1)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(t):
-            qml.evolve(H)([], t)
-            return qml.expval(qml.PauliZ(0))
+            qp.evolve(H)([], t)
+            return qp.expval(qp.PauliZ(0))
 
         if use_jit:
             circuit = jax.jit(circuit)
 
         res = circuit(time)
-        duration = time if qml.math.ndim(time) == 0 else time[1] - time[0]
-        assert qml.math.isclose(res, qml.math.cos(4 * duration))
+        duration = time if qp.math.ndim(time) == 0 else time[1] - time[0]
+        assert qp.math.isclose(res, qp.math.cos(4 * duration))
 
     # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
@@ -582,31 +582,31 @@ class TestIntegration:
 
         t = 4
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
-            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+            return qp.expval(qp.PauliX(0) @ qp.PauliX(1))
 
         @jax.jit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
-            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+            return qp.expval(qp.PauliX(0) @ qp.PauliX(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def true_circuit(params):
-            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+            true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
-            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+            return qp.expval(qp.PauliX(0) @ qp.PauliX(1))
 
         params = jnp.array([1.0, 2.0])
 
-        assert qml.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
-        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
-        assert qml.math.allclose(
+        assert qp.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
+        assert qp.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
+        assert qp.math.allclose(
             jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
 
@@ -627,33 +627,33 @@ class TestIntegration:
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+                yield jax.scipy.linalg.expm(-1j * time_step * qp.matrix(H(params, t=ti)))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         @jax.jit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
             QubitUnitary(U=true_mat, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         params = jnp.array([1.0, 2.0])
 
-        assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
-        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
-        assert qml.math.allclose(
+        assert qp.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
+        assert qp.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
+        assert qp.math.allclose(
             jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
 
@@ -669,7 +669,7 @@ class TestIntegration:
         def f2(params, t):
             return params  # constant
 
-        ops = [qml.PauliX("a"), qml.PauliZ("b"), qml.PauliY("a"), qml.PauliX("b")]
+        ops = [qp.PauliX("a"), qp.PauliZ("b"), qp.PauliY("a"), qp.PauliX("b")]
         coeffs = [f1, f2, 4, 9]
         H = ParametrizedHamiltonian(coeffs, ops)
 
@@ -677,31 +677,31 @@ class TestIntegration:
 
         t = 4
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
-            return qml.expval(qml.PauliX("a") @ qml.PauliX("b"))
+            return qp.expval(qp.PauliX("a") @ qp.PauliX("b"))
 
         @jax.jit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
-            return qml.expval(qml.PauliX("a") @ qml.PauliX("b"))
+            return qp.expval(qp.PauliX("a") @ qp.PauliX("b"))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def true_circuit(params):
-            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+            true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
-            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+            return qp.expval(qp.PauliX(0) @ qp.PauliX(1))
 
         params = jnp.array([1.0, 2.0])
 
-        assert qml.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
-        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
-        assert qml.math.allclose(
+        assert qp.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
+        assert qp.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
+        assert qp.math.allclose(
             jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
 
@@ -719,37 +719,37 @@ class TestIntegration:
             return jnp.sin(t) * (p - 1)
 
         coeffs = [1, f1, f2]
-        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliX(2)]
-        H1_ = qml.dot(coeffs, ops)
+        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliX(2)]
+        H1_ = qp.dot(coeffs, ops)
 
         def f3(p, t):
             return jnp.cos(t) * (p + 1)
 
         coeffs = [7, f3]
-        ops = [qml.PauliX(0), qml.PauliX(2)]
-        H2_ = qml.dot(coeffs, ops)
+        ops = [qp.PauliX(0), qp.PauliX(2)]
+        H2_ = qp.dot(coeffs, ops)
 
         dev = DefaultQubit(wires=8)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit1(params):
-            qml.evolve(H1_)(params[0], t=2)
-            qml.evolve(H2_)(params[1], t=2)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            qp.evolve(H1_)(params[0], t=2)
+            qp.evolve(H2_)(params[1], t=2)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit2(params):
-            qml.evolve(H1_ + H2_)(params, t=2)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            qp.evolve(H1_ + H2_)(params, t=2)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1) @ qp.PauliZ(2))
 
         params1 = [(1.0, 2.0), (3.0,)]
         params2 = [1.0, 2.0, 3.0]
 
-        assert qml.math.allclose(circuit1(params1), circuit2(params2), atol=5e-4)
-        assert qml.math.allclose(
-            qml.math.concatenate(jax.grad(circuit1)(params1)),
+        assert qp.math.allclose(circuit1(params1), circuit2(params2), atol=5e-4)
+        assert qp.math.allclose(
+            qp.math.concatenate(jax.grad(circuit1)(params1)),
             jax.grad(circuit2)(params2),
             atol=5e-4,
         )
@@ -763,19 +763,19 @@ class TestIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        mixed = qml.device("default.mixed", wires=range(3))
-        default = qml.device("default.qubit", wires=range(3))
+        mixed = qp.device("default.mixed", wires=range(3))
+        default = qp.device("default.qubit", wires=range(3))
 
-        coeff = [qml.pulse.pwc(5.0), qml.pulse.pwc(5.0)]
-        ops = [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(1) @ qml.PauliY(2)]
-        H_pulse = qml.dot(coeff, ops)
+        coeff = [qp.pulse.pwc(5.0), qp.pulse.pwc(5.0)]
+        ops = [qp.PauliX(0) @ qp.PauliX(1), qp.PauliY(1) @ qp.PauliY(2)]
+        H_pulse = qp.dot(coeff, ops)
 
         def circuit(x):
-            qml.evolve(H_pulse, dense=False)(x, 5.0)
-            return qml.expval(qml.PauliZ(0))
+            qp.evolve(H_pulse, dense=False)(x, 5.0)
+            return qp.expval(qp.PauliZ(0))
 
-        qnode_def = qml.QNode(circuit, default, interface="jax")
-        qnode_mix = qml.QNode(circuit, mixed, interface="jax")
+        qnode_def = qp.QNode(circuit, default, interface="jax")
+        qnode_mix = qp.QNode(circuit, mixed, interface="jax")
 
         x = [jnp.arange(3, dtype=float)] * 2
         res_def = qnode_def(x)
@@ -784,8 +784,8 @@ class TestIntegration:
         res_mix = qnode_mix(x)
         grad_mix = jax.grad(qnode_mix)(x)
 
-        assert qml.math.isclose(res_def, res_mix, atol=1e-4)
-        assert qml.math.allclose(grad_def, grad_mix, atol=1e-4)
+        assert qp.math.isclose(res_def, res_mix, atol=1e-4)
+        assert qp.math.allclose(grad_def, grad_mix, atol=1e-4)
 
     def test_jitted_unitary_differentiation_sparse(self):
         """Test that the unitary can be differentiated with and without jitting using sparse matrices"""
@@ -795,15 +795,15 @@ class TestIntegration:
         jax.config.update("jax_enable_x64", True)
 
         def U(params):
-            H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H, dense=False)(params, t=10.0)
-            return qml.matrix(Um)
+            H = jnp.polyval * qp.PauliZ(0)
+            Um = qp.evolve(H, dense=False)(params, t=10.0)
+            return qp.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)
         jac = jax.jacobian(U, holomorphic=True)(params)
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
-        assert qml.math.allclose(jac, jac_jit)
+        assert qp.math.allclose(jac, jac_jit)
 
     def test_jitted_unitary_differentiation_dense(self):
         """Test that the unitary can be differentiated with and without jitting using dense matrices"""
@@ -813,15 +813,15 @@ class TestIntegration:
         jax.config.update("jax_enable_x64", True)
 
         def U(params):
-            H = jnp.polyval * qml.PauliZ(0)
-            Um = qml.evolve(H, dense=True)(params, t=10.0)
-            return qml.matrix(Um)
+            H = jnp.polyval * qp.PauliZ(0)
+            Um = qp.evolve(H, dense=True)(params, t=10.0)
+            return qp.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)
         jac = jax.jacobian(U, holomorphic=True)(params)
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
-        assert qml.math.allclose(jac, jac_jit)
+        assert qp.math.allclose(jac, jac_jit)
 
 
 @pytest.mark.jax
@@ -833,17 +833,17 @@ def test_map_wires():
         return p * t
 
     coeffs = [2, 4, f1]
-    ops = [qml.PauliX("a"), qml.PauliX("b"), qml.PauliX("c")]
+    ops = [qp.PauliX("a"), qp.PauliX("b"), qp.PauliX("c")]
 
-    H = qml.dot(coeffs, ops)
+    H = qp.dot(coeffs, ops)
 
-    op = qml.evolve(H)([3], 2)
+    op = qp.evolve(H)([3], 2)
 
     wire_map = {"a": 3, "b": 5, "c": 7}
     new_op = op.map_wires(wire_map)
 
-    assert op.wires == qml.wires.Wires(["a", "b", "c"])
-    assert op.H.wires == qml.wires.Wires(["a", "b", "c"])
+    assert op.wires == qp.wires.Wires(["a", "b", "c"])
+    assert op.H.wires == qp.wires.Wires(["a", "b", "c"])
 
-    assert new_op.wires == qml.wires.Wires([3, 5, 7])
-    assert new_op.H.wires == qml.wires.Wires([3, 5, 7])
+    assert new_op.wires == qp.wires.Wires([3, 5, 7])
+    assert new_op.H.wires == qp.wires.Wires([3, 5, 7])

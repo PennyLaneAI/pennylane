@@ -41,13 +41,13 @@ class TestOldRX:
         grouping = sys.modules["pennylane.pauli.grouping.group_observables"]
         monkeypatch.setattr(grouping, "new_rx", False)
 
-        observables = [qml.X(0)]
+        observables = [qp.X(0)]
         with pytest.raises(ValueError, match="not supported in this version of Rustworkx"):
             PauliGroupingStrategy(observables, graph_colourer=new_colourer)
 
     def test_old_rx_produces_right_results(self, monkeypatch):
         """Test that the results produced with an older rx version is the same as with lf"""
-        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        observables = [qp.X(0) @ qp.Z(1), qp.Z(0), qp.X(1)]
 
         new_groupper = PauliGroupingStrategy(observables, graph_colourer="lf")
         new_partitions = new_groupper.partition_observables()
@@ -149,7 +149,7 @@ class TestPauliGroupingStrategy:
 
     def test_wrong_length_of_custom_indices(self):
         """Test that an error is raised if the length of indices does not match the length of observables"""
-        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        observables = [qp.X(0) @ qp.Z(1), qp.Z(0), qp.X(1)]
         groupper = PauliGroupingStrategy(observables=observables)
 
         custom_indices = [1, 3, 5, 7]
@@ -159,7 +159,7 @@ class TestPauliGroupingStrategy:
 
     def test_custom_indices_partition(self):
         """Test that a custom list indices is partitioned according to the observables they correspond to."""
-        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        observables = [qp.X(0) @ qp.Z(1), qp.Z(0), qp.X(1)]
         groupper = PauliGroupingStrategy(observables=observables)
 
         custom_indices = [1, 3, 5]
@@ -185,11 +185,11 @@ class TestPauliGroupingStrategy:
 observables_list = [
     [PauliX(0) @ PauliZ(1), PauliY(2) @ PauliZ(1), PauliX(1), PauliY(0), PauliZ(1) @ PauliZ(2)],
     [
-        qml.s_prod(1.5, qml.prod(PauliX(0), PauliZ(1))),
-        qml.prod(PauliY(2), PauliZ(1)),
+        qp.s_prod(1.5, qp.prod(PauliX(0), PauliZ(1))),
+        qp.prod(PauliY(2), PauliZ(1)),
         PauliX(1),
         PauliY(0),
-        qml.prod(PauliZ(1), PauliZ(2)),
+        qp.prod(PauliZ(1), PauliZ(2)),
     ],
     [
         Identity(1) @ Identity(0),
@@ -200,12 +200,12 @@ observables_list = [
         PauliX(0) @ PauliX(1),
     ],
     [
-        qml.prod(Identity(1), Identity(0)),
-        qml.prod(PauliX(1), PauliY(0), Identity(2)),
+        qp.prod(Identity(1), Identity(0)),
+        qp.prod(PauliX(1), PauliY(0), Identity(2)),
         PauliZ(2),
-        qml.s_prod(-2.0, Identity(0)),
-        qml.prod(PauliZ(2), Identity(0)),
-        qml.prod(PauliX(0), PauliX(1)),
+        qp.s_prod(-2.0, Identity(0)),
+        qp.prod(PauliZ(2), Identity(0)),
+        qp.prod(PauliX(0), PauliX(1)),
     ],
     [
         PauliX("a") @ Identity("b"),
@@ -214,10 +214,10 @@ observables_list = [
         PauliZ("a") @ PauliZ("b") @ PauliZ("c"),
     ],
     [
-        qml.prod(PauliX("a"), Identity("b")),
-        qml.s_prod(0.5, qml.prod(PauliX("a"), PauliZ("b"))),
-        qml.s_prod(0.5, qml.prod(PauliX("b"), PauliZ("a"))),
-        qml.prod(PauliZ("a"), PauliZ("b") @ PauliZ("c")),
+        qp.prod(PauliX("a"), Identity("b")),
+        qp.s_prod(0.5, qp.prod(PauliX("a"), PauliZ("b"))),
+        qp.s_prod(0.5, qp.prod(PauliX("b"), PauliZ("a"))),
+        qp.prod(PauliZ("a"), PauliZ("b") @ PauliZ("c")),
     ],
     [PauliX([(0, 0)]), PauliZ([(0, 0)])],
 ]
@@ -453,7 +453,7 @@ class TestGroupObservables:
     def test_return_list_coefficients(self):
         """Tests that if the coefficients are given as a list, the groups
         are likewise lists."""
-        obs = [qml.PauliX(0), qml.PauliX(1)]
+        obs = [qp.PauliX(0), qp.PauliX(1)]
         coeffs = [1.0, 2.0]
         _, grouped_coeffs = group_observables(obs, coeffs)
         assert isinstance(grouped_coeffs[0], list)
@@ -462,19 +462,19 @@ class TestGroupObservables:
         """Test that observables on no wires are stuck in the first group."""
 
         observables = [
-            qml.I(),
-            qml.X(0) @ qml.Y(1),
-            qml.Z(0),
-            2 * qml.I(),
+            qp.I(),
+            qp.X(0) @ qp.Y(1),
+            qp.Z(0),
+            2 * qp.I(),
         ]
 
         groups = group_observables(observables)
-        assert groups == [[qml.X(0) @ qml.Y(1), qml.I(), 2 * qml.I()], [qml.Z(0)]]
+        assert groups == [[qp.X(0) @ qp.Y(1), qp.I(), 2 * qp.I()], [qp.Z(0)]]
 
     def test_no_observables_with_wires(self):
         """Test when only observables with no wires are present."""
 
-        observables = [qml.I(), 2 * qml.I()]
+        observables = [qp.I(), 2 * qp.I()]
         groups = group_observables(observables)
         assert groups == [observables]
 
@@ -487,14 +487,14 @@ class TestGroupObservables:
         coefficients are tracked when provided."""
 
         observables = [
-            qml.X(0),
-            qml.Z(0),
-            2 * qml.I(),
-            qml.I() @ qml.I(),
+            qp.X(0),
+            qp.Z(0),
+            2 * qp.I(),
+            qp.I() @ qp.I(),
         ]
         coeffs = [1, 2, 3, 4]
         groups, out_coeffs = group_observables(observables, coeffs)
-        assert groups == [[qml.X(0), 2 * qml.I(), qml.I() @ qml.I()], [qml.Z(0)]]
+        assert groups == [[qp.X(0), 2 * qp.I(), qp.I() @ qp.I()], [qp.Z(0)]]
         assert out_coeffs == [[1, 3, 4], [2]]
 
 
@@ -503,22 +503,22 @@ class TestComputePartitionIndices:
 
     OBS_IDX_PARTITIONS = [
         (
-            [qml.I(), qml.X(0) @ qml.X(1), qml.Z(0) @ qml.Z(1), 2 * qml.I(), 2 * qml.Z(0)],
+            [qp.I(), qp.X(0) @ qp.X(1), qp.Z(0) @ qp.Z(1), 2 * qp.I(), 2 * qp.Z(0)],
             ((0, 1, 3), (2, 4)),
-            [[qml.I(), qml.X(0) @ qml.X(1), 2 * qml.I()], [qml.Z(0) @ qml.Z(1), 2 * qml.Z(0)]],
+            [[qp.I(), qp.X(0) @ qp.X(1), 2 * qp.I()], [qp.Z(0) @ qp.Z(1), 2 * qp.Z(0)]],
         ),
     ]
 
     def test_invalid_colouring_method(self):
         """Test that passing an invalid colouring method raises an error"""
-        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        observables = [qp.X(0) @ qp.Z(1), qp.Z(0), qp.X(1)]
         with pytest.raises(ValueError, match="Graph colouring method must be one of"):
             compute_partition_indices(observables=observables, method="recursive")
 
     def test_only_observables_without_wires(self):
         """Test that if none of the observables has wires, they are all in one single partition."""
 
-        observables = [qml.I(), 2 * qml.I()]
+        observables = [qp.I(), 2 * qp.I()]
         partition_indices = compute_partition_indices(observables=observables)
         assert partition_indices == (tuple(range(len(observables))),)
 
@@ -532,7 +532,7 @@ class TestComputePartitionIndices:
     def test_mixed_observables_qwc(self):
         """Test that if both observables with wires and without wires are present,
         the latter are appended on the first element of the former and the partitions are qwc."""
-        observables = [qml.I(), qml.X(0), qml.Z(0), 2 * qml.I(), 2 * qml.Z(0)]
+        observables = [qp.I(), qp.X(0), qp.Z(0), 2 * qp.I(), 2 * qp.Z(0)]
         partition_indices = compute_partition_indices(observables=observables, grouping_type="qwc")
         indices_no_wires = (0, 3)
         assert set(indices_no_wires) < set(partition_indices[0])
@@ -581,7 +581,7 @@ class TestComputePartitionIndices:
     @pytest.mark.parametrize("method", ("rlf", "lf", "dsatur", "gis"))
     def test_colouring_methods(self, method):
         """Test that all colouring methods return the correct results."""
-        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        observables = [qp.X(0) @ qp.Z(1), qp.Z(0), qp.X(1)]
         partition_indices = compute_partition_indices(
             observables, grouping_type="qwc", method=method
         )
@@ -600,7 +600,7 @@ class TestDifferentiable:
             _, grouped_coeffs = group_observables(obs, coeffs)
             return grouped_coeffs[select]
 
-        jac_fn = qml.jacobian(group)
+        jac_fn = qp.jacobian(group)
         assert pnp.allclose(
             jac_fn(coeffs, select=0), pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol
         )

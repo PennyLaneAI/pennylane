@@ -27,13 +27,13 @@ def test_trivial_center():
 
 
 DLA_CENTERS = (
-    ([qml.I()], [qml.I()]),  # just the identity
-    ([qml.I(), qml.X(0)], [qml.I(), qml.X(0)]),  # identity and some other operator
-    ([qml.X(0), qml.X(1)], [qml.X(0), qml.X(1)]),  # two non-overlapping wires
-    ([qml.X(0), qml.Y(1)], [qml.X(0), qml.Y(1)]),  # two non-overlapping wires with different ops
-    ([qml.X(0), qml.Y(0), qml.Z(0), qml.I()], [qml.I()]),  # non-trivial DLA, but trivial center
+    ([qp.I()], [qp.I()]),  # just the identity
+    ([qp.I(), qp.X(0)], [qp.I(), qp.X(0)]),  # identity and some other operator
+    ([qp.X(0), qp.X(1)], [qp.X(0), qp.X(1)]),  # two non-overlapping wires
+    ([qp.X(0), qp.Y(1)], [qp.X(0), qp.Y(1)]),  # two non-overlapping wires with different ops
+    ([qp.X(0), qp.Y(0), qp.Z(0), qp.I()], [qp.I()]),  # non-trivial DLA, but trivial center
     (
-        [qml.X(0) + qml.Y(0), qml.X(0) - qml.Y(0), qml.Z(0)],
+        [qp.X(0) + qp.Y(0), qp.X(0) - qp.Y(0), qp.Z(0)],
         [],
     ),  # non-trivial DLA, but trivial center
 )
@@ -61,9 +61,9 @@ def test_center_pauli_word(pauli):
     words = [{0: "X"}, {0: "X", 1: "X"}, {1: "Y"}, {0: "X", 1: "Z"}]
     ops = list(map(PauliWord, words))
     if pauli:
-        assert qml.center(ops, pauli=pauli) == [PauliWord({0: "X"})]
+        assert qp.center(ops, pauli=pauli) == [PauliWord({0: "X"})]
     else:
-        assert qml.center(ops, pauli=pauli) == [qml.X(0)]
+        assert qp.center(ops, pauli=pauli) == [qp.X(0)]
 
 
 @pytest.mark.parametrize("pauli", [False, True])
@@ -79,31 +79,31 @@ def test_center_pauli_sentence(pauli):
     ]
     sentences = list(map(PauliSentence, sentences))
     if pauli:
-        cent = qml.center(sentences, pauli=pauli)
+        cent = qp.center(sentences, pauli=pauli)
         assert isinstance(cent, list) and len(cent) == 1
         assert isinstance(cent[0], PauliSentence)
         assert PauliWord({0: "X"}) in cent[0]
     else:
-        cent = qml.center(sentences, pauli=pauli)
+        cent = qp.center(sentences, pauli=pauli)
         assert isinstance(cent, list) and len(cent) == 1
-        assert isinstance(cent[0], qml.ops.op_math.SProd)
-        assert cent[0].base == qml.X(0)
+        assert isinstance(cent[0], qp.ops.op_math.SProd)
+        assert cent[0].base == qp.X(0)
 
 
 c = 1 / np.sqrt(2)
 
 GENERATOR_CENTERS = (
-    ([qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)], [qml.X(0)]),
-    ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(0)], [qml.X(0)]),
-    ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(1)], []),
-    ([qml.X(0) @ qml.X(1), qml.Y(1), qml.Z(0)], []),
-    ([p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]], [p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]]),
-    ([qml.X(0), qml.X(1), sum(p(0) @ p(1) for p in [qml.Y, qml.Z])], [c * qml.X(0) + c * qml.X(1)]),
+    ([qp.X(0), qp.X(0) @ qp.X(1), qp.Y(1)], [qp.X(0)]),
+    ([qp.X(0) @ qp.X(1), qp.Y(1), qp.X(0)], [qp.X(0)]),
+    ([qp.X(0) @ qp.X(1), qp.Y(1), qp.X(1)], []),
+    ([qp.X(0) @ qp.X(1), qp.Y(1), qp.Z(0)], []),
+    ([p(0) @ p(1) for p in [qp.X, qp.Y, qp.Z]], [p(0) @ p(1) for p in [qp.X, qp.Y, qp.Z]]),
+    ([qp.X(0), qp.X(1), sum(p(0) @ p(1) for p in [qp.Y, qp.Z])], [c * qp.X(0) + c * qp.X(1)]),
 )
 
 
 @pytest.mark.parametrize("generators, true_res", GENERATOR_CENTERS)
 def test_center_dla(generators, true_res):
     """Test computing the center for a non-trivial DLA"""
-    g = qml.lie_closure(generators)
+    g = qp.lie_closure(generators)
     assert center(g) == true_res

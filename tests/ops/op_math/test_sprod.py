@@ -30,57 +30,57 @@ from pennylane.wires import Wires
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
 no_mat_ops = (
-    qml.Barrier,
-    qml.WireCut,
+    qp.Barrier,
+    qp.WireCut,
 )
 
 non_param_ops = (
-    (qml.Identity, gd.I),
-    (qml.Hadamard, gd.H),
-    (qml.PauliX, gd.X),
-    (qml.PauliY, gd.Y),
-    (qml.PauliZ, gd.Z),
-    (qml.S, gd.S),
-    (qml.T, gd.T),
-    (qml.SX, gd.SX),
-    (qml.CNOT, gd.CNOT),
-    (qml.CZ, gd.CZ),
-    (qml.CY, gd.CY),
-    (qml.SWAP, gd.SWAP),
-    (qml.ISWAP, gd.ISWAP),
-    (qml.SISWAP, gd.SISWAP),
-    (qml.CSWAP, gd.CSWAP),
-    (qml.Toffoli, gd.Toffoli),
+    (qp.Identity, gd.I),
+    (qp.Hadamard, gd.H),
+    (qp.PauliX, gd.X),
+    (qp.PauliY, gd.Y),
+    (qp.PauliZ, gd.Z),
+    (qp.S, gd.S),
+    (qp.T, gd.T),
+    (qp.SX, gd.SX),
+    (qp.CNOT, gd.CNOT),
+    (qp.CZ, gd.CZ),
+    (qp.CY, gd.CY),
+    (qp.SWAP, gd.SWAP),
+    (qp.ISWAP, gd.ISWAP),
+    (qp.SISWAP, gd.SISWAP),
+    (qp.CSWAP, gd.CSWAP),
+    (qp.Toffoli, gd.Toffoli),
 )
 
 param_ops = (
-    (qml.RX, gd.Rotx),
-    (qml.RY, gd.Roty),
-    (qml.RZ, gd.Rotz),
-    (qml.PhaseShift, gd.Rphi),
-    (qml.Rot, gd.Rot3),
-    (qml.U1, gd.U1),
-    (qml.U2, gd.U2),
-    (qml.U3, gd.U3),
-    (qml.CRX, gd.CRotx),
-    (qml.CRY, gd.CRoty),
-    (qml.CRZ, gd.CRotz),
-    (qml.CRot, gd.CRot3),
-    (qml.IsingXX, gd.IsingXX),
-    (qml.IsingYY, gd.IsingYY),
-    (qml.IsingZZ, gd.IsingZZ),
+    (qp.RX, gd.Rotx),
+    (qp.RY, gd.Roty),
+    (qp.RZ, gd.Rotz),
+    (qp.PhaseShift, gd.Rphi),
+    (qp.Rot, gd.Rot3),
+    (qp.U1, gd.U1),
+    (qp.U2, gd.U2),
+    (qp.U3, gd.U3),
+    (qp.CRX, gd.CRotx),
+    (qp.CRY, gd.CRoty),
+    (qp.CRZ, gd.CRotz),
+    (qp.CRot, gd.CRot3),
+    (qp.IsingXX, gd.IsingXX),
+    (qp.IsingYY, gd.IsingYY),
+    (qp.IsingZZ, gd.IsingZZ),
 )
 
 ops = (
-    (1.0, qml.PauliX(wires=0)),
-    (0.0, qml.PauliZ(wires=0)),
-    (1j, qml.Hadamard(wires=0)),
-    (1.23, qml.CNOT(wires=[0, 1])),
-    (4.56, qml.RX(1.23, wires=1)),
-    (1.0 + 2.0j, qml.Identity(wires=0)),
-    (10, qml.IsingXX(4.56, wires=[2, 3])),
-    (0j, qml.Toffoli(wires=[1, 2, 3])),
-    (42, qml.Rot(0.34, 1.0, 0, wires=0)),
+    (1.0, qp.PauliX(wires=0)),
+    (0.0, qp.PauliZ(wires=0)),
+    (1j, qp.Hadamard(wires=0)),
+    (1.23, qp.CNOT(wires=[0, 1])),
+    (4.56, qp.RX(1.23, wires=1)),
+    (1.0 + 2.0j, qp.Identity(wires=0)),
+    (10, qp.IsingXX(4.56, wires=[2, 3])),
+    (0j, qp.Toffoli(wires=[1, 2, 3])),
+    (42, qp.Rot(0.34, 1.0, 0, wires=0)),
 )
 
 ops_rep = (
@@ -101,7 +101,7 @@ class TestInitialization:
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
-        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), id=test_id)
+        sprod_op = s_prod(3.14, qp.RX(0.23, wires="a"), id=test_id)
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
@@ -115,11 +115,11 @@ class TestInitialization:
         assert sprod_op.num_params == 2
 
     def test_parameters(self):
-        sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
+        sprod_op = s_prod(9.87, qp.Rot(1.23, 4.0, 5.67, wires=1))
         assert sprod_op.parameters == [9.87, 1.23, 4.0, 5.67]
 
     def test_data(self):
-        sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
+        sprod_op = s_prod(9.87, qp.Rot(1.23, 4.0, 5.67, wires=1))
         assert sprod_op.data == (9.87, 1.23, 4.0, 5.67)
 
     def test_data_setter(self):
@@ -127,7 +127,7 @@ class TestInitialization:
         scalar, angles = (9.87, (1.23, 4.0, 5.67))
         old_data = (9.87, 1.23, 4.0, 5.67)
 
-        sprod_op = s_prod(scalar, qml.Rot(*angles, wires=1))
+        sprod_op = s_prod(scalar, qp.Rot(*angles, wires=1))
         assert sprod_op.data == old_data
 
         new_data = (1.23, 0.0, -1.0, -2.0)
@@ -138,13 +138,13 @@ class TestInitialization:
 
     def test_data_setter_shallow(self):
         """Test the setter method for data with a non-parametric base op."""
-        op = s_prod(0.1, qml.PauliX(0))
+        op = s_prod(0.1, qp.PauliX(0))
         op.data = (0.2,)
         assert op.data == (0.2,) == (op.scalar,)
 
     def test_data_setter_deep(self):
         """Test the setter method for data with a deep base operator."""
-        op = s_prod(0.1, qml.sum(qml.PauliX(0), qml.prod(qml.PauliY(0), qml.RX(0.2, 1))))
+        op = s_prod(0.1, qp.sum(qp.PauliX(0), qp.prod(qp.PauliY(0), qp.RX(0.2, 1))))
         assert op.data == (0.1, 0.2)
 
         new_data = (0.3, 0.4)
@@ -161,16 +161,16 @@ class TestInitialization:
 
         assert coeff == [scalar]
         for op1, op2 in zip(op2, [op]):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         "sprod_op, coeffs_exp, ops_exp",
         [
-            (qml.s_prod(1.23, qml.sum(qml.X(0), qml.Y(0))), [1.23, 1.23], [qml.X(0), qml.Y(0)]),
+            (qp.s_prod(1.23, qp.sum(qp.X(0), qp.Y(0))), [1.23, 1.23], [qp.X(0), qp.Y(0)]),
             (
-                qml.s_prod(1.23, qml.Hamiltonian([0.1, 0.2], [qml.X(0), qml.Y(0)])),
+                qp.s_prod(1.23, qp.Hamiltonian([0.1, 0.2], [qp.X(0), qp.Y(0)])),
                 [0.123, 0.246],
-                [qml.X(0), qml.Y(0)],
+                [qp.X(0), qp.Y(0)],
             ),
         ],
     )
@@ -179,26 +179,26 @@ class TestInitialization:
         coeffs, ops_actual = sprod_op.terms()
         assert coeffs == coeffs_exp
         for op1, op2 in zip(ops_actual, ops_exp):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
-        diag_sprod_op = SProd(1.23, qml.PauliX(wires=0))
+        diag_sprod_op = SProd(1.23, qp.PauliX(wires=0))
         diagonalizing_gates = diag_sprod_op.diagonalizing_gates()[0].matrix()
         true_diagonalizing_gates = (
-            qml.PauliX(wires=0).diagonalizing_gates()[0].matrix()
+            qp.PauliX(wires=0).diagonalizing_gates()[0].matrix()
         )  # scaling doesn't change diagonalizing gates
 
         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
     def test_base_gets_cast_to_new_type(self):
         """Test that Tensor and Hamiltonian instances get cast to new types."""
-        base_H = qml.Hamiltonian([1.1, 2.2], [qml.PauliZ(0), qml.PauliZ(1)])
-        op_H = qml.s_prod(2j, base_H)
+        base_H = qp.Hamiltonian([1.1, 2.2], [qp.PauliZ(0), qp.PauliZ(1)])
+        op_H = qp.s_prod(2j, base_H)
         assert isinstance(op_H.base, Sum)
 
-        base_T = qml.PauliZ(0) @ qml.PauliZ(1)
-        op_T = qml.s_prod(2j, base_T)
+        base_T = qp.PauliZ(0) @ qp.PauliZ(1)
+        op_T = qp.s_prod(2j, base_T)
         assert isinstance(op_T.base, Prod)
 
 
@@ -207,25 +207,25 @@ class TestMscMethods:
 
     def test_string_with_single_pauli(self):
         """Test the string representation with single pauli"""
-        res = qml.s_prod(0.5, qml.PauliX("a"))
+        res = qp.s_prod(0.5, qp.PauliX("a"))
         true_res = "0.5 * X('a')"
         assert repr(res) == true_res
 
-        res = qml.s_prod(0.5, qml.PauliX(0))
+        res = qp.s_prod(0.5, qp.PauliX(0))
         true_res = "0.5 * X(0)"
         assert repr(res) == true_res
 
     def test_string_with_sum_of_pauli(self):
         """Test the string representation with single pauli"""
-        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX("b")))
+        res = qp.s_prod(0.5, qp.sum(qp.PauliX("a"), qp.PauliX("b")))
         true_res = "0.5 * (X('a') + X('b'))"
         assert repr(res) == true_res
 
-        res = qml.s_prod(0.5, qml.sum(qml.PauliX(0), qml.PauliX(1)))
+        res = qp.s_prod(0.5, qp.sum(qp.PauliX(0), qp.PauliX(1)))
         true_res = "0.5 * (X(0) + X(1))"
         assert repr(res) == true_res
 
-        res = qml.s_prod(0.5, qml.sum(qml.PauliX("a"), qml.PauliX(1)))
+        res = qp.s_prod(0.5, qp.sum(qp.PauliX("a"), qp.PauliX(1)))
         true_res = "0.5 * (X('a') + X(1))"
         assert repr(res) == true_res
 
@@ -251,7 +251,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
-        qml.assert_equal(new_op, sprod_op)
+        qp.assert_equal(new_op, sprod_op)
         assert new_op is not sprod_op
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
@@ -275,14 +275,14 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        sprod_op = SProd(0.7, qml.RZ(0.23, wires="a"))
+        sprod_op = SProd(0.7, qp.RZ(0.23, wires="a"))
         assert sprod_op.has_matrix is True
 
     def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
         """Test that a scalar product with an operator that has `has_matrix=False`
         but is a Hamiltonian has `has_matrix=True`."""
 
-        H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
+        H = qp.Hamiltonian([0.5], [qp.PauliX(wires=1)])
         sprod_op = SProd(0.6, H)
         assert sprod_op.has_matrix is True
 
@@ -291,8 +291,8 @@ class TestMscMethods:
         has `has_matrix=True` as well."""
 
         # pylint: disable=too-few-public-methods
-        class MyOp(qml.RX):
-            """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
+        class MyOp(qp.RX):
+            """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
             has_matrix = False
 
@@ -304,7 +304,7 @@ class TestMscMethods:
         """Test that SProd defers has_diagonalizing_gates to base operator."""
 
         # pylint: disable=too-few-public-methods
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(qp.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -317,23 +317,23 @@ class TestDecomposition:
     def test_decomposition_coeff_norm_1(self):
         """Test that a decomposition exists when the coefficient is of norm 1."""
 
-        op = qml.s_prod(1j, qml.X(0))
+        op = qp.s_prod(1j, qp.X(0))
         assert op.has_decomposition
         decomp = op.decomposition()
 
         assert len(decomp) == 2
-        qml.assert_equal(decomp[0], qml.GlobalPhase(-np.pi / 2))
-        qml.assert_equal(decomp[1], qml.X(0))
+        qp.assert_equal(decomp[0], qp.GlobalPhase(-np.pi / 2))
+        qp.assert_equal(decomp[1], qp.X(0))
 
-        decomp_mat = qml.matrix(op.decomposition, wire_order=[0])()
-        assert qml.math.allclose(decomp_mat, 1j * qml.X.compute_matrix())
+        decomp_mat = qp.matrix(op.decomposition, wire_order=[0])()
+        assert qp.math.allclose(decomp_mat, 1j * qp.X.compute_matrix())
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op.decomposition()
 
         assert len(q) == 2
-        qml.assert_equal(q.queue[0], qml.GlobalPhase(-np.pi / 2))
-        qml.assert_equal(q.queue[1], qml.X(0))
+        qp.assert_equal(q.queue[0], qp.GlobalPhase(-np.pi / 2))
+        qp.assert_equal(q.queue[1], qp.X(0))
 
     @pytest.mark.jax
     def test_no_decomposition_abstract_coeff(self):
@@ -342,7 +342,7 @@ class TestDecomposition:
         import jax
 
         def f(coeff):
-            op = qml.s_prod(coeff, qml.X(0))
+            op = qp.s_prod(coeff, qp.X(0))
             assert not op.has_decomposition
             with pytest.raises(DecompositionUndefinedError):
                 op.decomposition()
@@ -352,7 +352,7 @@ class TestDecomposition:
     def test_no_decomposition_norm_not_one(self):
         """Test that no decomposition exists if the norm is not 1."""
 
-        op = qml.s_prod(2, qml.X(0))
+        op = qp.s_prod(2, qp.X(0))
         assert not op.has_decomposition
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
@@ -364,29 +364,29 @@ class TestMatrix:
     def test_base_batching_support(self):
         """Test that SProd matrix has base batching support."""
         x = np.array([-1, -2, -3])
-        op = qml.s_prod(3, qml.RX(x, 0))
+        op = qp.s_prod(3, qp.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(3, qml.RX(i, 0)).matrix() for i in x])
-        assert qml.math.allclose(mat, true_mat)
+        true_mat = qp.math.stack([qp.s_prod(3, qp.RX(i, 0)).matrix() for i in x])
+        assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
     def test_coeff_batching_support(self):
         """Test that SProd matrix has coeff batching support."""
         x = np.array([-1, -2, -3])
-        op = qml.s_prod(x, qml.PauliX(0))
+        op = qp.s_prod(x, qp.PauliX(0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(i, qml.PauliX(0)).matrix() for i in x])
-        assert qml.math.allclose(mat, true_mat)
+        true_mat = qp.math.stack([qp.s_prod(i, qp.PauliX(0)).matrix() for i in x])
+        assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
     def test_base_and_coeff_batching_support(self):
         """Test that SProd matrix has base and coeff batching support."""
         x = np.array([-1, -2, -3])
         y = np.array([1, 2, 3])
-        op = qml.s_prod(y, qml.RX(x, 0))
+        op = qp.s_prod(y, qp.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
-        assert qml.math.allclose(mat, true_mat)
+        true_mat = qp.math.stack([qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
     @pytest.mark.jax
@@ -396,10 +396,10 @@ class TestMatrix:
 
         x = jnp.array([-1, -2, -3])
         y = jnp.array([1, 2, 3])
-        op = qml.s_prod(y, qml.RX(x, 0))
+        op = qp.s_prod(y, qp.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
-        assert qml.math.allclose(mat, true_mat)
+        true_mat = qp.math.stack([qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, jnp.ndarray)
 
@@ -410,10 +410,10 @@ class TestMatrix:
 
         x = torch.tensor([-1, -2, -3])
         y = torch.tensor([1, 2, 3])
-        op = qml.s_prod(y, qml.RX(x, 0))
+        op = qp.s_prod(y, qp.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
-        assert qml.math.allclose(mat, true_mat)
+        true_mat = qp.math.stack([qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
 
@@ -424,10 +424,10 @@ class TestMatrix:
 
         x = tf.constant([-1.0, -2.0, -3.0])
         y = tf.constant([1.0, 2.0, 3.0])
-        op = qml.s_prod(y, qml.RX(x, 0))
+        op = qp.s_prod(y, qp.RX(x, 0))
         mat = op.matrix()
-        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
-        assert qml.math.allclose(mat, true_mat)
+        true_mat = qp.math.stack([qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, tf.Tensor)
 
@@ -456,7 +456,7 @@ class TestMatrix:
     def test_sprod_ops_wire_order(self):
         """Test correct matrix is returned when the wire_order arg is provided."""
         scalar = 1.23
-        sprod_op = SProd(scalar, qml.Toffoli(wires=[2, 0, 1]))
+        sprod_op = SProd(scalar, qp.Toffoli(wires=[2, 0, 1]))
         wire_order = [0, 1, 2]
         mat = sprod_op.matrix(wire_order=wire_order)
 
@@ -477,10 +477,10 @@ class TestMatrix:
         assert np.allclose(mat, true_mat)
 
     templates_and_mats = (
-        (qml.QFT(wires=[0, 1, 2]), qml.QFT(wires=[0, 1, 2]).compute_matrix(3)),
+        (qp.QFT(wires=[0, 1, 2]), qp.QFT(wires=[0, 1, 2]).compute_matrix(3)),
         (
-            qml.GroverOperator(wires=[0, 1, 2]),
-            qml.GroverOperator(wires=[0, 1, 2]).compute_matrix(3, range(3)),
+            qp.GroverOperator(wires=[0, 1, 2]),
+            qp.GroverOperator(wires=[0, 1, 2]).compute_matrix(3, range(3)),
         ),
     )
 
@@ -497,8 +497,8 @@ class TestMatrix:
     def test_sprod_qchem_ops(self):
         """Test that we can scale qchem operations and the generated matrix is correct."""
         wires = [0, 1, 2, 3]
-        sprod_op1 = SProd(1.23, qml.OrbitalRotation(4.56, wires=wires))
-        sprod_op2 = SProd(3.45, qml.SingleExcitation(1.23, wires=[0, 1]))
+        sprod_op1 = SProd(1.23, qp.OrbitalRotation(4.56, wires=wires))
+        sprod_op2 = SProd(3.45, qp.SingleExcitation(1.23, wires=[0, 1]))
         mat1 = sprod_op1.matrix()
         mat2 = sprod_op2.matrix()
 
@@ -511,8 +511,8 @@ class TestMatrix:
     def test_sprod_observables(self):
         """Test that observable objects can also be scaled with correct matrix representation."""
         wires = [0, 1]
-        sprod_op1 = SProd(1.23, qml.Projector(state=qnp.array([0, 1]), wires=wires))
-        sprod_op2 = SProd(3.45, qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0))
+        sprod_op1 = SProd(1.23, qp.Projector(state=qnp.array([0, 1]), wires=wires))
+        sprod_op2 = SProd(3.45, qp.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0))
         mat1 = sprod_op1.matrix()
         mat2 = sprod_op2.matrix()
 
@@ -527,7 +527,7 @@ class TestMatrix:
     def test_sprod_qubit_unitary(self):
         """Test that an arbitrary QubitUnitary can be scaled with correct matrix representation."""
         U = 1 / qnp.sqrt(2) * qnp.array([[1, 1], [1, -1]])  # Hadamard
-        U_op = qml.QubitUnitary(U, wires=0)
+        U_op = qp.QubitUnitary(U, wires=0)
 
         sprod_op = SProd(42, U_op)
         mat = sprod_op.matrix()
@@ -537,7 +537,7 @@ class TestMatrix:
 
     def test_sprod_hamiltonian(self):
         """Test that a hamiltonian object can be scaled."""
-        U = qml.Hamiltonian([0.5], [qml.PauliX(wires=0)])
+        U = qp.Hamiltonian([0.5], [qp.PauliX(wires=0)])
         sprod_op = SProd(-4, U)
         mat = sprod_op.matrix()
 
@@ -554,7 +554,7 @@ class TestMatrix:
         coeff = jnp.array(1.23)
         rot_params = jnp.array([0.12, 3.45, 6.78])
 
-        sprod_op = SProd(coeff, qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
+        sprod_op = SProd(coeff, qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
         mat = sprod_op.matrix()
 
         true_mat = 1.23 * gd.Rot3(rot_params[0], rot_params[1], rot_params[2])
@@ -570,7 +570,7 @@ class TestMatrix:
         coeff = torch.tensor(1.23)
         rot_params = torch.tensor([0.12, 3.45, 6.78])
 
-        sprod_op = SProd(coeff, qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
+        sprod_op = SProd(coeff, qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
         mat = sprod_op.matrix()
 
         true_mat = 1.23 * gd.Rot3(rot_params[0], rot_params[1], rot_params[2])
@@ -587,7 +587,7 @@ class TestMatrix:
         raw_rot_params = [0.12, 3.45, 6.78]
         rot_params = tf.Variable(raw_rot_params)
 
-        sprod_op = SProd(coeff, qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
+        sprod_op = SProd(coeff, qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
         mat = sprod_op.matrix()
 
         true_mat = 1.23 * gd.Rot3(raw_rot_params[0], raw_rot_params[1], raw_rot_params[2])
@@ -603,34 +603,34 @@ class TestMatrix:
         import tensorflow as tf
 
         coeff = tf.Variable(0.1)
-        op = qml.PauliX(0)
+        op = qp.PauliX(0)
 
         sprod_op = SProd(coeff, op)
         mat = sprod_op.matrix()
 
         assert mat.dtype == tf.complex128
         expected = np.array([[0, 0.1], [0.1, 0.0]], dtype="complex128")
-        assert qml.math.allclose(mat, expected)
+        assert qp.math.allclose(mat, expected)
         assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
 
-        op = qml.PauliY(0)
+        op = qp.PauliY(0)
 
         sprod_op = SProd(coeff, op)
         mat = sprod_op.matrix()
 
         assert mat.dtype == tf.complex128
         expected = np.array([[0, -0.1j], [0.1j, 0.0]], dtype="complex128")
-        assert qml.math.allclose(mat, expected)
+        assert qp.math.allclose(mat, expected)
         assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
 
 
 class TestSparseMatrix:
     sparse_ops = (
-        qml.Identity(wires=0),
-        qml.PauliX(wires=0),
-        qml.PauliY(wires=0),
-        qml.PauliZ(wires=0),
-        qml.Hadamard(wires=0),
+        qp.Identity(wires=0),
+        qp.PauliX(wires=0),
+        qp.PauliY(wires=0),
+        qp.PauliZ(wires=0),
+        qp.Hadamard(wires=0),
     )
 
     @pytest.mark.parametrize("scalar", scalars)
@@ -731,8 +731,8 @@ class TestSparseMatrix:
     def test_sparse_matrix_sparse_hamiltonian(self):
         """Test the sparse_matrix representation of scaled ops."""
         scalar = 1.23
-        op = qml.Hadamard(wires=0)
-        sparse_ham = qml.SparseHamiltonian(csr_matrix(op.matrix()), wires=0)
+        op = qp.Hadamard(wires=0)
+        sparse_ham = qp.SparseHamiltonian(csr_matrix(op.matrix()), wires=0)
 
         sprod_op = SProd(scalar, sparse_ham)
         sparse_matrix = sprod_op.sparse_matrix()
@@ -754,7 +754,7 @@ class TestProperties:
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
-        coeff, op = (1.0 + 2j, qml.PauliX(wires=0))
+        coeff, op = (1.0 + 2j, qp.PauliX(wires=0))
         sprod_op = SProd(coeff, op)
         sprod_op_eigvals = sprod_op.eigvals()
 
@@ -763,9 +763,9 @@ class TestProperties:
         assert np.allclose(sprod_op_eigvals, true_eigvals)
 
     ops_are_hermitian = (
-        (qml.PauliX(wires=0), 1.23 + 0.0j, True),  # Op is hermitian, scalar is real
-        (qml.RX(1.23, wires=0), 1.0 + 0.0j, False),  # Op not hermitian
-        (qml.PauliZ(wires=0), 2.0 + 1.0j, False),  # Scalar not real
+        (qp.PauliX(wires=0), 1.23 + 0.0j, True),  # Op is hermitian, scalar is real
+        (qp.RX(1.23, wires=0), 1.0 + 0.0j, False),  # Op not hermitian
+        (qp.PauliZ(wires=0), 2.0 + 1.0j, False),  # Scalar not real
     )
 
     @pytest.mark.parametrize("op, scalar, hermitian_status", ops_are_hermitian)
@@ -783,14 +783,14 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
-            op = s_prod(scalar, qml.PauliX(wires=0))
+            op = s_prod(scalar, qp.PauliX(wires=0))
             assert op.is_verified_hermitian == hermitian_state
 
     @pytest.mark.tf
     def test_no_dtype_promotion(self):
         import tensorflow as tf
 
-        op = qml.s_prod(tf.constant(0.5), qml.X(0))
+        op = qp.s_prod(tf.constant(0.5), qp.X(0))
         assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
 
     @pytest.mark.jax
@@ -802,7 +802,7 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
-            op = s_prod(scalar, qml.PauliX(wires=0))
+            op = s_prod(scalar, qp.PauliX(wires=0))
             assert op.is_verified_hermitian == hermitian_state
 
     @pytest.mark.torch
@@ -814,14 +814,14 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
-            op = s_prod(scalar, qml.PauliX(wires=0))
+            op = s_prod(scalar, qp.PauliX(wires=0))
             assert op.is_verified_hermitian == hermitian_state
 
     ops_labels = (
-        (qml.PauliX(wires=0), 1.23, 2, "1.23*X"),
-        (qml.RX(1.23, wires=0), 4.56, 1, "4.6*RX\n(1.2)"),
-        (qml.RY(1.234, wires=0), 4.56, 3, "4.560*RY\n(1.234)"),
-        (qml.Rot(1.0, 2.12, 3.1416, wires=0), 1, 2, "1.00*Rot\n(1.00,\n2.12,\n3.14)"),
+        (qp.PauliX(wires=0), 1.23, 2, "1.23*X"),
+        (qp.RX(1.23, wires=0), 4.56, 1, "4.6*RX\n(1.2)"),
+        (qp.RY(1.234, wires=0), 4.56, 3, "4.560*RY\n(1.234)"),
+        (qp.Rot(1.0, 2.12, 3.1416, wires=0), 1, 2, "1.00*Rot\n(1.00,\n2.12,\n3.14)"),
     )
 
     @pytest.mark.parametrize("op, scalar, decimal, label", ops_labels)
@@ -833,7 +833,7 @@ class TestProperties:
 
     def test_label_cache(self):
         """Test label method with cache keyword arg."""
-        base = qml.QubitUnitary(np.eye(2), wires=0)
+        base = qp.QubitUnitary(np.eye(2), wires=0)
         op = s_prod(-1.2, base)
 
         cache = {"matrices": []}
@@ -842,16 +842,16 @@ class TestProperties:
 
     op_pauli_reps = (
         (
-            qml.s_prod(1.23, qml.PauliZ(wires=0)),
-            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1.23}),
+            qp.s_prod(1.23, qp.PauliZ(wires=0)),
+            qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "Z"}): 1.23}),
         ),
         (
-            qml.s_prod(-1j, qml.PauliX(wires=1)),
-            qml.pauli.PauliSentence({qml.pauli.PauliWord({1: "X"}): -1j}),
+            qp.s_prod(-1j, qp.PauliX(wires=1)),
+            qp.pauli.PauliSentence({qp.pauli.PauliWord({1: "X"}): -1j}),
         ),
         (
-            qml.s_prod(1.23 - 4j, qml.PauliY(wires="a")),
-            qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1.23 - 4j}),
+            qp.s_prod(1.23 - 4j, qp.PauliY(wires="a")),
+            qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "Y"}): 1.23 - 4j}),
         ),
     )
 
@@ -862,32 +862,32 @@ class TestProperties:
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self):
         """Test that None is produced if the base op does not have a pauli rep"""
-        base = qml.RX(1.23, wires=0)
-        op = qml.s_prod(2, base)
+        base = qp.RX(1.23, wires=0)
+        op = qp.s_prod(2, base)
         assert op.pauli_rep is None
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""
 
         # base is batched
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = qml.s_prod(0.5, base)
+        base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qp.s_prod(0.5, base)
         assert op.batch_size == 3
 
         # coeff is batched
-        base = qml.RX(1, 0)
-        op = qml.s_prod(np.array([1.2, 2.3, 3.4]), base)
+        base = qp.RX(1, 0)
+        op = qp.s_prod(np.array([1.2, 2.3, 3.4]), base)
         assert op.batch_size == 3
 
         # both are batched
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = qml.s_prod(np.array([1.2, 2.3, 3.4]), base)
+        base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qp.s_prod(np.array([1.2, 2.3, 3.4]), base)
         assert op.batch_size == 3
 
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
-        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
-        op = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
+        base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qp.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
@@ -899,42 +899,42 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        sprod_op = s_prod(5, s_prod(3, s_prod(-1, qml.RZ(1.32, wires=0))))
+        sprod_op = s_prod(5, s_prod(3, s_prod(-1, qp.RZ(1.32, wires=0))))
         assert sprod_op.arithmetic_depth == 3
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         sprod_op = SProd(
-            2, SProd(2, qml.RZ(1.32, wires=0)) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
+            2, SProd(2, qp.RZ(1.32, wires=0)) + qp.Identity(wires=0) + qp.RX(1.9, wires=1)
         )
-        final_op = qml.ops.Sum(  # pylint:disable=no-member
-            SProd(4, qml.RZ(1.32, wires=0)),
-            SProd(2, qml.Identity(wires=0)),
-            SProd(2, qml.RX(1.9, wires=1)),
+        final_op = qp.ops.Sum(  # pylint:disable=no-member
+            SProd(4, qp.RZ(1.32, wires=0)),
+            SProd(2, qp.Identity(wires=0)),
+            SProd(2, qp.RX(1.9, wires=1)),
         )
         simplified_op = sprod_op.simplify()
-        qml.assert_equal(simplified_op, final_op)
+        qp.assert_equal(simplified_op, final_op)
 
     def test_simplify_scalar_equal_to_1(self):
         """Test the simplify method when the scalar is 1."""
-        sprod_op = s_prod(1, qml.PauliX(0))
-        final_op = qml.PauliX(0)
+        sprod_op = s_prod(1, qp.PauliX(0))
+        final_op = qp.PauliX(0)
         simplified_op = sprod_op.simplify()
-        qml.assert_equal(simplified_op, final_op)
+        qp.assert_equal(simplified_op, final_op)
 
     def test_simplify_nested_sprod_scalar_equal_to_1(self):
         """Test the simplify method with nested SProd where the global scalar is 1."""
-        sprod_op = s_prod(3, s_prod(1 / 3, qml.PauliX(0)))
-        final_op = qml.PauliX(0)
+        sprod_op = s_prod(3, s_prod(1 / 3, qp.PauliX(0)))
+        final_op = qp.PauliX(0)
         simplified_op = sprod_op.simplify()
-        qml.assert_equal(simplified_op, final_op)
+        qp.assert_equal(simplified_op, final_op)
 
     def test_simplify_with_sum_operator(self):
         """Test the simplify method a scalar product of a Sum operator."""
-        sprod_op = s_prod(0 - 3j, qml.sum(qml.PauliX(0), qml.PauliX(0)))
-        final_op = s_prod(0 - 6j, qml.PauliX(0))
+        sprod_op = s_prod(0 - 3j, qp.sum(qp.PauliX(0), qp.PauliX(0)))
+        final_op = s_prod(0 - 6j, qp.PauliX(0))
         simplified_op = sprod_op.simplify()
-        qml.assert_equal(simplified_op, final_op)
+        qp.assert_equal(simplified_op, final_op)
 
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
@@ -943,11 +943,11 @@ class TestSimplify:
 
         c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46)
 
-        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
-        result = s_prod(c3, qml.PauliX(0))
+        op = s_prod(c1, s_prod(c2, qp.PauliX(0)))
+        result = s_prod(c3, qp.PauliX(0))
         simplified_op = op.simplify()
 
-        qml.assert_equal(simplified_op, result)
+        qp.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -956,10 +956,10 @@ class TestSimplify:
 
         c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46)
 
-        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
-        result = s_prod(c3, qml.PauliX(0))
+        op = s_prod(c1, s_prod(c2, qp.PauliX(0)))
+        result = s_prod(c3, qp.PauliX(0))
         simplified_op = op.simplify()
-        qml.assert_equal(simplified_op, result)
+        qp.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
     def test_simplify_pauli_rep_torch(self):
@@ -968,11 +968,11 @@ class TestSimplify:
 
         c1, c2, c3 = torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46)
 
-        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
-        result = s_prod(c3, qml.PauliX(0))
+        op = s_prod(c1, s_prod(c2, qp.PauliX(0)))
+        result = s_prod(c3, qp.PauliX(0))
         simplified_op = op.simplify()
 
-        qml.assert_equal(simplified_op, result)
+        qp.assert_equal(simplified_op, result)
 
 
 class TestWrapperFunc:
@@ -987,11 +987,11 @@ class TestWrapperFunc:
 
         sprod_func_op = s_prod(coeff, op, id=op_id)
         sprod_class_op = SProd(coeff, op, id=op_id)
-        qml.assert_equal(sprod_func_op, sprod_class_op)
+        qp.assert_equal(sprod_func_op, sprod_class_op)
 
     def test_lazy_mode(self):
         """Test that by default, the operator is simply wrapped in `SProd`, even if a simplification exists."""
-        op = s_prod(3, s_prod(4, qml.PauliX(0)))
+        op = s_prod(3, s_prod(4, qp.PauliX(0)))
 
         assert isinstance(op, SProd)
         assert op.scalar == 3
@@ -999,17 +999,17 @@ class TestWrapperFunc:
 
     def test_non_lazy_mode(self):
         """Test the lazy=False keyword."""
-        op = s_prod(3, s_prod(4, qml.PauliX(0)), lazy=False)
+        op = s_prod(3, s_prod(4, qp.PauliX(0)), lazy=False)
 
         assert isinstance(op, SProd)
         assert op.scalar == 12
-        qml.assert_equal(op.base, qml.PauliX(0))
+        qp.assert_equal(op.base, qp.PauliX(0))
 
     def test_non_lazy_mode_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op
         and the new simplified op is updated."""
-        with qml.queuing.AnnotatedQueue() as q:
-            sprod1 = s_prod(4, qml.PauliX(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            sprod1 = s_prod(4, qp.PauliX(0))
             sprod2 = s_prod(3, sprod1, lazy=False)
 
         assert len(q) == 1
@@ -1021,13 +1021,13 @@ class TestIntegration:
 
     def test_measurement_process_expval(self):
         """Test SProd class instance in expval measurement process."""
-        dev = qml.device("default.qubit", wires=2)
-        sprod_op = SProd(1.23, qml.Hadamard(1))
+        dev = qp.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qp.Hadamard(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
-            return qml.expval(sprod_op)
+            qp.PauliX(0)
+            return qp.expval(sprod_op)
 
         exp_val = my_circ()
         true_exp_val = qnp.array(1.23 / qnp.sqrt(2))
@@ -1035,13 +1035,13 @@ class TestIntegration:
 
     def test_measurement_process_var(self):
         """Test SProd class instance in var measurement process."""
-        dev = qml.device("default.qubit", wires=2)
-        sprod_op = SProd(1.23, qml.Hadamard(1))
+        dev = qp.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qp.Hadamard(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
-            return qml.var(sprod_op)
+            qp.PauliX(0)
+            return qp.var(sprod_op)
 
         var = my_circ()
         true_var = qnp.array(1.23**2 / 2)
@@ -1049,27 +1049,27 @@ class TestIntegration:
 
     def test_measurement_process_probs(self):
         """Test SProd class instance in probs measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
-        sprod_op = SProd(1.23, qml.Hadamard(1))
+        dev = qp.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qp.Hadamard(1))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
-            return qml.probs(op=sprod_op), qml.probs(op=qml.Hadamard(1))
+            qp.PauliX(0)
+            return qp.probs(op=sprod_op), qp.probs(op=qp.Hadamard(1))
 
         res1, res2 = my_circ()
-        assert qml.math.allclose(res1, res2)
+        assert qp.math.allclose(res1, res2)
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2)
-        sprod_op = SProd(1.23, qml.PauliX(1))
+        dev = qp.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qp.PauliX(1))
 
-        @qml.set_shots(20)
-        @qml.qnode(dev)
+        @qp.set_shots(20)
+        @qp.qnode(dev)
         def my_circ():
-            qml.Hadamard(1)
-            return qml.sample(op=sprod_op)
+            qp.Hadamard(1)
+            return qp.sample(op=sprod_op)
 
         results = my_circ()
 
@@ -1078,14 +1078,14 @@ class TestIntegration:
 
     def test_measurement_process_count(self):
         """Test SProd class instance in counts measurement process."""
-        dev = qml.device("default.qubit", wires=2)
-        sprod_op = SProd(1.23, qml.PauliX(1))
+        dev = qp.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qp.PauliX(1))
 
-        @qml.set_shots(20)
-        @qml.qnode(dev)
+        @qp.set_shots(20)
+        @qp.qnode(dev)
         def my_circ():
-            qml.Hadamard(1)
-            return qml.counts(op=sprod_op)
+            qp.Hadamard(1)
+            return qp.counts(op=sprod_op)
 
         results = my_circ()
 
@@ -1096,31 +1096,31 @@ class TestIntegration:
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op
         is used in the measurement process."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="best")
+        @qp.qnode(dev, diff_method="best")
         def circuit(scalar):
-            qml.PauliX(wires=0)
-            return qml.expval(SProd(scalar, qml.Hadamard(wires=0)))
+            qp.PauliX(wires=0)
+            return qp.expval(SProd(scalar, qp.Hadamard(wires=0)))
 
         scalar = qnp.array(1.23, requires_grad=True)
-        grad = qml.grad(circuit)(scalar)
+        grad = qp.grad(circuit)(scalar)
 
         true_grad = -1 / qnp.sqrt(2)
         assert qnp.allclose(grad, true_grad)
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a SProd op in the measurement process."""
-        sprod_op = SProd(100, qml.Hadamard(0))
-        dev = qml.device("default.qubit", wires=1)
+        sprod_op = SProd(100, qp.Hadamard(0))
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="best")
+        @qp.qnode(dev, diff_method="best")
         def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            return qml.expval(sprod_op)
+            qp.RX(weights[0], wires=0)
+            return qp.expval(sprod_op)
 
         weights = qnp.array([0.1], requires_grad=True)
-        grad = qml.grad(circuit)(weights)
+        grad = qp.grad(circuit)(weights)
 
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
@@ -1133,15 +1133,15 @@ class TestIntegration:
 
         import torch
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(s):
-            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+            return qp.expval(qp.s_prod(s, qp.PauliZ(0)))
 
         res = circuit(torch.tensor(2))
 
-        assert qml.math.allclose(res, 2)
+        assert qp.math.allclose(res, 2)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
@@ -1151,30 +1151,30 @@ class TestIntegration:
 
         from jax import numpy as jnp
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(s):
-            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+            return qp.expval(qp.s_prod(s, qp.PauliZ(0)))
 
         res = circuit(jnp.array(2))
 
-        assert qml.math.allclose(res, 2)
+        assert qp.math.allclose(res, 2)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
     def test_tensorflow_qnode(self, diff_method):
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qp.device("default.qubit", wires=5)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circuit(s):
-            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+            return qp.expval(qp.s_prod(s, qp.PauliZ(0)))
 
         res = circuit(tf.Variable(2, dtype=tf.float64))
 
-        assert qml.math.allclose(res, 2)
+        assert qp.math.allclose(res, 2)
 
 
 class TestArithmetic:
@@ -1183,15 +1183,15 @@ class TestArithmetic:
     def test_pow(self):
         """Test the pow method for SProd Operators."""
 
-        sprod_op = SProd(3, qml.RX(1.23, wires=0))
-        final_op = SProd(scalar=3**2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
+        sprod_op = SProd(3, qp.RX(1.23, wires=0))
+        final_op = SProd(scalar=3**2, base=qp.pow(base=qp.RX(1.23, wires=0), z=2))
         pow_op = sprod_op.pow(z=2)[0]
-        qml.assert_equal(pow_op, final_op)
+        qp.assert_equal(pow_op, final_op)
 
     def test_adjoint(self):
         """Test the adjoint method for Sprod Operators."""
 
-        sprod_op = SProd(3j, qml.RX(1.23, wires=0))
-        final_op = SProd(scalar=-3j, base=qml.adjoint(qml.RX(1.23, wires=0)))
+        sprod_op = SProd(3j, qp.RX(1.23, wires=0))
+        final_op = SProd(scalar=-3j, base=qp.adjoint(qp.RX(1.23, wires=0)))
         adj_op = sprod_op.adjoint()
-        qml.assert_equal(adj_op, final_op)
+        qp.assert_equal(adj_op, final_op)

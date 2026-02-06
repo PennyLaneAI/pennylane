@@ -26,30 +26,30 @@ from pennylane import numpy as pnp
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
 
-dev = qml.device("default.qubit", wires=(0, "a", 1.23))
+dev = qp.device("default.qubit", wires=(0, "a", 1.23))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def circuit1(x, y):
     """Circuit on three qubits."""
-    qml.RX(x, wires=0)
-    qml.CNOT(wires=(0, "a"))
-    qml.RY(y, wires=1.23)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(x, wires=0)
+    qp.CNOT(wires=(0, "a"))
+    qp.RY(y, wires=1.23)
+    return qp.expval(qp.PauliZ(0))
 
 
-@qml.qnode(dev)
+@qp.qnode(dev)
 def circuit2(x):
     """Circuit on a single qubit."""
-    qml.RX(x, wires=0)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(x, wires=0)
+    return qp.expval(qp.PauliZ(0))
 
 
 def test_standard_use():
     """Tests standard usage produces expected figure and axes"""
 
     # not constructed before calling
-    fig, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+    fig, ax = qp.draw_mpl(circuit1)(1.23, 2.34)
 
     assert isinstance(fig, mpl.figure.Figure)
     assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
@@ -75,7 +75,7 @@ def test_fig_argument():
     """Tests figure argument is used correcly"""
 
     fig = plt.figure()
-    output_fig, ax = qml.draw_mpl(circuit1, fig=fig)(1.23, 2.34)
+    output_fig, ax = qp.draw_mpl(circuit1, fig=fig)(1.23, 2.34)
     assert ax.get_figure() == fig
     assert output_fig == fig
     plt.close("all")
@@ -84,17 +84,17 @@ def test_fig_argument():
 class TestLevelExpansionStrategy:
     @pytest.fixture
     def transforms_circuit(self):
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
         def circ(weights, order):
-            qml.RandomLayers(weights, wires=(0, 1))
-            qml.Permute(order, wires=(0, 1, 2))
-            qml.PauliX(0)
-            qml.PauliX(0)
-            qml.RX(0.1, wires=0)
-            qml.RX(-0.1, wires=0)
-            return qml.expval(qml.PauliX(0))
+            qp.RandomLayers(weights, wires=(0, 1))
+            qp.Permute(order, wires=(0, 1, 2))
+            qp.PauliX(0)
+            qp.PauliX(0)
+            qp.RX(0.1, wires=0)
+            qp.RX(-0.1, wires=0)
+            return qp.expval(qp.PauliX(0))
 
         return circ
 
@@ -115,8 +115,8 @@ class TestLevelExpansionStrategy:
         order = [2, 1, 0]
         weights = pnp.array([[1.0, 20]])
 
-        _, ax1 = qml.draw_mpl(transforms_circuit, level=var1)(weights, order)
-        _, ax2 = qml.draw_mpl(transforms_circuit, level=var2)(weights, order)
+        _, ax1 = qp.draw_mpl(transforms_circuit, level=var1)(weights, order)
+        _, ax2 = qp.draw_mpl(transforms_circuit, level=var2)(weights, order)
 
         assert len(ax1.lines) == len(ax2.lines) == expected_lines
         assert len(ax1.patches) == len(ax2.patches) == expected_patches
@@ -130,7 +130,7 @@ class TestLevelExpansionStrategy:
         order = [2, 1, 0]
         weights = pnp.array([[1.0, 20]])
 
-        _, ax = qml.draw_mpl(transforms_circuit, level=1)(weights, order)
+        _, ax = qp.draw_mpl(transforms_circuit, level=1)(weights, order)
 
         assert len(ax.lines) == 3
         assert len(ax.patches) == 7
@@ -140,19 +140,19 @@ class TestLevelExpansionStrategy:
         """Test that draw warns the user about level being ignored."""
 
         def qfunc():
-            qml.PauliZ(0)
+            qp.PauliZ(0)
 
         with pytest.warns(UserWarning, match="the level argument is ignored"):
-            qml.draw_mpl(qfunc, level=None)
+            qp.draw_mpl(qfunc, level=None)
 
     def test_split_tapes_raises_warning(self):
-        @qml.transforms.split_non_commuting
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.transforms.split_non_commuting
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def circuit():
-            return [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
+            return [qp.expval(qp.X(0)), qp.expval(qp.Z(0))]
 
         with pytest.warns(UserWarning, match="Multiple tapes constructed"):
-            qml.draw_mpl(circuit)()
+            qp.draw_mpl(circuit)()
         plt.close("all")
 
 
@@ -162,7 +162,7 @@ class TestKwargs:
     def test_fontsize(self):
         """Test fontsize set by keyword argument."""
 
-        _, ax = qml.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
+        _, ax = qp.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
         for t in ax.texts:
             assert t.get_fontsize() == 20
         plt.close("all")
@@ -170,7 +170,7 @@ class TestKwargs:
     def test_decimals(self):
         """Test decimals changes operation labelling"""
 
-        _, ax = qml.draw_mpl(circuit1, decimals=2)(1.23, 2.34)
+        _, ax = qp.draw_mpl(circuit1, decimals=2)(1.23, 2.34)
 
         texts = [t.get_text() for t in ax.texts[3:]]
         assert "RX\n(1.23)" in texts
@@ -180,7 +180,7 @@ class TestKwargs:
     def test_label_options(self):
         """Test label options modifies label style."""
 
-        _, ax = qml.draw_mpl(circuit1, label_options={"color": "purple", "fontsize": 20})(
+        _, ax = qp.draw_mpl(circuit1, label_options={"color": "purple", "fontsize": 20})(
             1.23, 2.34
         )
 
@@ -191,8 +191,8 @@ class TestKwargs:
 
     def test_hide_wire_labels(self):
         """Test that wire labels are skipped with show_wire_labels=False."""
-        fig, ax = qml.draw_mpl(circuit1, show_wire_labels=False)(1.23, 2.34)
-        fig_with_labels, ax_with_labels = qml.draw_mpl(circuit1)(1.23, 2.34)
+        fig, ax = qp.draw_mpl(circuit1, show_wire_labels=False)(1.23, 2.34)
+        fig_with_labels, ax_with_labels = qp.draw_mpl(circuit1)(1.23, 2.34)
 
         # Only PauliX gate labels should be present
         assert len(ax.texts) == 2
@@ -214,12 +214,12 @@ class TestKwargs:
     def test_active_wire_notches(self, notches, n_patches):
         """Test active wire notches can be toggled by keyword."""
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def temp_circ():
-            qml.QFT(wires=(0, 1.23))
-            return qml.probs(0)
+            qp.QFT(wires=(0, 1.23))
+            return qp.probs(0)
 
-        _, ax = qml.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()
+        _, ax = qp.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()
 
         assert len(ax.patches) == n_patches
         plt.close("all")
@@ -228,7 +228,7 @@ class TestKwargs:
         """Test that if no style is specified, the black_white style is the default for mpl_draw,
         rather than general matplotlib settings."""
 
-        _, ax = qml.draw_mpl(circuit1)(1.234, 1.234)
+        _, ax = qp.draw_mpl(circuit1)(1.234, 1.234)
 
         assert ax.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
         assert ax.patches[4].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
@@ -237,7 +237,7 @@ class TestKwargs:
     def test_style(self):
         """Test style is set by keyword argument."""
 
-        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+        _, ax = qp.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
 
         assert ax.get_facecolor() == (
             0.8392156862745098,
@@ -261,13 +261,13 @@ class TestKwargs:
 
         def c():
             for _ in range(15):
-                qml.X(0)
-            return qml.expval(qml.Z(0))
+                qp.X(0)
+            return qp.expval(qp.Z(0))
 
         if as_qnode:
-            c = qml.QNode(c, qml.device("default.qubit"))
+            c = qp.QNode(c, qp.device("default.qubit"))
 
-        figs_and_axes = qml.draw_mpl(c, max_length=5)()
+        figs_and_axes = qp.draw_mpl(c, max_length=5)()
         assert len(figs_and_axes) == 3
         for i in range(3):
             assert isinstance(figs_and_axes[i][0], plt.Figure)
@@ -297,15 +297,15 @@ class TestWireBehaviour:
 
         def f(x, y):
             """Circuit on three qubits."""
-            qml.RX(x, wires=0)
-            qml.CNOT(wires=(0, "a"))
-            qml.RY(y, wires=1.23)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=(0, "a"))
+            qp.RY(y, wires=1.23)
+            return qp.expval(qp.PauliZ(0))
 
         if use_qnode:
-            f = qml.QNode(f, qml.device("default.qubit", wires=(0, "a", 1.23)))
+            f = qp.QNode(f, qp.device("default.qubit", wires=(0, "a", 1.23)))
 
-        _, ax = qml.draw_mpl(f, wire_order=(1.23, "a"))(1.23, 2.34)
+        _, ax = qp.draw_mpl(f, wire_order=(1.23, "a"))(1.23, 2.34)
 
         assert len(ax.texts) == 5
 
@@ -317,7 +317,7 @@ class TestWireBehaviour:
     def test_empty_wires(self):
         """Test empty wires do not appear by default"""
 
-        _, ax = qml.draw_mpl(circuit2)(1.23)
+        _, ax = qp.draw_mpl(circuit2)(1.23)
 
         assert len(ax.lines) == 1  # one wire
         assert len(ax.texts) == 2  # one wire label and one gate label
@@ -328,7 +328,7 @@ class TestWireBehaviour:
     def test_show_all_wires(self):
         """Test show_all_wires=True displays empty wires."""
 
-        _, ax = qml.draw_mpl(circuit2, show_all_wires=True)(1.23)
+        _, ax = qp.draw_mpl(circuit2, show_all_wires=True)(1.23)
 
         assert len(ax.lines) == 3  # three wires
 
@@ -343,7 +343,7 @@ class TestWireBehaviour:
         the ``wire_order`` containing wires not on the device. The output should have
         three wires, one active and two empty wires from the wire order."""
 
-        _, ax = qml.draw_mpl(circuit2, wire_order=[2, "a"], show_all_wires=True)(1.23)
+        _, ax = qp.draw_mpl(circuit2, wire_order=[2, "a"], show_all_wires=True)(1.23)
 
         assert len(ax.lines) == 3  # three wires
 
@@ -356,7 +356,7 @@ class TestWireBehaviour:
     def test_uniform_wire_options(self):
         """Test wire options modifies wire styling"""
 
-        _, ax = qml.draw_mpl(circuit1, wire_options={"color": "black", "linewidth": 4})(1.23, 2.34)
+        _, ax = qp.draw_mpl(circuit1, wire_options={"color": "black", "linewidth": 4})(1.23, 2.34)
 
         for w in ax.lines[:3]:  # three wires
             assert w.get_color() == "black"
@@ -367,24 +367,24 @@ class TestWireBehaviour:
     def test_individual_wire_options(self):
         """Test wire option styling when individual wires have their own options specified"""
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def f_circ(x):
             """Circuit on ten qubits."""
-            qml.RX(x, wires=0)
+            qp.RX(x, wires=0)
             for w in range(10):
-                qml.Hadamard(w)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
+                qp.Hadamard(w)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliY(1))
 
         # All wires are orange
         wire_options = {"color": "orange"}
-        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+        _, ax = qp.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
         for w in ax.lines:
             assert w.get_color() == "orange"
 
         # Wires are orange and cyan
         wire_options = {0: {"color": "orange"}, 1: {"color": "cyan"}}
-        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+        _, ax = qp.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
         assert ax.lines[0].get_color() == "orange"
         assert ax.lines[1].get_color() == "cyan"
@@ -398,7 +398,7 @@ class TestWireBehaviour:
             2: {"linestyle": "--", "color": "red"},
             6: {"linestyle": "--", "color": "orange", "linewidth": 1},
         }
-        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+        _, ax = qp.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
         for i, w in enumerate(ax.lines):
             if i == 2:
@@ -420,7 +420,7 @@ class TestWireBehaviour:
             6: {"linestyle": "--", "color": "orange"},
         }
 
-        _, ax = qml.draw_mpl(f_circ, wire_options=wire_options)(0.52)
+        _, ax = qp.draw_mpl(f_circ, wire_options=wire_options)(0.52)
 
         for i, w in enumerate(ax.lines):
             if i == 2:
@@ -441,18 +441,18 @@ class TestWireBehaviour:
     def test_individual_wire_options_with_string_labels(self):
         """Test that individual wire options work with string wire labels"""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            qml.X("a")
-            qml.Y("b")
-            return qml.expval(qml.Z("a"))
+            qp.X("a")
+            qp.Y("b")
+            return qp.expval(qp.Z("a"))
 
         wire_options = {
             "color": "teal",
             "linewidth": 5,
             "b": {"color": "orange", "linestyle": "--"},
         }
-        _, ax = qml.draw_mpl(circuit, wire_options=wire_options)()
+        _, ax = qp.draw_mpl(circuit, wire_options=wire_options)()
 
         for i, w in enumerate(ax.lines):
             assert w.get_linewidth() == 5
@@ -466,20 +466,20 @@ class TestWireBehaviour:
     def test_wire_options_and_wire_order(self):
         """Test that individual wire options work with specifying a wire_order"""
 
-        device = qml.device("default.qubit", wires=4)
+        device = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(device)
+        @qp.qnode(device)
         def circuit():
             for w in device.wires:
-                qml.X(w)
-            return qml.expval(qml.Z(0))
+                qp.X(w)
+            return qp.expval(qp.Z(0))
 
         wire_options = {
             "color": "teal",
             "linewidth": 5,
             3: {"color": "orange", "linestyle": "--"},  # wire 3 should be orange and dashed
         }
-        _, ax = qml.draw_mpl(circuit, wire_order=[1, 3, 0, 2], wire_options=wire_options)()
+        _, ax = qp.draw_mpl(circuit, wire_order=[1, 3, 0, 2], wire_options=wire_options)()
 
         for i, w in enumerate(ax.lines):
             assert w.get_linewidth() == 5
@@ -502,7 +502,7 @@ class TestMPLIntegration:
         plt.rcParams["patch.facecolor"] = rgba_red
         plt.rcParams["lines.color"] = rgba_green
 
-        _, ax = qml.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
+        _, ax = qp.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
 
         assert ax.patches[0].get_facecolor() == rgba_red
         assert ax.patches[1].get_facecolor() == rgba_red
@@ -510,7 +510,7 @@ class TestMPLIntegration:
         for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert l.get_color() == rgba_green
 
-        qml.drawer.use_style("black_white")
+        qp.drawer.use_style("black_white")
         plt.close("all")
 
     def test_style_with_matplotlib(self):
@@ -518,7 +518,7 @@ class TestMPLIntegration:
 
         plt.style.use("fivethirtyeight")
 
-        _, ax = qml.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
+        _, ax = qp.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
 
         expected_facecolor = mpl.colors.to_rgba(plt.rcParams["patch.facecolor"])
         assert ax.patches[0].get_facecolor() == expected_facecolor
@@ -528,7 +528,7 @@ class TestMPLIntegration:
         for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
 
-        qml.drawer.use_style("black_white")
+        qp.drawer.use_style("black_white")
         plt.close("all")
 
     def test_style_restores_settings(self):
@@ -540,7 +540,7 @@ class TestMPLIntegration:
         initial_patch_edgecolor = mpl.rcParams["patch.edgecolor"]
 
         # confirm settings were updated for the draw_mpl plot
-        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+        _, ax = qp.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
         assert ax.get_facecolor() == (
             0.8392156862745098,
             0.9607843137254902,
@@ -565,9 +565,9 @@ def test_draw_mpl_supports_qfuncs():
     """Test that draw_mpl works with non-QNode quantum functions."""
 
     def qfunc(x):
-        qml.RX(x, 0)
+        qp.RX(x, 0)
 
-    fig, ax = qml.draw_mpl(qfunc)(1.1)
+    fig, ax = qp.draw_mpl(qfunc)(1.1)
 
     assert isinstance(fig, mpl.figure.Figure)
     assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
@@ -583,24 +583,24 @@ def test_draw_mpl_with_qfunc_warns_with_level():
     """Test that draw warns the user about level being ignored."""
 
     def qfunc():
-        qml.PauliZ(0)
+        qp.PauliZ(0)
 
     with pytest.warns(UserWarning, match="the level argument is ignored"):
-        qml.draw_mpl(qfunc, level=None)
+        qp.draw_mpl(qfunc, level=None)
 
 
 def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):
     """Test that a circuit containing mid-circuit measurements is not transformed by the drawer
     to use deferred measurements if the device uses the new device API."""
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def circ():
-        qml.PauliX(0)
-        qml.measure(0)
-        return qml.probs(wires=0)
+        qp.PauliX(0)
+        qp.measure(0)
+        return qp.probs(wires=0)
 
-    draw_qnode = qml.draw_mpl(circ)
-    spy = mocker.spy(qml.defer_measurements, "_tape_transform")
+    draw_qnode = qp.draw_mpl(circ)
+    spy = mocker.spy(qp.defer_measurements, "_tape_transform")
 
     _ = draw_qnode()
     spy.assert_not_called()
@@ -609,14 +609,14 @@ def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):
 def test_qnode_transform_program(mocker):
     """Test that qnode transforms are applied before drawing a circuit."""
 
-    @qml.compile
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.compile
+    @qp.qnode(qp.device("default.qubit"))
     def circuit():
-        qml.RX(1.1, 0)
-        qml.RX(2.2, 0)
-        return qml.state()
+        qp.RX(1.1, 0)
+        qp.RX(2.2, 0)
+        return qp.state()
 
-    draw_qnode = qml.draw_mpl(circuit, decimals=2)
+    draw_qnode = qp.draw_mpl(circuit, decimals=2)
     qnode_transform = circuit.transform_program[0]
     # pylint: disable=protected-access
     spy = mocker.spy(qnode_transform._transform, "_tape_transform")
@@ -627,14 +627,14 @@ def test_qnode_transform_program(mocker):
 
 def test_draw_mpl_with_control_in_adjoint():
     def U(wires):
-        qml.adjoint(qml.CNOT)(wires=wires)
+        qp.adjoint(qp.CNOT)(wires=wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.ctrl(U, control=0)(wires=["a", 1.23])
-        return qml.state()
+        qp.ctrl(U, control=0)(wires=["a", 1.23])
+        return qp.state()
 
-    _, ax = qml.draw_mpl(circuit)()
+    _, ax = qp.draw_mpl(circuit)()
     assert len(ax.lines) == 4  # three wires, one control
     assert len(ax.texts) == 4  # three wire labels, one gate label
     assert ax.texts[-1].get_text() == "X†"
@@ -643,19 +643,19 @@ def test_draw_mpl_with_control_in_adjoint():
 def test_applied_transforms():
     """Test that any transforms applied to the qnode are included in the output."""
 
-    @qml.transform
+    @qp.transform
     def just_pauli_x(_):
-        new_tape = qml.tape.QuantumScript([qml.PauliX(0)])
+        new_tape = qp.tape.QuantumScript([qp.PauliX(0)])
         return (new_tape,), lambda res: res[0]
 
     @just_pauli_x
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def my_circuit():
-        qml.SWAP(wires=(0, 1))
-        qml.CNOT(wires=(0, 1))
-        return qml.probs(wires=(0, 1))
+        qp.SWAP(wires=(0, 1))
+        qp.CNOT(wires=(0, 1))
+        return qp.probs(wires=(0, 1))
 
-    _, ax = qml.draw_mpl(my_circuit)()
+    _, ax = qp.draw_mpl(my_circuit)()
 
     assert len(ax.lines) == 1  # single wire used in tape
     assert len(ax.patches) == 1  # single pauli x gate
@@ -670,14 +670,14 @@ def test_wire_sorting_if_no_wire_order(use_qnode):
     dont provide a wire order."""
 
     def f():
-        qml.X(4)
-        qml.X(2)
-        return qml.expval(qml.Z(0))
+        qp.X(4)
+        qp.X(2)
+        return qp.expval(qp.Z(0))
 
     if use_qnode:
-        f = qml.QNode(f, qml.device("default.qubit"))
+        f = qp.QNode(f, qp.device("default.qubit"))
 
-    _, ax = qml.draw_mpl(f)()
+    _, ax = qp.draw_mpl(f)()
 
     assert ax.texts[0].get_text() == "0"
     assert ax.texts[1].get_text() == "2"
@@ -692,14 +692,14 @@ def test_wire_sorting_fallback_if_no_wire_order(use_qnode):
     dont provide a wire order."""
 
     def f():
-        qml.X(4)
-        qml.X("a")
-        return qml.expval(qml.Z(0))
+        qp.X(4)
+        qp.X("a")
+        return qp.expval(qp.Z(0))
 
     if use_qnode:
-        f = qml.QNode(f, qml.device("default.qubit"))
+        f = qp.QNode(f, qp.device("default.qubit"))
 
-    _, ax = qml.draw_mpl(f)()
+    _, ax = qp.draw_mpl(f)()
 
     assert ax.texts[0].get_text() == "4"
     assert ax.texts[1].get_text() == "a"

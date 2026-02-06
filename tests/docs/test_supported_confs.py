@@ -18,7 +18,7 @@ A configuration is specified by:
     1. The quantum device, e.g. "default.qubit"
     2. The interface, e.g. "jax"
     3. The differentiation method, e.g. "parameter-shift"
-    4. The return value of the QNode, e.g. qml.expval() or qml.probs()
+    4. The return value of the QNode, e.g. qp.expval() or qp.probs()
     5. The number of shots, either None or an integer > 0
 
 A configuration is supported if gradients can be computed for the
@@ -42,7 +42,7 @@ diff_interfaces = ["autograd", "jax", "torch"]
 shots_list = [None, 100]
 
 # Each of these tuples contain:
-#   1. The argument 'wires' to pass to qml.device()
+#   1. The argument 'wires' to pass to qp.device()
 #   2. A list of the wire labels
 #   3. The wire to measure in a single-qubit measurement process
 #   4. The wires(s) to measure in a multi-qubit measurement process
@@ -102,43 +102,43 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
     """
     device_wires, wire_labels, single_meas_wire, multi_meas_wire = wire_specs
 
-    dev = qml.device("default.qubit", wires=device_wires)
+    dev = qp.device("default.qubit", wires=device_wires)
 
     # pylint: disable=too-many-return-statements
-    @qml.set_shots(shots)
-    @qml.qnode(dev, interface=interface, diff_method=diff_method)
+    @qp.set_shots(shots)
+    @qp.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         for i, wire_label in enumerate(wire_labels):
-            qml.Hadamard(wires=wire_label)
-            qml.RX(x[i], wires=wire_label)
+            qp.Hadamard(wires=wire_label)
+            qp.RX(x[i], wires=wire_label)
 
         if return_type == "StateCost":
-            return qml.state()
+            return qp.state()
         if return_type == "StateVector":
-            return qml.state()
+            return qp.state()
         if return_type == "DensityMatrix":
-            return qml.density_matrix(wires=single_meas_wire)
+            return qp.density_matrix(wires=single_meas_wire)
         if return_type == "Probability":
-            return qml.probs(wires=multi_meas_wire)
+            return qp.probs(wires=multi_meas_wire)
         if return_type == "Sample":
-            return qml.sample(wires=multi_meas_wire)
+            return qp.sample(wires=multi_meas_wire)
         if return_type == "Expectation":
-            return qml.expval(qml.PauliZ(wires=single_meas_wire))
+            return qp.expval(qp.PauliZ(wires=single_meas_wire))
         if return_type == "Hermitian":
-            return qml.expval(
-                qml.Hermitian(
+            return qp.expval(
+                qp.Hermitian(
                     np.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=False), wires=single_meas_wire
                 )
             )
         if return_type == "Projector":
-            return qml.expval(qml.Projector(np.array([1]), wires=single_meas_wire))
+            return qp.expval(qp.Projector(np.array([1]), wires=single_meas_wire))
         if return_type == "Variance":
-            return qml.var(qml.PauliZ(wires=single_meas_wire))
+            return qp.var(qp.PauliZ(wires=single_meas_wire))
         if return_type == "VnEntropy":
-            return qml.vn_entropy(wires=single_meas_wire)
+            return qp.vn_entropy(wires=single_meas_wire)
         if return_type == "MutualInfo":
             wires1 = [w for w in wire_labels if w != single_meas_wire]
-            return qml.mutual_info(wires0=[single_meas_wire], wires1=wires1)
+            return qp.mutual_info(wires0=[single_meas_wire], wires1=wires1)
         return None
 
     return circuit
@@ -169,7 +169,7 @@ def get_state_cost_fn(circuit):
 
     def cost_fn(x):
         res = circuit(x)
-        probs = qml.math.abs(res) ** 2
+        probs = qp.math.abs(res) ** 2
         return probs[0]
 
     return cost_fn
@@ -180,7 +180,7 @@ def get_density_matrix_cost_fn(circuit):
 
     def cost_fn(x):
         res = circuit(x)
-        probs = qml.math.abs(res) ** 2
+        probs = qp.math.abs(res) ** 2
         return probs[0][0]
 
     return cost_fn
@@ -211,8 +211,8 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
 
     if interface == "autograd":
         if return_type in grad_return_cases:
-            return qml.grad(cost_fn)(x)
-        return qml.jacobian(cost_fn)(x)
+            return qp.grad(cost_fn)(x)
+        return qp.jacobian(cost_fn)(x)
     if interface == "jax":
         if return_type in grad_return_cases:
             return jax.grad(cost_fn)(x)

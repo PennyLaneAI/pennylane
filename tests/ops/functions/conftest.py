@@ -32,59 +32,59 @@ from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQf
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
-    qml.RX(time * theta, wires[0])
-    qml.RY(time * phi, wires[0])
+    qp.RX(time * theta, wires[0])
+    qp.RY(time * phi, wires[0])
     if flip:
-        qml.CNOT(wires)
+        qp.CNOT(wires)
 
 
 _INSTANCES_TO_TEST = [
-    (qml.ops.MidMeasure(wires=0), {"skip_capture": True}),
-    (qml.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
-    (ChangeOpBasis(qml.T(0), qml.PauliZ(0)), {}),
-    (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
-    (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
-    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
-    (qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), {"skip_differentiation": True}),
+    (qp.ops.MidMeasure(wires=0), {"skip_capture": True}),
+    (qp.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
+    (ChangeOpBasis(qp.T(0), qp.PauliZ(0)), {}),
+    (qp.sum(qp.PauliX(0), qp.PauliZ(0)), {}),
+    (qp.sum(qp.X(0), qp.X(0), qp.Z(0), qp.Z(0)), {}),
+    (qp.BasisState([1], wires=[0]), {"skip_differentiation": True}),
+    (qp.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), {"skip_differentiation": True}),
     (
-        qml.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[0]),
+        qp.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[0]),
         {"skip_differentiation": True},
     ),
     (
-        qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
+        qp.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
         {"skip_differentiation": True},
     ),
-    (qml.MultiControlledX(wires=[0, 1]), {}),
-    (qml.Projector([1], 0), {"skip_differentiation": True}),
-    (qml.Projector([1, 0], 0), {"skip_differentiation": True}),
-    (qml.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
-    (qml.QubitUnitary(np.eye(2), wires=[0]), {"skip_differentiation": True}),
-    (qml.QubitUnitary(np.eye(4), wires=[0, 1]), {"skip_differentiation": True}),
+    (qp.MultiControlledX(wires=[0, 1]), {}),
+    (qp.Projector([1], 0), {"skip_differentiation": True}),
+    (qp.Projector([1, 0], 0), {"skip_differentiation": True}),
+    (qp.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
+    (qp.QubitUnitary(np.eye(2), wires=[0]), {"skip_differentiation": True}),
+    (qp.QubitUnitary(np.eye(4), wires=[0, 1]), {"skip_differentiation": True}),
     (
-        qml.QubitUnitary(qml.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[0]),
+        qp.QubitUnitary(qp.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[0]),
         {"skip_differentiation": True},
     ),
-    (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
-    (qml.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),
-    (qml.PauliRot(1.1, "X", wires=[0]), {}),
-    (qml.StatePrep([0, 1], 0), {"skip_differentiation": True}),
-    (qml.PCPhase(0.27, dim=2, wires=[0, 1]), {}),
-    (qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
-    (qml.adjoint(qml.PauliX(0)), {}),
-    (qml.adjoint(qml.RX(1.1, 0)), {}),
-    (qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]), {}),
-    (qml.s_prod(1.1, qml.RX(1.1, 0)), {}),
-    (qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)), {}),
-    (qml.ctrl(qml.RX(1.1, 0), 1), {}),
-    (qml.exp(qml.PauliX(0), 1.1), {}),
-    (qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5), {}),
-    (qml.ops.Evolution(qml.PauliX(0), 5.2), {}),
-    (qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
-    (qml.estimator.FirstQuantization(1, 2, 1), {}),
-    (qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)), {}),
-    (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
-    (qml.Snapshot(tag="tag"), {}),
-    (qml.Identity(0), {}),
+    (qp.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
+    (qp.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),
+    (qp.PauliRot(1.1, "X", wires=[0]), {}),
+    (qp.StatePrep([0, 1], 0), {"skip_differentiation": True}),
+    (qp.PCPhase(0.27, dim=2, wires=[0, 1]), {}),
+    (qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
+    (qp.adjoint(qp.PauliX(0)), {}),
+    (qp.adjoint(qp.RX(1.1, 0)), {}),
+    (qp.ops.LinearCombination([1.1, 2.2], [qp.PauliX(0), qp.PauliZ(0)]), {}),
+    (qp.s_prod(1.1, qp.RX(1.1, 0)), {}),
+    (qp.prod(qp.PauliX(0), qp.PauliY(1), qp.PauliZ(0)), {}),
+    (qp.ctrl(qp.RX(1.1, 0), 1), {}),
+    (qp.exp(qp.PauliX(0), 1.1), {}),
+    (qp.pow(qp.IsingXX(1.1, [0, 1]), 2.5), {}),
+    (qp.ops.Evolution(qp.PauliX(0), 5.2), {}),
+    (qp.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
+    (qp.estimator.FirstQuantization(1, 2, 1), {}),
+    (qp.prod(qp.RX(1.1, 0), qp.RY(2.2, 0), qp.RZ(3.3, 1)), {}),
+    (qp.Snapshot(measurement=qp.expval(qp.Z(0)), tag="hi"), {}),
+    (qp.Snapshot(tag="tag"), {}),
+    (qp.Identity(0), {}),
     (
         TrotterizedQfunc(
             0.1,
@@ -99,7 +99,7 @@ _INSTANCES_TO_TEST = [
         {"skip_pickle": True},
     ),
     (
-        qml.SelectPauliRot(
+        qp.SelectPauliRot(
             np.array(
                 [
                     0.69307448,
@@ -124,35 +124,35 @@ _INSTANCES_TO_TEST = [
 
 _INSTANCES_TO_FAIL = [
     (
-        qml.SparseHamiltonian(qml.Hamiltonian([1.1], [qml.PauliX(0)]).sparse_matrix(), [0]),
+        qp.SparseHamiltonian(qp.Hamiltonian([1.1], [qp.PauliX(0)]).sparse_matrix(), [0]),
         AssertionError,  # each data element must be tensorlike
     ),
     (
-        qml.PauliError("X", 0.5, wires=0),
+        qp.PauliError("X", 0.5, wires=0),
         DeviceError,  # not supported with default.qubit and does not provide a decomposition
     ),
     (
-        qml.THermitian(np.eye(3), wires=0),
+        qp.THermitian(np.eye(3), wires=0),
         (AssertionError, ValueError),  # qutrit ops fail validation
     ),
     (
-        qml.ops.qubit.special_unitary.TmpPauliRot(1.1, "X", [0]),
+        qp.ops.qubit.special_unitary.TmpPauliRot(1.1, "X", [0]),
         AssertionError,  # private type with has_matrix=False despite having one
     ),
     (
-        qml.ops.Conditional(qml.measure(1), qml.S(0)),
+        qp.ops.Conditional(qp.measure(1), qp.S(0)),
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
     ),
     (
-        qml.GlobalPhase(1.1),
+        qp.GlobalPhase(1.1),
         AssertionError,  # empty decomposition, matrix differs from decomp's matrix
     ),
     (
-        qml.pulse.ParametrizedEvolution(qml.PauliX(0) + sum * qml.PauliZ(0)),
+        qp.pulse.ParametrizedEvolution(qp.PauliX(0) + sum * qp.PauliZ(0)),
         ValueError,  # binding parameters fail, and more
     ),
     (
-        qml.estimator.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
+        qp.estimator.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
         TypeError,  # op.eigvals is a list (overwritten in the init)
     ),
 ]
@@ -170,23 +170,23 @@ _ABSTRACT_OR_META_TYPES = {
     Operator,
     Operation,
     Channel,
-    qml.ops.Projector,
-    qml.ops.SymbolicOp,
-    qml.ops.ScalarSymbolicOp,
-    qml.ops.Pow,
-    qml.ops.CompositeOp,
-    qml.ops.Controlled,
-    qml.ops.ControlledOp,
-    qml.ops.qubit.BasisStateProjector,
-    qml.ops.qubit.StateVectorProjector,
+    qp.ops.Projector,
+    qp.ops.SymbolicOp,
+    qp.ops.ScalarSymbolicOp,
+    qp.ops.Pow,
+    qp.ops.CompositeOp,
+    qp.ops.Controlled,
+    qp.ops.ControlledOp,
+    qp.ops.qubit.BasisStateProjector,
+    qp.ops.qubit.StateVectorProjector,
     StatePrepBase,
-    qml.resource.ResourcesOperation,
-    qml.resource.ErrorOperation,
+    qp.resource.ResourcesOperation,
+    qp.resource.ErrorOperation,
     PowOperation,
-    qml.StatePrep,
-    qml.FromBloq,
-    qml.allocation.Allocate,  # no integer wires
-    qml.allocation.Deallocate,  # no integer wires
+    qp.StatePrep,
+    qp.FromBloq,
+    qp.allocation.Allocate,  # no integer wires
+    qp.allocation.Deallocate,  # no integer wires
 }
 """Types that should not have actual instances created."""
 
@@ -205,7 +205,7 @@ def get_all_classes(c):
 
 _CLASSES_TO_TEST = (
     set(get_all_classes(Operator))
-    - {i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
+    - {i[1] for i in getmembers(qp.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
     - {type(op) for (op, _) in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}
 )

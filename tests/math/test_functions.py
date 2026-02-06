@@ -337,7 +337,7 @@ test_conj_data = [
 
 @pytest.mark.parametrize("t", test_conj_data)
 def test_conj(t):
-    """Test the qml.math.conj function."""
+    """Test the qp.math.conj function."""
     res = fn.conj(t)
     assert fn.allequal(res, np.conj(t))
 
@@ -523,9 +523,9 @@ class TestConvertLike:
 
         np_array = np.array([[1, 0], [1, 0]])
         sp_array = sci.sparse.csr_matrix([[0, 1], [1, 0]])
-        out = qml.math.convert_like(np_array, sp_array)
+        out = qp.math.convert_like(np_array, sp_array)
         assert isinstance(out, sci.sparse.csr_matrix)
-        assert qml.math.allclose(out.todense(), np_array)
+        assert qp.math.allclose(out.todense(), np_array)
 
 
 class TestDot:
@@ -803,14 +803,14 @@ class TestTensordotTorch:
     def test_tensordot_torch_outer(self):
         """Test tensordot outer product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
-        assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
+        assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qp.math.T(self.v1_outer_v2))
 
     def test_tensordot_torch_outer_with_old_version(self, monkeypatch):
         """Test tensordot outer product with an old version of PyTorch."""
         with monkeypatch.context() as m:
             m.setattr("torch.__version__", "1.9.0")
             assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
-            assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
+            assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qp.math.T(self.v1_outer_v2))
 
     @pytest.mark.parametrize(
         "M, v, expected",
@@ -824,13 +824,13 @@ class TestTensordotTorch:
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-1], [0]], [[1], [-2]], [[-1], [-2]]])
     def test_tensordot_torch_matrix_matrix(self, axes):
         """Test tensordot matrix-matrix product with PyTorch."""
-        assert fn.allclose(fn.tensordot(self.M1, qml.math.T(self.M2), axes=axes), self.M1_dot_M2T)
+        assert fn.allclose(fn.tensordot(self.M1, qp.math.T(self.M2), axes=axes), self.M1_dot_M2T)
         assert fn.allclose(
-            fn.tensordot(self.M2, qml.math.T(self.M1), axes=axes), qml.math.T(self.M1_dot_M2T)
+            fn.tensordot(self.M2, qp.math.T(self.M1), axes=axes), qp.math.T(self.M1_dot_M2T)
         )
-        assert fn.allclose(fn.tensordot(qml.math.T(self.M1), self.M2, axes=axes), self.M1T_dot_M2)
+        assert fn.allclose(fn.tensordot(qp.math.T(self.M1), self.M2, axes=axes), self.M1T_dot_M2)
         assert fn.allclose(
-            fn.tensordot(qml.math.T(self.M2), self.M1, axes=axes), qml.math.T(self.M1T_dot_M2)
+            fn.tensordot(qp.math.T(self.M2), self.M1, axes=axes), qp.math.T(self.M1T_dot_M2)
         )
 
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-3], [0]], [[1], [-1]], [[-3], [-1]]])
@@ -848,7 +848,7 @@ class TestTensordotTorch:
 
 
 class TestTensordotDifferentiability:
-    """Test the differentiability of qml.math.tensordot."""
+    """Test the differentiability of qp.math.tensordot."""
 
     v0 = np.array([0.1, 5.3, -0.9, 1.1])
     v1 = np.array([0.5, -1.7, -2.9, 0.0])
@@ -867,11 +867,11 @@ class TestTensordotDifferentiability:
         v2 = np.array(self.v2, requires_grad=True)
 
         # Test inner product
-        jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnums=(0, 1))(v0, v1)
+        jac = qp.jacobian(partial(fn.tensordot, axes=[0, 0]), argnums=(0, 1))(v0, v1)
         assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
 
         # Test outer product
-        jac = qml.jacobian(partial(fn.tensordot, axes=0), argnums=(0, 1))(v0, v2)
+        jac = qp.jacobian(partial(fn.tensordot, axes=0), argnums=(0, 1))(v0, v2)
         assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
         assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
 
@@ -1265,22 +1265,22 @@ class TestRequiresGrad:
         t = np.array([1.0, 2.0, 3.0])
         s = np.array([-2.0, -3.0, -4.0])
 
-        qml.grad(cost_fn)(t, s)
+        qp.grad(cost_fn)(t, s)
         assert res == [True, True]
 
         t.requires_grad = False
-        qml.grad(cost_fn)(t, s)
+        qp.grad(cost_fn)(t, s)
         assert res == [False, True]
 
         t.requires_grad = True
         s.requires_grad = False
-        qml.grad(cost_fn)(t, s)
+        qp.grad(cost_fn)(t, s)
         assert res == [True, False]
 
         t.requires_grad = False
         s.requires_grad = False
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            qml.grad(cost_fn)(t, s)
+            qp.grad(cost_fn)(t, s)
         assert res == [False, False]
 
     def test_torch(self):
@@ -1334,23 +1334,23 @@ class TestInBackprop:
         t = np.array([1.0, 2.0, 3.0], requires_grad=True)
         s = np.array([-2.0, -3.0, -4.0], requires_grad=True)
 
-        qml.grad(cost_fn)(t, s)
+        qp.grad(cost_fn)(t, s)
         assert res == [True, True]
 
         t.requires_grad = False
         s.requires_grad = True
-        qml.grad(cost_fn)(t, s)
+        qp.grad(cost_fn)(t, s)
         assert res == [False, True]
 
         t.requires_grad = True
         s.requires_grad = False
-        qml.grad(cost_fn)(t, s)
+        qp.grad(cost_fn)(t, s)
         assert res == [True, False]
 
         t.requires_grad = False
         s.requires_grad = False
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            qml.grad(cost_fn)(t, s)
+            qp.grad(cost_fn)(t, s)
         assert res == [False, False]
 
     @pytest.mark.torch
@@ -1558,7 +1558,7 @@ def test_T(t):
 
 
 class TestTake:
-    """Tests for the qml.take function"""
+    """Tests for the qp.take function"""
 
     take_data = [
         np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -1592,7 +1592,7 @@ class TestTake:
         def cost_fn(t):
             return np.sum(fn.take(t, indices))
 
-        grad = qml.grad(cost_fn)(t)
+        grad = qp.grad(cost_fn)(t)
         expected = np.array([[[1, 0], [1, 1], [0, 0]], [[1, 0], [0, 0], [1, 0]]])
         assert fn.allclose(grad, expected)
 
@@ -1641,7 +1641,7 @@ class TestTake:
         )
         assert fn.allclose(res, expected)
 
-        grad = qml.grad(cost_fn)(t)
+        grad = qp.grad(cost_fn)(t)
         expected = np.array([[[3, 3], [1, 1], [0, 0]], [[3, 3], [1, 1], [0, 0]]])
         assert fn.allclose(grad, expected)
 
@@ -1662,7 +1662,7 @@ where_data = [
 
 @pytest.mark.parametrize("t", where_data)
 def test_where(t):
-    """Test that the qml.math.where function works as expected"""
+    """Test that the qp.math.where function works as expected"""
     # With output values
     res = fn.where(t < 0, 100 * fn.ones_like(t), t)
     expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
@@ -1721,7 +1721,7 @@ class TestScatterElementAdd:
             """Return a single entry of the cost"""
             return cost(*weights)[self.index[0], self.index[1]]
 
-        grad = qml.grad(grab_cost_entry)(x, y)
+        grad = qp.grad(grab_cost_entry)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1738,7 +1738,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        jac = qml.jacobian(cost_multi)(x, y)
+        jac = qp.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -1755,7 +1755,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
 
-        jac = qml.jacobian(cost_multi)(x, y)
+        jac = qp.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         exp_jac_y = onp.zeros((2, 3, 2))
         exp_jac_y[0, 1, 0] = 2 * y[0]
@@ -1849,7 +1849,7 @@ class TestScatterElementAddMultiValue:
                 + c[self.indices[0][1], self.indices[1][1]]
             )
 
-        grad = qml.grad(add_cost_entries)(x, y)
+        grad = qp.grad(add_cost_entries)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1957,16 +1957,16 @@ class TestDiag:
 class TestCovMatrix:
     """Tests for the cov matrix function"""
 
-    obs_list = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(2)]
+    obs_list = [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliY(2)]
 
     @staticmethod
     def ansatz(weights, wires):
         """Circuit ansatz for testing"""
-        qml.RY(weights[0], wires=wires[0])
-        qml.RX(weights[1], wires=wires[1])
-        qml.RX(weights[2], wires=wires[2])
-        qml.CNOT(wires=[wires[0], wires[1]])
-        qml.CNOT(wires=[wires[1], wires[2]])
+        qp.RY(weights[0], wires=wires[0])
+        qp.RX(weights[1], wires=wires[1])
+        qp.RX(weights[2], wires=wires[2])
+        qp.CNOT(wires=[wires[0], wires[1]])
+        qp.CNOT(wires=[wires[1], wires[2]])
 
     @staticmethod
     def expected_cov(weights):
@@ -1997,10 +1997,10 @@ class TestCovMatrix:
     def test_weird_wires(self, tol):
         """Test that the covariance matrix computes the correct
         result when weird wires are used"""
-        dev = qml.device("default.qubit", wires=["a", -1, "q"])
-        obs_list = [qml.PauliZ("a") @ qml.PauliZ(-1), qml.PauliY("q")]
+        dev = qp.device("default.qubit", wires=["a", -1, "q"])
+        obs_list = [qp.PauliZ("a") @ qp.PauliZ(-1), qp.PauliY("q")]
 
-        @qml.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="autograd")
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
@@ -2009,7 +2009,7 @@ class TestCovMatrix:
             for o in obs_list:
                 o.diagonalizing_gates()
 
-            return qml.probs(wires=dev.wires)
+            return qp.probs(wires=dev.wires)
 
         def cov(weights):
             probs = circuit(weights)
@@ -2024,7 +2024,7 @@ class TestCovMatrix:
             """Grab an entry of the cov output."""
             return cov(weights)[0, 1]
 
-        grad_fn = qml.grad(grab_cov_entry)
+        grad_fn = qp.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -2032,9 +2032,9 @@ class TestCovMatrix:
     def test_autograd(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the Autograd interface"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="autograd")
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
@@ -2043,7 +2043,7 @@ class TestCovMatrix:
             for o in self.obs_list:
                 o.diagonalizing_gates()
 
-            return qml.probs(wires=[0, 1, 2])
+            return qp.probs(wires=[0, 1, 2])
 
         def cov(weights):
             probs = circuit(weights)
@@ -2058,7 +2058,7 @@ class TestCovMatrix:
             """Grab an entry of the cov output."""
             return cov(weights)[0, 1]
 
-        grad_fn = qml.grad(grab_cov_entry)
+        grad_fn = qp.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -2066,9 +2066,9 @@ class TestCovMatrix:
     def test_torch(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the Torch interface"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="torch")
+        @qp.qnode(dev, interface="torch")
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
@@ -2077,7 +2077,7 @@ class TestCovMatrix:
             for o in self.obs_list:
                 o.diagonalizing_gates()
 
-            return qml.probs(wires=[0, 1, 2])
+            return qp.probs(wires=[0, 1, 2])
 
         weights = np.array([0.1, 0.2, 0.3])
         weights_t = torch.tensor(weights, requires_grad=True)
@@ -2096,9 +2096,9 @@ class TestCovMatrix:
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qp.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(weights):
             """Returns the shared probability distribution of ansatz
             in the joint basis for obs_list"""
@@ -2107,7 +2107,7 @@ class TestCovMatrix:
             for o in self.obs_list:
                 o.diagonalizing_gates()
 
-            return qml.probs(wires=[0, 1, 2])
+            return qp.probs(wires=[0, 1, 2])
 
         def cov(weights):
             probs = circuit(weights)
@@ -2146,7 +2146,7 @@ def test_block_diag(tensors):
 
 
 class TestBlockDiagDiffability:
-    """Test differentiability of qml.math.block_diag."""
+    """Test differentiability of qp.math.block_diag."""
 
     @staticmethod
     def expected(x, y):
@@ -2176,7 +2176,7 @@ class TestBlockDiagDiffability:
             )
 
         x, y = np.array([0.2, 1.5], requires_grad=True)
-        res = qml.jacobian(f)(x, y)
+        res = qp.jacobian(f)(x, y)
         exp = self.expected(x, y)
         assert fn.allclose(res[0], exp[0])
         assert fn.allclose(res[1], exp[1])
@@ -2231,7 +2231,7 @@ def test_gather(tensor):
 
 
 class TestCoercion:
-    """Test that qml.math.coerce works for all supported interfaces."""
+    """Test that qp.math.coerce works for all supported interfaces."""
 
     @pytest.mark.parametrize("coercion_interface", ["jax", "autograd", "scipy"])
     def test_trivial_coercions(self, coercion_interface):
@@ -2243,7 +2243,7 @@ class TestCoercion:
             np.array([1, 2, 3]),
         ]
         expected_interfaces = ["jax", "numpy", "torch", "autograd"]
-        res = qml.math.coerce(tensors, like=coercion_interface)
+        res = qp.math.coerce(tensors, like=coercion_interface)
         for tensor, interface in zip(res, expected_interfaces, strict=True):
             assert fn.get_interface(tensor) == interface
 
@@ -2254,7 +2254,7 @@ class TestCoercion:
             np.array([1, 2, 3]),
             torch.tensor(1 + 3j, dtype=torch.complex64),
         ]
-        res = qml.math.coerce(tensors, like="torch")
+        res = qp.math.coerce(tensors, like="torch")
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
 
@@ -2269,7 +2269,7 @@ class TestUnwrap:
             torch.tensor(0.1, dtype=torch.float64),
             torch.tensor([0.5, 0.2]),
         ]
-        res = qml.math.unwrap(values)
+        res = qp.math.unwrap(values)
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(res, expected))
 
@@ -2281,7 +2281,7 @@ class TestUnwrap:
 
         def cost_fn(params):
             nonlocal unwrapped_params
-            unwrapped_params = qml.math.unwrap(params)
+            unwrapped_params = qp.math.unwrap(params)
             return np.sum(np.sin(params[0] * params[2])) + params[1]
 
         values = [onp.array([0.1, 0.2]), np.tensor(0.1, dtype=np.float64), np.tensor([0.5, 0.2])]
@@ -2299,7 +2299,7 @@ class TestUnwrap:
 
         def cost_fn(*params):
             nonlocal unwrapped_params
-            unwrapped_params = qml.math.unwrap(params)
+            unwrapped_params = qp.math.unwrap(params)
             return np.sum(np.sin(params[0] * params[2])) + params[1]
 
         values = [
@@ -2307,7 +2307,7 @@ class TestUnwrap:
             np.tensor(0.1, dtype=np.float64, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=True),
         ]
-        _ = qml.grad(cost_fn, argnums=[1, 2])(*values)
+        _ = qp.grad(cost_fn, argnums=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
@@ -2321,11 +2321,11 @@ class TestUnwrap:
 
         def cost_fn(p, max_depth=None):
             nonlocal unwrapped_params
-            unwrapped_params = qml.math.unwrap(p, max_depth)
+            unwrapped_params = qp.math.unwrap(p, max_depth)
             return np.sum(np.sin(np.prod(p)))
 
         values = np.tensor([0.1, 0.2, 0.3])
-        _ = qml.jacobian(qml.grad(cost_fn))(values)
+        _ = qp.jacobian(qp.grad(cost_fn))(values)
 
         expected = np.array([0.1, 0.2, 0.3])
         assert np.allclose(unwrapped_params, expected)
@@ -2333,7 +2333,7 @@ class TestUnwrap:
 
         # Specifying max_depth=1 will result in the second backward
         # pass not being unwrapped
-        _ = qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
+        _ = qp.jacobian(qp.grad(cost_fn))(values, max_depth=1)
         assert all(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_jax_unwrapping(self):
@@ -2344,7 +2344,7 @@ class TestUnwrap:
 
         def cost_fn(params):
             nonlocal unwrapped_params
-            unwrapped_params = qml.math.unwrap(params)
+            unwrapped_params = qp.math.unwrap(params)
             return np.sum(np.sin(params[0])) + params[2]
 
         values = [jnp.array([0.1, 0.2]), onp.array(0.1, dtype=np.float64), jnp.array([0.5, 0.2])]
@@ -2366,7 +2366,7 @@ class TestGetTrainable:
             torch.tensor(0.1, requires_grad=True),
             torch.tensor([0.5, 0.2]),
         ]
-        res = qml.math.get_trainable_indices(values)
+        res = qp.math.get_trainable_indices(values)
         assert res == {1}
 
     def test_autograd(self):
@@ -2376,7 +2376,7 @@ class TestGetTrainable:
 
         def cost_fn(params):
             nonlocal res
-            res = qml.math.get_trainable_indices(params)
+            res = qp.math.get_trainable_indices(params)
             return np.sum(np.sin(params[0] * params[2])) + params[1]
 
         values = [[0.1, 0.2], np.tensor(0.1, requires_grad=True), np.tensor([0.5, 0.2])]
@@ -2391,7 +2391,7 @@ class TestGetTrainable:
 
         def cost_fn(*params):
             nonlocal res
-            res = qml.math.get_trainable_indices(params)
+            res = qp.math.get_trainable_indices(params)
             return np.sum(np.sin(params[0] * params[2])) + params[1]
 
         values = [
@@ -2399,7 +2399,7 @@ class TestGetTrainable:
             np.tensor(0.1, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=False),
         ]
-        _ = qml.grad(cost_fn)(*values)
+        _ = qp.grad(cost_fn)(*values)
 
         assert res == {0, 1}
 
@@ -2434,7 +2434,7 @@ class TestExpm:
     def get_compare_mat(self):
         """Computes expm via taylor expansion."""
         if self._compare_mat is None:
-            mat = qml.RX.compute_matrix(0.3)
+            mat = qp.RX.compute_matrix(0.3)
             out = np.eye(2, dtype=complex)
             coeff = 1
             for i in range(1, 8):
@@ -2445,17 +2445,17 @@ class TestExpm:
 
         return self._compare_mat
 
-    @pytest.mark.parametrize("phi", [qml.numpy.array(0.3), torch.tensor(0.3), jnp.array(0.3)])
+    @pytest.mark.parametrize("phi", [qp.numpy.array(0.3), torch.tensor(0.3), jnp.array(0.3)])
     def test_expm(self, phi):
         """Test expm function for all interfaces against taylor expansion approximation."""
-        orig_mat = qml.RX.compute_matrix(phi)
-        exp_mat = qml.math.expm(orig_mat)
+        orig_mat = qp.RX.compute_matrix(phi)
+        exp_mat = qp.math.expm(orig_mat)
 
-        assert qml.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
+        assert qp.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
 
 
 class TestSize:
-    """Test qml.math.size method."""
+    """Test qp.math.size method."""
 
     # pylint: disable=too-few-public-methods
 
@@ -2483,7 +2483,7 @@ class TestSize:
 
 @pytest.mark.parametrize("name", ["fft", "ifft", "fft2", "ifft2"])
 class TestFft:
-    """Test qml.math.fft functions and their differentiability."""
+    """Test qp.math.fft functions and their differentiability."""
 
     arg = {
         "fft": onp.sin(onp.linspace(0, np.pi, 5)) - onp.cos(onp.linspace(0, np.pi, 5)) / 2,
@@ -2612,58 +2612,58 @@ class TestFft:
     @staticmethod
     def fft_real(x, func=None):
         """Compute the real part of an FFT function output."""
-        return qml.math.real(func(x))
+        return qp.math.real(func(x))
 
     @staticmethod
     def fft_imag(x, func=None):
         """Compute the imag part of an FFT function output."""
-        return qml.math.imag(func(x))
+        return qp.math.imag(func(x))
 
     def test_numpy(self, name):
         """Test that the functions are available in Numpy."""
-        func = getattr(qml.math.fft, name)
+        func = getattr(qp.math.fft, name)
         out = func(self.arg[name])
-        assert qml.math.allclose(out, self.exp_fft[name])
+        assert qp.math.allclose(out, self.exp_fft[name])
 
     @pytest.mark.autograd
     def test_autograd(self, name):
         """Test that the functions are available in Autograd."""
-        func = getattr(qml.math.fft, name)
+        func = getattr(qp.math.fft, name)
         arg = np.array(self.arg[name], requires_grad=True)
         out = func(arg)
-        assert qml.math.allclose(out, self.exp_fft[name])
-        jac_real = qml.jacobian(self.fft_real)(arg, func=func)
-        jac_imag = qml.jacobian(self.fft_imag)(arg, func=func)
-        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
+        assert qp.math.allclose(out, self.exp_fft[name])
+        jac_real = qp.jacobian(self.fft_real)(arg, func=func)
+        jac_imag = qp.jacobian(self.fft_imag)(arg, func=func)
+        assert qp.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
 
     @pytest.mark.jax
     def test_jax(self, name):
         """Test that the functions are available in JAX."""
-        func = getattr(qml.math.fft, name)
+        func = getattr(qp.math.fft, name)
         arg = jax.numpy.array(self.arg[name], dtype=jax.numpy.complex64)
         out = func(arg)
-        assert qml.math.allclose(out, self.exp_fft[name])
+        assert qp.math.allclose(out, self.exp_fft[name])
         jac = jax.jacobian(func, holomorphic=True)(arg)
-        assert qml.math.allclose(jac, self.exp_jac_fft[name])
+        assert qp.math.allclose(jac, self.exp_jac_fft[name])
 
     @pytest.mark.torch
     def test_torch(self, name):
         """Test that the functions are available in PyTorch."""
-        func = getattr(qml.math.fft, name)
+        func = getattr(qp.math.fft, name)
         arg = torch.tensor(self.arg[name], requires_grad=True)
         out = func(arg)
-        assert qml.math.allclose(out, self.exp_fft[name])
+        assert qp.math.allclose(out, self.exp_fft[name])
         jac_real = torch.autograd.functional.jacobian(partial(self.fft_real, func=func), arg)
         jac_imag = torch.autograd.functional.jacobian(partial(self.fft_imag, func=func), arg)
         print(jac_real + 1j * jac_imag)
         print(self.exp_jac_fft[name])
-        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
+        assert qp.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
 
 
 def test_jax_ndim():
-    """Test that qml.math.ndim dispatches to jax.numpy.ndim."""
+    """Test that qp.math.ndim dispatches to jax.numpy.ndim."""
     with patch("jax.numpy.ndim") as mock_ndim:
-        _ = qml.math.ndim(jax.numpy.array(3))
+        _ = qp.math.ndim(jax.numpy.array(3))
 
     mock_ndim.assert_called_once_with(3)
 
@@ -2672,24 +2672,24 @@ class TestSetIndex:
     """Test the set_index method."""
 
     @pytest.mark.parametrize(
-        "array", [qml.numpy.zeros((2, 2)), torch.zeros((2, 2)), jnp.zeros((2, 2))]
+        "array", [qp.numpy.zeros((2, 2)), torch.zeros((2, 2)), jnp.zeros((2, 2))]
     )
     def test_set_index_jax_2d_array(self, array):
         """Test that an array can be created that is a copy of the
         original array, with the value at the specified index updated"""
 
-        array2 = qml.math.set_index(array, (1, 1), 3)
-        assert qml.math.allclose(array2, np.array([[0, 0], [0, 3]]))
+        array2 = qp.math.set_index(array, (1, 1), 3)
+        assert qp.math.allclose(array2, np.array([[0, 0], [0, 3]]))
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert isinstance(array2, type(array))
 
-    @pytest.mark.parametrize("array", [qml.numpy.zeros(4), torch.zeros(4), jnp.zeros(4)])
+    @pytest.mark.parametrize("array", [qp.numpy.zeros(4), torch.zeros(4), jnp.zeros(4)])
     def test_set_index_jax_1d_array(self, array):
         """Test that an array can be created that is a copy of the
         original array, with the value at the specified index updated"""
 
-        array2 = qml.math.set_index(array, 3, 3)
-        assert qml.math.allclose(array2, np.array([[0, 0, 0, 3]]))
+        array2 = qp.math.set_index(array, 3, 3)
+        assert qp.math.allclose(array2, np.array([[0, 0, 0, 3]]))
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert isinstance(array2, type(array))
 
@@ -2705,12 +2705,12 @@ class TestSetIndex:
         @jax.jit
         def jitted_function(x):
             assert isinstance(x, DynamicJaxprTracer)
-            return qml.math.set_index(array, (0, 0), x)
+            return qp.math.set_index(array, (0, 0), x)
 
         val = jnp.array(7)
         array2 = jitted_function(val)
 
-        assert qml.math.allclose(array2, jnp.array([[7, 2], [3, 4]]))
+        assert qp.math.allclose(array2, jnp.array([[7, 2], [3, 4]]))
         assert isinstance(array2, jnp.ndarray)
 
     @pytest.mark.parametrize(
@@ -2725,12 +2725,12 @@ class TestSetIndex:
         @jax.jit
         def jitted_function(y):
             assert isinstance(y, DynamicJaxprTracer)
-            return qml.math.set_index(array, (1 + y, y), 7)
+            return qp.math.set_index(array, (1 + y, y), 7)
 
         val = jnp.array(0)
         array2 = jitted_function(val)
 
-        assert qml.math.allclose(array2, jnp.array([[1, 2], [7, 4]]))
+        assert qp.math.allclose(array2, jnp.array([[1, 2], [7, 4]]))
         assert isinstance(array2, jnp.ndarray)
 
     @pytest.mark.parametrize(
@@ -2744,17 +2744,17 @@ class TestSetIndex:
         @jax.jit
         def jitted_function(y):
             assert isinstance(y, DynamicJaxprTracer)
-            return qml.math.set_index(array, y, 7)
+            return qp.math.set_index(array, y, 7)
 
         val = jnp.array(0)
         array2 = jitted_function(val)
 
-        assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
+        assert qp.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
         assert isinstance(array2, jnp.ndarray)
 
 
 class TestScatter:
-    """Tests for qml.math.scatter functionality"""
+    """Tests for qp.math.scatter functionality"""
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
@@ -2764,13 +2764,13 @@ class TestScatter:
         updates = [1.0, 2.0, 3.0]
         shape = [6]
 
-        updates = qml.math.asarray(updates, like=interface)
-        indices = qml.math.asarray(indices, like=interface)
+        updates = qp.math.asarray(updates, like=interface)
+        indices = qp.math.asarray(indices, like=interface)
 
-        result = qml.math.scatter(indices, updates, shape)
-        expected = qml.math.asarray([1.0, 0.0, 2.0, 0.0, 3.0, 0.0], like=interface)
+        result = qp.math.scatter(indices, updates, shape)
+        expected = qp.math.asarray([1.0, 0.0, 2.0, 0.0, 3.0, 0.0], like=interface)
 
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
@@ -2780,15 +2780,15 @@ class TestScatter:
         updates = [1.0 + 1.0j, 2.0 - 1.0j]
         shape = [4]
 
-        updates = qml.math.asarray(updates, like=interface)
-        indices = qml.math.asarray(indices, like=interface)
+        updates = qp.math.asarray(updates, like=interface)
+        indices = qp.math.asarray(indices, like=interface)
 
-        result = qml.math.scatter(indices, updates, shape)
-        expected = qml.math.asarray(
+        result = qp.math.scatter(indices, updates, shape)
+        expected = qp.math.asarray(
             [0.0 + 0.0j, 1.0 + 1.0j, 0.0 + 0.0j, 2.0 - 1.0j], like=interface
         )
 
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
@@ -2798,10 +2798,10 @@ class TestScatter:
         updates = [[1.0, 2.0], [3.0, 4.0]]
         shape = [3, 2]  # 3x2 target array
 
-        updates = qml.math.asarray(updates, like=interface)
-        indices = qml.math.asarray(indices, like=interface)
+        updates = qp.math.asarray(updates, like=interface)
+        indices = qp.math.asarray(indices, like=interface)
 
-        result = qml.math.scatter(indices, updates, shape)
-        expected = qml.math.asarray([[1.0, 2.0], [0.0, 0.0], [3.0, 4.0]], like=interface)
+        result = qp.math.scatter(indices, updates, shape)
+        expected = qp.math.asarray([[1.0, 2.0], [0.0, 0.0], [3.0, 4.0]], like=interface)
 
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)

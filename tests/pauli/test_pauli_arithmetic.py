@@ -384,16 +384,16 @@ class TestPauliWord:
         assert np.allclose(sparse_mat.toarray(), true_matrix)
 
     tup_pw_operation = (
-        (PauliWord({0: X}), qml.PauliX(wires=0)),
-        (pw1, qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2))),
-        (pw2, qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c"))),
-        (pw3, qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c"))),
+        (PauliWord({0: X}), qp.PauliX(wires=0)),
+        (pw1, qp.prod(qp.PauliX(wires=1), qp.PauliY(wires=2))),
+        (pw2, qp.prod(qp.PauliX(wires="a"), qp.PauliX(wires="b"), qp.PauliZ(wires="c"))),
+        (pw3, qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c"))),
     )
 
     @pytest.mark.parametrize("pw, op", tup_pw_operation)
     def test_operation(self, pw, op):
         """Test that a PauliWord can be cast to a PL operation."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             pw_op = pw.operation()
         assert len(q.queue) == 0
 
@@ -407,19 +407,19 @@ class TestPauliWord:
 
     def test_operation_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op = PauliWord({}).operation(wire_order=[0, 1])
         assert len(q.queue) == 0
-        id = qml.Identity(wires=[0, 1])
+        id = qp.Identity(wires=[0, 1])
         assert op.name == id.name
         assert op.wires == id.wires
 
     def test_operation_empty_nowires(self):
-        """Test that an empty PauliWord is cast to qml.Identity() operation."""
-        with qml.queuing.AnnotatedQueue() as q:
+        """Test that an empty PauliWord is cast to qp.Identity() operation."""
+        with qp.queuing.AnnotatedQueue() as q:
             res = pw4.operation()
         assert len(q.queue) == 0
-        assert res == qml.Identity()
+        assert res == qp.Identity()
 
     def test_pickling(self):
         """Check that pauliwords can be pickled and unpickled."""
@@ -666,17 +666,17 @@ class TestPauliSentence:
     def test_add_raises_other_types(self):
         """Test that adding types other than PauliWord, PauliSentence or a scalar raises an error"""
         with pytest.raises(TypeError, match="Cannot add"):
-            _ = ps1 + qml.PauliX(0)
+            _ = ps1 + qp.PauliX(0)
 
         with pytest.raises(TypeError, match="Cannot add"):
-            _ = qml.PauliX(0) + ps1
+            _ = qp.PauliX(0) + ps1
 
         with pytest.raises(TypeError, match="Cannot add"):
             _ = ps1 + "asd"
 
         copy_ps = copy(ps1)
         with pytest.raises(TypeError, match="Cannot add"):
-            copy_ps += qml.PauliX(0)
+            copy_ps += qp.PauliX(0)
 
         copy_ps = copy(ps1)
         with pytest.raises(TypeError, match="Cannot add"):
@@ -868,21 +868,21 @@ class TestPauliSentence:
         assert un_simplified_ps == expected_simplified_ps2
 
     tup_ps_operation = (
-        (PauliSentence({PauliWord({0: X}): 1}), qml.s_prod(1, qml.PauliX(wires=0))),
+        (PauliSentence({PauliWord({0: X}): 1}), qp.s_prod(1, qp.PauliX(wires=0))),
         (
             ps1_hamiltonian,
-            qml.sum(
-                1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
-                4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
-                -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+            qp.sum(
+                1.23 * qp.prod(qp.PauliX(wires=1), qp.PauliY(wires=2)),
+                4 * qp.prod(qp.PauliX(wires="a"), qp.PauliX(wires="b"), qp.PauliZ(wires="c")),
+                -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
             ),
         ),
         (
             ps2_hamiltonian,
-            qml.sum(
-                -1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
-                -4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
-                0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
+            qp.sum(
+                -1.23 * qp.prod(qp.PauliX(wires=1), qp.PauliY(wires=2)),
+                -4 * qp.prod(qp.PauliX(wires="a"), qp.PauliX(wires="b"), qp.PauliZ(wires="c")),
+                0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
             ),
         ),
     )
@@ -895,13 +895,13 @@ class TestPauliSentence:
             assert op1.name == op2.name
             assert op1.wires == op2.wires
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             ps_op = ps.operation()
         assert len(q.queue) == 0
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
                 assert ps_summand.scalar == op_summand.scalar
-                if isinstance(ps_summand.base, qml.ops.Prod):  # pylint: disable=no-member
+                if isinstance(ps_summand.base, qp.ops.Prod):  # pylint: disable=no-member
                     for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
                         _compare_ops(pw_factor, op_factor)
                 else:
@@ -911,12 +911,12 @@ class TestPauliSentence:
     def test_operation_with_identity(self):
         """Test that a PauliSentence with an empty PauliWord can be cast to
         operation correctly."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             full_ps_op = ps3.operation()
         assert len(q.queue) == 0
-        full_op = qml.sum(
-            -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
-            qml.s_prod(1, qml.Identity(wires=[0, "b", "c"])),
+        full_op = qp.sum(
+            -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
+            qp.s_prod(1, qp.Identity(wires=[0, "b", "c"])),
         )
 
         ps_op, op = (
@@ -935,10 +935,10 @@ class TestPauliSentence:
 
     def test_operation_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op = ps5.operation(wire_order=[0, 1])
         assert len(q.queue) == 0
-        id = qml.s_prod(0.0, qml.Identity(wires=[0, 1]))
+        id = qp.s_prod(0.0, qp.Identity(wires=[0, 1]))
 
         assert op.name == id.name
         assert op.wires == id.wires
@@ -946,30 +946,30 @@ class TestPauliSentence:
     def test_operation_empty_nowires(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             res1 = ps4.operation()
         assert len(q.queue) == 0
-        assert res1 == qml.Identity()
+        assert res1 == qp.Identity()
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             res2 = ps5.operation()
         assert len(q.queue) == 0
-        assert res2 == qml.s_prod(0, qml.Identity())
+        assert res2 == qp.s_prod(0, qp.Identity())
 
     def test_operation_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
         op = ps5.operation(wire_order=["a", "b"])
-        id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
+        id = qp.s_prod(0.0, qp.Identity(wires=["a", "b"]))
 
-        qml.assert_equal(op, id)
+        qp.assert_equal(op, id)
 
     # pylint: disable=W0621
-    @pytest.mark.parametrize("coeff0", [qml.math.array([0.6, 0.2, 4.3])])
-    @pytest.mark.parametrize("coeff1", [qml.math.array([1.2, -0.9, 2.7])])
+    @pytest.mark.parametrize("coeff0", [qp.math.array([0.6, 0.2, 4.3])])
+    @pytest.mark.parametrize("coeff1", [qp.math.array([1.2, -0.9, 2.7])])
     def test_operation_array_input(self, coeff0, coeff1):
-        pw0 = qml.pauli.PauliWord({0: "X", "a": "Y"})
-        pw1 = qml.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
-        ps = qml.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
+        pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
+        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
+        ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         assert ps.operation() is not None
 
     def test_pickling(self):
@@ -1027,12 +1027,12 @@ class TestPauliSentence:
     @pytest.mark.parametrize("coeff1", [[1.2, -0.9, 2.7], -0.7])
     def test_to_mat_with_broadcasting(self, coeff0, coeff1):
         wire_order = [0, 1, "a", "b"]
-        pw0 = qml.pauli.PauliWord({0: "X", "a": "Y"})
-        pw1 = qml.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
-        ps = qml.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
+        pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
+        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
+        ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         mat0 = ps.to_mat(wire_order=wire_order)
-        mat1 = qml.matrix(ps.operation(), wire_order=wire_order)
-        assert qml.math.allclose(mat0, mat1)
+        mat1 = qp.matrix(ps.operation(), wire_order=wire_order)
+        assert qp.math.allclose(mat0, mat1)
 
 
 class TestPauliSentenceMatrix:
@@ -1044,7 +1044,7 @@ class TestPauliSentenceMatrix:
         (PauliSentence({PauliWord({}): 2.5}), 2.5 * np.ones((1, 1))),
         (
             PauliSentence({PauliWord({}): 2.5, PauliWord({0: "X"}): 1.0}),
-            2.5 * np.eye(2) + qml.matrix(qml.PauliX(0)),
+            2.5 * np.eye(2) + qp.matrix(qp.PauliX(0)),
         ),
     )
 
@@ -1056,7 +1056,7 @@ class TestPauliSentenceMatrix:
         assert np.allclose(res_dense, true_res)
         res_sparse = ps.to_mat(format="csr")
         assert sparse.issparse(res_sparse)
-        assert qml.math.allclose(res_sparse.todense(), true_res)
+        assert qp.math.allclose(res_sparse.todense(), true_res)
 
     def test_empty_pauli_to_mat_with_wire_order(self):
         """Test the to_mat method with an empty PauliSentence and PauliWord and an external wire order."""
@@ -1080,7 +1080,7 @@ class TestPauliSentenceMatrix:
         assert np.allclose(res_dense, true_res)
         res_sparse = ps5.to_mat(wire_order=[0, 1], format="csr")
         assert sparse.issparse(res_sparse)
-        assert qml.math.allclose(res_sparse.todense(), true_res)
+        assert qp.math.allclose(res_sparse.todense(), true_res)
 
     tup_ps_mat = (
         (
@@ -1144,9 +1144,9 @@ class TestPauliSentenceMatrix:
         pw1_mat = np.array([[0, 0, 0, -1j], [0, 0, 1j, 0], [0, -1j, 0, 0], [1j, 0, 0, 0]])
         pw2_mat = np.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
 
-        assert qml.math.allclose(mat, x * pw1_mat + y * pw2_mat)
-        assert qml.math.allclose(gx, qml.math.conj(pw1_mat))  # tf complex number convention
-        assert qml.math.allclose(gy, qml.math.conj(pw2_mat))
+        assert qp.math.allclose(mat, x * pw1_mat + y * pw2_mat)
+        assert qp.math.allclose(gx, qp.math.conj(pw1_mat))  # tf complex number convention
+        assert qp.math.allclose(gy, qp.math.conj(pw2_mat))
 
     @pytest.mark.torch
     def test_dense_matrix_torch(self):
@@ -1154,8 +1154,8 @@ class TestPauliSentenceMatrix:
 
         import torch
 
-        _pw1 = qml.pauli.PauliWord({0: "X", 1: "Z"})
-        _pw2 = qml.pauli.PauliWord({0: "X"})
+        _pw1 = qp.pauli.PauliWord({0: "X", 1: "Z"})
+        _pw2 = qp.pauli.PauliWord({0: "X"})
 
         pw1_mat = torch.tensor([[0, 0, 1, 0], [0, 0, 0, -1], [1, 0, 0, 0], [0, -1, 0, 0]])
         pw2_mat = torch.tensor([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
@@ -1165,14 +1165,14 @@ class TestPauliSentenceMatrix:
 
         def f(x, y):
             H = x * _pw1 + y * _pw2
-            return qml.math.real(H.to_mat())
+            return qp.math.real(H.to_mat())
 
         mat = f(x, y)
-        assert qml.math.allclose(mat, x * pw1_mat + y * pw2_mat)
+        assert qp.math.allclose(mat, x * pw1_mat + y * pw2_mat)
 
         gx, gy = torch.autograd.functional.jacobian(f, (x, y))
-        assert qml.math.allclose(gx, pw1_mat)
-        assert qml.math.allclose(gy, pw2_mat)
+        assert qp.math.allclose(gx, pw1_mat)
+        assert qp.math.allclose(gy, pw2_mat)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [True, False])
@@ -1182,8 +1182,8 @@ class TestPauliSentenceMatrix:
         import jax
 
         def f(x, y):
-            _pw1 = qml.pauli.PauliWord({0: "X", 1: "Y"})
-            _pw2 = qml.pauli.PauliWord({0: "Y", 1: "X"})
+            _pw1 = qp.pauli.PauliWord({0: "X", 1: "Y"})
+            _pw2 = qp.pauli.PauliWord({0: "Y", 1: "X"})
             H = x * _pw1 + y * _pw2
             return H.to_mat()
 
@@ -1197,11 +1197,11 @@ class TestPauliSentenceMatrix:
         pw2_mat = np.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
 
         mat = f(x, y)
-        assert qml.math.allclose(mat, x * pw1_mat + y * pw2_mat)
+        assert qp.math.allclose(mat, x * pw1_mat + y * pw2_mat)
 
         gx, gy = jax.jacobian(f, holomorphic=True, argnums=(0, 1))(x, y)
-        assert qml.math.allclose(gx, pw1_mat)
-        assert qml.math.allclose(gy, pw2_mat)
+        assert qp.math.allclose(gx, pw1_mat)
+        assert qp.math.allclose(gy, pw2_mat)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [True, False])
@@ -1210,7 +1210,7 @@ class TestPauliSentenceMatrix:
         import jax
 
         def f(c1, c2):
-            op = c1 * qml.X(0) + c2 * qml.X(0)
+            op = c1 * qp.X(0) + c2 * qp.X(0)
             return op.simplify()
 
         if use_jit:
@@ -1221,9 +1221,9 @@ class TestPauliSentenceMatrix:
         else:
             coeffs = 1.0
 
-        qml.assert_equal(
+        qp.assert_equal(
             f(1.0, 1.0),
-            (coeffs * qml.X(0) + coeffs * qml.X(0)).simplify(),
+            (coeffs * qp.X(0) + coeffs * qp.X(0)).simplify(),
         )
 
 
@@ -1242,14 +1242,14 @@ class TestPaulicomms:
         with pytest.raises(
             NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
         ):
-            _ = ps1.commutator(qml.Hadamard(0))
+            _ = ps1.commutator(qp.Hadamard(0))
 
     def test_pauli_raises_NotImplementedError_without_pauli_rep_pw(self):
         """Test that a NotImplementedError is raised in PauliWord when ``other`` is an operator without a pauli_rep"""
         with pytest.raises(
             NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
         ):
-            _ = pw1.commutator(qml.Hadamard(0))
+            _ = pw1.commutator(qp.Hadamard(0))
 
     def test_commutators_with_zeros_ps(self):
         """Test that commutators between PauliSentences where one represents the 0 word is treated correctly"""
@@ -1388,7 +1388,7 @@ class TestPaulicomms:
     def test_pauli_word_comm_commutes(self, op1, op2, true_res, convert1):
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
         op1 = convert1(op1)
-        op2 = qml.pauli.pauli_sentence(op2)
+        op2 = qp.pauli.pauli_sentence(op2)
         res2 = op1.commutator(op2)
         res2m = op2.commutator(op1)
         assert res2 == true_res
@@ -1418,7 +1418,7 @@ class TestPaulicomms:
         op1 = PauliWord({0: "X", 1: "X"})
         op2 = PauliWord({0: "Y"}) + PauliWord({1: "Y"})
         res1 = op1.commutator(op2)
-        res2 = qml.commutator(op1, op2, pauli=True)
+        res2 = qp.commutator(op1, op2, pauli=True)
         assert res1 == res2
 
 
@@ -1452,16 +1452,16 @@ class TestPauliArithmeticIntegration:
         ops = [
             J_orthogonal
             * (
-                qml.PauliX(i) @ qml.PauliX((i + 1) % n_wires)
-                + qml.PauliY(i) @ qml.PauliY((i + 1) % n_wires)
+                qp.PauliX(i) @ qp.PauliX((i + 1) % n_wires)
+                + qp.PauliY(i) @ qp.PauliY((i + 1) % n_wires)
             )
             for i in range(n_wires)
         ]
-        ops += [J_zz * qml.PauliZ(i) @ qml.PauliZ((i + 1) % n_wires) for i in range(n_wires)]
-        ops += [h * qml.PauliZ(i) for i in range(n_wires)]
-        H_true = qml.sum(*ops) + 10.0
+        ops += [J_zz * qp.PauliZ(i) @ qp.PauliZ((i + 1) % n_wires) for i in range(n_wires)]
+        ops += [h * qp.PauliZ(i) for i in range(n_wires)]
+        H_true = qp.sum(*ops) + 10.0
 
-        assert qml.math.allclose(H.to_mat(), qml.matrix(H_true))
+        assert qp.math.allclose(H.to_mat(), qp.matrix(H_true))
 
 
 @pytest.mark.all_interfaces

@@ -21,7 +21,7 @@ from pennylane.ftqc import Lattice, generate_lattice
 
 
 class TestLattice:
-    """Test for the qml.ftqc.Lattice class."""
+    """Test for the qp.ftqc.Lattice class."""
 
     def test_lattice_creation_with_graph(self):
         """Test for Lattice object created by a nx.Graph object."""

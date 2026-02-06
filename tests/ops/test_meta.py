@@ -29,20 +29,20 @@ class TestBarrier:
         r"""Test that the barrier influences compilation."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            qp.Barrier(wires=0)
+            qp.Hadamard(wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(qfunc, dev)
+        gates = qp.specs(qnode)()["resources"].gate_sizes[1]
 
         assert gates == 3
 
-        optimized_qfunc = qml.compile(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
+        optimized_qfunc = qp.compile(qfunc)
+        optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        optimized_gates = qp.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
         assert optimized_gates == 2
 
@@ -50,90 +50,90 @@ class TestBarrier:
         r"""Test that the barrier doesn't influence compilation when the only_visual parameter is True."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(only_visual=True, wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            qp.Barrier(only_visual=True, wires=0)
+            qp.Hadamard(wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        dev = qp.device("default.qubit", wires=3)
+        optimized_qfunc = qp.compile(qfunc)
+        optimized_qnode = qp.QNode(optimized_qfunc, dev)
 
-        assert 1 not in qml.specs(optimized_qnode)()["resources"].gate_sizes
+        assert 1 not in qp.specs(optimized_qnode)()["resources"].gate_sizes
 
     def test_barrier_edge_cases(self):
         r"""Test that the barrier works in edge cases."""
 
         def qfunc():
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Barrier(wires=0)
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+            qp.Barrier(wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(qfunc, dev)
+        gates = qp.specs(qnode)()["resources"].gate_sizes[1]
 
         assert gates == 4
 
-        optimized_qfunc = qml.compile(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        assert 1 not in qml.specs(optimized_qnode)()["resources"].gate_sizes
+        optimized_qfunc = qp.compile(qfunc)
+        optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        assert 1 not in qp.specs(optimized_qnode)()["resources"].gate_sizes
 
         def qfunc1():
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+            qp.Barrier(wires=0)
+            qp.Barrier(wires=0)
+            qp.Hadamard(wires=0)
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc1, dev)
-        gates = qml.specs(qnode)()["resources"].gate_sizes[1]
+        dev = qp.device("default.qubit", wires=3)
+        qnode = qp.QNode(qfunc1, dev)
+        gates = qp.specs(qnode)()["resources"].gate_sizes[1]
 
         assert gates == 4
 
         def qfunc2():
-            qml.Hadamard(wires=0)
-            qml.Barrier(only_visual=True, wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+            qp.Barrier(only_visual=True, wires=0)
+            qp.Barrier(wires=0)
+            qp.Hadamard(wires=0)
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=3)
-        optimized_qfunc = qml.compile(qfunc2)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["resources"].gate_sizes[1]
+        dev = qp.device("default.qubit", wires=3)
+        optimized_qfunc = qp.compile(qfunc2)
+        optimized_qnode = qp.QNode(optimized_qfunc, dev)
+        optimized_gates = qp.specs(optimized_qnode)()["resources"].gate_sizes[1]
 
         assert optimized_gates == 2
 
     def test_barrier_adjoint(self):
         """Test if adjoint of a Barrier is decomposed correctly."""
 
-        base = qml.Barrier(wires=(0, 1))
-        adj = qml.ops.op_math.Adjoint(base)
+        base = qp.Barrier(wires=(0, 1))
+        adj = qp.ops.op_math.Adjoint(base)
 
         assert adj.decomposition()[0].name == "Barrier"
 
     def test_barrier_control(self):
         """Test if Barrier is correctly included in queue when controlling"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
         def barrier():
-            qml.PauliX(wires=0)
-            qml.Barrier(wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
+            qp.PauliX(wires=0)
+            qp.Barrier(wires=[0, 1])
+            qp.CNOT(wires=[0, 1])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             barrier()
-            qml.ctrl(barrier, 2)()
-            return qml.state()
+            qp.ctrl(barrier, 2)()
+            return qp.state()
 
-        tape = qml.workflow.construct_tape(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
         tape = tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
 
         assert tape.operations[1].name == "Barrier"
@@ -141,39 +141,39 @@ class TestBarrier:
 
     def test_barrier_empty_wire_list_no_error(self):
         """Test that barrier does not raise an error when instantiated with wires=[]."""
-        barrier = qml.Barrier(wires=[])
-        assert isinstance(barrier, qml.Barrier)
+        barrier = qp.Barrier(wires=[])
+        assert isinstance(barrier, qp.Barrier)
 
     def test_simplify_only_visual_one_wire(self):
         """Test that if `only_visual=True`, the operation simplifies to the identity."""
-        op = qml.Barrier(wires="a", only_visual=True)
+        op = qp.Barrier(wires="a", only_visual=True)
         simplified = op.simplify()
-        qml.assert_equal(simplified, qml.Identity("a"))
+        qp.assert_equal(simplified, qp.Identity("a"))
 
     def test_simplify_only_visual_multiple_wires(self):
         """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
-        op = qml.Barrier(wires=(0, 1, 2), only_visual=True)
+        op = qp.Barrier(wires=(0, 1, 2), only_visual=True)
         simplified = op.simplify()
-        assert isinstance(simplified, qml.ops.op_math.Prod)
+        assert isinstance(simplified, qp.ops.op_math.Prod)
         for i, op in enumerate(simplified.operands):
-            qml.assert_equal(op, qml.Identity(i))
+            qp.assert_equal(op, qp.Identity(i))
 
     def test_simplify_only_visual_False(self):
         """Test that no simplification occurs if only_visual is False."""
-        op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
+        op = qp.Barrier(wires=(0, 1, 2, 3), only_visual=False)
         assert op.simplify() is op
 
     def test_qml_matrix_gives_identity(self):
-        """Test that qml.matrix(op) gives an identity."""
-        op = qml.Barrier(0)
-        assert np.allclose(qml.matrix(op), np.eye(2))
-        op = qml.Barrier()
-        assert np.allclose(qml.matrix(op, wire_order=[0, 3]), np.eye(4))
+        """Test that qp.matrix(op) gives an identity."""
+        op = qp.Barrier(0)
+        assert np.allclose(qp.matrix(op), np.eye(2))
+        op = qp.Barrier()
+        assert np.allclose(qp.matrix(op, wire_order=[0, 3]), np.eye(4))
 
     def test_op_matrix_fails(self):
-        """Test that qml.matrix(op) and op.matrix() both fail."""
-        op = qml.Barrier(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
+        """Test that qp.matrix(op) and op.matrix() both fail."""
+        op = qp.Barrier(0)
+        with pytest.raises(qp.operation.MatrixUndefinedError):
             op.matrix()
 
 
@@ -184,18 +184,18 @@ class TestWireCut:
         """Tests that the WireCut operator behaves as the Identity in the
         absence of cutting"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def with_wirecut():
-            qml.PauliX(wires=0)
-            qml.WireCut(wires=0)
-            return qml.state()
+            qp.PauliX(wires=0)
+            qp.WireCut(wires=0)
+            return qp.state()
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def without_wirecut():
-            qml.PauliX(wires=0)
-            return qml.state()
+            qp.PauliX(wires=0)
+            return qp.state()
 
         assert np.allclose(with_wirecut(), without_wirecut())
 
@@ -205,17 +205,17 @@ class TestWireCut:
             ValueError,
             match="WireCut: wrong number of wires. At least one wire has to be provided.",
         ):
-            qml.WireCut(wires=[])
+            qp.WireCut(wires=[])
 
     def test_qml_matrix_gives_identity(self):
-        """Test that qml.matrix(op) gives an identity."""
-        op = qml.WireCut(0)
-        assert np.allclose(qml.matrix(op), np.eye(2))
+        """Test that qp.matrix(op) gives an identity."""
+        op = qp.WireCut(0)
+        assert np.allclose(qp.matrix(op), np.eye(2))
 
     def test_op_matrix_fails(self):
-        """Test that qml.matrix(op) and op.matrix() both fail."""
-        op = qml.WireCut(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
+        """Test that qp.matrix(op) and op.matrix() both fail."""
+        op = qp.WireCut(0)
+        with pytest.raises(qp.operation.MatrixUndefinedError):
             op.matrix()
 
 
@@ -225,18 +225,18 @@ class TestSnapshot:
     def test_repr(self):
         """Test the repr for a Snapshot."""
 
-        op = qml.Snapshot("my_tag", measurement=qml.expval(qml.Z(0)), shots=2)
+        op = qp.Snapshot("my_tag", measurement=qp.expval(qp.Z(0)), shots=2)
         assert repr(op) == "<Snapshot: tag=my_tag, measurement=expval(Z(0)), shots=Shots(total=2)>"
 
     def test_update_tag(self):
         """Test that update_tag generates a copy with a new tag."""
 
-        op1 = qml.Snapshot("initial_tag", measurement=qml.probs(), shots=5)
+        op1 = qp.Snapshot("initial_tag", measurement=qp.probs(), shots=5)
 
         op2 = op1.update_tag("new_tag")
         assert op2.tag == "new_tag"
-        assert op2.hyperparameters["shots"] == qml.measurements.Shots(5)
-        assert op2.hyperparameters["measurement"] == qml.probs()
+        assert op2.hyperparameters["shots"] == qp.measurements.Shots(5)
+        assert op2.hyperparameters["measurement"] == qp.probs()
         assert op1.tag == "initial_tag"
 
     def test_decomposition(self):
@@ -262,17 +262,17 @@ class TestSnapshot:
 
     def test_snapshot_no_empty_wire_list_error(self):
         """Test that Snapshot does not raise an empty wire error."""
-        snapshot = qml.Snapshot()
-        assert isinstance(snapshot, qml.Snapshot)
+        snapshot = qp.Snapshot()
+        assert isinstance(snapshot, qp.Snapshot)
 
     def test_shots_none_for_no_measurement(self):
         """Test that the shots become None if no measurement is provided."""
 
-        op = qml.Snapshot()
-        assert op.hyperparameters["shots"] == qml.measurements.Shots(None)
+        op = qp.Snapshot()
+        assert op.hyperparameters["shots"] == qp.measurements.Shots(None)
 
     @pytest.mark.parametrize(
-        "mp", (qml.expval(qml.Z(0)), qml.measurements.StateMP(wires=(2, 1, 0)))
+        "mp", (qp.expval(qp.Z(0)), qp.measurements.StateMP(wires=(2, 1, 0)))
     )
     def test_map_wires(self, mp):
         """Test that the wires of the measurement are mapped"""
@@ -280,7 +280,7 @@ class TestSnapshot:
         wire_map = {0: "a", 1: "b"}
         new_op = op.map_wires(wire_map)
         target_mp = mp.map_wires(wire_map)
-        qml.assert_equal(target_mp, new_op.hyperparameters["measurement"])
+        qp.assert_equal(target_mp, new_op.hyperparameters["measurement"])
         assert new_op.tag == "my tag"
 
     # pylint: disable=unused-argument
@@ -293,15 +293,15 @@ class TestSnapshot:
 
         def f():
             if measurement is None:
-                qml.Snapshot()
+                qp.Snapshot()
             else:
-                qml.Snapshot(measurement=qml.state())
+                qp.Snapshot(measurement=qp.state())
 
         jaxpr = jax.make_jaxpr(f)()
 
         if measurement is None:
-            assert jaxpr.eqns[0].primitive == qml.Snapshot._primitive
+            assert jaxpr.eqns[0].primitive == qp.Snapshot._primitive
         else:
-            assert jaxpr.eqns[0].primitive == qml.measurements.StateMP._wires_primitive
-            assert jaxpr.eqns[1].primitive == qml.Snapshot._primitive
+            assert jaxpr.eqns[0].primitive == qp.measurements.StateMP._wires_primitive
+            assert jaxpr.eqns[1].primitive == qp.Snapshot._primitive
             assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]

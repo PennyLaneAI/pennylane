@@ -23,7 +23,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 # TFIM
 gens = [PauliSentence({PauliWord({i: "X", i + 1: "X"}): 1.0}) for i in range(2)]
 gens += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-Ising3 = qml.lie_closure(gens, pauli=True)
+Ising3 = qp.lie_closure(gens, pauli=True)
 
 # XXZ-type DLA, i.e. with true PauliSentences
 gens2 = [
@@ -36,7 +36,7 @@ gens2 = [
     for i in range(2)
 ]
 gens2 += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(3)]
-XXZ3 = qml.lie_closure(gens2, pauli=True)
+XXZ3 = qp.lie_closure(gens2, pauli=True)
 
 
 class TestAdjointRepr:
@@ -123,28 +123,28 @@ class TestAdjointRepr:
 
         ops = [op.operation() for op in dla]
         ad_rep = structure_constants(ops, pauli=False, matrix=matrix)
-        assert qml.math.allclose(ad_rep, ad_rep_true)
+        assert qp.math.allclose(ad_rep, ad_rep_true)
 
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     def test_matrix_input(self, dla):
         """Test structure constants work as expected for matrix inputs"""
-        dla_m = [qml.matrix(op, wire_order=range(3)) for op in dla]
-        adj = qml.structure_constants(dla, matrix=True, is_orthogonal=False)
-        adj_m = qml.structure_constants(dla_m, matrix=True, is_orthogonal=False)
+        dla_m = [qp.matrix(op, wire_order=range(3)) for op in dla]
+        adj = qp.structure_constants(dla, matrix=True, is_orthogonal=False)
+        adj_m = qp.structure_constants(dla_m, matrix=True, is_orthogonal=False)
 
         assert np.allclose(adj, adj_m)
 
     def test_raise_error_for_non_paulis(self):
         """Test that an error is raised when passing operators that do not have a pauli_rep"""
-        generators = [qml.Hadamard(0), qml.X(0)]
+        generators = [qp.Hadamard(0), qp.X(0)]
         with pytest.raises(
             ValueError, match="Cannot compute adjoint representation of non-pauli operators"
         ):
             structure_constants(generators)
 
 
-dla0 = qml.lie_closure([qml.X(0) @ qml.X(1), qml.Z(0), qml.Z(1)], matrix=True)
-adj0 = qml.structure_constants(dla0, matrix=True)
+dla0 = qp.lie_closure([qp.X(0) @ qp.X(1), qp.Z(0), qp.Z(1)], matrix=True)
+adj0 = qp.structure_constants(dla0, matrix=True)
 
 
 class TestInterfacesStructureConstants:
@@ -157,10 +157,10 @@ class TestInterfacesStructureConstants:
         import jax.numpy as jnp
 
         dla_jax = jnp.array(dla0)
-        adj_jax = qml.structure_constants(dla_jax, matrix=True)
+        adj_jax = qp.structure_constants(dla_jax, matrix=True)
 
-        assert qml.math.allclose(adj_jax, adj0)
-        assert qml.math.get_interface(adj_jax) == "jax"
+        assert qp.math.allclose(adj_jax, adj0)
+        assert qp.math.get_interface(adj_jax) == "jax"
 
     @pytest.mark.torch
     def test_torch_structure_constants(self):
@@ -169,10 +169,10 @@ class TestInterfacesStructureConstants:
         import torch
 
         dla_torch = torch.tensor(dla0)
-        adj_torch = qml.structure_constants(dla_torch, matrix=True)
+        adj_torch = qp.structure_constants(dla_torch, matrix=True)
 
-        assert qml.math.allclose(adj_torch, adj0)
-        assert qml.math.get_interface(adj_torch) == "torch"
+        assert qp.math.allclose(adj_torch, adj0)
+        assert qp.math.get_interface(adj_torch) == "torch"
 
     @pytest.mark.tf
     def test_tf_structure_constants(self):
@@ -181,7 +181,7 @@ class TestInterfacesStructureConstants:
         import tensorflow as tf
 
         dla_tf = tf.constant(dla0)
-        adj_tf = qml.structure_constants(dla_tf, matrix=True)
+        adj_tf = qp.structure_constants(dla_tf, matrix=True)
 
-        assert qml.math.allclose(adj_tf, adj0)
-        assert qml.math.get_interface(adj_tf) == "tensorflow"
+        assert qp.math.allclose(adj_tf, adj0)
+        assert qp.math.get_interface(adj_tf) == "tensorflow"

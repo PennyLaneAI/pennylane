@@ -28,7 +28,7 @@ from pennylane.ftqc.pauli_tracker import (
     xz_to_pauli,
 )
 
-_PAULIS = (qml.I, qml.X, qml.Y, qml.Z)
+_PAULIS = (qp.I, qp.X, qp.Y, qp.Z)
 
 
 def generate_pauli_list(wire: int, num_ops: int):
@@ -52,27 +52,27 @@ class TestPauliTracker:
     @pytest.mark.parametrize(
         "op, expected",
         [
-            (qml.I(0), (0, 0)),
-            (qml.X(1), (1, 0)),
-            (qml.Y(0), (1, 1)),
-            (qml.Z(0), (0, 1)),
-            (qml.I, (0, 0)),
-            (qml.X, (1, 0)),
-            (qml.Y, (1, 1)),
-            (qml.Z, (0, 1)),
+            (qp.I(0), (0, 0)),
+            (qp.X(1), (1, 0)),
+            (qp.Y(0), (1, 1)),
+            (qp.Z(0), (0, 1)),
+            (qp.I, (0, 0)),
+            (qp.X, (1, 0)),
+            (qp.Y, (1, 1)),
+            (qp.Z, (0, 1)),
         ],
     )
     def test_pauli_to_xz(self, op, expected):
         xz = pauli_to_xz(op)
         assert xz == expected
 
-    @pytest.mark.parametrize("op", [qml.S(0), qml.CNOT(wires=[0, 1]), qml.H(2)])
+    @pytest.mark.parametrize("op", [qp.S(0), qp.CNOT(wires=[0, 1]), qp.H(2)])
     def test_unsuppored_ops_pauli_to_xz(self, op):
         with pytest.raises(NotImplementedError):
             _ = pauli_to_xz(op)
 
     @pytest.mark.parametrize(
-        "x, z, expected", [(0, 0, qml.I), (1, 0, qml.X), (1, 1, qml.Y), (0, 1, qml.Z)]
+        "x, z, expected", [(0, 0, qp.I), (1, 0, qp.X), (1, 1, qp.Y), (0, 1, qp.Z)]
     )
     def test_xz_to_pauli(self, x, z, expected):
         op = xz_to_pauli(x, z)
@@ -92,7 +92,7 @@ class TestPauliTracker:
 
         op = xz_to_pauli(x, z)(wires=target_wire)
 
-        op_simplify = qml.prod(*pauli_list).simplify()
+        op_simplify = qp.prod(*pauli_list).simplify()
         expected_op = op_simplify if isinstance(op_simplify, _PAULIS) else op_simplify.terms()[1][0]
 
         assert op == expected_op
@@ -102,9 +102,9 @@ class TestPauliTracker:
         with pytest.raises(ValueError):
             _ = pauli_prod(ops)
 
-    @pytest.mark.parametrize("clifford_op", [qml.S, qml.H])
+    @pytest.mark.parametrize("clifford_op", [qp.S, qp.H])
     @pytest.mark.parametrize("wires", [0, 1, 10, 100])
-    @pytest.mark.parametrize("pauli", [qml.I, qml.X, qml.Y, qml.Z])
+    @pytest.mark.parametrize("pauli", [qp.I, qp.X, qp.Y, qp.Z])
     def test_apply_clifford_ops_one_wire(self, clifford_op, wires, pauli):
         pauli = pauli(wires=wires)
         clifford_op = clifford_op(wires=wires)
@@ -113,17 +113,17 @@ class TestPauliTracker:
         new_x, new_z = new_xz[0]
         new_pauli = xz_to_pauli(new_x, new_z)(wires=wires)
 
-        new_xz_clifford_op = qml.prod(new_pauli, clifford_op).matrix()
-        clifford_op_xz = qml.prod(clifford_op, pauli).matrix()
+        new_xz_clifford_op = qp.prod(new_pauli, clifford_op).matrix()
+        clifford_op_xz = qp.prod(clifford_op, pauli).matrix()
 
         assert np.allclose(new_xz_clifford_op, clifford_op_xz) | np.allclose(
             new_xz_clifford_op, -clifford_op_xz
         )
 
-    @pytest.mark.parametrize("clifford_op", [qml.CNOT])
+    @pytest.mark.parametrize("clifford_op", [qp.CNOT])
     @pytest.mark.parametrize("wires", [[0, 1], [1, 2], [10, 100]])
-    @pytest.mark.parametrize("pauli_control", [qml.I, qml.X, qml.Y, qml.Z])
-    @pytest.mark.parametrize("pauli_target", [qml.I, qml.X, qml.Y, qml.Z])
+    @pytest.mark.parametrize("pauli_control", [qp.I, qp.X, qp.Y, qp.Z])
+    @pytest.mark.parametrize("pauli_target", [qp.I, qp.X, qp.Y, qp.Z])
     def test_apply_clifford_ops_two_wires(self, clifford_op, wires, pauli_control, pauli_target):
         pauli_control = pauli_control(wires=wires[0])
         pauli_target = pauli_target(wires=wires[1])
@@ -137,29 +137,29 @@ class TestPauliTracker:
         _xt, _zt = new_xz[1]
         new_pauli_target = xz_to_pauli(_xt, _zt)(wires=wires[1])
 
-        new_xz_clifford_op = qml.prod(new_pauli_control, new_pauli_target, clifford_op).matrix()
-        clifford_op_xz = qml.prod(clifford_op, pauli_control, pauli_target).matrix()
+        new_xz_clifford_op = qp.prod(new_pauli_control, new_pauli_target, clifford_op).matrix()
+        clifford_op_xz = qp.prod(clifford_op, pauli_control, pauli_target).matrix()
 
         assert np.allclose(new_xz_clifford_op, clifford_op_xz) | np.allclose(
             new_xz_clifford_op, -clifford_op_xz
         )
 
     @pytest.mark.parametrize(
-        "clifford_op", [qml.X(0), qml.RZ(phi=0.123, wires=0), qml.RX(phi=0.123, wires=0)]
+        "clifford_op", [qp.X(0), qp.RZ(phi=0.123, wires=0), qp.RX(phi=0.123, wires=0)]
     )
     @pytest.mark.parametrize("xz", [[(0, 1)]])
     def test_apply_clifford_ops_not_imp(self, clifford_op, xz):
         with pytest.raises(
-            NotImplementedError, match="Only qml.H, qml.S and qml.CNOT are supported."
+            NotImplementedError, match="Only qp.H, qp.S and qp.CNOT are supported."
         ):
             _ = commute_clifford_op(clifford_op, xz)
 
     @pytest.mark.parametrize(
         "clifford_op, xz",
         [
-            (qml.S(0), [(0, 1), (1, 1)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 1)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 0), (0, 0), (0, 0)]),
+            (qp.S(0), [(0, 1), (1, 1)]),
+            (qp.CNOT(wires=[0, 1]), [(0, 1)]),
+            (qp.CNOT(wires=[0, 1]), [(0, 0), (0, 0), (0, 0)]),
         ],
     )
     def test_apply_clifford_ops_xz_list_size_mismatch(self, clifford_op, xz):
@@ -172,10 +172,10 @@ class TestPauliTracker:
     @pytest.mark.parametrize(
         "clifford_op, xz",
         [
-            (qml.S(0), [(0, 1, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 1), (0, 1, 1)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 0, 1), (0, 0)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 0, 1), (0, 0, 1)]),
+            (qp.S(0), [(0, 1, 0)]),
+            (qp.CNOT(wires=[0, 1]), [(0, 1), (0, 1, 1)]),
+            (qp.CNOT(wires=[0, 1]), [(0, 0, 1), (0, 0)]),
+            (qp.CNOT(wires=[0, 1]), [(0, 0, 1), (0, 0, 1)]),
         ],
     )
     def test_apply_clifford_ops_xz_tuple_size_mismatch(self, clifford_op, xz):
@@ -188,9 +188,9 @@ class TestPauliTracker:
     @pytest.mark.parametrize(
         "clifford_op, xz",
         [
-            (qml.S(0), [(0, 2)]),
-            (qml.CNOT(wires=[0, 1]), [(0, 1), (0, 3)]),
-            (qml.CNOT(wires=[0, 1]), [(2, 0), (0, 0)]),
+            (qp.S(0), [(0, 2)]),
+            (qp.CNOT(wires=[0, 1]), [(0, 1), (0, 3)]),
+            (qp.CNOT(wires=[0, 1]), [(2, 0), (0, 0)]),
         ],
     )
     def test_apply_clifford_ops_xz_value_err(self, clifford_op, xz):
@@ -208,17 +208,17 @@ class TestOfflineCorrection:
         "ops, mid_measures, expected",
         [
             (
-                [qml.CNOT(wires=[0, 1]), qml.X(0), qml.X(1)],
+                [qp.CNOT(wires=[0, 1]), qp.X(0), qp.X(1)],
                 [1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0],
                 [[(0, 1), (0, 1)]],
             ),
-            ([qml.S(0), qml.Y(0)], [1, 0, 0, 1], [[(1, 0)]]),
-            ([qml.H(0), qml.Z(0)], [1, 1, 0, 0], [[(1, 1)]]),
-            ([qml.RZ(0.1, wires=[0]), qml.X(0)], [1, 0, 1, 1], [[(1, 0)]]),
+            ([qp.S(0), qp.Y(0)], [1, 0, 0, 1], [[(1, 0)]]),
+            ([qp.H(0), qp.Z(0)], [1, 1, 0, 0], [[(1, 1)]]),
+            ([qp.RZ(0.1, wires=[0]), qp.X(0)], [1, 0, 1, 1], [[(1, 0)]]),
         ],
     )
     def test_parse_mid_measurements(self, ops, mid_measures, expected):
-        tape = qml.tape.QuantumScript(ops=ops)
+        tape = qp.tape.QuantumScript(ops=ops)
         by_ops = _parse_mid_measurements(tape, mid_measures)
         assert by_ops == expected
 
@@ -226,15 +226,15 @@ class TestOfflineCorrection:
     @pytest.mark.parametrize(
         "ops",
         [
-            [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[0])],
-            [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[0])],
-            [qml.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0])],
+            [qp.RZ(0.1, wires=[0]), qp.RZ(0.3, wires=[0])],
+            [qp.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[0])],
+            [qp.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0])],
         ],
     )
     def test_unsupported_tape_offline_correction(self, num_shots, ops):
-        measurements = [qml.sample(wires=[0])]
+        measurements = [qp.sample(wires=[0])]
 
-        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements, shots=num_shots)
+        tape = qp.tape.QuantumScript(ops=ops, measurements=measurements, shots=num_shots)
 
         mid_meas = [random.choice([0, 1]) for _ in range(8)]
 
@@ -245,61 +245,61 @@ class TestOfflineCorrection:
         "ops, mid_meas, sample_wires, measures_expected",
         [
             (
-                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1]), qml.Z(0)],
+                [qp.RZ(0.1, wires=[0]), qp.RZ(0.3, wires=[1]), qp.Z(0)],
                 [0, 1, 1, 0, 1, 1, 0, 0],
                 [0],
                 [[1], [0]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[2]), qml.Z(0)],
+                [qp.RZ(0.1, wires=[0]), qp.RZ(0.3, wires=[2]), qp.Z(0)],
                 [0, 1, 1, 0, 1, 1, 0, 0],
                 [0],
                 [[1], [0]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), qml.S(wires=[0])],
+                [qp.RZ(0.1, wires=[0]), qp.S(wires=[0])],
                 [0, 0, 1, 1, 1, 1, 0, 0],
                 [0],
                 [[1], [1]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [qp.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 0, 0, 1],
                 [0],
                 [[0], [0]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [qp.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 0, 1, 0, 1, 0, 0, 1],
                 [0],
                 [[1], [1]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), qml.RZ(0.3, wires=[1])],
+                [qp.RZ(0.1, wires=[0]), qp.RZ(0.3, wires=[1])],
                 [0, 1, 1, 0, 1, 1, 0, 0],
                 [1],
                 [[0], [1]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
+                [qp.RZ(0.1, wires=[0]), RotXZX(0.1, 0.2, 0.3, wires=[1])],
                 [0, 1, 1, 0, 1, 0, 0, 0],
                 [1],
                 [[0], [0]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [qp.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 0, 0, 1],
                 [1],
                 [[0], [1]],
             ),
             (
-                [qml.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
+                [qp.RZ(0.1, wires=[0]), RotXZX(0.1, -0.1, 0.3, wires=[1])],
                 [0, 1, 0, 1, 1, 1, 0, 1],
                 [1],
                 [[1], [1]],
             ),
             (
-                [qml.RZ(-0.1, wires=[0]), qml.RZ(0.1, wires=[1]), qml.X(wires=[1])],
+                [qp.RZ(-0.1, wires=[0]), qp.RZ(0.1, wires=[1]), qp.X(wires=[1])],
                 [0, 1, 0, 1, 1, 1, 0, 1],
                 [0, 1],
                 [[1, 0], [1, 1]],
@@ -307,9 +307,9 @@ class TestOfflineCorrection:
         ],
     )
     def test_non_clifford_offline_correction(self, ops, mid_meas, sample_wires, measures_expected):
-        measurements = [qml.sample(wires=sample_wires)]
+        measurements = [qp.sample(wires=sample_wires)]
 
-        tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+        tape = qp.tape.QuantumScript(ops=ops, measurements=measurements)
 
         measures, expected = measures_expected
 

@@ -28,7 +28,7 @@ class TestPauliMeasure:
         """Tests that the pauli_measure is applied correctly."""
 
         with queuing.AnnotatedQueue() as q:
-            m = qml.pauli_measure("XY", wires=[0, 1])
+            m = qp.pauli_measure("XY", wires=[0, 1])
 
         assert isinstance(m, MeasurementValue)
         assert len(q.queue) == 1
@@ -43,10 +43,10 @@ class TestPauliMeasure:
         """Tests that the correct error is raised."""
 
         with pytest.raises(ValueError, match="The given Pauli word"):
-            qml.pauli_measure("ABC", wires=[0, 1, 2])
+            qp.pauli_measure("ABC", wires=[0, 1, 2])
 
         with pytest.raises(ValueError, match="The number of wires"):
-            qml.pauli_measure("XYX", wires=[0, 1])
+            qp.pauli_measure("XYX", wires=[0, 1])
 
     def test_label(self):
         """Tests the label of a PauliMeasure."""

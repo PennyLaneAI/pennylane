@@ -56,14 +56,14 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     function `'spin_z'`.
     """
     n = qchem.particle_number(orbitals)
-    n_ref = qml.dot(coeffs_ref, ops_ref)
-    qml.assert_equal(n_ref, n)
-    assert isinstance(n, qml.ops.Sum)
+    n_ref = qp.dot(coeffs_ref, ops_ref)
+    qp.assert_equal(n_ref, n)
+    assert isinstance(n, qp.ops.Sum)
 
     wire_order = n_ref.wires
     assert np.allclose(
-        qml.matrix(n, wire_order=wire_order),
-        qml.matrix(n_ref, wire_order=wire_order),
+        qp.matrix(n, wire_order=wire_order),
+        qp.matrix(n_ref, wire_order=wire_order),
     )
 
 

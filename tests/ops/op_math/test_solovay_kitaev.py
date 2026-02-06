@@ -33,20 +33,20 @@ from pennylane.ops.op_math.decompositions.solovay_kitaev import (
     ("op", "matrix", "phase"),
     [
         (
-            qml.Identity(0),  # computed manually
-            qml.math.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]]),
+            qp.Identity(0),  # computed manually
+            qp.math.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]]),
             0.0,
         ),
         (
-            qml.T(0),  # computed manually
-            qml.math.array(
+            qp.T(0),  # computed manually
+            qp.math.array(
                 [[0.92387953 - 0.38268343j, 0.0 + 0.0j], [0.0 + 0.0j, 0.92387953 + 0.38268343j]]
             ),
             0.3926990817,
         ),
         (
-            qml.Hadamard(0),  # computed manually
-            qml.math.array(
+            qp.Hadamard(0),  # computed manually
+            qp.math.array(
                 [
                     [-0.70710678j, -0.70710678j],
                     [-0.70710678j, 0.70710678j],
@@ -59,28 +59,28 @@ from pennylane.ops.op_math.decompositions.solovay_kitaev import (
 def test_su2_transform(op, matrix, phase):
     """Test the functionality to create SU(2) representation"""
     su2_matrix, su2_phase = _SU2_transform(op.matrix())
-    assert qml.math.allclose(su2_matrix, matrix)
-    assert qml.math.isclose(su2_phase, phase)
+    assert qp.math.allclose(su2_matrix, matrix)
+    assert qp.math.isclose(su2_phase, phase)
 
 
 @pytest.mark.parametrize(
     "op,quaternion",
     [
-        (qml.Identity(0), qml.math.array([1.0, 0.0, 0.0, 0.0])),
-        (qml.T(0), qml.math.array([0.92387953, 0.0, 0.0, 0.38268343])),
-        (qml.Hadamard(0), qml.math.array([0, 0.707106781, 0, 0.707106781])),
+        (qp.Identity(0), qp.math.array([1.0, 0.0, 0.0, 0.0])),
+        (qp.T(0), qp.math.array([0.92387953, 0.0, 0.0, 0.38268343])),
+        (qp.Hadamard(0), qp.math.array([0, 0.707106781, 0, 0.707106781])),
     ],
 )
 def test_quaternion_transform(op, quaternion):
     """Test the functionality to create quaternion representation"""
     su2_matrix, _ = _SU2_transform(op.matrix())
     op_quaternion = _quaternion_transform(su2_matrix)
-    assert qml.math.allclose(op_quaternion, quaternion)
+    assert qp.math.allclose(op_quaternion, quaternion)
 
 
 def test_contains_SU2():
     """Test the functionality to check an operation is in an existing approximate set"""
-    op = qml.prod(qml.T(0), qml.T(0), qml.T(0), qml.T(0), qml.T(0))
+    op = qp.prod(qp.T(0), qp.T(0), qp.T(0), qp.T(0), qp.T(0))
     target = _SU2_transform(op.matrix())[0]
 
     approx_ids, _, _, approx_vec = _approximate_set(("T", "T*", "H"), max_length=3)
@@ -88,10 +88,10 @@ def test_contains_SU2():
     exists, quaternion, _ = _contains_SU2(target, approx_vec)
     assert exists
 
-    result = [qml.adjoint(qml.T(0)), qml.adjoint(qml.T(0)), qml.adjoint(qml.T(0))]
+    result = [qp.adjoint(qp.T(0)), qp.adjoint(qp.T(0)), qp.adjoint(qp.T(0))]
 
-    node_points = qml.math.array(approx_vec)
-    seq_node = qml.math.array([quaternion])
+    node_points = qp.math.array(approx_vec)
+    seq_node = qp.math.array([quaternion])
     _, [index] = sp.spatial.KDTree(node_points).query(seq_node, workers=-1)
 
     assert approx_ids[index] == result
@@ -115,52 +115,52 @@ def test_approximate_sets():
 @pytest.mark.parametrize(
     ("op"),
     [
-        qml.U3(0.0, 0.0, 0.0, wires=[0]),
-        qml.U3(1.0, 2.0, 3.0, wires=[1]),
-        qml.U3(-1.0, 2.0, 3.0, wires=["b"]),
-        qml.U3(1.0, 2.0, -3.0, wires=[0]),
+        qp.U3(0.0, 0.0, 0.0, wires=[0]),
+        qp.U3(1.0, 2.0, 3.0, wires=[1]),
+        qp.U3(-1.0, 2.0, 3.0, wires=["b"]),
+        qp.U3(1.0, 2.0, -3.0, wires=[0]),
     ],
 )
 def test_group_commutator_decompose(op):
     """Test group commutator decomposition method for SU(2)"""
 
-    su2_matrix, _ = _SU2_transform(qml.matrix(op))
+    su2_matrix, _ = _SU2_transform(qp.matrix(op))
 
     v_hat, w_hat = _group_commutator_decompose(su2_matrix)
     decomposed_matrix = (
         v_hat
         @ w_hat
-        @ qml.math.conj(qml.math.transpose(v_hat))
-        @ qml.math.conj(qml.math.transpose(w_hat))
+        @ qp.math.conj(qp.math.transpose(v_hat))
+        @ qp.math.conj(qp.math.transpose(w_hat))
     )
 
-    assert qml.math.allclose(decomposed_matrix, su2_matrix)
+    assert qp.math.allclose(decomposed_matrix, su2_matrix)
 
 
 @pytest.mark.parametrize(
     ("op", "max_depth"),
     [
-        (qml.RX(math.pi / 42, wires=[1]), 5),
-        (qml.RY(math.pi / 7, wires=["a"]), 5),
-        (qml.prod(*[qml.RX(1.0, "a"), qml.T("a")]), 5),
-        (qml.prod(*[qml.T(0), qml.Hadamard(0)] * 5), 5),
-        (qml.RZ(-math.pi / 2, wires=[1]), 1),
-        (qml.adjoint(qml.S(wires=["a"])), 1),
-        (qml.PhaseShift(5 * math.pi / 2, wires=[0]), 1),
-        (qml.PhaseShift(-3 * math.pi / 4, wires=["b"]), 1),
+        (qp.RX(math.pi / 42, wires=[1]), 5),
+        (qp.RY(math.pi / 7, wires=["a"]), 5),
+        (qp.prod(*[qp.RX(1.0, "a"), qp.T("a")]), 5),
+        (qp.prod(*[qp.T(0), qp.Hadamard(0)] * 5), 5),
+        (qp.RZ(-math.pi / 2, wires=[1]), 1),
+        (qp.adjoint(qp.S(wires=["a"])), 1),
+        (qp.PhaseShift(5 * math.pi / 2, wires=[0]), 1),
+        (qp.PhaseShift(-3 * math.pi / 4, wires=["b"]), 1),
     ],
 )
 def test_solovay_kitaev(op, max_depth):
     """Test Solovay-Kitaev decomposition method with specified max-depth"""
 
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         gates = sk_decomposition(op, epsilon=1e-4, max_depth=max_depth, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
-    matrix_sk = qml.matrix(qml.tape.QuantumScript(gates))
+    matrix_sk = qp.matrix(qp.tape.QuantumScript(gates))
 
-    assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-2)
-    assert qml.prod(*gates, lazy=False).wires == op.wires
+    assert qp.math.allclose(qp.matrix(op), matrix_sk, atol=1e-2)
+    assert qp.prod(*gates, lazy=False).wires == op.wires
 
 
 @pytest.mark.parametrize(
@@ -169,22 +169,22 @@ def test_solovay_kitaev(op, max_depth):
 )
 def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
     """Test Solovay-Kitaev decomposition method with additional basis information provided."""
-    op = qml.PhaseShift(math.pi / 4, 0)
+    op = qp.PhaseShift(math.pi / 4, 0)
     gates = sk_decomposition(op, 1e-4, max_depth=3, basis_set=basis_set, basis_length=basis_length)
 
-    matrix_sk = qml.prod(*reversed(gates)).matrix()
+    matrix_sk = qp.prod(*reversed(gates)).matrix()
 
-    assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-5)
+    assert qp.math.allclose(qp.matrix(op), matrix_sk, atol=1e-5)
 
 
 @pytest.mark.parametrize(
     "op,query_count",
     [
-        (qml.Hadamard(0), 1),
-        (qml.prod(qml.Hadamard(0), qml.T(0)), 1),
-        (qml.prod(qml.Hadamard(0), qml.T(0), qml.RX(1e-9, 0)), 1),
-        (qml.RZ(1.23, 0), 27),
-        (qml.prod(*[qml.T(0), qml.Hadamard(0)] * 5), 1),
+        (qp.Hadamard(0), 1),
+        (qp.prod(qp.Hadamard(0), qp.T(0)), 1),
+        (qp.prod(qp.Hadamard(0), qp.T(0), qp.RX(1e-9, 0)), 1),
+        (qp.RZ(1.23, 0), 27),
+        (qp.prod(*[qp.T(0), qp.Hadamard(0)] * 5), 1),
     ],
 )
 def test_close_approximations_do_not_go_deep(op, query_count, mocker):
@@ -201,15 +201,15 @@ def test_close_approximations_do_not_go_deep(op, query_count, mocker):
 @pytest.mark.parametrize("epsilon", [2e-2, 3e-2, 7e-2])
 def test_epsilon_value_respected(epsilon):
     """Test that resulting decompositions are within an epsilon value."""
-    op = qml.RX(1.234, 0)
+    op = qp.RX(1.234, 0)
     gates = sk_decomposition(op, epsilon, max_depth=5)
-    matrix_sk = qml.prod(*reversed(gates)).matrix()
-    assert qml.math.norm(qml.matrix(op)[0] - matrix_sk[0]) < epsilon
+    matrix_sk = qp.prod(*reversed(gates)).matrix()
+    assert qp.math.norm(qp.matrix(op)[0] - matrix_sk[0]) < epsilon
 
 
 def test_epsilon_value_effect():
     """Test that different epsilon values create different decompositions."""
-    op = qml.RZ(math.pi / 5, 0)
+    op = qp.RZ(math.pi / 5, 0)
     decomp_with_error = sk_decomposition(op, 9e-2, max_depth=5)
     decomp_less_error = sk_decomposition(op, 1e-2, max_depth=5)
     assert len(decomp_with_error) < len(decomp_less_error)
@@ -217,7 +217,7 @@ def test_epsilon_value_effect():
 
 def test_exception():
     """Test operation wire exception in Solovay-Kitaev"""
-    op = qml.SingleExcitation(1.0, wires=[1, 2])
+    op = qp.SingleExcitation(1.0, wires=[1, 2])
 
     with pytest.raises(
         ValueError,
@@ -236,7 +236,7 @@ def test_exception_with_qjit():
     import jax.numpy as jnp
     from catalyst import qjit
 
-    op = qml.RZ(jnp.array(1.0), wires=[1])
+    op = qp.RZ(jnp.array(1.0), wires=[1])
     with pytest.raises(RuntimeError, match=r"Solovay-Kitaev decomposition is not supported"):
         qjit(sk_decomposition)(op, epsilon=1e-4, max_depth=1)
 
@@ -249,6 +249,6 @@ def test_exception_with_jit():
     import jax.numpy as jnp
     from jax import jit
 
-    op = qml.RZ(jnp.array(1.0), wires=[1])
+    op = qp.RZ(jnp.array(1.0), wires=[1])
     with pytest.raises(RuntimeError, match=r"Solovay-Kitaev decomposition is not supported"):
         jit(sk_decomposition)(op, epsilon=1e-4, max_depth=1)

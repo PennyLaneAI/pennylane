@@ -25,9 +25,9 @@ from pennylane.workflow.resolution import _resolve_execution_config
 def test_resolve_execution_config_with_gradient_method():
     """Test resolving an ExecutionConfig with a specified gradient method."""
     execution_config = ExecutionConfig(gradient_method="best", interface=None)
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
-    empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
+    empty_tape = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))])
 
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
@@ -39,9 +39,9 @@ def test_metric_tensor_lightning_edge_case():
     execution_config = ExecutionConfig(
         gradient_method="best",
     )
-    device = qml.device("lightning.qubit", wires=2)
+    device = qp.device("lightning.qubit", wires=2)
 
-    empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
+    empty_tape = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))])
 
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
@@ -50,8 +50,8 @@ def test_metric_tensor_lightning_edge_case():
 
 def test_param_shift_cv_kwargs():
     """Test resolving an ExecutionConfig with parameter-shift and validating gradient keyword arguments."""
-    dev = qml.device("default.gaussian", wires=1)
-    tape = qml.tape.QuantumScript([qml.Displacement(0.5, 0.0, wires=0)])
+    dev = qp.device("default.gaussian", wires=1)
+    tape = qp.tape.QuantumScript([qp.Displacement(0.5, 0.0, wires=0)])
     execution_config = ExecutionConfig(gradient_method="parameter-shift")
 
     resolved_config = _resolve_execution_config(execution_config, dev, [tape])
@@ -63,9 +63,9 @@ def test_mcm_config_validation():
     """Test validation of MCMConfig within an ExecutionConfig."""
     mcm_config = MCMConfig(postselect_mode="hw-like")
     execution_config = ExecutionConfig(mcm_config=mcm_config, interface=None)
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
-    empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
+    empty_tape = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))])
 
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
@@ -81,9 +81,9 @@ def test_jax_interface(mcm_method, postselect_mode):
     """Test resolving ExecutionConfig with JAX interface and different MCMConfig settings."""
     mcm_config = MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
     execution_config = ExecutionConfig(mcm_config=mcm_config, interface="jax")
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
-    tape_with_finite_shots = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
+    tape_with_finite_shots = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))], shots=100)
 
     resolved_config = _resolve_execution_config(execution_config, device, [tape_with_finite_shots])
 
@@ -98,9 +98,9 @@ def test_jax_jit_interface():
     """Test resolving ExecutionConfig with JAX-JIT interface and deferred MCMConfig method."""
     mcm_config = MCMConfig(mcm_method="deferred")
     execution_config = ExecutionConfig(mcm_config=mcm_config, interface="jax-jit")
-    device = qml.device("default.qubit")
+    device = qp.device("default.qubit")
 
-    empty_tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
+    empty_tape = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))])
 
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
@@ -113,9 +113,9 @@ def test_jax_jit_interface():
 def test_no_device_vjp_if_not_supported():
     """Test that an error is raised for device_vjp=True if the device does not support it."""
 
-    class DummyDev(qml.devices.Device):
+    class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config=qml.devices.ExecutionConfig()):
+        def execute(self, circuits, execution_config=qp.devices.ExecutionConfig()):
             return 0
 
         def supports_derivatives(self, execution_config=None, circuit=None):
@@ -125,7 +125,7 @@ def test_no_device_vjp_if_not_supported():
             return execution_config and execution_config.gradient_method == "vjp_grad"
 
     config_vjp_grad = ExecutionConfig(use_device_jacobian_product=True, gradient_method="vjp_grad")
-    tape = qml.tape.QuantumScript()
+    tape = qp.tape.QuantumScript()
     # no error
     _ = _resolve_execution_config(config_vjp_grad, DummyDev(), (tape,))
 

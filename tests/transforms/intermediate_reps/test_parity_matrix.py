@@ -21,23 +21,23 @@ import pytest
 import pennylane as qp
 from pennylane.transforms import parity_matrix
 
-circ1 = qml.tape.QuantumScript(
+circ1 = qp.tape.QuantumScript(
     [
-        qml.CNOT((3, 2)),
-        qml.CNOT((0, 2)),
-        qml.CNOT((2, 1)),
-        qml.CNOT((3, 2)),
-        qml.CNOT((3, 0)),
-        qml.CNOT((0, 2)),
+        qp.CNOT((3, 2)),
+        qp.CNOT((0, 2)),
+        qp.CNOT((2, 1)),
+        qp.CNOT((3, 2)),
+        qp.CNOT((3, 0)),
+        qp.CNOT((0, 2)),
     ],
 )
 wire_order_abcd = ["a", "b", "c", "d"]
-(circ1_letters,), _ = qml.map_wires(circ1, dict(enumerate(wire_order_abcd)))
+(circ1_letters,), _ = qp.map_wires(circ1, dict(enumerate(wire_order_abcd)))
 
 P1 = np.array([[1, 0, 0, 1], [1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
 
-circ2 = qml.tape.QuantumScript(
-    [qml.SWAP((0, 1)), qml.SWAP((1, 2)), qml.SWAP((2, 3))], []
+circ2 = qp.tape.QuantumScript(
+    [qp.SWAP((0, 1)), qp.SWAP((1, 2)), qp.SWAP((2, 3))], []
 ).expand()  # expand into CNOTs
 P2 = np.array([[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0]])
 
@@ -67,12 +67,12 @@ class TestParityMatrix:
 
     def test_WireError(self):
         """Test that WireError is raised when wires in the provided wire_order dont match the circuit wires"""
-        with pytest.raises(qml.wires.WireError, match="The provided wire_order"):
+        with pytest.raises(qp.wires.WireError, match="The provided wire_order"):
             _ = parity_matrix(circ1, wire_order=[1, 2, 3, 4])
 
     def test_input_validation(self):
         """Test that input circuits are correctly validated"""
-        circ = qml.tape.QuantumScript([qml.CNOT((0, 2)), qml.RZ(0.5, 0)])
+        circ = qp.tape.QuantumScript([qp.CNOT((0, 2)), qp.RZ(0.5, 0)])
 
         with pytest.raises(TypeError, match="parity_matrix requires all input circuits"):
             _ = parity_matrix(circ)
@@ -81,12 +81,12 @@ class TestParityMatrix:
         """Test parity_matrix correctly handles a qfunc input"""
 
         def qfunc(wire1, wire2, wire3):
-            qml.CNOT((wire1, wire2))
-            qml.CNOT((wire2, wire3))
-            qml.CNOT((wire3, wire1))
-            return qml.expval(qml.Z(0))
+            qp.CNOT((wire1, wire2))
+            qp.CNOT((wire2, wire3))
+            qp.CNOT((wire3, wire1))
+            return qp.expval(qp.Z(0))
 
-        tape = qml.tape.make_qscript(qfunc)(0, 1, 2)
+        tape = qp.tape.make_qscript(qfunc)(0, 1, 2)
 
         _P1 = parity_matrix(qfunc, wire_order=range(3))(0, 1, 2)
         _P2 = parity_matrix(tape, wire_order=range(3))
@@ -95,14 +95,14 @@ class TestParityMatrix:
     def test_qnode_input(self):
         """Test parity_matrix correctly handles a qnode input"""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def qnode(wire1, wire2, wire3):
-            qml.CNOT((wire1, wire2))
-            qml.CNOT((wire2, wire3))
-            qml.CNOT((wire3, wire1))
-            return qml.expval(qml.Z(0))
+            qp.CNOT((wire1, wire2))
+            qp.CNOT((wire2, wire3))
+            qp.CNOT((wire3, wire1))
+            return qp.expval(qp.Z(0))
 
-        tape = qml.workflow.construct_tape(qnode)(0, 1, 2)
+        tape = qp.workflow.construct_tape(qnode)(0, 1, 2)
 
         _P1 = parity_matrix(qnode, wire_order=range(3))(0, 1, 2)
         _P2 = parity_matrix(tape, wire_order=range(3))

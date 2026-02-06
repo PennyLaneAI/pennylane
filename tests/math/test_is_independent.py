@@ -44,8 +44,8 @@ dependent_lambdas = [
     lambda x: x if abs(x) < 1e-4 else 0.0,  # x*delta for x=0 is okay
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
-    lambda x: qml.math.log(1 + qml.math.exp(100.0 * x)) / 100.0,  # Softplus is okay
-    lambda x: qml.math.log(1 + qml.math.exp(100.0 * x)) / 100.0,  # Softplus is okay
+    lambda x: qp.math.log(1 + qp.math.exp(100.0 * x)) / 100.0,  # Softplus is okay
+    lambda x: qp.math.log(1 + qp.math.exp(100.0 * x)) / 100.0,  # Softplus is okay
 ]
 
 args_dependent_lambdas = [
@@ -95,16 +95,16 @@ args_overlooked_lambdas = [
 
 def const_circuit(x, y):
     # pylint: disable=unused-argument
-    qml.RX(0.1, wires=0)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(0.1, wires=0)
+    return qp.expval(qp.PauliZ(0))
 
 
 def dependent_circuit(x, y, z):
     # pylint: disable=unused-argument
-    qml.RX(0.1, wires=0)
-    qml.RY(y / 2, wires=0)
-    qml.RZ(qml.math.sin(z), wires=0)
-    return qml.expval(qml.PauliX(0))
+    qp.RX(0.1, wires=0)
+    qp.RY(y / 2, wires=0)
+    qp.RZ(qp.math.sin(z), wires=0)
+    return qp.expval(qp.PauliX(0))
 
 
 class TestIsIndependentAutograd:
@@ -136,13 +136,13 @@ class TestIsIndependentAutograd:
             )
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
     constant_functions = [
-        qml.QNode(const_circuit, dev, interface=interface),
+        qp.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
-        qml.jacobian(lambda x, y: 4 * x - 2.1 * y, argnums=[0, 1]),
+        qp.jacobian(lambda x, y: 4 * x - 2.1 * y, argnums=[0, 1]),
     ]
 
     args_constant = [
@@ -153,10 +153,10 @@ class TestIsIndependentAutograd:
     ]
 
     dependent_functions = [
-        qml.QNode(dependent_circuit, dev, interface=interface),
+        qp.QNode(dependent_circuit, dev, interface=interface),
         np.array,
         lambda x: np.array(x * 0.0),
-        lambda x: (1 + qml.math.tanh(100 * x)) / 2,
+        lambda x: (1 + qp.math.tanh(100 * x)) / 2,
         *dependent_lambdas,
     ]
 
@@ -189,37 +189,37 @@ class TestIsIndependentAutograd:
         """Tests that kwargs are taken into account when checking
         independence of outputs."""
         f = lambda x, kw=False: 0.1 * x if kw else 0.2
-        jac = qml.jacobian(f, argnums=0)
+        jac = qp.jacobian(f, argnums=0)
         args = (0.2,)
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})
         assert is_independent(jac, self.interface, args, {"kw": True})
 
     def test_no_trainable_params_deprecation_grad(self, recwarn):
-        """Tests that no deprecation warning arises when using qml.grad with
-        qml.math.is_independent.
+        """Tests that no deprecation warning arises when using qp.grad with
+        qp.math.is_independent.
         """
 
         def lin(x):
             return pnp.sum(x)
 
         x = pnp.array([0.2, 9.1, -3.2], requires_grad=True)
-        jac = qml.grad(lin)
-        assert qml.math.is_independent(jac, "autograd", (x,), {})
+        jac = qp.grad(lin)
+        assert qp.math.is_independent(jac, "autograd", (x,), {})
 
         assert len(recwarn) == 0
 
     def test_no_trainable_params_deprecation_jac(self, recwarn):
-        """Tests that no deprecation arises when using qml.jacobian with
-        qml.math.is_independent."""
+        """Tests that no deprecation arises when using qp.jacobian with
+        qp.math.is_independent."""
 
         def lin(x, weights=None):
             return np.dot(x, weights)
 
         x = pnp.array([0.2, 9.1, -3.2], requires_grad=True)
         weights = pnp.array([1.1, -0.7, 1.8], requires_grad=True)
-        jac = qml.jacobian(lin)
-        assert qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
+        jac = qp.jacobian(lin)
+        assert qp.math.is_independent(jac, "autograd", (x,), {"weights": weights})
         assert len(recwarn) == 0
 
 
@@ -252,10 +252,10 @@ class TestIsIndependentJax:
             )
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
     constant_functions = [
-        qml.QNode(const_circuit, dev, interface=interface),
+        qp.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
         jax.jacobian(lambda x, y: 4.0 * x - 2.1 * y, argnums=[0, 1]),
@@ -269,9 +269,9 @@ class TestIsIndependentJax:
     ]
 
     dependent_functions = [
-        qml.QNode(dependent_circuit, dev, interface=interface),
+        qp.QNode(dependent_circuit, dev, interface=interface),
         jax.numpy.array,
-        lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
+        lambda x: (1 + qp.math.tanh(1000 * x)) / 2,
         *dependent_lambdas,
     ]
 
@@ -339,10 +339,10 @@ class TestIsIndependentTorch:
             )
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
     constant_functions = [
-        qml.QNode(const_circuit, dev, interface=interface),
+        qp.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
     ]
@@ -354,9 +354,9 @@ class TestIsIndependentTorch:
     ]
 
     dependent_functions = [
-        qml.QNode(dependent_circuit, dev, interface=interface),
+        qp.QNode(dependent_circuit, dev, interface=interface),
         torch.as_tensor,
-        lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
+        lambda x: (1 + qp.math.tanh(1000 * x)) / 2,
         *dependent_lambdas,
     ]
 

@@ -34,9 +34,9 @@ def test_error_raised_if_jax_not_installed():
         pytest.skip()
     except ImportError:
         with pytest.raises(ImportError, match="Module jax is required"):
-            qml.pulse.pwc(10)
+            qp.pulse.pwc(10)
         with pytest.raises(ImportError, match="Module jax is required"):
-            qml.pulse.pwc_from_function(10, 10)
+            qp.pulse.pwc_from_function(10, 10)
 
 
 @pytest.mark.jax
@@ -45,7 +45,7 @@ class TestPWC:
 
     def test_pwc_returns_callable(self):
         """Tests that the pwc function returns a callable with arguments (params, t)"""
-        c = qml.pulse.pwc(10)
+        c = qp.pulse.pwc(10)
         argspec = inspect.getfullargspec(c)
 
         assert callable(c)
@@ -53,7 +53,7 @@ class TestPWC:
 
     def test_t_out_of_bounds_returns_0(self):
         """Tests that requesting a value for the pwc function outside the defined window returns 0"""
-        f_pwc = qml.pulse.pwc(timespan=(1, 3))
+        f_pwc = qp.pulse.pwc(timespan=(1, 3))
         constants = np.linspace(0, 12, 13)
 
         assert f_pwc(constants, 1.5) != 0
@@ -62,7 +62,7 @@ class TestPWC:
 
     def test_bins_match_params_array(self):
         """Test the pwc function contains bins matching the array of constants passed as params"""
-        f_pwc = qml.pulse.pwc(timespan=(1, 3))
+        f_pwc = qp.pulse.pwc(timespan=(1, 3))
         constants = np.linspace(0, 12, 13)
 
         y = [float(f_pwc(constants, i)) for i in np.linspace(1, 3, 100)]
@@ -73,8 +73,8 @@ class TestPWC:
         constants = np.linspace(0, 12, 13)
 
         # should be identical
-        f1 = qml.pulse.pwc(10)
-        f2 = qml.pulse.pwc((0, 10))
+        f1 = qp.pulse.pwc(10)
+        f2 = qp.pulse.pwc((0, 10))
 
         assert np.all([f1(constants, t) == f2(constants, t) for t in np.linspace(-2, 12, 200)])
         assert f1(constants, 10) == 0
@@ -83,7 +83,7 @@ class TestPWC:
         assert f2(constants, 0) == constants[0]
 
         # should set t1=1 instead of default t1=0
-        f3 = qml.pulse.pwc((1, 3))
+        f3 = qp.pulse.pwc((1, 3))
         assert f3(constants, 3) == 0
         assert f3(constants, 1) == constants[0]
         assert f3(constants, 0) == 0
@@ -92,7 +92,7 @@ class TestPWC:
         """Test that jax.jit can be used on the callable produced by pwc_from_function"""
         import jax
 
-        f = qml.pulse.pwc(10)
+        f = qp.pulse.pwc(10)
         assert jax.jit(f)([1.2, 2.3], 2) != 0
         assert jax.jit(f)([1.2, 2.3], 13) == 0
 
@@ -108,7 +108,7 @@ class TestPWC_from_function:
         def f(x):
             return x**2
 
-        c1 = qml.pulse.pwc_from_function(10, 10)
+        c1 = qp.pulse.pwc_from_function(10, 10)
         c2 = c1(f)
 
         argspec1 = inspect.getfullargspec(c1)
@@ -122,7 +122,7 @@ class TestPWC_from_function:
     def test_use_as_decorator_returns_callable(self):
         """Test that decorating a function with pwc_from_function returns a callable with arguments (params, t)"""
 
-        @qml.pulse.pwc_from_function(9, 10)
+        @qp.pulse.pwc_from_function(9, 10)
         def f(param, t):
             return t**2 + param
 
@@ -138,9 +138,9 @@ class TestPWC_from_function:
         def f_initial(param, t):
             return t**2 + param
 
-        f_pwc = qml.pulse.pwc_from_function(timespan=9, num_bins=10)(f_initial)
+        f_pwc = qp.pulse.pwc_from_function(timespan=9, num_bins=10)(f_initial)
 
-        @qml.pulse.pwc_from_function(timespan=9, num_bins=10)
+        @qp.pulse.pwc_from_function(timespan=9, num_bins=10)
         def f_decorated(param, t):
             return t**2 + param
 
@@ -160,7 +160,7 @@ class TestPWC_from_function:
         def f_initial(param, t):
             return t + param
 
-        f_pwc = qml.pulse.pwc_from_function(timespan=9, num_bins=num_bins)(f_initial)
+        f_pwc = qp.pulse.pwc_from_function(timespan=9, num_bins=num_bins)(f_initial)
 
         # check that there are only a limited number of unique output values for the pwc function
         y = [float(f_pwc(2, i)) for i in np.linspace(0, 9, 1000)]
@@ -173,7 +173,7 @@ class TestPWC_from_function:
         def f_initial(param, t):
             return t + param
 
-        f_pwc = qml.pulse.pwc_from_function(timespan=(1, 3), num_bins=10)(f_initial)
+        f_pwc = qp.pulse.pwc_from_function(timespan=(1, 3), num_bins=10)(f_initial)
 
         assert f_pwc(3, 1.5) != 0
         assert f_pwc(3, 0) == 0
@@ -188,8 +188,8 @@ class TestPWC_from_function:
         params = [1.2, 2.3]
 
         # should be identical, t1=0, t2=10
-        f1 = qml.pulse.pwc_from_function(10, 12)(f)
-        f2 = qml.pulse.pwc_from_function((0, 10), 12)(f)
+        f1 = qp.pulse.pwc_from_function(10, 12)(f)
+        f2 = qp.pulse.pwc_from_function((0, 10), 12)(f)
 
         assert np.all([f1(params, t) == f2(params, t) for t in np.linspace(-2, 12, 200)])
         assert f1(params, 10) == 0
@@ -198,7 +198,7 @@ class TestPWC_from_function:
         assert f2(params, 0) == params[0]
 
         # should set t1=1 instead of default t1=0
-        f3 = qml.pulse.pwc_from_function((1, 3), 12)(f)
+        f3 = qp.pulse.pwc_from_function((1, 3), 12)(f)
         assert f3(params, 3) == 0
         assert f3(params, 1) == f(params, 1)
         assert f3(params, 0) == 0
@@ -207,7 +207,7 @@ class TestPWC_from_function:
         """Test that jax.jit can be used on the callable produced by pwc_from_function"""
         import jax
 
-        @qml.pulse.pwc_from_function((1, 3), 12)
+        @qp.pulse.pwc_from_function((1, 3), 12)
         def f(params, t):
             return params[1] * t**2 + params[0]
 
@@ -260,67 +260,67 @@ class TestIntegration:
     def test_parametrized_hamiltonian_with_pwc(self):
         """Test that a pwc function can be used to create a ParametrizedHamiltonian"""
 
-        f1 = qml.pulse.pwc((1, 6))
-        f2 = qml.pulse.pwc((0.5, 3))
-        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+        f1 = qp.pulse.pwc((1, 6))
+        f2 = qp.pulse.pwc((0.5, 3))
+        H = f1 * qp.PauliX(0) + f2 * qp.PauliY(1)
 
         constants = np.linspace(0, 9, 10)
 
         assert isinstance(H, ParametrizedHamiltonian)
 
         # at t=7 and t=0.2, both terms are 0
-        assert qml.math.allequal(qml.matrix(H(params=[constants, constants], t=7)), 0)
-        assert qml.math.allequal(qml.matrix(H(params=[constants, constants], t=0.2)), 0)
+        assert qp.math.allequal(qp.matrix(H(params=[constants, constants], t=7)), 0)
+        assert qp.math.allequal(qp.matrix(H(params=[constants, constants], t=0.2)), 0)
 
         # at t=4, only term 1 is non-zero
-        true_mat = qml.matrix(f1(constants, 4) * qml.PauliX(0), wire_order=[0, 1])
-        assert qml.math.allequal(qml.matrix(H(params=[constants, constants], t=4)), true_mat)
+        true_mat = qp.matrix(f1(constants, 4) * qp.PauliX(0), wire_order=[0, 1])
+        assert qp.math.allequal(qp.matrix(H(params=[constants, constants], t=4)), true_mat)
 
         # at t=0.7, only term 2 is non-zero
-        true_mat = qml.matrix(f2(constants, 0.7) * qml.PauliY(1), wire_order=[0, 1])
-        assert qml.math.allequal(qml.matrix(H(params=[constants, constants], t=0.7)), true_mat)
+        true_mat = qp.matrix(f2(constants, 0.7) * qp.PauliY(1), wire_order=[0, 1])
+        assert qp.math.allequal(qp.matrix(H(params=[constants, constants], t=0.7)), true_mat)
 
         # at t=1.5, both are non-zero and output is as expected
-        true_mat = qml.matrix(f1(constants, 1.5) * qml.PauliX(0), wire_order=[0, 1]) + qml.matrix(
-            f2(constants, 1.5) * qml.PauliY(1), wire_order=[0, 1]
+        true_mat = qp.matrix(f1(constants, 1.5) * qp.PauliX(0), wire_order=[0, 1]) + qp.matrix(
+            f2(constants, 1.5) * qp.PauliY(1), wire_order=[0, 1]
         )
-        assert qml.math.allequal(qml.matrix(H(params=[constants, constants], t=1.5)), true_mat)
+        assert qp.math.allequal(qp.matrix(H(params=[constants, constants], t=1.5)), true_mat)
 
     @pytest.mark.slow
     def test_qnode_pwc(self):
         """Test that the evolution of a parametrized hamiltonian defined with a pwc function be executed on a QNode."""
         import jax
 
-        f1 = qml.pulse.pwc((1, 6))
-        f2 = qml.pulse.pwc((0.5, 3))
-        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+        f1 = qp.pulse.pwc((1, 6))
+        f2 = qp.pulse.pwc((0.5, 3))
+        H = f1 * qp.PauliX(0) + f2 * qp.PauliY(1)
 
         t = (0, 4)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def true_circuit(params):
             # ops X0 and Y1 are commuting - time evolution of f1*X0 + f2*X1 is exp(-i*F1*X0)exp(-i*F2*Y1)
             # Where Fj = integral of fj(p,t)dt over evolution time t
             coeff1 = partial(self.integral_pwc, 1, 6, 10, (0, 4), f1)
             coeff2 = partial(self.integral_pwc, 0.5, 3, 10, (0, 4), f2)
-            qml.prod(
-                qml.exp(qml.PauliX(0), -1j * coeff1(params[0])),
-                qml.exp(qml.PauliY(1), -1j * coeff2(params[1])),
+            qp.prod(
+                qp.exp(qp.PauliX(0), -1j * coeff1(params[0])),
+                qp.exp(qp.PauliY(1), -1j * coeff2(params[1])),
             )
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         constants = np.linspace(0, 9, 10)
         params = [constants, constants]
 
-        assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
-        assert qml.math.allclose(
+        assert qp.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
+        assert qp.math.allclose(
             jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
 
@@ -329,110 +329,110 @@ class TestIntegration:
         a QNode using jax-jit, and the results don't differ from execution without jitting."""
         import jax
 
-        f1 = qml.pulse.pwc((1, 6))
-        f2 = qml.pulse.pwc((0.5, 3))
-        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+        f1 = qp.pulse.pwc((1, 6))
+        f2 = qp.pulse.pwc((0.5, 3))
+        H = f1 * qp.PauliX(0) + f2 * qp.PauliY(1)
 
         t = (0, 4)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         constants = np.linspace(0, 9, 10)
         params = [constants, constants]
 
-        assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-3)
-        assert qml.math.allclose(
+        assert qp.math.allclose(jitted_circuit(params), circuit(params), atol=5e-3)
+        assert qp.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(circuit)(params), atol=5e-3
         )
 
     def test_parametrized_hamiltonian_with_pwc_from_function(self):
         """Test that a function decorated by pwc_from_function can be used to create a ParametrizedHamiltonian"""
 
-        @qml.pulse.pwc_from_function((2, 5), 20)
+        @qp.pulse.pwc_from_function((2, 5), 20)
         def f1(params, t):
             return params + t
 
-        @qml.pulse.pwc_from_function((3, 7), 10)
+        @qp.pulse.pwc_from_function((3, 7), 10)
         def f2(params, t):
             return params[0] + params[1] * t**2
 
-        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+        H = f1 * qp.PauliX(0) + f2 * qp.PauliY(1)
         params = [1.2, [2.3, 3.4]]
 
         assert isinstance(H, ParametrizedHamiltonian)
 
         # at t=8 and t=1, both terms are 0
-        assert qml.math.allequal(qml.matrix(H(params, t=8)), 0)
-        assert qml.math.allequal(qml.matrix(H(params, t=1)), 0)
+        assert qp.math.allequal(qp.matrix(H(params, t=8)), 0)
+        assert qp.math.allequal(qp.matrix(H(params, t=1)), 0)
 
         # at t=2.5, only term 1 is non-zero
-        true_mat = qml.matrix(f1(params[0], 2.5) * qml.PauliX(0), wire_order=[0, 1])
-        assert qml.math.allequal(qml.matrix(H(params, t=2.5)), true_mat)
+        true_mat = qp.matrix(f1(params[0], 2.5) * qp.PauliX(0), wire_order=[0, 1])
+        assert qp.math.allequal(qp.matrix(H(params, t=2.5)), true_mat)
 
         # # at t=6, only term 2 is non-zero
-        true_mat = qml.matrix(f2(params[1], 6) * qml.PauliY(1), wire_order=[0, 1])
-        assert qml.math.allequal(qml.matrix(H(params, t=6)), true_mat)
+        true_mat = qp.matrix(f2(params[1], 6) * qp.PauliY(1), wire_order=[0, 1])
+        assert qp.math.allequal(qp.matrix(H(params, t=6)), true_mat)
         #
         # # at t=4, both are non-zero and output is as expected
-        true_mat = qml.matrix(f1(params[0], 4) * qml.PauliX(0), wire_order=[0, 1]) + qml.matrix(
-            f2(params[1], 4) * qml.PauliY(1), wire_order=[0, 1]
+        true_mat = qp.matrix(f1(params[0], 4) * qp.PauliX(0), wire_order=[0, 1]) + qp.matrix(
+            f2(params[1], 4) * qp.PauliY(1), wire_order=[0, 1]
         )
-        assert qml.math.allequal(qml.matrix(H(params, t=4)), true_mat)
+        assert qp.math.allequal(qp.matrix(H(params, t=4)), true_mat)
 
     def test_qnode_pwc_from_function(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
         can be executed on a QNode."""
         import jax
 
-        @qml.pulse.pwc_from_function((2, 5), 20)
+        @qp.pulse.pwc_from_function((2, 5), 20)
         def f1(params, t):
             return params + t
 
-        @qml.pulse.pwc_from_function((3, 7), 10)
+        @qp.pulse.pwc_from_function((3, 7), 10)
         def f2(params, t):
             return params[0] + params[1] * t**2
 
-        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+        H = f1 * qp.PauliX(0) + f2 * qp.PauliY(1)
 
         t = (1, 4)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def true_circuit(params):
             # ops X0 and Y1 are commuting - time evolution of f1*X0 + f2*X1 is exp(-i*F1*X0)exp(-i*F2*Y1)
             # Where Fj = integral of fj(p,t)dt over evolution time t
             coeff1 = partial(self.integral_pwc, 2, 5, 20, (1, 4), f1)
             coeff2 = partial(self.integral_pwc, 3, 7, 10, (1, 4), f2)
-            qml.prod(
-                qml.exp(qml.PauliX(0), -1j * coeff1(params[0], pwc_from_function=True)),
-                qml.exp(qml.PauliY(1), -1j * coeff2(params[1], pwc_from_function=True)),
+            qp.prod(
+                qp.exp(qp.PauliX(0), -1j * coeff1(params[0], pwc_from_function=True)),
+                qp.exp(qp.PauliY(1), -1j * coeff2(params[1], pwc_from_function=True)),
             )
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         params = [1.2, [2.3, 3.4]]
 
         circuit_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(circuit)(params))
         true_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(true_circuit)(params))
 
-        assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-2)
-        assert qml.math.allclose(circuit_grad_flattened, true_grad_flattened, atol=5e-2)
+        assert qp.math.allclose(circuit(params), true_circuit(params), atol=5e-2)
+        assert qp.math.allclose(circuit_grad_flattened, true_grad_flattened, atol=5e-2)
 
     def test_qnode_pwc_from_function_jit(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
@@ -440,35 +440,35 @@ class TestIntegration:
         """
         import jax
 
-        @qml.pulse.pwc_from_function((2, 5), 20)
+        @qp.pulse.pwc_from_function((2, 5), 20)
         def f1(params, t):
             return params + t
 
-        @qml.pulse.pwc_from_function((3, 7), 10)
+        @qp.pulse.pwc_from_function((3, 7), 10)
         def f2(params, t):
             return params[0] + params[1] * t**2
 
-        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+        H = f1 * qp.PauliX(0) + f2 * qp.PauliY(1)
 
         t = (1, 4)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qp.evolve(H)(params=params, t=t)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         params = [1.2, [2.3, 3.4]]
 
         circuit_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(circuit)(params))
         jitted_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(jitted_circuit)(params))
 
-        assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-2)
-        assert qml.math.allclose(circuit_grad_flattened, jitted_grad_flattened, atol=5e-2)
+        assert qp.math.allclose(jitted_circuit(params), circuit(params), atol=5e-2)
+        assert qp.math.allclose(circuit_grad_flattened, jitted_grad_flattened, atol=5e-2)

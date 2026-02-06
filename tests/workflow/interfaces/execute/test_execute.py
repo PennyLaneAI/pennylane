@@ -20,19 +20,19 @@ import pennylane as qp
 from pennylane.devices import DefaultQubit
 
 
-@pytest.mark.parametrize("diff_method", (None, "backprop", qml.gradients.param_shift))
+@pytest.mark.parametrize("diff_method", (None, "backprop", qp.gradients.param_shift))
 def test_caching(diff_method):
     """Test that cache execute returns the cached result if the same script is executed
     multiple times, both in multiple times in a batch and in separate batches."""
     dev = DefaultQubit()
 
-    qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
+    qs = qp.tape.QuantumScript([qp.PauliX(0)], [qp.expval(qp.PauliZ(0))])
 
     cache = {}
 
-    with qml.Tracker(dev) as tracker:
-        results = qml.execute([qs, qs], dev, cache=cache, diff_method=diff_method)
-        results2 = qml.execute([qs, qs], dev, cache=cache, diff_method=diff_method)
+    with qp.Tracker(dev) as tracker:
+        results = qp.execute([qs, qs], dev, cache=cache, diff_method=diff_method)
+        results2 = qp.execute([qs, qs], dev, cache=cache, diff_method=diff_method)
 
     assert len(cache) == 1
     assert cache[qs.hash] == -1.0
@@ -46,20 +46,20 @@ def test_caching(diff_method):
 
 
 def test_execute_legacy_device():
-    """Test that qml.execute works when passed a legacy device class."""
+    """Test that qp.execute works when passed a legacy device class."""
 
-    dev = qml.devices.DefaultMixed(wires=2)
+    dev = qp.devices.DefaultMixed(wires=2)
 
-    tape = qml.tape.QuantumScript([qml.RX(0.1, 0)], [qml.expval(qml.Z(0))])
+    tape = qp.tape.QuantumScript([qp.RX(0.1, 0)], [qp.expval(qp.Z(0))])
 
-    res = qml.execute((tape,), dev)
+    res = qp.execute((tape,), dev)
 
-    assert qml.math.allclose(res[0], np.cos(0.1))
+    assert qp.math.allclose(res[0], np.cos(0.1))
 
 
 def test_execution_with_empty_batch():
-    """Test that qml.execute can be used with an empty batch."""
+    """Test that qp.execute can be used with an empty batch."""
 
-    dev = qml.device("default.qubit")
-    res = qml.execute((), dev)
+    dev = qp.device("default.qubit")
+    res = qp.execute((), dev)
     assert res == ()

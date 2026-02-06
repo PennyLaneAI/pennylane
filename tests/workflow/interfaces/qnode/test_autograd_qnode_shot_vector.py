@@ -50,21 +50,21 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For one measurement and one param, the gradient is a float."""
-        dev = qml.device(dev_name, wires=1)
+        dev = qp.device(dev_name, wires=1)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = np.array(0.1)
 
         def cost(a):
-            return qml.math.stack(circuit(a))
+            return qp.math.stack(circuit(a))
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies,)
@@ -73,22 +73,22 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
-        dev = qml.device(dev_name, wires=1)
+        dev = qp.device(dev_name, wires=1)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = np.array(0.1)
         b = np.array(0.2)
 
         def cost(a, b):
-            return qml.math.stack(circuit(a, b))
+            return qp.math.stack(circuit(a, b))
 
-        jac = qml.jacobian(cost, argnums=[0, 1])(a, b)
+        jac = qp.jacobian(cost, argnums=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -100,21 +100,21 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
-        dev = qml.device(dev_name, wires=1)
+        dev = qp.device(dev_name, wires=1)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         a = np.array([0.1, 0.2])
 
         def cost(a):
-            return qml.math.stack(circuit(a))
+            return qp.math.stack(circuit(a))
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies, 2)
@@ -124,21 +124,21 @@ class TestReturnWithShotVectors:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = np.array(0.1)
 
         def cost(a):
-            return qml.math.stack(circuit(a))
+            return qp.math.stack(circuit(a))
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies, 4)
@@ -148,22 +148,22 @@ class TestReturnWithShotVectors:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = np.array(0.1)
         b = np.array(0.2)
 
         def cost(a, b):
-            return qml.math.stack(circuit(a, b))
+            return qp.math.stack(circuit(a, b))
 
-        jac = qml.jacobian(cost, argnums=[0, 1])(a, b)
+        jac = qp.jacobian(cost, argnums=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -176,21 +176,21 @@ class TestReturnWithShotVectors:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.probs(wires=[0, 1])
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.probs(wires=[0, 1])
 
         a = np.array([0.1, 0.2])
 
         def cost(a):
-            return qml.math.stack(circuit(a))
+            return qp.math.stack(circuit(a))
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies, 4, 2)
@@ -199,24 +199,24 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The gradient of multiple measurements with multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         par_0 = np.array(0.1)
         par_1 = np.array(0.2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, max_diff=1, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.expval(qp.PauliZ(0))
 
         def cost(x, y):
             res = circuit(x, y)
-            return qml.math.stack([qml.math.stack(r) for r in res])
+            return qp.math.stack([qp.math.stack(r) for r in res])
 
-        jac = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
+        jac = qp.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -228,23 +228,23 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            qml.RY(a[2], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            qp.RY(a[2], wires=0)
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.expval(qp.PauliZ(0))
 
         a = np.array([0.1, 0.2, 0.3])
 
         def cost(a):
             res = circuit(a)
-            return qml.math.stack([qml.math.stack(r) for r in res])
+            return qp.math.stack([qp.math.stack(r) for r in res])
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies, 2, 3)
@@ -253,24 +253,24 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         par_0 = np.array(0.1)
         par_1 = np.array(0.2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.var(qp.PauliZ(0))
 
         def cost(x, y):
             res = circuit(x, y)
-            return qml.math.stack([qml.math.stack(r) for r in res])
+            return qp.math.stack([qp.math.stack(r) for r in res])
 
-        jac = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
+        jac = qp.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -282,23 +282,23 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            qml.RY(a[2], wires=0)
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            qp.RY(a[2], wires=0)
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1)), qp.var(qp.PauliZ(0))
 
         a = np.array([0.1, 0.2, 0.3])
 
         def cost(a):
             res = circuit(a)
-            return qml.math.stack([qml.math.stack(r) for r in res])
+            return qp.math.stack([qp.math.stack(r) for r in res])
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies, 2, 3)
@@ -307,22 +307,22 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a single params return an array."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(0.2, wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = np.array(0.1)
 
         def cost(a):
             res = circuit(a)
-            return qml.math.stack([qml.math.hstack(r) for r in res])
+            return qp.math.stack([qp.math.hstack(r) for r in res])
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies, 5)
@@ -331,23 +331,23 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a, wires=0)
+            qp.RX(b, wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
         def cost(a, b):
             res = circuit(a, b)
-            return qml.math.stack([qml.math.hstack(r) for r in res])
+            return qp.math.stack([qp.math.hstack(r) for r in res])
 
-        jac = qml.jacobian(cost, argnums=[0, 1])(a, b)
+        jac = qp.jacobian(cost, argnums=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -359,22 +359,22 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(a):
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RY(a[0], wires=0)
+            qp.RX(a[1], wires=0)
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         a = np.array([0.1, 0.2])
 
         def cost(a):
             res = circuit(a)
-            return qml.math.stack([qml.math.hstack(r) for r in res])
+            return qp.math.stack([qp.math.hstack(r) for r in res])
 
-        jac = qml.jacobian(cost)(a)
+        jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (num_copies, 5, 2)
@@ -390,27 +390,27 @@ class TestReturnShotVectorHessian:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         par_0 = np.array(0.1)
         par_1 = np.array(0.2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         def cost(x, y):
             def cost2(x, y):
                 res = circuit(x, y)
-                return qml.math.stack(res)
+                return qp.math.stack(res)
 
-            return qml.math.stack(qml.jacobian(cost2, argnums=[0, 1])(x, y))
+            return qp.math.stack(qp.jacobian(cost2, argnums=[0, 1])(x, y))
 
-        hess = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
+        hess = qp.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -422,26 +422,26 @@ class TestReturnShotVectorHessian:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         params = np.array([0.1, 0.2])
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         def cost(x):
             def cost2(x):
                 res = circuit(x)
-                return qml.math.stack(res)
+                return qp.math.stack(res)
 
-            return qml.jacobian(cost2)(x)
+            return qp.jacobian(cost2)(x)
 
-        hess = qml.jacobian(cost)(params)
+        hess = qp.jacobian(cost)(params)
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (num_copies, 2, 2)
@@ -450,27 +450,27 @@ class TestReturnShotVectorHessian:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         par_0 = np.array(0.1)
         par_1 = np.array(0.2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1))
 
         def cost(x, y):
             def cost2(x, y):
                 res = circuit(x, y)
-                return qml.math.stack(res)
+                return qp.math.stack(res)
 
-            return qml.math.stack(qml.jacobian(cost2, argnums=[0, 1])(x, y))
+            return qp.math.stack(qp.jacobian(cost2, argnums=[0, 1])(x, y))
 
-        hess = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
+        hess = qp.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -482,26 +482,26 @@ class TestReturnShotVectorHessian:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         params = np.array([0.1, 0.2])
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.var(qp.PauliZ(0) @ qp.PauliX(1))
 
         def cost(x):
             def cost2(x):
                 res = circuit(x)
-                return qml.math.stack(res)
+                return qp.math.stack(res)
 
-            return qml.jacobian(cost2)(x)
+            return qp.jacobian(cost2)(x)
 
-        hess = qml.jacobian(cost)(params)
+        hess = qp.jacobian(cost)(params)
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (num_copies, 2, 2)
@@ -512,27 +512,27 @@ class TestReturnShotVectorHessian:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "spsa":
             pytest.skip("SPSA does not support iterated differentiation in Autograd.")
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         par_0 = np.array(0.1)
         par_1 = np.array(0.2)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def cost(x, y):
             def cost2(x, y):
                 res = circuit(x, y)
-                return qml.math.stack([qml.math.hstack(r) for r in res])
+                return qp.math.stack([qp.math.hstack(r) for r in res])
 
-            return qml.math.stack(qml.jacobian(cost2, argnums=[0, 1])(x, y))
+            return qp.math.stack(qp.jacobian(cost2, argnums=[0, 1])(x, y))
 
-        hess = qml.jacobian(cost, argnums=[0, 1])(par_0, par_1)
+        hess = qp.jacobian(cost, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -547,26 +547,26 @@ class TestReturnShotVectorHessian:
         if diff_method == "spsa":
             pytest.skip("SPSA does not support iterated differentiation in Autograd.")
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
 
         params = np.array([0.1, 0.2])
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
         def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+            qp.RX(x[0], wires=[0])
+            qp.RY(x[1], wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1)), qp.probs(wires=[0])
 
         def cost(x):
             def cost2(x):
                 res = circuit(x)
-                return qml.math.stack([qml.math.hstack(r) for r in res])
+                return qp.math.stack([qp.math.hstack(r) for r in res])
 
-            return qml.jacobian(cost2)(x)
+            return qp.jacobian(cost2)(x)
 
-        hess = qml.jacobian(cost)(params)
+        hess = qp.jacobian(cost)(params)
 
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (num_copies, 3, 2, 2)
@@ -586,23 +586,23 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
         x = np.array(0.543)
         y = np.array(-0.654)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
         def cost(x, y):
             res = circuit(x, y)
-            return qml.math.stack(res)
+            return qp.math.stack(res)
 
-        all_res = qml.jacobian(cost, argnums=[0, 1])(x, y)
+        all_res = qp.jacobian(cost, argnums=[0, 1])(x, y)
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == 2
@@ -620,23 +620,23 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        dev = qml.device(dev_name, wires=2)
+        dev = qp.device(dev_name, wires=2)
         x = np.array(0.543)
         y = np.array(-0.654)
 
-        @qml.set_shots(shots)
+        @qp.set_shots(shots)
         @qnode(dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
 
         def cost(x, y):
             res = circuit(x, y)
-            return qml.math.stack([qml.math.hstack(r) for r in res])
+            return qp.math.stack([qp.math.hstack(r) for r in res])
 
-        all_res = qml.jacobian(cost, argnums=[0, 1])(x, y)
+        all_res = qp.jacobian(cost, argnums=[0, 1])(x, y)
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == 2

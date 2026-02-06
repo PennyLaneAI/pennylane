@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains unit tests for ``qml.ops.functions.assert_valid``.
+This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 import string
 from pickle import PicklingError
@@ -37,7 +37,7 @@ class TestDecompositionErrors:
         class BadDecomp(Operator):
             @staticmethod
             def compute_decomposition(wires):
-                qml.RX(1.2, wires=0)
+                qp.RX(1.2, wires=0)
 
         with pytest.raises(AssertionError, match=r"decomposition must be a list"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
@@ -48,8 +48,8 @@ class TestDecompositionErrors:
         class BadDecomp(Operator):
             @staticmethod
             def compute_decomposition(wires):
-                qml.RX(1.2, wires=0)
-                return [qml.RY(2.3, 0)]
+                qp.RX(1.2, wires=0)
+                return [qp.RY(2.3, 0)]
 
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
@@ -62,8 +62,8 @@ class TestDecompositionErrors:
             @staticmethod
             def compute_decomposition(*args, **kwargs):
                 if kwargs["wires"][0] == 0:
-                    return [qml.RX(0.2, wires=0)]
-                return [qml.RX(0.2, wires="not the ops wire")]
+                    return [qp.RX(0.2, wires=0)]
+                return [qp.RX(0.2, wires="not the ops wire")]
 
         with pytest.raises(AssertionError, match=r"Operators in decomposition of wire\-mapped"):
             assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)
@@ -75,7 +75,7 @@ class TestDecompositionErrors:
         class BadDecomp(Operator):
             @staticmethod
             def compute_decomposition(wires):
-                return [qml.RY(2.3, 0)]
+                return [qp.RY(2.3, 0)]
 
             has_decomposition = False
 
@@ -140,7 +140,7 @@ class TestBadCopyComparison:
     """Check errors invovling copy, deepcopy, and comparison."""
 
     def test_bad_comparison(self):
-        """Test an operator that cannot be compared with standard qml.equal."""
+        """Test an operator that cannot be compared with standard qp.equal."""
 
         class BadComparison(Operator):
             def __init__(self, wires, val):
@@ -160,7 +160,7 @@ def test_mismatched_mat_decomp():
             return np.eye(2)
 
         def decomposition(self):
-            return [qml.PauliX(self.wires)]
+            return [qp.PauliX(self.wires)]
 
     with pytest.raises(AssertionError, match=r"matrix and matrix from decomposition must match"):
         assert_valid(MisMatchedMatDecomp(0), skip_pickle=True)
@@ -169,7 +169,7 @@ def test_mismatched_mat_decomp():
 def test_bad_eigenvalues_order():
     """Test that an error is raised if the order of eigenvalues does not match the diagonalizing gates."""
 
-    class BadEigenDecomp(qml.PauliX):
+    class BadEigenDecomp(qp.PauliX):
         @staticmethod
         def compute_eigvals():
             return [-1, 1]
@@ -223,7 +223,7 @@ def test_bad_wire_mapping():
             return self.hyperparameters["op1"].wires
 
     with pytest.raises(AssertionError, match=r"wires must be mappable"):
-        assert_valid(BadWireMap(qml.PauliX(0)), skip_pickle=True)
+        assert_valid(BadWireMap(qp.PauliX(0)), skip_pickle=True)
 
 
 class TestPytree:
@@ -244,7 +244,7 @@ class TestPytree:
     def test_bad_pytree(self):
         """Check an operation that errors out of the _unflatten call."""
 
-        class BadPytree(qml.operation.Operator):
+        class BadPytree(qp.operation.Operator):
             def __init__(self, wires1, wires2):
                 super().__init__(wires=wires1 + wires2)
 
@@ -283,7 +283,7 @@ class TestPytree:
                 super().__init__(wires)
                 self.hyperparameters["val"] = val
 
-        op = qml.adjoint(BadPytree(wires=0, val="b"))
+        op = qp.adjoint(BadPytree(wires=0, val="b"))
         with pytest.raises(AssertionError, match=r"op must be a valid pytree."):
             assert_valid(op, skip_pickle=True)
 
@@ -291,7 +291,7 @@ class TestPytree:
     def test_bad_leaves_ordering(self):
         """Test an error is raised if data and pytree leaves have a different ordering convention."""
 
-        class BadLeavesOrdering(qml.ops.op_math.SProd):
+        class BadLeavesOrdering(qp.ops.op_math.SProd):
             def _flatten(self):
                 return (self.base, self.scalar), tuple()
 
@@ -299,7 +299,7 @@ class TestPytree:
             def _unflatten(cls, data, _):
                 return cls(data[1], data[0])
 
-        op = BadLeavesOrdering(2.0, qml.RX(1.2, wires=0))
+        op = BadLeavesOrdering(2.0, qp.RX(1.2, wires=0))
 
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
             assert_valid(op, skip_pickle=True)
@@ -309,7 +309,7 @@ class TestPytree:
 def test_bad_capture():
     """Tests that the correct error is raised when something goes wrong with program capture."""
 
-    class MyBadOp(qml.operation.Operator):
+    class MyBadOp(qp.operation.Operator):
 
         def _flatten(self):
             return (self.hyperparameters["target_op"], self.data[0]), ()
@@ -322,7 +322,7 @@ def test_bad_capture():
             super().__init__(val, wires=target_op.wires)
             self.hyperparameters["target_op"] = target_op
 
-    op = MyBadOp(qml.X(0), 2)
+    op = MyBadOp(qp.X(0), 2)
     with pytest.raises(ValueError, match=r"The capture of the operation into jaxpr failed"):
         _check_capture(op)
 
@@ -347,9 +347,9 @@ def create_op_instance(c, str_wires=False):
     if n_wires is None:
         n_wires = 1
 
-    wires = qml.wires.Wires(range(n_wires))
+    wires = qp.wires.Wires(range(n_wires))
     if str_wires and len(wires) < 26:
-        wires = qml.wires.Wires([string.ascii_lowercase[i] for i in wires])
+        wires = qp.wires.Wires([string.ascii_lowercase[i] for i in wires])
     if (num_params := c.num_params) == 0:
         return c(wires) if wires else c()
     if isinstance(num_params, property):

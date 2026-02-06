@@ -1255,7 +1255,7 @@ class TestFermiSentenceArithmetic:
 
     def test_to_string_type(self):
         """Test if to_string throws error if wrong type is given."""
-        pl_op = qml.X(0)
+        pl_op = qp.X(0)
         with pytest.raises(ValueError, match=f"fermi_op must be a FermiWord, got: {type(pl_op)}"):
             _to_string(pl_op)
 
