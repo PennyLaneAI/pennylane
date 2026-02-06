@@ -20,12 +20,14 @@ from collections.abc import Callable, Sequence
 from itertools import product
 
 from pennylane import ops
+from pennylane.decomposition import gate_sets
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
 from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
 from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.tape import QuantumScript
+from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 from .ops import MeasureNode, PrepareNode
@@ -408,7 +410,8 @@ def _qcut_expand_fn(
             return tape
 
     if max_depth > 0:
-        return _qcut_expand_fn(tape.expand(), max_depth=max_depth - 1, auto_cutter=auto_cutter)
+        [tape], _ = decompose(tape, gate_set=gate_sets.ALL_OPS)
+        return _qcut_expand_fn(tape, max_depth=max_depth - 1, auto_cutter=auto_cutter)
 
     if not (auto_cutter is True or callable(auto_cutter)):
         raise ValueError(

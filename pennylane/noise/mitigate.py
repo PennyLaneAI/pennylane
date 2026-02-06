@@ -430,7 +430,7 @@ def mitigate_with_zne(
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order' : 2},
         )
-        @qml.transforms.decompose(gate_set = ["RY", "CZ"])
+        @qml.decompose(gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -545,7 +545,6 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    tape = tape.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [
