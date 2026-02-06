@@ -48,7 +48,7 @@ else:  # pragma: no cover
 if util.find_spec("optax") is not None:
     optax = import_module("optax")
     is_optax_available = True
-else:
+else:  # pragma: no cover
     is_optax_available = False
     optax = None
 
@@ -196,9 +196,7 @@ def qsvt(
             - ``"iterative"``: Uses Scipy (L-BFGS-B). Stable, no extra dependencies.
               Effective for polynomials of degree higher than :math:`\sim 1000`.
             - ``"iterative_optax"``: Uses JAX+Optax for optimization. Requires ``jax`` and
-              ``optax`` to be installed and JAX configured for 64-bit mode
-              (``jax.config.update('jax_enable_x64', True)``). Can provide better performance
-              for high-degree polynomials.
+              ``optax`` to be installed. x64 mode can provide higher precision and better convergence for high degree polynomials.
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -1085,9 +1083,6 @@ def _cheby_pol_optax(x, degree):
 @jit_if_jax_available
 def _poly_func_optax(coeffs, x):
     r"""\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-
     return jax.numpy.sum(
         coeffs @ jax.vmap(_cheby_pol_optax, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
     )
@@ -1158,9 +1153,6 @@ def _qsp_iterate_broadcast_optax(phis, x, interface):
     Returns:
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-
     qsp_iterate_list = jax.vmap(_qsp_iterate_optax, in_axes=(0, None, None))(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
@@ -1267,31 +1259,19 @@ def _compute_qsp_angles_iteratively_optax(poly):
     """Calculates the angles given a polynomial in canonical base using Optax optimizer.
 
     This is the implementation contributed in PR #8685.
-    Requires JAX and Optax to be installed and JAX must be in 64-bit mode.
+    Requires JAX and Optax to be installed.
 
     Args:
         poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
 
     Raises:
-        ImportError: if JAX or Optax are not installed
-        RuntimeError: if JAX is not configured for 64-bit precision
+        ModuleNotFoundError: if JAX or Optax are not installed
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    try:
-        import jax
-        import jax.numpy as jnp
-        import optax  # noqa: F401  # pylint: disable=unused-import
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "The 'iterative_optax' solver requires JAX and Optax. "
-            "Please install them via: pip install jax optax"
-        ) from e
+    if not is_jax_available:
+        raise ModuleNotFoundError("jax is required!")  # pragma: no cover
 
-    if not jax.config.jax_enable_x64:
-        raise RuntimeError(
-            "JAX must be in 64-bit mode (jax_enable_x64) for the 'iterative_optax' solver. "
-            "Enable it with: jax.config.update('jax_enable_x64', True)"
-        )
+    if not is_optax_available:
+        raise ModuleNotFoundError("optax is required!")  # pragma: no cover
 
     poly_cheb = chebyshev.poly2cheb(poly)
     degree = len(poly_cheb) - 1
@@ -1300,10 +1280,10 @@ def _compute_qsp_angles_iteratively_optax(poly):
     # Replacing the odd/even items by 0 for odd/even parts of the polynomial allows to keep the same array shape
     # Therefore we avoid second jit-compilation that was triggered if we were to
     # extract the odd/even coeff arrays separately!
-    coeffs_odd = jnp.copy(poly_cheb)
+    coeffs_odd = jax.numpy.copy(poly_cheb)
     coeffs_odd = coeffs_odd.at[0::2].set(0.0)
 
-    coeffs_even = jnp.copy(poly_cheb)
+    coeffs_even = jax.numpy.copy(poly_cheb)
     coeffs_even = coeffs_even.at[1::2].set(0.0)
 
     if np.allclose(coeffs_odd, np.zeros_like(coeffs_odd)):
