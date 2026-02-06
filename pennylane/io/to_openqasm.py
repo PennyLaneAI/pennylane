@@ -128,7 +128,10 @@ def _tape_openqasm(
 
     # create the quantum and classical registers
     lines.append(f"qreg q[{len(wires)}];")
-    lines.append(f"creg c[{len(wires)}];")
+
+    measured_wires = wires if measure_all else Wires.all_wires([m.wires for m in tape.measurements])
+    if measured_wires:
+        lines.append(f"creg c[{len(measured_wires)}];")
 
     num_mcms = sum(isinstance(o, MidMeasure) for o in tape.operations)
     if num_mcms:
@@ -171,11 +174,9 @@ def _tape_openqasm(
         for wire in range(len(wires)):
             lines.append(f"measure q[{wire}] -> c[{wire}];")
     else:
-        measured_wires = Wires.all_wires([m.wires for m in tape.measurements])
-
-        for w in measured_wires:
-            wire_indx = tape.wires.index(w)
-            lines.append(f"measure q[{wire_indx}] -> c[{wire_indx}];")
+        for creg_indx, w in enumerate(measured_wires):
+            qreg_indx = tape.wires.index(w)
+            lines.append(f"measure q[{qreg_indx}] -> c[{creg_indx}];")
 
     return "\n".join(lines) + "\n"
 
