@@ -2207,9 +2207,20 @@ class TestTapeExpansionWithControlled:
             cmy_op_dagger(0.789, 0.123, c=0.456)
         tape2 = QuantumScript.from_queue(q2)
 
+        expected = [
+            *qml.CRZ(4 * np.pi - 0.456, wires=[5, 0]).decomposition(),
+            *qml.CRY(4 * np.pi - 0.123, wires=[5, 3]).decomposition(),
+            *qml.CRX(4 * np.pi - 0.789, wires=[5, 2]).decomposition(),
+        ]
+        expected_matrix = qml.matrix(expected, wire_order=[0, 1, 2, 3, 4, 5])
+
         [tape1], _ = decompose(tape1, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        actual_matrix = qml.matrix(tape1, wire_order=[0, 1, 2, 3, 4, 5])
+        assert qml.math.allclose(actual_matrix, expected_matrix)
+
         [tape2], _ = decompose(tape2, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
-        assert tape1.operations == tape2.operations
+        actual_matrix = qml.matrix(tape2, wire_order=[0, 1, 2, 3, 4, 5])
+        assert qml.math.allclose(actual_matrix, expected_matrix)
 
     def test_ctrl_with_qnode(self):
         """Test ctrl works when in a qnode cotext."""
