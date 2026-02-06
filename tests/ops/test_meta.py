@@ -20,6 +20,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import Snapshot
+from pennylane.decomposition import gate_sets
+from pennylane.transforms import decompose
 
 
 class TestBarrier:
@@ -134,7 +136,11 @@ class TestBarrier:
             return qml.state()
 
         tape = qml.workflow.construct_tape(circuit)()
-        tape = tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
+        [tape], _ = decompose(
+            tape,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: op.name in ["Barrier", "PauliX", "CNOT"],
+        )
 
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"

@@ -18,6 +18,7 @@ created in pennylane.
 It has a jax dependency and should be located in a standard import path.
 """
 from pennylane._grad.grad import _get_jacobian_prim
+from pennylane._grad.jvp import _get_jvp_prim
 from pennylane._grad.vjp import _get_vjp_prim
 from pennylane.control_flow.for_loop import _get_for_loop_qfunc_prim
 from pennylane.control_flow.while_loop import _get_while_loop_qfunc_prim
@@ -31,12 +32,15 @@ from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 from pennylane.transforms.core.transform import _create_transform_primitive
 from pennylane.workflow._capture_qnode import qnode_prim
 
+from .subroutine import quantum_subroutine_prim
+
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
 adjoint_transform_prim = _get_adjoint_qfunc_prim()
 ctrl_transform_prim = _get_ctrl_qfunc_prim()
 jacobian_prim = _get_jacobian_prim()
 vjp_prim = _get_vjp_prim()
+jvp_prim = _get_jvp_prim()
 cond_prim = _get_cond_qfunc_prim()
 for_loop_prim = _get_for_loop_qfunc_prim()
 while_loop_prim = _get_while_loop_qfunc_prim()
@@ -51,11 +55,13 @@ __all__ = [
     "ctrl_transform_prim",
     "jacobian_prim",
     "vjp_prim",
+    "jvp_prim",
     "qnode_prim",
     "cond_prim",
     "for_loop_prim",
     "while_loop_prim",
     "measure_prim",
+    "quantum_subroutine_prim",
     "pauli_measure_prim",
     "transform_prim",
 ]

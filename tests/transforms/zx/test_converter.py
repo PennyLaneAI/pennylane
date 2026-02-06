@@ -66,6 +66,7 @@ def test_import_pyzx_error(monkeypatch):
             qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
 
@@ -256,7 +257,7 @@ class TestConvertersZX:
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
         # Add rotation Hadamard because of PauliX
-        operations.append(qml.Hadamard(wires=[1]))
+        operations.append(qml.RY(-np.pi / 2, wires=1))
         operations_with_rotations = operations
         qscript_with_rot = QuantumScript(operations_with_rotations, [])
         matrix_qscript = qml.matrix(qscript_with_rot, wire_order=[0, 1])

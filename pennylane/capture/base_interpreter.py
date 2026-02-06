@@ -34,7 +34,9 @@ from .primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
+    jvp_prim,
     qnode_prim,
+    quantum_subroutine_prim,
     vjp_prim,
     while_loop_prim,
 )
@@ -226,8 +228,9 @@ class PlxprInterpreter:
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
 
-    def __init__(self):
+    def __init__(self, *, subroutine_cache=None):
         self._env = {}
+        self.subroutine_cache = subroutine_cache or {}
 
     @classmethod
     def register_primitive(
@@ -619,6 +622,17 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
     )
 
 
+@PlxprInterpreter.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine(self, *invals, jaxpr, **params):
+    if jaxpr in self.subroutine_cache:
+        new_jaxpr = self.subroutine_cache[jaxpr]
+    else:
+        new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr.jaxpr, jaxpr.consts, *invals)
+        self.subroutine_cache[jaxpr] = new_jaxpr
+
+    return quantum_subroutine_prim.bind(*invals, jaxpr=new_jaxpr, **params)
+
+
 @PlxprInterpreter.register_primitive(jacobian_prim)
 def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     """Handle the jacobian primitive."""
@@ -632,7 +646,7 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
 
 @PlxprInterpreter.register_primitive(vjp_prim)
 def handle_vjp(self, *invals, jaxpr, argnums, **params):
-    """Handle the jacobian primitive."""
+    """Handle the vector-jacobian-product primitive."""
 
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
 
@@ -641,6 +655,21 @@ def handle_vjp(self, *invals, jaxpr, argnums, **params):
     argnums = tuple(a + len(j.constvars) for a in argnums)
 
     return vjp_prim.bind(
+        *new_jaxpr.consts, *invals, jaxpr=no_consts_jaxpr, argnums=argnums, **params
+    )
+
+
+@PlxprInterpreter.register_primitive(jvp_prim)
+def handle_jvp(self, *invals, jaxpr, argnums, **params):
+    """Handle the jacobian-vector-product primitive."""
+
+    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
+
+    j = new_jaxpr.jaxpr
+    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    argnums = tuple(a + len(j.constvars) for a in argnums)
+
+    return jvp_prim.bind(
         *new_jaxpr.consts, *invals, jaxpr=no_consts_jaxpr, argnums=argnums, **params
     )
 
@@ -667,6 +696,11 @@ def _pjit_primitive(self, *invals, jaxpr, **params):
 
     subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
     return pjit_p.bind(*subfuns, *invals, **params)
+
+
+@FlattenedInterpreter.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine_eval(self, *invals, jaxpr, **params):
+    return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
