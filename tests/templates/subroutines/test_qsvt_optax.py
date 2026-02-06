@@ -17,11 +17,14 @@ Tests for the QSVT Optax-based iterative angle solver.
 These tests require JAX and Optax to be installed and are marked as external.
 """
 
-import jax
-import jax.numpy as jnp
-
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 import pytest
+
+# Skip entire module if JAX or Optax are not available
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+pytest.importorskip("optax")
+
 from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
