@@ -25,18 +25,16 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.qsvt import (
-    _complementary_poly,
-    # Scipy-based functions
+from pennylane.templates.subroutines.qsvt import (  # Scipy-based functions; Optax-based functions (may not be available without JAX/Optax)
     _cheby_pol_scipy,
-    _poly_func_scipy,
-    _z_rotation_scipy,
-    _W_of_x_scipy,
-    _qsp_iterate_scipy,
-    _qsp_iterate_broadcast_scipy,
+    _complementary_poly,
     _grid_pts_scipy,
+    _poly_func_scipy,
+    _qsp_iterate_broadcast_scipy,
+    _qsp_iterate_scipy,
     _qsp_optimization_scipy,
-    # Optax-based functions (may not be available without JAX/Optax)
+    _W_of_x_scipy,
+    _z_rotation_scipy,
 )
 from pennylane.transforms import decompose
 
@@ -44,13 +42,13 @@ from pennylane.transforms import decompose
 try:
     from pennylane.templates.subroutines.qsvt import (
         _cheby_pol_optax,
-        _poly_func_optax,
-        _z_rotation_optax,
-        _W_of_x_optax,
-        _qsp_iterate_optax,
-        _qsp_iterate_broadcast_optax,
         _grid_pts_optax,
+        _poly_func_optax,
+        _qsp_iterate_broadcast_optax,
+        _qsp_iterate_optax,
         _qsp_optimization_optax,
+        _W_of_x_optax,
+        _z_rotation_optax,
     )
 
     optax_functions_available = True
@@ -851,7 +849,6 @@ class TestRootFindingSolver:
         with pytest.raises(AssertionError, match="Invalid conversion"):
             _ = qml.transform_angles(angles, "QFT", "QSVT")
 
-    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -888,7 +885,6 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
-    @pytest.mark.jax
     @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
@@ -919,7 +915,6 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
-    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -956,7 +951,6 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
-    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -992,7 +986,6 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert qml.math.isclose(output.real, expected.real)
 
-    @pytest.mark.jax
     @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
@@ -1096,8 +1089,8 @@ class TestRootFindingSolver:
     def test_iterative_optax_import_error(self, monkeypatch):
         """Test that iterative_optax raises ImportError without jax/optax installed"""
         # Monkeypatch sys.modules to make jax import fail
-        import sys
         import builtins
+        import sys
 
         original_import = builtins.__import__
 
@@ -1119,6 +1112,7 @@ class TestRootFindingSolver:
             from pennylane.templates.subroutines.qsvt import (
                 _compute_qsp_angles_iteratively_optax,
             )
+
             _compute_qsp_angles_iteratively_optax(poly)
 
 
@@ -1130,7 +1124,6 @@ class TestIterativeSolver:
     # Scipy-based solver tests
     # =========================================================================
 
-    @pytest.mark.external
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
@@ -1238,7 +1231,6 @@ class TestIterativeSolver:
     # Optax-based solver tests (require JAX and Optax)
     # =========================================================================
 
-    @pytest.mark.jax
     @pytest.mark.external
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
@@ -1276,7 +1268,7 @@ class TestIterativeSolver:
             atol=tolerance,
         )
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "coeffs, x",
         [
@@ -1292,14 +1284,14 @@ class TestIterativeSolver:
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
     @pytest.mark.parametrize("interface", ["jax"])
     def test_z_rotation_optax(self, angle, interface):
         """Test internal function _z_rotation_optax"""
         assert np.allclose(_z_rotation_optax(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     @pytest.mark.parametrize("interface", ["jax"])
     def test_qsp_iterate_optax(self, phi, interface):
@@ -1308,7 +1300,7 @@ class TestIterativeSolver:
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "x",
         list([0.1, 0.2, 0.3, 0.4]),
@@ -1323,7 +1315,7 @@ class TestIterativeSolver:
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jax.numpy.isclose(qsp_be, ref)
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
     @pytest.mark.parametrize("interface", ["jax"])
     def test_W_of_x_optax(self, x, interface):
@@ -1332,7 +1324,7 @@ class TestIterativeSolver:
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize("degree", [4, 5, 10])
     @pytest.mark.parametrize("interface", ["jax"])
     def test_grid_pts_optax(self, degree, interface):
@@ -1348,7 +1340,7 @@ class TestIterativeSolver:
     # Error handling tests
     # =========================================================================
 
-    @pytest.mark.jax
+    @pytest.mark.external
     def test_iterative_optax_requires_x64_mode(self):
         """Test that iterative_optax raises RuntimeError without 64-bit mode"""
         # Ensure x64 is disabled for this test
