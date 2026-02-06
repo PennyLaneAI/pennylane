@@ -174,7 +174,6 @@ def iqp_expval(config: CircuitConfig):
         # correspond to which generators. E.g. if param_map = [0, 1, 1], and params = [a, b],
         # then the expanded params should be [a, b, b].
         expanded_params = params if param_map is None else jnp.asarray(params)[param_map]
-
         E = C @ (expanded_params[:, None] * B.T)
 
         if config.phase_layer is not None:

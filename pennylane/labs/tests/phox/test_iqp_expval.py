@@ -280,6 +280,71 @@ class TestIQPExpval:
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
+    def test_iqp_expval_with_phase_layer(self):
+        """Test iqp_expval with a custom phase layer against PennyLane."""
+
+        def compute_phase(params, z):
+            hamming = jnp.mean(jnp.abs(z))
+            hamming_powers = jnp.array([hamming**t for t in range(4)])
+            return jnp.sum(params * hamming_powers)
+
+        bitstrings = jnp.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+        phase_params = jnp.array([0.11, 0.7, 3.0, 1.0])
+
+        phases = jax.vmap(compute_phase, in_axes=(None, 0))(phase_params, bitstrings)
+        diagonal = jnp.exp(1j * phases).flatten()
+
+        obs_strings = ["Z", "Y"]
+        generators_pl = [[0], [1], [0, 1]]
+        params = [0.37, 0.95, 0.73]
+        pl_state = [1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]
+        jax_state = (jnp.array([[0, 0], [1, 1]]), jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)]))
+
+        n_qubits = 2
+
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        expval_ops = [qml.Z(0), qml.Y(1)]
+        expval_op = qml.prod(*expval_ops)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.StatePrep(np.array(pl_state), wires=range(n_qubits))
+
+            for i in range(n_qubits):
+                qml.Hadamard(i)
+
+            for param, gen in zip(params, generators_pl):
+                qml.MultiRZ(2 * -param, wires=gen)
+
+            qml.DiagonalQubitUnitary(diagonal, wires=[0, 1])
+
+            for i in range(n_qubits):
+                qml.Hadamard(i)
+
+            return qml.expval(expval_op)
+
+        exact_val = circuit()
+
+        gates = {0: [[0]], 1: [[1]], 2: [[0, 1]]}
+        obs_batch = [obs_strings]
+
+        config = CircuitConfig(
+            n_qubits=n_qubits,
+            gates=gates,
+            observables=obs_batch,
+            init_state=jax_state,
+            phase_layer=compute_phase,
+            n_samples=50000,
+            key=jax.random.PRNGKey(42),
+        )
+
+        f = iqp_expval(config)
+        approx_val, _ = f(jnp.array(params), phase_params)
+
+        atol = 3.5 / np.sqrt(50000)
+        assert np.allclose(exact_val, approx_val, atol=atol)
+
 
 @pytest.mark.parametrize(
     "circuit_def,n_qubits,expected_generators,expected_param_map",
