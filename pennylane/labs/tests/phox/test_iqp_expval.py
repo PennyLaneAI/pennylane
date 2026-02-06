@@ -25,6 +25,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 try:
     from pennylane.labs.phox.simulator_pure_functions import (
+        CircuitConfig,
         _parse_iqp_dict,
         iqp_expval,
     )
@@ -179,8 +180,16 @@ class TestIQPExpval:
         key = jax.random.PRNGKey(42)
         atol = 3.5 / np.sqrt(n_samples)
 
-        expval_func = iqp_expval(gates, n_qubits, init_state=jax_state)
-        approx_val, _ = expval_func(params_jax, obs_batch, n_samples, key)
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state=jax_state,
+        )
+        expval_func = iqp_expval(config)
+        approx_val, _ = expval_func(params_jax)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -223,8 +232,16 @@ class TestIQPExpval:
         n_samples = 10000
         atol = 3.5 / np.sqrt(n_samples)
 
-        expval_func = iqp_expval(gates, n_qubits, init_state=jax_state)
-        approx_val, _ = expval_func(np.array(params), obs_batch, n_samples, key)
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state=jax_state,
+        )
+        expval_func = iqp_expval(config)
+        approx_val, _ = expval_func(np.array(params))
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -251,8 +268,15 @@ class TestIQPExpval:
         # Tolerances for MC estimation
         atol = 0.05
 
-        expval_func = iqp_expval(gates, n_qubits)
-        approx_val, _ = expval_func(np.array(params), obs_batch, n_samples, key)
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+        )
+        expval_func = iqp_expval(config)
+        approx_val, _ = expval_func(np.array(params))
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 

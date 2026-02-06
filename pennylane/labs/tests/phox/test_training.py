@@ -14,11 +14,12 @@
 """
 Tests for the Phox training module.
 """
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from pennylane.labs.phox.simulator_pure_functions import iqp_expval
+from pennylane.labs.phox.simulator_pure_functions import CircuitConfig, iqp_expval
 from pennylane.labs.phox.training import TrainingOptions, train
 
 
@@ -184,16 +185,6 @@ def test_history_logging_manual(quadratic_problem):
     assert history[0].shape == (2,)
 
 
-def _obs_to_numeric(obs_batch):
-    """Convert batch of string observables to numeric encoding (I=0, X=1, Y=2, Z=3)."""
-    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
-    numeric_batch = []
-    for op in obs_batch:
-        numeric_row = [mapping[gate] for gate in op]
-        numeric_batch.append(numeric_row)
-    return np.array(numeric_batch, dtype=int)
-
-
 def test_iqp_optimization():
     """
     Test 6: Integration Test.
@@ -209,10 +200,19 @@ def test_iqp_optimization():
 
     ops_strings = [["Z", "I"], ["I", "Z"]]
 
-    expval_func = iqp_expval(gates, n_qubits)
+    key = jax.random.PRNGKey(42)
 
-    def loss_fn(params, key):
-        expvals, _ = expval_func(params, ops_strings, n_samples, key)
+    config = CircuitConfig(
+        gates=gates,
+        observables=ops_strings,
+        n_samples=n_samples,
+        key=key,
+        n_qubits=n_qubits,
+    )
+    expval_func = iqp_expval(config)
+
+    def loss_fn(params):
+        expvals, _ = expval_func(params)
         return jnp.sum(expvals)
 
     loss_kwargs = {"params": params_init}

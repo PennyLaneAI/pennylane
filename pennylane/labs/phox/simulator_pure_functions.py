@@ -25,15 +25,58 @@ from jax.typing import ArrayLike
 
 
 @dataclass
-class CircuitConfig:  # unused for now
-    """Configuration data for an IQP circuit simulation."""
-    n_samples: int
-    n_qubits: int
-    generators: list[list[int]]
+class CircuitConfig:
+    """
+    Configuration data for an IQP circuit simulation.
+
+    Args:
+        gates (dict[int, list[list[int]]]): Circuit structure mapping parameters to gates.
+        observables (list[list[str]]): List of Pauli observables.
+        n_samples (int): Number of stochastic samples.
+        key (ArrayLike): Random key for JAX.
+        n_qubits (int): Number of qubits.
+        init_state (tuple[ArrayLike, ArrayLike] | None): Initial state configuration (X, P).
+        phase_layer (Callable | None): Optional phase layer function.
+    """
+
+    gates: dict[int, list[list[int]]]
     observables: list[list[str]]
-    key: int
-    init_state: ArrayLike = None
-    phase_layer: Callable = None
+    n_samples: int
+    key: ArrayLike
+    n_qubits: int
+    init_state: tuple[ArrayLike, ArrayLike] | None = None
+    phase_layer: Callable | None = None
+
+def _phase(pauli: str, qubit: int) -> complex:
+    """
+    For a Pauli P return the phase applied by Conjugation with Hadamard (HPH).
+    Specifically, we have the relations:
+    HXH = Z
+    HYH = -Y
+    HZH = X
+    Args:
+        pauli (str): The Pauli operator ("I", "X", "Y", "Z").
+        qubit (int): The qubit index (0 or 1, although only checked for parity).
+    Returns:
+        complex: The phase factor.
+    Raises:
+        ValueError: If pauli is not one of "I", "X", "Y", "Z".
+    """
+
+    if pauli in ("I", "Z"):
+        return 1
+
+    if pauli == "Y":
+        if qubit == 0:
+            return -1j
+        return 1j
+
+    if pauli == "X":
+        if qubit == 0:
+            return 1
+        return -1
+
+    raise ValueError(f"Expected Pauli I, X, Y, or Z, got {pauli}.")
 
 
 def bitflip_expval(
@@ -95,73 +138,35 @@ def _parse_iqp_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
     return jnp.array(generators), param_map
 
 
-def _obs_to_numeric(obs: list[list[str]] | list[str]) -> jnp.ndarray:
-    """
-    Helper to convert observable strings to numeric encoding:
-    I -> 0, X -> 1, Y -> 2, Z -> 3.
-    """
-    if isinstance(obs, list):
-        if not obs:
-            return jnp.array([], dtype=jnp.int32)
-        if isinstance(obs[0], str): # Handle Single observable case
-             obs = [obs]
-    
-    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
-    
-    numeric_batch = []
-    for row in obs:
-        if isinstance(row, str) and len(row) > 1:
-            numeric_row = [mapping[gate] for gate in row]
-        else:
-            numeric_row = [mapping[gate] for gate in row]
-        numeric_batch.append(numeric_row)
-        
-    return jnp.array(numeric_batch, dtype=jnp.int32)
-
-
-def iqp_expval(
-    gates: dict[int, list[list[int]]],
-    n_qubits: int,
-    init_state: tuple[ArrayLike, ArrayLike] | None = None,
-):
+def iqp_expval(config: CircuitConfig):
     """
     Factory that returns a function for computing expectation values.
 
     Args:
-        gates (dict[int, list[list[int]]]): Circuit structure.
-        n_qubits (int): Number of qubits.
-        init_state (tuple): Initial state.
+        config (CircuitConfig): Configuration object containing circuit details.
 
     Returns:
-        Callable: A function ``execute(params, ops, n_samples, key)``.
+        Callable: A function ``execute(params, phase_params=None)``.
     """
-    generators, param_map = _parse_iqp_dict(gates, n_qubits)
+    generators, param_map = _parse_iqp_dict(config.gates, config.n_qubits)
 
-    if init_state is not None:
-        X, P = init_state
-        P = P[:, jnp.newaxis]
-        use_init_state = True
-    else:
-        X = jnp.empty((0, 0))
-        P = jnp.empty((0, 0))
-        use_init_state = False
+    samples = jax.random.randint(config.key, (config.n_samples, config.n_qubits), 0, 2)
+    bitflips = jnp.array(
+        [[1 if g in ("Z", "Y") else 0 for g in op] for op in config.observables], dtype=jnp.int32
+    )
 
-    def expval_execution(params, ops_numeric, n_samples, key):
-        samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
-        
-        is_z_or_y = (ops_numeric == 3) | (ops_numeric == 2)
-        bitflips = is_z_or_y.astype(jnp.int32)
-        
-        count_y = jnp.sum(ops_numeric == 2, axis=1)
-        
-        is_x_or_y = (ops_numeric == 1) | (ops_numeric == 2)
-        dot_xy_samples = is_x_or_y.astype(jnp.int32) @ samples.T
-        
-        phase_y_base = (-1j) ** count_y
-        phase_bit_dep = (-1) ** dot_xy_samples
-        
-        phases = phase_y_base[:, None] * phase_bit_dep
-        
+    phases = jnp.array(
+        [
+            [
+                math.prod([_phase(gate, qubit) for gate, qubit in zip(op, sample)])
+                for sample in samples
+            ]
+            for op in config.observables
+        ]
+    )
+
+    @jax.jit
+    def expval_execution(params, phase_params=None):
         B = (-1) ** (samples @ generators.T)
         C = 1 - ((-1) ** (bitflips @ generators.T))
 
@@ -169,9 +174,22 @@ def iqp_expval(
 
         E = C @ (expanded_params[:, None] * B.T)
 
+        if config.phase_layer is not None:
+            def compute_phase(p_params, sample, b_flips):
+                return config.phase_layer(p_params, sample) - config.phase_layer(
+                    p_params, (sample + b_flips) % 2
+                )
+
+            phase_matrix = jax.vmap(compute_phase, in_axes=(None, 0, None))
+            phase_matrix = jax.vmap(phase_matrix, in_axes=(None, None, 0))
+
+            E += phase_matrix(phase_params, samples, bitflips)
+
         M = phases * jnp.exp(1j * E)
 
-        if use_init_state:
+        if config.init_state is not None:
+            X, P = config.init_state
+            P = P[:, jnp.newaxis]
             F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
 
             H1 = ((-1) ** (bitflips @ X.T)) @ F
@@ -184,11 +202,4 @@ def iqp_expval(
         std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
         return jnp.mean(expvals, axis=1), std_err
 
-    # Compile the inner kernel
-    jitted_kernel = jax.jit(expval_execution, static_argnames=["n_samples"])
-
-    # Wrapper to handle string -> numeric conversion
-    def execute(params, ops, n_samples, key):
-        return jitted_kernel(params, _obs_to_numeric(ops), n_samples, key)
-
-    return execute
+    return expval_execution
