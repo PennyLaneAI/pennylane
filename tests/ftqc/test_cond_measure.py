@@ -270,5 +270,10 @@ class TestWorkflows:
         # this can't be executed without diagonalize_mcms, because without the transform, it
         # tries to get concrete values for measurements that weren't executed when it hits
         # the conditional that depends on m2, and can't find it in the measurements dictionary
-        with pytest.raises(KeyError):
-            circ(x, y)
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(KeyError):
+                with pytest.warns(DecompositionWarning):
+                    circ(x, y)
+        else:
+            with pytest.raises(KeyError):
+                circ(x, y)
