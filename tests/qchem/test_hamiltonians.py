@@ -37,8 +37,8 @@ def test_molecular_hamiltonian_numpy_data(coordinates):
     """Test that if numpy data is used with molecular hamiltonian, that numpy data is outputted."""
     symbols = ["H", "H"]
 
-    H, _ = qml.qchem.molecular_hamiltonian(symbols, coordinates)
-    assert all(qml.math.get_interface(d) == "numpy" for d in H.data)
+    H, _ = qp.qchem.molecular_hamiltonian(symbols, coordinates)
+    assert all(qp.math.get_interface(d) == "numpy" for d in H.data)
 
 
 @pytest.mark.torch
@@ -48,7 +48,7 @@ def test_error_torch_data_molecular_hamiltonian():
 
     x = torch.tensor([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
     with pytest.raises(ValueError, match="unsupported interface torch"):
-        qml.qchem.molecular_hamiltonian(["H", "H"], x)
+        qp.qchem.molecular_hamiltonian(["H", "H"], x)
 
 
 @pytest.mark.parametrize(
@@ -132,7 +132,7 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
     r"""Test that electron_integrals returns the correct values."""
 
     if use_jax:
-        geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+        geometry = qp.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
 
     mol = qchem.Molecule(symbols, geometry)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else []
@@ -209,8 +209,8 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 def test_fermionic_hamiltonian(use_jax, symbols, geometry, alpha, h_ref):
     r"""Test that using fermionic_hamiltonian returns the correct values."""
     if use_jax:
-        geometry = qml.math.array(geometry, like="jax")
-        alpha = qml.math.array(alpha, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
+        alpha = qp.math.array(alpha, like="jax")
 
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else [alpha]
@@ -284,27 +284,27 @@ def test_fermionic_hamiltonian(use_jax, symbols, geometry, alpha, h_ref):
 def test_diff_hamiltonian(use_jax, symbols, geometry, h_ref_data):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
     if use_jax:
-        geometry = qml.math.array(geometry, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
 
     mol = qchem.Molecule(symbols, geometry)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else []
 
     h = qchem.diff_hamiltonian(mol)(*args)
 
-    ops = list(map(qml.simplify, h_ref_data[1]))
-    h_ref_data = qml.Hamiltonian(h_ref_data[0], ops)
+    ops = list(map(qp.simplify, h_ref_data[1]))
+    h_ref_data = qp.Hamiltonian(h_ref_data[0], ops)
 
     assert pnp.allclose(pnp.sort(h.terms()[0]), pnp.sort(h_ref_data.terms()[0]))
-    assert qml.Hamiltonian(pnp.ones(len(h.terms()[0])), h.terms()[1]) == (
-        qml.Hamiltonian(pnp.ones(len(h_ref_data.terms()[0])), h_ref_data.terms()[1])
+    assert qp.Hamiltonian(pnp.ones(len(h.terms()[0])), h.terms()[1]) == (
+        qp.Hamiltonian(pnp.ones(len(h_ref_data.terms()[0])), h_ref_data.terms()[1])
     )
 
-    assert isinstance(h, qml.ops.Sum)
+    assert isinstance(h, qp.ops.Sum)
 
     wire_order = h_ref_data.wires
     assert pnp.allclose(
-        qml.matrix(h, wire_order=wire_order),
-        qml.matrix(h_ref_data, wire_order=wire_order),
+        qp.matrix(h, wire_order=wire_order),
+        qp.matrix(h_ref_data, wire_order=wire_order),
     )
 
 
@@ -321,14 +321,14 @@ def test_diff_hamiltonian_active_space(use_jax):
     symbols = ["H", "H", "H"]
     geometry = pnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
     if use_jax:
-        geometry = qml.math.array(geometry, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
 
     mol = qchem.Molecule(symbols, geometry, charge=1)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else [geometry]
 
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
-    assert isinstance(h, qml.ops.Sum)
+    assert isinstance(h, qp.ops.Sum)
 
 
 @pytest.mark.parametrize(
@@ -360,7 +360,7 @@ def test_diff_hamiltonian_active_space(use_jax):
 def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, use_jax):
     r"""Test that diff_hamiltonian has an ascending wire order."""
     if use_jax:
-        geometry = qml.math.array(geometry, like="jax")
+        geometry = qp.math.array(geometry, like="jax")
 
     mol = qchem.Molecule(symbols, geometry, charge)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else [geometry]
@@ -371,7 +371,7 @@ def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, us
 
 
 def test_gradient_expvalH():
-    r"""Test that the gradient of expval(H) computed with ``qml.grad`` is equal to the value
+    r"""Test that the gradient of expval(H) computed with ``qp.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H"]
     geometry = (
@@ -385,20 +385,20 @@ def test_gradient_expvalH():
 
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    dev = qml.device("default.qubit", wires=4)
+    dev = qp.device("default.qubit", wires=4)
 
     def energy(mol):
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(*args):
-            qml.PauliX(0)
-            qml.PauliX(1)
-            qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
+            qp.PauliX(0)
+            qp.PauliX(1)
+            qp.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
             h_qubit = qchem.diff_hamiltonian(mol)(*args)
-            return qml.expval(h_qubit)
+            return qp.expval(h_qubit)
 
         return circuit
 
-    grad_qml = qml.grad(energy(mol), argnums=0)(*args)
+    grad_qml = qp.grad(energy(mol), argnums=0)(*args)
 
     alpha_1 = pnp.array(
         [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
@@ -427,38 +427,38 @@ class TestJax:
 
         symbols = ["H", "H"]
         geometry = (
-            qml.math.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], like="jax")
+            qp.math.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], like="jax")
             / 0.529177210903
         )
-        alpha = qml.math.array(
+        alpha = qp.math.array(
             [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
             like="jax",
         )
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, mol.alpha]
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
         def energy():
-            @qml.qnode(dev, interface="jax")
+            @qp.qnode(dev, interface="jax")
             def circuit(*args):
-                qml.PauliX(0)
-                qml.PauliX(1)
-                qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-                mol = qml.qchem.Molecule(symbols, geometry, alpha=args[2], coeff=args[1])
+                qp.PauliX(0)
+                qp.PauliX(1)
+                qp.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
+                mol = qp.qchem.Molecule(symbols, geometry, alpha=args[2], coeff=args[1])
                 h_qubit = qchem.diff_hamiltonian(mol)(*args)
-                return qml.expval(h_qubit)
+                return qp.expval(h_qubit)
 
             return circuit
 
         grad_jax = jax.grad(energy(), argnums=2)(*args)
 
         # Finite Differences
-        alpha_1 = qml.math.array(
+        alpha_1 = qp.math.array(
             [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
             like="jax",
         )  # alpha[0][0] -= 0.0001
 
-        alpha_2 = qml.math.array(
+        alpha_2 = qp.math.array(
             [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
             like="jax",
         )  # alpha[0][0] += 0.0001
@@ -470,4 +470,4 @@ class TestJax:
 
         grad_finitediff = (e_2 - e_1) / 0.0002
 
-        assert qml.math.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
+        assert qp.math.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)

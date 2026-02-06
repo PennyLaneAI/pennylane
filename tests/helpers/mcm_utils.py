@@ -83,7 +83,7 @@ def validate_samples(shots, results1, results2, batch_size=None):
     assert results1.ndim == results2.ndim
     if results2.ndim > 1:
         assert results1.shape[1] == results2.shape[1]
-    np.allclose(qml.math.sum(results1), qml.math.sum(results2), atol=20, rtol=0.2)
+    np.allclose(qp.math.sum(results1), qp.math.sum(results2), atol=20, rtol=0.2)
 
 
 def validate_expval(shots, results1, results2, batch_size=None):
@@ -117,11 +117,11 @@ def validate_expval(shots, results1, results2, batch_size=None):
 
 def validate_measurements(func, shots, results1, results2, batch_size=None):
     """Calls the correct validation function based on measurement type."""
-    if func is qml.counts:
+    if func is qp.counts:
         validate_counts(shots, results1, results2, batch_size=batch_size)
         return
 
-    if func is qml.sample:
+    if func is qp.sample:
         validate_samples(shots, results1, results2, batch_size=batch_size)
         return
 

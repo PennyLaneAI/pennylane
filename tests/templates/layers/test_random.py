@@ -28,30 +28,30 @@ def test_standard_validity():
     """Run standard checks with the assert_valid function."""
 
     weights = np.array([[0.1, -2.1, 1.4]])
-    op = qml.RandomLayers(weights, wires=(0, 1))
-    qml.ops.functions.assert_valid(op)
+    op = qp.RandomLayers(weights, wires=(0, 1))
+    qp.ops.functions.assert_valid(op)
 
 
 def test_hyperparameters():
     """Test that the hyperparmaeters are set as expected."""
     weights = np.array([[0.1, -2.1, 1.4]])
-    op = qml.RandomLayers(weights, wires=(0, 1))
+    op = qp.RandomLayers(weights, wires=(0, 1))
 
     assert op.hyperparameters == {
         "ratio_imprim": 0.3,
-        "imprimitive": qml.CNOT,
-        "rotations": (qml.RX, qml.RY, qml.RZ),
+        "imprimitive": qp.CNOT,
+        "rotations": (qp.RX, qp.RY, qp.RZ),
         "seed": 42,
     }
 
-    op2 = qml.RandomLayers(
-        weights, wires=(0, 1), ratio_imprim=1.0, imprimitive=qml.CZ, rotations=(qml.RX,), seed=None
+    op2 = qp.RandomLayers(
+        weights, wires=(0, 1), ratio_imprim=1.0, imprimitive=qp.CZ, rotations=(qp.RX,), seed=None
     )
 
     assert op2.hyperparameters == {
         "ratio_imprim": 1.0,
-        "imprimitive": qml.CZ,
-        "rotations": (qml.RX,),
+        "imprimitive": qp.CZ,
+        "rotations": (qp.RX,),
         "seed": None,
     }
 
@@ -60,16 +60,16 @@ def test_hyperparameters():
 def test_flatten_unflatten():
     """Test the behavior of the flatten and unflatten methods."""
     weights = np.array([[0.1, -2.1, 1.4]])
-    op = qml.RandomLayers(weights, wires=(0, 1))
+    op = qp.RandomLayers(weights, wires=(0, 1))
 
     data, metadata = op._flatten()
 
-    assert qml.math.allclose(data[0], weights)
+    assert qp.math.allclose(data[0], weights)
     # check metadata hashable
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    qml.assert_equal(new_op, op)
+    qp.assert_equal(new_op, op)
     assert new_op is not op
 
 
@@ -80,9 +80,9 @@ class TestDecomposition:
         """Test that the circuit is fixed by the seed."""
         weights = np.random.random((2, 3))
 
-        op1 = qml.RandomLayers(weights, wires=range(2), seed=41)
-        op2 = qml.RandomLayers(weights, wires=range(2), seed=42)
-        op3 = qml.RandomLayers(weights, wires=range(2), seed=42)
+        op1 = qp.RandomLayers(weights, wires=range(2), seed=41)
+        op2 = qp.RandomLayers(weights, wires=range(2), seed=42)
+        op3 = qp.RandomLayers(weights, wires=range(2), seed=42)
 
         queue1 = op1.decomposition()
         decomp1 = op1.compute_decomposition(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
@@ -95,18 +95,18 @@ class TestDecomposition:
         assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
 
         for op1, op2 in zip(queue1, decomp1):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
         for op1, op2 in zip(queue2, decomp2):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
         for op1, op2 in zip(queue3, decomp3):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
     def test_number_gates(self, n_layers, n_rots):
         """Test that the number of gates is correct."""
         weights = np.random.randn(n_layers, n_rots)
 
-        op = qml.RandomLayers(weights, wires=range(2))
+        op = qp.RandomLayers(weights, wires=range(2))
         ops = op.decomposition()
 
         gate_names = [g.name for g in ops]
@@ -118,7 +118,7 @@ class TestDecomposition:
         n_rots = 500
         weights = np.random.random(size=(1, n_rots))
 
-        op = qml.RandomLayers(weights, wires=range(2), ratio_imprim=ratio)
+        op = qp.RandomLayers(weights, wires=range(2), ratio_imprim=ratio)
         queue = op.decomposition()
 
         gate_names = [gate.name for gate in queue]
@@ -131,7 +131,7 @@ class TestDecomposition:
         n_rots = 5000
         weights = np.random.random(size=(2, n_rots))
 
-        op = qml.RandomLayers(weights, wires=range(3))
+        op = qp.RandomLayers(weights, wires=range(3))
         queue = op.decomposition()
 
         gate_wires = [gate.wires.labels for gate in queue]
@@ -144,18 +144,18 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         weights = np.random.random(size=(1, 3))
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RandomLayers(weights, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.RandomLayers(weights, wires=range(3))
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.RandomLayers(weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.RandomLayers(weights, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -171,12 +171,12 @@ class TestInputs:
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi):
-            qml.RandomLayers(phi, wires=list(range(4)))
-            return qml.expval(qml.PauliZ(0))
+            qp.RandomLayers(phi, wires=list(range(4)))
+            return qp.expval(qp.PauliZ(0))
 
         phi = np.array([0.04, 0.14, 3.29, 2.51])
 
@@ -185,7 +185,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.RandomLayers(np.random.random(size=(1, 3)), wires=range(3), id="a")
+        template = qp.RandomLayers(np.random.random(size=(1, 3)), wires=range(3), id="a")
         assert template.id == "a"
 
 
@@ -203,22 +203,22 @@ class TestAttributes:
     def test_shape(self, n_layers, n_rots, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.RandomLayers.shape(n_layers, n_rots)
+        shape = qp.RandomLayers.shape(n_layers, n_rots)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.RandomLayers(weights, range(3), seed=42)
-    return qml.expval(qml.PauliZ(0))
+    qp.RandomLayers(weights, range(3), seed=42)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(weights):
     # this structure is only true for a seed of 42 and 3 wires
-    qml.RY(weights[0, 0], wires=1)
-    qml.RX(weights[0][1], wires=2)
-    qml.CNOT(wires=[1, 2])
-    qml.RZ(weights[0, 2], wires=1)
-    return qml.expval(qml.PauliZ(0))
+    qp.RY(weights[0, 0], wires=1)
+    qp.RX(weights[0][1], wires=2)
+    qp.CNOT(wires=[1, 2])
+    qp.RZ(weights[0, 2], wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -229,18 +229,18 @@ class TestInterfaces:
         """Tests the weights as a list of lists."""
         weights = [[0.1, -2.1, 1.4]]
 
-        op = qml.RandomLayers(weights, wires=range(3), seed=42)
+        op = qp.RandomLayers(weights, wires=range(3), seed=42)
 
         decomp = op.decomposition()
         expected = [
-            qml.RY(weights[0][0], wires=1),
-            qml.RX(weights[0][1], wires=2),
-            qml.CNOT(wires=[1, 2]),
-            qml.RZ(weights[0][2], wires=1),
+            qp.RY(weights[0][0], wires=1),
+            qp.RX(weights[0][1], wires=2),
+            qp.CNOT(wires=[1, 2]),
+            qp.RZ(weights[0][2], wires=1),
         ]
 
         for op1, op2 in zip(decomp, expected):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     def test_autograd(self, tol):
         """Tests the autograd interface."""
@@ -248,19 +248,19 @@ class TestInterfaces:
         weights = np.random.random(size=(1, 3))
         weights = pnp.array(weights, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(weights)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -274,14 +274,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -300,14 +300,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -315,7 +315,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -325,14 +325,14 @@ class TestInterfaces:
 
         weights = tf.Variable(np.random.random(size=(1, 3)))
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(weights)
@@ -352,14 +352,14 @@ class TestInterfaces:
 
         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(weights)
         res.backward()

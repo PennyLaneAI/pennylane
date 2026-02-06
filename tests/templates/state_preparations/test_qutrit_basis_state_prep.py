@@ -28,9 +28,9 @@ def test_standard_validity():
 
     basis_state = [2, 1, 0, 2]
     wires = [1, 2, 6, 8]
-    op = qml.QutritBasisStatePreparation(basis_state, wires)
+    op = qp.QutritBasisStatePreparation(basis_state, wires)
 
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -58,7 +58,7 @@ class TestDecomposition:
     def test_correct_pl_gates(self, basis_state, wires, target_wires):
         """Tests queue for simple cases."""
 
-        op = qml.QutritBasisStatePreparation(basis_state, wires)
+        op = qp.QutritBasisStatePreparation(basis_state, wires)
         queue = op.decomposition()
 
         for id, gate in enumerate(queue):
@@ -90,11 +90,11 @@ class TestDecomposition:
     def test_state_preparation(self, tol, qutrit_device_3_wires, basis_state, wires, target_state):
         """Tests that the template produces the correct expectation values."""
 
-        @qml.qnode(qutrit_device_3_wires)
+        @qp.qnode(qutrit_device_3_wires)
         def circuit(obs):
-            qml.QutritBasisStatePreparation(basis_state, wires)
+            qp.QutritBasisStatePreparation(basis_state, wires)
 
-            return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
+            return [qp.expval(qp.THermitian(A=obs, wires=i)) for i in range(3)]
 
         # Convert to basis states
         obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
@@ -107,19 +107,19 @@ class TestDecomposition:
         """Tests that the template can be JIT compiled."""
         import jax
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qp.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
-            qml.QutritBasisStatePreparation(state, [0])
-            return qml.state()
+            qp.QutritBasisStatePreparation(state, [0])
+            return qp.state()
 
         circuit = jax.jit(circuit)
 
-        basis_state = qml.math.array([2], like="jax")
+        basis_state = qp.math.array([2], like="jax")
         output_state = circuit(basis_state)
 
-        assert qml.math.allclose(output_state, [0, 0, 1])
+        assert qp.math.allclose(output_state, [0, 0, 1])
 
     @pytest.mark.jax
     def test_state_preparation_with_simpling_jax_jit(self):
@@ -130,10 +130,10 @@ class TestDecomposition:
         n = 2
 
         @jax.jit
-        @qml.qnode(qml.device("default.qutrit", wires=n), shots=1)
+        @qp.qnode(qp.device("default.qutrit", wires=n), shots=1)
         def circuit(state):
-            qml.QutritBasisStatePreparation(state, wires=range(n))
-            return qml.sample(wires=range(n))
+            qp.QutritBasisStatePreparation(state, wires=range(n))
+            return qp.sample(wires=range(n))
 
         state = jax.numpy.array([1, 1])
         circuit(state)
@@ -146,11 +146,11 @@ class TestDecomposition:
         import jax.numpy as jnp
 
         tshift = jnp.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
-        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
+        jit_decomp = jax.jit(qp.QutritBasisStatePreparation.compute_decomposition)
 
         decomp = jit_decomp(jnp.array([state]), wires=[0])
-        matrix = qml.matrix(qml.prod(*decomp[::-1]))
-        assert qml.math.allclose(matrix, jnp.linalg.matrix_power(tshift, state))
+        matrix = qp.matrix(qp.prod(*decomp[::-1]))
+        assert qp.math.allclose(matrix, jnp.linalg.matrix_power(tshift, state))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("state", [0, 1, 2])
@@ -160,7 +160,7 @@ class TestDecomposition:
         import jax.numpy as jnp
 
         jit_decomp = jax.jit(
-            qml.QutritBasisStatePreparation.compute_decomposition, static_argnames="wires"
+            qp.QutritBasisStatePreparation.compute_decomposition, static_argnames="wires"
         )
 
         wire = (0,)
@@ -168,16 +168,16 @@ class TestDecomposition:
         decomp = jit_decomp(jnp.array([state]), wires=wire)
 
         op_list = [
-            qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
-            qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 2)),
-            qml.TRZ((-2 * state + 3) * state * np.pi, wires=wire, subspace=(0, 2)),
-            qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 2)),
-            qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 1)),
-            qml.TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
+            qp.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
+            qp.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 2)),
+            qp.TRZ((-2 * state + 3) * state * np.pi, wires=wire, subspace=(0, 2)),
+            qp.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 2)),
+            qp.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 1)),
+            qp.TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
         ]
 
         for op1, op2 in zip(decomp, op_list):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
@@ -196,11 +196,11 @@ class TestDecomposition:
         import tensorflow as tf
 
         @tf.function
-        @qml.qnode(qutrit_device_3_wires, interface="tf")
+        @qp.qnode(qutrit_device_3_wires, interface="tf")
         def circuit(state, obs):
-            qml.QutritBasisStatePreparation(state, wires)
+            qp.QutritBasisStatePreparation(state, wires)
 
-            return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
+            return [qp.expval(qp.THermitian(A=obs, wires=i)) for i in range(3)]
 
         obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
         output_state = [x - 1 for x in circuit(basis_state, obs)]
@@ -211,18 +211,18 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         basis_state = [0, 1, 2]
 
-        dev = qml.device("default.qutrit", wires=3)
-        dev2 = qml.device("default.qutrit", wires=["z", "a", "k"])
+        dev = qp.device("default.qutrit", wires=3)
+        dev2 = qp.device("default.qutrit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(obs):
-            qml.QutritBasisStatePreparation(basis_state, wires=range(3))
-            return qml.expval(qml.THermitian(A=obs, wires=0))
+            qp.QutritBasisStatePreparation(basis_state, wires=range(3))
+            return qp.expval(qp.THermitian(A=obs, wires=0))
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2(obs):
-            qml.QutritBasisStatePreparation(basis_state, wires=["z", "a", "k"])
-            return qml.expval(qml.THermitian(A=obs, wires="z"))
+            qp.QutritBasisStatePreparation(basis_state, wires=["z", "a", "k"])
+            return qp.expval(qp.THermitian(A=obs, wires="z"))
 
         obs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         circuit(obs)
@@ -247,7 +247,7 @@ class TestInputs:
         of qutrits does not match the number of wires."""
 
         with pytest.raises(ValueError, match="Basis states must be of (shape|length)"):
-            qml.QutritBasisStatePreparation(basis_state, wires)
+            qp.QutritBasisStatePreparation(basis_state, wires)
 
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
@@ -260,17 +260,17 @@ class TestInputs:
         the basis state contains numbers different from 0 ,1 and 2."""
 
         with pytest.raises(ValueError, match="Basis states must only (contain|consist)"):
-            qml.QutritBasisStatePreparation(basis_state, wires)
+            qp.QutritBasisStatePreparation(basis_state, wires)
 
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qp.device("default.qutrit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(basis_state, obs):
-            qml.QutritBasisStatePreparation(basis_state, wires=range(2))
-            return qml.expval(qml.THermitian(A=obs, wires=0))
+            qp.QutritBasisStatePreparation(basis_state, wires=range(2))
+            return qp.expval(qp.THermitian(A=obs, wires=0))
 
         obs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
@@ -288,5 +288,5 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.QutritBasisStatePreparation(np.array([0, 2]), wires=[0, 1], id="a")
+        template = qp.QutritBasisStatePreparation(np.array([0, 2]), wires=[0, 1], id="a")
         assert template.id == "a"

@@ -79,7 +79,7 @@ class TestRegisters:
         The expected result is a dictionary that has elements ordered first by appearance from left
         to right, then by nestedness (also known as DFS traversal order)."""
 
-        wire_dict = qml.registers(wire_dict)
+        wire_dict = qp.registers(wire_dict)
 
         assert wire_dict == expected_register
 
@@ -103,4 +103,4 @@ class TestRegisters:
     def test_errors_for_registers(self, wire_dict, expected_error_msg):
         """Test that the registers function raises the right error for given Wires dictionaries"""
         with pytest.raises(ValueError, match=expected_error_msg):
-            qml.registers(wire_dict)
+            qp.registers(wire_dict)

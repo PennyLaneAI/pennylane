@@ -29,14 +29,14 @@ coeffs_h2.append([0.45445016, 0.45445016, 0.45445016, 0.45445016])
 
 
 ops_h2 = []
-ops_h2.append([qml.Identity(wires=[0])])
-ops_h2.append([qml.Identity(wires=[0])])
+ops_h2.append([qp.Identity(wires=[0])])
+ops_h2.append([qp.Identity(wires=[0])])
 ops_h2.append(
     [
-        qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-        qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-        qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-        qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
+        qp.PauliY(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliY(wires=[2]),
+        qp.PauliX(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliX(wires=[2]),
+        qp.PauliY(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliY(wires=[3]),
+        qp.PauliX(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliX(wires=[3]),
     ]
 )
 
@@ -93,81 +93,81 @@ coeffs_h3p.append([0.0])
 ops_h3p = []
 ops_h3p.append(
     [
-        qml.PauliZ(wires=[0]),
-        qml.PauliZ(wires=[1]),
-        qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-        qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-        qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-        qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
-        qml.PauliY(wires=[0])
-        @ qml.PauliZ(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliY(wires=[4]),
-        qml.PauliX(wires=[0])
-        @ qml.PauliZ(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliX(wires=[4]),
-        qml.PauliY(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliZ(wires=[4])
-        @ qml.PauliY(wires=[5]),
-        qml.PauliX(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliZ(wires=[4])
-        @ qml.PauliX(wires=[5]),
-        qml.PauliZ(wires=[2]),
-        qml.PauliZ(wires=[3]),
-        qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliY(wires=[4]),
-        qml.PauliX(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliX(wires=[4]),
-        qml.PauliY(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliY(wires=[5]),
-        qml.PauliX(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliX(wires=[5]),
-        qml.PauliZ(wires=[4]),
-        qml.PauliZ(wires=[5]),
+        qp.PauliZ(wires=[0]),
+        qp.PauliZ(wires=[1]),
+        qp.PauliY(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliY(wires=[2]),
+        qp.PauliX(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliX(wires=[2]),
+        qp.PauliY(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliY(wires=[3]),
+        qp.PauliX(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliX(wires=[3]),
+        qp.PauliY(wires=[0])
+        @ qp.PauliZ(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliY(wires=[4]),
+        qp.PauliX(wires=[0])
+        @ qp.PauliZ(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliX(wires=[4]),
+        qp.PauliY(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliZ(wires=[4])
+        @ qp.PauliY(wires=[5]),
+        qp.PauliX(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliZ(wires=[4])
+        @ qp.PauliX(wires=[5]),
+        qp.PauliZ(wires=[2]),
+        qp.PauliZ(wires=[3]),
+        qp.PauliY(wires=[2]) @ qp.PauliZ(wires=[3]) @ qp.PauliY(wires=[4]),
+        qp.PauliX(wires=[2]) @ qp.PauliZ(wires=[3]) @ qp.PauliX(wires=[4]),
+        qp.PauliY(wires=[3]) @ qp.PauliZ(wires=[4]) @ qp.PauliY(wires=[5]),
+        qp.PauliX(wires=[3]) @ qp.PauliZ(wires=[4]) @ qp.PauliX(wires=[5]),
+        qp.PauliZ(wires=[4]),
+        qp.PauliZ(wires=[5]),
     ]
 )
 ops_h3p.append(
     [
-        qml.PauliZ(wires=[0]),
-        qml.PauliZ(wires=[1]),
-        qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
-        qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
-        qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
-        qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
-        qml.PauliY(wires=[0])
-        @ qml.PauliZ(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliY(wires=[4]),
-        qml.PauliX(wires=[0])
-        @ qml.PauliZ(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliX(wires=[4]),
-        qml.PauliY(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliZ(wires=[4])
-        @ qml.PauliY(wires=[5]),
-        qml.PauliX(wires=[1])
-        @ qml.PauliZ(wires=[2])
-        @ qml.PauliZ(wires=[3])
-        @ qml.PauliZ(wires=[4])
-        @ qml.PauliX(wires=[5]),
-        qml.PauliZ(wires=[2]),
-        qml.PauliZ(wires=[3]),
-        qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliY(wires=[4]),
-        qml.PauliX(wires=[2]) @ qml.PauliZ(wires=[3]) @ qml.PauliX(wires=[4]),
-        qml.PauliY(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliY(wires=[5]),
-        qml.PauliX(wires=[3]) @ qml.PauliZ(wires=[4]) @ qml.PauliX(wires=[5]),
-        qml.PauliZ(wires=[4]),
-        qml.PauliZ(wires=[5]),
+        qp.PauliZ(wires=[0]),
+        qp.PauliZ(wires=[1]),
+        qp.PauliY(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliY(wires=[2]),
+        qp.PauliX(wires=[0]) @ qp.PauliZ(wires=[1]) @ qp.PauliX(wires=[2]),
+        qp.PauliY(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliY(wires=[3]),
+        qp.PauliX(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliX(wires=[3]),
+        qp.PauliY(wires=[0])
+        @ qp.PauliZ(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliY(wires=[4]),
+        qp.PauliX(wires=[0])
+        @ qp.PauliZ(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliX(wires=[4]),
+        qp.PauliY(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliZ(wires=[4])
+        @ qp.PauliY(wires=[5]),
+        qp.PauliX(wires=[1])
+        @ qp.PauliZ(wires=[2])
+        @ qp.PauliZ(wires=[3])
+        @ qp.PauliZ(wires=[4])
+        @ qp.PauliX(wires=[5]),
+        qp.PauliZ(wires=[2]),
+        qp.PauliZ(wires=[3]),
+        qp.PauliY(wires=[2]) @ qp.PauliZ(wires=[3]) @ qp.PauliY(wires=[4]),
+        qp.PauliX(wires=[2]) @ qp.PauliZ(wires=[3]) @ qp.PauliX(wires=[4]),
+        qp.PauliY(wires=[3]) @ qp.PauliZ(wires=[4]) @ qp.PauliY(wires=[5]),
+        qp.PauliX(wires=[3]) @ qp.PauliZ(wires=[4]) @ qp.PauliX(wires=[5]),
+        qp.PauliZ(wires=[4]),
+        qp.PauliZ(wires=[5]),
     ]
 )
-ops_h3p.append([qml.Identity(wires=[0])])
+ops_h3p.append([qp.Identity(wires=[0])])
 
 
 h2o = ["H", "H", "O"]
@@ -181,20 +181,20 @@ coeffs_h2o.append([0.28530461, 0.111, 0.111, -0.3710174, -0.3710174])
 ops_h2o = []
 ops_h2o.append(
     [
-        qml.PauliX(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]),
-        qml.PauliY(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]),
-        qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[3]),
-        qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]),
+        qp.PauliX(wires=[0]) @ qp.PauliY(wires=[1]) @ qp.PauliY(wires=[2]),
+        qp.PauliY(wires=[0]) @ qp.PauliY(wires=[1]) @ qp.PauliX(wires=[2]),
+        qp.PauliZ(wires=[0]) @ qp.PauliX(wires=[1]) @ qp.PauliZ(wires=[3]),
+        qp.PauliX(wires=[1]) @ qp.PauliZ(wires=[2]),
     ]
 )
-ops_h2o.append([qml.Identity(wires=[0])])
+ops_h2o.append([qp.Identity(wires=[0])])
 ops_h2o.append(
     [
-        qml.Identity(wires=[0]),
-        qml.PauliZ(wires=[0]),
-        qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-        qml.PauliZ(wires=[2]),
-        qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+        qp.Identity(wires=[0]),
+        qp.PauliZ(wires=[0]),
+        qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[1]),
+        qp.PauliZ(wires=[2]),
+        qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[3]),
     ]
 )
 
@@ -211,7 +211,7 @@ ops_h2o.append(
 def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
     r"""Tests the correctness of the dipole observable computed by the ``dipole`` function."""
 
-    dip = qml.qchem.dipole_of(
+    dip = qp.qchem.dipole_of(
         symbols,
         coords,
         charge=charge,
@@ -233,7 +233,7 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
         for o1, o2 in zip(d_ops, r_ops):
-            qml.assert_equal(o1, o2)
+            qp.assert_equal(o1, o2)
 
 
 @pytest.mark.parametrize(
@@ -247,14 +247,14 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
 def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
     r"""Tests the correctness of the computed dipole moment."""
 
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
-    dip_obs = qml.qchem.dipole_of(symbols, coords, charge=charge, outpath=tmpdir.strpath)
+    dip_obs = qp.qchem.dipole_of(symbols, coords, charge=charge, outpath=tmpdir.strpath)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(hf_state, obs):
-        qml.BasisState(hf_state, wires=range(len(hf_state)))
-        return qml.expval(obs)
+        qp.BasisState(hf_state, wires=range(len(hf_state)))
+        return qp.expval(obs)
 
     dipole = np.array([circuit(hf_state, obs) for obs in dip_obs])
 
@@ -273,4 +273,4 @@ def test_exceptions_dipole(symbols, coords, mult, msg_match):
     """Test exceptions of the ``dipole`` function."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qml.qchem.dipole_of(symbols, coords, mult=mult)
+        qp.qchem.dipole_of(symbols, coords, mult=mult)

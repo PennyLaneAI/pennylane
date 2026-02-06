@@ -35,27 +35,27 @@ ml_frameworks_list = [
 def test_convert_arrays_to_numpy(framework, shots):
     """Tests that convert_to_numpy_parameters works with autograd arrays."""
 
-    x = qml.math.asarray(np.array(1.234), like=framework)
-    y = qml.math.asarray(np.array(0.652), like=framework)
-    M = qml.math.asarray(np.eye(2), like=framework)
-    state = qml.math.asarray(np.array([1, 0]), like=framework)
+    x = qp.math.asarray(np.array(1.234), like=framework)
+    y = qp.math.asarray(np.array(0.652), like=framework)
+    M = qp.math.asarray(np.eye(2), like=framework)
+    state = qp.math.asarray(np.array([1, 0]), like=framework)
 
     numpy_data = np.array(0.62)
 
     ops = [
-        qml.StatePrep(state, 0),
-        qml.RX(x, 0),
-        qml.RY(y, 1),
-        qml.CNOT((0, 1)),
-        qml.RZ(numpy_data, 0),
+        qp.StatePrep(state, 0),
+        qp.RX(x, 0),
+        qp.RY(y, 1),
+        qp.CNOT((0, 1)),
+        qp.RZ(numpy_data, 0),
     ]
-    m = [qml.state(), qml.expval(qml.Hermitian(M, 0))]
+    m = [qp.state(), qp.expval(qp.Hermitian(M, 0))]
 
-    qs = qml.tape.QuantumScript(ops, m, shots=shots)
+    qs = qp.tape.QuantumScript(ops, m, shots=shots)
     new_qs, fn = convert_to_numpy_parameters(qs)
 
     assert len(new_qs) == 1
-    assert isinstance(new_qs[0], qml.tape.QuantumScript)
+    assert isinstance(new_qs[0], qp.tape.QuantumScript)
 
     new_qs = new_qs[0]
     # check ops that should be unaltered
@@ -65,10 +65,10 @@ def test_convert_arrays_to_numpy(framework, shots):
     assert fn([0.5]) == 0.5
 
     for ind in (0, 1, 2):
-        qml.assert_equal(new_qs[ind], qs[ind], check_interface=False, check_trainability=False)
-        assert qml.math.get_interface(*new_qs[ind].data) == "numpy"
-    qml.assert_equal(new_qs[6], qs[6], check_interface=False, check_trainability=False)
-    assert qml.math.get_interface(*new_qs[6].obs.data) == "numpy"
+        qp.assert_equal(new_qs[ind], qs[ind], check_interface=False, check_trainability=False)
+        assert qp.math.get_interface(*new_qs[ind].data) == "numpy"
+    qp.assert_equal(new_qs[6], qs[6], check_interface=False, check_trainability=False)
+    assert qp.math.get_interface(*new_qs[6].obs.data) == "numpy"
 
     # check shots attribute matches
     assert new_qs.shots == qs.shots
@@ -77,8 +77,8 @@ def test_convert_arrays_to_numpy(framework, shots):
 @pytest.mark.autograd
 def test_preserves_trainable_params():
     """Test that convert_to_numpy_parameters preserves the trainable parameters property."""
-    ops = [qml.RX(qml.numpy.array(2.0), 0), qml.RY(qml.numpy.array(3.0), 0)]
-    qs = qml.tape.QuantumScript(ops)
+    ops = [qp.RX(qp.numpy.array(2.0), 0), qp.RY(qp.numpy.array(3.0), 0)]
+    qs = qp.tape.QuantumScript(ops)
     qs.trainable_params = {0}
     output, _ = convert_to_numpy_parameters(qs)
     assert output[0].trainable_params == [0]
@@ -87,40 +87,40 @@ def test_preserves_trainable_params():
 @pytest.mark.autograd
 def test_unwraps_arithmetic_op():
     """Test that the operator helper function can handle operator arithmetic objects."""
-    op1 = qml.s_prod(qml.numpy.array(2.0), qml.PauliX(0))
-    op2 = qml.s_prod(qml.numpy.array(3.0), qml.PauliY(0))
+    op1 = qp.s_prod(qp.numpy.array(2.0), qp.PauliX(0))
+    op2 = qp.s_prod(qp.numpy.array(3.0), qp.PauliY(0))
 
-    sum_op = qml.sum(op1, op2)
+    sum_op = qp.sum(op1, op2)
 
     unwrapped_op = _convert_op_to_numpy_data(sum_op)
-    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
-    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
+    assert qp.math.get_interface(*unwrapped_op.data) == "numpy"
+    assert qp.math.get_interface(*unwrapped_op.data) == "numpy"
 
 
 @pytest.mark.autograd
 def test_unwraps_arithmetic_op_measurement():
     """Test that the measurement helper function can handle operator arithmetic objects."""
-    op1 = qml.s_prod(qml.numpy.array(2.0), qml.PauliX(0))
-    op2 = qml.s_prod(qml.numpy.array(3.0), qml.PauliY(0))
+    op1 = qp.s_prod(qp.numpy.array(2.0), qp.PauliX(0))
+    op2 = qp.s_prod(qp.numpy.array(3.0), qp.PauliY(0))
 
-    sum_op = qml.sum(op1, op2)
-    m = qml.expval(sum_op)
+    sum_op = qp.sum(op1, op2)
+    m = qp.expval(sum_op)
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
     unwrapped_op = unwrapped_m.obs
-    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
-    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
+    assert qp.math.get_interface(*unwrapped_op.data) == "numpy"
+    assert qp.math.get_interface(*unwrapped_op.data) == "numpy"
 
 
 @pytest.mark.autograd
 def test_unwraps_prod_observables():
     """Test that the measurement helper function can set data on a prod observable."""
-    mat = qml.numpy.eye(2)
-    obs = qml.prod(qml.PauliZ(0), qml.Hermitian(mat, 1))
-    m = qml.expval(obs)
+    mat = qp.numpy.eye(2)
+    obs = qp.prod(qp.PauliZ(0), qp.Hermitian(mat, 1))
+    m = qp.expval(obs)
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
-    assert qml.math.get_interface(*unwrapped_m.obs.data) == "numpy"
+    assert qp.math.get_interface(*unwrapped_m.obs.data) == "numpy"
 
 
 @pytest.mark.torch
@@ -129,16 +129,16 @@ def test_unwraps_mp_eigvals():
     import torch
 
     eigvals = torch.tensor([0.5, 0.5])
-    m = qml.measurements.ExpectationMP(eigvals=eigvals, wires=qml.wires.Wires(0))
+    m = qp.measurements.ExpectationMP(eigvals=eigvals, wires=qp.wires.Wires(0))
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
-    assert qml.math.get_interface(unwrapped_m.eigvals) == "numpy"
+    assert qp.math.get_interface(unwrapped_m.eigvals) == "numpy"
 
 
 def test_mp_numpy_eigvals():
     """Test that a measurement process with numpy eigvals is returned unchanged."""
     eigvals = np.array([0.5, 0.5])
-    m = qml.measurements.ExpectationMP(eigvals=eigvals, wires=qml.wires.Wires(0))
+    m = qp.measurements.ExpectationMP(eigvals=eigvals, wires=qp.wires.Wires(0))
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
     assert m is unwrapped_m

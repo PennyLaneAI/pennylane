@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the qml.gradients.classical_jacobian function."""
+"""Tests for the qp.gradients.classical_jacobian function."""
 import numpy as np
 
 # pylint: disable=too-many-arguments
@@ -30,29 +30,29 @@ z = pnp.array([2.1, -0.3, 0.62, 0.89], requires_grad=True)
 
 
 def circuit_0(val):
-    qml.RZ(0.2, wires=0)
-    _ = [qml.RX(val, wires=0) for i in range(4)]
-    return qml.expval(qml.PauliZ(0))
+    qp.RZ(0.2, wires=0)
+    _ = [qp.RX(val, wires=0) for i in range(4)]
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_1(a_, b_):
-    qml.RX(qml.math.sin(a_), wires=0)
-    qml.RZ(a_ / 3, wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.RY(b_**2, wires=1)
-    qml.RZ(1 / b_, wires=1)
-    return qml.expval(qml.PauliZ(0))
+    qp.RX(qp.math.sin(a_), wires=0)
+    qp.RZ(a_ / 3, wires=0)
+    qp.CNOT(wires=[0, 1])
+    qp.RY(b_**2, wires=1)
+    qp.RZ(1 / b_, wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_2(par):
-    _ = [qml.RX(par[i], wires=0) for i in range(3)]
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(par[i], wires=0) for i in range(3)]
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_3(par0, par1):
-    _ = [qml.RX(p, wires=0) for p in par0]
-    _ = [qml.RY(p, wires=1) for par in par1 for p in par]
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(p, wires=0) for p in par0]
+    _ = [qp.RY(p, wires=1) for par in par1 for p in par]
+    return qp.expval(qp.PauliZ(0))
 
 
 perm_3 = ([2, 0, 1], [1, 2, 0, 3])
@@ -60,23 +60,23 @@ perm_3 = ([2, 0, 1], [1, 2, 0, 3])
 
 def circuit_4(x_, y_):
     for i in perm_3[0]:
-        qml.RX(x_[i], wires=0)
+        qp.RX(x_[i], wires=0)
     for j in perm_3[1]:
-        qml.RY(y_[j // 2, j % 2], wires=1)
-    return qml.expval(qml.PauliZ(0))
+        qp.RY(y_[j // 2, j % 2], wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_5(par0, par1, par2):
-    _ = [qml.RX(_x, wires=0) for _x in par0]
-    qml.RZ(par1[0, 1] * par1[1, 0], wires=1)
-    qml.RY(par2[0] + 0.2 * par2[1] ** 2, wires=1)
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(_x, wires=0) for _x in par0]
+    qp.RZ(par1[0, 1] * par1[1, 0], wires=1)
+    qp.RY(par2[0] + 0.2 * par2[1] ** 2, wires=1)
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_6(par0, par1):
-    _ = [qml.RX(p, wires=0) for p in par0]
-    _ = [qml.RX(p, wires=0) for p in par1]
-    return qml.expval(qml.PauliZ(0))
+    _ = [qp.RX(p, wires=0) for p in par0]
+    _ = [qp.RX(p, wires=0) for p in par1]
+    return qp.expval(qp.PauliZ(0))
 
 
 circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5, circuit_6]
@@ -129,8 +129,8 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.parametrize("interface", interfaces)
 def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Autograd."""
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     if len(args) == 1:
@@ -148,10 +148,10 @@ interfaces = ["tf"]
 def test_error_undefined_interface():
     """Test that an error is raised in the qnode interface is not differentiable."""
 
-    @qml.qnode(qml.device("default.qubit"), interface=None)
+    @qp.qnode(qp.device("default.qubit"), interface=None)
     def circuit(_var):
-        qml.RX(_var, 0)
-        return qml.expval(qml.Z(0))
+        qp.RX(_var, 0)
+        return qp.expval(qp.Z(0))
 
     with pytest.raises(ValueError, match="Undifferentiable interface numpy"):
         classical_jacobian(circuit)(np.array(0.5))
@@ -166,8 +166,8 @@ def test_tf_without_argnum(circuit, args, expected_jac, diff_method, interface):
     import tensorflow as tf
 
     args = tuple(tf.Variable(arg, dtype=tf.double) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
@@ -187,8 +187,8 @@ def test_torch_without_argnum(circuit, args, expected_jac, diff_method, interfac
     import torch
 
     args = tuple(torch.tensor(arg, requires_grad=True) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
@@ -217,8 +217,8 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.parametrize("interface", interfaces)
 def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Autograd."""
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     if interface == "auto":
         assert qnode.interface == "auto"
@@ -240,8 +240,8 @@ def test_tf_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method,
     import tensorflow as tf
 
     args = tuple(tf.Variable(arg, dtype=tf.double) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = expected_jac[argnum]
     assert np.allclose(jac, expected_jac)
@@ -261,8 +261,8 @@ def test_torch_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_meth
     import torch
 
     args = tuple(torch.tensor(arg) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = expected_jac[argnum]
     assert np.allclose(jac, expected_jac)
@@ -283,8 +283,8 @@ def test_autograd_with_single_list_argnum(
     circuit, args, expected_jac, argnum, diff_method, interface
 ):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and Autograd."""
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
 
@@ -306,8 +306,8 @@ def test_tf_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_me
     import tensorflow as tf
 
     args = tuple(tf.Variable(arg, dtype=tf.double) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
     assert len(jac) == 1
@@ -328,8 +328,8 @@ def test_torch_with_single_list_argnum(circuit, args, expected_jac, argnum, diff
     import torch
 
     args = tuple(torch.tensor(arg) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
     assert len(jac) == 1
@@ -349,8 +349,8 @@ interfaces = ["auto", "autograd"]
 @pytest.mark.parametrize("interface", interfaces)
 def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and Autograd."""
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple(expected_jac[num] for num in argnum)
     assert len(jac) == len(expected_jac)
@@ -372,8 +372,8 @@ def test_tf_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_metho
     import tensorflow as tf
 
     args = tuple(tf.Variable(arg, dtype=tf.double) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple(expected_jac[num] for num in argnum)
     assert len(jac) == len(expected_jac)
@@ -395,8 +395,8 @@ def test_torch_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_me
     import torch
 
     args = tuple(torch.tensor(arg) for arg in args)
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = tuple(expected_jac[num] for num in argnum)
     assert len(jac) == len(expected_jac)
@@ -415,8 +415,8 @@ interfaces = ["auto", "autograd"]
 def test_autograd_not_trainable_only(diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Autograd
     with ``trainable_only=False`` ."""
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=0, trainable_only=False)(a)
     assert np.allclose(jac, expected_jac_not_trainable_only)
 
@@ -432,8 +432,8 @@ def test_tf_not_trainable_only(diff_method, interface):
     with ``trainable_only=False`` ."""
     import tensorflow as tf
 
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=0, trainable_only=False)(tf.Variable(a))
     assert np.allclose(jac, expected_jac_not_trainable_only)
 
@@ -449,8 +449,8 @@ def test_torch_not_trainable_only(diff_method, interface):
     with ``trainable_only=False`` ."""
     import torch
 
-    dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
+    dev = qp.device("default.qubit", wires=2)
+    qnode = qp.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=0, trainable_only=False)(
         torch.tensor(a, requires_grad=True)
     )
@@ -548,8 +548,8 @@ class TestJax:
         args = tuple(jnp.array(arg) for arg in args)
         # JAX behaviour: argnum=None yields only the Jacobian with respect to the first arg.
         expected_jac = expected_jac[0]
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
         jac = classical_jacobian(qnode)(*args)
         assert np.allclose(jac, expected_jac)
 
@@ -566,8 +566,8 @@ class TestJax:
         import jax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
         jac = classical_jacobian(qnode, argnum=argnum)(*args)
         expected_jac = (expected_jac[argnum[0]],)
         assert len(jac) == 1
@@ -584,8 +584,8 @@ class TestJax:
         import jax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
         jac = classical_jacobian(qnode, argnum=argnum)(*args)
         expected_jac = expected_jac[argnum]
         assert np.allclose(jac, expected_jac)
@@ -601,8 +601,8 @@ class TestJax:
         import jax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit, dev, interface=interface, diff_method=diff_method)
         jac = classical_jacobian(qnode, argnum=argnum)(*args)
 
         if len(argnum) > 1:
@@ -617,7 +617,7 @@ class TestJax:
     def test_jax_not_trainable_only(self, diff_method, interface):
         r"""Test ``classical_jacobian`` with ``argnum=<int>`` and JAX
         with ``trainable_only=False`` ."""
-        dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
+        dev = qp.device("default.qubit", wires=2)
+        qnode = qp.QNode(circuit_0, dev, interface=interface, diff_method=diff_method)
         jac = classical_jacobian(qnode, argnum=0, trainable_only=False)(a)
         assert np.allclose(jac, expected_jac_not_trainable_only)

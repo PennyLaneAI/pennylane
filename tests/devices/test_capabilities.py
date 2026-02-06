@@ -713,33 +713,33 @@ class TestDeviceCapabilities:
         capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file)
 
         for op in [
-            qml.RY(0.5, wires=0),
-            qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1]),
-            qml.RZ(0.5, wires=0),
-            qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1]),
-            qml.adjoint(qml.RZ(0.5, wires=0)),
-            qml.ops.Adjoint(qml.ops.Controlled(qml.RZ(0.5, wires=0), control_wires=[1])),
-            qml.ops.Controlled(qml.ops.Adjoint(qml.RZ(0.5, wires=0)), control_wires=[1]),
-            qml.CNOT(wires=[0, 1]),
-            qml.adjoint(qml.CNOT),
+            qp.RY(0.5, wires=0),
+            qp.ops.Controlled(qp.RY(0.5, wires=0), control_wires=[1]),
+            qp.RZ(0.5, wires=0),
+            qp.ops.Controlled(qp.RZ(0.5, wires=0), control_wires=[1]),
+            qp.adjoint(qp.RZ(0.5, wires=0)),
+            qp.ops.Adjoint(qp.ops.Controlled(qp.RZ(0.5, wires=0), control_wires=[1])),
+            qp.ops.Controlled(qp.ops.Adjoint(qp.RZ(0.5, wires=0)), control_wires=[1]),
+            qp.CNOT(wires=[0, 1]),
+            qp.adjoint(qp.CNOT),
         ]:
             assert capabilities.supports_operation(op.name) is True
 
         for op in [
-            qml.X(0),
-            qml.adjoint(qml.RY(0.5, wires=0)),
-            qml.adjoint(qml.ops.Controlled(qml.RY(0.5, wires=0), control_wires=[1])),
-            qml.ops.Controlled(qml.ops.Adjoint(qml.RY(0.5, wires=0)), control_wires=[1]),
-            qml.ops.Controlled(qml.CNOT(wires=[0, 1]), control_wires=[2]),
+            qp.X(0),
+            qp.adjoint(qp.RY(0.5, wires=0)),
+            qp.adjoint(qp.ops.Controlled(qp.RY(0.5, wires=0), control_wires=[1])),
+            qp.ops.Controlled(qp.ops.Adjoint(qp.RY(0.5, wires=0)), control_wires=[1]),
+            qp.ops.Controlled(qp.CNOT(wires=[0, 1]), control_wires=[2]),
         ]:
             assert capabilities.supports_operation(op.name) is False
 
-        for obs in [qml.X(0), qml.Y(0), qml.Z(0)]:
+        for obs in [qp.X(0), qp.Y(0), qp.Z(0)]:
             assert capabilities.supports_observable(obs.name) is True
 
         for obs in [
-            qml.H(0),
-            qml.Hamiltonian([0.5], [qml.PauliZ(0)]),
+            qp.H(0),
+            qp.Hamiltonian([0.5], [qp.PauliZ(0)]),
         ]:
             assert capabilities.supports_observable(obs.name) is False
 
@@ -803,8 +803,8 @@ def test_observable_stopping_condition_factory():
     }
 
     stopping_condition = observable_stopping_condition_factory(capabilities)
-    assert stopping_condition(qml.X(0)) is True
-    assert stopping_condition(qml.Y(0)) is False
-    assert stopping_condition(0.5 * qml.X(0)) is True
-    assert stopping_condition(0.5 * qml.Z(0) + 0.1 * qml.X(0) @ qml.Z(1)) is True
-    assert stopping_condition(qml.Hamiltonian([0.1, 0.2], [qml.Z(0), qml.X(0) @ qml.Y(1)])) is False
+    assert stopping_condition(qp.X(0)) is True
+    assert stopping_condition(qp.Y(0)) is False
+    assert stopping_condition(0.5 * qp.X(0)) is True
+    assert stopping_condition(0.5 * qp.Z(0) + 0.1 * qp.X(0) @ qp.Z(1)) is True
+    assert stopping_condition(qp.Hamiltonian([0.1, 0.2], [qp.Z(0), qp.X(0) @ qp.Y(1)])) is False

@@ -642,12 +642,12 @@ def test_specs_compute_depth(compute_depth):
     """Test that depth is skipped with `resources_from_tape`."""
 
     ops = [
-        qml.RX(0.432, wires=0),
-        qml.Rot(0.543, 0, 0.23, wires=0),
-        qml.CNOT(wires=[0, "a"]),
-        qml.RX(0.133, wires=4),
+        qp.RX(0.432, wires=0),
+        qp.Rot(0.543, 0, 0.23, wires=0),
+        qp.CNOT(wires=[0, "a"]),
+        qp.RX(0.133, wires=4),
     ]
-    obs = [qml.expval(qml.PauliX(wires="a")), qml.probs(wires=[0, "a"])]
+    obs = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
 
     tape = QuantumScript(ops=ops, measurements=obs)
     resources = resources_from_tape(tape, compute_depth=compute_depth)
@@ -1045,34 +1045,34 @@ class TestCountResources:
     scripts = (
         QuantumScript(ops=[], measurements=[]),
         QuantumScript(
-            ops=[qml.Hadamard(0), qml.CNOT([0, 1])], measurements=[qml.expval(qml.PauliZ(0))]
+            ops=[qp.Hadamard(0), qp.CNOT([0, 1])], measurements=[qp.expval(qp.PauliZ(0))]
         ),
         QuantumScript(
-            ops=[qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)],
-            measurements=[qml.expval(qml.exp(qml.PauliZ(0)))],
+            ops=[qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)],
+            measurements=[qp.expval(qp.exp(qp.PauliZ(0)))],
             shots=Shots(10),
         ),
         QuantumScript(
             ops=[
-                qml.PauliZ(0),
-                qml.CNOT([0, 1]),
-                qml.RX(1.23, 2),
+                qp.PauliZ(0),
+                qp.CNOT([0, 1]),
+                qp.RX(1.23, 2),
                 _CustomOpWithResource(wires=[0, 2]),
                 _CustomOpWithoutResource(wires=[0, 1]),
             ],
-            measurements=[qml.probs()],
+            measurements=[qp.probs()],
         ),
         QuantumScript(
             ops=[
-                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=range(10)),
-                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=range(5)),
-                qml.ctrl(op=qml.IsingXX(0.5, wires=[10, 11]), control=[0]),
-                qml.CNOT([0, 1]),
-                qml.Toffoli([0, 1, 2]),
-                qml.ctrl(op=qml.PauliX(10), control=[0]),
-                qml.ctrl(op=qml.PauliX(10), control=[0, 1]),
+                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=range(10)),
+                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=range(5)),
+                qp.ctrl(op=qp.IsingXX(0.5, wires=[10, 11]), control=[0]),
+                qp.CNOT([0, 1]),
+                qp.Toffoli([0, 1, 2]),
+                qp.ctrl(op=qp.PauliX(10), control=[0]),
+                qp.ctrl(op=qp.PauliX(10), control=[0, 1]),
             ],
-            measurements=[qml.probs()],
+            measurements=[qp.probs()],
         ),
     )
 

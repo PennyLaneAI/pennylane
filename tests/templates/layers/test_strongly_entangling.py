@@ -36,9 +36,9 @@ def test_standard_validity():
 
     weights = np.random.random(size=weight_shape)
 
-    op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
+    op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires))
 
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
 
 
 @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -73,9 +73,9 @@ class TestDecomposition:
         weights = np.random.random(
             size=(1, n_wires, 3),
         )
-        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+        op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
-        for rule in qml.list_decomps(qml.StronglyEntanglingLayers):
+        for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
@@ -88,9 +88,9 @@ class TestDecomposition:
         weights = np.random.random(
             size=(1, n_wires, 3),
         )
-        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+        op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
-        for rule in qml.list_decomps(qml.StronglyEntanglingLayers):
+        for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
@@ -102,8 +102,8 @@ class TestDecomposition:
             weight_shape = (batch_dim,) + weight_shape
         weights = np.random.random(size=weight_shape)
 
-        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires))
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         if batch_dim is None:
             param_sets = iter(weights.reshape((-1, 3)))
@@ -114,7 +114,7 @@ class TestDecomposition:
             assert gate.name == expected_names[i]
             if gate.name == "Rot":
                 assert gate.batch_size == batch_dim
-                assert qml.math.allclose(gate.data, next(param_sets))
+                assert qp.math.allclose(gate.data, next(param_sets))
             else:
                 assert gate.batch_size is None
             assert gate.wires.labels == tuple(expected_wires[i])
@@ -128,7 +128,7 @@ class TestDecomposition:
             shape = (batch_dim,) + shape
         weights = np.random.randn(*shape)
 
-        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), imprimitive=qml.CZ)
+        op = qp.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), imprimitive=qp.CZ)
         ops = op.decomposition()
 
         gate_names = [gate.name for gate in ops]
@@ -140,18 +140,18 @@ class TestDecomposition:
         shape = (1, 3, 3) if batch_dim is None else (batch_dim, 1, 3, 3)
         weights = np.random.random(size=shape)
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.StronglyEntanglingLayers(weights, wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.StronglyEntanglingLayers(weights, wires=range(3))
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.StronglyEntanglingLayers(weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.StronglyEntanglingLayers(weights, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -170,7 +170,7 @@ class TestDecomposition:
             shape = (batch_dim,) + shape
         weights = np.random.randn(*shape)
 
-        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
+        op = qp.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
         ops = op.decomposition()
 
         gate_wires = [gate.wires.labels for gate in ops]
@@ -204,7 +204,7 @@ class TestDynamicDecomposition:
         layers = 5
         n_wires = 3
         gate_set = None
-        imprimitive = qml.CNOT
+        imprimitive = qp.CNOT
         max_expansion = 1
 
         weight_shape = (layers, n_wires, 3)
@@ -213,8 +213,8 @@ class TestDynamicDecomposition:
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         def circuit(weights, wires):
-            qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
-            return qml.state()
+            qp.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
+            return qp.state()
 
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
         jaxpr_eqns = jaxpr.eqns
@@ -225,18 +225,18 @@ class TestDynamicDecomposition:
         rot_loop_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == for_loop_prim]
         assert rot_loop_eqn[0].primitive == for_loop_prim
         rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
-        assert rot_inner_eqn[-1].primitive == qml.Rot._primitive
+        assert rot_inner_eqn[-1].primitive == qp.Rot._primitive
 
         cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
-        assert cnot_inner_eqn[-1].primitive == qml.CNOT._primitive
+        assert cnot_inner_eqn[-1].primitive == qp.CNOT._primitive
         # Validate Ops
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
         ops_list = collector.state["ops"]
-        tape = qml.tape.QuantumScript(
-            [qml.StronglyEntanglingLayers(jnp.array(weights), wires=wires, imprimitive=imprimitive)]
+        tape = qp.tape.QuantumScript(
+            [qp.StronglyEntanglingLayers(jnp.array(weights), wires=wires, imprimitive=imprimitive)]
         )
-        [decomp_tape], _ = qml.transforms.decompose(
+        [decomp_tape], _ = qp.transforms.decompose(
             tape, max_expansion=max_expansion, gate_set=gate_set
         )
         assert ops_list == decomp_tape.operations
@@ -246,10 +246,10 @@ class TestDynamicDecomposition:
         "n_layers, n_wires, ranges",
         [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3]), (4, 4, None)],
     )
-    @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ, None])
+    @pytest.mark.parametrize("imprimitive", [qp.CNOT, qp.CZ, None])
     @pytest.mark.parametrize("max_expansion", [1, 2, 3, 4, 5, None])
     @pytest.mark.parametrize(
-        "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
+        "gate_set", [[qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.GlobalPhase], None]
     )
     def test_strongly_entangling_state(
         self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
@@ -265,31 +265,31 @@ class TestDynamicDecomposition:
         wires = list(range(n_wires))
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
+        @qp.qnode(device=qp.device("default.qubit", wires=n_wires))
         def circuit(weights, wires):
-            qml.StronglyEntanglingLayers(
+            qp.StronglyEntanglingLayers(
                 weights, wires=wires, ranges=ranges, imprimitive=imprimitive
             )
-            return qml.state()
+            return qp.state()
 
         if autograph:
             circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
 
-        with qml.capture.pause():
+        with qp.capture.pause():
 
-            @qml.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
-            @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
+            @qp.transforms.decompose(max_expansion=max_expansion, gate_set=gate_set)
+            @qp.qnode(device=qp.device("default.qubit", wires=n_wires))
             def circuit_comparison():
-                qml.StronglyEntanglingLayers(
+                qp.StronglyEntanglingLayers(
                     weights, wires=range(n_wires), ranges=ranges, imprimitive=imprimitive
                 )
-                return qml.state()
+                return qp.state()
 
             result_comparison = circuit_comparison()
 
-        assert qml.math.allclose(*result, result_comparison)
+        assert qp.math.allclose(*result, result_comparison)
 
 
 class TestInputs:
@@ -299,12 +299,12 @@ class TestInputs:
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights, ranges=None):
-            qml.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
-            return qml.expval(qml.PauliZ(0))
+            qp.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
             weights = np.random.randn(2, 1, 3)
@@ -322,12 +322,12 @@ class TestInputs:
         """Verifies that exception is raised if the
         value of ranges is incorrect."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(weights, ranges=None):
-            qml.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
-            return qml.expval(qml.PauliZ(0))
+            qp.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.raises(ValueError, match="Ranges must not be zero nor"):
             weights = np.random.randn(1, 2, 3)
@@ -335,7 +335,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")
+        template = qp.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")
         assert template.id == "a"
 
 
@@ -353,23 +353,23 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.StronglyEntanglingLayers.shape(n_layers, n_wires)
+        shape = qp.StronglyEntanglingLayers.shape(n_layers, n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.StronglyEntanglingLayers(weights, range(3))
-    return qml.expval(qml.PauliZ(0))
+    qp.StronglyEntanglingLayers(weights, range(3))
+    return qp.expval(qp.PauliZ(0))
 
 
 def circuit_decomposed(weights):
-    qml.Rot(weights[0, 0, 0], weights[0, 0, 1], weights[0, 0, 2], wires=0)
-    qml.Rot(weights[0, 1, 0], weights[0, 1, 1], weights[0, 1, 2], wires=1)
-    qml.Rot(weights[0, 2, 0], weights[0, 2, 1], weights[0, 2, 2], wires=2)
-    qml.CNOT(wires=[0, 1])
-    qml.CNOT(wires=[1, 2])
-    qml.CNOT(wires=[2, 0])
-    return qml.expval(qml.PauliZ(0))
+    qp.Rot(weights[0, 0, 0], weights[0, 0, 1], weights[0, 0, 2], wires=0)
+    qp.Rot(weights[0, 1, 0], weights[0, 1, 1], weights[0, 1, 2], wires=1)
+    qp.Rot(weights[0, 2, 0], weights[0, 2, 1], weights[0, 2, 2], wires=2)
+    qp.CNOT(wires=[0, 1])
+    qp.CNOT(wires=[1, 2])
+    qp.CNOT(wires=[2, 0])
+    return qp.expval(qp.PauliZ(0))
 
 
 class TestInterfaces:
@@ -383,19 +383,19 @@ class TestInterfaces:
         weights = np.random.random(size=(1, 3, 3))
         weights = pnp.array(weights, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(weights)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -409,14 +409,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=(1, 3, 3)))
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -435,14 +435,14 @@ class TestInterfaces:
 
         weights = jnp.array(np.random.random(size=(1, 3, 3)))
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(weights)
@@ -450,7 +450,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -460,14 +460,14 @@ class TestInterfaces:
 
         weights = tf.Variable(np.random.random(size=(1, 3, 3)))
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(weights)
@@ -487,14 +487,14 @@ class TestInterfaces:
 
         weights = torch.tensor(np.random.random(size=(1, 3, 3)), requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(weights)
         res.backward()

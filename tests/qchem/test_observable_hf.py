@@ -130,19 +130,19 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
         (
             from_string("0+ 0-"),
             # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
-            [[0.5 + 0j, -0.5 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
+            [[0.5 + 0j, -0.5 + 0j], [qp.Identity(0), qp.PauliZ(0)]],
         ),
         (
             from_string("0+ 0-") + from_string("0+ 0-"),
             # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
-            [[1.0 + 0j, -1.0 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
+            [[1.0 + 0j, -1.0 + 0j], [qp.Identity(0), qp.PauliZ(0)]],
         ),
         (
             from_string("2+ 0+ 2- 0-"),
             # obtained with openfermion: jordan_wigner(FermionOperator('2^ 0^ 2 0', 1)) and reformatted
             [
                 [-0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
-                [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(2)],
+                [qp.Identity(0), qp.PauliZ(0), qp.PauliZ(0) @ qp.PauliZ(2), qp.PauliZ(2)],
             ],
         ),
         (
@@ -152,28 +152,28 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
             [
                 [-0.25 + 0j, 0.25 + 0j, -0.25j, 0.25j, 0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
                 [
-                    qml.Identity(0),
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(2),
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(2),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliY(2),
-                    qml.PauliZ(0),
-                    qml.PauliZ(0) @ qml.PauliZ(2),
-                    qml.PauliZ(2),
+                    qp.Identity(0),
+                    qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliX(2),
+                    qp.PauliX(0) @ qp.PauliZ(1) @ qp.PauliY(2),
+                    qp.PauliY(0) @ qp.PauliZ(1) @ qp.PauliX(2),
+                    qp.PauliY(0) @ qp.PauliZ(1) @ qp.PauliY(2),
+                    qp.PauliZ(0),
+                    qp.PauliZ(0) @ qp.PauliZ(2),
+                    qp.PauliZ(2),
                 ],
             ],
         ),
-        (1.23 * from_string(""), [[1.23], [qml.Identity(0)]]),
+        (1.23 * from_string(""), [[1.23], [qp.Identity(0)]]),
     ],
 )
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
     h_as_op = qchem.qubit_observable(f_observable)
-    ops = list(map(qml.simplify, q_observable[1]))
-    h_ref = qml.dot(q_observable[0], ops)
-    qml.assert_equal(h_ref, h_as_op)
+    ops = list(map(qp.simplify, q_observable[1]))
+    h_ref = qp.dot(q_observable[0], ops)
+    qp.assert_equal(h_ref, h_as_op)
     assert np.allclose(
-        qml.matrix(h_as_op, wire_order=[0, 1, 2]), qml.matrix(h_ref, wire_order=[0, 1, 2])
+        qp.matrix(h_as_op, wire_order=[0, 1, 2]), qp.matrix(h_ref, wire_order=[0, 1, 2])
     )
 
 
@@ -192,12 +192,12 @@ def test_qubit_observable(f_observable, q_observable):
 )
 def test_qubit_observable_cutoff(f_observable, cut_off):
     """Test that qubit_observable returns the correct operator when a cutoff is provided."""
-    h_ref, h_ref_op = 0 * qml.I(0), qml.s_prod(0, qml.Identity(0))
+    h_ref, h_ref_op = 0 * qp.I(0), qp.s_prod(0, qp.Identity(0))
     h_as_op = qchem.qubit_observable(f_observable, cutoff=cut_off)
 
-    qml.assert_equal(h_ref, h_as_op)
+    qp.assert_equal(h_ref, h_as_op)
     assert np.allclose(
-        qml.matrix(h_ref_op, wire_order=[0, 1, 2]), qml.matrix(h_as_op, wire_order=[0, 1, 2])
+        qp.matrix(h_ref_op, wire_order=[0, 1, 2]), qp.matrix(h_as_op, wire_order=[0, 1, 2])
     )
 
 

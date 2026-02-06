@@ -34,11 +34,11 @@ class TestDeviceProperties:
 
     def test_shots(self):
         """Test the shots property of DefaultQutritMixed."""
-        assert DefaultQutritMixed().shots == qml.measurements.Shots(None)
+        assert DefaultQutritMixed().shots == qp.measurements.Shots(None)
         with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
         ):
-            assert DefaultQutritMixed(shots=100).shots == qml.measurements.Shots(100)
+            assert DefaultQutritMixed(shots=100).shots == qp.measurements.Shots(100)
 
         with pytest.raises(AttributeError):
             DefaultQutritMixed().shots = 10
@@ -46,8 +46,8 @@ class TestDeviceProperties:
     def test_wires(self):
         """Test that a device can be created with wires."""
         assert DefaultQutritMixed().wires is None
-        assert DefaultQutritMixed(wires=2).wires == qml.wires.Wires([0, 1])
-        assert DefaultQutritMixed(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
+        assert DefaultQutritMixed(wires=2).wires == qp.wires.Wires([0, 1])
+        assert DefaultQutritMixed(wires=[0, 2]).wires == qp.wires.Wires([0, 2])
 
         with pytest.raises(AttributeError):
             DefaultQutritMixed().wires = [0, 1]
@@ -66,8 +66,8 @@ class TestDeviceProperties:
         """
         dev = DefaultQutritMixed()
         assert dev._applied_modifiers == [  # pylint: disable=protected-access
-            qml.devices.modifiers.single_tape_support,
-            qml.devices.modifiers.simulator_tracking,
+            qp.devices.modifiers.single_tape_support,
+            qp.devices.modifiers.simulator_tracking,
         ]
 
 
@@ -86,7 +86,7 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config) is False
         assert dev.supports_vjp(config) is False
 
-        qs = qml.tape.QuantumScript([], [qml.state()])
+        qs = qp.tape.QuantumScript([], [qp.state()])
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is False
         assert dev.supports_vjp(config, qs) is False
@@ -100,7 +100,7 @@ class TestSupportsDerivatives:
         """Tests that DefaultQutritMixed does not support differentiation with invalid circuits."""
         dev = DefaultQutritMixed()
         config = ExecutionConfig(gradient_method="backprop")
-        circuit = qml.tape.QuantumScript([], [qml.sample()], shots=10)
+        circuit = qp.tape.QuantumScript([], [qp.sample()], shots=10)
         assert dev.supports_derivatives(config, circuit=circuit) is False
 
     @pytest.mark.parametrize(
@@ -154,9 +154,9 @@ class TestBasicCircuit:
     @staticmethod
     def get_trx_quantum_script(phi, subspace):
         """Get the quantum script where TRX is applied then GellMann observables are measured"""
-        ops = [qml.TRX(phi, wires=0, subspace=subspace)]
-        obs = [qml.expval(qml.GellMann(0, index)) for index in [2, 3, 5, 8]]
-        return qml.tape.QuantumScript(ops, obs)
+        ops = [qp.TRX(phi, wires=0, subspace=subspace)]
+        obs = [qp.expval(qp.GellMann(0, index)) for index in [2, 3, 5, 8]]
+        return qp.tape.QuantumScript(ops, obs)
 
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_basic_circuit_numpy(self, subspace):
@@ -176,20 +176,20 @@ class TestBasicCircuit:
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_autograd_results_and_backprop(self, subspace):
         """Tests execution and gradients of a basic circuit using autograd."""
-        phi = qml.numpy.array(-0.52)
+        phi = qp.numpy.array(-0.52)
         dev = DefaultQutritMixed()
 
         def f(x):
             qs = self.get_trx_quantum_script(x, subspace)
-            return qml.numpy.array(dev.execute(qs))
+            return qp.numpy.array(dev.execute(qs))
 
         result = f(phi)
         expected = self.expected_trx_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
-        g = qml.jacobian(f)(phi)
+        g = qp.jacobian(f)(phi)
         expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
-        assert qml.math.allclose(g, expected)
+        assert qp.math.allclose(g, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -210,11 +210,11 @@ class TestBasicCircuit:
 
         result = f(phi)
         expected = self.expected_trx_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         g = jax.jacobian(f)(phi)
         expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
-        assert qml.math.allclose(g, expected)
+        assert qp.math.allclose(g, expected)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
@@ -255,7 +255,7 @@ class TestBasicCircuit:
             result = dev.execute(qs)
 
         expected = self.expected_trx_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
         assert math.all(
@@ -266,33 +266,33 @@ class TestBasicCircuit:
         )
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("op,param", [(qml.TRX, np.pi), (qml.QutritBasisState, [1])])
+    @pytest.mark.parametrize("op,param", [(qp.TRX, np.pi), (qp.QutritBasisState, [1])])
     def test_qnode_returns_correct_interface(self, op, param):
         """Test that even if no interface parameters are given, result's type is the correct
         interface."""
         dev = DefaultQutritMixed()
 
-        @qml.qnode(dev, interface="tf")
+        @qp.qnode(dev, interface="tf")
         def circuit(p):
             op(p, wires=[0])
-            return qml.expval(qml.GellMann(0, 3))
+            return qp.expval(qp.GellMann(0, 3))
 
         res = circuit(param)
-        assert qml.math.get_interface(res) == "tensorflow"
-        assert qml.math.allclose(res, -1)
+        assert qp.math.get_interface(res) == "tensorflow"
+        assert qp.math.allclose(res, -1)
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a
         non-standard order."""
         dev = DefaultQutritMixed()
 
-        tape = qml.tape.QuantumScript(
-            [qml.QutritBasisState([2], wires=1), qml.TClock(0)], [qml.state()]
+        tape = qp.tape.QuantumScript(
+            [qp.QutritBasisState([2], wires=1), qp.TClock(0)], [qp.state()]
         )
         expected_vec = np.array([0, 0, 1, 0, 0, 0, 0, 0, 0], dtype=np.complex128)
         expected = np.outer(expected_vec, expected_vec)
         res = dev.execute(tape)
-        assert qml.math.allclose(res, expected)
+        assert qp.math.allclose(res, expected)
 
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
@@ -353,9 +353,9 @@ class TestSampleMeasurements:
     def test_single_expval(self, subspace):
         """Test a simple circuit with a single sample-based expval measurement."""
         x = np.array(0.732)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)],
-            [qml.expval(qml.GellMann(0, 3))],
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)],
+            [qp.expval(qp.GellMann(0, 3))],
             shots=1000000,
         )
 
@@ -369,8 +369,8 @@ class TestSampleMeasurements:
     def test_single_sample(self, subspace):
         """Test a simple circuit with a single sample measurement."""
         x = np.array(0.732)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.sample(wires=range(2))], shots=10000
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)], [qp.sample(wires=range(2))], shots=10000
         )
 
         dev = DefaultQutritMixed()
@@ -388,16 +388,16 @@ class TestSampleMeasurements:
         """Test a simple circuit containing multiple sample-based measurements."""
         num_shots = 10000
         x, y = np.array(0.732), np.array(0.488)
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.TRX(x, wires=0, subspace=subspace),
-                qml.TAdd(wires=[0, 1]),
-                qml.TRY(y, wires=1, subspace=subspace),
+                qp.TRX(x, wires=0, subspace=subspace),
+                qp.TAdd(wires=[0, 1]),
+                qp.TRY(y, wires=1, subspace=subspace),
             ],
             [
-                qml.expval(qml.GellMann(0, 3)),
-                qml.counts(wires=range(2)),
-                qml.sample(wires=range(2)),
+                qp.expval(qp.GellMann(0, 3)),
+                qp.counts(wires=range(2)),
+                qp.sample(wires=range(2)),
             ],
             shots=num_shots,
         )
@@ -433,9 +433,9 @@ class TestSampleMeasurements:
         """Test a simple circuit with a single sample-based expval measurement using
         shot vectors."""
         x = np.array(0.732)
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.expval(qml.GellMann(0, 3))], shots=shots
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)], [qp.expval(qp.GellMann(0, 3))], shots=shots
         )
 
         dev = DefaultQutritMixed()
@@ -453,9 +453,9 @@ class TestSampleMeasurements:
     def test_sample_shot_vector(self, shots, subspace):
         """Test a simple circuit with a single sample measurement using shot vectors."""
         x = np.array(0.732)
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.sample(wires=range(2))], shots=shots
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)], [qp.sample(wires=range(2))], shots=shots
         )
 
         dev = DefaultQutritMixed()
@@ -476,17 +476,17 @@ class TestSampleMeasurements:
     def test_multi_measurement_shot_vector(self, shots, subspace):
         """Test a simple circuit containing multiple measurements using shot vectors."""
         x, y = np.array(0.732), np.array(0.488)
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
             [
-                qml.TRX(x, wires=0, subspace=subspace),
-                qml.TAdd(wires=[0, 1]),
-                qml.TRY(y, wires=1, subspace=subspace),
+                qp.TRX(x, wires=0, subspace=subspace),
+                qp.TAdd(wires=[0, 1]),
+                qp.TRY(y, wires=1, subspace=subspace),
             ],
             [
-                qml.expval(qml.GellMann(0, 3)),
-                qml.counts(wires=range(2)),
-                qml.sample(wires=range(2)),
+                qp.expval(qp.GellMann(0, 3)),
+                qp.counts(wires=range(2)),
+                qp.sample(wires=range(2)),
             ],
             shots=shots,
         )
@@ -522,16 +522,16 @@ class TestSampleMeasurements:
         num_shots = 10000
 
         x, y = np.array(0.732), np.array(0.488)
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.TRX(x, wires="b", subspace=subspace),
-                qml.TAdd(wires=["b", "a"]),
-                qml.TRY(y, wires="a", subspace=subspace),
+                qp.TRX(x, wires="b", subspace=subspace),
+                qp.TAdd(wires=["b", "a"]),
+                qp.TRY(y, wires="a", subspace=subspace),
             ],
             [
-                qml.expval(qml.GellMann("b", 3)),
-                qml.counts(wires=["a", "b"]),
-                qml.sample(wires=["b", "a"]),
+                qp.expval(qp.GellMann("b", 3)),
+                qp.counts(wires=["a", "b"]),
+                qp.sample(wires=["b", "a"]),
             ],
             shots=num_shots,
         )
@@ -560,11 +560,11 @@ class TestSampleMeasurements:
     def test_batch_tapes(self, subspace):
         """Test that a batch of tapes with sampling works as expected."""
         x = np.array(0.732)
-        qs1 = qml.tape.QuantumScript(
-            [qml.TRX(x, wires=0, subspace=subspace)], [qml.sample(wires=(0, 1))], shots=100
+        qs1 = qp.tape.QuantumScript(
+            [qp.TRX(x, wires=0, subspace=subspace)], [qp.sample(wires=(0, 1))], shots=100
         )
-        qs2 = qml.tape.QuantumScript(
-            [qml.TRX(x, wires=0, subspace=subspace)], [qml.sample(wires=1)], shots=50
+        qs2 = qp.tape.QuantumScript(
+            [qp.TRX(x, wires=0, subspace=subspace)], [qp.sample(wires=1)], shots=50
         )
 
         dev = DefaultQutritMixed()
@@ -580,9 +580,9 @@ class TestSampleMeasurements:
     def test_counts_obs(self, all_outcomes, subspace, seed):
         """Test that a Counts measurement with an observable works as expected."""
         x = np.array(np.pi / 2)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)],
-            [qml.counts(qml.GellMann(0, 3), all_outcomes=all_outcomes)],
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)],
+            [qp.counts(qp.GellMann(0, 3), all_outcomes=all_outcomes)],
             shots=10000,
         )
 
@@ -606,36 +606,36 @@ class TestExecutingBatches:
         """A function that executes a batch of scripts on DefaultQutritMixed without
         preprocessing."""
         ops = [
-            qml.TShift("a"),
-            qml.TShift("b"),
-            qml.TShift("b"),
-            qml.ControlledQutritUnitary(
-                qml.TRX.compute_matrix(phi) @ qml.TRX.compute_matrix(phi, subspace=(1, 2)),
+            qp.TShift("a"),
+            qp.TShift("b"),
+            qp.TShift("b"),
+            qp.ControlledQutritUnitary(
+                qp.TRX.compute_matrix(phi) @ qp.TRX.compute_matrix(phi, subspace=(1, 2)),
                 control_wires=("a", "b", -3),
                 wires="target",
                 control_values="120",
             ),
         ]
 
-        qs1 = qml.tape.QuantumScript(
+        qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qml.expval(qml.sum(qml.GellMann("target", 2), qml.GellMann("b", 8))),
-                qml.expval(qml.s_prod(3, qml.GellMann("target", 3))),
+                qp.expval(qp.sum(qp.GellMann("target", 2), qp.GellMann("b", 8))),
+                qp.expval(qp.s_prod(3, qp.GellMann("target", 3))),
             ],
         )
 
         ops = [
-            qml.THadamard(0),
-            qml.THadamard(1),
-            qml.TAdd((0, 1)),
-            qml.TRZ(phi, 1),
-            qml.TRZ(phi, 1, subspace=(0, 2)),
-            qml.TAdd((0, 1)),
-            qml.TAdd((0, 1)),
-            qml.THadamard(1),
+            qp.THadamard(0),
+            qp.THadamard(1),
+            qp.TAdd((0, 1)),
+            qp.TRZ(phi, 1),
+            qp.TRZ(phi, 1, subspace=(0, 2)),
+            qp.TAdd((0, 1)),
+            qp.TAdd((0, 1)),
+            qp.THadamard(1),
         ]
-        qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
+        qs2 = qp.tape.QuantumScript(ops, [qp.probs(wires=(0, 1))])
         return DefaultQutritMixed().execute((qs1, qs2))
 
     @staticmethod
@@ -656,9 +656,9 @@ class TestExecutingBatches:
         """Assert two ragged lists are equal."""
         assert len(x1) == len(x2)
         assert len(x1[0]) == len(x2[0])
-        assert qml.math.allclose(x1[0][0], x2[0][0])
-        assert qml.math.allclose(x1[0][1], x2[0][1])
-        assert qml.math.allclose(x1[1], x2[1])
+        assert qp.math.allclose(x1[0][0], x2[0][0])
+        assert qp.math.allclose(x1[0][1], x2[0][1])
+        assert qp.math.allclose(x1[1], x2[1])
 
     def test_numpy(self):
         """Test that results are expected when the parameter uses numpy interface."""
@@ -671,19 +671,19 @@ class TestExecutingBatches:
     @pytest.mark.autograd
     def test_autograd(self):
         """Test batches can be executed and have backprop derivatives using autograd."""
-        phi = qml.numpy.array(-0.629)
+        phi = qp.numpy.array(-0.629)
         results = self.f(phi)
         expected = self.expected(phi)
 
         self.nested_compare(results, expected)
 
-        g0 = qml.jacobian(lambda x: qml.numpy.array(self.f(x)[0]))(phi)
-        g0_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[0]))(phi)
-        assert qml.math.allclose(g0, g0_expected)
+        g0 = qp.jacobian(lambda x: qp.numpy.array(self.f(x)[0]))(phi)
+        g0_expected = qp.jacobian(lambda x: qp.numpy.array(self.expected(x)[0]))(phi)
+        assert qp.math.allclose(g0, g0_expected)
 
-        g1 = qml.jacobian(lambda x: qml.numpy.array(self.f(x)[1]))(phi)
-        g1_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
-        assert qml.math.allclose(g1, g1_expected)
+        g1 = qp.jacobian(lambda x: qp.numpy.array(self.f(x)[1]))(phi)
+        g1_expected = qp.jacobian(lambda x: qp.numpy.array(self.expected(x)[1]))(phi)
+        assert qp.math.allclose(g1, g1_expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -717,8 +717,8 @@ class TestExecutingBatches:
         self.nested_compare(results, expected)
 
         jacobian_1 = torch.autograd.functional.jacobian(lambda y: self.f(y)[0], x)
-        assert qml.math.allclose(jacobian_1[0], -qml.math.cos(x))
-        assert qml.math.allclose(jacobian_1[1], -3 * qml.math.sin(x))
+        assert qp.math.allclose(jacobian_1[0], -qp.math.cos(x))
+        assert qp.math.allclose(jacobian_1[1], -3 * qp.math.sin(x))
 
         jacobian_1 = torch.autograd.functional.jacobian(lambda y: self.f(y)[1], x)
 
@@ -726,7 +726,7 @@ class TestExecutingBatches:
         x2 = math.sin(3 / 2 * x)
         jacobian_3 = math.array([x1, x2, x2, x1, x2, x2, x1, x2, x2]) / 9
 
-        assert qml.math.allclose(jacobian_1, jacobian_3)
+        assert qp.math.allclose(jacobian_1, jacobian_3)
 
     @pytest.mark.tf
     def test_tf(self):
@@ -741,16 +741,16 @@ class TestExecutingBatches:
         self.nested_compare(results, expected)
 
         jacobian_00 = tape.gradient(results[0][0], x)
-        assert qml.math.allclose(jacobian_00, -qml.math.cos(x))
+        assert qp.math.allclose(jacobian_00, -qp.math.cos(x))
         jacobian_01 = tape.gradient(results[0][1], x)
-        assert qml.math.allclose(jacobian_01, -3 * qml.math.sin(x))
+        assert qp.math.allclose(jacobian_01, -3 * qp.math.sin(x))
 
         jacobian_1 = tape.jacobian(results[1], x)
 
         x1 = 2 * -math.sin(3 / 2 * x)
         x2 = math.sin(3 / 2 * x)
         jacobian_3 = math.array([x1, x2, x2, x1, x2, x2, x1, x2, x2]) / 9
-        assert qml.math.allclose(jacobian_1, jacobian_3)
+        assert qp.math.allclose(jacobian_1, jacobian_3)
 
 
 class TestSumOfTermsDifferentiability:
@@ -763,57 +763,57 @@ class TestSumOfTermsDifferentiability:
     @staticmethod
     def f(scale, coeffs, num_wires=5, offset=0.1):
         """Function to differentiate that implements a circuit with a SumOfTerms operator."""
-        ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(num_wires)]
-        H = qml.Hamiltonian(
+        ops = [qp.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(num_wires)]
+        H = qp.Hamiltonian(
             coeffs,
             [
-                reduce(lambda x, y: x @ y, (qml.GellMann(i, 3) for i in range(num_wires))),
-                reduce(lambda x, y: x @ y, (qml.GellMann(i, 5) for i in range(num_wires))),
+                reduce(lambda x, y: x @ y, (qp.GellMann(i, 3) for i in range(num_wires))),
+                reduce(lambda x, y: x @ y, (qp.GellMann(i, 5) for i in range(num_wires))),
             ],
         )
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        qs = qp.tape.QuantumScript(ops, [qp.expval(H)])
         return DefaultQutritMixed().execute(qs)
 
     @staticmethod
     def expected(scale, coeffs, num_wires=5, offset=0.1, like="numpy"):
         """Gets the expected output of function TestSumOfTermsDifferentiability.f."""
-        phase = offset + scale * qml.math.asarray(range(num_wires), like=like)
-        cosines = qml.math.cos(phase / 2) ** 2
-        sines = -qml.math.sin(phase)
-        return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
+        phase = offset + scale * qp.math.asarray(range(num_wires), like=like)
+        cosines = qp.math.cos(phase / 2) ** 2
+        sines = -qp.math.sin(phase)
+        return coeffs[0] * qp.math.prod(cosines) + coeffs[1] * qp.math.prod(sines)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "coeffs",
         [
-            (qml.numpy.array(2.5), qml.numpy.array(6.2)),
-            (qml.numpy.array(2.5, requires_grad=False), qml.numpy.array(6.2, requires_grad=False)),
+            (qp.numpy.array(2.5), qp.numpy.array(6.2)),
+            (qp.numpy.array(2.5, requires_grad=False), qp.numpy.array(6.2, requires_grad=False)),
         ],
     )
     def test_autograd_backprop(self, coeffs):
         """Test that backpropagation derivatives work in autograd with
         Hamiltonians using new and old math."""
 
-        x = qml.numpy.array(self.x)
+        x = qp.numpy.array(self.x)
         out = self.f(x, coeffs)
         expected_out = self.expected(x, coeffs)
-        assert qml.math.allclose(out, expected_out)
+        assert qp.math.allclose(out, expected_out)
 
-        gradient = qml.grad(self.f)(x, coeffs)
-        expected_gradient = qml.grad(self.expected)(x, coeffs)
-        assert qml.math.allclose(expected_gradient, gradient)
+        gradient = qp.grad(self.f)(x, coeffs)
+        expected_gradient = qp.grad(self.expected)(x, coeffs)
+        assert qp.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.autograd
     def test_autograd_backprop_coeffs(self):
         """Test that backpropagation derivatives work in autograd with
         the coefficients of Hamiltonians using new and old math."""
 
-        coeffs = qml.numpy.array((2.5, 6.2), requires_grad=True)
-        gradient = qml.grad(self.f, argnums=1)(self.x, coeffs)
-        expected_gradient = qml.grad(self.expected)(self.x, coeffs)
+        coeffs = qp.numpy.array((2.5, 6.2), requires_grad=True)
+        gradient = qp.grad(self.f, argnums=1)(self.x, coeffs)
+        expected_gradient = qp.grad(self.expected)(self.x, coeffs)
 
         assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qp.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -830,11 +830,11 @@ class TestSumOfTermsDifferentiability:
 
         out = f(x, coeffs)
         expected_out = self.expected(x, coeffs)
-        assert qml.math.allclose(out, expected_out)
+        assert qp.math.allclose(out, expected_out)
 
         gradient = jax.grad(f)(x, coeffs)
         expected_gradient = jax.grad(self.expected)(x, coeffs)
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qp.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
     def test_jax_backprop_coeffs(self):
@@ -848,7 +848,7 @@ class TestSumOfTermsDifferentiability:
         gradient = jax.grad(self.f, argnums=1)(self.x, coeffs)
         expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
         assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qp.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.torch
     def test_torch_backprop(self):
@@ -865,11 +865,11 @@ class TestSumOfTermsDifferentiability:
         x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
         out = self.f(x, coeffs)
         expected_out = self.expected(x2, coeffs, like="torch")
-        assert qml.math.allclose(out, expected_out)
+        assert qp.math.allclose(out, expected_out)
 
         out.backward()
         expected_out.backward()
-        assert qml.math.allclose(x.grad, x2.grad)
+        assert qp.math.allclose(x.grad, x2.grad)
 
     @pytest.mark.torch
     def test_torch_backprop_coeffs(self):
@@ -883,12 +883,12 @@ class TestSumOfTermsDifferentiability:
         x = torch.tensor(-0.289, requires_grad=False, dtype=torch.float64)
         out = self.f(x, coeffs)
         expected_out = self.expected(x, coeffs_expected, like="torch")
-        assert qml.math.allclose(out, expected_out)
+        assert qp.math.allclose(out, expected_out)
 
         out.backward()
         expected_out.backward()
         assert len(coeffs.grad) == 2
-        assert qml.math.allclose(coeffs.grad, coeffs_expected.grad)
+        assert qp.math.allclose(coeffs.grad, coeffs_expected.grad)
 
     @pytest.mark.tf
     def test_tf_backprop(self):
@@ -905,10 +905,10 @@ class TestSumOfTermsDifferentiability:
         with tf.GradientTape() as tape2:
             expected_out = self.expected(x, coeffs)
 
-        assert qml.math.allclose(out, expected_out)
+        assert qp.math.allclose(out, expected_out)
         gradient = tape1.gradient(out, x)
         expected_gradient = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qp.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.tf
     def test_tf_backprop_coeffs(self):
@@ -927,24 +927,24 @@ class TestSumOfTermsDifferentiability:
         gradient = tape1.gradient(out, coeffs)
         expected_gradient = tape2.gradient(expected_out, coeffs)
         assert len(gradient) == 2
-        assert qml.math.allclose(expected_gradient, gradient)
+        assert qp.math.allclose(expected_gradient, gradient)
 
 
 class TestRandomSeed:
     """Test that the device behaves correctly when provided with a random seed."""
 
     measurements = [
-        [qml.sample(wires=0)],
-        [qml.expval(qml.GellMann(0, 3))],
-        [qml.counts(wires=0)],
-        [qml.sample(wires=0), qml.expval(qml.GellMann(0, 8)), qml.counts(wires=0)],
+        [qp.sample(wires=0)],
+        [qp.expval(qp.GellMann(0, 3))],
+        [qp.counts(wires=0)],
+        [qp.sample(wires=0), qp.expval(qp.GellMann(0, 8)), qp.counts(wires=0)],
     ]
 
     @pytest.mark.parametrize("measurements", measurements)
     def test_same_seed(self, measurements):
         """Test that different devices given the same random seed will produce
         the same results."""
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], measurements, shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], measurements, shots=1000)
 
         dev1 = DefaultQutritMixed(seed=123)
         result1 = dev1.execute(qs)
@@ -961,7 +961,7 @@ class TestRandomSeed:
     def test_different_seed(self):
         """Test that different devices given different random seeds will produce
         different results (with almost certainty)."""
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], [qp.sample(wires=0)], shots=1000)
 
         dev1 = DefaultQutritMixed(seed=None)
         result1 = dev1.execute(qs)
@@ -980,7 +980,7 @@ class TestRandomSeed:
     @pytest.mark.parametrize("measurements", measurements)
     def test_different_executions(self, measurements):
         """Test that the same device will produce different results every execution."""
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], measurements, shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], measurements, shots=1000)
 
         dev = DefaultQutritMixed(seed=123)
         result1 = dev.execute(qs)
@@ -995,7 +995,7 @@ class TestRandomSeed:
     def test_global_seed_and_device_seed(self, measurements):
         """Test that a global seed does not affect the result of devices
         provided with a seed."""
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], measurements, shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], measurements, shots=1000)
 
         # expected result
         dev1 = DefaultQutritMixed(seed=123)
@@ -1023,13 +1023,13 @@ class TestRandomSeed:
         dev2 = DefaultQutritMixed()
         second_num = dev2._rng.random()  # pylint: disable=protected-access
 
-        assert qml.math.allclose(first_num, second_num)
+        assert qp.math.allclose(first_num, second_num)
 
         np.random.seed(42)
         dev2 = DefaultQutritMixed(seed="global")
         third_num = dev2._rng.random()  # pylint: disable=protected-access
 
-        assert qml.math.allclose(third_num, first_num)
+        assert qp.math.allclose(third_num, first_num)
 
     def test_none_seed_not_using_global_rng(self):
         """Test that if the seed is None, it is uncorrelated with the global rng."""
@@ -1041,7 +1041,7 @@ class TestRandomSeed:
         dev2 = DefaultQutritMixed(seed=None)
         second_nums = dev2._rng.random(10)  # pylint: disable=protected-access
 
-        assert not qml.math.allclose(first_nums, second_nums)
+        assert not qp.math.allclose(first_nums, second_nums)
 
     def test_rng_as_seed(self):
         """Test that a PRNG can be passed as a seed."""
@@ -1052,7 +1052,7 @@ class TestRandomSeed:
         dev = DefaultQutritMixed(seed=rng)
         second_num = dev._rng.random()  # pylint: disable=protected-access
 
-        assert qml.math.allclose(first_num, second_num)
+        assert qp.math.allclose(first_num, second_num)
 
 
 @pytest.mark.jax
@@ -1081,7 +1081,7 @@ class TestPRNGKeySeed:
         the same samples repeatedly."""
         import jax
 
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], [qp.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
         dev = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
@@ -1096,7 +1096,7 @@ class TestPRNGKeySeed:
         the same results for sample, even with different seeds"""
         import jax
 
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], [qp.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
         dev1 = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
@@ -1112,7 +1112,7 @@ class TestPRNGKeySeed:
         different results"""
         import jax
 
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], [qp.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
         dev1 = DefaultQutritMixed(seed=jax.random.PRNGKey(246))
@@ -1128,7 +1128,7 @@ class TestPRNGKeySeed:
         the seed is a jax.random.PRNGKey"""
         import jax
 
-        qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
+        qs = qp.tape.QuantumScript([qp.THadamard(0)], [qp.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
         dev = DefaultQutritMixed(seed=jax.random.PRNGKey(77))
@@ -1141,8 +1141,8 @@ class TestPRNGKeySeed:
 @pytest.mark.parametrize(
     "obs",
     [
-        qml.Hamiltonian([0.8, 0.5], [qml.GellMann(0, 3), qml.GellMann(0, 1)]),
-        qml.s_prod(0.8, qml.GellMann(0, 3)) + qml.s_prod(0.5, qml.GellMann(0, 1)),
+        qp.Hamiltonian([0.8, 0.5], [qp.GellMann(0, 3), qp.GellMann(0, 1)]),
+        qp.s_prod(0.8, qp.GellMann(0, 3)) + qp.s_prod(0.5, qp.GellMann(0, 1)),
     ],
 )
 class TestHamiltonianSamples:
@@ -1155,10 +1155,10 @@ class TestHamiltonianSamples:
         """Tests that sampling works well for Hamiltonian and Sum observables."""
 
         x, y = np.array(0.67), np.array(0.95)
-        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        ops = [qp.TRY(x, wires=0), qp.TRZ(y, wires=0)]
 
         dev = DefaultQutritMixed(seed=seed)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(obs)], shots=10000)
+        qs = qp.tape.QuantumScript(ops, [qp.expval(obs)], shots=10000)
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
@@ -1167,11 +1167,11 @@ class TestHamiltonianSamples:
     def test_hamiltonian_expval_shot_vector(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector."""
 
-        shots = qml.measurements.Shots((10000, 100000))
+        shots = qp.measurements.Shots((10000, 100000))
         x, y = np.array(0.67), np.array(0.95)
-        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        ops = [qp.TRY(x, wires=0), qp.TRZ(y, wires=0)]
         dev = DefaultQutritMixed(seed=seed)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(obs)], shots=shots)
+        qs = qp.tape.QuantumScript(ops, [qp.expval(obs)], shots=shots)
         res = dev.execute(qs)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
@@ -1188,14 +1188,14 @@ class TestIntegration:
     @pytest.mark.parametrize("wires,expected", [(None, [1, 0]), (3, [0, 0, 1])])
     def test_sample_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by sample."""
-        dev = qml.device("default.qutrit.mixed", wires=wires)
+        dev = qp.device("default.qutrit.mixed", wires=wires)
 
-        @qml.set_shots(5)
-        @qml.qnode(dev)
+        @qp.set_shots(5)
+        @qp.qnode(dev)
         def circuit():
-            qml.TShift(2)
-            qml.Identity(0)
-            return qml.sample()
+            qp.TShift(2)
+            qp.Identity(0)
+            return qp.sample()
 
         assert np.array_equal(circuit(), [expected] * 5)
 
@@ -1208,13 +1208,13 @@ class TestIntegration:
     )
     def test_probs_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = qml.device("default.qutrit.mixed", wires=wires)
+        dev = qp.device("default.qutrit.mixed", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.TShift(2)
-            qml.Identity(0)
-            return qml.probs()
+            qp.TShift(2)
+            qp.Identity(0)
+            return qp.probs()
 
         assert np.array_equal(circuit(), expected)
 
@@ -1227,31 +1227,31 @@ class TestIntegration:
     )
     def test_counts_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = qml.device("default.qutrit.mixed", wires=wires)
+        dev = qp.device("default.qutrit.mixed", wires=wires)
 
-        @qml.set_shots(10)
-        @qml.qnode(dev, interface=None)
+        @qp.set_shots(10)
+        @qp.qnode(dev, interface=None)
         def circuit():
-            qml.TShift(2)
-            qml.Identity(0)
-            return qml.counts()
+            qp.TShift(2)
+            qp.Identity(0)
+            return qp.counts()
 
         assert circuit() == expected
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("measurement_func", [qml.expval, qml.var])
+    @pytest.mark.parametrize("measurement_func", [qp.expval, qp.var])
     def test_differentiate_jitted_qnode(self, measurement_func):
         """Test that a jitted qnode can be correctly differentiated"""
         import jax
 
-        dev = qml.device("default.qutrit.mixed")
+        dev = qp.device("default.qutrit.mixed")
 
         def qfunc(x, y):
-            qml.TRX(x, 0)
-            return measurement_func(qml.Hamiltonian(y, [qml.GellMann(0, 3)]))
+            qp.TRX(x, 0)
+            return measurement_func(qp.Hamiltonian(y, [qp.GellMann(0, 3)]))
 
-        qnode = qml.QNode(qfunc, dev, interface="jax")
-        qnode_jit = jax.jit(qml.QNode(qfunc, dev, interface="jax"))
+        qnode = qp.QNode(qfunc, dev, interface="jax")
+        qnode_jit = jax.jit(qp.QNode(qfunc, dev, interface="jax"))
 
         x = jax.numpy.array(0.5)
         y = jax.numpy.array([0.5])
@@ -1259,12 +1259,12 @@ class TestIntegration:
         res = qnode(x, y)
         res_jit = qnode_jit(x, y)
 
-        assert qml.math.allclose(res, res_jit)
+        assert qp.math.allclose(res, res_jit)
 
         grad = jax.grad(qnode)(x, y)
         grad_jit = jax.grad(qnode_jit)(x, y)
 
-        assert qml.math.allclose(grad, grad_jit)
+        assert qp.math.allclose(grad, grad_jit)
 
 
 @pytest.mark.parametrize("num_wires", [2, 3])
@@ -1281,10 +1281,10 @@ class TestReadoutError:
 
     def setup_state(self, num_wires):
         """Sets up a basic state used for testing."""
-        qml.QutritUnitary(self.setup_unitary, wires=0)
-        qml.QutritUnitary(self.setup_unitary, wires=1)
+        qp.QutritUnitary(self.setup_unitary, wires=0)
+        qp.QutritUnitary(self.setup_unitary, wires=1)
         if num_wires == 3:
-            qml.TAdd(wires=(0, 2))
+            qp.TAdd(wires=(0, 2))
 
     @staticmethod
     def get_expected_dm(num_wires):
@@ -1336,17 +1336,17 @@ class TestReadoutError:
     )
     def test_probs_with_readout_error(self, num_wires, relax_and_misclass, expected):
         """Tests the measurement results for probs"""
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relax_and_misclass[0],
             readout_misclassification_probs=relax_and_misclass[1],
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             self.setup_state(num_wires)
-            return qml.probs(wires=0)
+            return qp.probs(wires=0)
 
         res = circuit()
         assert np.allclose(res, expected)
@@ -1372,20 +1372,20 @@ class TestReadoutError:
     )
     def test_readout_expval_commuting(self, num_wires, relax_and_misclass, expected):
         """Tests the measurement results for expval of diagonal GellMann observables (3 and 8)"""
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relax_and_misclass[0],
             readout_misclassification_probs=relax_and_misclass[1],
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             self.setup_state(num_wires)
             return (
-                qml.expval(qml.GellMann(0, 3)),
-                qml.expval(qml.GellMann(0, 8)),
-                qml.expval(qml.GellMann(1, 3)),
+                qp.expval(qp.GellMann(0, 3)),
+                qp.expval(qp.GellMann(0, 8)),
+                qp.expval(qp.GellMann(1, 3)),
             )
 
         res = circuit()
@@ -1413,7 +1413,7 @@ class TestReadoutError:
     )
     def test_readout_expval_non_commuting(self, num_wires, relax_and_misclass, expected):
         """Tests the measurement results for expval of GellMann 1 observables"""
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relax_and_misclass[0],
@@ -1438,17 +1438,17 @@ class TestReadoutError:
             ]
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             self.setup_state(num_wires)
 
-            qml.THadamard(wires=0)
-            qml.THadamard(wires=1, subspace=(0, 1))
+            qp.THadamard(wires=0)
+            qp.THadamard(wires=1, subspace=(0, 1))
 
             return (
-                qml.expval(qml.THermitian(non_commuting_obs_one, 0)),
-                qml.expval(qml.THermitian(non_commuting_obs_two, 0)),
-                qml.expval(qml.GellMann(1, 1)),
+                qp.expval(qp.THermitian(non_commuting_obs_one, 0)),
+                qp.expval(qp.THermitian(non_commuting_obs_two, 0)),
+                qp.expval(qp.GellMann(1, 1)),
             )
 
         res = circuit()
@@ -1463,17 +1463,17 @@ class TestReadoutError:
     @pytest.mark.parametrize("relaxations, misclassifications", state_relax_and_misclass)
     def test_readout_state(self, num_wires, relaxations, misclassifications):
         """Tests the state output is not affected by readout error"""
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             self.setup_state(num_wires)
-            return qml.state()
+            return qp.state()
 
         res = circuit()
         assert np.allclose(res, self.get_expected_dm(num_wires))
@@ -1481,17 +1481,17 @@ class TestReadoutError:
     @pytest.mark.parametrize("relaxations, misclassifications", state_relax_and_misclass)
     def test_readout_density_matrix(self, num_wires, relaxations, misclassifications):
         """Tests the density matrix output is not affected by readout error"""
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
         )
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             self.setup_state(num_wires)
-            return qml.density_matrix(wires=1)
+            return qp.density_matrix(wires=1)
 
         res = circuit()
         assert np.allclose(res, self.get_expected_dm(1))
@@ -1508,18 +1508,18 @@ class TestReadoutError:
     )
     def test_readout_sample(self, num_wires, relaxations, misclassifications, expected):
         """Tests the sample output with readout error"""
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
         )
 
-        @qml.set_shots(2)
-        @qml.qnode(dev)
+        @qp.set_shots(2)
+        @qp.qnode(dev)
         def circuit():
-            qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
-            return qml.sample(wires=[0, 1])
+            qp.QutritBasisState([2] * num_wires, wires=range(num_wires))
+            return qp.sample(wires=[0, 1])
 
         res = circuit()
         assert np.allclose(res, expected)
@@ -1536,18 +1536,18 @@ class TestReadoutError:
     )
     def test_readout_counts(self, num_wires, relaxations, misclassifications, expected):
         """Tests the counts output with readout error"""
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
         )
 
-        @qml.set_shots(100)
-        @qml.qnode(dev)
+        @qp.set_shots(100)
+        @qp.qnode(dev)
         def circuit():
-            qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
-            return qml.counts(wires=[0, 1])
+            qp.QutritBasisState([2] * num_wires, wires=range(num_wires))
+            return qp.counts(wires=[0, 1])
 
         res = circuit()
         assert res == expected
@@ -1566,7 +1566,7 @@ class TestReadoutError:
     ):
         """Tests the counts output with readout error"""
         num_shots = 10000
-        dev = qml.device(
+        dev = qp.device(
             "default.qutrit.mixed",
             wires=num_wires,
             readout_relaxation_probs=relaxations,
@@ -1574,11 +1574,11 @@ class TestReadoutError:
             seed=seed,
         )
 
-        @qml.set_shots(num_shots)
-        @qml.qnode(dev)
+        @qp.set_shots(num_shots)
+        @qp.qnode(dev)
         def circuit():
             self.setup_state(num_wires)
-            return qml.counts(wires=[0])
+            return qp.counts(wires=[0])
 
         res = circuit()
         assert isinstance(res, dict)
@@ -1598,7 +1598,7 @@ class TestReadoutError:
     def test_measurement_error_validation(self, relaxations, misclassifications, num_wires):
         """Ensure error is raised for wrong number of arguments inputted in readout errors."""
         with pytest.raises(DeviceError, match="results in error"):
-            qml.device(
+            qp.device(
                 "default.qutrit.mixed",
                 wires=num_wires,
                 readout_relaxation_probs=relaxations,
@@ -1608,11 +1608,11 @@ class TestReadoutError:
     def test_prob_type(self, num_wires):
         """Tests that an error is raised for wrong data type in readout errors"""
         with pytest.raises(DeviceError, match="results in error"):
-            qml.device(
+            qp.device(
                 "default.qutrit.mixed", wires=num_wires, readout_relaxation_probs=[0.1, 0.2, "0.3"]
             )
         with pytest.raises(DeviceError, match="results in error"):
-            qml.device(
+            qp.device(
                 "default.qutrit.mixed",
                 wires=num_wires,
                 readout_misclassification_probs=[0.1, 0.2, "0.3"],
@@ -1659,17 +1659,17 @@ class TestReadoutError:
         """Get the function to differentiate for following differentiability interface tests"""
 
         def diff_func(relaxations, misclassifications):
-            dev = qml.device(
+            dev = qp.device(
                 "default.qutrit.mixed",
                 wires=num_wires,
                 readout_relaxation_probs=relaxations,
                 readout_misclassification_probs=misclassifications,
             )
 
-            @qml.qnode(dev, interface=interface)
+            @qp.qnode(dev, interface=interface)
             def circuit():
                 self.setup_state(num_wires)
-                return qml.probs(0)
+                return qp.probs(0)
 
             return circuit()
 
@@ -1692,7 +1692,7 @@ class TestReadoutError:
             misclassifications = qnp.array(misclassifications)
 
         diff_func = self.get_diff_function("autograd", num_wires)
-        jac = qml.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
+        jac = qp.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
         assert np.allclose(jac, expected)
 
     @pytest.mark.jax
@@ -1719,7 +1719,7 @@ class TestReadoutError:
         if use_jit:
             diff_func = jax.jit(diff_func)
         jac = jax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
-        assert qml.math.allclose(jac, expected, rtol=0.05)
+        assert qp.math.allclose(jac, expected, rtol=0.05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)

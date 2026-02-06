@@ -25,10 +25,10 @@ from pennylane import numpy as np
 from pennylane.transforms.optimization.optimization_utils import find_next_gate, fuse_rot_angles
 
 sample_op_list = [
-    qml.Hadamard(wires="a"),
-    qml.CNOT(wires=["a", "b"]),
-    qml.Toffoli(wires=[0, 1, "b"]),
-    qml.Hadamard(wires="c"),
+    qp.Hadamard(wires="a"),
+    qp.CNOT(wires=["a", "b"]),
+    qp.Toffoli(wires=[0, 1, "b"]),
+    qp.Hadamard(wires="c"),
 ]
 
 
@@ -46,11 +46,11 @@ class TestFindNextGate:
     )
     def test_find_next_gate(self, wires, op_list, next_gate_idx):
         """Test find_next_gate correctly identifies the next gate in a list of operations that share any number of wires."""
-        assert find_next_gate(qml.wires.Wires(wires), op_list) == next_gate_idx
+        assert find_next_gate(qp.wires.Wires(wires), op_list) == next_gate_idx
 
 
 class TestRotGateFusion:
-    """Test that utility functions for fusing two qml.Rot gates function as expected."""
+    """Test that utility functions for fusing two qp.Rot gates function as expected."""
 
     generic_test_angles = [
         ([0.15, 0.25, -0.90], [-0.5, 0.25, 1.3]),
@@ -80,18 +80,18 @@ class TestRotGateFusion:
         Note that the transpose calls only are relevant for tests with batching."""
 
         def original_ops():
-            qml.Rot(*qml.math.transpose(angles_1), wires=0)
-            qml.Rot(*qml.math.transpose(angles_2), wires=0)
+            qp.Rot(*qp.math.transpose(angles_1), wires=0)
+            qp.Rot(*qp.math.transpose(angles_2), wires=0)
 
-        matrix_expected = qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+        matrix_expected = qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         # The reshape is only used in the _mixed_batching test. Otherwise it is irrelevant.
-        matrix_obtained = qml.Rot(
-            *qml.math.transpose(qml.math.reshape(fused_angles, (-1, 3))), wires=0
+        matrix_obtained = qp.Rot(
+            *qp.math.transpose(qp.math.reshape(fused_angles, (-1, 3))), wires=0
         ).matrix()
 
-        assert qml.math.allclose(matrix_expected, matrix_obtained)
+        assert qp.math.allclose(matrix_expected, matrix_obtained)
 
     @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
     def test_full_rot_fusion_numpy(self, angles_1, angles_2):
@@ -125,7 +125,7 @@ class TestRotGateFusion:
         """Test that the fusion of two Rot gates has the same effect as
         applying the Rots sequentially, in Autograd."""
 
-        angles_1, angles_2 = qml.numpy.array(angles_1), qml.numpy.array(angles_1)
+        angles_1, angles_2 = qp.numpy.array(angles_1), qp.numpy.array(angles_1)
         self.run_interface_test(angles_1, angles_2)
 
     @pytest.mark.tf
@@ -180,15 +180,15 @@ class TestRotGateFusion:
         def mat_from_prod(angles):
             def original_ops():
                 angles1, angles2 = angles[..., 0, :], angles[..., 1, :]
-                qml.Rot(angles1[..., 0], angles1[..., 1], angles1[..., 2], wires=0)
-                qml.Rot(angles2[..., 0], angles2[..., 1], angles2[..., 2], wires=0)
+                qp.Rot(angles1[..., 0], angles1[..., 1], angles1[..., 2], wires=0)
+                qp.Rot(angles2[..., 0], angles2[..., 1], angles2[..., 2], wires=0)
 
-            return qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+            return qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
 
         def mat_from_fuse(angles):
             angles1, angles2 = angles[..., 0, :], angles[..., 1, :]
-            fused_angles = qml.math.transpose(fuse_rot_angles(angles1, angles2))
-            return qml.Rot(fused_angles[0], fused_angles[1], fused_angles[2], wires=0).matrix()
+            fused_angles = qp.math.transpose(fuse_rot_angles(angles1, angles2))
+            return qp.Rot(fused_angles[0], fused_angles[1], fused_angles[2], wires=0).matrix()
 
         if jit_fn is not None:
             mat_from_fuse = jit_fn(mat_from_fuse)
@@ -197,29 +197,29 @@ class TestRotGateFusion:
             jac_from_prod = jac_fn(mat_from_prod)(all_angles)
             jac_from_fuse = jac_fn(mat_from_fuse)(all_angles)
         else:
-            jac_from_prod = qml.math.stack([jac_fn(mat_from_prod)(a) for a in all_angles])
-            jac_from_fuse = qml.math.stack([jac_fn(mat_from_fuse)(a) for a in all_angles])
+            jac_from_prod = qp.math.stack([jac_fn(mat_from_prod)(a) for a in all_angles])
+            jac_from_fuse = qp.math.stack([jac_fn(mat_from_fuse)(a) for a in all_angles])
 
         if array_fn is not None:
             # Convert to vanilla numpy
             all_angles = array_fn(all_angles)
 
         # expected failures based on the sources mentioned in the docstring above.
-        thetas = qml.math.transpose(all_angles[..., 1])
-        (c1, c2), (s1, s2) = qml.math.cos(thetas / 2), qml.math.sin(thetas / 2)
+        thetas = qp.math.transpose(all_angles[..., 1])
+        (c1, c2), (s1, s2) = qp.math.cos(thetas / 2), qp.math.sin(thetas / 2)
         omega1 = all_angles[:, 0, 2]
         phi2 = all_angles[:, 1, 0]
         # squared absolute value of the relevant entry of the product of the two rotation matrices
         pre_mag = (
-            c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qml.math.cos(omega1 + phi2)
+            c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qp.math.cos(omega1 + phi2)
         )
         # Compute condition for the two error sources combined
-        error_sources = (qml.math.abs(pre_mag - 1) < 1e-12) | (pre_mag == 0)
+        error_sources = (qp.math.abs(pre_mag - 1) < 1e-12) | (pre_mag == 0)
 
-        assert qml.math.allclose(jac_from_prod[~error_sources], jac_from_fuse[~error_sources])
-        nans = qml.math.isnan(jac_from_fuse[error_sources])
-        nans = qml.math.reshape(nans, (len(nans), -1))
-        assert qml.math.all(qml.math.any(nans, axis=1))
+        assert qp.math.allclose(jac_from_prod[~error_sources], jac_from_fuse[~error_sources])
+        nans = qp.math.isnan(jac_from_fuse[error_sources])
+        nans = qp.math.reshape(nans, (len(nans), -1))
+        assert qp.math.all(qp.math.any(nans, axis=1))
 
     @pytest.mark.slow
     @pytest.mark.jax
@@ -243,8 +243,8 @@ class TestRotGateFusion:
         # We need to define the Jacobian function manually because fuse_rot_angles is not guaranteed to be holomorphic,
         # and jax.jacobian requires real-valued outputs for non-holomorphic functions.
         def jac_fn(fn):
-            real_fn = lambda arg: qml.math.real(fn(arg))
-            imag_fn = lambda arg: qml.math.imag(fn(arg))
+            real_fn = lambda arg: qp.math.real(fn(arg))
+            imag_fn = lambda arg: qp.math.imag(fn(arg))
             real_jac_fn = jax.vmap(jax.jacobian(real_fn))
             imag_jac_fn = jax.vmap(jax.jacobian(imag_fn))
             return lambda arg: real_jac_fn(arg) + 1j * imag_jac_fn(arg)
@@ -274,8 +274,8 @@ class TestRotGateFusion:
         all_angles = torch.tensor(all_angles, requires_grad=True)
 
         def jacobian(fn):
-            real_fn = lambda arg: qml.math.real(fn(arg))
-            imag_fn = lambda arg: qml.math.imag(fn(arg))
+            real_fn = lambda arg: qp.math.real(fn(arg))
+            imag_fn = lambda arg: qp.math.imag(fn(arg))
             real_jac_fn = lambda arg: torch.autograd.functional.jacobian(real_fn, (arg,))
             imag_jac_fn = lambda arg: torch.autograd.functional.jacobian(imag_fn, (arg,))
             return lambda arg: real_jac_fn(arg)[0] + 1j * imag_jac_fn(arg)[0]
@@ -297,13 +297,13 @@ class TestRotGateFusion:
         special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
         random_angles = np.random.random((100, 2, 3))
         # Need holomorphic derivatives and complex inputs because the output matrices are complex
-        all_angles = qml.numpy.concatenate([special_angles, random_angles], requires_grad=True)
+        all_angles = qp.numpy.concatenate([special_angles, random_angles], requires_grad=True)
 
         def jacobian(fn):
-            real_fn = lambda *args: qml.math.real(fn(*args))
-            imag_fn = lambda *args: qml.math.imag(fn(*args))
-            real_jac_fn = qml.jacobian(real_fn)
-            imag_jac_fn = qml.jacobian(imag_fn)
+            real_fn = lambda *args: qp.math.real(fn(*args))
+            imag_fn = lambda *args: qp.math.imag(fn(*args))
+            real_jac_fn = qp.jacobian(real_fn)
+            imag_jac_fn = qp.jacobian(imag_fn)
             return lambda *args: real_jac_fn(*args) + 1j * imag_jac_fn(*args)
 
         self.run_jacobian_test(all_angles, jacobian, is_batched=False)

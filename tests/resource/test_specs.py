@@ -23,8 +23,8 @@ from pennylane.resource import SpecsResources
 from pennylane.resource.specs import _preprocess_level_input
 
 devices_list = [
-    (qml.device("default.qubit"), None),
-    (qml.device("default.qubit", wires=2), 2),
+    (qp.device("default.qubit"), None),
+    (qp.device("default.qubit", wires=2), 2),
 ]
 
 
@@ -32,11 +32,11 @@ devices_list = [
 def test_error_with_bad_key(key):
     """Test that a helpful error message is raised if key does not exist."""
 
-    @qml.qnode(qml.device("null.qubit"))
+    @qp.qnode(qp.device("null.qubit"))
     def c():
-        return qml.state()
+        return qp.state()
 
-    out = qml.specs(c)()
+    out = qp.specs(c)()
     with pytest.raises(KeyError):
         _ = out[key]
 
@@ -68,7 +68,7 @@ def test_preprocess_levels(level, output, expect_warnings):
     if expect_warnings:
         with pytest.warns(
             UserWarning,
-            match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
+            match="The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
             assert _preprocess_level_input(level, marker_to_level) == output
@@ -78,7 +78,7 @@ def test_preprocess_levels(level, output, expect_warnings):
 
 def test_preprocess_levels_invalid():
     with pytest.raises(
-        ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
+        ValueError, match="The 'level' argument to qp.specs for QJIT'd QNodes must be non-negative"
     ):
         _preprocess_level_input(-1, {})
 
@@ -91,22 +91,22 @@ class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
     def sample_circuit(self):
-        @qml.transforms.merge_rotations
-        @qml.transforms.undo_swaps
-        @qml.transforms.cancel_inverses
-        @qml.qnode(
-            qml.device("default.qubit"),
+        @qp.transforms.merge_rotations
+        @qp.transforms.undo_swaps
+        @qp.transforms.cancel_inverses
+        @qp.qnode(
+            qp.device("default.qubit"),
             diff_method="parameter-shift",
             gradient_kwargs={"shifts": pnp.pi / 4},
         )
         def circuit(x):
-            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
-            qml.RX(x, wires=0)
-            qml.RX(-x, wires=0)
-            qml.SWAP((0, 1))
-            qml.X(0)
-            qml.X(0)
-            return qml.expval(qml.sum(qml.X(0), qml.Y(1)))
+            qp.RandomLayers(qp.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+            qp.RX(x, wires=0)
+            qp.RX(-x, wires=0)
+            qp.SWAP((0, 1))
+            qp.X(0)
+            qp.X(0)
+            return qp.expval(qp.sum(qp.X(0), qp.Y(1)))
 
         return circuit
 
@@ -116,7 +116,7 @@ class TestSpecsTransform:
     )
     def test_int_specs_level(self, level, expected_gates):
         circ = self.sample_circuit()
-        specs = qml.specs(circ, level=level)(0.1)
+        specs = qp.specs(circ, level=level)(0.1)
 
         assert specs["level"] == level
         assert specs["resources"].num_gates == expected_gates
@@ -135,8 +135,8 @@ class TestSpecsTransform:
     def test_equivalent_levels(self, level1, level2):
         circ = self.sample_circuit()
 
-        specs1 = qml.specs(circ, level=level1)(0.1).to_dict()
-        specs2 = qml.specs(circ, level=level2)(0.1).to_dict()
+        specs1 = qp.specs(circ, level=level1)(0.1).to_dict()
+        specs2 = qp.specs(circ, level=level2)(0.1).to_dict()
 
         del specs1["level"]
         del specs2["level"]
@@ -145,9 +145,9 @@ class TestSpecsTransform:
 
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "adjoint"])
     def test_diff_methods(self, diff_method):
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.qnode(dev, diff_method=diff_method)
         def circ():
             pass
 
@@ -155,7 +155,7 @@ class TestSpecsTransform:
             gate_types={}, gate_sizes={}, measurements={}, num_allocs=0, depth=0
         )
 
-        info = qml.specs(circ)()
+        info = qp.specs(circ)()
         assert info["resources"] == expected_resources
         assert info["num_device_wires"] == 1
         assert info["device_name"] == dev.name
@@ -163,22 +163,22 @@ class TestSpecsTransform:
 
     def test_specs(self):
         """Test the specs transforms works in standard situations"""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y, add_RY=True):
-            qml.RX(x[0], wires=0)
-            qml.Toffoli(wires=(0, 1, 2))
-            qml.CRY(x[1], wires=(0, 1))
-            qml.Rot(x[2], x[3], y, wires=2)
+            qp.RX(x[0], wires=0)
+            qp.Toffoli(wires=(0, 1, 2))
+            qp.CRY(x[1], wires=(0, 1))
+            qp.Rot(x[2], x[3], y, wires=2)
             if add_RY:
-                qml.RY(x[4], wires=1)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+                qp.RY(x[4], wires=1)
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(1))
 
         x = pnp.array([0.05, 0.1, 0.2, 0.3, 0.5], requires_grad=True)
         y = pnp.array(0.1, requires_grad=False)
 
-        info = qml.specs(circuit)(x, y, add_RY=False)
+        info = qp.specs(circuit)(x, y, add_RY=False)
 
         gate_sizes = {1: 2, 3: 1, 2: 1}
         gate_types = {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1}
@@ -202,17 +202,17 @@ class TestSpecsTransform:
 
         x = pnp.array([0.1, 0.2])
 
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        @qp.qnode(qp.device("default.qubit"), diff_method="parameter-shift")
         def circuit(x):
-            qml.RandomLayers(pnp.array([[1.0, 2.0]]), wires=(0, 1))
-            qml.RX(x, wires=0)
-            qml.RX(-x, wires=0)
-            qml.SWAP((0, 1))
-            qml.X(0)
-            qml.X(0)
-            return qml.expval(qml.X(0) + qml.Y(1))
+            qp.RandomLayers(pnp.array([[1.0, 2.0]]), wires=(0, 1))
+            qp.RX(x, wires=0)
+            qp.RX(-x, wires=0)
+            qp.SWAP((0, 1))
+            qp.X(0)
+            qp.X(0)
+            return qp.expval(qp.X(0) + qp.Y(1))
 
-        info = qml.specs(circuit, compute_depth=compute_depth)(x)
+        info = qp.specs(circuit, compute_depth=compute_depth)(x)
 
         assert info.resources.depth == (6 if compute_depth else None)
 
@@ -221,45 +221,45 @@ class TestSpecsTransform:
 
         # Tests that a conditional operator is in a different layer from
         # the mid-circuit measurement that controls it.
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.Z)(1)
-            return qml.expval(qml.Z(1))
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.Z)(1)
+            return qp.expval(qp.Z(1))
 
-        assert qml.specs(circuit)()["resources"].depth == 2
+        assert qp.specs(circuit)()["resources"].depth == 2
 
         # Tests that conditional operator is in the same layer as any other
         # op that does not have overlapping wires with the target gate.
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit2():
-            m0 = qml.measure(0)
-            qml.X(0)
-            qml.cond(m0, qml.Z)(1)
-            return qml.expval(qml.Z(1))
+            m0 = qp.measure(0)
+            qp.X(0)
+            qp.cond(m0, qp.Z)(1)
+            return qp.expval(qp.Z(1))
 
-        assert qml.specs(circuit2)()["resources"].depth == 2
+        assert qp.specs(circuit2)()["resources"].depth == 2
 
         # Tests conditional that depends on multiple measurements
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit3():
-            m0 = qml.measure(0)
-            m1 = qml.pauli_measure("XY", [0, 1])
-            qml.cond(m0 & m1, qml.Z)(2)
-            return qml.expval(qml.Z(2))
+            m0 = qp.measure(0)
+            m1 = qp.pauli_measure("XY", [0, 1])
+            qp.cond(m0 & m1, qp.Z)(2)
+            return qp.expval(qp.Z(2))
 
-        assert qml.specs(circuit3)()["resources"].depth == 3
+        assert qp.specs(circuit3)()["resources"].depth == 3
 
     def test_specs_state(self):
         """Test specs works when state returned"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            return qml.state()
+            return qp.state()
 
-        info = qml.specs(circuit)()
+        info = qp.specs(circuit)()
 
         assert info.resources == SpecsResources(
             gate_types={},
@@ -274,14 +274,14 @@ class TestSpecsTransform:
     def test_specs_mcm(self):
         """Test specs works when MCMs are used"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            m0 = qml.measure(0)
-            return qml.sample(m0)
+            m0 = qp.measure(0)
+            return qp.sample(m0)
 
-        info = qml.specs(circuit)()
+        info = qp.specs(circuit)()
 
         assert info.resources == SpecsResources(
             gate_types={"MidMeasureMP": 1},
@@ -296,17 +296,17 @@ class TestSpecsTransform:
     def test_specs_hamiltonian(self):
         """Test specs works when hamiltonian returned"""
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(i: int):
             coeffs = [0.2, -0.543]
-            obs = [qml.X(0) @ qml.Z(1), qml.Z(i) @ qml.Hadamard(2)]
-            ham1 = qml.ops.LinearCombination(coeffs, obs)
-            ham2 = qml.Hamiltonian([1.0], [qml.exp(1j * qml.Z(0) @ qml.Z(1))])
-            return qml.expval(ham1), qml.expval(ham2)
+            obs = [qp.X(0) @ qp.Z(1), qp.Z(i) @ qp.Hadamard(2)]
+            ham1 = qp.ops.LinearCombination(coeffs, obs)
+            ham2 = qp.Hamiltonian([1.0], [qp.exp(1j * qp.Z(0) @ qp.Z(1))])
+            return qp.expval(ham1), qp.expval(ham2)
 
-        info = qml.specs(circuit)(0)
+        info = qp.specs(circuit)(0)
 
         assert info.resources == SpecsResources(
             gate_types={},
@@ -324,63 +324,63 @@ class TestSpecsTransform:
         device preprocess, for level=device, any unsupported diagonalizing gates are
         decomposed like the tape.operations."""
 
-        class TestDevice(qml.devices.DefaultQubit):
+        class TestDevice(qp.devices.DefaultQubit):
             def stopping_condition(self, op):
-                if isinstance(op, qml.QubitUnitary):
+                if isinstance(op, qp.QubitUnitary):
                     return False
                 return True
 
             def preprocess_transforms(
-                self, execution_config: qml.devices.ExecutionConfig | None = None
+                self, execution_config: qp.devices.ExecutionConfig | None = None
             ):
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
-                    qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition
+                    qp.devices.preprocess.decompose, stopping_condition=self.stopping_condition
                 )
                 return program
 
         dev = TestDevice(wires=2)
-        matrix = qml.matrix(qml.RX(1.2, 0))
+        matrix = qp.matrix(qp.RX(1.2, 0))
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circ():
-            qml.QubitUnitary(matrix, wires=0)
-            return qml.expval(qml.X(0) + qml.Y(0))
+            qp.QubitUnitary(matrix, wires=0)
+            return qp.expval(qp.X(0) + qp.Y(0))
 
-        specs = qml.specs(circ)()
+        specs = qp.specs(circ)()
         assert specs["resources"].num_gates == 1
 
-        specs = qml.specs(circ, level="device")()
+        specs = qp.specs(circ, level="device")()
         assert specs["resources"].num_gates == 4
 
     def test_splitting_transforms(self):
         """Test that the specs transform works with splitting transforms"""
         coeffs = [0.2, -0.543, 0.1]
-        obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2), qml.Y(0) @ qml.X(2)]
-        H = qml.Hamiltonian(coeffs, obs)
+        obs = [qp.X(0) @ qp.Z(1), qp.Z(0) @ qp.Y(2), qp.Y(0) @ qp.X(2)]
+        H = qp.Hamiltonian(coeffs, obs)
 
-        @qml.transforms.split_non_commuting
-        @qml.transforms.merge_rotations
-        @qml.qnode(
-            qml.device("default.qubit"),
+        @qp.transforms.split_non_commuting
+        @qp.transforms.merge_rotations
+        @qp.qnode(
+            qp.device("default.qubit"),
             diff_method="parameter-shift",
             gradient_kwargs={"shifts": pnp.pi / 4},
         )
         def circuit(x):
-            qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
-            qml.RX(x, wires=0)
-            qml.RX(-x, wires=0)
-            qml.SWAP((0, 1))
-            qml.X(0)
-            qml.X(0)
-            return qml.expval(H)
+            qp.RandomLayers(qp.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+            qp.RX(x, wires=0)
+            qp.RX(-x, wires=0)
+            qp.SWAP((0, 1))
+            qp.X(0)
+            qp.X(0)
+            return qp.expval(H)
 
-        specs_output = qml.specs(circuit, level=1)(pnp.array([1.23, -1]))
+        specs_output = qp.specs(circuit, level=1)(pnp.array([1.23, -1]))
 
         # Check that there is only 1 output
         assert isinstance(specs_output.resources, SpecsResources)
 
-        specs_output = qml.specs(circuit, level=2)(pnp.array([1.23, -1]))
+        specs_output = qp.specs(circuit, level=2)(pnp.array([1.23, -1]))
 
         assert isinstance(specs_output.resources, list)
         assert len(specs_output.resources) == len(H)
@@ -485,12 +485,12 @@ Resource specifications:
     def test_num_wires_source_of_truth(self, device, num_wires):
         """Tests that num_wires behaves differently on old and new devices."""
 
-        @qml.qnode(device)
+        @qp.qnode(device)
         def circuit():
-            qml.PauliX(0)
-            return qml.state()
+            qp.PauliX(0)
+            return qp.state()
 
-        info = qml.specs(circuit)()
+        info = qp.specs(circuit)()
         assert info["num_device_wires"] == num_wires
 
     def test_error_with_non_qnode(self):
@@ -500,23 +500,23 @@ Resource specifications:
             return 0
 
         with pytest.raises(
-            ValueError, match="qml.specs can only be applied to a QNode or qjit'd QNode"
+            ValueError, match="qp.specs can only be applied to a QNode or qjit'd QNode"
         ):
-            qml.specs(f)()
+            qp.specs(f)()
 
     def test_custom_level(self):
         """Test that we can draw at a custom level."""
 
-        @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("null.qubit"))
+        @qp.transforms.merge_rotations
+        @qp.marker(level="my_level")
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("null.qubit"))
         def c():
-            qml.RX(0.2, 0)
-            qml.X(0)
-            qml.X(0)
-            qml.RX(0.2, 0)
-            return qml.state()
+            qp.RX(0.2, 0)
+            qp.X(0)
+            qp.X(0)
+            qp.RX(0.2, 0)
+            return qp.state()
 
         expected = SpecsResources(
             num_allocs=1,
@@ -526,12 +526,12 @@ Resource specifications:
             depth=2,
         )
 
-        assert qml.specs(c, level="my_level")()["resources"] == expected
+        assert qp.specs(c, level="my_level")()["resources"] == expected
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestSpecsGraphModeExclusive:
-    """Tests for qml.specs features that require graph mode enabled.
+    """Tests for qp.specs features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
 
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
@@ -546,31 +546,31 @@ class TestSpecsGraphModeExclusive:
         ],
     )
     def test_specs_num_work_wires_calculation(self, num_device_wires, expected_decomp):
-        """Test that qml.specs correctly calculates num_work_wires and uses appropriate decomposition."""
+        """Test that qp.specs correctly calculates num_work_wires and uses appropriate decomposition."""
 
-        class MyCustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyCustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
-        @qml.register_resources({qml.H: 2})  # Fallback: 2 H gates
+        @qp.register_resources({qp.H: 2})  # Fallback: 2 H gates
         def decomp_fallback(wires):
-            qml.H(wires)
-            qml.H(wires)
+            qp.H(wires)
+            qp.H(wires)
 
-        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 5})  # Needs 5 work wires
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})  # Needs 5 work wires
         def decomp_with_work_wire(wires):
-            qml.X(wires)
+            qp.X(wires)
 
-        qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
+        qp.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
 
         # Test with parametrized number of device wires
-        dev = qml.device("default.qubit", wires=num_device_wires)
+        dev = qp.device("default.qubit", wires=num_device_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             MyCustomOp(0)  # Uses only wire 0
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        specs = qml.specs(circuit, level="device")()
+        specs = qp.specs(circuit, level="device")()
 
         # Work wires calculation should be: device_wires - tape_wires
         if num_device_wires:
@@ -581,30 +581,30 @@ class TestSpecsGraphModeExclusive:
         assert expected_decomp in specs["resources"].gate_types
 
     def test_specs_num_work_wires_with_insufficient_wires(self):
-        """Test that qml.specs correctly reports work wires when decomposition fallback is used."""
+        """Test that qp.specs correctly reports work wires when decomposition fallback is used."""
 
-        class MyLimitedOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyLimitedOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
-        @qml.register_resources({qml.H: 1})  # Fallback that uses 1 H gate
+        @qp.register_resources({qp.H: 1})  # Fallback that uses 1 H gate
         def simple_decomp(wires):
-            qml.H(wires)
+            qp.H(wires)
 
-        @qml.register_resources({qml.X: 1}, work_wires={"burnable": 10})  # Needs 10 work wires
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 10})  # Needs 10 work wires
         def work_wire_decomp(wires):
-            qml.X(wires)
+            qp.X(wires)
 
-        qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
+        qp.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
 
         # Device with only 2 wires - insufficient for the 10 work wires needed
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             MyLimitedOp(0)  # Uses wire 0, fallback should be used
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
-        specs = qml.specs(circuit, level="device")()
+        specs = qp.specs(circuit, level="device")()
 
         # Should report 1 work wire available (2 device wires - 1 tape wire)
         assert specs["num_device_wires"] == 2
@@ -613,17 +613,17 @@ class TestSpecsGraphModeExclusive:
         assert "Hadamard" in specs["resources"].gate_types
 
     def test_specs_num_work_wires_no_available_wires(self):
-        """Test qml.specs when all device wires are used by the circuit."""
+        """Test qp.specs when all device wires are used by the circuit."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.H(0)
-            qml.CNOT([0, 1])  # Uses both available wires
-            return qml.expval(qml.Z(0))
+            qp.H(0)
+            qp.CNOT([0, 1])  # Uses both available wires
+            return qp.expval(qp.Z(0))
 
-        specs = qml.specs(circuit)()
+        specs = qp.specs(circuit)()
 
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2

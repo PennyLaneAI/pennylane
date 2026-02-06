@@ -24,14 +24,14 @@ from pennylane.transforms.core.cotransform_cache import CotransformCache
 def test_classical_jacobian_error_if_not_in_cache():
     """Test a ValueError is raised if we request the classical jacobian for a transform not in the cotransform cache."""
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def c(x, y):
-        qml.RX(2 * x, 0)
-        qml.RY(x * y, 0)
-        return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+        qp.RX(2 * x, 0)
+        qp.RY(x * y, 0)
+        return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
 
-    container = BoundTransform(qml.transforms.merge_rotations)
-    x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
+    container = BoundTransform(qp.transforms.merge_rotations)
+    x, y = qp.numpy.array(0.5), qp.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
     with pytest.raises(ValueError, match=r"Could not find"):
@@ -41,15 +41,15 @@ def test_classical_jacobian_error_if_not_in_cache():
 def test_no_classical_jacobian_if_no_cotransform():
     """Test that the classical jacobian is None if the transform does not have a cotransform."""
 
-    @qml.transforms.split_non_commuting
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.transforms.split_non_commuting
+    @qp.qnode(qp.device("default.qubit"))
     def c(x, y):
-        qml.RX(2 * x, 0)
-        qml.RY(x * y, 0)
-        return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+        qp.RX(2 * x, 0)
+        qp.RY(x * y, 0)
+        return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
 
     container = c.transform_program[-1]
-    x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
+    x, y = qp.numpy.array(0.5), qp.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
     assert cc.get_classical_jacobian(container, 0) is None
@@ -58,22 +58,22 @@ def test_no_classical_jacobian_if_no_cotransform():
 def test_simple_classical_jacobian():
     """Test the calculation of a simple classical jacobian."""
 
-    @qml.gradients.param_shift
-    @qml.transforms.split_non_commuting
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.gradients.param_shift
+    @qp.transforms.split_non_commuting
+    @qp.qnode(qp.device("default.qubit"))
     def c(x, y):
-        qml.RX(2 * x, 0)
-        qml.RY(x * y, 0)
-        return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+        qp.RX(2 * x, 0)
+        qp.RY(x * y, 0)
+        return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
 
     ps_container = c.transform_program[-1]
-    x, y = qml.numpy.array(0.5), qml.numpy.array(3.0)
+    x, y = qp.numpy.array(0.5), qp.numpy.array(3.0)
 
     a = CotransformCache(c, (x, y), {})
     for i in range(2):
         x_jac, y_jac = a.get_classical_jacobian(ps_container, i)
-        assert qml.math.allclose(x_jac, qml.numpy.array([2.0, 3.0]))
-        assert qml.math.allclose(y_jac, qml.numpy.array([0.0, 0.5]))
+        assert qp.math.allclose(x_jac, qp.numpy.array([2.0, 3.0]))
+        assert qp.math.allclose(y_jac, qp.numpy.array([0.0, 0.5]))
 
 
 @pytest.mark.jax
@@ -113,15 +113,15 @@ def test_simple_argnums(argnums, trainable_params):
 
     import jax
 
-    @qml.transforms.split_non_commuting
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.transforms.split_non_commuting
+    @qp.qnode(qp.device("default.qubit"))
     def c(x, y):
-        qml.RX(x[0], 0)
-        qml.RX(y, 0)
-        qml.RY(x[1], 0)
-        return qml.expval(qml.Z(0)), qml.expval(qml.X(0))
+        qp.RX(x[0], 0)
+        qp.RX(y, 0)
+        qp.RY(x[1], 0)
+        return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
 
-    c = qml.gradients.param_shift(c, argnums=argnums)
+    c = qp.gradients.param_shift(c, argnums=argnums)
 
     ps_container = c.transform_program[-1]
     x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
@@ -137,14 +137,14 @@ def test_no_jax_argnum_error():
 
     import jax
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qp.qnode(qp.device("default.qubit"))
     def c(x, y):
-        qml.RX(x[0], 0)
-        qml.RX(y, 0)
-        qml.RY(x[1], 0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x[0], 0)
+        qp.RX(y, 0)
+        qp.RY(x[1], 0)
+        return qp.expval(qp.Z(0))
 
-    c = qml.gradients.param_shift(c, argnum=[0])
+    c = qp.gradients.param_shift(c, argnum=[0])
 
     ps_container = c.transform_program[-1]
     x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
@@ -152,7 +152,7 @@ def test_no_jax_argnum_error():
     cc = CotransformCache(c, (x, y), {})
 
     with pytest.raises(
-        qml.exceptions.QuantumFunctionError, match="argnum does not work with the Jax interface"
+        qp.exceptions.QuantumFunctionError, match="argnum does not work with the Jax interface"
     ):
         cc.get_argnums(ps_container)
 

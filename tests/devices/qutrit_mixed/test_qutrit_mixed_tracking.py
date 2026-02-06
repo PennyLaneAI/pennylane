@@ -26,25 +26,25 @@ class TestTracking:
 
     def test_tracker_set_upon_initialization(self):
         """Test that a new tracker is initialized with each device."""
-        tracker_1 = qml.device("default.qutrit.mixed").tracker
-        tracker_2 = qml.device("default.qutrit.mixed").tracker
+        tracker_1 = qp.device("default.qutrit.mixed").tracker
+        tracker_2 = qp.device("default.qutrit.mixed").tracker
         assert tracker_1 is not tracker_2
 
     def test_tracker_not_updated_if_not_active(self):
         """Test that the tracker is not updated if not active."""
-        dev = qml.device("default.qutrit.mixed")
+        dev = qp.device("default.qutrit.mixed")
         assert len(dev.tracker.totals) == 0
 
-        dev.execute(qml.tape.QuantumScript())
+        dev.execute(qp.tape.QuantumScript())
         assert len(dev.tracker.totals) == 0
         assert len(dev.tracker.history) == 0
 
     def test_tracking(self):
         """Test that the new default qutrit mixed integrates with the tracker."""
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.GellMann(0, 3))])
+        qs = qp.tape.QuantumScript([], [qp.expval(qp.GellMann(0, 3))])
 
-        dev = qml.device("default.qutrit.mixed")
-        with qml.Tracker(dev) as tracker:
+        dev = qp.device("default.qutrit.mixed")
+        with qp.Tracker(dev) as tracker:
             dev.execute(qs)
 
         res = SpecsResources(
@@ -79,16 +79,16 @@ class TestTracking:
 
     def test_tracking_resources(self):
         """Test that resources are tracked for the new default qutrit mixed device."""
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.THadamard(0),
-                qml.THadamard(1),
-                qml.TAdd(wires=[0, 2]),
-                qml.TRZ(1.23, 1, subspace=(0, 2)),
-                qml.TAdd(wires=[1, 2]),
-                qml.THadamard(0),
+                qp.THadamard(0),
+                qp.THadamard(1),
+                qp.TAdd(wires=[0, 2]),
+                qp.TRZ(1.23, 1, subspace=(0, 2)),
+                qp.TAdd(wires=[1, 2]),
+                qp.THadamard(0),
             ],
-            [qml.expval(qml.GellMann(1, 8)), qml.expval(qml.GellMann(2, 7))],
+            [qp.expval(qp.GellMann(1, 8)), qp.expval(qp.GellMann(2, 7))],
         )
 
         expected_resources = SpecsResources(
@@ -99,8 +99,8 @@ class TestTracking:
             depth=3,
         )
 
-        dev = qml.device("default.qutrit.mixed")
-        with qml.Tracker(dev) as tracker:
+        dev = qp.device("default.qutrit.mixed")
+        with qp.Tracker(dev) as tracker:
             dev.execute(qs)
 
         assert len(tracker.history["resources"]) == 1
@@ -110,35 +110,35 @@ class TestTracking:
         """Test the number of times the device is executed over a QNode's
         lifetime is tracked by the device's tracker."""
 
-        dev_1 = qml.device("default.qutrit.mixed", wires=2)
+        dev_1 = qp.device("default.qutrit.mixed", wires=2)
 
         def circuit_1(x, y):
-            qml.TRX(x, wires=[0])
-            qml.TRY(y, wires=[1])
-            qml.TAdd(wires=[0, 1])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 4))
+            qp.TRX(x, wires=[0])
+            qp.TRY(y, wires=[1])
+            qp.TAdd(wires=[0, 1])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 4))
 
-        node_1 = qml.QNode(circuit_1, dev_1)
+        node_1 = qp.QNode(circuit_1, dev_1)
         num_evals_1 = 10
 
-        with qml.Tracker(dev_1, persistent=True) as tracker1:
+        with qp.Tracker(dev_1, persistent=True) as tracker1:
             for _ in range(num_evals_1):
                 node_1(0.432, np.array([0.12, 0.5, 3.2]))
         assert tracker1.totals["executions"] == 3 * num_evals_1
         assert tracker1.totals["simulations"] == num_evals_1
 
         # test a second instance of a default qutrit mixed device
-        dev_2 = qml.device("default.qutrit.mixed", wires=2)
+        dev_2 = qp.device("default.qutrit.mixed", wires=2)
 
         def circuit_2(x):
-            qml.TRX(x, wires=[0])
-            qml.TAdd(wires=[0, 1])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 4))
+            qp.TRX(x, wires=[0])
+            qp.TAdd(wires=[0, 1])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 4))
 
-        node_2 = qml.QNode(circuit_2, dev_2)
+        node_2 = qp.QNode(circuit_2, dev_2)
         num_evals_2 = 5
 
-        with qml.Tracker(dev_2) as tracker2:
+        with qp.Tracker(dev_2) as tracker2:
             for _ in range(num_evals_2):
                 node_2(np.array([0.432, 0.61, 8.2]))
         assert tracker2.totals["simulations"] == num_evals_2
@@ -146,11 +146,11 @@ class TestTracking:
 
         # test a new circuit on an existing instance of a qutrit mixed device
         def circuit_3(y):
-            qml.TRY(y, wires=[1])
-            qml.TAdd(wires=[0, 1])
-            return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 4))
+            qp.TRY(y, wires=[1])
+            qp.TAdd(wires=[0, 1])
+            return qp.expval(qp.GellMann(0, 3) @ qp.GellMann(1, 4))
 
-        node_3 = qml.QNode(circuit_3, dev_1)
+        node_3 = qp.QNode(circuit_3, dev_1)
         num_evals_3 = 7
 
         with tracker1:
@@ -162,23 +162,23 @@ class TestTracking:
 
 shot_testing_combos = [
     # expval combinations
-    ([qml.expval(qml.GellMann(0, 1))], 1, 10),
-    ([qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(0, 2))], 2, 20),
+    ([qp.expval(qp.GellMann(0, 1))], 1, 10),
+    ([qp.expval(qp.GellMann(0, 1)), qp.expval(qp.GellMann(0, 2))], 2, 20),
     # Hamiltonian test cases
-    ([qml.expval(qml.Hamiltonian([1, 1], [qml.GellMann(0, 1), qml.GellMann(1, 5)]))], 1, 10),
+    ([qp.expval(qp.Hamiltonian([1, 1], [qp.GellMann(0, 1), qp.GellMann(1, 5)]))], 1, 10),
     # op arithmetic test cases
-    ([qml.expval(qml.sum(qml.GellMann(0, 1), qml.GellMann(1, 4)))], 2, 20),
+    ([qp.expval(qp.sum(qp.GellMann(0, 1), qp.GellMann(1, 4)))], 2, 20),
     (
         [
-            qml.expval(qml.prod(qml.GellMann(0, 1), qml.GellMann(1, 4))),
-            qml.expval(qml.prod(qml.GellMann(1, 4), qml.GellMann(2, 7))),
+            qp.expval(qp.prod(qp.GellMann(0, 1), qp.GellMann(1, 4))),
+            qp.expval(qp.prod(qp.GellMann(1, 4), qp.GellMann(2, 7))),
         ],
         2,
         20,
     ),
     # computational basis measurements
-    ([qml.sample(wires=(0, 1))], 1, 10),
-    ([qml.sample(wires=(0, 1)), qml.expval(qml.GellMann(0, 1))], 2, 20),
+    ([qp.sample(wires=(0, 1))], 1, 10),
+    ([qp.sample(wires=(0, 1)), qp.expval(qp.GellMann(0, 1))], 2, 20),
 ]
 
 
@@ -190,8 +190,8 @@ class TestExecuteTracker:
     @pytest.mark.parametrize("mps, expected_exec, expected_shots", shot_testing_combos)
     def test_single_expval(self, mps, expected_exec, expected_shots):
         """Test tracker tracks default qutrit mixed execute number of shots for single measurements"""
-        dev = qml.device("default.qutrit.mixed")
-        tape = qml.tape.QuantumScript([], mps, shots=10)
+        dev = qp.device("default.qutrit.mixed")
+        tape = qp.tape.QuantumScript([], mps, shots=10)
 
         with dev.tracker:
             dev.execute(tape)
@@ -200,7 +200,7 @@ class TestExecuteTracker:
         assert dev.tracker.totals["simulations"] == 1
         assert dev.tracker.totals["shots"] == expected_shots
 
-        tape = qml.tape.QuantumScript([qml.TRX((1.2, 2.3, 3.4), wires=0)], mps, shots=10)
+        tape = qp.tape.QuantumScript([qp.TRX((1.2, 2.3, 3.4), wires=0)], mps, shots=10)
 
         with dev.tracker:
             dev.execute(tape)
@@ -214,12 +214,12 @@ class TestExecuteTracker:
         Test tracker tracks default qutrit mixed execute number of shots for new and old opmath tensors.
         """
         mps, expected_exec, expected_shots = (
-            [qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(0, 1) @ qml.GellMann(1, 5))],
+            [qp.expval(qp.GellMann(0, 1)), qp.expval(qp.GellMann(0, 1) @ qp.GellMann(1, 5))],
             2,
             20,
         )
-        dev = qml.device("default.qutrit.mixed")
-        tape = qml.tape.QuantumScript([], mps, shots=10)
+        dev = qp.device("default.qutrit.mixed")
+        tape = qp.tape.QuantumScript([], mps, shots=10)
 
         with dev.tracker:
             dev.execute(tape)

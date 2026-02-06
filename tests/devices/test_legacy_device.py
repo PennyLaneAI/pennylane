@@ -193,7 +193,7 @@ def mock_device_supporting_prod(monkeypatch):
 # pylint: disable=pointless-statement
 def test_invalid_attribute_in_devices_raises_error():
     with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
-        qml.devices.blabla
+        qp.devices.blabla
 
 
 def test_gradients_record():
@@ -201,7 +201,7 @@ def test_gradients_record():
 
     dev = DefaultQubitLegacy(wires=1)
 
-    tape = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+    tape = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.PauliZ(0))])
 
     with dev.tracker:
         dev.execute_and_gradients((tape, tape), method="adjoint_jacobian", use_device_state=True)
@@ -227,10 +227,10 @@ class TestDeviceSupportedLogic:
         dev = mock_device_supporting_paulis()
 
         assert dev.supports_operation("PauliX")
-        assert dev.supports_operation(qml.PauliX)
+        assert dev.supports_operation(qp.PauliX)
 
         assert not dev.supports_operation("S")
-        assert not dev.supports_operation(qml.CNOT)
+        assert not dev.supports_operation(qp.CNOT)
 
     def test_supports_observable_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_observable returns the correct result
@@ -238,10 +238,10 @@ class TestDeviceSupportedLogic:
         dev = mock_device_supporting_paulis()
 
         assert dev.supports_observable("PauliX")
-        assert dev.supports_observable(qml.PauliX)
+        assert dev.supports_observable(qp.PauliX)
 
         assert not dev.supports_observable("Identity")
-        assert not dev.supports_observable(qml.Identity)
+        assert not dev.supports_observable(qp.Identity)
 
     def test_supports_operation_exception(self, mock_device):
         """check that device.supports_operation raises proper errors
@@ -272,7 +272,7 @@ class TestDeviceSupportedLogic:
             dev.supports_observable(3)
 
     @pytest.mark.parametrize("supported_multi_term_obs", ["Hamiltonian", "LinearCombination"])
-    @pytest.mark.parametrize("obs_type", [qml.ops.LinearCombination, qml.Hamiltonian])
+    @pytest.mark.parametrize("obs_type", [qp.ops.LinearCombination, qp.Hamiltonian])
     def test_all_multi_term_obs_supported_linear_combination(
         self, mock_device, supported_multi_term_obs, obs_type
     ):
@@ -281,8 +281,8 @@ class TestDeviceSupportedLogic:
         dev = mock_device()
         dev.observables = dev.observables + [supported_multi_term_obs]
 
-        obs = obs_type([1.0, 2.0], [qml.Z(0), qml.Z(0)])
-        circuit = qml.tape.QuantumScript([], [qml.expval(obs)])
+        obs = obs_type([1.0, 2.0], [qp.Z(0), qp.Z(0)])
+        circuit = qp.tape.QuantumScript([], [qp.expval(obs)])
         assert dev._all_multi_term_obs_supported(circuit)  # pylint: disable=protected-access
 
 
@@ -311,12 +311,12 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device_supporting_paulis()
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
-        observables = [qml.expval(qml.PauliZ(0))]
+        observables = [qp.expval(qp.PauliZ(0))]
 
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
@@ -327,13 +327,13 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device_supporting_prod()
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliZ(wires=1),
+            qp.PauliX(wires=0),
+            qp.PauliZ(wires=1),
         ]
 
         observables = [
-            qml.expval(qml.PauliX(0) @ qml.PauliZ(1)),
-            qml.expval(qml.PauliZ(0) @ (qml.PauliX(1) @ qml.PauliZ(2))),
+            qp.expval(qp.PauliX(0) @ qp.PauliZ(1)),
+            qp.expval(qp.PauliZ(0) @ (qp.PauliX(1) @ qp.PauliZ(2))),
         ]
 
         dev.check_validity(queue, observables)
@@ -344,12 +344,12 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device_supporting_prod()
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliZ(wires=1),
+            qp.PauliX(wires=0),
+            qp.PauliZ(wires=1),
         ]
 
         unsupported_nested_observables = [
-            qml.expval(qml.PauliZ(0) @ (qml.PauliX(1) @ qml.PauliY(2)))
+            qp.expval(qp.PauliZ(0) @ (qp.PauliX(1) @ qp.PauliY(2)))
         ]
 
         with pytest.raises(DeviceError, match="Observable PauliY not supported"):
@@ -360,12 +360,12 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device_supporting_paulis()
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
-        observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
+        observables = [qp.expval(qp.PauliZ(0) @ qp.PauliX(1))]
 
         # mock device does not support Tensor product
         with pytest.raises(DeviceError, match="Observable Prod not supported"):
@@ -376,12 +376,12 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device_supporting_paulis()
 
         queue = [
-            qml.RX(1.0, wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.RX(1.0, wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
-        observables = [qml.expval(qml.PauliZ(0))]
+        observables = [qp.expval(qp.PauliZ(0))]
 
         with pytest.raises(DeviceError, match="Gate RX not supported on device"):
             dev.check_validity(queue, observables)
@@ -391,21 +391,21 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device_supporting_paulis()
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
-        observables = [qml.expval(qml.Hadamard(0))]
+        observables = [qp.expval(qp.Hadamard(0))]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.check_validity(queue, observables)
 
     def test_check_validity_on_projector_as_operation(self, mock_device_supporting_paulis):
-        """Test that an error is raised if the operation queue contains qml.Projector"""
+        """Test that an error is raised if the operation queue contains qp.Projector"""
         dev = mock_device_supporting_paulis(wires=1)
 
-        queue = [qml.PauliX(0), qml.Projector([0], wires=0), qml.PauliZ(0)]
+        queue = [qp.PauliX(0), qp.Projector([0], wires=0), qp.PauliZ(0)]
         observables = []
 
         with pytest.raises(ValueError, match="Postselection is not supported"):
@@ -415,7 +415,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Test that using non-observable measurements like state() works."""
         dev = mock_device_with_identity(wires=1)
         queue = []
-        observables = [qml.state()]
+        observables = [qp.state()]
 
         dev.check_validity(queue, observables)
         assert len(recwarn) == 0
@@ -451,14 +451,14 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         lifetime is tracked by `num_executions`"""
 
         # test default Gaussian device
-        dev_gauss = qml.device("default.gaussian", wires=1)
+        dev_gauss = qp.device("default.gaussian", wires=1)
 
         def circuit_gauss(mag_alpha, phase_alpha, phi):
-            qml.Displacement(mag_alpha, phase_alpha, wires=0)
-            qml.Rotation(phi, wires=0)
-            return qml.expval(qml.NumberOperator(0))
+            qp.Displacement(mag_alpha, phase_alpha, wires=0)
+            qp.Rotation(phi, wires=0)
+            return qp.expval(qp.NumberOperator(0))
 
-        node_gauss = qml.QNode(circuit_gauss, dev_gauss)
+        node_gauss = qp.QNode(circuit_gauss, dev_gauss)
         num_evals_gauss = 12
 
         for _ in range(num_evals_gauss):
@@ -468,8 +468,8 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize(
         "depth, expanded_ops",
         [
-            (0, [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]),
-            (1, [qml.PauliX(wires=0), qml.PauliX(wires=1)]),
+            (0, [qp.PauliX(0), qp.BasisEmbedding([1, 0], wires=[1, 2])]),
+            (1, [qp.PauliX(wires=0), qp.PauliX(wires=1)]),
         ],
     )
     def test_device_default_expand_ops(
@@ -478,12 +478,12 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Test that the default expand method can selectively expand operations
         without expanding measurements."""
 
-        ops = [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]
+        ops = [qp.PauliX(0), qp.BasisEmbedding([1, 0], wires=[1, 2])]
         measurements = [
-            qml.expval(qml.PauliZ(0)),
-            qml.expval(qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)])),
+            qp.expval(qp.PauliZ(0)),
+            qp.expval(qp.Hamiltonian([2], [qp.PauliX(0) @ qp.PauliY(1)])),
         ]
-        circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+        circuit = qp.tape.QuantumScript(ops=ops, measurements=measurements)
 
         dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)
         expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
@@ -492,10 +492,10 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             expanded_tape.operations[expanded_tape.num_preps :],
             expanded_ops,
         ):
-            qml.assert_equal(op, expected_op)
+            qp.assert_equal(op, expected_op)
 
         for mp, expected_mp in zip(expanded_tape.measurements, measurements):
-            qml.assert_equal(mp, expected_mp)
+            qp.assert_equal(mp, expected_mp)
 
     wires_to_try = [
         (1, Wires([0])),
@@ -529,11 +529,11 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         dev = mock_device_with_paulis_and_methods(wires=2)
 
         # mid-circuit measurements are part of the queue (for now)
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.measure(1)
-            qml.PauliZ(0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.measure(1)
+            qp.PauliZ(0)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support mid-circuit measurements natively
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
@@ -568,17 +568,17 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
     def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis, recwarn):
         """Test that default_expand_fn works with an invalid op and some measurement."""
-        invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
-        expected_tape = qml.tape.QuantumScript([qml.RZ(np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))])
+        invalid_tape = qp.tape.QuantumScript([qp.S(0)], [qp.expval(qp.PauliZ(0))])
+        expected_tape = qp.tape.QuantumScript([qp.RZ(np.pi / 2, 0)], [qp.expval(qp.PauliZ(0))])
         dev = mock_device_supporting_paulis(wires=1)
         expanded_tape = dev.expand_fn(invalid_tape, max_expansion=3)
-        qml.assert_equal(expanded_tape, expected_tape)
+        qp.assert_equal(expanded_tape, expected_tape)
         assert len(recwarn) == 0
 
     def test_stopping_condition_passes_with_non_obs_mp(self, mock_device_with_identity, recwarn):
         """Test that Device.stopping_condition passes with non-observable measurements"""
         dev = mock_device_with_identity(wires=1)
-        assert dev.stopping_condition(qml.state())
+        assert dev.stopping_condition(qp.state())
         assert len(recwarn) == 0
 
 
@@ -637,15 +637,15 @@ class TestOperations:
         dev = mock_device_with_paulis_and_methods(wires=3)
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
         observables = [
-            qml.expval(qml.PauliZ(0)),
-            qml.var(qml.PauliZ(1)),
-            qml.sample(qml.PauliZ(2)),
+            qp.expval(qp.PauliZ(0)),
+            qp.var(qp.PauliZ(1)),
+            qp.sample(qp.PauliZ(2)),
         ]
 
         queue_at_pre_measure = []
@@ -665,15 +665,15 @@ class TestOperations:
         dev = mock_device_with_paulis_and_methods(wires=3)
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
         observables = [
-            qml.expval(qml.PauliZ(0)),
-            qml.var(qml.PauliZ(1)),
-            qml.sample(qml.PauliZ(2)),
+            qp.expval(qp.PauliZ(0)),
+            qp.var(qp.PauliZ(1)),
+            qp.sample(qp.PauliZ(2)),
         ]
 
         call_history = []
@@ -694,15 +694,15 @@ class TestOperations:
         dev = mock_device_with_paulis_and_methods()
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.Hadamard(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.Hadamard(wires=2),
         ]
 
         observables = [
-            qml.expval(qml.PauliZ(0)),
-            qml.var(qml.PauliZ(1)),
-            qml.sample(qml.PauliZ(2)),
+            qp.expval(qp.PauliZ(0)),
+            qp.var(qp.PauliZ(1)),
+            qp.sample(qp.PauliZ(2)),
         ]
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
@@ -712,7 +712,7 @@ class TestOperations:
         """Tests that the execute function raises an error if probabilities are
         not supported by the device"""
         dev = mock_device_supporting_paulis()
-        obs = qml.probs(op=qml.PauliZ(0))
+        obs = qp.probs(op=qp.PauliZ(0))
         with pytest.raises(NotImplementedError):
             dev.execute([], [obs])
 
@@ -721,14 +721,14 @@ class TestOperations:
         default"""
         dev = mock_device_supporting_paulis()
         with pytest.raises(NotImplementedError):
-            dev.var(qml.PauliZ, 0, [])
+            dev.var(qp.PauliZ, 0, [])
 
     def test_sample(self, mock_device_supporting_paulis):
         """Tests that the sample method are not implemented by the device by
         default"""
         dev = mock_device_supporting_paulis()
         with pytest.raises(NotImplementedError):
-            dev.sample(qml.PauliZ, 0, [])
+            dev.sample(qp.PauliZ, 0, [])
 
     @pytest.mark.parametrize("wires", [None, []])
     def test_probability(self, mock_device_supporting_paulis, wires):
@@ -761,15 +761,15 @@ class TestObservables:
         dev = mock_device_with_paulis_and_methods(wires=3)
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
         observables = [
-            qml.expval(qml.PauliZ(0)),
-            qml.var(qml.PauliZ(1)),
-            qml.sample(qml.PauliZ(2)),
+            qp.expval(qp.PauliZ(0)),
+            qp.var(qp.PauliZ(1)),
+            qp.sample(qp.PauliZ(2)),
         ]
 
         queue_at_pre_measure = []
@@ -788,7 +788,7 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        observables = [qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1)), qml.sample(qml.PauliZ(2))]
+        observables = [qp.expval(qp.PauliX(0)), qp.var(qp.PauliY(1)), qp.sample(qp.PauliZ(2))]
 
         # capture the arguments passed to dev methods
         expval_args = []
@@ -809,15 +809,15 @@ class TestObservables:
         dev = mock_device_with_paulis_and_methods()
 
         queue = [
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=1),
-            qml.PauliZ(wires=2),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=1),
+            qp.PauliZ(wires=2),
         ]
 
         observables = [
-            qml.expval(qml.Hadamard(0)),
-            qml.var(qml.PauliZ(1)),
-            qml.sample(qml.PauliZ(2)),
+            qp.expval(qp.Hadamard(0)),
+            qp.var(qp.PauliZ(1)),
+            qp.sample(qp.PauliZ(2)),
         ]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
@@ -829,10 +829,10 @@ class TestObservables:
         """Check that an error is raised if the return type of an observable is unsupported"""
         dev = mock_device_with_paulis_and_methods()
 
-        queue = [qml.PauliX(wires=0)]
+        queue = [qp.PauliX(wires=0)]
 
         # Make a observable without specifying a return operation upon measuring
-        observables = [qml.counts(op=qml.PauliZ(0))]
+        observables = [qp.counts(op=qp.PauliZ(0))]
 
         with pytest.raises(
             QuantumFunctionError,
@@ -864,17 +864,17 @@ class TestParameters:
         p1 = -0.32
 
         queue = [
-            qml.RX(p0, wires=0),
-            qml.PauliY(wires=1),
-            qml.Rot(0.432, 0.123, p1, wires=2),
+            qp.RX(p0, wires=0),
+            qp.PauliY(wires=1),
+            qp.Rot(0.432, 0.123, p1, wires=2),
         ]
 
         parameters = {0: (0, 0), 1: (2, 3)}
 
         observables = [
-            qml.expval(qml.PauliZ(0)),
-            qml.var(qml.PauliZ(1)),
-            qml.sample(qml.PauliZ(2)),
+            qp.expval(qp.PauliZ(0)),
+            qp.var(qp.PauliZ(1)),
+            qp.sample(qp.PauliZ(2)),
         ]
 
         p_mapping = {}
@@ -893,86 +893,86 @@ class TestDeviceInit:
         """Test that an exception is raised for a device that doesn't exist"""
 
         with pytest.raises(DeviceError, match="Device None does not exist"):
-            qml.device("None", wires=0)
+            qp.device("None", wires=0)
 
     def test_outdated_API(self, monkeypatch):
         """Test that an exception is raised if plugin that targets an old API is loaded"""
 
         with monkeypatch.context() as m:
-            m.setattr(qml.devices.device_constructor, "__version__", "0.0.1")
+            m.setattr(qp.devices.device_constructor, "__version__", "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.qutrit", wires=0)
+                qp.device("default.qutrit", wires=0)
 
     def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
-        spied = mocker.spy(qml.devices, "__getattr__")
+        spied = mocker.spy(qp.devices, "__getattr__")
 
-        qml.devices.plugin_devices
+        qp.devices.plugin_devices
 
         spied.assert_called_once()
 
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
-        assert qml.plugin_devices
+        assert qp.plugin_devices
 
         with monkeypatch.context() as m:
             # remove all entry points
             retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
-            # reimporting PennyLane within the context sets qml.plugin_devices to {}
+            # reimporting PennyLane within the context sets qp.plugin_devices to {}
             reload(qml)
-            reload(qml.devices.device_constructor)
+            reload(qp.devices.device_constructor)
 
             # since there are no entry points, there will be no plugin devices
-            assert not qml.plugin_devices
+            assert not qp.plugin_devices
 
         # outside of the context, entrypoints will now be found
-        assert not qml.plugin_devices
-        qml.refresh_devices()
-        assert qml.plugin_devices
+        assert not qp.plugin_devices
+        qp.refresh_devices()
+        assert qp.plugin_devices
 
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
-        reload(qml.devices.device_constructor)
+        reload(qp.devices.device_constructor)
 
     def test_hot_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the device loader if not currently present"""
-        assert qml.plugin_devices
+        assert qp.plugin_devices
 
         with monkeypatch.context() as m:
             # remove all entry points
             retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
-            # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            reload(qml.devices)
-            reload(qml.devices.device_constructor)
+            # reimporting PennyLane within the context sets qp.plugin_devices to {}
+            reload(qp.devices)
+            reload(qp.devices.device_constructor)
 
-            m.setattr(qml.devices.device_constructor, "refresh_devices", lambda: None)
-            assert not qml.plugin_devices
+            m.setattr(qp.devices.device_constructor, "refresh_devices", lambda: None)
+            assert not qp.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
             with pytest.raises(DeviceError, match="Device default.qubit does not exist"):
-                qml.device("default.qubit", wires=0)
+                qp.device("default.qubit", wires=0)
 
         # outside of the context, entrypoints will now be found automatically
-        assert not qml.plugin_devices
-        dev = qml.device("default.qubit", wires=0)
-        assert qml.plugin_devices
+        assert not qp.plugin_devices
+        dev = qp.device("default.qubit", wires=0)
+        assert qp.plugin_devices
         assert dev.name == "default.qubit"
 
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
-        reload(qml.devices.device_constructor)
+        reload(qp.devices.device_constructor)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
         with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
         ):
-            dev = qml.device("default.qutrit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+            dev = qp.device("default.qutrit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
@@ -1004,17 +1004,17 @@ class TestDeviceInit:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.queuing.AnnotatedQueue() as q1:
-        qml.PauliX(wires=0)
-        qml.expval(qml.PauliZ(wires=0))
-        qml.expval(qml.PauliZ(wires=1))
+    with qp.queuing.AnnotatedQueue() as q1:
+        qp.PauliX(wires=0)
+        qp.expval(qp.PauliZ(wires=0))
+        qp.expval(qp.PauliZ(wires=1))
 
-    tape1 = qml.tape.QuantumScript.from_queue(q1)
-    with qml.queuing.AnnotatedQueue() as q2:
-        qml.PauliX(wires=0)
-        qml.expval(qml.PauliZ(wires=0))
+    tape1 = qp.tape.QuantumScript.from_queue(q1)
+    with qp.queuing.AnnotatedQueue() as q2:
+        qp.PauliX(wires=0)
+        qp.expval(qp.PauliZ(wires=0))
 
-    tape2 = qml.tape.QuantumScript.from_queue(q2)
+    tape2 = qp.tape.QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
@@ -1060,7 +1060,7 @@ class TestBatchExecution:
 
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        empty_tape = qml.tape.QuantumScript()
+        empty_tape = qp.tape.QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 
@@ -1074,7 +1074,7 @@ class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
     # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
-    class SomeDevice(qml.devices.LegacyDevice):
+    class SomeDevice(qp.devices.LegacyDevice):
         name = ""
         short_name = ""
         pennylane_requires = ""
@@ -1103,10 +1103,10 @@ class TestGrouping:
         grouping indices.
         """
 
-        H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        H = qp.Hamiltonian([1.0, 1.0], [qp.PauliX(0), qp.PauliY(0)], grouping_type="qwc")
+        qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
         # pylint: disable=protected-access
-        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
+        spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.use_grouping = use_grouping
@@ -1121,10 +1121,10 @@ class TestGrouping:
 
     def test_batch_transform_does_not_expand_supported_sum(self, mocker):
         """Tests that batch_transform does not expand Sums if they are supported."""
-        H = qml.sum(qml.PauliX(0), qml.PauliY(0))
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        H = qp.sum(qp.PauliX(0), qp.PauliY(0))
+        qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
         # pylint: disable=protected-access
-        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
+        spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice(shots=None)
         new_qscripts, _ = dev.batch_transform(qs)
@@ -1134,10 +1134,10 @@ class TestGrouping:
 
     def test_batch_transform_expands_not_supported_sums(self, mocker):
         """Tests that batch_transform expand Sums if they are not supported."""
-        H = qml.sum(qml.PauliX(0), qml.PauliY(0))
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        H = qp.sum(qp.PauliX(0), qp.PauliY(0))
+        qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
         # pylint: disable=protected-access
-        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
+        spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False
@@ -1149,10 +1149,10 @@ class TestGrouping:
     def test_batch_transform_expands_prod_containing_sums(self, mocker):
         """Tests that batch_transform expands a Prod with a nested Sum"""
 
-        H = qml.prod(qml.PauliX(0), qml.sum(qml.PauliY(0), qml.PauliZ(0)))
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        H = qp.prod(qp.PauliX(0), qp.sum(qp.PauliY(0), qp.PauliZ(0)))
+        qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
         # pylint: disable=protected-access
-        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
+        spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
         dev.supports_observable = lambda *args, **kwargs: False

@@ -35,12 +35,12 @@ class TestCollectResourceOps:
         """Tests a function without classical structure."""
 
         def f(x, wires):
-            qml.RX(x, wires=wires[0])
-            qml.CNOT(wires=wires[:2])
-            qml.MultiRZ(x * 2, wires=wires[1:])
-            qml.CNOT(wires=wires[:2])
-            qml.RX(x * 2, wires=wires[1])
-            qml.MultiRZ(x * 2, wires=wires[2:])
+            qp.RX(x, wires=wires[0])
+            qp.CNOT(wires=wires[:2])
+            qp.MultiRZ(x * 2, wires=wires[1:])
+            qp.CNOT(wires=wires[:2])
+            qp.RX(x * 2, wires=wires[1])
+            qp.MultiRZ(x * 2, wires=wires[2:])
 
         jaxpr = jax.make_jaxpr(f)(0.5, [0, 1, 2, 3])
         collector = CollectResourceOps()
@@ -48,17 +48,17 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 4
         assert ops == {
-            qml.resource_rep(qml.RX),
-            qml.resource_rep(qml.CNOT),
-            qml.resource_rep(qml.MultiRZ, num_wires=2),
-            qml.resource_rep(qml.MultiRZ, num_wires=3),
+            qp.resource_rep(qp.RX),
+            qp.resource_rep(qp.CNOT),
+            qp.resource_rep(qp.MultiRZ, num_wires=2),
+            qp.resource_rep(qp.MultiRZ, num_wires=3),
         }
 
     @pytest.mark.unit
     def test_for_loop(self):
         """Tests a function with a for loop."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 
             resource_keys = {"x"}
 
@@ -68,12 +68,12 @@ class TestCollectResourceOps:
 
         def f(x, wires):
 
-            wires = qml.math.array(wires, like="jax")
+            wires = qp.math.array(wires, like="jax")
 
-            @qml.for_loop(3)
+            @qp.for_loop(3)
             def loop(i):
-                qml.RX(x, wires=wires[i])
-                qml.MultiRZ(x * 2, wires=[wires[i], wires[i + 1], wires[i + 2]])
+                qp.RX(x, wires=wires[i])
+                qp.MultiRZ(x * 2, wires=[wires[i], wires[i + 1], wires[i + 2]])
                 CustomOp(x * i, wires=wires[1])
 
             loop()
@@ -84,11 +84,11 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 5
         assert ops == {
-            qml.resource_rep(qml.RX),
-            qml.resource_rep(qml.MultiRZ, num_wires=3),
-            qml.resource_rep(CustomOp, x=0),
-            qml.resource_rep(CustomOp, x=0.5),
-            qml.resource_rep(CustomOp, x=1),
+            qp.resource_rep(qp.RX),
+            qp.resource_rep(qp.MultiRZ, num_wires=3),
+            qp.resource_rep(CustomOp, x=0),
+            qp.resource_rep(CustomOp, x=0.5),
+            qp.resource_rep(CustomOp, x=1),
         }
 
     @pytest.mark.unit
@@ -98,11 +98,11 @@ class TestCollectResourceOps:
         def circuit(x, wires):
 
             def f():
-                qml.X(wires[0])
-                qml.RX(x, wires=wires[0])
-                qml.MultiRZ(x * 2, wires=[wires[1], wires[2], wires[3]])
+                qp.X(wires[0])
+                qp.RX(x, wires=wires[0])
+                qp.MultiRZ(x * 2, wires=[wires[1], wires[2], wires[3]])
 
-            qml.ctrl(f, control=wires[4])()
+            qp.ctrl(f, control=wires[4])()
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, [0, 1, 2, 3, 4])
         collector = CollectResourceOps()
@@ -110,9 +110,9 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 3
         assert ops == {
-            qml.decomposition.controlled_resource_rep(qml.X, {}, 1, 0, 0),
-            qml.decomposition.controlled_resource_rep(qml.RX, {}, 1, 0, 0),
-            qml.decomposition.controlled_resource_rep(qml.MultiRZ, {"num_wires": 3}, 1, 0, 0),
+            qp.decomposition.controlled_resource_rep(qp.X, {}, 1, 0, 0),
+            qp.decomposition.controlled_resource_rep(qp.RX, {}, 1, 0, 0),
+            qp.decomposition.controlled_resource_rep(qp.MultiRZ, {"num_wires": 3}, 1, 0, 0),
         }
 
     @pytest.mark.unit
@@ -122,11 +122,11 @@ class TestCollectResourceOps:
         def circuit(x, wires):
 
             def f():
-                qml.X(wires[0])
-                qml.RX(x, wires=wires[0])
-                qml.MultiRZ(x * 2, wires=[wires[1], wires[2], wires[3]])
+                qp.X(wires[0])
+                qp.RX(x, wires=wires[0])
+                qp.MultiRZ(x * 2, wires=[wires[1], wires[2], wires[3]])
 
-            qml.adjoint(f)()
+            qp.adjoint(f)()
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, [0, 1, 2, 3, 4])
         collector = CollectResourceOps()
@@ -134,9 +134,9 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 3
         assert ops == {
-            qml.decomposition.adjoint_resource_rep(qml.X, {}),
-            qml.decomposition.adjoint_resource_rep(qml.RX, {}),
-            qml.decomposition.adjoint_resource_rep(qml.MultiRZ, {"num_wires": 3}),
+            qp.decomposition.adjoint_resource_rep(qp.X, {}),
+            qp.decomposition.adjoint_resource_rep(qp.RX, {}),
+            qp.decomposition.adjoint_resource_rep(qp.MultiRZ, {"num_wires": 3}),
         }
 
     @pytest.mark.unit
@@ -145,16 +145,16 @@ class TestCollectResourceOps:
 
         def circuit(x, wires):
 
-            wires = qml.math.array(wires, like="jax")
+            wires = qp.math.array(wires, like="jax")
 
             def true_fn():
-                qml.CRX(x, wires=wires)
+                qp.CRX(x, wires=wires)
 
             def false_fn():
-                qml.CRZ(x, wires=wires)
+                qp.CRZ(x, wires=wires)
 
-            qml.cond(x > 0.5, true_fn, false_fn)()
-            qml.cond(x > 0.5, qml.RX, qml.RY, elifs=(x > 0.2, qml.RZ))(x, wires=wires[0])
+            qp.cond(x > 0.5, true_fn, false_fn)()
+            qp.cond(x > 0.5, qp.RX, qp.RY, elifs=(x > 0.2, qp.RZ))(x, wires=wires[0])
 
         jaxpr = jax.make_jaxpr(circuit)(0.5, [0, 1])
         collector = CollectResourceOps()
@@ -162,9 +162,9 @@ class TestCollectResourceOps:
         ops = collector.state["ops"]
         assert len(ops) == 5
         assert ops == {
-            qml.resource_rep(qml.CRX),
-            qml.resource_rep(qml.CRZ),
-            qml.resource_rep(qml.RX),
-            qml.resource_rep(qml.RY),
-            qml.resource_rep(qml.RZ),
+            qp.resource_rep(qp.CRX),
+            qp.resource_rep(qp.CRZ),
+            qp.resource_rep(qp.RX),
+            qp.resource_rep(qp.RY),
+            qp.resource_rep(qp.RZ),
         }

@@ -50,15 +50,15 @@ def test_compute_repetitions(order, expected_val):
 @pytest.mark.parametrize(
     "op, fast, expected_norm",
     (
-        (qml.s_prod(0, qml.I(0)), False, 0),
-        (qml.s_prod(1.23, qml.X(0)), False, 1.23),
+        (qp.s_prod(0, qp.I(0)), False, 0),
+        (qp.s_prod(1.23, qp.X(0)), False, 1.23),
         (
-            qml.sum(qml.Z(1), qml.s_prod(-1.23, qml.X(0))),
+            qp.sum(qp.Z(1), qp.s_prod(-1.23, qp.X(0))),
             True,
             2.23,
         ),
         (
-            qml.sum(qml.Z(1), qml.s_prod(-1.23, qml.I(0))),
+            qp.sum(qp.Z(1), qp.s_prod(-1.23, qp.I(0))),
             False,
             2.23,
         ),
@@ -71,10 +71,10 @@ def test_spectral_norm_pauli(op, fast, expected_norm):
 @pytest.mark.parametrize(
     "op, fast, expected_norm",  # computed by hand
     (
-        (qml.Hadamard(0), False, 1),
-        (qml.Hadamard(0), True, 1),
-        (qml.RX(1.23, 0), True, 1),
-        (qml.s_prod(-0.5, qml.Hadamard(0)), False, 0.5),
+        (qp.Hadamard(0), False, 1),
+        (qp.Hadamard(0), True, 1),
+        (qp.RX(1.23, 0), True, 1),
+        (qp.s_prod(-0.5, qp.Hadamard(0)), False, 0.5),
     ),
 )
 def test_spectral_norm_non_pauli(op, fast, expected_norm):
@@ -105,35 +105,35 @@ def test_generate_combinations(num_var, req_sum, expected_tup):
 @pytest.mark.parametrize(
     "A, B, alpha, final_op",  # computed by hand
     (
-        (qml.X(0), qml.Y(0), 0, qml.Y(0)),
-        (qml.X(0), qml.Y(0), 1, qml.s_prod(2j, qml.Z(0))),
-        (qml.X(0), qml.Y(0), 2, qml.s_prod(4, qml.Y(0))),
-        (qml.X(0), qml.Y(0), 3, qml.s_prod(8j, qml.Z(0))),
-        (qml.X(0), qml.Y(1), 3, qml.s_prod(0, qml.I(wires=(0, 1)))),
+        (qp.X(0), qp.Y(0), 0, qp.Y(0)),
+        (qp.X(0), qp.Y(0), 1, qp.s_prod(2j, qp.Z(0))),
+        (qp.X(0), qp.Y(0), 2, qp.s_prod(4, qp.Y(0))),
+        (qp.X(0), qp.Y(0), 3, qp.s_prod(8j, qp.Z(0))),
+        (qp.X(0), qp.Y(1), 3, qp.s_prod(0, qp.I(wires=(0, 1)))),
         (
-            qml.RX(1.23, 0),
-            qml.RZ(-0.5, 0),
+            qp.RX(1.23, 0),
+            qp.RZ(-0.5, 0),
             1,
-            qml.sum(
-                qml.prod(qml.RX(1.23, 0), qml.RZ(-0.5, 0)),
-                qml.s_prod(-1, qml.prod(qml.RZ(-0.5, 0), qml.RX(1.23, 0))),
+            qp.sum(
+                qp.prod(qp.RX(1.23, 0), qp.RZ(-0.5, 0)),
+                qp.s_prod(-1, qp.prod(qp.RZ(-0.5, 0), qp.RX(1.23, 0))),
             ),
         ),
         (
-            qml.s_prod(-0.5, qml.prod(qml.X(0), qml.RX(123, 1))),
-            qml.RZ(-0.5, 2),
+            qp.s_prod(-0.5, qp.prod(qp.X(0), qp.RX(123, 1))),
+            qp.RZ(-0.5, 2),
             4,
-            qml.s_prod(0, qml.I(wires=(0, 1, 2))),
+            qp.s_prod(0, qp.I(wires=(0, 1, 2))),
         ),
     ),
 )
 def test_recursive_nested_commutator(A, B, alpha, final_op):
-    m_expected = qml.matrix(final_op)
+    m_expected = qp.matrix(final_op)
     computed_op = _recursive_nested_commutator(A, B, alpha)
 
     try:
-        m_computed = qml.matrix(computed_op, wire_order=final_op.wires)
-    except qml.operation.DecompositionUndefinedError:
+        m_computed = qp.matrix(computed_op, wire_order=final_op.wires)
+    except qp.operation.DecompositionUndefinedError:
         pr = computed_op.pauli_rep
         pr.simplify()
         m_computed = pr.to_mat(wire_order=final_op.wires.tolist())
@@ -261,7 +261,7 @@ class TestErrorFunctions:
     )
     @pytest.mark.parametrize("time", (1, 0.5, 0.25, 0.01))
     def test_one_norm_error(self, steps, order, time, h_coeffs):
-        h_ops = (qml.s_prod(h_coeffs[0], qml.X(0)), qml.s_prod(h_coeffs[1], qml.Z(0)))
+        h_ops = (qp.s_prod(h_coeffs[0], qp.X(0)), qp.s_prod(h_coeffs[1], qp.Z(0)))
         expected_error = self.one_norm_error_dict[order](h_coeffs[0], h_coeffs[1], time, steps)
 
         computed_error = _one_norm_error(h_ops, time, order, steps, fast=False)
@@ -305,7 +305,7 @@ class TestErrorFunctions:
     )
     @pytest.mark.parametrize("time", (1, 0.5, 0.25, 0.01))
     def test_commutator_error(self, steps, order, time, h_coeffs):
-        h_ops = (qml.s_prod(h_coeffs[0], qml.X(0)), qml.s_prod(h_coeffs[1], qml.Z(0)))
+        h_ops = (qp.s_prod(h_coeffs[0], qp.X(0)), qp.s_prod(h_coeffs[1], qp.Z(0)))
         expected_error = self.commutator_error_dict[order](h_coeffs[0], h_coeffs[1], time, steps)
 
         computed_error = _commutator_error(h_ops, time, order, steps, fast=False)

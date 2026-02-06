@@ -34,8 +34,8 @@ class TestErrors:
         """Test an error is raised if we have differentiable operator arithmetic."""
 
         def f(x):
-            qml.adjoint(qml.RX(x, 0))
-            return qml.expval(qml.Z(0))
+            qp.adjoint(qp.RX(x, 0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5)
 
@@ -46,8 +46,8 @@ class TestErrors:
         """Test that an error is raised for other measurements."""
 
         def f(x):
-            qml.RX(x, 0)
-            return qml.probs(wires=0)
+            qp.RX(x, 0)
+            return qp.probs(wires=0)
 
         jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
 
@@ -58,12 +58,12 @@ class TestErrors:
         """Generic test for a primitive without a registered jvp rule."""
 
         def f(x):
-            @qml.for_loop(3)
+            @qp.for_loop(3)
             def g(i):
-                qml.RX(x, i)
+                qp.RX(x, i)
 
             g()
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
 
@@ -74,8 +74,8 @@ class TestErrors:
         """Test that multiple arguments are not trainable."""
 
         def f(x, y, z):
-            qml.Rot(x, y, z, 0)
-            return qml.expval(qml.Z(0))
+            qp.Rot(x, y, z, 0)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5, 0.6, 0.7).jaxpr
 
@@ -86,36 +86,36 @@ class TestErrors:
         """Test that capture stays enabled if the generator is undefined."""
 
         def f(x):
-            qml.Rot(x, 1.2, 2.3, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.Rot(x, 1.2, 2.3, wires=0)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
 
         with pytest.raises(ValueError):
             execute_and_jvp(jaxpr, (0.5,), (1.0,), num_wires=1)
 
-        assert qml.capture.enabled()
+        assert qp.capture.enabled()
 
     def test_bad_adjoint_op(self):
         """Test capture stays enabled if the adjoint of an operator throws an error."""
 
-        class MyOp(qml.operation.Operator):
+        class MyOp(qp.operation.Operator):
 
             def adjoint(self):
                 raise ValueError
 
             def matrix(self):
-                return qml.X.compute_matrix()
+                return qp.X.compute_matrix()
 
         def f():
             MyOp(wires=0)
-            return qml.expval(qml.Z(0))
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)().jaxpr
         with pytest.raises(ValueError):
             execute_and_jvp(jaxpr, (), (), num_wires=1)
 
-        assert qml.capture.enabled()
+        assert qp.capture.enabled()
 
 
 class TestCorrectResults:
@@ -125,15 +125,15 @@ class TestCorrectResults:
 
         def f(x):
             _ = x + 1
-            qml.RX(0.5, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(0.5, 0)
+            return qp.expval(qp.Z(0))
 
         args = (0.5,)
         tangents = (jax.interpreters.ad.Zero(jax.core.ShapedArray((), float)),)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         [results], [dresults] = execute_and_jvp(jaxpr.jaxpr, args, tangents, num_wires=1)
-        assert qml.math.allclose(results, jnp.cos(0.5))
+        assert qp.math.allclose(results, jnp.cos(0.5))
         assert isinstance(dresults, jax.interpreters.ad.Zero)
 
     @pytest.mark.parametrize("use_jit", (False, True))
@@ -141,8 +141,8 @@ class TestCorrectResults:
         """Test the calculation of results and jvp for a basic circuit."""
 
         def f(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5)
 
@@ -156,18 +156,18 @@ class TestCorrectResults:
         results, dresults = executor(args, tangents)
 
         assert len(results) == 1
-        assert qml.math.allclose(results, jnp.cos(args[0]))
+        assert qp.math.allclose(results, jnp.cos(args[0]))
         assert len(dresults) == 1
-        assert qml.math.allclose(dresults[0], tangents[0] * -jnp.sin(args[0]))
+        assert qp.math.allclose(dresults[0], tangents[0] * -jnp.sin(args[0]))
 
     def test_multiple_in(self):
         """Test that we can differentiate multiple inputs."""
 
         def f(x, y):
-            qml.RX(x, 0)
-            qml.RY(y, 1)
-            qml.CNOT((0, 1))
-            return qml.expval(qml.Y(0))
+            qp.RX(x, 0)
+            qp.RY(y, 1)
+            qp.CNOT((0, 1))
+            return qp.expval(qp.Y(0))
 
         x = jnp.array(0.5)
         y = jnp.array(1.2)
@@ -179,39 +179,39 @@ class TestCorrectResults:
         [res], [dres] = execute_and_jvp(jaxpr, (x, y), (dx, dy), num_wires=2)
 
         expected = -jnp.sin(x) * jnp.sin(y)
-        assert qml.math.allclose(res, expected)
+        assert qp.math.allclose(res, expected)
 
         expected_dres = dx * -jnp.cos(x) * jnp.sin(y) + dy * -jnp.sin(x) * jnp.cos(y)
-        assert qml.math.allclose(dres, expected_dres)
+        assert qp.math.allclose(dres, expected_dres)
 
     def test_multiple_output(self):
         """Test we can compute the jvp with multiple outputs."""
 
         def f(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.Z(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.X(0)), qp.expval(qp.Y(0)), qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
 
         x = -0.5
         res, dres = execute_and_jvp(jaxpr, (x,), (2.0,), num_wires=1)
 
-        assert qml.math.allclose(res[0], 0)
-        assert qml.math.allclose(res[1], -jnp.sin(x))
-        assert qml.math.allclose(res[2], jnp.cos(x))
+        assert qp.math.allclose(res[0], 0)
+        assert qp.math.allclose(res[1], -jnp.sin(x))
+        assert qp.math.allclose(res[2], jnp.cos(x))
 
-        assert qml.math.allclose(dres[0], 0)
-        assert qml.math.allclose(dres[1], 2.0 * -jnp.cos(x))
-        assert qml.math.allclose(dres[2], 2.0 * -jnp.sin(x))
+        assert qp.math.allclose(dres[0], 0)
+        assert qp.math.allclose(dres[1], 2.0 * -jnp.cos(x))
+        assert qp.math.allclose(dres[2], 2.0 * -jnp.sin(x))
 
     def test_classical_preprocessing(self):
         """Test that we can perform classical preprocessing of variables."""
 
         def f(x):
             y = x**2
-            qml.RX(y[0], 0)
-            qml.RX(y[1], 1)
-            return qml.expval(qml.Z(0) @ qml.Z(1))
+            qp.RX(y[0], 0)
+            qp.RX(y[1], 1)
+            return qp.expval(qp.Z(0) @ qp.Z(1))
 
         x = jnp.array([1.5, 2.5])
         dx = jnp.array([2.0, 3.0])
@@ -220,20 +220,20 @@ class TestCorrectResults:
         [res], [dres] = execute_and_jvp(jaxpr, (x,), (dx,), num_wires=2)
 
         expected = jnp.cos(x[0] ** 2) * jnp.cos(x[1] ** 2)
-        assert qml.math.allclose(res, expected)
+        assert qp.math.allclose(res, expected)
         dexpected = (
             -jnp.sin(x[0] ** 2) * 2 * x[0] * dx[0] * jnp.cos(x[1] ** 2)
             + jnp.cos(x[0] ** 2) * -jnp.sin(x[1] ** 2) * 2 * x[1] * dx[1]
         )
-        assert qml.math.allclose(dres, dexpected)
+        assert qp.math.allclose(dres, dexpected)
 
     def test_jaxpr_consts(self):
         """Test that we can execute jaxpr with consts."""
 
         def f():
             x = jnp.array([1.0])
-            qml.RX(x[0], 0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x[0], 0)
+            return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)().jaxpr
 
@@ -241,5 +241,5 @@ class TestCorrectResults:
         dconst = jnp.array([0.25])
         [res], [dres] = execute_and_jvp(jaxpr, (const,), (dconst,), num_wires=1)
 
-        assert qml.math.allclose(res, jnp.cos(1.2))
-        assert qml.math.allclose(dres, dconst[0] * -jnp.sin(1.2))
+        assert qp.math.allclose(res, jnp.cos(1.2))
+        assert qp.math.allclose(dres, dconst[0] * -jnp.sin(1.2))

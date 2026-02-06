@@ -27,25 +27,25 @@ class TestTracking:
 
     def test_tracker_set_upon_initialization(self):
         """Test that a new tracker is intialized with each device."""
-        assert qml.device("default.qubit").tracker is not qml.device("default.qubit").tracker
+        assert qp.device("default.qubit").tracker is not qp.device("default.qubit").tracker
 
     def test_tracker_not_updated_if_not_active(self):
         """Test that the tracker is not updated if not active."""
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         assert len(dev.tracker.totals) == 0
 
-        dev.execute(qml.tape.QuantumScript())
+        dev.execute(qp.tape.QuantumScript())
         assert len(dev.tracker.totals) == 0
         assert len(dev.tracker.history) == 0
 
     def test_tracking_batch(self):
         """Test that the new default qubit integrates with the tracker."""
 
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        qs = qp.tape.QuantumScript([], [qp.expval(qp.PauliZ(0))])
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
         config = ExecutionConfig(gradient_method="adjoint")
-        with qml.Tracker(dev) as tracker:
+        with qp.Tracker(dev) as tracker:
             dev.execute(qs)
             dev.compute_derivatives(qs, config)
             dev.execute([qs, qs])  # and a second time
@@ -108,11 +108,11 @@ class TestTracking:
         """Test that the execute_and_compute_* calls are being tracked for the
         new default qubit device"""
 
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        dev = qml.device("default.qubit")
+        qs = qp.tape.QuantumScript([], [qp.expval(qp.PauliZ(0))])
+        dev = qp.device("default.qubit")
         config = ExecutionConfig(gradient_method="adjoint")
 
-        with qml.Tracker(dev) as tracker:
+        with qp.Tracker(dev) as tracker:
             dev.compute_derivatives(qs, config)
             dev.execute_and_compute_derivatives([qs] * 2, config)
             dev.compute_jvp([qs] * 3, [(0,)] * 3, config)
@@ -146,16 +146,16 @@ class TestTracking:
 
     def test_tracking_resources(self):
         """Test that resources are tracked for the new default qubit device."""
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.CNOT(wires=[0, 2]),
-                qml.RZ(1.23, 1),
-                qml.CNOT(wires=[1, 2]),
-                qml.Hadamard(0),
+                qp.Hadamard(0),
+                qp.Hadamard(1),
+                qp.CNOT(wires=[0, 2]),
+                qp.RZ(1.23, 1),
+                qp.CNOT(wires=[1, 2]),
+                qp.Hadamard(0),
             ],
-            [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliY(2))],
+            [qp.expval(qp.PauliZ(1)), qp.expval(qp.PauliY(2))],
         )
 
         expected_resources = SpecsResources(
@@ -166,8 +166,8 @@ class TestTracking:
             depth=3,
         )
 
-        dev = qml.device("default.qubit")
-        with qml.Tracker(dev) as tracker:
+        dev = qp.device("default.qubit")
+        with qp.Tracker(dev) as tracker:
             dev.execute(qs)
 
         assert len(tracker.history["resources"]) == 1
@@ -177,35 +177,35 @@ class TestTracking:
         """Test the number of times the device is executed over a QNode's
         lifetime is tracked by the device's tracker."""
 
-        dev_1 = qml.device("default.qubit", wires=2)
+        dev_1 = qp.device("default.qubit", wires=2)
 
         def circuit_1(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        node_1 = qml.QNode(circuit_1, dev_1)
+        node_1 = qp.QNode(circuit_1, dev_1)
         num_evals_1 = 10
 
-        with qml.Tracker(dev_1, persistent=True) as tracker1:
+        with qp.Tracker(dev_1, persistent=True) as tracker1:
             for _ in range(num_evals_1):
                 node_1(0.432, np.array([0.12, 0.5, 3.2]))
         assert tracker1.totals["executions"] == 3 * num_evals_1
         assert tracker1.totals["simulations"] == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit", wires=2)
+        dev_2 = qp.device("default.qubit", wires=2)
 
         def circuit_2(x):
-            qml.RX(x, wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        node_2 = qml.QNode(circuit_2, dev_2)
+        node_2 = qp.QNode(circuit_2, dev_2)
         num_evals_2 = 5
 
-        with qml.Tracker(dev_2) as tracker2:
+        with qp.Tracker(dev_2) as tracker2:
             for _ in range(num_evals_2):
                 node_2(np.array([0.432, 0.61, 8.2]))
         assert tracker2.totals["simulations"] == num_evals_2
@@ -213,11 +213,11 @@ class TestTracking:
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(y):
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        node_3 = qml.QNode(circuit_3, dev_1)
+        node_3 = qp.QNode(circuit_3, dev_1)
         num_evals_3 = 7
 
         with tracker1:
@@ -227,44 +227,44 @@ class TestTracking:
         assert tracker1.totals["executions"] == 3 * num_evals_1 + 2 * num_evals_3
 
 
-H0 = qml.Hamiltonian([1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+H0 = qp.Hamiltonian([1.0, 1.0], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)])
 
 
 shot_testing_combos = [
     # expval combinations
-    ([qml.expval(qml.X(0))], 1, 10),
-    ([qml.expval(qml.X(0)), qml.expval(qml.Y(0))], 2, 20),
+    ([qp.expval(qp.X(0))], 1, 10),
+    ([qp.expval(qp.X(0)), qp.expval(qp.Y(0))], 2, 20),
     # Hamiltonian test cases
-    ([qml.expval(qml.Hamiltonian([1, 0.5, 1], [qml.X(0), qml.Y(0), qml.X(1)]))], 2, 20),
-    ([qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.X(1)], grouping_type="qwc"))], 1, 10),
-    ([qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.Y(0)], grouping_type="qwc"))], 2, 20),
+    ([qp.expval(qp.Hamiltonian([1, 0.5, 1], [qp.X(0), qp.Y(0), qp.X(1)]))], 2, 20),
+    ([qp.expval(qp.Hamiltonian([1, 1], [qp.X(0), qp.X(1)], grouping_type="qwc"))], 1, 10),
+    ([qp.expval(qp.Hamiltonian([1, 1], [qp.X(0), qp.Y(0)], grouping_type="qwc"))], 2, 20),
     # op arithmetic test cases
-    ([qml.expval(qml.sum(qml.X(0), qml.Y(0)))], 2, 20),
-    ([qml.expval(qml.sum(qml.X(0), qml.X(0) @ qml.X(1)))], 1, 10),
-    ([qml.expval(qml.sum(qml.X(0), qml.Hadamard(0)))], 2, 20),
-    ([qml.expval(qml.sum(qml.X(0), qml.Y(1) @ qml.X(1), grouping_type="qwc"))], 1, 10),
+    ([qp.expval(qp.sum(qp.X(0), qp.Y(0)))], 2, 20),
+    ([qp.expval(qp.sum(qp.X(0), qp.X(0) @ qp.X(1)))], 1, 10),
+    ([qp.expval(qp.sum(qp.X(0), qp.Hadamard(0)))], 2, 20),
+    ([qp.expval(qp.sum(qp.X(0), qp.Y(1) @ qp.X(1), grouping_type="qwc"))], 1, 10),
     (
         [
-            qml.expval(qml.prod(qml.X(0), qml.X(1))),
-            qml.expval(qml.prod(qml.X(1), qml.X(2))),
+            qp.expval(qp.prod(qp.X(0), qp.X(1))),
+            qp.expval(qp.prod(qp.X(1), qp.X(2))),
         ],
         1,
         10,
     ),
     # computational basis measurements
-    ([qml.probs(wires=(0, 1)), qml.sample(wires=(0, 1))], 1, 10),
-    ([qml.probs(wires=(0, 1)), qml.sample(wires=(0, 1)), qml.expval(qml.X(0))], 2, 20),
+    ([qp.probs(wires=(0, 1)), qp.sample(wires=(0, 1))], 1, 10),
+    ([qp.probs(wires=(0, 1)), qp.sample(wires=(0, 1)), qp.expval(qp.X(0))], 2, 20),
     # classical shadows
-    ([qml.shadow_expval(H0)], 10, 10),
-    ([qml.shadow_expval(H0), qml.probs(wires=(0, 1))], 11, 20),
-    ([qml.classical_shadow(wires=(0, 1))], 10, 10),
+    ([qp.shadow_expval(H0)], 10, 10),
+    ([qp.shadow_expval(H0), qp.probs(wires=(0, 1))], 11, 20),
+    ([qp.classical_shadow(wires=(0, 1))], 10, 10),
 ]
 
 
 @pytest.mark.parametrize("mps, expected_exec, expected_shots", shot_testing_combos)
 def test_single_expval(mps, expected_exec, expected_shots):
-    dev = qml.device("default.qubit")
-    tape = qml.tape.QuantumScript([], mps, shots=10)
+    dev = qp.device("default.qubit")
+    tape = qp.tape.QuantumScript([], mps, shots=10)
 
     with dev.tracker:
         dev.execute(tape)
@@ -274,9 +274,9 @@ def test_single_expval(mps, expected_exec, expected_shots):
     assert dev.tracker.totals["shots"] == expected_shots
 
     if not isinstance(
-        tape.measurements[0], (qml.measurements.ShadowExpvalMP, qml.measurements.ClassicalShadowMP)
+        tape.measurements[0], (qp.measurements.ShadowExpvalMP, qp.measurements.ClassicalShadowMP)
     ):
-        tape = qml.tape.QuantumScript([qml.RX((1.2, 2.3, 3.4), wires=0)], mps, shots=10)
+        tape = qp.tape.QuantumScript([qp.RX((1.2, 2.3, 3.4), wires=0)], mps, shots=10)
 
         with dev.tracker:
             dev.execute(tape)
@@ -288,12 +288,12 @@ def test_single_expval(mps, expected_exec, expected_shots):
 
 def test_multiple_expval_with_prod():
     mps, expected_exec, expected_shots = (
-        [qml.expval(qml.PauliX(0)), qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))],
+        [qp.expval(qp.PauliX(0)), qp.expval(qp.prod(qp.PauliX(0), qp.PauliY(1)))],
         1,
         10,
     )
-    dev = qml.device("default.qubit")
-    tape = qml.tape.QuantumScript([], mps, shots=10)
+    dev = qp.device("default.qubit")
+    tape = qp.tape.QuantumScript([], mps, shots=10)
 
     with dev.tracker:
         dev.execute(tape)

@@ -24,14 +24,14 @@ from pennylane.workflow import construct_execution_config
 
 def dummycircuit():
     """Dummy function."""
-    qml.X(0)
-    return qml.expval(qml.Z(0))
+    qp.X(0)
+    return qp.expval(qp.Z(0))
 
 
 @pytest.mark.parametrize("device_name", ["default.qubit", "lightning.qubit"])
 def test_unresolved_construction(device_name, interface):
     """Test that an unresolved execution config is created correctly."""
-    qn = qml.QNode(dummycircuit, qml.device(device_name, wires=1), interface=interface)
+    qn = qp.QNode(dummycircuit, qp.device(device_name, wires=1), interface=interface)
 
     config = construct_execution_config(qn, resolve=False)()
 
@@ -54,7 +54,7 @@ def test_unresolved_construction(device_name, interface):
 
 def test_resolved_construction_lightning_qubit(interface):
     """Test that an resolved execution config is created correctly."""
-    qn = qml.QNode(dummycircuit, qml.device("lightning.qubit", wires=1), interface=interface)
+    qn = qp.QNode(dummycircuit, qp.device("lightning.qubit", wires=1), interface=interface)
 
     config = construct_execution_config(qn, resolve=True)()
 
@@ -78,7 +78,7 @@ def test_resolved_construction_lightning_qubit(interface):
 
 def test_resolved_construction_default_qubit(interface):
     """Test that an resolved execution config is created correctly."""
-    qn = qml.QNode(dummycircuit, qml.device("default.qubit", wires=1), interface=interface)
+    qn = qp.QNode(dummycircuit, qp.device("default.qubit", wires=1), interface=interface)
 
     config = construct_execution_config(qn, resolve=True)()
 
@@ -107,24 +107,24 @@ def test_resolved_construction_default_qubit(interface):
 def test_jax_interface(mcm_method, postselect_mode, interface):
     """Test constructing config with JAX interface and different MCMConfig settings."""
 
-    @qml.qnode(
-        qml.device("default.qubit"),
+    @qp.qnode(
+        qp.device("default.qubit"),
         interface=interface,
         mcm_method=mcm_method,
         postselect_mode=postselect_mode,
     )
     def circuit():
-        qml.X(0)
-        return qml.expval(qml.Z(0))
+        qp.X(0)
+        return qp.expval(qp.Z(0))
 
-    config = construct_execution_config(qml.set_shots(circuit, 100))()
+    config = construct_execution_config(qp.set_shots(circuit, 100))()
 
     expected_mcm_config = MCMConfig(mcm_method="one-shot", postselect_mode="pad-invalid-samples")
     expected_config = ExecutionConfig(
         grad_on_execution=False,
         use_device_gradient=False,
         use_device_jacobian_product=False,
-        gradient_method=qml.gradients.param_shift,
+        gradient_method=qp.gradients.param_shift,
         gradient_keyword_arguments={},
         interface=interface,
         derivative_order=1,

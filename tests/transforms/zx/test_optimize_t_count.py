@@ -35,7 +35,7 @@ def test_import_pyzx_error(monkeypatch):
         qs = QuantumScript(ops=[], measurements=[])
 
         with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-            qml.transforms.zx.optimize_t_count(qs)
+            qp.transforms.zx.optimize_t_count(qs)
 
 
 @pytest.mark.external
@@ -45,17 +45,17 @@ class TestOptimizeTCount:
         "gate",
         (
             # 1-qubit hermitian gates
-            qml.Identity(wires=0),
-            qml.PauliX(wires=0),
-            qml.PauliY(wires=0),
-            qml.PauliZ(wires=0),
-            qml.Hadamard(wires=0),
+            qp.Identity(wires=0),
+            qp.PauliX(wires=0),
+            qp.PauliY(wires=0),
+            qp.PauliZ(wires=0),
+            qp.Hadamard(wires=0),
             # 2-qubit hermitian gates
-            qml.CNOT(wires=[0, 1]),
-            qml.CY(wires=[0, 1]),
-            qml.CZ(wires=[0, 1]),
-            qml.CH(wires=[0, 1]),
-            qml.SWAP(wires=[0, 1]),
+            qp.CNOT(wires=[0, 1]),
+            qp.CY(wires=[0, 1]),
+            qp.CZ(wires=[0, 1]),
+            qp.CH(wires=[0, 1]),
+            qp.SWAP(wires=[0, 1]),
         ),
     )
     def test_hermitian_involutory_gates_cancellation(self, gate):
@@ -63,42 +63,42 @@ class TestOptimizeTCount:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qp.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == []
 
     @pytest.mark.parametrize(
         "num_gates, expected_ops",
         (
-            (1, [qml.S(0)]),
-            (2, [qml.Z(0)]),
+            (1, [qp.S(0)]),
+            (2, [qp.Z(0)]),
             (4, []),
         ),
     )
     def test_S_gate_simplification(self, num_gates, expected_ops):
         """Test S gate simplification/cancellation."""
-        ops = [qml.S(0)] * num_gates
+        ops = [qp.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qp.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == expected_ops
 
     @pytest.mark.parametrize(
         "num_gates, expected_ops",
         (
-            (1, [qml.T(0)]),
-            (2, [qml.S(0)]),
-            (4, [qml.Z(0)]),
+            (1, [qp.T(0)]),
+            (2, [qp.S(0)]),
+            (4, [qp.Z(0)]),
             (8, []),
         ),
     )
     def test_T_gate_simplification(self, num_gates, expected_ops):
         """Test T gate simplification/cancellation."""
-        ops = [qml.T(0)] * num_gates
+        ops = [qp.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qp.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -106,15 +106,15 @@ class TestOptimizeTCount:
         "gate",
         (
             # non-Clifford or T gates
-            qml.RX(0.5, wires=0),
-            qml.RY(0.5, wires=0),
-            qml.RZ(0.5, wires=0),
-            qml.U1(0.1, wires=0),
-            qml.U2(0.1, 0.2, wires=0),
-            qml.U3(0.1, 0.2, 0.3, wires=0),
-            qml.CRX(0.5, wires=[0, 1]),
-            qml.CRY(0.5, wires=[0, 1]),
-            qml.CRZ(0.5, wires=[0, 1]),
+            qp.RX(0.5, wires=0),
+            qp.RY(0.5, wires=0),
+            qp.RZ(0.5, wires=0),
+            qp.U1(0.1, wires=0),
+            qp.U2(0.1, 0.2, wires=0),
+            qp.U3(0.1, 0.2, 0.3, wires=0),
+            qp.CRX(0.5, wires=[0, 1]),
+            qp.CRY(0.5, wires=[0, 1]),
+            qp.CRZ(0.5, wires=[0, 1]),
         ),
     )
     def test_non_clifford_or_T_gates_error(self, gate):
@@ -122,28 +122,28 @@ class TestOptimizeTCount:
         qs = QuantumScript(ops=[gate])
 
         with pytest.raises(TypeError, match=r"The input circuit must be a Clifford \+ T circuit."):
-            qml.transforms.zx.optimize_t_count(qs)
+            qp.transforms.zx.optimize_t_count(qs)
 
     @pytest.mark.parametrize(
         "angle, expected_ops",
         (
             (0, []),
-            (0.25 * np.pi, [qml.T(0)]),
-            (0.5 * np.pi, [qml.S(0)]),
-            (0.75 * np.pi, [qml.Z(0), qml.adjoint(qml.T(0))]),
-            (np.pi, [qml.Z(0)]),
-            (1.25 * np.pi, [qml.Z(0), qml.T(0)]),
-            (1.5 * np.pi, [qml.adjoint(qml.S(0))]),
-            (1.75 * np.pi, [qml.adjoint(qml.T(0))]),
+            (0.25 * np.pi, [qp.T(0)]),
+            (0.5 * np.pi, [qp.S(0)]),
+            (0.75 * np.pi, [qp.Z(0), qp.adjoint(qp.T(0))]),
+            (np.pi, [qp.Z(0)]),
+            (1.25 * np.pi, [qp.Z(0), qp.T(0)]),
+            (1.5 * np.pi, [qp.adjoint(qp.S(0))]),
+            (1.75 * np.pi, [qp.adjoint(qp.T(0))]),
             (2 * np.pi, []),
         ),
     )
     def test_RZ_rotation_with_Clifford_T_angle(self, angle, expected_ops):
         """Test that RZ rotation gates are transformed into the corresponding sequence of Clifford + T gates."""
-        ops = [qml.RZ(angle, wires=0)]
+        ops = [qp.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+        (new_qs,), _ = qp.transforms.zx.optimize_t_count(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -151,32 +151,32 @@ class TestOptimizeTCount:
         "measurements",
         (
             [],
-            [qml.expval(qml.Z(0))],
-            [qml.probs()],
-            [qml.state()],
+            [qp.expval(qp.Z(0))],
+            [qp.probs()],
+            [qp.state()],
         ),
     )
     def test_transformed_tape(self, measurements):
         """Test that the operations of the transformed tape match the expected operations
         and that the original measurements are not touched."""
         ops = [
-            qml.T(wires=0),
-            qml.CNOT(wires=[0, 1]),
-            qml.S(wires=0),
-            qml.T(wires=0),
-            qml.T(wires=1),
-            qml.CNOT(wires=[0, 2]),
-            qml.T(wires=1),
+            qp.T(wires=0),
+            qp.CNOT(wires=[0, 1]),
+            qp.S(wires=0),
+            qp.T(wires=0),
+            qp.T(wires=1),
+            qp.CNOT(wires=[0, 2]),
+            qp.T(wires=1),
         ]
-        original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+        original_tape = qp.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        (transformed_tape,), _ = qml.transforms.zx.optimize_t_count(original_tape)
+        (transformed_tape,), _ = qp.transforms.zx.optimize_t_count(original_tape)
 
         expected_ops = [
-            qml.Z(wires=0),
-            qml.CNOT(wires=[0, 1]),
-            qml.S(wires=1),
-            qml.CNOT(wires=[0, 2]),
+            qp.Z(wires=0),
+            qp.CNOT(wires=[0, 1]),
+            qp.S(wires=1),
+            qp.CNOT(wires=[0, 2]),
         ]
 
         assert transformed_tape.operations == expected_ops
@@ -186,32 +186,32 @@ class TestOptimizeTCount:
         """Test that the output state returned by the transformed QNode matches
         the output state returned by the original QNode up to a global phase."""
         num_wires = 3
-        device = qml.device("default.qubit", wires=num_wires)
+        device = qp.device("default.qubit", wires=num_wires)
 
-        @qml.qnode(device)
+        @qp.qnode(device)
         def original_circ():
             for i in range(num_wires):
-                qml.Hadamard(wires=i)
-            qml.T(wires=0)
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(np.pi / 2, wires=0)
-            qml.S(wires=2)
-            qml.CNOT(wires=[1, 2])
-            qml.RZ(-np.pi, wires=2)
-            return qml.state()
+                qp.Hadamard(wires=i)
+            qp.T(wires=0)
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.RZ(np.pi / 2, wires=0)
+            qp.S(wires=2)
+            qp.CNOT(wires=[1, 2])
+            qp.RZ(-np.pi, wires=2)
+            return qp.state()
 
-        reduced_circ = qml.transforms.zx.optimize_t_count(original_circ)
+        reduced_circ = qp.transforms.zx.optimize_t_count(original_circ)
 
         state1 = original_circ()
         state2 = reduced_circ()
 
         # test that the states are equivalent up to a global phase
-        check = qml.math.fidelity_statevector(state1, state2)
+        check = qp.math.fidelity_statevector(state1, state2)
         assert np.isclose(check, 1)
 
-        u1 = qml.matrix(original_circ, wire_order=range(num_wires))()
-        u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))()
+        u1 = qp.matrix(original_circ, wire_order=range(num_wires))()
+        u2 = qp.matrix(reduced_circ, wire_order=range(num_wires))()
 
         # test that the unitaries are equivalent up to a global phase
         prod = u1 @ np.conj(u2.T)

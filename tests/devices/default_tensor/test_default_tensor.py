@@ -36,100 +36,100 @@ pytestmark = pytest.mark.external
 
 # gates for which device support is tested
 operations_list = {
-    "Identity": qml.Identity(wires=[0]),
-    "Identity()": qml.Identity(),
-    "BlockEncode": qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-    "CNOT": qml.CNOT(wires=[0, 1]),
-    "CRX": qml.CRX(1.234, wires=[0, 1]),
-    "CRY": qml.CRY(1.234, wires=[0, 1]),
-    "CRZ": qml.CRZ(1.234, wires=[0, 1]),
-    "CRot": qml.CRot(1.234, 0, 0, wires=[0, 1]),
-    "CSWAP": qml.CSWAP(wires=[0, 1, 2]),
-    "CZ": qml.CZ(wires=[0, 1]),
-    "CCZ": qml.CCZ(wires=[0, 1, 2]),
-    "CY": qml.CY(wires=[0, 1]),
-    "CH": qml.CH(wires=[0, 1]),
-    "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
-    "Hadamard": qml.Hadamard(wires=[0]),
-    "MultiRZ": qml.MultiRZ(1.234, wires=[0, 1]),
-    "MultiRZ(1)": qml.MultiRZ(1.234, wires=[0]),
-    "PauliX": qml.X(0),
-    "PauliY": qml.Y(0),
-    "PauliZ": qml.Z(0),
-    "X": qml.X([0]),
-    "Y": qml.Y([0]),
-    "Z": qml.Z([0]),
-    "PhaseShift": qml.PhaseShift(1.234, wires=[0]),
-    "PCPhase": qml.PCPhase(1.234, 1, wires=[0, 1]),
-    "ControlledPhaseShift": qml.ControlledPhaseShift(1.234, wires=[0, 1]),
-    "CPhaseShift00": qml.CPhaseShift00(1.234, wires=[0, 1]),
-    "CPhaseShift01": qml.CPhaseShift01(1.234, wires=[0, 1]),
-    "CPhaseShift10": qml.CPhaseShift10(1.234, wires=[0, 1]),
-    "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
-    "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
-    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
-    "MultiControlledX": qml.MultiControlledX(wires=[1, 2, 0]),
-    "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
-    "RX": qml.RX(1.234, wires=[0]),
-    "RY": qml.RY(1.234, wires=[0]),
-    "RZ": qml.RZ(1.234, wires=[0]),
-    "Rot": qml.Rot(1.234, 0, 0, wires=[0]),
-    "S": qml.S(wires=[0]),
-    "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
-    "SWAP": qml.SWAP(wires=[0, 1]),
-    "ISWAP": qml.ISWAP(wires=[0, 1]),
-    "PSWAP": qml.PSWAP(1.234, wires=[0, 1]),
-    "ECR": qml.ECR(wires=[0, 1]),
-    "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
-    "T": qml.T(wires=[0]),
-    "Adjoint(T)": qml.adjoint(qml.T(wires=[0])),
-    "SX": qml.SX(wires=[0]),
-    "Adjoint(SX)": qml.adjoint(qml.SX(wires=[0])),
-    "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
-    "QFT": qml.templates.QFT(wires=[0, 1, 2]),
-    "IsingXX": qml.IsingXX(1.234, wires=[0, 1]),
-    "IsingYY": qml.IsingYY(1.234, wires=[0, 1]),
-    "IsingZZ": qml.IsingZZ(1.234, wires=[0, 1]),
-    "IsingXY": qml.IsingXY(1.234, wires=[0, 1]),
-    "SingleExcitation": qml.SingleExcitation(1.234, wires=[0, 1]),
-    "SingleExcitationPlus": qml.SingleExcitationPlus(1.234, wires=[0, 1]),
-    "SingleExcitationMinus": qml.SingleExcitationMinus(1.234, wires=[0, 1]),
-    "DoubleExcitation": qml.DoubleExcitation(1.234, wires=[0, 1, 2, 3]),
-    "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
-    "QubitSum": qml.QubitSum(wires=[0, 1, 2]),
-    "PauliRot": qml.PauliRot(1.234, "XXYY", wires=[0, 1, 2, 3]),
-    "PauliRot(1)": qml.PauliRot(1.234, "X", wires=[0]),
-    "U1": qml.U1(1.234, wires=0),
-    "U2": qml.U2(1.234, 0.2, wires=0),
-    "U3": qml.U3(1.234, 0.2, 0.3, wires=0),
-    "SISWAP": qml.SISWAP(wires=[0, 1]),
-    "Adjoint(SISWAP)": qml.adjoint(qml.SISWAP(wires=[0, 1])),
-    "OrbitalRotation": qml.OrbitalRotation(1.234, wires=[0, 1, 2, 3]),
-    "FermionicSWAP": qml.FermionicSWAP(1.234, wires=[0, 1]),
-    "GlobalPhase": qml.GlobalPhase(1.23423, wires=[0, 1]),
-    "GlobalPhase()": qml.GlobalPhase(1.23423),
+    "Identity": qp.Identity(wires=[0]),
+    "Identity()": qp.Identity(),
+    "BlockEncode": qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+    "CNOT": qp.CNOT(wires=[0, 1]),
+    "CRX": qp.CRX(1.234, wires=[0, 1]),
+    "CRY": qp.CRY(1.234, wires=[0, 1]),
+    "CRZ": qp.CRZ(1.234, wires=[0, 1]),
+    "CRot": qp.CRot(1.234, 0, 0, wires=[0, 1]),
+    "CSWAP": qp.CSWAP(wires=[0, 1, 2]),
+    "CZ": qp.CZ(wires=[0, 1]),
+    "CCZ": qp.CCZ(wires=[0, 1, 2]),
+    "CY": qp.CY(wires=[0, 1]),
+    "CH": qp.CH(wires=[0, 1]),
+    "DiagonalQubitUnitary": qp.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
+    "Hadamard": qp.Hadamard(wires=[0]),
+    "MultiRZ": qp.MultiRZ(1.234, wires=[0, 1]),
+    "MultiRZ(1)": qp.MultiRZ(1.234, wires=[0]),
+    "PauliX": qp.X(0),
+    "PauliY": qp.Y(0),
+    "PauliZ": qp.Z(0),
+    "X": qp.X([0]),
+    "Y": qp.Y([0]),
+    "Z": qp.Z([0]),
+    "PhaseShift": qp.PhaseShift(1.234, wires=[0]),
+    "PCPhase": qp.PCPhase(1.234, 1, wires=[0, 1]),
+    "ControlledPhaseShift": qp.ControlledPhaseShift(1.234, wires=[0, 1]),
+    "CPhaseShift00": qp.CPhaseShift00(1.234, wires=[0, 1]),
+    "CPhaseShift01": qp.CPhaseShift01(1.234, wires=[0, 1]),
+    "CPhaseShift10": qp.CPhaseShift10(1.234, wires=[0, 1]),
+    "QubitUnitary": qp.QubitUnitary(np.eye(2), wires=[0]),
+    "SpecialUnitary": qp.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
+    "ControlledQubitUnitary": qp.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
+    "MultiControlledX": qp.MultiControlledX(wires=[1, 2, 0]),
+    "IntegerComparator": qp.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
+    "RX": qp.RX(1.234, wires=[0]),
+    "RY": qp.RY(1.234, wires=[0]),
+    "RZ": qp.RZ(1.234, wires=[0]),
+    "Rot": qp.Rot(1.234, 0, 0, wires=[0]),
+    "S": qp.S(wires=[0]),
+    "Adjoint(S)": qp.adjoint(qp.S(wires=[0])),
+    "SWAP": qp.SWAP(wires=[0, 1]),
+    "ISWAP": qp.ISWAP(wires=[0, 1]),
+    "PSWAP": qp.PSWAP(1.234, wires=[0, 1]),
+    "ECR": qp.ECR(wires=[0, 1]),
+    "Adjoint(ISWAP)": qp.adjoint(qp.ISWAP(wires=[0, 1])),
+    "T": qp.T(wires=[0]),
+    "Adjoint(T)": qp.adjoint(qp.T(wires=[0])),
+    "SX": qp.SX(wires=[0]),
+    "Adjoint(SX)": qp.adjoint(qp.SX(wires=[0])),
+    "Toffoli": qp.Toffoli(wires=[0, 1, 2]),
+    "QFT": qp.templates.QFT(wires=[0, 1, 2]),
+    "IsingXX": qp.IsingXX(1.234, wires=[0, 1]),
+    "IsingYY": qp.IsingYY(1.234, wires=[0, 1]),
+    "IsingZZ": qp.IsingZZ(1.234, wires=[0, 1]),
+    "IsingXY": qp.IsingXY(1.234, wires=[0, 1]),
+    "SingleExcitation": qp.SingleExcitation(1.234, wires=[0, 1]),
+    "SingleExcitationPlus": qp.SingleExcitationPlus(1.234, wires=[0, 1]),
+    "SingleExcitationMinus": qp.SingleExcitationMinus(1.234, wires=[0, 1]),
+    "DoubleExcitation": qp.DoubleExcitation(1.234, wires=[0, 1, 2, 3]),
+    "QubitCarry": qp.QubitCarry(wires=[0, 1, 2, 3]),
+    "QubitSum": qp.QubitSum(wires=[0, 1, 2]),
+    "PauliRot": qp.PauliRot(1.234, "XXYY", wires=[0, 1, 2, 3]),
+    "PauliRot(1)": qp.PauliRot(1.234, "X", wires=[0]),
+    "U1": qp.U1(1.234, wires=0),
+    "U2": qp.U2(1.234, 0.2, wires=0),
+    "U3": qp.U3(1.234, 0.2, 0.3, wires=0),
+    "SISWAP": qp.SISWAP(wires=[0, 1]),
+    "Adjoint(SISWAP)": qp.adjoint(qp.SISWAP(wires=[0, 1])),
+    "OrbitalRotation": qp.OrbitalRotation(1.234, wires=[0, 1, 2, 3]),
+    "FermionicSWAP": qp.FermionicSWAP(1.234, wires=[0, 1]),
+    "GlobalPhase": qp.GlobalPhase(1.23423, wires=[0, 1]),
+    "GlobalPhase()": qp.GlobalPhase(1.23423),
 }
 
 all_ops = operations_list.keys()
 
 # observables for which device support is tested
 observables_list = {
-    "Identity": qml.Identity(wires=[0]),
-    "Hadamard": qml.Hadamard(wires=[0]),
-    "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
-    "PauliX": qml.PauliX(0),
-    "PauliY": qml.PauliY(0),
-    "PauliZ": qml.PauliZ(0),
-    "X": qml.X(0),
-    "Y": qml.Y(0),
-    "Z": qml.Z(0),
+    "Identity": qp.Identity(wires=[0]),
+    "Hadamard": qp.Hadamard(wires=[0]),
+    "Hermitian": qp.Hermitian(np.eye(2), wires=[0]),
+    "PauliX": qp.PauliX(0),
+    "PauliY": qp.PauliY(0),
+    "PauliZ": qp.PauliZ(0),
+    "X": qp.X(0),
+    "Y": qp.Y(0),
+    "Z": qp.Z(0),
     "Projector": [
-        qml.Projector(np.array([1]), wires=[0]),
-        qml.Projector(np.array([0, 1]), wires=[0]),
+        qp.Projector(np.array([1]), wires=[0]),
+        qp.Projector(np.array([0, 1]), wires=[0]),
     ],
-    "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
-    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(0)]),
-    "LinearCombination": qml.ops.LinearCombination([1, 1], [qml.Z(0), qml.X(0)]),
+    "SparseHamiltonian": qp.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
+    "Hamiltonian": qp.Hamiltonian([1, 1], [qp.Z(0), qp.X(0)]),
+    "LinearCombination": qp.ops.LinearCombination([1, 1], [qp.Z(0), qp.X(0)]),
 }
 
 all_obs = observables_list.keys()
@@ -137,34 +137,34 @@ all_obs = observables_list.keys()
 
 def test_name():
     """Test the name of DefaultTensor."""
-    assert qml.device("default.tensor").name == "default.tensor"
+    assert qp.device("default.tensor").name == "default.tensor"
 
 
 def test_wires():
     """Test that a device can be created with wires."""
-    assert qml.device("default.tensor").wires is None
-    assert qml.device("default.tensor", wires=2).wires == qml.wires.Wires([0, 1])
-    assert qml.device("default.tensor", wires=[0, 2]).wires == qml.wires.Wires([0, 2])
+    assert qp.device("default.tensor").wires is None
+    assert qp.device("default.tensor", wires=2).wires == qp.wires.Wires([0, 1])
+    assert qp.device("default.tensor", wires=[0, 2]).wires == qp.wires.Wires([0, 2])
 
     with pytest.raises(AttributeError):
-        qml.device("default.tensor").wires = [0, 1]
+        qp.device("default.tensor").wires = [0, 1]
 
 
 def test_wires_runtime():
     """Test that this device can execute a tape with wires determined at runtime if they are not provided."""
-    dev = qml.device("default.tensor")
-    ops = [qml.Identity(0), qml.Identity((0, 1)), qml.RX(2, 0), qml.RY(1, 5), qml.RX(2, 1)]
-    measurements = [qml.expval(qml.PauliZ(15))]
-    tape = qml.tape.QuantumScript(ops, measurements)
+    dev = qp.device("default.tensor")
+    ops = [qp.Identity(0), qp.Identity((0, 1)), qp.RX(2, 0), qp.RY(1, 5), qp.RX(2, 1)]
+    measurements = [qp.expval(qp.PauliZ(15))]
+    tape = qp.tape.QuantumScript(ops, measurements)
     assert dev.execute(tape) == 1.0
 
 
 def test_wires_runtime_error():
     """Test that this device raises an error if the wires are provided by user and there is a mismatch."""
-    dev = qml.device("default.tensor", wires=1)
-    ops = [qml.Identity(0), qml.Identity((0, 1)), qml.RX(2, 0), qml.RY(1, 5), qml.RX(2, 1)]
-    measurements = [qml.expval(qml.PauliZ(15))]
-    tape = qml.tape.QuantumScript(ops, measurements)
+    dev = qp.device("default.tensor", wires=1)
+    ops = [qp.Identity(0), qp.Identity((0, 1)), qp.RX(2, 0), qp.RY(1, 5), qp.RX(2, 1)]
+    measurements = [qp.expval(qp.PauliZ(15))]
+    tape = qp.tape.QuantumScript(ops, measurements)
 
     with pytest.raises(WireError):
         dev.execute(tape)
@@ -179,7 +179,7 @@ def test_kwargs_mps(max_bond_dim, cutoff):
     cutoff = 1e-16
     method = "mps"
 
-    dev = qml.device("default.tensor", method=method, max_bond_dim=max_bond_dim, cutoff=cutoff)
+    dev = qp.device("default.tensor", method=method, max_bond_dim=max_bond_dim, cutoff=cutoff)
 
     config = dev.setup_execution_config()
     assert config.device_options["method"] == method
@@ -192,7 +192,7 @@ def test_kwargs_tn():
     """Test the class initialization with different arguments and returned properties for the TN method."""
 
     method = "tn"
-    dev = qml.device("default.tensor", method=method)
+    dev = qp.device("default.tensor", method=method)
 
     config = dev.setup_execution_config()
     assert config.device_options["method"] == method
@@ -205,7 +205,7 @@ def test_invalid_kwarg():
         TypeError,
         match="Unexpected argument: fake_arg during initialization of the default.tensor device.",
     ):
-        qml.device("default.tensor", fake_arg=None)
+        qp.device("default.tensor", fake_arg=None)
 
 
 def test_invalid_contract():
@@ -214,44 +214,44 @@ def test_invalid_contract():
     with pytest.raises(
         ValueError, match="Unsupported gate contraction option: 'auto-split-gate' for 'mps' method."
     ):
-        qml.device("default.tensor", method="mps", contract="auto-split-gate")
+        qp.device("default.tensor", method="mps", contract="auto-split-gate")
 
     with pytest.raises(
         ValueError, match="Unsupported gate contraction option: 'auto-mps' for 'tn' method."
     ):
-        qml.device("default.tensor", method="tn", contract="auto-mps")
+        qp.device("default.tensor", method="tn", contract="auto-mps")
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
 def test_method(method):
     """Test the device method."""
-    assert qml.device("default.tensor", method=method).method == method
+    assert qp.device("default.tensor", method=method).method == method
 
 
 def test_invalid_method():
     """Test an invalid method."""
     method = "invalid_method"
     with pytest.raises(ValueError, match=f"Unsupported method: {method}"):
-        qml.device("default.tensor", method=method)
+        qp.device("default.tensor", method=method)
 
 
 @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
 def test_data_type(c_dtype):
     """Test the data type."""
-    assert qml.device("default.tensor", c_dtype=c_dtype).c_dtype == c_dtype
+    assert qp.device("default.tensor", c_dtype=c_dtype).c_dtype == c_dtype
 
 
 def test_ivalid_data_type():
     """Test that data type can only be np.complex64 or np.complex128."""
     with pytest.raises(TypeError):
-        qml.device("default.tensor", c_dtype=float)
+        qp.device("default.tensor", c_dtype=float)
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
 def test_draw(method):
     """Test the draw method."""
 
-    dev = qml.device("default.tensor", wires=10, method=method)
+    dev = qp.device("default.tensor", wires=10, method=method)
     fig = dev.draw(color="auto", title="Test", return_fig=True)
     assert fig is not None
 
@@ -260,8 +260,8 @@ def test_warning_useless_kwargs():
     """Test that a warning is raised if the user provides a combination of arguments that are not used."""
 
     with pytest.warns():
-        qml.device("default.tensor", method="tn", max_bond_dim=10)
-        qml.device("default.tensor", method="tn", cutoff=1e-16)
+        qp.device("default.tensor", method="tn", max_bond_dim=10)
+        qp.device("default.tensor", method="tn", cutoff=1e-16)
 
 
 def test_kahypar_warning_not_raised(recwarn):
@@ -272,21 +272,21 @@ def test_kahypar_warning_not_raised(recwarn):
 
         pytest.skip(reason="Test is for when kahypar is not installed")
     except ImportError:
-        _ = qml.device("default.tensor", wires=1)
+        _ = qp.device("default.tensor", wires=1)
         assert len(recwarn) == 0
 
 
 def test_passing_shots_None():
     """Test that passing shots=None on initialization works without error."""
-    dev = qml.device("default.tensor", shots=None)
-    assert dev.shots == qml.measurements.Shots(None)
+    dev = qp.device("default.tensor", shots=None)
+    assert dev.shots == qp.measurements.Shots(None)
 
 
 def test_passing_finite_shots_error():
     """Test that an error is raised if finite shots are passed on initialization."""
 
     with pytest.raises(DeviceError, match=r"only supports analytic simulations"):
-        qml.device("default.tensor", shots=10)
+        qp.device("default.tensor", shots=10)
 
 
 @pytest.mark.parametrize("method", ["mps", "tn"])
@@ -300,11 +300,11 @@ class TestSupportedGatesAndObservables:
     def test_supported_gates_can_be_implemented(self, operation, method):
         """Test that the device can implement all its supported gates."""
 
-        dev = qml.device("default.tensor", wires=4, method=method)
+        dev = qp.device("default.tensor", wires=4, method=method)
 
-        tape = qml.tape.QuantumScript(
+        tape = qp.tape.QuantumScript(
             [operations_list[operation]],
-            [qml.expval(qml.Identity(wires=0))],
+            [qp.expval(qp.Identity(wires=0))],
         )
 
         result = dev.execute(circuits=tape)
@@ -314,15 +314,15 @@ class TestSupportedGatesAndObservables:
     def test_supported_gates_yield_correct_state(self, operation, method):
         """Test that the device can implement all its supported gates."""
         nwires = 4
-        dq = qml.device("default.qubit", wires=nwires)
-        dev = qml.device("default.tensor", wires=nwires, method=method)
+        dq = qp.device("default.qubit", wires=nwires)
+        dev = qp.device("default.tensor", wires=nwires, method=method)
 
         state = np.random.rand(2**nwires) + 1j * np.random.rand(2**nwires)
         state /= np.linalg.norm(state)
-        wires = qml.wires.Wires(range(nwires))
-        tape = qml.tape.QuantumScript(
-            [qml.StatePrep(state, wires=wires), operations_list[operation]],
-            [qml.state()],
+        wires = qp.wires.Wires(range(nwires))
+        tape = qp.tape.QuantumScript(
+            [qp.StatePrep(state, wires=wires), operations_list[operation]],
+            [qp.state()],
         )
         result = dev.execute(circuits=[tape])[0]
         ref = dq.execute(circuits=[tape])[0]
@@ -332,33 +332,33 @@ class TestSupportedGatesAndObservables:
     def test_supported_observables_can_be_implemented(self, observable, method):
         """Test that the device can implement all its supported observables."""
 
-        dev = qml.device("default.tensor", wires=3, method=method)
+        dev = qp.device("default.tensor", wires=3, method=method)
 
         if observable == "Projector":
             for o in observables_list[observable]:
-                tape = qml.tape.QuantumScript(
-                    [qml.PauliX(0)],
-                    [qml.expval(o)],
+                tape = qp.tape.QuantumScript(
+                    [qp.PauliX(0)],
+                    [qp.expval(o)],
                 )
                 result = dev.execute(circuits=tape)
                 assert isinstance(result, (float, np.ndarray))
 
         else:
-            tape = qml.tape.QuantumScript(
-                [qml.PauliX(0)],
-                [qml.expval(observables_list[observable])],
+            tape = qp.tape.QuantumScript(
+                [qp.PauliX(0)],
+                [qp.expval(observables_list[observable])],
             )
             result = dev.execute(circuits=tape)
             assert isinstance(result, (float, np.ndarray))
 
     def test_not_implemented_meas(self, method):
-        """Tests that support only exists for `qml.expval` and `qml.var` so far."""
+        """Tests that support only exists for `qp.expval` and `qp.var` so far."""
 
-        op = [qml.Identity(0)]
-        measurements = [qml.probs(qml.PauliZ(0))]
-        tape = qml.tape.QuantumScript(op, measurements)
+        op = [qp.Identity(0)]
+        measurements = [qp.probs(qp.PauliZ(0))]
+        tape = qp.tape.QuantumScript(op, measurements)
 
-        dev = qml.device("default.tensor", wires=tape.wires, method=method)
+        dev = qp.device("default.tensor", wires=tape.wires, method=method)
 
         with pytest.raises(NotImplementedError):
             dev.execute(tape)
@@ -369,12 +369,12 @@ class TestSupportsDerivatives:
 
     def test_support_derivatives(self):
         """Test that the device does not support derivatives yet."""
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
         assert not dev.supports_derivatives()
 
     def test_compute_derivatives(self):
         """Test that an error is raised if the `compute_derivatives` method is called."""
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of derivatives has yet to be implemented for the default.tensor device.",
@@ -383,7 +383,7 @@ class TestSupportsDerivatives:
 
     def test_execute_and_compute_derivatives(self):
         """Test that an error is raised if `execute_and_compute_derivative` method is called."""
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of derivatives has yet to be implemented for the default.tensor device.",
@@ -392,12 +392,12 @@ class TestSupportsDerivatives:
 
     def test_supports_vjp(self):
         """Test that the device does not support VJP yet."""
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
         assert not dev.supports_vjp()
 
     def test_compute_vjp(self):
         """Test that an error is raised if `compute_vjp` method is called."""
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of vector-Jacobian product has yet to be implemented for the default.tensor device.",
@@ -406,7 +406,7 @@ class TestSupportsDerivatives:
 
     def test_execute_and_compute_vjp(self):
         """Test that an error is raised if `execute_and_compute_vjp` method is called."""
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
         with pytest.raises(
             NotImplementedError,
             match="The computation of vector-Jacobian product has yet to be implemented for the default.tensor device.",
@@ -424,17 +424,17 @@ class TestJaxSupport:
         """Test the device with JAX."""
 
         jax = pytest.importorskip("jax")
-        dev = qml.device("default.tensor", wires=1, method=method)
-        ref_dev = qml.device("default.qubit", wires=1)
+        dev = qp.device("default.tensor", wires=1, method=method)
+        ref_dev = qp.device("default.qubit", wires=1)
 
         def circuit(x):
-            qml.RX(x[1], wires=0)
-            qml.Rot(x[0], x[1], x[2], wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(x[1], wires=0)
+            qp.Rot(x[0], x[1], x[2], wires=0)
+            return qp.expval(qp.Z(0))
 
         weights = jax.numpy.array([0.2, 0.5, 0.1])
-        qnode = qml.QNode(circuit, dev, interface="jax")
-        ref_qnode = qml.QNode(circuit, ref_dev, interface="jax")
+        qnode = qp.QNode(circuit, dev, interface="jax")
+        ref_qnode = qp.QNode(circuit, ref_dev, interface="jax")
 
         assert np.allclose(qnode(weights), ref_qnode(weights))
 
@@ -442,13 +442,13 @@ class TestJaxSupport:
         """Test the device with JAX's JIT compiler."""
 
         jax = pytest.importorskip("jax")
-        dev = qml.device("default.tensor", wires=1, method=method)
+        dev = qp.device("default.tensor", wires=1, method=method)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qp.qnode(dev, interface="jax")
         def circuit():
-            qml.Hadamard(0)
-            return qml.expval(qml.Z(0))
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
 
         assert np.allclose(circuit(), 0.0)
 
@@ -458,21 +458,21 @@ class TestJaxSupport:
 @pytest.mark.parametrize(
     "operation, expected_output, par",
     [
-        (qml.BasisState, [0, 0, 1 + 0j, 0], [1 + 0j, 0]),
-        (qml.BasisState, [0, 0, 0, 1 + 0j], [1 + 0j, 1 + 0j]),
-        (qml.BasisState, [0, 0, 1, 0], [1, 0]),
-        (qml.BasisState, [0, 0, 0, 1], [1, 1]),
-        (qml.StatePrep, [0, 0, 1 + 0j, 0], [0, 0, 1 + 0j, 0]),
-        (qml.StatePrep, [0, 0, 0, 1 + 0j], [0, 0, 0, 1 + 0j]),
-        (qml.StatePrep, [0, 0, 1, 0], [0, 0, 1, 0]),
-        (qml.StatePrep, [0, 0, 0, 1], [0, 0, 0, 1]),
+        (qp.BasisState, [0, 0, 1 + 0j, 0], [1 + 0j, 0]),
+        (qp.BasisState, [0, 0, 0, 1 + 0j], [1 + 0j, 1 + 0j]),
+        (qp.BasisState, [0, 0, 1, 0], [1, 0]),
+        (qp.BasisState, [0, 0, 0, 1], [1, 1]),
+        (qp.StatePrep, [0, 0, 1 + 0j, 0], [0, 0, 1 + 0j, 0]),
+        (qp.StatePrep, [0, 0, 0, 1 + 0j], [0, 0, 0, 1 + 0j]),
+        (qp.StatePrep, [0, 0, 1, 0], [0, 0, 1, 0]),
+        (qp.StatePrep, [0, 0, 0, 1], [0, 0, 0, 1]),
         (
-            qml.StatePrep,
+            qp.StatePrep,
             [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
             [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
         ),
         (
-            qml.StatePrep,
+            qp.StatePrep,
             [1 / math.sqrt(3), 0, -1 / math.sqrt(3), 1 / math.sqrt(3)],
             [1 / math.sqrt(3), 0, -1 / math.sqrt(3), 1 / math.sqrt(3)],
         ),
@@ -483,12 +483,12 @@ def test_apply_operation_state_preparation(operation, expected_output, par, meth
     operations that have no parameters."""
 
     par = np.array(par)
-    dev = qml.device("default.tensor", method=method, wires=2)
+    dev = qp.device("default.tensor", method=method, wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         operation(par, wires=[0, 1])
-        return qml.state()
+        return qp.state()
 
     state = circuit()
     assert np.allclose(state, np.array(expected_output), rtol=0)
@@ -501,7 +501,7 @@ def test_apply_operation_state_preparation(operation, expected_output, par, meth
 def test_wire_order_dense_vector(method, num_orbitals):
     """Test that the wire order is preserved if the initial state is created from a dense vector."""
 
-    dev = qml.device("default.tensor", wires=int(2 * num_orbitals + 1), method=method)
+    dev = qp.device("default.tensor", wires=int(2 * num_orbitals + 1), method=method)
     qubits = dev.wires.tolist()
 
     wave_fun = np.random.random(2 ** (2 * num_orbitals)) + 1j * np.random.random(
@@ -517,16 +517,16 @@ def test_wire_order_dense_vector(method, num_orbitals):
 
         for grot_mat, indices in givens_list:
             theta = np.arccos(np.real(grot_mat[1, 1]))
-            qml.SingleExcitation(2 * theta, wires=[int(wires[indices[0]]), int(wires[indices[1]])])
+            qp.SingleExcitation(2 * theta, wires=[int(wires[indices[0]]), int(wires[indices[1]])])
 
     control_wires = 1
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.StatePrep(wave_fun, wires=qubits[1:])
-        qml.Hadamard(qubits[0])
+        qp.StatePrep(wave_fun, wires=qubits[1:])
+        qp.Hadamard(qubits[0])
         basis_rotation_ops(U0, [int(2 * i + 1 + control_wires) for i in range(num_orbitals)])
-        return qml.state()
+        return qp.state()
 
     state = circuit()
     assert isinstance(state, TensorLike)
@@ -541,37 +541,37 @@ class TestMCMs:
     def test_error_on_unsupported_mcm_method(self, mcm_method):
         """Test that an error is raised on unsupported mcm methods."""
 
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method)
-        config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
+        mcm_config = qp.devices.MCMConfig(mcm_method=mcm_method)
+        config = qp.devices.ExecutionConfig(mcm_config=mcm_config)
         with pytest.raises(DeviceError, match=r"only supports the deferred measurement principle."):
-            qml.device("default.tensor").preprocess(config)
+            qp.device("default.tensor").preprocess(config)
 
     def test_simple_mcm_present(self):
         """Test that the device can execute a circuit with a mid circuit measurement."""
 
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.measure(0)
-            return qml.expval(qml.Z(0))
+            qp.measure(0)
+            return qp.expval(qp.Z(0))
 
         res = circuit()
-        assert qml.math.allclose(res, 1)
+        assert qp.math.allclose(res, 1)
 
     def test_mcm_conditional(self):
         """Test that the device execute a circuit with an MCM and a conditional."""
 
-        dev = qml.device("default.tensor")
+        dev = qp.device("default.tensor")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            m0 = qml.measure(0)
-            qml.cond(~m0, qml.RX)(x, 0)
-            return qml.expval(qml.Z(0))
+            m0 = qp.measure(0)
+            qp.cond(~m0, qp.RX)(x, 0)
+            return qp.expval(qp.Z(0))
 
         res = circuit(0.5)
-        assert qml.math.allclose(res, np.cos(0.5))
+        assert qp.math.allclose(res, np.cos(0.5))
 
 
 class TestPreprocessingTransforms:
@@ -579,7 +579,7 @@ class TestPreprocessingTransforms:
 
     def test_preprocess_transforms_structure(self):
         """Test that the preprocessing transforms are set up correctly."""
-        dev = qml.device("default.tensor", wires=3)
+        dev = qp.device("default.tensor", wires=3)
         config = ExecutionConfig()
 
         program, _ = dev.preprocess(config)
@@ -602,7 +602,7 @@ class TestPreprocessingTransforms:
 
     def test_decompose_transform_has_device_wires_and_target_gates(self):
         """Test that the decompose transform is configured with device_wires and target_gates."""
-        dev = qml.device("default.tensor", wires=[0, 1, 2])
+        dev = qp.device("default.tensor", wires=[0, 1, 2])
         config = ExecutionConfig()
 
         program, _ = dev.preprocess(config)
@@ -624,7 +624,7 @@ class TestPreprocessingTransforms:
 
     def test_decompose_with_stopping_condition(self):
         """Test that decompose transform uses the correct stopping condition."""
-        dev = qml.device("default.tensor", wires=3)
+        dev = qp.device("default.tensor", wires=3)
         config = ExecutionConfig()
 
         program, _ = dev.preprocess(config)
@@ -644,13 +644,13 @@ class TestPreprocessingTransforms:
     @pytest.mark.integration
     def test_integration_with_qnode(self):
         """Test integration with QNode to ensure the device works end-to-end."""
-        dev = qml.device("default.tensor", wires=3)
+        dev = qp.device("default.tensor", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             # Use an operation that needs decomposition
-            qml.QFT(wires=[0, 1])
-            return qml.expval(qml.Z(0))
+            qp.QFT(wires=[0, 1])
+            return qp.expval(qp.Z(0))
 
         # This should work without errors
         result = circuit()
@@ -660,14 +660,14 @@ class TestPreprocessingTransforms:
     @pytest.mark.integration
     def test_integration_with_multiple_decomposition_layers(self):
         """Test that operations requiring multiple layers of decomposition work."""
-        dev = qml.device("default.tensor", wires=4)
+        dev = qp.device("default.tensor", wires=4)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             # Operations that may require multiple decomposition steps
-            qml.QFT(wires=[0, 1, 2])
-            qml.GroverOperator(wires=[0, 1, 2, 3])
-            return qml.expval(qml.Z(0))
+            qp.QFT(wires=[0, 1, 2])
+            qp.GroverOperator(wires=[0, 1, 2, 3])
+            return qp.expval(qp.Z(0))
 
         # This should work without errors
         result = circuit()
@@ -683,24 +683,24 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
         """Test that decompositions requiring more work wires than available are discarded."""
 
         # Create a mock operation with different decomposition options
-        class MyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)
-        @qml.register_resources({qml.Hadamard: 2})
+        @qp.register_resources({qp.Hadamard: 2})
         def decomp_fallback(wires):
-            qml.Hadamard(wires)
-            qml.Hadamard(wires)
+            qp.Hadamard(wires)
+            qp.Hadamard(wires)
 
         # Work wire decomposition (needs more wires than available)
-        @qml.register_resources({qml.PauliX: 1}, work_wires={"burnable": 3})
+        @qp.register_resources({qp.PauliX: 1}, work_wires={"burnable": 3})
         def decomp_with_work_wire(wires):
-            qml.PauliX(wires)
+            qp.PauliX(wires)
 
-        qml.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        qp.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-        tape = qml.tape.QuantumScript([MyOp(0)], [qml.expval(qml.Z(0))])
-        dev = qml.device("default.tensor", wires=wires)
+        tape = qp.tape.QuantumScript([MyOp(0)], [qp.expval(qp.Z(0))])
+        dev = qp.device("default.tensor", wires=wires)
         program = dev.preprocess_transforms()
         (out_tape,), _ = program([tape])
 

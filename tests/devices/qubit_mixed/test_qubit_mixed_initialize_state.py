@@ -57,7 +57,7 @@ class TestInitializeState:
         def state_vector(self, wire_order=None):
             sv = self.parameters[0]
             if self.dtype is not None:
-                sv = qml.math.cast(sv, self.dtype)
+                sv = qp.math.cast(sv, self.dtype)
             return sv
 
     def test_create_initial_state_no_state_prep(self, interface):
@@ -78,7 +78,7 @@ class TestInitializeState:
 
         vec_correct = allzero_vec(num_wires, interface)
         state_correct = allzero_dm(num_wires, interface)
-        prep_op = self.DefaultPrep(qml.math.array(vec_correct, like=interface), wires=wires)
+        prep_op = self.DefaultPrep(qp.math.array(vec_correct, like=interface), wires=wires)
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface
@@ -91,7 +91,7 @@ class TestInitializeState:
         vec_correct = allzero_vec(num_wires, interface)
         state_correct = allzero_dm(num_wires, interface)
         state_correct_flatten = math.reshape(vec_correct, [-1])
-        prep_op = StatePrep(qml.math.array(state_correct_flatten, like=interface), wires=wires)
+        prep_op = StatePrep(qp.math.array(state_correct_flatten, like=interface), wires=wires)
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface
@@ -114,7 +114,7 @@ class TestInitializeState:
         num_wires = len(wires)
         # The following 2 lines are for reusing the statevec code on the density matrices
         state_correct = allzero_dm(num_wires, interface)
-        prep_op = qml.QubitDensityMatrix(qml.math.array(state_correct, like=interface), wires=wires)
+        prep_op = qp.QubitDensityMatrix(qp.math.array(state_correct, like=interface), wires=wires)
         state = create_initial_state(wires, prep_operation=prep_op, like=interface)
         assert math.allequal(state, state_correct)
         assert math.get_interface(state) == interface

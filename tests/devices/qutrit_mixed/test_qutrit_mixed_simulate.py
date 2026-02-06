@@ -65,14 +65,14 @@ class TestCurrentlyUnsupportedCases:
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a NotImplementedError."""
 
-        qs = qml.tape.QuantumScript(measurements=[qml.sample(wires=0)])
+        qs = qp.tape.QuantumScript(measurements=[qp.sample(wires=0)])
         with pytest.raises(NotImplementedError):
             simulate(qs)
 
-    @pytest.mark.parametrize("mp", [qml.probs(0), qml.probs(op=qml.GellMann(0, 2))])
+    @pytest.mark.parametrize("mp", [qp.probs(0), qp.probs(op=qp.GellMann(0, 2))])
     def test_invalid_samples(self, mp):
         """Test Sampling MeasurementProcesses that are currently unsupported on this device"""
-        qs = qml.tape.QuantumScript(ops=[qml.TAdd(wires=(0, 1))], measurements=[mp], shots=10)
+        qs = qp.tape.QuantumScript(ops=[qp.TAdd(wires=(0, 1))], measurements=[mp], shots=10)
         with pytest.raises(NotImplementedError):
             simulate(qs)
 
@@ -81,29 +81,29 @@ def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
     # pylint: disable=too-few-public-methods
-    class MyOperator(qml.operation.Operator):
+    class MyOperator(qp.operation.Operator):
         num_wires = 1
 
         @staticmethod
         def compute_matrix():
             return np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
 
-    qs = qml.tape.QuantumScript([MyOperator(0)], [qml.expval(qml.GellMann(0, 8))])
+    qs = qp.tape.QuantumScript([MyOperator(0)], [qp.expval(qp.GellMann(0, 8))])
 
     result = simulate(qs)
-    assert qml.math.allclose(result, -np.sqrt(4 / 3))
+    assert qp.math.allclose(result, -np.sqrt(4 / 3))
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("op", [qml.TRX(np.pi, 0), qml.QutritBasisState([1], 0)])
+@pytest.mark.parametrize("op", [qp.TRX(np.pi, 0), qp.QutritBasisState([1], 0)])
 @pytest.mark.parametrize("interface", ("jax", "torch", "autograd", "numpy"))
 def test_result_has_correct_interface(op, interface):
     """Test that even if no interface parameters are given, result is correct."""
-    qs = qml.tape.QuantumScript([op], [qml.expval(qml.GellMann(0, 3))])
+    qs = qp.tape.QuantumScript([op], [qp.expval(qp.GellMann(0, 3))])
     res = simulate(qs, interface=interface)
 
-    assert qml.math.get_interface(res) == interface
-    assert qml.math.allclose(res, -1)
+    assert qp.math.get_interface(res) == interface
+    assert qp.math.allclose(res, -1)
 
 
 # pylint: disable=too-few-public-methods
@@ -112,14 +112,14 @@ class TestStatePrepBase:
 
     def test_basis_state(self):
         """Test that the BasisState operator prepares the desired state."""
-        qs = qml.tape.QuantumScript(
-            ops=[qml.QutritBasisState((2, 1), wires=(0, 1))],
-            measurements=[qml.probs(wires=(0, 1, 2))],
+        qs = qp.tape.QuantumScript(
+            ops=[qp.QutritBasisState((2, 1), wires=(0, 1))],
+            measurements=[qp.probs(wires=(0, 1, 2))],
         )
         probs = simulate(qs)
         expected = np.zeros(27)
         expected[21] = 1.0
-        assert qml.math.allclose(probs, expected)
+        assert qp.math.allclose(probs, expected)
 
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
@@ -129,9 +129,9 @@ class TestBasicCircuit:
     @staticmethod
     def get_TRX_quantum_script(phi, subspace):
         """Get the quantum script where TRX is applied then GellMann observables are measured"""
-        ops = [qml.TRX(phi, wires=0, subspace=subspace)]
-        obs = [qml.expval(qml.GellMann(0, index)) for index in [2, 3, 5, 8]]
-        return qml.tape.QuantumScript(ops, obs)
+        ops = [qp.TRX(phi, wires=0, subspace=subspace)]
+        obs = [qp.expval(qp.GellMann(0, index)) for index in [2, 3, 5, 8]]
+        return qp.tape.QuantumScript(ops, obs)
 
     def test_basic_circuit_numpy(self, subspace):
         """Test execution with a basic circuit."""
@@ -162,19 +162,19 @@ class TestBasicCircuit:
     def test_autograd_results_and_backprop(self, subspace):
         """Tests execution and gradients with autograd"""
 
-        phi = qml.numpy.array(-0.52)
+        phi = qp.numpy.array(-0.52)
 
         def f(x):
             qs = self.get_TRX_quantum_script(x, subspace)
-            return qml.numpy.array(simulate(qs))
+            return qp.numpy.array(simulate(qs))
 
         result = f(phi)
         expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
-        g = qml.jacobian(f)(phi)
+        g = qp.jacobian(f)(phi)
         expected = expected_TRX_circ_expval_jacobians(phi, subspace)
-        assert qml.math.allclose(g, expected)
+        assert qp.math.allclose(g, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -193,11 +193,11 @@ class TestBasicCircuit:
 
         result = f(phi)
         expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         g = jax.jacobian(f)(phi)
         expected = expected_TRX_circ_expval_jacobians(phi, subspace)
-        assert qml.math.allclose(g, expected)
+        assert qp.math.allclose(g, expected)
 
     @pytest.mark.torch
     def test_torch_results_and_backprop(self, subspace):
@@ -232,7 +232,7 @@ class TestBasicCircuit:
             result = simulate(qs)
 
         expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         expected = expected_TRX_circ_expval_jacobians(phi, subspace)
         assert math.all(
@@ -272,12 +272,12 @@ class TestBroadcasting:
         """Gets quantum script of a circuit that includes
         parameter broadcasted operations and measurements."""
         ops = [
-            qml.TRX(np.pi, wires=1 + extra_wire, subspace=subspace),
-            qml.TRY(x, wires=0 + extra_wire, subspace=subspace),
-            qml.TAdd(wires=[0 + extra_wire, 1 + extra_wire]),
+            qp.TRX(np.pi, wires=1 + extra_wire, subspace=subspace),
+            qp.TRY(x, wires=0 + extra_wire, subspace=subspace),
+            qp.TAdd(wires=[0 + extra_wire, 1 + extra_wire]),
         ]
-        measurements = [qml.expval(qml.GellMann(i, 3)) for i in range(2 + extra_wire)]
-        return qml.tape.QuantumScript(ops, measurements, shots=shots)
+        measurements = [qp.expval(qp.GellMann(i, 3)) for i in range(2 + extra_wire)]
+        return qp.tape.QuantumScript(ops, measurements, shots=shots)
 
     def test_broadcasted_op_state(self, subspace):
         """Test that simulate works for state measurements
@@ -306,7 +306,7 @@ class TestBroadcasting:
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
-        qs = self.get_quantum_script(x, subspace, shots=qml.measurements.Shots(10000))
+        qs = self.get_quantum_script(x, subspace, shots=qp.measurements.Shots(10000))
         res = simulate(qs, rng=seed)
 
         expected = self.get_expectation_values(x, subspace)
@@ -358,11 +358,11 @@ class TestStatePadding:
     def get_quantum_script(x, extra_wires):
         """Gets a quantum script of a circuit where operators don't act on all measured wires."""
         ops = [
-            qml.TRX(np.pi, wires=1, subspace=(0, 1)),
-            qml.TRY(x, wires=0, subspace=(0, 2)),
-            qml.TAdd(wires=[0, 1]),
+            qp.TRX(np.pi, wires=1, subspace=(0, 1)),
+            qp.TRY(x, wires=0, subspace=(0, 2)),
+            qp.TAdd(wires=[0, 1]),
         ]
-        return qml.tape.QuantumScript(ops, [qml.density_matrix(wires=range(2 + extra_wires))])
+        return qp.tape.QuantumScript(ops, [qp.density_matrix(wires=range(2 + extra_wires))])
 
     def test_extra_measurement_wires(self, extra_wires):
         """Tests if correct state is returned when operators don't act on all measured wires."""
@@ -401,12 +401,12 @@ class TestDebugger:
         """Get the quantum script with debugging where TRX is applied
         then GellMann observables are measured"""
         ops = [
-            qml.Snapshot(),
-            qml.TRX(phi, wires=0, subspace=subspace),
-            qml.Snapshot("final_state"),
+            qp.Snapshot(),
+            qp.TRX(phi, wires=0, subspace=subspace),
+            qp.Snapshot("final_state"),
         ]
-        obs = [qml.expval(qml.GellMann(0, index)) for index in [2, 3, 5, 8]]
-        return qml.tape.QuantumScript(ops, obs)
+        obs = [qp.expval(qp.GellMann(0, index)) for index in [2, 3, 5, 8]]
+        return qp.tape.QuantumScript(ops, obs)
 
     def test_debugger_numpy(self, subspace):
         """Test debugger with numpy"""
@@ -430,22 +430,22 @@ class TestDebugger:
     @pytest.mark.autograd
     def test_debugger_autograd(self, subspace):
         """Tests debugger with autograd"""
-        phi = qml.numpy.array(-0.52)
+        phi = qp.numpy.array(-0.52)
         debugger = Debugger()
 
         def f(x):
             qs = self.get_debugger_quantum_script(x, subspace)
-            return qml.numpy.array(simulate(qs, debugger=debugger))
+            return qp.numpy.array(simulate(qs, debugger=debugger))
 
         result = f(phi)
         expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         assert list(debugger.snapshots.keys()) == [0, "final_state"]
-        assert qml.math.allclose(debugger.snapshots[0], self.basis_state)
+        assert qp.math.allclose(debugger.snapshots[0], self.basis_state)
 
         expected_final_state = expected_TRX_circ_state(phi, subspace)
-        assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
+        assert qp.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
     @pytest.mark.jax
     def test_debugger_jax(self, subspace):
@@ -461,13 +461,13 @@ class TestDebugger:
 
         result = f(phi)
         expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         assert list(debugger.snapshots.keys()) == [0, "final_state"]
-        assert qml.math.allclose(debugger.snapshots[0], self.basis_state)
+        assert qp.math.allclose(debugger.snapshots[0], self.basis_state)
 
         expected_final_state = expected_TRX_circ_state(phi, subspace)
-        assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
+        assert qp.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
     @pytest.mark.torch
     def test_debugger_torch(self, subspace):
@@ -484,15 +484,15 @@ class TestDebugger:
         results = f(phi)
         expected_values = expected_TRX_circ_expval_values(phi.detach().numpy(), subspace)
         for result, expected in zip(results, expected_values):
-            assert qml.math.allclose(result, expected)
+            assert qp.math.allclose(result, expected)
 
         assert list(debugger.snapshots.keys()) == [0, "final_state"]
-        assert qml.math.allclose(debugger.snapshots[0], self.basis_state)
+        assert qp.math.allclose(debugger.snapshots[0], self.basis_state)
 
         expected_final_state = math.asarray(
             expected_TRX_circ_state(phi.detach().numpy(), subspace), like="torch"
         )
-        assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
+        assert qp.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
     # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
@@ -507,13 +507,13 @@ class TestDebugger:
         result = simulate(qs, debugger=debugger)
 
         expected = expected_TRX_circ_expval_values(phi, subspace)
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         assert list(debugger.snapshots.keys()) == [0, "final_state"]
-        assert qml.math.allclose(debugger.snapshots[0], self.basis_state)
+        assert qp.math.allclose(debugger.snapshots[0], self.basis_state)
 
         expected_final_state = expected_TRX_circ_state(phi, subspace)
-        assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
+        assert qp.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
 
 @flaky
@@ -569,9 +569,9 @@ class TestSampleMeasurements:
     def test_single_expval(self, subspace):
         """Test a simple circuit with a single expval measurement"""
         x = np.array(0.732)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)],
-            [qml.expval(qml.GellMann(0, 3))],
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)],
+            [qp.expval(qp.GellMann(0, 3))],
             shots=10000,
         )
         result = simulate(qs)
@@ -582,8 +582,8 @@ class TestSampleMeasurements:
     def test_single_sample(self, subspace):
         """Test a simple circuit with a single sample measurement"""
         x = np.array(0.732)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.sample(wires=range(2))], shots=10000
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)], [qp.sample(wires=range(2))], shots=10000
         )
         result = simulate(qs)
 
@@ -599,16 +599,16 @@ class TestSampleMeasurements:
         """Test a simple circuit containing multiple measurements"""
         num_shots = 100000
         x, y = np.array(0.732), np.array(0.488)
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.TRX(x, wires=0, subspace=subspace),
-                qml.TAdd(wires=[0, 1]),
-                qml.TRY(y, wires=1, subspace=subspace),
+                qp.TRX(x, wires=0, subspace=subspace),
+                qp.TAdd(wires=[0, 1]),
+                qp.TRY(y, wires=1, subspace=subspace),
             ],
             [
-                qml.expval(qml.GellMann(0, 3)),
-                qml.counts(wires=range(2)),
-                qml.sample(wires=range(2)),
+                qp.expval(qp.GellMann(0, 3)),
+                qp.counts(wires=range(2)),
+                qp.sample(wires=range(2)),
             ],
             shots=num_shots,
         )
@@ -641,9 +641,9 @@ class TestSampleMeasurements:
     def test_expval_shot_vector(self, shots, subspace):
         """Test a simple circuit with a single expval measurement for shot vectors"""
         x = np.array(0.732)
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.expval(qml.GellMann(0, 3))], shots=shots
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)], [qp.expval(qp.GellMann(0, 3))], shots=shots
         )
         result = simulate(qs)
 
@@ -659,9 +659,9 @@ class TestSampleMeasurements:
     def test_sample_shot_vector(self, shots, subspace):
         """Test a simple circuit with a single sample measurement for shot vectors"""
         x = np.array(0.732)
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
-            [qml.TRY(x, wires=0, subspace=subspace)], [qml.sample(wires=range(2))], shots=shots
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
+            [qp.TRY(x, wires=0, subspace=subspace)], [qp.sample(wires=range(2))], shots=shots
         )
         result = simulate(qs)
 
@@ -680,17 +680,17 @@ class TestSampleMeasurements:
     def test_multi_measurement_shot_vector(self, shots, subspace):
         """Test a simple circuit containing multiple measurements for shot vectors"""
         x, y = np.array(0.732), np.array(0.488)
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
             [
-                qml.TRX(x, wires=0, subspace=subspace),
-                qml.TAdd(wires=[0, 1]),
-                qml.TRY(y, wires=1, subspace=subspace),
+                qp.TRX(x, wires=0, subspace=subspace),
+                qp.TAdd(wires=[0, 1]),
+                qp.TRY(y, wires=1, subspace=subspace),
             ],
             [
-                qml.expval(qml.GellMann(0, 3)),
-                qml.counts(wires=range(2)),
-                qml.sample(wires=range(2)),
+                qp.expval(qp.GellMann(0, 3)),
+                qp.counts(wires=range(2)),
+                qp.sample(wires=range(2)),
             ],
             shots=shots,
         )
@@ -723,16 +723,16 @@ class TestSampleMeasurements:
         """Test that custom wire labels works as expected"""
         num_shots = 10000
         x, y = np.array(0.732), np.array(0.488)
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.TRX(x, wires="b", subspace=subspace),
-                qml.TAdd(wires=["b", "a"]),
-                qml.TRY(y, wires="a", subspace=subspace),
+                qp.TRX(x, wires="b", subspace=subspace),
+                qp.TAdd(wires=["b", "a"]),
+                qp.TRY(y, wires="a", subspace=subspace),
             ],
             [
-                qml.expval(qml.GellMann("b", 3)),
-                qml.counts(wires=["a", "b"]),
-                qml.sample(wires=["b", "a"]),
+                qp.expval(qp.GellMann("b", 3)),
+                qp.counts(wires=["a", "b"]),
+                qp.sample(wires=["b", "a"]),
             ],
             shots=num_shots,
         )

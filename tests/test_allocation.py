@@ -76,7 +76,7 @@ class TestAllocateOp:
     def test_valid_operation(self):
         """Test that Allocate is a valid Operator."""
         op = Allocate.from_num_wires(3)
-        qml.ops.functions.assert_valid(op)
+        qp.ops.functions.assert_valid(op)
 
     def test_allocate_from_num_wires(self):
         """Test that the op can be instantiated with from_num_wires"""
@@ -91,7 +91,7 @@ class TestAllocateOp:
         """Test that the op can also be initialized with already created dynamic wires."""
         wires = [DynamicWire() for _ in range(5)]
         op = Allocate(wires, state=AllocateState.ANY, restored=True)
-        assert op.wires == qml.wires.Wires(wires)
+        assert op.wires == qp.wires.Wires(wires)
         assert op.hyperparameters == {"state": AllocateState.ANY, "restored": True}
         assert op.state == AllocateState.ANY
         assert op.restored
@@ -115,16 +115,16 @@ def test_dynamic_register_not_hashable():
     with pytest.raises(TypeError, match="unhashable type"):
         hash(reg)
 
-    with pytest.raises(qml.exceptions.WireError, match="Wires must be hashable"):
-        qml.wires.Wires((0, reg))
+    with pytest.raises(qp.exceptions.WireError, match="Wires must be hashable"):
+        qp.wires.Wires((0, reg))
 
 
 def test_Deallocate_validity():
     """Test that Deallocate is a valid operation."""
     wires = [DynamicWire(), DynamicWire()]
     op = Deallocate(wires)
-    assert op.wires == qml.wires.Wires(wires)
-    qml.ops.functions.assert_valid(op)
+    assert op.wires == qp.wires.Wires(wires)
+    qp.ops.functions.assert_valid(op)
 
 
 def test_error_bad_state():
@@ -136,24 +136,24 @@ def test_error_bad_state():
 
 def test_allocate_function():
     """Test that allocate returns dynamic wires and queues an Allocate op."""
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         wires = allocate(4)
     assert isinstance(wires, DynamicRegister)
     assert len(wires) == 4
-    assert isinstance(wires[:3], qml.wires.Wires)
+    assert isinstance(wires[:3], qp.wires.Wires)
     assert all(isinstance(w, DynamicWire) for w in wires)
 
     assert len(q) == 1
     op = q.queue[0]
     assert isinstance(op, Allocate)
-    assert op.wires == qml.wires.Wires(wires)
+    assert op.wires == qp.wires.Wires(wires)
     assert op.state == AllocateState.ZERO
 
 
 def test_allocate_kwargs():
     """Test that the kwargs to allocate get passed to the op."""
 
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         allocate(3, state="any", restored=True)
 
     op = q.queue[0]
@@ -166,9 +166,9 @@ class TestDeallocate:
     def test_single_dynamic_wire(self):
         """Test that deallocate can accept a single dynamic wire."""
         wire = DynamicWire()
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op = deallocate(wire)
-        assert op.wires == qml.wires.Wires((wire,))
+        assert op.wires == qp.wires.Wires((wire,))
 
         assert len(q.queue) == 1
         assert op is q.queue[0]
@@ -183,9 +183,9 @@ class TestDeallocate:
         """Test multiple dynamic wires can be deallocated."""
 
         wires = [DynamicWire(), DynamicWire()]
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             op = deallocate(wires)
-        assert op.wires == qml.wires.Wires(wires)
+        assert op.wires == qp.wires.Wires(wires)
 
         assert len(q.queue) == 1
         assert op is q.queue[0]
@@ -202,18 +202,18 @@ def test_dynamic_register_repr():
 def test_allocate_context_manager():
     """Test that allocate when used as context manager allocates and deallocates qubits."""
 
-    with qml.queuing.AnnotatedQueue() as q:
+    with qp.queuing.AnnotatedQueue() as q:
         with allocate(3, state="any", restored=True) as wires:
             assert len(wires) == 3
             assert all(isinstance(w, DynamicWire) for w in wires)
             assert len(set(wires)) == 3
 
-            qml.I(wires)
+            qp.I(wires)
 
     assert len(q.queue) == 3
-    qml.assert_equal(q.queue[0], Allocate(wires, state=AllocateState.ANY, restored=True))
-    qml.assert_equal(q.queue[1], qml.I(wires))
-    qml.assert_equal(q.queue[2], Deallocate(wires))
+    qp.assert_equal(q.queue[0], Allocate(wires, state=AllocateState.ANY, restored=True))
+    qp.assert_equal(q.queue[1], qp.I(wires))
+    qp.assert_equal(q.queue[2], Deallocate(wires))
 
 
 @pytest.mark.jax
@@ -229,12 +229,12 @@ class TestCaptureIntegration:
         def f():
             if use_context:
                 with allocate(2, state="zero", restored=True) as wires:
-                    qml.H(wires[0])
-                    qml.Z(wires[1])
+                    qp.H(wires[0])
+                    qp.Z(wires[1])
             else:
                 w, w2 = allocate(2, state="zero", restored=True)
-                qml.H(w)
-                qml.Z(w2)
+                qp.H(w)
+                qp.Z(w2)
                 deallocate((w, w2))
 
         jaxpr = jax.make_jaxpr(f)()
@@ -268,7 +268,7 @@ class TestCaptureIntegration:
 
         def f():
             [w] = allocate(1)
-            qml.X(w)
+            qp.X(w)
             deallocate(w)
 
         jaxpr = jax.make_jaxpr(f)()
@@ -299,7 +299,7 @@ class TestCaptureIntegration:
 
         with pytest.raises(NotImplementedError):
             with allocate(2) as wires:
-                qml.X(wires)
+                qp.X(wires)
 
         with pytest.raises(NotImplementedError):
             deallocate(2)
@@ -307,7 +307,7 @@ class TestCaptureIntegration:
     def test_no_dynamic_allocation_size(self):
         """Test that allocation size must be static with capture."""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=2))
         def c(n: int):
             allocate(n)
 
@@ -326,21 +326,21 @@ class TestDeviceIntegration:
     def test_reuse_without_mcms(self, dev_name, device_wires):
         """Test that a dynamic allocations that do not require mcms can be executed."""
 
-        @qml.qnode(qml.device(dev_name, wires=device_wires))
+        @qp.qnode(qp.device(dev_name, wires=device_wires))
         def c():
             with allocate(1, restored=True) as wires:
-                qml.H(wires)
-                qml.CNOT((wires[0], 0))
-                qml.H(wires)
+                qp.H(wires)
+                qp.CNOT((wires[0], 0))
+                qp.H(wires)
 
             with allocate(1) as wires:
-                qml.H(wires)
-                qml.CNOT((wires[0], 1))
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+                qp.H(wires)
+                qp.CNOT((wires[0], 1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         res1, res2 = c()
-        assert qml.math.allclose(res1, 0)
-        assert qml.math.allclose(res2, 0)
+        assert qp.math.allclose(res1, 0)
+        assert qp.math.allclose(res2, 0)
 
     @pytest.mark.parametrize("dev_name", ("default.qubit",))
     @pytest.mark.parametrize("device_wires", (None, (0, 1, 2, 3)))
@@ -348,20 +348,20 @@ class TestDeviceIntegration:
     def test_reuse_with_mcms(self, dev_name, device_wires, mcm_method):
         """Test that a simple dynamic allocation can be executed."""
 
-        @qml.set_shots(5000 if mcm_method == "one-shot" else None)
-        @qml.qnode(qml.device(dev_name, wires=device_wires), mcm_method=mcm_method)
+        @qp.set_shots(5000 if mcm_method == "one-shot" else None)
+        @qp.qnode(qp.device(dev_name, wires=device_wires), mcm_method=mcm_method)
         def c():
             with allocate(1, restored=False) as wires:
-                qml.H(wires)
-                qml.CNOT((wires[0], 0))
-                qml.H(wires)
+                qp.H(wires)
+                qp.CNOT((wires[0], 0))
+                qp.H(wires)
 
             with allocate(1) as wires:
-                qml.H(wires)
-                qml.CNOT((wires[0], 1))
-            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+                qp.H(wires)
+                qp.CNOT((wires[0], 1))
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
 
         res1, res2 = c()
         atol = 0.05 if mcm_method == "one-shot" else 1e-6
-        assert qml.math.allclose(res1, 0, atol=atol)
-        assert qml.math.allclose(res2, 0, atol=atol)
+        assert qp.math.allclose(res1, 0, atol=atol)
+        assert qp.math.allclose(res2, 0, atol=atol)

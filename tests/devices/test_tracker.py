@@ -167,20 +167,20 @@ class TestTrackerCoreBehavior:
 
 # Integration test definitions
 
-dev_qubit = qml.device("default.qubit", wires=1)
+dev_qubit = qp.device("default.qubit", wires=1)
 
 
-@qml.qnode(dev_qubit)
+@qp.qnode(dev_qubit)
 def circuit_qubit():
-    return qml.expval(qml.PauliZ(0))
+    return qp.expval(qp.PauliZ(0))
 
 
-dev_gaussian = qml.device("default.gaussian", wires=1)
+dev_gaussian = qp.device("default.gaussian", wires=1)
 
 
-@qml.qnode(dev_gaussian)
+@qp.qnode(dev_gaussian)
 def circuit_gaussian():
-    return qml.expval(qml.QuadX(0))
+    return qp.expval(qp.QuadX(0))
 
 
 @pytest.mark.xfail
@@ -257,7 +257,7 @@ class TestDefaultTrackerIntegration:
         wrapper = callback_wrapper()
         spy = mocker.spy(wrapper, "callback")
 
-        tape = qml.workflow.construct_tape(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
 
         with Tracker(circuit.device, callback=wrapper.callback) as tracker:
             circuit.device.batch_execute([tape, tape])

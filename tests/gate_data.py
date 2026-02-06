@@ -168,10 +168,10 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return qml.math.array(
+    return qp.math.array(
         [
-            [qml.math.cos(0.5 * theta), -1j * qml.math.sin(0.5 * theta)],
-            [-1j * qml.math.sin(0.5 * theta), qml.math.cos(0.5 * theta)],
+            [qp.math.cos(0.5 * theta), -1j * qp.math.sin(0.5 * theta)],
+            [-1j * qp.math.sin(0.5 * theta), qp.math.cos(0.5 * theta)],
         ],
         like=theta,
     )
@@ -186,10 +186,10 @@ def Roty(theta):
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
     return (
-        qml.math.array(
+        qp.math.array(
             [
-                [qml.math.cos(0.5 * theta), -qml.math.sin(0.5 * theta)],
-                [qml.math.sin(0.5 * theta), qml.math.cos(0.5 * theta)],
+                [qp.math.cos(0.5 * theta), -qp.math.sin(0.5 * theta)],
+                [qp.math.sin(0.5 * theta), qp.math.cos(0.5 * theta)],
             ],
             like=theta,
         )
@@ -205,8 +205,8 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return qml.math.array(
-        [[qml.math.exp(-0.5j * theta), 0.0], [0.0, qml.math.exp(0.5j * theta)]], like=theta
+    return qp.math.array(
+        [[qp.math.exp(-0.5j * theta), 0.0], [0.0, qp.math.exp(0.5j * theta)]], like=theta
     )
 
 

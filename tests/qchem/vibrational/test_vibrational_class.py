@@ -46,7 +46,7 @@ def test_optimize_geometry_methoderror():
 
     symbols = ["H", "H"]
     geom = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
-    mol = qml.qchem.Molecule(symbols, geom)
+    mol = qp.qchem.Molecule(symbols, geom)
 
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd, is not available."
@@ -88,8 +88,8 @@ def test_optimize_geometry_methoderror():
 def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
     r"""Test that correct energy is produced for a given molecule."""
 
-    mol = qml.qchem.Molecule(sym, geom, unit=unit, basis_name=basis, load_data=True)
-    scf_obj = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
+    mol = qp.qchem.Molecule(sym, geom, unit=unit, basis_name=basis, load_data=True)
+    scf_obj = qp.qchem.vibrational.vibrational_class._single_point(mol, method=method)
 
     assert np.isclose(scf_obj.e_tot, expected_energy)
 
@@ -116,7 +116,7 @@ def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
 def test_optimize_geometry(sym, geom, unit, expected_geom):
     r"""Test that correct optimized geometry is obtained."""
 
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit=unit)
+    mol = qp.qchem.Molecule(sym, geom, basis_name="6-31g", unit=unit)
     coordinates = vibrational.optimize_geometry(mol)
     print(coordinates, geom)
     assert np.allclose(coordinates, expected_geom)
@@ -141,9 +141,9 @@ def test_optimize_geometry(sym, geom, unit, expected_geom):
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
 def test_harmonic_analysis(sym, geom, expected_vecs):
     r"""Test that the correct displacement vectors are obtained after harmonic analysis."""
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
+    mol = qp.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     geom_eq = vibrational.optimize_geometry(mol)
-    mol_eq = qml.qchem.Molecule(
+    mol_eq = qp.qchem.Molecule(
         mol.symbols,
         geom_eq,
         unit=mol.unit,
@@ -327,8 +327,8 @@ def test_hess_methoderror():
 
     symbols = ["H", "H"]
     geom = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
-    mol = qml.qchem.Molecule(symbols, geom)
-    mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
+    mol = qp.qchem.Molecule(symbols, geom)
+    mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol)
 
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd is not available."
@@ -342,8 +342,8 @@ def test_error_mode_localization():
 
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-    mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
-    mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol)
+    mol = qp.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol)
     freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)
     with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
         vibrational.localize_normal_modes(freqs, vecs, bins=[])
@@ -388,10 +388,10 @@ def test_error_mode_localization():
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
 def test_get_dipole(sym, geom, mult, charge, method, expected_dipole):
     r"""Test that the get_dipole function produces correct results."""
-    mol = qml.qchem.Molecule(
+    mol = qp.qchem.Molecule(
         sym, geom, mult=mult, charge=charge, basis_name="6-31g", unit="Angstrom", load_data=True
     )
-    mol_scf = qml.qchem.vibrational.vibrational_class._single_point(mol, method=method)
+    mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol, method=method)
     dipole = vibrational_class._get_dipole(mol_scf, method=method)
     assert np.allclose(dipole, expected_dipole)
 

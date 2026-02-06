@@ -29,23 +29,23 @@ def test_flatten_unflatten():
 
     def block(weights, wires, use_CNOT=True):
         if use_CNOT:
-            qml.CNOT(wires=[wires[0], wires[1]])
-        qml.RY(weights[0], wires=wires[0])
-        qml.RY(weights[1], wires=wires[1])
+            qp.CNOT(wires=[wires[0], wires[1]])
+        qp.RY(weights[0], wires=wires[0])
+        qp.RY(weights[1], wires=wires[1])
 
     n_wires = 4
     n_block_wires = 2
     n_params_block = 2
-    n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+    n_blocks = qp.MPS.get_n_blocks(range(n_wires), n_block_wires)
     template_weights = [[0.1, -0.3]] * n_blocks
 
-    wires = qml.wires.Wires((0, 1, 2, 3))
+    wires = qp.wires.Wires((0, 1, 2, 3))
 
-    op = qml.MPS(wires, n_block_wires, block, n_params_block, template_weights, use_CNOT=True)
+    op = qp.MPS(wires, n_block_wires, block, n_params_block, template_weights, use_CNOT=True)
 
     data, metadata = op._flatten()
     assert len(data) == 1
-    assert qml.math.allclose(data[0], template_weights)
+    assert qp.math.allclose(data[0], template_weights)
 
     assert metadata[0] == wires
     assert dict(metadata[1]) == op.hyperparameters
@@ -53,8 +53,8 @@ def test_flatten_unflatten():
     # make sure metadata hashable
     assert hash(metadata)
 
-    new_op = qml.MPS._unflatten(*op._flatten())
-    qml.assert_equal(new_op, op)
+    new_op = qp.MPS._unflatten(*op._flatten())
+    qp.assert_equal(new_op, op)
     assert new_op._name == "MPS"  # make sure acutally initialized
     assert new_op is not op
 
@@ -233,7 +233,7 @@ class TestAttributes:
             match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "
             f"got {len(wires)}",
         ):
-            qml.MPS.get_n_blocks(wires, n_block_wires)
+            qp.MPS.get_n_blocks(wires, n_block_wires)
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -249,7 +249,7 @@ class TestAttributes:
     def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks):
         """Test that the number of blocks attribute returns the correct number of blocks."""
 
-        assert qml.MPS.get_n_blocks(wires, n_block_wires) == expected_n_blocks
+        assert qp.MPS.get_n_blocks(wires, n_block_wires) == expected_n_blocks
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -265,7 +265,7 @@ class TestAttributes:
             match=f"n_block_wires must be smaller than or equal to the number of wires; "
             f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
         ):
-            qml.MPS.get_n_blocks(wires, n_block_wires)
+            qp.MPS.get_n_blocks(wires, n_block_wires)
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -280,7 +280,7 @@ class TestAttributes:
     def test_get_n_blocks_with_offset(self, wires, n_block_wires, offset, expected_n_blocks):
         """Test that the number of blocks attribute returns the correct number of blocks with offset."""
 
-        assert qml.MPS.get_n_blocks(wires, n_block_wires, offset) == expected_n_blocks
+        assert qp.MPS.get_n_blocks(wires, n_block_wires, offset) == expected_n_blocks
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -295,7 +295,7 @@ class TestAttributes:
             match=r"Provided offset is outside the expected range; "
             f"the expected range for n_block_wires = {n_block_wires}",
         ):
-            qml.MPS.get_n_blocks(wires, n_block_wires, offset)
+            qp.MPS.get_n_blocks(wires, n_block_wires, offset)
 
 
 class TestTemplateOutputs:
@@ -303,24 +303,24 @@ class TestTemplateOutputs:
 
     @staticmethod
     def circuit1_block(weights, wires):
-        qml.RZ(weights[0], wires=wires[0])
-        qml.RZ(weights[1], wires=wires[1])
+        qp.RZ(weights[0], wires=wires[0])
+        qp.RZ(weights[1], wires=wires[1])
 
     @staticmethod
     def circuit1_MPS(weights, wires):
-        qml.RZ(weights[0][0], wires=wires[0])
-        qml.RZ(weights[0][1], wires=wires[1])
-        qml.RZ(weights[1][0], wires=wires[1])
-        qml.RZ(weights[1][1], wires=wires[2])
-        qml.RZ(weights[2][0], wires=wires[2])
-        qml.RZ(weights[2][1], wires=wires[3])
+        qp.RZ(weights[0][0], wires=wires[0])
+        qp.RZ(weights[0][1], wires=wires[1])
+        qp.RZ(weights[1][0], wires=wires[1])
+        qp.RZ(weights[1][1], wires=wires[2])
+        qp.RZ(weights[2][0], wires=wires[2])
+        qp.RZ(weights[2][1], wires=wires[3])
 
     @staticmethod
     def circuit2_block(weights, wires):
         SELWeights = np.array(
             [[[weights[0], weights[1], weights[2]], [weights[0], weights[1], weights[2]]]]
         )
-        qml.StronglyEntanglingLayers(SELWeights, wires)
+        qp.StronglyEntanglingLayers(SELWeights, wires)
 
     @staticmethod
     def circuit2_MPS(weights, wires):
@@ -340,27 +340,27 @@ class TestTemplateOutputs:
                 ]
             ]
         )
-        qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
-        qml.StronglyEntanglingLayers(SELWeights2, wires=wires[1:3])
+        qp.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
+        qp.StronglyEntanglingLayers(SELWeights2, wires=wires[1:3])
 
     @staticmethod
     def circuit3_block(wires, k=None):
-        qml.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
+        qp.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
         assert k == 2
 
     @staticmethod
     def circuit3_MPS(wires, **kwargs):  # pylint: disable=unused-argument
-        qml.MultiControlledX(wires=[wires[0], wires[1], wires[2], wires[3]])
-        qml.MultiControlledX(wires=[wires[1], wires[2], wires[3], wires[4]])
-        qml.MultiControlledX(wires=[wires[2], wires[3], wires[4], wires[5]])
-        qml.MultiControlledX(wires=[wires[3], wires[4], wires[5], wires[6]])
-        qml.MultiControlledX(wires=[wires[4], wires[5], wires[6], wires[7]])
+        qp.MultiControlledX(wires=[wires[0], wires[1], wires[2], wires[3]])
+        qp.MultiControlledX(wires=[wires[1], wires[2], wires[3], wires[4]])
+        qp.MultiControlledX(wires=[wires[2], wires[3], wires[4], wires[5]])
+        qp.MultiControlledX(wires=[wires[3], wires[4], wires[5], wires[6]])
+        qp.MultiControlledX(wires=[wires[4], wires[5], wires[6], wires[7]])
 
     @staticmethod
     def circuit4_MPS(wires, **kwargs):  # pylint: disable=unused-argument
-        qml.MultiControlledX(wires=[wires[0], wires[1], wires[2], wires[3]])
-        qml.MultiControlledX(wires=[wires[2], wires[3], wires[4], wires[5]])
-        qml.MultiControlledX(wires=[wires[4], wires[5], wires[6], wires[7]])
+        qp.MultiControlledX(wires=[wires[0], wires[1], wires[2], wires[3]])
+        qp.MultiControlledX(wires=[wires[2], wires[3], wires[4], wires[5]])
+        qp.MultiControlledX(wires=[wires[4], wires[5], wires[6], wires[7]])
 
     @pytest.mark.parametrize(
         (
@@ -428,13 +428,13 @@ class TestTemplateOutputs:
         expected_circuit,
     ):
         """Verifies that the output of the circuits is correct."""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
         block = getattr(self, block)
         expected_circuit = getattr(self, expected_circuit)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_template():
-            qml.MPS(
+            qp.MPS(
                 wires,
                 n_block_wires,
                 block,
@@ -443,14 +443,14 @@ class TestTemplateOutputs:
                 offset=offset,
                 **kwargs,
             )
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
+            return qp.expval(qp.PauliZ(wires=wires[-1]))
 
         template_result = circuit_template()
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_manual():
             expected_circuit(weights=template_weights, wires=wires)
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
+            return qp.expval(qp.PauliZ(wires=wires[-1]))
 
         manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
@@ -523,13 +523,13 @@ class TestTemplateOutputs:
     ):
         import jax
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
         block = getattr(self, block)
         expected_circuit = getattr(self, expected_circuit)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.MPS(
+            qp.MPS(
                 wires,
                 n_block_wires,
                 block,
@@ -538,8 +538,8 @@ class TestTemplateOutputs:
                 offset=offset,
                 **kwargs,
             )
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
+            return qp.expval(qp.PauliZ(wires=wires[-1]))
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.isclose(circuit(), jit_circuit())
+        assert qp.math.isclose(circuit(), jit_circuit())

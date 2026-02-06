@@ -32,9 +32,9 @@ import pennylane as qp
 def test_error_on_non_numpy_data(interface):
     """Test that an error is thrown in the interface data is not numpy."""
 
-    x = qml.math.asarray(0.5, like=interface)
-    tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
-    dev = qml.device("reference.qubit", wires=1)
+    x = qp.math.asarray(0.5, like=interface)
+    tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.Z(0))])
+    dev = qp.device("reference.qubit", wires=1)
 
     with pytest.raises(ValueError, match="Reference qubit can only work with numpy data."):
         dev.execute(tape)

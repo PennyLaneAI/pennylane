@@ -37,7 +37,7 @@ def tol():
     scope="module",
     params=[
         None,
-        qml.wires.Wires(
+        qp.wires.Wires(
             list("ab") + [-3, 42] + ["xyz", "23", "wireX"] + [f"w{i}" for i in range(20)]
         ),
         list(range(100, 120)),

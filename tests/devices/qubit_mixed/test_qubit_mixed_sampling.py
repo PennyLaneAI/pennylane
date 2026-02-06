@@ -120,7 +120,7 @@ class TestSampleState:
     @pytest.mark.parametrize("interface", ml_frameworks_list)
     def test_basic_sampling(self, interface, two_qubit_pure_state):
         """Test sampling across different ML interfaces."""
-        state = qml.math.array(two_qubit_pure_state, like=interface)
+        state = qp.math.array(two_qubit_pure_state, like=interface)
         samples = sample_state(state, 10)
         assert samples.shape == (10, 2)
         assert samples.dtype.kind == "i"
@@ -184,7 +184,7 @@ class TestMeasurements:
     def test_sample_measurement(self, num_shots, wires, two_qubit_pure_state):
         """Test sample measurements with different shots and wire configurations."""
         shots = Shots(num_shots)
-        result = measure_with_samples([qml.sample(wires=wires)], two_qubit_pure_state, shots)[0]
+        result = measure_with_samples([qp.sample(wires=wires)], two_qubit_pure_state, shots)[0]
         expected_shape = (num_shots, len(wires))
         assert result.shape == expected_shape, f"Result shape mismatch: {result.shape}"
         # Additional assertions to check the validity of the samples
@@ -195,7 +195,7 @@ class TestMeasurements:
     def test_counts_measurement(self, num_shots, two_qubit_pure_state):
         """Test counts measurement."""
         shots = Shots(num_shots)
-        result = measure_with_samples([qml.counts()], two_qubit_pure_state, shots)[0]
+        result = measure_with_samples([qp.counts()], two_qubit_pure_state, shots)[0]
         assert isinstance(result, dict), "Result is not a dictionary"
         total_counts = sum(result.values())
         assert (
@@ -211,7 +211,7 @@ class TestMeasurements:
     def test_counts_measurement_all_outcomes(self, num_shots, two_qubit_pure_state):
         """Test counts measurement with all_outcomes=True."""
         shots = Shots(num_shots)
-        result = measure_with_samples([qml.counts(all_outcomes=True)], two_qubit_pure_state, shots)[
+        result = measure_with_samples([qp.counts(all_outcomes=True)], two_qubit_pure_state, shots)[
             0
         ]
 
@@ -236,19 +236,19 @@ class TestMeasurements:
     @pytest.mark.parametrize(
         "observable",
         [
-            qml.PauliX(0),
-            qml.PauliY(0),
-            qml.PauliZ(0),
-            qml.PauliX(0) @ qml.PauliX(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
+            qp.PauliX(0),
+            qp.PauliY(0),
+            qp.PauliZ(0),
+            qp.PauliX(0) @ qp.PauliX(1),
+            qp.PauliZ(0) @ qp.PauliZ(1),
         ],
     )
-    @pytest.mark.parametrize("measurement", [qml.expval, qml.var])
+    @pytest.mark.parametrize("measurement", [qp.expval, qp.var])
     def test_observable_measurements(self, observable, measurement, two_qubit_pure_state):
         """Test different observables with expectation and variance."""
         shots = Shots(10000)
         result = measure_with_samples([measurement(observable)], two_qubit_pure_state, shots)[0]
-        if measurement is qml.expval:
+        if measurement is qp.expval:
             assert -1 <= result <= 1, f"Expectation value {result} out of bounds"
         else:
             assert 0 <= result <= 1, f"Variance {result} out of bounds"
@@ -256,9 +256,9 @@ class TestMeasurements:
     @pytest.mark.parametrize(
         "coeffs, obs",
         [
-            ([1.0, 0.5], [qml.PauliX(0), qml.PauliZ(0)]),
-            ([0.3, 0.7], [qml.PauliY(0), qml.PauliX(0)]),
-            ([0.5, 0.5], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]),
+            ([1.0, 0.5], [qp.PauliX(0), qp.PauliZ(0)]),
+            ([0.3, 0.7], [qp.PauliY(0), qp.PauliX(0)]),
+            ([0.5, 0.5], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliX(1)]),
         ],
     )
     def test_hamiltonian_measurement(self, coeffs, obs):
@@ -272,11 +272,11 @@ class TestMeasurements:
         num_wires = max(hamiltonian_wires) + 1
         state = create_initial_state(range(num_wires))  # Adjusted to include all wires
 
-        hamiltonian = qml.Hamiltonian(coeffs, obs)
+        hamiltonian = qp.Hamiltonian(coeffs, obs)
         shots = Shots(10000)
 
         result = measure_with_samples(
-            [qml.expval(hamiltonian)],
+            [qp.expval(hamiltonian)],
             state,
             shots,
         )[0]
@@ -288,10 +288,10 @@ class TestMeasurements:
         state = create_initial_state((0, 1))
 
         # Define a Sum observable
-        obs = qml.PauliZ(0) + qml.PauliX(1)
+        obs = qp.PauliZ(0) + qp.PauliX(1)
 
         # Wrap it in an expectation measurement process
-        mp = qml.expval(obs)
+        mp = qp.expval(obs)
 
         # Define partitioned shots
         shots = Shots((100, 200))
@@ -338,7 +338,7 @@ class TestBatchedOperations:
     def test_batched_measurements_shots(self, shots, batched_two_qubit_pure_state):
         """Test measurements with different shot configurations."""
         result = measure_with_samples(
-            [qml.sample(wires=[0, 1])], batched_two_qubit_pure_state, shots, is_state_batched=True
+            [qp.sample(wires=[0, 1])], batched_two_qubit_pure_state, shots, is_state_batched=True
         )
         batch_size = len(batched_two_qubit_pure_state)
         if shots.has_partitioned_shots:
@@ -371,11 +371,11 @@ class TestBatchedOperations:
         batched_states = math.stack(states)
 
         # Define an observable
-        obs = qml.PauliZ(0)
+        obs = qp.PauliZ(0)
 
         # Perform measurement
         result = measure_with_samples(
-            [qml.expval(obs)],
+            [qp.expval(obs)],
             batched_states,
             shots,
             is_state_batched=True,
@@ -401,7 +401,7 @@ class TestJaxSampling:
 
         # Define a simple state vector for a single qubit |0>
         state_vector = jnp.array([1, 0], dtype=jnp.complex64)
-        state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
+        state = qp.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set the PRNG key
         prng_key = jax.random.PRNGKey(0)
@@ -421,7 +421,7 @@ class TestJaxSampling:
 
         # Define a Bell state |00> + |11>
         state_vector = jnp.array([1, 0, 0, 1], dtype=jnp.complex64) / jnp.sqrt(2)
-        state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2, 2, 2))
+        state = qp.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2, 2, 2))
 
         # Set the PRNG key
         prng_key = jax.random.PRNGKey(42)
@@ -445,7 +445,7 @@ class TestJaxSampling:
 
         # Define a simple state vector for a single qubit |+>
         state_vector = jnp.array([1, 1], dtype=jnp.complex64) / jnp.sqrt(2)
-        state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
+        state = qp.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set the PRNG key
         prng_key = jax.random.PRNGKey(0)
@@ -465,7 +465,7 @@ class TestJaxSampling:
 
         # Define a simple state vector for a single qubit |+>
         state_vector = jnp.array([1, 1], dtype=jnp.complex64) / jnp.sqrt(2)
-        state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
+        state = qp.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set different PRNG keys
         prng_key1 = jax.random.PRNGKey(0)
@@ -486,13 +486,13 @@ class TestJaxSampling:
 
         # Define a simple state vector for a single qubit |0>
         state_vector = jnp.array([1, 0], dtype=jnp.complex64)
-        state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
+        state = qp.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set the PRNG key
         prng_key = jax.random.PRNGKey(0)
 
         # Define a measurement process
-        mp = qml.sample(wires=0)
+        mp = qp.sample(wires=0)
 
         # Perform measurement
         shots = Shots(10)
@@ -510,13 +510,13 @@ class TestJaxSampling:
 
         # Define a Bell state |00> + |11>
         state_vector = jnp.array([1, 0, 0, 1], dtype=jnp.complex64) / jnp.sqrt(2)
-        state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2, 2, 2))
+        state = qp.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2, 2, 2))
 
         # Set the PRNG key
         prng_key = jax.random.PRNGKey(42)
 
         # Define a measurement process
-        mp = qml.sample(wires=[0, 1])
+        mp = qp.sample(wires=[0, 1])
 
         # Perform measurement
         shots = Shots(1000)
@@ -541,8 +541,8 @@ class TestJaxSampling:
         # Convert to density matrices and batch them
         states = jnp.array(
             [
-                qml.math.reshape(jnp.outer(state_vectors[0], jnp.conj(state_vectors[0])), (2, 2)),
-                qml.math.reshape(jnp.outer(state_vectors[1], jnp.conj(state_vectors[1])), (2, 2)),
+                qp.math.reshape(jnp.outer(state_vectors[0], jnp.conj(state_vectors[0])), (2, 2)),
+                qp.math.reshape(jnp.outer(state_vectors[1], jnp.conj(state_vectors[1])), (2, 2)),
             ]
         )
 
@@ -568,8 +568,8 @@ class TestJaxSampling:
         # Convert to density matrices and batch them
         states = jnp.array(
             [
-                qml.math.reshape(jnp.outer(state_vectors[0], jnp.conj(state_vectors[0])), (2, 2)),
-                qml.math.reshape(jnp.outer(state_vectors[1], jnp.conj(state_vectors[1])), (2, 2)),
+                qp.math.reshape(jnp.outer(state_vectors[0], jnp.conj(state_vectors[0])), (2, 2)),
+                qp.math.reshape(jnp.outer(state_vectors[1], jnp.conj(state_vectors[1])), (2, 2)),
             ]
         )
 
@@ -577,7 +577,7 @@ class TestJaxSampling:
         prng_key = jax.random.PRNGKey(0)
 
         # Define a measurement process (PauliX measurement)
-        mp = qml.sample(qml.PauliX(0))
+        mp = qp.sample(qp.PauliX(0))
 
         # Perform measurement
         shots = Shots(1000)

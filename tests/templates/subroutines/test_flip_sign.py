@@ -27,13 +27,13 @@ from pennylane.wires import Wires
 @pytest.mark.jax
 def test_standard_checks():
     """Run standard checks with the assert_valid function."""
-    op = qml.FlipSign([0, 1], wires=("a", "b"))
-    qml.ops.functions.assert_valid(op)
+    op = qp.FlipSign([0, 1], wires=("a", "b"))
+    qp.ops.functions.assert_valid(op)
 
 
 def test_repr():
     """Test the repr for a flip sign operator."""
-    op = qml.FlipSign([0, 1], wires=("a", "b"))
+    op = qp.FlipSign([0, 1], wires=("a", "b"))
     expected = "FlipSign((0, 1), wires=['a', 'b'])"
     assert repr(op) == expected
 
@@ -58,14 +58,14 @@ class TestFlipSign:
         if isinstance(wires, int):
             wires = [wires]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for wire in wires:
-                qml.Hadamard(wire)
-            qml.FlipSign(n, wires=wires)
-            return qml.state()
+                qp.Hadamard(wire)
+            qp.FlipSign(n, wires=wires)
+            return qp.state()
 
         if isinstance(n, list):
             # convert the basis state from list of bits to integer number
@@ -91,7 +91,7 @@ class TestFlipSign:
     )
     def test_wires(self, n, wires):
         """Test that the operation wires attribute is correct."""
-        op = qml.FlipSign(n, wires=wires)
+        op = qp.FlipSign(n, wires=wires)
         assert op.wires == Wires(wires)
 
     @pytest.mark.parametrize(
@@ -105,7 +105,7 @@ class TestFlipSign:
         with pytest.raises(
             ValueError, match="The given basis state cannot be a negative integer number."
         ):
-            qml.FlipSign(n, wires=wires)
+            qp.FlipSign(n, wires=wires)
 
     @pytest.mark.parametrize(
         ("n, wires"),
@@ -122,7 +122,7 @@ class TestFlipSign:
         with pytest.raises(
             ValueError, match=f"Cannot encode basis state {n} on {num_wires} wires."
         ):
-            qml.FlipSign(n, wires=wires)
+            qp.FlipSign(n, wires=wires)
 
     @pytest.mark.parametrize(
         ("n, wires"),
@@ -140,7 +140,7 @@ class TestFlipSign:
                 f"The basis state {tuple(n)} and wires {wires} must be of equal length."
             ),
         ):
-            qml.FlipSign(n, wires=wires)
+            qp.FlipSign(n, wires=wires)
 
     @pytest.mark.parametrize(
         ("n, wires"),
@@ -155,27 +155,27 @@ class TestFlipSign:
     def test_wire_empty_error(self, n, wires):
         """Assert error raised when given empty wires"""
         with pytest.raises(ValueError, match="At least one valid wire is required."):
-            qml.FlipSign(n, wires=wires)
+            qp.FlipSign(n, wires=wires)
 
     @pytest.mark.jax
     def test_jax_jit(self):
         import jax
 
         num_wires = 2
-        dev = qml.device("default.qubit", wires=num_wires)
+        dev = qp.device("default.qubit", wires=num_wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             for wire in range(num_wires):
-                qml.Hadamard(wire)
-            qml.FlipSign([1, 0], wires=range(num_wires))
-            return qml.state()
+                qp.Hadamard(wire)
+            qp.FlipSign([1, 0], wires=range(num_wires))
+            return qp.state()
 
         jit_circuit = jax.jit(circuit)
 
         res = circuit()
         jit_res = jit_circuit()
-        assert qml.math.allclose(res, jit_res)
+        assert qp.math.allclose(res, jit_res)
 
     @pytest.mark.parametrize(
         ("n, wires"),
@@ -192,9 +192,9 @@ class TestFlipSign:
     )
     def test_decomposition_new(self, n, wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.FlipSign(n, wires=wires)
+        op = qp.FlipSign(n, wires=wires)
 
-        for rule in qml.list_decomps(qml.FlipSign):
+        for rule in qp.list_decomps(qp.FlipSign):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
@@ -213,7 +213,7 @@ class TestFlipSign:
     @pytest.mark.capture
     def test_decomposition_new_capture(self, n, wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.FlipSign(n, wires=wires)
+        op = qp.FlipSign(n, wires=wires)
 
-        for rule in qml.list_decomps(qml.FlipSign):
+        for rule in qp.list_decomps(qp.FlipSign):
             _test_decomposition_rule(op, rule)

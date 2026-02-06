@@ -23,16 +23,16 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 
 
-@qml.prod
+@qp.prod
 def generator(wires):
     for wire in wires:
-        qml.Hadamard(wire)
+        qp.Hadamard(wire)
 
 
-@qml.prod
+@qp.prod
 def oracle(items, wires):
     for item in items:
-        qml.FlipSign(item, wires=wires)
+        qp.FlipSign(item, wires=wires)
 
 
 class TestInitialization:
@@ -45,9 +45,9 @@ class TestInitialization:
         O = oracle([0, 2], wires=range(3))
 
         with pytest.raises(
-            qml.wires.WireError, match="work_wire must be specified if fixed_point == True."
+            qp.wires.WireError, match="work_wire must be specified if fixed_point == True."
         ):
-            qml.AmplitudeAmplification(U, O, iters=3, fixed_point=True)
+            qp.AmplitudeAmplification(U, O, iters=3, fixed_point=True)
 
     @pytest.mark.parametrize(
         "wires, fixed_point, work_wire",
@@ -63,15 +63,15 @@ class TestInitialization:
         O = oracle([0], wires=wires)
 
         with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
-            qml.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
+            qp.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
     @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity using assert_valid."""
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
-        op = qml.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
-        qml.ops.functions.assert_valid(op)
+        op = qp.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
+        qp.ops.functions.assert_valid(op)
 
 
 @pytest.mark.parametrize(
@@ -88,23 +88,23 @@ def test_compare_grover(n_wires, items, iters):
     U = generator(wires=range(n_wires))
     O = oracle(items, wires=range(n_wires))
 
-    dev = qml.device("default.qubit", wires=n_wires)
+    dev = qp.device("default.qubit", wires=n_wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit_amplitude_amplification():
         generator(wires=range(n_wires))
-        qml.AmplitudeAmplification(U, O, iters)
-        return qml.probs(wires=range(n_wires))
+        qp.AmplitudeAmplification(U, O, iters)
+        return qp.probs(wires=range(n_wires))
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit_grover():
         generator(wires=range(n_wires))
 
         for _ in range(iters):
             oracle(items, wires=range(n_wires))
-            qml.GroverOperator(wires=range(n_wires))
+            qp.GroverOperator(wires=range(n_wires))
 
-        return qml.probs(wires=range(n_wires))
+        return qp.probs(wires=range(n_wires))
 
     assert np.allclose(circuit_amplitude_amplification(), circuit_grover(), atol=1e-5)
 
@@ -114,22 +114,22 @@ def test_default_lightning_devices():
 
     def circuit():
         """Test circuit"""
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=1)
-        qml.Hadamard(wires=2)
+        qp.Hadamard(wires=0)
+        qp.Hadamard(wires=1)
+        qp.Hadamard(wires=2)
 
-        qml.AmplitudeAmplification(
+        qp.AmplitudeAmplification(
             generator(range(3)), oracle([0], range(3)), fixed_point=True, iters=3, work_wire=3
         )
-        return qml.probs(wires=range(3))
+        return qp.probs(wires=range(3))
 
-    dev1 = qml.device("default.qubit")
-    qnode1 = qml.QNode(circuit, dev1, interface=None)
+    dev1 = qp.device("default.qubit")
+    qnode1 = qp.QNode(circuit, dev1, interface=None)
 
     res1 = qnode1()
 
-    dev2 = qml.device("lightning.qubit", wires=4)
-    qnode2 = qml.QNode(circuit, dev2)
+    dev2 = qp.device("lightning.qubit", wires=4)
+    qnode2 = qp.QNode(circuit, dev2)
 
     res2 = qnode2()
 
@@ -141,16 +141,16 @@ class TestDifferentiability:
 
     @staticmethod
     def circuit(params):
-        qml.RY(params[0], wires=0)
-        qml.AmplitudeAmplification(
-            qml.RY(params[0], wires=0),
-            qml.RZ(params[1], wires=0),
+        qp.RY(params[0], wires=0)
+        qp.AmplitudeAmplification(
+            qp.RY(params[0], wires=0),
+            qp.RZ(params[1], wires=0),
             iters=3,
             fixed_point=True,
             work_wire=2,
         )
 
-        return qml.expval(qml.PauliZ(0))
+        return qp.expval(qp.PauliZ(0))
 
     # calculated numerically with finite diff method (h = 1e-5)
     exp_grad = np.array([-0.88109663, -0.66429297])
@@ -162,15 +162,15 @@ class TestDifferentiability:
     def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit", wires=3, seed=seed)
+        dev = qp.device("default.qubit", wires=3, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
         )
 
-        params = qml.numpy.array(self.params, requires_grad=True)
-        res = qml.grad(qnode)(params)
-        assert qml.math.shape(res) == (2,)
+        params = qp.numpy.array(self.params, requires_grad=True)
+        res = qp.grad(qnode)(params)
+        assert qp.math.shape(res) == (2,)
         assert np.allclose(res, self.exp_grad, atol=0.01)
 
     @pytest.mark.jax
@@ -183,11 +183,11 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", seed=seed)
+        dev = qp.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
         )
         if use_jit:
             qnode = jax.jit(qnode)
@@ -209,17 +209,17 @@ class TestDifferentiability:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = qml.device("default.qubit", seed=seed)
+        dev = qp.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
         )
 
         params = torch.tensor(self.params, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, params)
-        assert qml.math.shape(jac) == (2,)
-        assert qml.math.allclose(jac, self.exp_grad, atol=0.01)
+        assert qp.math.shape(jac) == (2,)
+        assert qp.math.allclose(jac, self.exp_grad, atol=0.01)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -229,10 +229,10 @@ class TestDifferentiability:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", seed=seed)
+        dev = qp.device("default.qubit", seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(
-            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
+        qnode = qp.set_shots(
+            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
         )
 
         params = tf.Variable(self.params)
@@ -240,39 +240,39 @@ class TestDifferentiability:
             res = qnode(params)
 
         jac = tape.gradient(res, params)
-        assert qml.math.shape(jac) == (8,)
-        assert qml.math.allclose(res, self.exp_grad, atol=0.001)
+        assert qp.math.shape(jac) == (8,)
+        assert qp.math.allclose(res, self.exp_grad, atol=0.001)
 
 
 def test_correct_queueing():
     """Test that operations in a circuit containing AmplitudeAmplification are correctly queued"""
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit1():
-        qml.Hadamard(wires=0)
-        qml.Hadamard(wires=1)
-        qml.Hadamard(wires=2)
+        qp.Hadamard(wires=0)
+        qp.Hadamard(wires=1)
+        qp.Hadamard(wires=2)
 
-        qml.AmplitudeAmplification(generator(range(3)), oracle([0], range(3)))
-        return qml.state()
+        qp.AmplitudeAmplification(generator(range(3)), oracle([0], range(3)))
+        return qp.state()
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit2():
         generator(wires=[0, 1, 2])
 
-        qml.AmplitudeAmplification(generator(range(3)), oracle([0], range(3)))
-        return qml.state()
+        qp.AmplitudeAmplification(generator(range(3)), oracle([0], range(3)))
+        return qp.state()
 
     U = generator(wires=[0, 1, 2])
     O = oracle([0], wires=[0, 1, 2])
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit3():
         generator(wires=[0, 1, 2])
 
-        qml.AmplitudeAmplification(U=U, O=O)
-        return qml.state()
+        qp.AmplitudeAmplification(U=U, O=O)
+        return qp.state()
 
     assert np.allclose(circuit1(), circuit2())
     assert np.allclose(circuit1(), circuit3())
@@ -285,14 +285,14 @@ def test_amplification():
     U = generator(wires=range(3))
     O = oracle([2], wires=range(3))
 
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         generator(wires=range(3))
-        qml.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
+        qp.AmplitudeAmplification(U, O, iters=5, fixed_point=True, work_wire=3)
 
-        return qml.probs(wires=range(3))
+        return qp.probs(wires=range(3))
 
     res = np.round(circuit(), 3)
 
@@ -306,18 +306,18 @@ def test_amplification():
 def test_p_min(p_min):
     """Test that the p_min parameter works correctly."""
 
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
 
     U = generator(wires=range(4))
     O = oracle([0], wires=range(4))
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
         generator(wires=range(4))
 
-        qml.AmplitudeAmplification(U, O, fixed_point=True, work_wire=4, p_min=p_min, iters=11)
+        qp.AmplitudeAmplification(U, O, fixed_point=True, work_wire=4, p_min=p_min, iters=11)
 
-        return qml.probs(wires=range(4))
+        return qp.probs(wires=range(4))
 
     assert circuit()[0] >= p_min
 
@@ -358,7 +358,7 @@ def test_decomposition_new(n_wires, items, iters, fixed):
     U = generator(wires=range(n_wires))
     O = oracle(items, wires=range(n_wires))
 
-    op = qml.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
+    op = qp.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
 
-    for rule in qml.list_decomps(qml.AmplitudeAmplification):
+    for rule in qp.list_decomps(qp.AmplitudeAmplification):
         _test_decomposition_rule(op, rule)

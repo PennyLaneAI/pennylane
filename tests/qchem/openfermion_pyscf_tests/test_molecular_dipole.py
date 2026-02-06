@@ -245,8 +245,8 @@ def test_openfermion_molecular_dipole(
 ):
     r"""Test that molecular_dipole returns the correct dipole operator with openfermion backend."""
 
-    molecule = qml.qchem.Molecule(symbols, geometry, charge=charge)
-    dip = qml.qchem.molecular_dipole(
+    molecule = qp.qchem.Molecule(symbols, geometry, charge=charge)
+    dip = qp.qchem.molecular_dipole(
         molecule,
         method="openfermion",
         active_electrons=active_el,
@@ -267,7 +267,7 @@ def test_openfermion_molecular_dipole(
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
         for o1, o2 in zip(d_ops, r_ops):
-            qml.assert_equal(o1, o2)
+            qp.assert_equal(o1, o2)
 
 
 @pytest.mark.parametrize(
@@ -292,8 +292,8 @@ def test_differentiable_molecular_dipole(
 ):
     r"""Test that molecular_dipole returns the correct eigenvalues with the dhf backend."""
 
-    molecule = qml.qchem.Molecule(symbols, geometry, charge=charge)
-    dip_dhf = qml.qchem.molecular_dipole(
+    molecule = qp.qchem.Molecule(symbols, geometry, charge=charge)
+    dip_dhf = qp.qchem.molecular_dipole(
         molecule,
         method="dhf",
         active_electrons=active_el,
@@ -307,7 +307,7 @@ def test_differentiable_molecular_dipole(
         if not wires:
             eig = [0, 0]
         else:
-            eig = qml.eigvals(qml.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
+            eig = qp.eigvals(qp.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
 
@@ -423,4 +423,4 @@ def test_coordinate_units_for_molecular_dipole(method, tmpdir):
         outpath=tmpdir.strpath,
     )
     for o1, o2 in zip(dipole_ang, dipole_bohr):
-        qml.assert_equal(o1, o2)
+        qp.assert_equal(o1, o2)

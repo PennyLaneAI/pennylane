@@ -32,7 +32,7 @@ from pennylane.devices.legacy_facade import (
 from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 
 
-class DummyDevice(qml.devices.LegacyDevice):
+class DummyDevice(qp.devices.LegacyDevice):
     """A minimal device that does not do anything."""
 
     author = "some string"
@@ -61,23 +61,23 @@ class DummyDevice(qml.devices.LegacyDevice):
 
 def test_double_facade_raises_error():
     """Test that a RuntimeError is raised if a facaded device is passed to constructor"""
-    dev = qml.device("default.qutrit", wires=1)
+    dev = qp.device("default.qutrit", wires=1)
 
     with pytest.raises(RuntimeError, match="already-facaded device can not be wrapped"):
-        qml.devices.LegacyDeviceFacade(dev)
+        qp.devices.LegacyDeviceFacade(dev)
 
 
 def test_error_if_not_legacy_device():
     """Test that a ValueError is raised if the target is not a legacy device."""
 
-    target = qml.devices.DefaultQubit()
+    target = qp.devices.DefaultQubit()
     with pytest.raises(ValueError, match="The LegacyDeviceFacade only accepts"):
         LegacyDeviceFacade(target)
 
 
 def test_copy():
     """Test that copy works correctly"""
-    dev = qml.device("default.qutrit", wires=1)
+    dev = qp.device("default.qutrit", wires=1)
 
     for copied_devs in (copy.copy(dev), copy.deepcopy(dev)):
         assert copied_devs is not dev
@@ -95,11 +95,11 @@ def test_shots():
     ):
         dev = LegacyDeviceFacade(legacy_dev)
 
-    assert dev.shots == qml.measurements.Shots((100, 100))
+    assert dev.shots == qp.measurements.Shots((100, 100))
 
-    assert legacy_dev._shot_vector == list(qml.measurements.Shots((100, 100)).shot_vector)
+    assert legacy_dev._shot_vector == list(qp.measurements.Shots((100, 100)).shot_vector)
     assert legacy_dev.shots == 200
-    assert dev.shots == qml.measurements.Shots((100, 100))
+    assert dev.shots == qp.measurements.Shots((100, 100))
 
 
 def test_tracker():
@@ -107,8 +107,8 @@ def test_tracker():
 
     dev = LegacyDeviceFacade(DummyDevice())
 
-    with qml.Tracker(dev) as tracker:
-        _ = dev.execute(qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50))
+    with qp.Tracker(dev) as tracker:
+        _ = dev.execute(qp.tape.QuantumScript([], [qp.expval(qp.Z(0))], shots=50))
 
     assert tracker.totals == {"executions": 1, "shots": 50, "batches": 1, "batch_len": 1}
 
@@ -118,17 +118,17 @@ def test_debugger():
 
     dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.Snapshot()
-        qml.Hadamard(0)
-        qml.Snapshot()
-        return qml.expval(qml.Z(0))
+        qp.Snapshot()
+        qp.Hadamard(0)
+        qp.Snapshot()
+        return qp.expval(qp.Z(0))
 
-    res = qml.snapshots(circuit)()
-    assert qml.math.allclose(res[0], np.array([1, 0]))
-    assert qml.math.allclose(res[1], 1 / np.sqrt(2) * np.array([1, 1]))
-    assert qml.math.allclose(res["execution_results"], 0)
+    res = qp.snapshots(circuit)()
+    assert qp.math.allclose(res[0], np.array([1, 0]))
+    assert qp.math.allclose(res[1], 1 / np.sqrt(2) * np.array([1, 1]))
+    assert qp.math.allclose(res["execution_results"], 0)
 
 
 @pytest.mark.parametrize(
@@ -149,8 +149,8 @@ def test_shot_distribution(execution_config):
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
 
-    tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
-    tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
+    tape1 = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))], shots=5)
+    tape2 = qp.tape.QuantumScript([], [qp.expval(qp.Z(0))], shots=100)
 
     with dev.tracker:
         dev.execute((tape1, tape2))
@@ -172,24 +172,24 @@ def test_shot_distribution(execution_config):
 def test_legacy_device_expand_fn():
     """Test that legacy_device_expand_fn expands operations to the target gateset."""
 
-    tape = qml.tape.QuantumScript([qml.X(0), qml.IsingXX(0.5, wires=(0, 1))], [qml.state()])
+    tape = qp.tape.QuantumScript([qp.X(0), qp.IsingXX(0.5, wires=(0, 1))], [qp.state()])
 
-    expected = qml.tape.QuantumScript(
-        [qml.X(0), qml.CNOT((0, 1)), qml.RX(0.5, 0), qml.CNOT((0, 1))], [qml.state()]
+    expected = qp.tape.QuantumScript(
+        [qp.X(0), qp.CNOT((0, 1)), qp.RX(0.5, 0), qp.CNOT((0, 1))], [qp.state()]
     )
     (new_tape,), fn = legacy_device_expand_fn(tape, device=DummyDevice())
-    qml.assert_equal(new_tape, expected)
+    qp.assert_equal(new_tape, expected)
     assert fn(("A",)) == "A"
 
 
 def test_legacy_device_batch_transform():
     """Test that legacy_device_batch_transform still performs the operations that the legacy batch transform did."""
 
-    tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0) + qml.Y(0))])
+    tape = qp.tape.QuantumScript([], [qp.expval(qp.X(0) + qp.Y(0))])
     (tape1, tape2), fn = legacy_device_batch_transform(tape, device=DummyDevice())
 
-    qml.assert_equal(tape1, qml.tape.QuantumScript([], [qml.expval(qml.X(0))]))
-    qml.assert_equal(tape2, qml.tape.QuantumScript([], [qml.expval(qml.Y(0))]))
+    qp.assert_equal(tape1, qp.tape.QuantumScript([], [qp.expval(qp.X(0))]))
+    qp.assert_equal(tape2, qp.tape.QuantumScript([], [qp.expval(qp.Y(0))]))
     assert fn((1.0, 2.0)) == np.array(3.0)
 
 
@@ -202,13 +202,13 @@ def test_batch_transform_supports_hamiltonian():
 
         observables = {"Hamiltonian"}
 
-    H = qml.Hamiltonian([1, 1], [qml.X(0), qml.Y(0)])
+    H = qp.Hamiltonian([1, 1], [qp.X(0), qp.Y(0)])
 
-    tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=None)
+    tape = qp.tape.QuantumScript([], [qp.expval(H)], shots=None)
     batch, _ = legacy_device_batch_transform(tape, device=HamiltonianDev())
     assert len(batch) == 1
 
-    tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=50)
+    tape = qp.tape.QuantumScript([], [qp.expval(H)], shots=50)
     batch, _ = legacy_device_batch_transform(tape, device=HamiltonianDev())
     assert len(batch) == 2
 
@@ -223,16 +223,16 @@ def test_basic_properties():
     assert d.author == "some string"
     assert d.version == 0.0
     assert repr(d) == f"<LegacyDeviceFacade: {repr(ld)}>"
-    assert d.wires == qml.wires.Wires((0, 1))
+    assert d.wires == qp.wires.Wires((0, 1))
 
 
 def test_preprocessing_program():
     """Test the population of the preprocessing program."""
 
-    m0 = qml.measure(0)
-    tape = qml.tape.QuantumScript(
-        [qml.X(0), qml.IsingXX(0.5, (0, 1)), *m0.measurements],
-        [qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.Y(0)]))],
+    m0 = qp.measure(0)
+    tape = qp.tape.QuantumScript(
+        [qp.X(0), qp.IsingXX(0.5, (0, 1)), *m0.measurements],
+        [qp.expval(qp.Hamiltonian([1, 1], [qp.X(0), qp.Y(0)]))],
     )
 
     dev = DummyDevice(wires=(0, 1))
@@ -241,7 +241,7 @@ def test_preprocessing_program():
     program = facade.preprocess_transforms(config)
 
     assert (
-        program[0].tape_transform == qml.defer_measurements.tape_transform
+        program[0].tape_transform == qp.defer_measurements.tape_transform
     )  # pylint: disable=no-member
     assert (
         program[1].tape_transform == legacy_device_batch_transform.tape_transform
@@ -250,24 +250,24 @@ def test_preprocessing_program():
         program[2].tape_transform == legacy_device_expand_fn.tape_transform
     )  # pylint: disable=no-member
 
-    m0 = qml.measure(0)
-    tape = qml.tape.QuantumScript(
-        [qml.X(0), qml.IsingXX(0.5, (0, 1)), *m0.measurements],
-        [qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.Y(0)]))],
+    m0 = qp.measure(0)
+    tape = qp.tape.QuantumScript(
+        [qp.X(0), qp.IsingXX(0.5, (0, 1)), *m0.measurements],
+        [qp.expval(qp.Hamiltonian([1, 1], [qp.X(0), qp.Y(0)]))],
         shots=50,
     )
 
     (tape1, tape2), fn = program((tape,))
-    expected_ops = [qml.X(0), qml.CNOT((0, 1)), qml.RX(0.5, 0), qml.CNOT((0, 1)), qml.CNOT((0, 2))]
+    expected_ops = [qp.X(0), qp.CNOT((0, 1)), qp.RX(0.5, 0), qp.CNOT((0, 1)), qp.CNOT((0, 2))]
     assert tape1.operations == expected_ops
     assert tape2.operations == expected_ops
 
-    assert tape1.measurements == [qml.expval(qml.X(0))]
-    assert tape2.measurements == [qml.expval(qml.Y(0))]
-    assert tape1.shots == qml.measurements.Shots(50)
-    assert tape2.shots == qml.measurements.Shots(50)
+    assert tape1.measurements == [qp.expval(qp.X(0))]
+    assert tape2.measurements == [qp.expval(qp.Y(0))]
+    assert tape1.shots == qp.measurements.Shots(50)
+    assert tape2.shots == qp.measurements.Shots(50)
 
-    assert qml.math.allclose(fn((1.0, 2.0)), 3.0)
+    assert qp.math.allclose(fn((1.0, 2.0)), 3.0)
 
 
 def test_mcm_validation():
@@ -276,8 +276,8 @@ def test_mcm_validation():
     dev = DummyDevice(wires=[0, 1])
     facade = LegacyDeviceFacade(dev)
 
-    m0 = qml.measure(0)
-    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))])
+    m0 = qp.measure(0)
+    tape = qp.tape.QuantumScript([qp.X, *m0.measurements], [qp.expval(qp.Z(0))])
     with pytest.raises(QuantumFunctionError, match="only supported with finite shots"):
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
         facade.setup_execution_config(config, tape)
@@ -298,8 +298,8 @@ def test_mcm_resolution_when_supported():
     dev = MidMeasureDev(wires=[0, 1])
     facade = LegacyDeviceFacade(dev)
 
-    m0 = qml.measure(0)
-    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))], shots=100)
+    m0 = qp.measure(0)
+    tape = qp.tape.QuantumScript([qp.X, *m0.measurements], [qp.expval(qp.Z(0))], shots=100)
     config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
     config = facade.setup_execution_config(config, tape)
     assert config.mcm_config.mcm_method == "one-shot"
@@ -330,8 +330,8 @@ def test_mcm_resolution_toml_present(request):
     dev.config_filepath = request.node.toml_file  # pylint: disable=attribute-defined-outside-init
     facade = LegacyDeviceFacade(dev)
 
-    m0 = qml.measure(0)
-    tape = qml.tape.QuantumScript([qml.X, *m0.measurements], [qml.expval(qml.Z(0))], shots=100)
+    m0 = qp.measure(0)
+    tape = qp.tape.QuantumScript([qp.X, *m0.measurements], [qp.expval(qp.Z(0))], shots=100)
     config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="one-shot"))
     config = facade.setup_execution_config(config, tape)
     assert config.mcm_config.mcm_method == "one-shot"
@@ -351,7 +351,7 @@ def test_preprocessing_program_supports_mid_measure():
 
     dev = MidMeasureDev()
     program = LegacyDeviceFacade(dev).preprocess_transforms()
-    assert qml.defer_measurements not in program
+    assert qp.defer_measurements not in program
 
 
 @pytest.mark.parametrize("t_postselect_mode", ("hw-like", "fill-shots"))
@@ -370,10 +370,10 @@ def test_pass_postselect_mode_to_dev(t_postselect_mode):
     target = MidMeasureDev()
     dev = LegacyDeviceFacade(target)
 
-    mcm_config = qml.devices.MCMConfig(postselect_mode=t_postselect_mode)
-    config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
+    mcm_config = qp.devices.MCMConfig(postselect_mode=t_postselect_mode)
+    config = qp.devices.ExecutionConfig(mcm_config=mcm_config)
 
-    dev.execute(qml.tape.QuantumScript(), config)
+    dev.execute(qp.tape.QuantumScript(), config)
 
 
 class TestGradientSupport:
@@ -420,16 +420,16 @@ class TestGradientSupport:
         adj_dev = AdjointDev()
         dev = LegacyDeviceFacade(adj_dev)
 
-        tape = qml.tape.QuantumScript([], [], shots=None)
+        tape = qp.tape.QuantumScript([], [], shots=None)
         assert dev._validate_adjoint_method(tape)
-        tape_shots = qml.tape.QuantumScript([], [], shots=50)
+        tape_shots = qp.tape.QuantumScript([], [], shots=50)
         assert not dev._validate_adjoint_method(tape_shots)
 
-        config = qml.devices.ExecutionConfig(gradient_method=gradient_method)
+        config = qp.devices.ExecutionConfig(gradient_method=gradient_method)
         assert dev.supports_derivatives(config, tape)
         assert not dev.supports_derivatives(config, tape_shots)
 
-        unsupported_tape = qml.tape.QuantumScript([], [qml.state()])
+        unsupported_tape = qp.tape.QuantumScript([], [qp.state()])
         assert not dev.supports_derivatives(config, unsupported_tape)
 
         program, processed_config = dev.preprocess(config)
@@ -440,21 +440,21 @@ class TestGradientSupport:
         }
         assert processed_config.grad_on_execution is True
 
-        tape = qml.tape.QuantumScript(
-            [qml.Rot(qml.numpy.array(1.2), 2.3, 3.4, 0)], [qml.expval(qml.Z(0))]
+        tape = qp.tape.QuantumScript(
+            [qp.Rot(qp.numpy.array(1.2), 2.3, 3.4, 0)], [qp.expval(qp.Z(0))]
         )
         (new_tape,), _ = program((tape,))
-        expected = qml.tape.QuantumScript(
-            [qml.RZ(qml.numpy.array(1.2), 0), qml.RY(2.3, 0), qml.RZ(3.4, 0)],
-            [qml.expval(qml.Z(0))],
+        expected = qp.tape.QuantumScript(
+            [qp.RZ(qp.numpy.array(1.2), 0), qp.RY(2.3, 0), qp.RZ(3.4, 0)],
+            [qp.expval(qp.Z(0))],
         )
-        qml.assert_equal(new_tape, expected)
+        qp.assert_equal(new_tape, expected)
 
         out = dev.compute_derivatives(tape, processed_config)
         assert out == "a"  # the output of adjoint_jacobian
 
         res, jac = dev.execute_and_compute_derivatives(tape, processed_config)
-        assert qml.math.allclose(res, 0)
+        assert qp.math.allclose(res, 0)
         assert jac == "a"
 
     def test_device_derivatives(self):
@@ -470,9 +470,9 @@ class TestGradientSupport:
 
         assert dev.supports_derivatives()
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
-        assert dev._validate_device_method(qml.tape.QuantumScript())
+        assert dev._validate_device_method(qp.tape.QuantumScript())
 
-        config = qml.devices.ExecutionConfig(gradient_method="best")
+        config = qp.devices.ExecutionConfig(gradient_method="best")
         processed_config = dev.setup_execution_config(config)
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
@@ -483,13 +483,13 @@ class TestGradientSupport:
         class BackpropDevice(DummyDevice):
             _capabilities = {"passthru_interface": "autograd"}
 
-        H = qml.SparseHamiltonian(qml.X.compute_sparse_matrix(), wires=0)
-        x = qml.numpy.array(0.1)
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(H)])
+        H = qp.SparseHamiltonian(qp.X.compute_sparse_matrix(), wires=0)
+        x = qp.numpy.array(0.1)
+        tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(H)])
         dev = LegacyDeviceFacade(BackpropDevice())
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
 
-        tape2 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+        tape2 = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.Z(0))])
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape2)
 
     def test_passthru_interface_no_substitution(self):
@@ -500,7 +500,7 @@ class TestGradientSupport:
 
         dev = LegacyDeviceFacade(BackpropDevice(wires=2, shots=None))
 
-        assert dev.supports_derivatives(qml.devices.ExecutionConfig(gradient_method="backprop"))
+        assert dev.supports_derivatives(qp.devices.ExecutionConfig(gradient_method="backprop"))
 
-        config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
+        config = qp.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
         assert dev.setup_execution_config(config) is config  # unchanged

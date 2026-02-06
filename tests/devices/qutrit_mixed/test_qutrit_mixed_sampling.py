@@ -139,8 +139,8 @@ class TestSampleState:
         """Tests that sample_state calls _sample_state_jax if the seed is a JAX PRNG key"""
         import jax
 
-        spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
-        state = qml.math.array(two_qutrit_state, like="jax")
+        spy = mocker.spy(qp.devices.qutrit_mixed.sampling, "_sample_state_jax")
+        state = qp.math.array(two_qutrit_state, like="jax")
 
         # prng_key specified, should call _sample_state_jax
         _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
@@ -154,7 +154,7 @@ class TestSampleState:
         """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
         import jax
 
-        state = qml.math.array(two_qutrit_pure_state, like="jax")
+        state = qp.math.array(two_qutrit_pure_state, like="jax")
 
         samples = _sample_state_jax(state, 10, prng_key=jax.random.PRNGKey(seed))
 
@@ -167,7 +167,7 @@ class TestSampleState:
         """Test that setting the seed as a JAX PRNG key determines the results for _sample_state_jax"""
         import jax
 
-        state = qml.math.array(two_qutrit_pure_state, like="jax")
+        state = qp.math.array(two_qutrit_pure_state, like="jax")
 
         samples = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
         samples2 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
@@ -181,7 +181,7 @@ class TestSampleState:
         custom_rng = np.random.default_rng(12345)
         samples = sample_state(two_qutrit_state, 4, rng=custom_rng)
         expected = [[0, 2], [1, 0], [2, 1], [1, 2]]
-        assert qml.math.allequal(samples, expected)
+        assert qp.math.allequal(samples, expected)
 
     def test_entangled_qutrit_samples_always_match(self, seed):
         """Tests that entangled qutrits are always in the same state."""
@@ -244,8 +244,8 @@ class TestMeasureWithSamples:
 
     def test_sample_measure(self, two_qutrit_pure_state):
         """Test that a sample measurement works as expected"""
-        shots = qml.measurements.Shots(100)
-        mp = qml.sample(wires=range(2))
+        shots = qp.measurements.Shots(100)
+        mp = qp.sample(wires=range(2))
 
         result = measure_with_samples(mp, two_qutrit_pure_state, shots=shots)
 
@@ -257,10 +257,10 @@ class TestMeasureWithSamples:
         """Test that a sample measurement on a single wire works as expected"""
         state_vector = np.array([1, -1j, 1, 0, 0, 0, 0, 0, 0])
         state = get_dm_of_state(state_vector, 2, 3)
-        shots = qml.measurements.Shots(100)
+        shots = qp.measurements.Shots(100)
 
-        mp0 = qml.sample(wires=0)
-        mp1 = qml.sample(wires=1)
+        mp0 = qp.sample(wires=0)
+        mp1 = qp.sample(wires=1)
 
         result0 = measure_with_samples(mp0, state, shots=shots)
         result1 = measure_with_samples(mp1, state, shots=shots)
@@ -275,8 +275,8 @@ class TestMeasureWithSamples:
 
     def test_approximate_sample_measure(self, two_qutrit_pure_state, seed):
         """Test that a sample measurement returns approximately the correct distribution"""
-        shots = qml.measurements.Shots(10000)
-        mp = qml.sample(wires=range(2))
+        shots = qp.measurements.Shots(10000)
+        mp = qp.sample(wires=range(2))
 
         result = measure_with_samples(mp, two_qutrit_pure_state, shots=shots, rng=seed)
 
@@ -287,13 +287,13 @@ class TestMeasureWithSamples:
 
     def test_approximate_expval_measure(self, two_qutrit_state, seed):
         """Test that an expval measurement works as expected"""
-        state = qml.math.array(two_qutrit_state)
-        shots = qml.measurements.Shots(10000)
-        mp = qml.expval(qml.GellMann(0, 1) @ qml.GellMann(1, 1))
+        state = qp.math.array(two_qutrit_state)
+        shots = qp.measurements.Shots(10000)
+        mp = qp.expval(qp.GellMann(0, 1) @ qp.GellMann(1, 1))
 
         result = measure_with_samples(mp, state, shots=shots, rng=seed)
 
-        gellmann_1_matrix = qml.GellMann.compute_matrix(1)
+        gellmann_1_matrix = qp.GellMann.compute_matrix(1)
         observable_matrix = np.kron(gellmann_1_matrix, gellmann_1_matrix)
         expected = np.trace(observable_matrix @ state.reshape((9, 9)))
 
@@ -302,13 +302,13 @@ class TestMeasureWithSamples:
 
     def test_approximate_var_measure(self, two_qutrit_state, seed):
         """Test that a variance measurement works as expected"""
-        state = qml.math.array(two_qutrit_state)
-        shots = qml.measurements.Shots(10000)
-        mp = qml.var(qml.GellMann(0, 1) @ qml.GellMann(1, 1))
+        state = qp.math.array(two_qutrit_state)
+        shots = qp.measurements.Shots(10000)
+        mp = qp.var(qp.GellMann(0, 1) @ qp.GellMann(1, 1))
 
         result = measure_with_samples(mp, state, shots=shots, rng=seed)
 
-        gellmann_1_matrix = qml.GellMann.compute_matrix(1)
+        gellmann_1_matrix = qp.GellMann.compute_matrix(1)
         obs_mat = np.kron(gellmann_1_matrix, gellmann_1_matrix)
         reshaped_state = state.reshape((9, 9))
         obs_squared = np.linalg.matrix_power(obs_mat, 2)
@@ -321,8 +321,8 @@ class TestMeasureWithSamples:
     def test_counts_measure(self, two_qutrit_pure_state):
         """Test that a counts measurement works as expected"""
         num_shots = 10000
-        shots = qml.measurements.Shots(num_shots)
-        mp = qml.counts()
+        shots = qp.measurements.Shots(num_shots)
+        mp = qp.counts()
 
         result = measure_with_samples(mp, two_qutrit_pure_state, shots=shots)
 
@@ -339,10 +339,10 @@ class TestMeasureWithSamples:
         state = get_dm_of_state(state_vector, 2)
 
         num_shots = 10000
-        shots = qml.measurements.Shots(num_shots)
+        shots = qp.measurements.Shots(num_shots)
 
-        mp0 = qml.counts(wires=0)
-        mp1 = qml.counts(wires=1)
+        mp0 = qp.counts(wires=0)
+        mp1 = qp.counts(wires=1)
 
         result0 = measure_with_samples(mp0, state, shots=shots)
         result1 = measure_with_samples(mp1, state, shots=shots)
@@ -361,15 +361,15 @@ class TestMeasureWithSamples:
         state_vector = np.sqrt(np.array([0, 0, 0, 0, 2, 0, 1, 0, 1]) / 4)
         state = get_dm_of_state(state_vector, 2)
         num_shots = 100
-        shots = qml.measurements.Shots(num_shots)
+        shots = qp.measurements.Shots(num_shots)
 
-        results_gel_3 = measure_with_samples(qml.sample(qml.GellMann(0, 3)), state, shots=shots)
+        results_gel_3 = measure_with_samples(qp.sample(qp.GellMann(0, 3)), state, shots=shots)
         assert results_gel_3.shape == (shots.total_shots,)
         assert results_gel_3.dtype == np.int64
         assert sorted(np.unique(results_gel_3)) == [-1, 0]
 
         results_gel_1s = measure_with_samples(
-            qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
+            qp.sample(qp.GellMann(0, 1) @ qp.GellMann(1, 1)), state, shots=shots
         )
         assert results_gel_1s.shape == (shots.total_shots,)
         assert results_gel_1s.dtype == np.float64
@@ -381,9 +381,9 @@ class TestMeasureWithSamples:
         state_vector = np.sqrt(np.array([0, 0, 0, 0, 3, 0, 1, 0, 1]) / 5)
         state = get_dm_of_state(state_vector, 2)
         num_shots = 10000
-        shots = qml.measurements.Shots(num_shots)
+        shots = qp.measurements.Shots(num_shots)
 
-        results_gel_3 = measure_with_samples(qml.counts(qml.GellMann(0, 3)), state, shots=shots)
+        results_gel_3 = measure_with_samples(qp.counts(qp.GellMann(0, 3)), state, shots=shots)
 
         assert isinstance(results_gel_3, dict)
         assert sorted(results_gel_3.keys()) == [-1, 0]
@@ -391,7 +391,7 @@ class TestMeasureWithSamples:
         assert np.isclose(results_gel_3[0] / num_shots, 2 / 5, atol=APPROX_ATOL)
 
         results_gel_1s = measure_with_samples(
-            qml.counts(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
+            qp.counts(qp.GellMann(0, 1) @ qp.GellMann(1, 1)), state, shots=shots
         )
         assert isinstance(results_gel_1s, dict)
         assert sorted(results_gel_1s.keys()) == [-1, 0, 1]
@@ -407,17 +407,17 @@ class TestInvalidSampling:
     def test_only_catch_nan_errors(self, shots):
         """Test that when probabilities don't add to 1 Error is thrown."""
         state = np.zeros((3,) * QUDIT_DIM * 2).astype(np.complex128)
-        mp = qml.sample(wires=range(2))
+        mp = qp.sample(wires=range(2))
         _shots = Shots(shots)
 
         with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = measure_with_samples(mp, state, _shots)
 
-    @pytest.mark.parametrize("mp", [qml.probs(0), qml.probs(op=qml.GellMann(0, 1))])
+    @pytest.mark.parametrize("mp", [qp.probs(0), qp.probs(op=qp.GellMann(0, 1))])
     def test_currently_unsupported_observable(self, mp, two_qutrit_state):
         """Test sample measurements that are not sample, counts, expval,
         or var raise a NotImplementedError."""
-        shots = qml.measurements.Shots(1)
+        shots = qp.measurements.Shots(1)
         with pytest.raises(NotImplementedError):
             _ = measure_with_samples(mp, two_qutrit_state, shots)
 
@@ -443,24 +443,24 @@ class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
     def test_sample_measure(self, batched_two_qutrit_pure_state, seed):
-        """Test that broadcasting works for qml.sample and single shots"""
+        """Test that broadcasting works for qp.sample and single shots"""
         rng = np.random.default_rng(seed)
-        shots = qml.measurements.Shots(100)
+        shots = qp.measurements.Shots(100)
         state = batched_two_qutrit_pure_state
 
-        measurement = qml.sample(wires=[0, 1])
+        measurement = qp.sample(wires=[0, 1])
         res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
 
         assert res.shape == (3, shots.total_shots, 2)
         assert res.dtype == np.int64
 
     def test_counts_measure(self, batched_two_qutrit_pure_state, seed):
-        """Test that broadcasting works for qml.sample and single shots"""
+        """Test that broadcasting works for qp.sample and single shots"""
         rng = np.random.default_rng(seed)
-        shots = qml.measurements.Shots(100)
+        shots = qp.measurements.Shots(100)
         state = batched_two_qutrit_pure_state
 
-        measurement = qml.counts(wires=[0, 1])
+        measurement = qp.counts(wires=[0, 1])
         res = measure_with_samples(measurement, state, shots, is_state_batched=True, rng=rng)
 
         assert len(res) == 3
@@ -470,11 +470,11 @@ class TestBroadcasting:
 
     @pytest.mark.parametrize("shots", shots_to_test_samples)
     def test_sample_measure_shot_vector(self, shots, batched_two_qutrit_pure_state, seed):
-        """Test that broadcasting works for qml.sample and shot vectors"""
+        """Test that broadcasting works for qp.sample and shot vectors"""
         rng = np.random.default_rng(seed)
-        shots = qml.measurements.Shots(shots)
+        shots = qp.measurements.Shots(shots)
 
-        measurement = qml.sample(wires=[0, 1])
+        measurement = qp.sample(wires=[0, 1])
         res = measure_with_samples(
             measurement,
             batched_two_qutrit_pure_state,
@@ -500,15 +500,15 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "measurement, expected",
         [
-            (qml.expval(qml.GellMann(1, 3)), np.array([1 / 2, 1, 0])),
-            (qml.var(qml.GellMann(1, 3)), np.array([1 / 4, 0, 1])),
+            (qp.expval(qp.GellMann(1, 3)), np.array([1 / 2, 1, 0])),
+            (qp.var(qp.GellMann(1, 3)), np.array([1 / 4, 0, 1])),
         ],
     )
     def test_nonsample_measure_shot_vector(self, shots, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
 
         rng = np.random.default_rng(seed)
-        shots = qml.measurements.Shots(shots)
+        shots = qp.measurements.Shots(shots)
 
         state = [
             get_dm_of_state(np.array([[0, 0, 0, 1, 0, 1, 0, 0, 0]]), 2, 2),
@@ -534,15 +534,15 @@ class TestBroadcastingPRNG:
     and a PRNG key is provided"""
 
     def test_sample_measure(self, mocker, batched_two_qutrit_pure_state, seed):
-        """Test that broadcasting works for qml.sample and single shots"""
+        """Test that broadcasting works for qp.sample and single shots"""
         import jax
 
-        spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
+        spy = mocker.spy(qp.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
         rng = np.random.default_rng(seed)
-        shots = qml.measurements.Shots(100)
+        shots = qp.measurements.Shots(100)
 
-        measurement = qml.sample(wires=[0, 1])
+        measurement = qp.sample(wires=[0, 1])
         res = measure_with_samples(
             measurement,
             batched_two_qutrit_pure_state,
@@ -564,17 +564,17 @@ class TestBroadcastingPRNG:
 
     @pytest.mark.parametrize("shots", shots_to_test_samples)
     def test_sample_measure_shot_vector(self, mocker, shots, batched_two_qutrit_pure_state, seed):
-        """Test that broadcasting works for qml.sample and shot vectors"""
+        """Test that broadcasting works for qp.sample and shot vectors"""
         import jax
 
         jax.config.update("jax_enable_x64", True)
 
-        spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
+        spy = mocker.spy(qp.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
         rng = np.random.default_rng(seed)
-        shots = qml.measurements.Shots(shots)
+        shots = qp.measurements.Shots(shots)
 
-        measurement = qml.sample(wires=[0, 1])
+        measurement = qp.sample(wires=[0, 1])
         res = measure_with_samples(
             measurement,
             batched_two_qutrit_pure_state,
@@ -603,18 +603,18 @@ class TestBroadcastingPRNG:
     @pytest.mark.parametrize(
         "measurement, expected",
         [
-            (qml.expval(qml.GellMann(1, 3)), np.array([1 / 2, 1, 0])),
-            (qml.var(qml.GellMann(1, 3)), np.array([1 / 4, 0, 1])),
+            (qp.expval(qp.GellMann(1, 3)), np.array([1 / 2, 1, 0])),
+            (qp.var(qp.GellMann(1, 3)), np.array([1 / 4, 0, 1])),
         ],
     )
     def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
         import jax
 
-        spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
+        spy = mocker.spy(qp.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
         rng = np.random.default_rng(seed)
-        shots = qml.measurements.Shots(shots)
+        shots = qp.measurements.Shots(shots)
 
         state = [
             get_dm_of_state(np.array([[0, 0, 0, 1, 0, 1, 0, 0, 0]]), 2, 2),
@@ -645,8 +645,8 @@ class TestBroadcastingPRNG:
 @pytest.mark.parametrize(
     "obs",
     [
-        qml.Hamiltonian([0.8, 0.5], [qml.GellMann(0, 3), qml.GellMann(0, 1)]),
-        qml.s_prod(0.8, qml.GellMann(0, 3)) + qml.s_prod(0.5, qml.GellMann(0, 1)),
+        qp.Hamiltonian([0.8, 0.5], [qp.GellMann(0, 3), qp.GellMann(0, 1)]),
+        qp.s_prod(0.8, qp.GellMann(0, 3)) + qp.s_prod(0.5, qp.GellMann(0, 1)),
     ],
 )
 class TestHamiltonianSamples:
@@ -656,14 +656,14 @@ class TestHamiltonianSamples:
     def test_hamiltonian_expval(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables"""
 
-        shots = qml.measurements.Shots(10000)
+        shots = qp.measurements.Shots(10000)
         x, y = np.array(0.67), np.array(0.95)
-        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        ops = [qp.TRY(x, wires=0), qp.TRZ(y, wires=0)]
         state = create_initial_state((0,))
         for op in ops:
             state = apply_operation(op, state)
 
-        res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=seed)
+        res = measure_with_samples(qp.expval(obs), state, shots=shots, rng=seed)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
         assert isinstance(res, np.float64)
@@ -672,14 +672,14 @@ class TestHamiltonianSamples:
     def test_hamiltonian_expval_shot_vector(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
 
-        shots = qml.measurements.Shots((10000, 100000))
+        shots = qp.measurements.Shots((10000, 100000))
         x, y = np.array(0.67), np.array(0.95)
-        ops = [qml.TRY(x, wires=0), qml.TRZ(y, wires=0)]
+        ops = [qp.TRY(x, wires=0), qp.TRZ(y, wires=0)]
         state = create_initial_state((0,))
         for op in ops:
             state = apply_operation(op, state)
 
-        res = measure_with_samples(qml.expval(obs), state, shots=shots, rng=seed)
+        res = measure_with_samples(qp.expval(obs), state, shots=shots, rng=seed)
 
         expected = 0.8 * np.cos(x) + 0.5 * np.cos(y) * np.sin(x)
 
@@ -778,15 +778,15 @@ class TestSampleProbsJax:
         )
 
         assert result.shape == (self.shots, num_wires)
-        assert np.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
+        assert np.all(result >= 0) and qp.math.all(result < QUDIT_DIM)
 
-        _, counts = qml.math.unique(result, return_counts=True)
+        _, counts = qp.math.unique(result, return_counts=True)
         observed_probs = counts / self.shots
         np.testing.assert_allclose(observed_probs, probs, atol=0.05)
 
     @pytest.mark.jax
     def test_sample_probs_jax_multi_wire(self, seed):
-        probs = qml.math.array(
+        probs = qp.math.array(
             [0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]
         )  # 3^2 = 9 probabilities for 2 wires
         num_wires = 2
@@ -798,11 +798,11 @@ class TestSampleProbsJax:
         )
 
         assert result.shape == (self.shots, num_wires)
-        assert qml.math.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
+        assert qp.math.all(result >= 0) and qp.math.all(result < QUDIT_DIM)
 
     @pytest.mark.jax
     def test_sample_probs_jax_batched(self, seed):
-        probs = qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]])
+        probs = qp.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]])
         num_wires = 1
         is_state_batched = True
         state_len = 2
@@ -812,21 +812,21 @@ class TestSampleProbsJax:
         )
 
         assert result.shape == (2, self.shots, num_wires)
-        assert qml.math.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
+        assert qp.math.all(result >= 0) and qp.math.all(result < QUDIT_DIM)
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "probs,num_wires,is_state_batched,expected_shape,state_len",
         [
-            (qml.math.array([0.2, 0.3, 0.5]), 1, False, (1000, 1), 1),
+            (qp.math.array([0.2, 0.3, 0.5]), 1, False, (1000, 1), 1),
             (
-                qml.math.array([0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]),
+                qp.math.array([0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]),
                 2,
                 False,
                 (1000, 2),
                 1,
             ),
-            (qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1), 2),
+            (qp.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1), 2),
         ],
     )
     @pytest.mark.jax
@@ -840,7 +840,7 @@ class TestSampleProbsJax:
 
     @pytest.mark.jax
     def test_invalid_probs_jax(self, seed):
-        probs = qml.math.array(
+        probs = qp.math.array(
             [0.1, 0.2, 0.3, 0.4]
         )  # 4 probabilities, which is invalid for qutrit system
         num_wires = 2

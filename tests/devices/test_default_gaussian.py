@@ -86,25 +86,25 @@ hbar = 2
 @pytest.fixture(scope="function", name="gaussian_device_1_wire")
 def gaussian_device_1_wire_fixture():
     """Fixture of a default.gaussian device with 1 wire."""
-    return qml.device("default.gaussian", wires=1)
+    return qp.device("default.gaussian", wires=1)
 
 
 @pytest.fixture(scope="function", name="gaussian_device_2_wires")
 def gaussian_device_2_wires_fixture():
     """Fixture of a default.gaussian device with 2 wires."""
-    return qml.device("default.gaussian", wires=2)
+    return qp.device("default.gaussian", wires=2)
 
 
 @pytest.fixture(scope="function", name="gaussian_device_3_wires")
 def gaussian_device_3_wires_fixture():
     """Fixture of a default.gaussian device with 3 wires."""
-    return qml.device("default.gaussian", wires=3)
+    return qp.device("default.gaussian", wires=3)
 
 
 @pytest.fixture(scope="function", name="gaussian_dev")
 def gaussian_dev_fixture():  # alias
     """Fixture of a default.gaussian device with 2 wires."""
-    return qml.device("default.gaussian", wires=2)
+    return qp.device("default.gaussian", wires=2)
 
 
 def test_analytic_deprecation():
@@ -116,7 +116,7 @@ def test_analytic_deprecation():
         DeviceError,
         match=msg,
     ):
-        qml.device("default.gaussian", wires=1, shots=1, analytic=True)
+        qp.device("default.gaussian", wires=1, shots=1, analytic=True)
 
 
 # pylint: disable=too-few-public-methods
@@ -126,11 +126,11 @@ class TestExceptions:
     def test_sample_exception(self):
         """Test that default.gaussian raises an exception if sampling is attempted."""
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            return qml.sample(qml.NumberOperator(0))
+            return qp.sample(qp.NumberOperator(0))
 
         with pytest.raises(
             NotImplementedError, match="default.gaussian does not support sampling NumberOperator"
@@ -177,7 +177,7 @@ class TestGates:
         inp_cov_mat = inp_state[0]
         inp_means = inp_state[1]
 
-        O = qml.Identity.identity_op()
+        O = qp.Identity.identity_op()
         out_means = O @ inp_means
         out_cov_mat = O @ inp_cov_mat @ O.T
 
@@ -385,12 +385,12 @@ class TestDefaultGaussianDevice:
             "Kerr",
         }
 
-        cv_ops = set(qml.ops._cv__ops__) | {"Identity"}  # we also support identity operation
+        cv_ops = set(qp.ops._cv__ops__) | {"Identity"}  # we also support identity operation
         assert cv_ops - non_supported == set(gaussian_dev._operation_map)
 
     def test_observable_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
-        assert set(qml.ops._cv__obs__) - {"TensorN"} | {"Identity"} - {"Heterodyne"} == set(
+        assert set(qp.ops._cv__obs__) - {"TensorN"} | {"Identity"} - {"Heterodyne"} == set(
             gaussian_dev._observable_map
         )
 
@@ -398,7 +398,7 @@ class TestDefaultGaussianDevice:
         """Test the application of gates to a state, using gates that use the default logic in
         the apply function."""
 
-        gaussian_dev = qml.device("default.gaussian", wires=1)
+        gaussian_dev = qp.device("default.gaussian", wires=1)
 
         def dummy_gate_fn():
             # dummy implementation of a symplectic matrix
@@ -407,7 +407,7 @@ class TestDefaultGaussianDevice:
         # temporarily add the gate to the device using an arbitrary implementation
         gaussian_dev._operation_map["DummyGate"] = dummy_gate_fn
 
-        gaussian_dev.apply("DummyGate", wires=qml.wires.Wires([0]), par=[])
+        gaussian_dev.apply("DummyGate", wires=qp.wires.Wires([0]), par=[])
 
         exp_cov = np.array([[4.0, 0.0], [0.0, 9.0]])
         exp_mu = np.array([0.0, 0.0])
@@ -420,7 +420,7 @@ class TestDefaultGaussianDevice:
         """Test the application of the GaussianState gate to a state, since it
         uses a forked logic in the apply function."""
 
-        gaussian_dev = qml.device("default.gaussian", wires=2)
+        gaussian_dev = qp.device("default.gaussian", wires=2)
 
         # start in the displaced squeezed state
         alpha = 0.542 + 0.123j
@@ -447,7 +447,7 @@ class TestDefaultGaussianDevice:
         """Test the application of one of the state preparation gates, since they
         use a forked logic in the apply function."""
 
-        gaussian_dev = qml.device("default.gaussian", wires=2)
+        gaussian_dev = qp.device("default.gaussian", wires=2)
 
         # start in the displaced squeezed state
         alpha = 0.542 + 0.123j
@@ -481,7 +481,7 @@ class TestDefaultGaussianDevice:
         """Test the application of the displacement gate to a state, since it
         uses a forked logic in the apply function."""
 
-        gaussian_dev = qml.device("default.gaussian", wires=2)
+        gaussian_dev = qp.device("default.gaussian", wires=2)
 
         # start in the displaced squeezed state
         alpha = 0.542 + 0.123j
@@ -518,7 +518,7 @@ class TestDefaultGaussianDevice:
             p = U
             gaussian_dev.apply("InterferometerUnitary", wires=Wires([0]), par=[p])
 
-        with pytest.raises(qml.wires.WireError, match="Did not find some of the wires"):
+        with pytest.raises(qp.wires.WireError, match="Did not find some of the wires"):
             p = U2
             # dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
             gaussian_dev.apply("InterferometerUnitary", wires=Wires([0, 1, 2]), par=[p])
@@ -526,7 +526,7 @@ class TestDefaultGaussianDevice:
     def test_expectation(self, tol):
         """Test that expectation values are calculated correctly"""
 
-        dev = qml.device("default.gaussian", wires=1, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=1, hbar=hbar)
 
         # test correct mean for <n> of a displaced thermal state
         nbar = 0.5431
@@ -565,7 +565,7 @@ class TestDefaultGaussianDevice:
 
     def test_variance_displaced_thermal_mean_photon(self, tol):
         """test correct variance for <n> of a displaced thermal state"""
-        dev = qml.device("default.gaussian", wires=1, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=1, hbar=hbar)
 
         nbar = 0.5431
         alpha = 0.324 - 0.59j
@@ -576,7 +576,7 @@ class TestDefaultGaussianDevice:
 
     def test_variance_coherent_homodyne(self, tol):
         """test correct variance for Homodyne P measurement"""
-        dev = qml.device("default.gaussian", wires=1, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=1, hbar=hbar)
 
         alpha = 0.324 - 0.59j
         dev.apply("CoherentState", wires=Wires([0]), par=[alpha])
@@ -591,7 +591,7 @@ class TestDefaultGaussianDevice:
         """test correct variance for number state expectation |<n|alpha>|^2
         on a coherent state
         """
-        dev = qml.device("default.gaussian", wires=1, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=1, hbar=hbar)
 
         alpha = 0.324 - 0.59j
 
@@ -606,7 +606,7 @@ class TestDefaultGaussianDevice:
         """test correct variance for number state expectation |<n|S(r)>|^2
         on a squeezed state
         """
-        dev = qml.device("default.gaussian", wires=1, hbar=hbar)
+        dev = qp.device("default.gaussian", wires=1, hbar=hbar)
 
         n = 1
         r = 0.4523
@@ -655,7 +655,7 @@ class TestSample:
             gaussian_device_1_wire.sample("QuadP", Wires([0]), [])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
-            assert gaussian_device_1_wire.shots == qml.measurements.Shots(input_logger.args[2])
+            assert gaussian_device_1_wire.shots == qp.measurements.Shots(input_logger.args[2])
 
     @pytest.mark.parametrize("alpha", [0.324 - 0.59j, 2.3 + 1.2j, 1.3j, -1.2])
     def test_sampling_parameters_coherent_quad_operator(
@@ -673,7 +673,7 @@ class TestSample:
             gaussian_device_1_wire.sample("QuadOperator", Wires([0]), [np.pi / 2])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
-            assert gaussian_device_1_wire.shots == qml.measurements.Shots(input_logger.args[2])
+            assert gaussian_device_1_wire.shots == qp.measurements.Shots(input_logger.args[2])
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
@@ -690,7 +690,7 @@ class TestSample:
             gaussian_device_1_wire.sample("QuadP", Wires([0]), [])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
-            assert gaussian_device_1_wire.shots == qml.measurements.Shots(input_logger.args[2])
+            assert gaussian_device_1_wire.shots == qp.measurements.Shots(input_logger.args[2])
 
     @pytest.mark.parametrize(
         "observable,n_sample", [("QuadP", 10), ("QuadP", 25), ("QuadX", 1), ("QuadX", 16)]
@@ -712,7 +712,7 @@ class TestSample:
 
     @pytest.mark.parametrize(
         "observable",
-        sorted(set(qml.ops.cv.__obs__) - {"QuadP", "QuadX", "QuadOperator"}),
+        sorted(set(qp.ops.cv.__obs__) - {"QuadP", "QuadX", "QuadOperator"}),
     )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
@@ -728,7 +728,7 @@ class TestDefaultGaussianIntegration:
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
         cap = dev.target_device.capabilities()
         capabilities = {
             "model": "cv",
@@ -743,9 +743,9 @@ class TestDefaultGaussianIntegration:
     def test_load_default_gaussian_device(self):
         """Test that the default plugin loads correctly"""
 
-        dev = qml.device("default.gaussian", wires=2, hbar=2)
+        dev = qp.device("default.gaussian", wires=2, hbar=2)
         assert dev.num_wires == 2
-        assert dev.shots == qml.measurements.Shots(None)
+        assert dev.shots == qp.measurements.Shots(None)
         assert dev.hbar == 2
         assert dev.short_name == "default.gaussian"
 
@@ -753,33 +753,33 @@ class TestDefaultGaussianIntegration:
         """Test that the plugin requires correct arguments"""
 
         with pytest.raises(TypeError, match="missing 1 required positional argument: 'wires'"):
-            qml.device("default.gaussian")
+            qp.device("default.gaussian")
 
     def test_gaussian_circuit(self, tol):
         """Test that the default gaussian plugin provides correct result for simple circuit"""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         p = 0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
             """Test quantum function"""
-            qml.Displacement(x, 0, wires=0)
-            return qml.expval(qml.QuadX(0))
+            qp.Displacement(x, 0, wires=0)
+            return qp.expval(qp.QuadX(0))
 
         assert circuit(p) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol)
 
     def test_gaussian_identity(self, tol):
         """Test that the default gaussian plugin provides correct result for the identity expectation"""
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         p = 0.543
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
             """Test quantum function"""
-            qml.Displacement(x, 0, wires=0)
-            return qml.expval(qml.Identity(0))
+            qp.Displacement(x, 0, wires=0)
+            return qp.expval(qp.Identity(0))
 
         assert circuit(p) == pytest.approx(1, abs=tol)
 
@@ -807,11 +807,11 @@ class TestDefaultGaussianIntegration:
         The a*a_{dagger}=Id+a_{dagger}*a equation is also used to yield
         Var[X^2] = hbar^2/2.
         """
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            return qml.var(qml.PolyXP(np.diag([0, 1, 0]), wires=0))
+            return qp.var(qp.PolyXP(np.diag([0, 1, 0]), wires=0))
 
         assert circuit() == pytest.approx(dev.hbar**2 / 2)
 
@@ -819,16 +819,16 @@ class TestDefaultGaussianIntegration:
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
         shots = 10**4
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
         p = 0.543
 
-        @qml.set_shots(shots)
-        @qml.qnode(dev)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
         def circuit(x):
             """Test quantum function"""
-            qml.Displacement(x, 0, wires=0)
-            return qml.expval(qml.QuadX(0))
+            qp.Displacement(x, 0, wires=0)
+            return qp.expval(qp.QuadX(0))
 
         runs = []
         for _ in range(100):
@@ -841,13 +841,13 @@ class TestDefaultGaussianIntegration:
         default.gaussian and emits a warning"""
 
         shots = [10, 10, 10]
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qp.device("default.gaussian", wires=1)
 
-        @qml.set_shots(shots)
-        @qml.qnode(dev)
+        @qp.set_shots(shots)
+        @qp.qnode(dev)
         def circuit():
             """Test quantum function"""
-            return qml.sample(qml.QuadX(0))
+            return qp.sample(qp.QuadX(0))
 
         with pytest.warns(
             UserWarning,
@@ -858,12 +858,12 @@ class TestDefaultGaussianIntegration:
 
     def test_new_return_type_error_multi_measurements(self):
         """Test that multiple measurements raise an error with the new return type."""
-        dev = qml.device("default.gaussian", wires=2)
+        dev = qp.device("default.gaussian", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
             """Test quantum function"""
-            return qml.sample(qml.QuadX(0)), qml.expval(qml.QuadX(1))
+            return qp.sample(qp.QuadX(0)), qp.expval(qp.QuadX(1))
 
         with pytest.raises(
             QuantumFunctionError,

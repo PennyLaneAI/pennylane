@@ -34,9 +34,9 @@ class TestMultiplexerStatePreparation:
 
         wires = range(4)
 
-        op = qml.MultiplexerStatePreparation(state_vector=state, wires=wires)
+        op = qp.MultiplexerStatePreparation(state_vector=state, wires=wires)
 
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("state", "msg_match"),
@@ -54,7 +54,7 @@ class TestMultiplexerStatePreparation:
     def test_MultiplexerStatePrep_error(self, state, msg_match):
         """Test that proper errors are raised for MultiplexerStatePreparation"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.MultiplexerStatePreparation(state, wires=[0, 1])
+            qp.MultiplexerStatePreparation(state, wires=[0, 1])
 
     @pytest.mark.parametrize(
         ("state", "num_wires"),
@@ -79,16 +79,16 @@ class TestMultiplexerStatePreparation:
 
         wires = range(num_wires)
 
-        dev = qml.device("default.qubit", wires=num_wires)
+        dev = qp.device("default.qubit", wires=num_wires)
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.MultiplexerStatePreparation(
+                qp.MultiplexerStatePreparation(
                     state,
                     wires=wires,
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
@@ -102,7 +102,7 @@ class TestMultiplexerStatePreparation:
 
         wires = range(2)
 
-        decomposition = qml.MultiplexerStatePreparation.compute_decomposition(
+        decomposition = qp.MultiplexerStatePreparation.compute_decomposition(
             np.array([1 / 2, 1j / 2, -1 / 2, -1j / 2]),
             wires=wires,
         )
@@ -119,37 +119,37 @@ class TestMultiplexerStatePreparation:
         state = [1 / 2, -1 / 2, 1j / 2, -1j / 2]
 
         wires = range(2)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.MultiplexerStatePreparation(
+                qp.MultiplexerStatePreparation(
                     jnp.array(state),
                     wires=wires,
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_jax = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.MultiplexerStatePreparation(
+                qp.MultiplexerStatePreparation(
                     state,
                     wires=wires,
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_jax)
+        assert qp.math.allclose(output, output_jax)
 
     @pytest.mark.torch
     def test_interface_torch(self):
@@ -160,37 +160,37 @@ class TestMultiplexerStatePreparation:
         state = torch.tensor([1 / 2, -1 / 2, 1j / 2, -1j / 2])
 
         wires = range(2)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.MultiplexerStatePreparation(
+                qp.MultiplexerStatePreparation(
                     torch.tensor(state, dtype=torch.complex64),
                     wires=wires,
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_torch = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.MultiplexerStatePreparation(
+                qp.MultiplexerStatePreparation(
                     state,
                     wires=wires,
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_torch)
+        assert qp.math.allclose(output, output_torch)
 
     @pytest.mark.tf
     def test_interface_tf(self):
@@ -201,32 +201,32 @@ class TestMultiplexerStatePreparation:
         state = tf.Variable([1 / 2, -1 / 2, 1 / 2, -1 / 2])
 
         wires = range(2)
-        dev = qml.device("default.qubit", wires=6)
+        dev = qp.device("default.qubit", wires=6)
 
-        qs = qml.tape.QuantumScript(
-            [qml.MultiplexerStatePreparation(tf.Variable(state), wires=wires)],
-            [qml.state()],
+        qs = qp.tape.QuantumScript(
+            [qp.MultiplexerStatePreparation(tf.Variable(state), wires=wires)],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_tf = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.MultiplexerStatePreparation(
+                qp.MultiplexerStatePreparation(
                     state,
                     wires=wires,
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_tf)
+        assert qp.math.allclose(output, output_tf)
 
     @pytest.mark.jax
     def test_jit(self):
@@ -236,20 +236,20 @@ class TestMultiplexerStatePreparation:
         state = jax.numpy.array([1 / 2j, -1 / 2, 1 / 2, -1 / 2])
 
         wires = range(2)
-        dev = qml.device("default.qubit", wires=6)
+        dev = qp.device("default.qubit", wires=6)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state):
 
             for wire in wires:
-                qml.Hadamard(wire)
+                qp.Hadamard(wire)
 
-            qml.MultiplexerStatePreparation(
+            qp.MultiplexerStatePreparation(
                 state,
                 wires=wires,
             )
-            return qml.probs(wires)
+            return qp.probs(wires)
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.allclose(circuit(state), jit_circuit(state))
+        assert qp.math.allclose(circuit(state), jit_circuit(state))

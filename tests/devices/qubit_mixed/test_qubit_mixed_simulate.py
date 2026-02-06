@@ -28,15 +28,15 @@ class TestResultInterface:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "op", [qml.RX(np.pi, [0]), qml.BasisState(np.array([1, 1]), wires=range(2))]
+        "op", [qp.RX(np.pi, [0]), qp.BasisState(np.array([1, 1]), wires=range(2))]
     )
     @pytest.mark.parametrize("interface", ml_interfaces)
     def test_result_has_correct_interface(self, op, interface):
         """Test that even if no interface parameters are given, result is correct."""
-        qs = qml.tape.QuantumScript([op], [qml.expval(qml.Z(0))])
+        qs = qp.tape.QuantumScript([op], [qp.expval(qp.Z(0))])
         res = simulate(qs, interface=interface)
 
-        assert qml.math.get_interface(res) == interface
+        assert qp.math.get_interface(res) == interface
 
 
 # pylint: disable=too-few-public-methods
@@ -45,9 +45,9 @@ class TestStatePrepBase:
 
     def test_basis_state(self):
         """Test that the BasisState operator prepares the desired state."""
-        qs = qml.tape.QuantumScript(
-            ops=[qml.BasisState(np.array([1, 1]), wires=[0, 1])],  # prod state |1, 1>
-            measurements=[qml.probs(wires=[0, 1])],  # measure only the wires we prepare
+        qs = qp.tape.QuantumScript(
+            ops=[qp.BasisState(np.array([1, 1]), wires=[0, 1])],  # prod state |1, 1>
+            measurements=[qp.probs(wires=[0, 1])],  # measure only the wires we prepare
         )
         probs = simulate(qs)
 
@@ -58,30 +58,30 @@ class TestStatePrepBase:
 
     def test_basis_state_padding(self):
         """Test that the BasisState operator prepares the desired state, with actual wires larger than the initial."""
-        qs = qml.tape.QuantumScript(
-            ops=[qml.BasisState(np.array([1, 1]), wires=[0, 1])],  # prod state |1, 1>
-            measurements=[qml.probs(wires=[0, 1, 2])],
+        qs = qp.tape.QuantumScript(
+            ops=[qp.BasisState(np.array([1, 1]), wires=[0, 1])],  # prod state |1, 1>
+            measurements=[qp.probs(wires=[0, 1, 2])],
         )
         probs = simulate(qs)
         expected = np.zeros(8)
         expected[6] = 1.0  # Should be |110> = |6>
-        assert qml.math.allclose(probs, expected)
+        assert qp.math.allclose(probs, expected)
 
     def test_state_mp(self):
         """Test that the current two supported statemps are equivalent.
         This test ensure the fix for measurementprocess.raw_wires is working."""
         state = np.array([0, 1])
-        device = qml.device("default.mixed", wires=[0, 1])
+        device = qp.device("default.mixed", wires=[0, 1])
 
-        @qml.qnode(device)
+        @qp.qnode(device)
         def circuit0():
-            qml.StatePrep(state, wires=[1])
-            return qml.density_matrix(wires=[0, 1])
+            qp.StatePrep(state, wires=[1])
+            return qp.density_matrix(wires=[0, 1])
 
-        @qml.qnode(device)
+        @qp.qnode(device)
         def circuit():
-            qml.StatePrep(state, wires=[1])
-            return qml.state()
+            qp.StatePrep(state, wires=[1])
+            return qp.state()
 
         dm0 = circuit0()
         dm = circuit()
@@ -94,11 +94,11 @@ class TestStatePrepBase:
         state = np.zeros((1, 4))
         state[0, 0] = 1.0
 
-        state = qml.math.asarray(state, like=interface)
+        state = qp.math.asarray(state, like=interface)
 
-        qs = qml.tape.QuantumScript(
-            ops=[qml.StatePrep(state, wires=[0, 1]), qml.X(0)],
-            measurements=[qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.state()],
+        qs = qp.tape.QuantumScript(
+            ops=[qp.StatePrep(state, wires=[0, 1]), qp.X(0)],
+            measurements=[qp.expval(qp.Z(0)), qp.expval(qp.Z(1)), qp.state()],
         )
         # Dev Note: there used to be a shape-related bug that only appears in usage when you measure all wires.
         res, _, dm = simulate(qs)
@@ -113,13 +113,13 @@ class TestBasicCircuit:
     @staticmethod
     def get_quantum_script(phi, wires):
         """Get the quantum script where RX is applied then observables are measured"""
-        ops = [qml.RX(phi, wires=wires)]
+        ops = [qp.RX(phi, wires=wires)]
         obs = [
-            qml.expval(qml.PauliX(wires)),
-            qml.expval(qml.PauliY(wires)),
-            qml.expval(qml.PauliZ(wires)),
+            qp.expval(qp.PauliX(wires)),
+            qp.expval(qp.PauliY(wires)),
+            qp.expval(qp.PauliZ(wires)),
         ]
-        return qml.tape.QuantumScript(ops, obs)
+        return qp.tape.QuantumScript(ops, obs)
 
     def test_basic_circuit_numpy(self, wires):
         """Test execution with a basic circuit, only one wire."""
@@ -147,19 +147,19 @@ class TestBasicCircuit:
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self, wires):
         """Tests execution and gradients with autograd"""
-        phi = qml.numpy.array(-0.52)
+        phi = qp.numpy.array(-0.52)
 
         def f(x):
             qs = self.get_quantum_script(x, wires)
-            return qml.numpy.array(simulate(qs))
+            return qp.numpy.array(simulate(qs))
 
         result = f(phi)
         expected = (0, -np.sin(phi), np.cos(phi))
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
-        g = qml.jacobian(f)(phi)
+        g = qp.jacobian(f)(phi)
         expected = (0, -np.cos(phi), -np.sin(phi))
-        assert qml.math.allclose(g, expected)
+        assert qp.math.allclose(g, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
@@ -178,11 +178,11 @@ class TestBasicCircuit:
 
         result = f(phi)
         expected = (0, -np.sin(phi), np.cos(phi))
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         g = jax.jacobian(f)(phi)
         expected = (0, -np.cos(phi), -np.sin(phi))
-        assert qml.math.allclose(g, expected)
+        assert qp.math.allclose(g, expected)
 
     @pytest.mark.torch
     def test_torch_results_and_backprop(self, wires):
@@ -219,7 +219,7 @@ class TestBasicCircuit:
             result = simulate(qs)
 
         expected = (0, -np.sin(float(phi)), np.cos(float(phi)))
-        assert qml.math.allclose(result, expected)
+        assert qp.math.allclose(result, expected)
 
         expected = (0, -np.cos(float(phi)), -np.sin(float(phi)))
         assert math.all(
@@ -278,13 +278,13 @@ class TestBroadcasting:
     def get_quantum_script(x, wire=0, shots=None, extra_wire=False):
         """Gets quantum script of a circuit that includes parameter broadcasted operations and measurements."""
 
-        ops = [qml.RX(x, wires=wire)]
-        measurements = [qml.expval(qml.PauliY(wire)), qml.expval(qml.PauliZ(wire))]
+        ops = [qp.RX(x, wires=wire)]
+        measurements = [qp.expval(qp.PauliY(wire)), qp.expval(qp.PauliZ(wire))]
         if extra_wire:
             # Add measurement on the last wire for the extra wire case
-            measurements.insert(0, qml.expval(qml.PauliY(wire + 2)))
+            measurements.insert(0, qp.expval(qp.PauliY(wire + 2)))
 
-        return qml.tape.QuantumScript(ops, measurements, shots=shots)
+        return qp.tape.QuantumScript(ops, measurements, shots=shots)
 
     def test_broadcasted_op_state(self):
         """Test that simulate works for state measurements
@@ -365,9 +365,9 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("x", [0.732, 0.488])
     def test_single_expval(self, x, interface, seed):
         """Test a simple circuit with a single expval measurement"""
-        qs = qml.tape.QuantumScript(
-            [qml.RY(x, wires=0)],
-            [qml.expval(qml.PauliZ(0))],
+        qs = qp.tape.QuantumScript(
+            [qp.RY(x, wires=0)],
+            [qp.expval(qp.PauliZ(0))],
             shots=10000,
         )
         result = simulate(qs, rng=seed, interface=interface)
@@ -380,7 +380,7 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("x", [0.732, 0.488])
     def test_single_sample(self, x, seed):
         """Test a simple circuit with a single sample measurement"""
-        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=10000)
+        qs = qp.tape.QuantumScript([qp.RY(x, wires=0)], [qp.sample(wires=range(2))], shots=10000)
         result = simulate(qs, rng=seed)
 
         assert isinstance(result, np.ndarray)
@@ -391,16 +391,16 @@ class TestSampleMeasurements:
     def test_multi_measurements(self, x, y, seed):
         """Test a simple circuit containing multiple measurements"""
         num_shots = 10000
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.RX(x, wires=0),
-                qml.RY(y, wires=1),
-                qml.CNOT(wires=[0, 1]),
+                qp.RX(x, wires=0),
+                qp.RY(y, wires=1),
+                qp.CNOT(wires=[0, 1]),
             ],
             [
-                qml.expval(qml.PauliZ(0)),
-                qml.counts(wires=range(2)),
-                qml.sample(wires=range(2)),
+                qp.expval(qp.PauliZ(0)),
+                qp.counts(wires=range(2)),
+                qp.sample(wires=range(2)),
             ],
             shots=num_shots,
         )
@@ -426,8 +426,8 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_expval_shot_vector(self, shots, x, seed):
         """Test a simple circuit with a single expval measurement for shot vectors"""
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript([qp.RY(x, wires=0)], [qp.expval(qp.PauliZ(0))], shots=shots)
         result = simulate(qs, rng=seed)
 
         assert isinstance(result, tuple)
@@ -440,8 +440,8 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_sample_shot_vector(self, shots, x, seed):
         """Test a simple circuit with a single sample measurement for shot vectors"""
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=shots)
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript([qp.RY(x, wires=0)], [qp.sample(wires=range(2))], shots=shots)
         result = simulate(qs, rng=seed)
 
         assert isinstance(result, tuple)
@@ -455,17 +455,17 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_multi_measurement_shot_vector(self, shots, x, y, seed):
         """Test a simple circuit containing multiple measurements for shot vectors"""
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
             [
-                qml.RX(x, wires=0),
-                qml.RY(y, wires=1),
-                qml.CNOT(wires=[0, 1]),
+                qp.RX(x, wires=0),
+                qp.RY(y, wires=1),
+                qp.CNOT(wires=[0, 1]),
             ],
             [
-                qml.expval(qml.PauliZ(0)),
-                qml.counts(wires=range(2)),
-                qml.sample(wires=range(2)),
+                qp.expval(qp.PauliZ(0)),
+                qp.counts(wires=range(2)),
+                qp.sample(wires=range(2)),
             ],
             shots=shots,
         )
@@ -492,17 +492,17 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_custom_wire_labels(self, shots, x, y, seed):
         """Test that custom wire labels works as expected"""
-        shots = qml.measurements.Shots(shots)
-        qs = qml.tape.QuantumScript(
+        shots = qp.measurements.Shots(shots)
+        qs = qp.tape.QuantumScript(
             [
-                qml.RX(x, wires="b"),
-                qml.RY(y, wires="a"),
-                qml.CNOT(wires=["b", "a"]),
+                qp.RX(x, wires="b"),
+                qp.RY(y, wires="a"),
+                qp.CNOT(wires=["b", "a"]),
             ],
             [
-                qml.expval(qml.PauliZ("b")),
-                qml.counts(wires=["a", "b"]),
-                qml.sample(wires=["b", "a"]),
+                qp.expval(qp.PauliZ("b")),
+                qp.counts(wires=["a", "b"]),
+                qp.sample(wires=["b", "a"]),
             ],
             shots=shots,
         )

@@ -174,14 +174,14 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     """
     s2 = qchem.spin.spin2(electrons, orbitals)
     sops = list(map(simplify, ops_ref))
-    s2_ref = qml.dot(coeffs_ref, sops)
-    qml.assert_equal(s2_ref, s2)
-    assert isinstance(s2, qml.ops.Sum)
+    s2_ref = qp.dot(coeffs_ref, sops)
+    qp.assert_equal(s2_ref, s2)
+    assert isinstance(s2, qp.ops.Sum)
 
     wire_order = s2_ref.wires
     assert np.allclose(
-        qml.matrix(s2, wire_order=wire_order),
-        qml.matrix(s2_ref, wire_order=wire_order),
+        qp.matrix(s2, wire_order=wire_order),
+        qp.matrix(s2_ref, wire_order=wire_order),
     )
 
 
@@ -229,14 +229,14 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     function `'spin_z'`.
     """
     sz = qchem.spin.spinz(orbitals)
-    sz_ref = qml.dot(coeffs_ref, ops_ref)
+    sz_ref = qp.dot(coeffs_ref, ops_ref)
     assert sz_ref == (sz)
-    assert isinstance(sz, qml.ops.Sum)
+    assert isinstance(sz, qp.ops.Sum)
 
     wire_order = sz_ref.wires
     assert np.allclose(
-        qml.matrix(sz, wire_order=wire_order),
-        qml.matrix(sz_ref, wire_order=wire_order),
+        qp.matrix(sz, wire_order=wire_order),
+        qp.matrix(sz_ref, wire_order=wire_order),
     )
 
 

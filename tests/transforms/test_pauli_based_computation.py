@@ -56,7 +56,7 @@ class TestPauliBasedComputationTransforms:
         """Test that NotImplementedError is raised when trying to use Pauli-based computation
         transforms on a tape."""
 
-        tape = qml.tape.QuantumScript([qml.T(wires=0), qml.PauliRot(0.1, "Y", wires=0)])
+        tape = qp.tape.QuantumScript([qp.T(wires=0), qp.PauliRot(0.1, "Y", wires=0)])
 
         with pytest.raises(
             NotImplementedError,

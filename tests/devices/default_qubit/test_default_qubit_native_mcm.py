@@ -32,19 +32,19 @@ pytestmark = pytest.mark.slow
 def test_combine_measurements_core():
     """Test that combine_measurements_core raises for unsupported measurements."""
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        _ = combine_measurements_core(qml.classical_shadow(0), None)
+        _ = combine_measurements_core(qp.classical_shadow(0), None)
 
 
 def test_measurement_with_no_shots():
     """Test that measurement_with_no_shots returns the correct NaNs."""
-    assert np.isnan(measurement_with_no_shots(qml.expval(0)))
-    probs = measurement_with_no_shots(qml.probs(wires=0))
+    assert np.isnan(measurement_with_no_shots(qp.expval(0)))
+    probs = measurement_with_no_shots(qp.probs(wires=0))
     assert probs.shape == (2,)
     assert all(np.isnan(probs).tolist())
-    probs = measurement_with_no_shots(qml.probs(wires=[0, 1]))
+    probs = measurement_with_no_shots(qp.probs(wires=[0, 1]))
     assert probs.shape == (4,)
     assert all(np.isnan(probs).tolist())
-    probs = measurement_with_no_shots(qml.probs(op=qml.PauliY(0)))
+    probs = measurement_with_no_shots(qp.probs(op=qp.PauliY(0)))
     assert probs.shape == (2,)
     assert all(np.isnan(probs).tolist())
 
@@ -54,24 +54,24 @@ def test_measurement_with_no_shots():
 def test_all_invalid_shots_circuit(obs, mcm_method):
     """Test that circuits in which all shots mismatch with post-selection conditions return the same answer as ``defer_measurements``."""
 
-    dev = qml.device("default.qubit")
-    dev_shots = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
+    dev_shots = qp.device("default.qubit")
 
     def circuit_op():
-        m = qml.measure(0, postselect=1)
-        qml.cond(m, qml.PauliX)(1)
+        m = qp.measure(0, postselect=1)
+        qp.cond(m, qp.PauliX)(1)
         return (
             (
-                qml.expval(op=qml.PauliZ(1)),
-                qml.probs(op=qml.PauliY(0) @ qml.PauliZ(1)),
-                qml.var(op=qml.PauliZ(1)),
+                qp.expval(op=qp.PauliZ(1)),
+                qp.probs(op=qp.PauliY(0) @ qp.PauliZ(1)),
+                qp.var(op=qp.PauliZ(1)),
             )
             if obs == "pauli"
-            else (qml.expval(op=m), qml.probs(op=m), qml.var(op=m))
+            else (qp.expval(op=m), qp.probs(op=m), qp.var(op=m))
         )
 
-    res1 = qml.QNode(circuit_op, dev, mcm_method="deferred")()
-    res2 = qml.set_shots(qml.QNode(circuit_op, dev_shots, mcm_method=mcm_method), shots=10)()
+    res1 = qp.QNode(circuit_op, dev, mcm_method="deferred")()
+    res2 = qp.set_shots(qp.QNode(circuit_op, dev_shots, mcm_method=mcm_method), shots=10)()
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -83,40 +83,40 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
 def test_unsupported_measurement(mcm_method):
     """Test that circuits with unsupported measurements raise the correct error."""
 
-    dev = qml.device("default.qubit")
+    dev = qp.device("default.qubit")
     params = np.pi / 4 * np.ones(2)
 
-    @qml.set_shots(1000)
-    @qml.qnode(dev, mcm_method=mcm_method)
+    @qp.set_shots(1000)
+    @qp.qnode(dev, mcm_method=mcm_method)
     def func(x, y):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return qml.classical_shadow(wires=0)
+        qp.RX(x, wires=0)
+        m0 = qp.measure(0)
+        qp.cond(m0, qp.RY)(y, wires=1)
+        return qp.classical_shadow(wires=0)
 
     with pytest.raises(
         TypeError,
-        match=f"Native mid-circuit measurement mode does not support {type(qml.classical_shadow(wires=0)).__name__}",
+        match=f"Native mid-circuit measurement mode does not support {type(qp.classical_shadow(wires=0)).__name__}",
     ):
         func(*params)
 
 
 # pylint: disable=unused-argument
 def obs_tape(x, y, z, reset=False, postselect=None):
-    qml.RX(x, 0)
-    qml.RZ(np.pi / 4, 0)
-    m0 = qml.measure(0, reset=reset)
-    qml.cond(m0 == 0, qml.RX)(np.pi / 4, 0)
-    qml.cond(m0 == 0, qml.RZ)(np.pi / 4, 0)
-    qml.cond(m0 == 1, qml.RX)(-np.pi / 4, 0)
-    qml.cond(m0 == 1, qml.RZ)(-np.pi / 4, 0)
-    qml.RX(y, 1)
-    qml.RZ(np.pi / 4, 1)
-    m1 = qml.measure(1, postselect=postselect)
-    qml.cond(m1 == 0, qml.RX)(np.pi / 4, 1)
-    qml.cond(m1 == 0, qml.RZ)(np.pi / 4, 1)
-    qml.cond(m1 == 1, qml.RX)(-np.pi / 4, 1)
-    qml.cond(m1 == 1, qml.RZ)(-np.pi / 4, 1)
+    qp.RX(x, 0)
+    qp.RZ(np.pi / 4, 0)
+    m0 = qp.measure(0, reset=reset)
+    qp.cond(m0 == 0, qp.RX)(np.pi / 4, 0)
+    qp.cond(m0 == 0, qp.RZ)(np.pi / 4, 0)
+    qp.cond(m0 == 1, qp.RX)(-np.pi / 4, 0)
+    qp.cond(m0 == 1, qp.RZ)(-np.pi / 4, 0)
+    qp.RX(y, 1)
+    qp.RZ(np.pi / 4, 1)
+    m1 = qp.measure(1, postselect=postselect)
+    qp.cond(m1 == 0, qp.RX)(np.pi / 4, 1)
+    qp.cond(m1 == 0, qp.RZ)(np.pi / 4, 1)
+    qp.cond(m1 == 1, qp.RX)(-np.pi / 4, 1)
+    qp.cond(m1 == 1, qp.RZ)(-np.pi / 4, 1)
     return m0, m1
 
 
@@ -143,40 +143,40 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
     if batch_size is not None and shots is not None and postselect is not None:
         pytest.skip("Postselection with samples doesn't work with broadcasting")
 
-    dev = qml.device("default.qubit", seed=seed)
-    obs = qml.PauliY(1)
-    state = qml.math.zeros((4,))
+    dev = qp.device("default.qubit", seed=seed)
+    obs = qp.PauliY(1)
+    state = qp.math.zeros((4,))
     state[0] = 1.0
 
     def func(x, y, z):
-        qml.StatePrep(state, wires=[0, 1])
+        qp.StatePrep(state, wires=[0, 1])
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return (
             (
-                qml.expval(op=mcms[0]),
-                qml.probs(op=obs),
-                qml.var(op=obs),
-                qml.expval(op=obs),
-                qml.probs(op=obs),
-                qml.var(op=mcms[0]),
+                qp.expval(op=mcms[0]),
+                qp.probs(op=obs),
+                qp.var(op=obs),
+                qp.expval(op=obs),
+                qp.probs(op=obs),
+                qp.var(op=mcms[0]),
             )
             if shots is None
             else (
-                qml.counts(op=obs),
-                qml.expval(op=mcms[0]),
-                qml.probs(op=obs),
-                qml.sample(op=mcms[0]),
-                qml.var(op=obs),
+                qp.counts(op=obs),
+                qp.expval(op=mcms[0]),
+                qp.probs(op=obs),
+                qp.sample(op=mcms[0]),
+                qp.var(op=obs),
             )
         )
 
-    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*params)
-    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
+    results0 = qp.set_shots(qp.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*params)
+    results1 = qp.set_shots(qp.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
 
     measurements = (
-        [qml.expval, qml.probs, qml.var, qml.expval, qml.probs, qml.var]
+        [qp.expval, qp.probs, qp.var, qp.expval, qp.probs, qp.var]
         if shots is None
-        else [qml.counts, qml.expval, qml.probs, qml.sample, qml.var]
+        else [qp.counts, qp.expval, qp.probs, qp.sample, qp.var]
     )
 
     if not isinstance(shots, list):
@@ -184,8 +184,8 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
 
     for shot, res1, res0 in zip(shots, results1, results0):
         for measure_f, r1, r0 in zip(measurements, res1, res0):
-            if shots is None and measure_f in [qml.expval, qml.probs] and batch_size is not None:
-                r0 = qml.math.squeeze(r0)
+            if shots is None and measure_f in [qp.expval, qp.probs] and batch_size is not None:
+                r0 = qp.math.squeeze(r0)
             mcm_utils.validate_measurements(measure_f, shot, r1, r0, batch_size=batch_size)
 
 
@@ -204,7 +204,7 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
         ("all", lambda x, y, z: (x - 2 * y) * z + 7),
     ],
 )
-@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
+@pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs, qp.sample, qp.var])
 def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
@@ -213,29 +213,29 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
     if mcm_method == "one-shot" and shots is None:
         pytest.skip("`mcm_method='one-shot'` is incompatible with analytic mode (`shots=None`)")
 
-    if measure_f in (qml.counts, qml.sample) and shots is None:
+    if measure_f in (qp.counts, qp.sample) and shots is None:
         pytest.skip("Can't measure counts/sample in analytic mode (`shots=None`)")
 
-    if measure_f in (qml.expval, qml.var) and mcm_name in ["mix", "all"]:
+    if measure_f in (qp.expval, qp.var) and mcm_name in ["mix", "all"]:
         pytest.skip(
             "expval/var does not support measuring sequences of measurements or observables."
         )
 
-    if measure_f in (qml.probs,) and mcm_name in ["mix", "all"]:
+    if measure_f in (qp.probs,) and mcm_name in ["mix", "all"]:
         pytest.skip(
-            "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected using arithmetic operators."
+            "Cannot use qp.probs() when measuring multiple mid-circuit measurements collected using arithmetic operators."
         )
 
-    dev = qml.device("default.qubit", seed=seed)
-    param = qml.numpy.array([np.pi / 3, np.pi / 6])
+    dev = qp.device("default.qubit", seed=seed)
+    param = qp.numpy.array([np.pi / 3, np.pi / 6])
 
     def func(x, y):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(0.5 * x, 1)
-        m1 = qml.measure(1)
-        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
-        m2 = qml.measure(0)
+        qp.RX(x, 0)
+        m0 = qp.measure(0)
+        qp.RX(0.5 * x, 1)
+        m1 = qp.measure(1)
+        qp.cond((m0 + m1) == 2, qp.RY)(2.0 * x, 0)
+        m2 = qp.measure(0)
         obs = (
             mcm_func(m2)
             if mcm_name == "single"
@@ -243,8 +243,8 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
         )
         return measure_f(op=obs)
 
-    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*param)
-    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*param)
+    results0 = qp.set_shots(qp.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*param)
+    results1 = qp.set_shots(qp.QNode(func, dev, mcm_method="deferred"), shots=shots)(*param)
 
     mcm_utils.validate_measurements(measure_f, shots, results1, results0)
 
@@ -252,60 +252,60 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
 @pytest.mark.parametrize("shots", [5000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-@pytest.mark.parametrize("measure_f", [qml.expval])
+@pytest.mark.parametrize("measure_f", [qp.expval])
 def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f, seed):
     """Tests that DefaultQubit can differentiate a circuit with a composite mid-circuit
     measurement and a conditional gate. A single measurement of a common observable is
     performed at the end."""
 
-    dev = qml.device("default.qubit", seed=seed)
-    param = qml.numpy.array([np.pi / 3, np.pi / 6])
-    obs = qml.PauliZ(0) @ qml.PauliZ(1)
+    dev = qp.device("default.qubit", seed=seed)
+    param = qp.numpy.array([np.pi / 3, np.pi / 6])
+    obs = qp.PauliZ(0) @ qp.PauliZ(1)
 
-    @qml.set_shots(shots)
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qp.set_shots(shots)
+    @qp.qnode(dev, diff_method="parameter-shift")
     def func(x, y):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(y, 1)
-        m1 = qml.measure(1, reset=reset, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2 * np.pi / 3, 0)
-        qml.cond((m0 + m1) > 0, qml.RY)(2 * np.pi / 3, 1)
+        qp.RX(x, 0)
+        m0 = qp.measure(0)
+        qp.RX(y, 1)
+        m1 = qp.measure(1, reset=reset, postselect=postselect)
+        qp.cond((m0 + m1) == 2, qp.RY)(2 * np.pi / 3, 0)
+        qp.cond((m0 + m1) > 0, qp.RY)(2 * np.pi / 3, 1)
         return measure_f(op=obs)
 
     func1 = func
-    func2 = qml.defer_measurements(func)
+    func2 = qp.defer_measurements(func)
 
     results1 = func1(*param)
     results2 = func2(*param)
 
     mcm_utils.validate_measurements(measure_f, shots, results1, results2)
 
-    grad1 = qml.grad(func)(*param)
-    grad2 = qml.grad(func2)(*param)
+    grad1 = qp.grad(func)(*param)
+    grad2 = qp.grad(func2)(*param)
 
     assert np.allclose(grad1, grad2, atol=0.01, rtol=0.3)
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
 def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
-    """Test that an error is raised if returning qml.sample if postselecting with broadcasting"""
-    tape = qml.tape.QuantumScript(
-        [qml.RX([0.1, 0.2], 0), MidMeasure(0, postselect=1)], [qml.sample(wires=0)], shots=10
+    """Test that an error is raised if returning qp.sample if postselecting with broadcasting"""
+    tape = qp.tape.QuantumScript(
+        [qp.RX([0.1, 0.2], 0), MidMeasure(0, postselect=1)], [qp.sample(wires=0)], shots=10
     )
-    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
-        qml.transforms.dynamic_one_shot(tape)
+    with pytest.raises(ValueError, match="Returning qp.sample is not supported when"):
+        qp.transforms.dynamic_one_shot(tape)
 
-    dev = qml.device("default.qubit", seed=seed)
+    dev = qp.device("default.qubit", seed=seed)
 
-    @qml.set_shots(10)
-    @qml.qnode(dev, mcm_method=mcm_method)
+    @qp.set_shots(10)
+    @qp.qnode(dev, mcm_method=mcm_method)
     def circuit(x):
-        qml.RX(x, 0)
-        qml.measure(0, postselect=1)
-        return qml.sample(wires=0)
+        qp.RX(x, 0)
+        qp.measure(0, postselect=1)
+        return qp.sample(wires=0)
 
-    with pytest.raises(ValueError, match="Returning qml.sample is not supported when"):
+    with pytest.raises(ValueError, match="Returning qp.sample is not supported when"):
         _ = circuit([0.1, 0.2])
 
 
@@ -323,19 +323,19 @@ class TestJaxIntegration:
         # pylint: disable=import-outside-toplevel
         from jax.random import PRNGKey
 
-        dev = qml.device("default.qubit", seed=PRNGKey(seed))
+        dev = qp.device("default.qubit", seed=PRNGKey(seed))
         params = [np.pi / 4, np.pi / 3]
-        obs = qml.PauliZ(0) @ qml.PauliZ(1)
+        obs = qp.PauliZ(0) @ qp.PauliZ(1)
 
         def func(x, y):
             obs_tape(x, y, None, postselect=postselect)
-            return qml.sample(op=obs)
+            return qp.sample(op=obs)
 
-        func0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)
+        func0 = qp.set_shots(qp.QNode(func, dev, mcm_method=mcm_method), shots=shots)
         results0 = func0(*params)
-        results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
+        results1 = qp.set_shots(qp.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
 
-        mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
+        mcm_utils.validate_measurements(qp.sample, shots, results1, results0, batch_size=None)
 
         evals = obs.eigvals()
         for eig in evals:
@@ -365,28 +365,28 @@ class TestJaxIntegration:
 
         shots = 10
 
-        dev = qml.device("default.qubit", seed=jax.random.PRNGKey(seed))
+        dev = qp.device("default.qubit", seed=jax.random.PRNGKey(seed))
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
-        obs = qml.PauliY(0)
+        obs = qp.PauliY(0)
 
-        @qml.set_shots(shots)
-        @qml.qnode(dev, diff_method=diff_method)
+        @qp.set_shots(shots)
+        @qp.qnode(dev, diff_method=diff_method)
         def func(x, y, z):
             m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)
             return (
-                qml.probs(wires=[1]),
-                qml.probs(wires=[0, 1]),
-                qml.sample(wires=[1]),
-                qml.sample(wires=[0, 1]),
-                qml.expval(obs),
-                qml.probs(obs),
-                qml.sample(obs),
-                qml.var(obs),
-                qml.expval(op=m0 + 2 * m1),
-                qml.probs(op=m0),
-                qml.sample(op=m0 + 2 * m1),
-                qml.var(op=m0 + 2 * m1),
-                qml.probs(op=[m0, m1]),
+                qp.probs(wires=[1]),
+                qp.probs(wires=[0, 1]),
+                qp.sample(wires=[1]),
+                qp.sample(wires=[0, 1]),
+                qp.expval(obs),
+                qp.probs(obs),
+                qp.sample(obs),
+                qp.var(obs),
+                qp.expval(op=m0 + 2 * m1),
+                qp.probs(op=m0),
+                qp.sample(op=m0 + 2 * m1),
+                qp.var(op=m0 + 2 * m1),
+                qp.probs(op=[m0, m1]),
             )
 
         func1 = func
@@ -399,22 +399,22 @@ class TestJaxIntegration:
         results2 = func2(*params)
 
         measures = [
-            qml.probs,
-            qml.probs,
-            qml.sample,
-            qml.sample,
-            qml.expval,
-            qml.probs,
-            qml.sample,
-            qml.var,
-            qml.expval,
-            qml.probs,
-            qml.sample,
-            qml.var,
-            qml.probs,
+            qp.probs,
+            qp.probs,
+            qp.sample,
+            qp.sample,
+            qp.expval,
+            qp.probs,
+            qp.sample,
+            qp.var,
+            qp.expval,
+            qp.probs,
+            qp.sample,
+            qp.var,
+            qp.probs,
         ]
         for measure_f, r1, r2 in zip(measures, results1, results2):
             r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
-            if measure_f == qml.sample:
+            if measure_f == qp.sample:
                 r2 = r2[r2 != fill_in_value]
             np.allclose(r1, r2)

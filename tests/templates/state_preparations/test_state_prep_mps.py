@@ -50,8 +50,8 @@ class TestMPSPrep:
             np.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
 
-        op = qml.MPSPrep(mps, wires=[0, 1, 2, 3], work_wires=[4, 5])
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+        op = qp.MPSPrep(mps, wires=[0, 1, 2, 3], work_wires=[4, 5])
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_access_to_param(self):
         """Tests that the template parameters are accessible."""
@@ -73,7 +73,7 @@ class TestMPSPrep:
             ),
             np.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
-        op = qml.MPSPrep(mps, wires=[0, 1, 2])
+        op = qp.MPSPrep(mps, wires=[0, 1, 2])
 
         for arr1, arr2 in zip(mps, op.mps):
             assert np.allclose(arr1, arr2)
@@ -260,12 +260,12 @@ class TestMPSPrep:
             0.0 + 0.0j,
         ]
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.MPSPrep(mps, wires=range(2, 5), work_wires=[0, 1])
-            return qml.state()
+            qp.MPSPrep(mps, wires=range(2, 5), work_wires=[0, 1])
+            return qp.state()
 
         output = circuit()[:8]
         output_jit = jax.jit(circuit)()[:8]
@@ -515,14 +515,14 @@ class TestMPSPrep:
             num_work_wires(int): number of auxiliary wires used in the mps decomposition
         """
 
-        wires = qml.registers({"work": num_work_wires, "state": num_wires})
-        dev = qml.device("default.qubit")
+        wires = qp.registers({"work": num_work_wires, "state": num_wires})
+        dev = qp.device("default.qubit")
 
-        qs = qml.tape.QuantumScript(
-            qml.MPSPrep.compute_decomposition(
+        qs = qp.tape.QuantumScript(
+            qp.MPSPrep.compute_decomposition(
                 mps, wires=wires["state"], work_wires=wires["work"], right_canonicalize=True
             ),
-            [qml.state()],
+            [qp.state()],
         )
         output = dev.execute(qs)[: 2**num_wires]
 
@@ -624,10 +624,10 @@ class TestMPSPrep:
     )
     def test_decomposition_new(self, mps, num_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.MPSPrep(
+        op = qp.MPSPrep(
             mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
         )
-        for rule in qml.list_decomps(qml.MPSPrep):
+        for rule in qp.list_decomps(qp.MPSPrep):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.capture
@@ -662,12 +662,12 @@ class TestMPSPrep:
                 *_mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
             )
 
-        plxpr = qml.capture.make_plxpr(circuit)(*mps)
+        plxpr = qp.capture.make_plxpr(circuit)(*mps)
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts, *mps)
         assert len(collector.state["ops"]) == 4
         for op in collector.state["ops"]:
-            assert isinstance(op, qml.QubitUnitary)
+            assert isinstance(op, qp.QubitUnitary)
 
     def test_decomposition(self):
         """Tests that the template defines the correct decomposition."""
@@ -691,15 +691,15 @@ class TestMPSPrep:
             np.array([[1.0, 0.0], [0.0, 1.0]]),
         ]
 
-        ops = qml.MPSPrep.compute_decomposition(mps, wires=range(2, 6), work_wires=[0, 1])
+        ops = qp.MPSPrep.compute_decomposition(mps, wires=range(2, 6), work_wires=[0, 1])
 
         for ind, op in enumerate(ops):
-            assert op.wires == qml.wires.Wires([2 + ind] + [0, 1])
+            assert op.wires == qp.wires.Wires([2 + ind] + [0, 1])
             assert op.name == "QubitUnitary"
 
     @pytest.mark.parametrize(
         ("work_wires", "msg"),
-        [(None, "The qml.MPSPrep decomposition requires"), (1, "Incorrect number of `work_wires`")],
+        [(None, "The qp.MPSPrep decomposition requires"), (1, "Incorrect number of `work_wires`")],
     )
     def test_wires_decomposition(self, work_wires, msg):
         """Checks that error is shown if no `work_wires` are given in decomposition"""
@@ -723,7 +723,7 @@ class TestMPSPrep:
             np.array([[1.0, 0.0], [0.0, 1.0]]),
         ]
 
-        op = qml.MPSPrep(mps, wires=range(2, 5), work_wires=work_wires)
+        op = qp.MPSPrep(mps, wires=range(2, 5), work_wires=work_wires)
         with pytest.raises(ValueError, match=msg):
             op.decomposition()
 
@@ -765,7 +765,7 @@ class TestMPSPrep:
 
             # Right-canonical definition
             contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
-            assert qml.math.allclose(contraction_matrix, qml.math.eye(tensor.shape[0]))
+            assert qp.math.allclose(contraction_matrix, qp.math.eye(tensor.shape[0]))
 
     def test_immutable_input(self):
         """Verifies that the input MPS remains unchanged after processing."""
@@ -780,18 +780,18 @@ class TestMPSPrep:
         _ = right_canonicalize_mps(mps)
 
         for tensor1, tensor2 in zip(mps, mps_copy):
-            assert qml.math.allclose(tensor1, tensor2)
+            assert qp.math.allclose(tensor1, tensor2)
 
-        wires = qml.registers({"work": 2, "state": n_sites})
-        dev = qml.device("default.qubit")
+        wires = qp.registers({"work": 2, "state": n_sites})
+        dev = qp.device("default.qubit")
 
-        qs = qml.tape.QuantumScript(
-            qml.MPSPrep.compute_decomposition(
+        qs = qp.tape.QuantumScript(
+            qp.MPSPrep.compute_decomposition(
                 mps, wires=wires["state"], work_wires=wires["work"], right_canonicalize=True
             ),
-            [qml.state()],
+            [qp.state()],
         )
         _ = dev.execute(qs)
 
         for tensor1, tensor2 in zip(mps, mps_copy):
-            assert qml.math.allclose(tensor1, tensor2)
+            assert qp.math.allclose(tensor1, tensor2)

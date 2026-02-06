@@ -50,96 +50,96 @@ def catalyst_incompatible_version():
 def test_catalyst_incompatible():
     """Test qjit with an incompatible Catalyst version that's lower than required."""
 
-    dev = qml.device("lightning.qubit", wires=1)
+    dev = qp.device("lightning.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.PauliX(0)
-        return qml.state()
+        qp.PauliX(0)
+        return qp.state()
 
     with pytest.raises(
         CompileError,
         match="PennyLane-Catalyst 0.[0-9]+.0 or greater is required, but installed 0.0.1",
     ):
-        qml.qjit(circuit)()
+        qp.qjit(circuit)()
 
 
 class TestCatalyst:
-    """Test ``qml.qjit`` with Catalyst"""
+    """Test ``qp.qjit`` with Catalyst"""
 
     def test_compiler(self):
         """Test compiler active and available methods"""
 
-        assert not qml.compiler.active()
-        assert not qml.compiler.available("SomeRandomCompiler")
+        assert not qp.compiler.active()
+        assert not qp.compiler.available("SomeRandomCompiler")
 
-        assert qml.compiler.available("catalyst")
-        assert qml.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
+        assert qp.compiler.available("catalyst")
+        assert qp.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
 
     def test_active_compiler(self):
-        """Test `qml.compiler.active_compiler` inside a simple circuit"""
-        dev = qml.device("lightning.qubit", wires=2)
+        """Test `qp.compiler.active_compiler` inside a simple circuit"""
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active_compiler() == "catalyst":
-                qml.RX(phi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            if qp.compiler.active_compiler() == "catalyst":
+                qp.RX(phi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.PhaseShift(theta, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
 
     def test_active(self):
-        """Test `qml.compiler.active` inside a simple circuit"""
-        dev = qml.device("lightning.qubit", wires=2)
+        """Test `qp.compiler.active` inside a simple circuit"""
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active():
-                qml.RX(phi, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            if qp.compiler.active():
+                qp.RX(phi, wires=0)
+            qp.CNOT(wires=[0, 1])
+            qp.PhaseShift(theta, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
 
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
     def test_jax_enable_x64(self, jax_enable_x64):
-        """Test whether `qml.compiler.active` changes `jax_enable_x64`."""
+        """Test whether `qp.compiler.active` changes `jax_enable_x64`."""
         jax.config.update("jax_enable_x64", jax_enable_x64)
         assert jax.config.jax_enable_x64 is jax_enable_x64
-        qml.compiler.active()
+        qp.compiler.active()
         assert jax.config.jax_enable_x64 is jax_enable_x64
 
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(theta):
-            qml.Hadamard(wires=0)
-            qml.RX(theta, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=1))
+            qp.Hadamard(wires=0)
+            qp.RX(theta, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(wires=1))
 
         assert jnp.allclose(circuit(0.5), 0.0)
 
     def test_qjit_aot(self):
         """Test AOT compilation of a circuit with 2-qubit"""
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
             theta = jnp.abs(x)
-            qml.RY(theta, wires=0)
-            qml.Rot(z[0], z[1], z[2], wires=0)
-            return qml.state()
+            qp.RY(theta, wires=0)
+            qp.Rot(z[0], z[1], z[2], wires=0)
+            return qp.state()
 
         # Check that the compilation happens at definition
         assert circuit.compiled_function
@@ -159,19 +159,19 @@ class TestCatalyst:
     )
     def test_variable_capture_multiple_devices(self, _in, _out):
         """Test variable capture using multiple backend devices."""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
+        @qp.qjit
         def workflow(n: int):
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def f(x: float):
-                qml.RX(n * x, wires=n)
-                return qml.expval(qml.PauliZ(wires=n))
+                qp.RX(n * x, wires=n)
+                return qp.expval(qp.PauliZ(wires=n))
 
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def g(x: float):
-                qml.RX(x, wires=1)
-                return qml.expval(qml.PauliZ(wires=1))
+                qp.RX(x, wires=1)
+                return qp.expval(qp.PauliZ(wires=1))
 
             return jnp.array_equal(f(jnp.pi), g(jnp.pi))
 
@@ -180,7 +180,7 @@ class TestCatalyst:
     def test_args_workflow(self):
         """Test arguments with workflows."""
 
-        @qml.qjit
+        @qp.qjit
         def workflow1(params1, params2):
             """A classical workflow"""
             res1 = params1["a"][0][0] + params2[1]
@@ -196,18 +196,18 @@ class TestCatalyst:
 
     def test_return_value_dict(self):
         """Test pytree return values."""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit1(params):
-            qml.RX(params[0], wires=0)
-            qml.RX(params[1], wires=1)
+            qp.RX(params[0], wires=0)
+            qp.RX(params[1], wires=1)
             return {
-                "w0": qml.expval(qml.PauliZ(0)),
-                "w1": qml.expval(qml.PauliZ(1)),
+                "w0": qp.expval(qp.PauliZ(0)),
+                "w1": qp.expval(qp.PauliZ(1)),
             }
 
-        jitted_fn = qml.qjit(circuit1)
+        jitted_fn = qp.qjit(circuit1)
 
         params = [0.2, 0.6]
         expected = {"w0": 0.98006658, "w1": 0.82533561}
@@ -218,31 +218,31 @@ class TestCatalyst:
 
     def test_qjit_python_if(self):
         """Test JIT compilation with the autograph support"""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit(autograph=True)
-        @qml.qnode(dev)
+        @qp.qjit(autograph=True)
+        @qp.qnode(dev)
         def circuit(x: int):
             if x < 5:
-                qml.Hadamard(wires=0)
+                qp.Hadamard(wires=0)
             else:
-                qml.T(wires=0)
+                qp.T(wires=0)
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(3), 0.0)
         assert jnp.allclose(circuit(5), 1.0)
 
     def test_compilation_opt(self):
         """Test user-configurable compilation options"""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit(target="mlir", keep_intermediate=True)
-        @qml.qnode(dev)
+        @qp.qjit(target="mlir", keep_intermediate=True)
+        @qp.qnode(dev)
         def circuit(x: float):
-            qml.RX(x, wires=0)
-            qml.RX(x**2, wires=1)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            qp.RX(x**2, wires=1)
+            return qp.expval(qp.PauliZ(0))
 
         mlir_str = str(circuit.mlir)
         result_header = "func.func public @circuit(%arg0: tensor<f64>) -> tensor<f64>"
@@ -251,62 +251,62 @@ class TestCatalyst:
 
     def test_qjit_adjoint(self):
         """Test JIT compilation with adjoint support"""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
-        @qml.qnode(device=dev)
+        @qp.qjit
+        @qp.qnode(device=dev)
         def workflow_cl(theta, wires):
             def func():
-                qml.RX(theta, wires=wires)
+                qp.RX(theta, wires=wires)
 
-            qml.adjoint(func)()
-            return qml.probs()
+            qp.adjoint(func)()
+            return qp.probs()
 
-        @qml.qnode(device=dev)
+        @qp.qnode(device=dev)
         def workflow_pl(theta, wires):
             def func():
-                qml.RX(theta, wires=wires)
+                qp.RX(theta, wires=wires)
 
-            qml.adjoint(func)()
-            return qml.probs()
+            qp.adjoint(func)()
+            return qp.probs()
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
     def test_qjit_adjoint_lazy(self):
         """Test that the lazy kwarg is supported."""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qnode(device=dev)
+        @qp.qnode(device=dev)
         def workflow_pl(theta, wires):
-            qml.Hadamard(wires)
-            qml.adjoint(qml.RX(theta, wires=wires), lazy=False)
-            return qml.probs()
+            qp.Hadamard(wires)
+            qp.adjoint(qp.RX(theta, wires=wires), lazy=False)
+            return qp.probs()
 
-        workflow_cl = qml.qjit(workflow_pl)
+        workflow_cl = qp.qjit(workflow_pl)
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
     def test_control(self):
         """Test that control works with qjit."""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def workflow(theta, w, cw):
-            qml.Hadamard(wires=[0])
-            qml.Hadamard(wires=[1])
+            qp.Hadamard(wires=[0])
+            qp.Hadamard(wires=[1])
 
             def func(arg):
-                qml.RX(theta, wires=arg)
+                qp.RX(theta, wires=arg)
 
             def cond_fn():
-                qml.RY(theta, wires=w)
+                qp.RY(theta, wires=w)
 
-            qml.ctrl(func, control=[cw])(w)
-            qml.ctrl(qml.cond(theta > 0.0, cond_fn), control=[cw])()
-            qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
-            qml.ctrl(qml.RY(theta, wires=w), control=[cw])
-            return qml.probs()
+            qp.ctrl(func, control=[cw])(w)
+            qp.ctrl(qp.cond(theta > 0.0, cond_fn), control=[cw])()
+            qp.ctrl(qp.RZ, control=[cw])(theta, wires=w)
+            qp.ctrl(qp.RY(theta, wires=w), control=[cw])
+            return qp.probs()
 
         assert jnp.allclose(
             workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.03661165, 0.46338835])
@@ -314,55 +314,55 @@ class TestCatalyst:
 
 
 class TestCatalystControlFlow:
-    """Test ``qml.qjit`` with Catalyst's control-flow operations"""
+    """Test ``qp.qjit`` with Catalyst's control-flow operations"""
 
     def test_while_loop_defined_outside_qjit(self):
         """Test that the while loop can be defined outside the qjit."""
 
-        @qml.while_loop(lambda n: n < 4)
+        @qp.while_loop(lambda n: n < 4)
         def w(n):
             return n + 1
 
-        res = qml.qjit(w)(0)
-        assert qml.math.allclose(res, 4)
+        res = qp.qjit(w)(0)
+        assert qp.math.allclose(res, 4)
 
     def test_for_loop_defined_outside_qjit(self):
         """Test that a for_loop can be defined outside the qjit."""
 
-        @qml.for_loop(5)
+        @qp.for_loop(5)
         def f(i, x):
             return x + i
 
-        res = qml.qjit(f)(0)
-        assert qml.math.allclose(res, 10)
+        res = qp.qjit(f)(0)
+        assert qp.math.allclose(res, 10)
 
     def test_alternating_while_loop(self):
         """Test simple while loop."""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(n):
-            @qml.while_loop(lambda v: v[0] < v[1])
+            @qp.while_loop(lambda v: v[0] < v[1])
             def loop(v):
-                qml.PauliX(wires=0)
+                qp.PauliX(wires=0)
                 return v[0] + 1, v[1]
 
             loop((0, n))
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(1), -1.0)
 
     def test_nested_while_loops(self):
         """Test nested while loops."""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(n, m):
-            @qml.while_loop(lambda i, _: i < n)
+            @qp.while_loop(lambda i, _: i < n)
             def outer(i, sm):
-                @qml.while_loop(lambda j: j < m)
+                @qp.while_loop(lambda j: j < m)
                 def inner(j):
                     return j + 1
 
@@ -375,19 +375,19 @@ class TestCatalystControlFlow:
 
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
-        dev = qml.device("lightning.qubit", wires=6)
+        dev = qp.device("lightning.qubit", wires=6)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(n: int):
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
 
-            @qml.for_loop(0, n - 1, 1)
+            @qp.for_loop(0, n - 1, 1)
             def loop_fn(i):
-                qml.CNOT(wires=[i, i + 1])
+                qp.CNOT(wires=[i, i + 1])
 
             loop_fn()
-            return qml.state()
+            return qp.state()
 
         expected = np.zeros(2**6)
         expected[[0, 2**6 - 1]] = 1 / np.sqrt(2)
@@ -396,24 +396,24 @@ class TestCatalystControlFlow:
 
     def test_nested_for_loops(self):
         """Test nested for loops."""
-        dev = qml.device("lightning.qubit", wires=4)
+        dev = qp.device("lightning.qubit", wires=4)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(n):
             # Input state: equal superposition
-            @qml.for_loop(0, n, 1)
+            @qp.for_loop(0, n, 1)
             def init(i):
-                qml.Hadamard(wires=i)
+                qp.Hadamard(wires=i)
 
             # QFT
-            @qml.for_loop(0, n, 1)
+            @qp.for_loop(0, n, 1)
             def qft(i):
-                qml.Hadamard(wires=i)
+                qp.Hadamard(wires=i)
 
-                @qml.for_loop(i + 1, n, 1)
+                @qp.for_loop(i + 1, n, 1)
                 def inner(j):
-                    qml.ControlledPhaseShift(np.pi / 2 ** (n - j + 1), [i, j])
+                    qp.ControlledPhaseShift(np.pi / 2 ** (n - j + 1), [i, j])
 
                 inner()
 
@@ -421,113 +421,113 @@ class TestCatalystControlFlow:
             qft()
 
             # Expected output: |100...>
-            return qml.state()
+            return qp.state()
 
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
 
     def test_cond(self):
         """Test condition with simple true_fn"""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(x: float):
             def ansatz_true():
-                qml.RX(x, wires=0)
-                qml.Hadamard(wires=0)
+                qp.RX(x, wires=0)
+                qp.Hadamard(wires=0)
 
-            qml.cond(x > 1.4, ansatz_true)()
+            qp.cond(x > 1.4, ansatz_true)()
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(1.4), 1.0)
         assert jnp.allclose(circuit(1.6), 0.0)
 
     def test_cond_with_else(self):
         """Test condition with simple true_fn and false_fn"""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(x: float):
             def ansatz_true():
-                qml.RX(x, wires=0)
-                qml.Hadamard(wires=0)
+                qp.RX(x, wires=0)
+                qp.Hadamard(wires=0)
 
             def ansatz_false():
-                qml.RY(x, wires=0)
+                qp.RY(x, wires=0)
 
-            qml.cond(x > 1.4, ansatz_true, ansatz_false)()
+            qp.cond(x > 1.4, ansatz_true, ansatz_false)()
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(1.4), 0.16996714)
         assert jnp.allclose(circuit(1.6), 0.0)
 
     def test_cond_with_elif(self):
         """Test condition with a simple elif branch"""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(x):
             def true_fn():
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
 
             def elif_fn():
-                qml.RY(x, wires=0)
+                qp.RY(x, wires=0)
 
             def false_fn():
-                qml.RX(x**2, wires=0)
+                qp.RX(x**2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
+            qp.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))()
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(1.2), 0.13042371)
         assert jnp.allclose(circuit(jnp.pi), -1.0)
 
     def test_cond_with_elifs(self):
         """Test condition with multiple elif branches"""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.qnode(dev)
         def circuit(x):
             def true_fn():
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
 
             def elif1_fn():
-                qml.RY(x, wires=0)
+                qp.RY(x, wires=0)
 
             def elif2_fn():
-                qml.RZ(x, wires=0)
+                qp.RZ(x, wires=0)
 
             def false_fn():
-                qml.RX(x**2, wires=0)
+                qp.RX(x**2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, false_fn, ((x > 2.4, elif1_fn), (x > 1.4, elif2_fn)))()
+            qp.cond(x > 2.7, true_fn, false_fn, ((x > 2.4, elif1_fn), (x > 1.4, elif2_fn)))()
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(1.5), 1.0)
         assert jnp.allclose(circuit(jnp.pi), -1.0)
 
     def test_cond_with_elif_interpreted(self):
         """Test condition with an elif branch in interpreted mode"""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
             def true_fn():
-                qml.RX(x, wires=0)
+                qp.RX(x, wires=0)
 
             def elif_fn():
-                qml.RX(x**2, wires=0)
+                qp.RX(x**2, wires=0)
 
-            qml.cond(x > 2.7, true_fn, None, ((x > 1.4, elif_fn),))()
+            qp.cond(x > 2.7, true_fn, None, ((x > 1.4, elif_fn),))()
 
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(1.2), 1.0)
         assert jnp.allclose(circuit(jnp.pi), -1.0)
@@ -535,9 +535,9 @@ class TestCatalystControlFlow:
     def test_cond_with_decorator_syntax(self):
         """Test condition using the decorator syntax"""
 
-        @qml.qjit
+        @qp.qjit
         def f(x):
-            @qml.cond(x > 0)
+            @qp.cond(x > 0)
             def conditional():
                 return (x + 1) ** 2
 
@@ -557,75 +557,75 @@ class TestCatalystControlFlow:
 
 
 class TestCatalystGrad:
-    """Test ``qml.qjit`` with Catalyst's grad operations"""
+    """Test ``qp.qjit`` with Catalyst's grad operations"""
 
     @pytest.mark.parametrize("argnums", (None, 0))
-    @pytest.mark.parametrize("g_fn", (qml.grad, qml.jacobian))
+    @pytest.mark.parametrize("g_fn", (qp.grad, qp.jacobian))
     def test_lazy_dispatch_grad(self, g_fn, argnums):
         """Test that grad is lazily dispatched to the catalyst version at runtime."""
 
         def f(x):
             return x**2
 
-        g = qml.qjit(g_fn(f, argnums=argnums))(0.5)
-        assert qml.math.allclose(g, 1.0)
-        assert qml.math.get_interface(g) == "jax"
+        g = qp.qjit(g_fn(f, argnums=argnums))(0.5)
+        assert qp.math.allclose(g, 1.0)
+        assert qp.math.get_interface(g) == "jax"
 
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
+        @qp.qjit
         def workflow(x):
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RX(jnp.pi * x, wires=0)
-                return qml.expval(qml.PauliY(0))
+                qp.RX(jnp.pi * x, wires=0)
+                return qp.expval(qp.PauliY(0))
 
-            g = qml.grad(circuit)
+            g = qp.grad(circuit)
             return g(x)
 
         assert jnp.allclose(workflow(2.0), -jnp.pi)
 
     def test_grad_with_postprocessing(self):
         """Test the grad transformation with classical preprocessing and postprocessing."""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
+        @qp.qjit
         def workflow(theta):
-            @qml.qnode(dev, diff_method="adjoint")
+            @qp.qnode(dev, diff_method="adjoint")
             def circuit(theta):
-                qml.RX(jnp.exp(theta**2) / jnp.cos(theta / 4), wires=0)
-                return qml.expval(qml.PauliZ(wires=0))
+                qp.RX(jnp.exp(theta**2) / jnp.cos(theta / 4), wires=0)
+                return qp.expval(qp.PauliZ(wires=0))
 
             def loss(theta):
                 return jnp.pi / jnp.tanh(circuit(theta))
 
-            return qml.grad(loss, method="auto")(theta)
+            return qp.grad(loss, method="auto")(theta)
 
         assert jnp.allclose(workflow(1.0), 5.04324559)
 
     def test_grad_with_multiple_qnodes(self):
         """Test the grad transformation with multiple QNodes with their own differentiation methods."""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
+        @qp.qjit
         def workflow(theta):
-            @qml.qnode(dev, diff_method="parameter-shift")
+            @qp.qnode(dev, diff_method="parameter-shift")
             def circuit_A(params):
-                qml.RX(jnp.exp(params[0] ** 2) / jnp.cos(params[1] / 4), wires=0)
-                return qml.probs()
+                qp.RX(jnp.exp(params[0] ** 2) / jnp.cos(params[1] / 4), wires=0)
+                return qp.probs()
 
-            @qml.qnode(dev, diff_method="adjoint")
+            @qp.qnode(dev, diff_method="adjoint")
             def circuit_B(params):
-                qml.RX(jnp.exp(params[1] ** 2) / jnp.cos(params[0] / 4), wires=0)
-                return qml.expval(qml.PauliZ(wires=0))
+                qp.RX(jnp.exp(params[1] ** 2) / jnp.cos(params[0] / 4), wires=0)
+                return qp.expval(qp.PauliZ(wires=0))
 
             def loss(params):
                 return jnp.prod(circuit_A(params)) + circuit_B(params)
 
-            return qml.grad(loss)(theta)
+            return qp.grad(loss)(theta)
 
         result = workflow(jnp.array([1.0, 2.0]))
         reference = jnp.array([0.57367285, 44.4911605])
@@ -638,77 +638,77 @@ class TestCatalystGrad:
         def square(x: float):
             return x**2
 
-        @qml.qjit
+        @qp.qjit
         def dsquare(x: float):
-            return qml.grad(square)(x)
+            return qp.grad(square)(x)
 
         assert jnp.allclose(dsquare(2.3), 4.6)
 
     def test_jacobian_diff_method(self):
         """Test the Jacobian transformation with the device diff_method."""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, diff_method="parameter-shift")
         def func(p):
-            qml.RY(p, wires=0)
-            return qml.probs(wires=0)
+            qp.RY(p, wires=0)
+            return qp.probs(wires=0)
 
-        @qml.qjit
+        @qp.qjit
         def workflow(p: float):
-            return qml.jacobian(func, method="auto")(p)
+            return qp.jacobian(func, method="auto")(p)
 
         result = workflow(0.5)
-        reference = qml.jacobian(func, argnums=0)(0.5)
+        reference = qp.jacobian(func, argnums=0)(0.5)
 
         assert jnp.allclose(result, reference)
 
     def test_jacobian_auto(self):
         """Test the Jacobian transformation with 'auto'."""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
         def workflow(x):
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RX(jnp.pi * x[0], wires=0)
-                qml.RY(x[1], wires=0)
-                return qml.probs()
+                qp.RX(jnp.pi * x[0], wires=0)
+                qp.RY(x[1], wires=0)
+                return qp.probs()
 
-            g = qml.jacobian(circuit)
+            g = qp.jacobian(circuit)
             return g(x)
 
         reference = workflow(np.array([2.0, 1.0]))
-        result = qml.qjit(workflow)(jnp.array([2.0, 1.0]))
+        result = qp.qjit(workflow)(jnp.array([2.0, 1.0]))
 
         assert jnp.allclose(result, reference)
 
     def test_jacobian_fd(self):
         """Test the Jacobian transformation with 'fd'."""
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
         def workflow(x):
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(x):
-                qml.RX(np.pi * x[0], wires=0)
-                qml.RY(x[1], wires=0)
-                return qml.probs()
+                qp.RX(np.pi * x[0], wires=0)
+                qp.RY(x[1], wires=0)
+                return qp.probs()
 
-            g = qml.jacobian(circuit, method="fd", h=0.3)
+            g = qp.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-        result = qml.qjit(workflow)(np.array([2.0, 1.0]))
+        result = qp.qjit(workflow)(np.array([2.0, 1.0]))
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
         assert jnp.allclose(result, reference)
 
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
 
-        @qml.qjit
+        @qp.qjit
         def jvp(params, tangent):
             def f(x):
                 y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
                 return jnp.stack(y)
 
-            return qml.jvp(f, [params], [tangent])
+            return qp.jvp(f, [params], [tangent])
 
         x = jnp.array([0.1, 0.2])
         tangent = jnp.array([0.3, 0.6])
@@ -724,23 +724,23 @@ class TestCatalystGrad:
         def f(x, y):
             return y * x**2
 
-        @qml.qjit
+        @qp.qjit
         def w(x, y):
-            return qml.jvp(f, [x, y], [1.0], **{argnum_name: [1]})
+            return qp.jvp(f, [x, y], [1.0], **{argnum_name: [1]})
 
         x = jnp.array(0.5)
         y = jnp.array(3.0)
 
         if argnum_name == "argnum":
             with pytest.warns(
-                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.jvp"
+                qp.exceptions.PennyLaneDeprecationWarning, match="argnum in qp.jvp"
             ):
                 res, dres = w(x, y)
         else:
             res, dres = w(x, y)
 
-        assert qml.math.allclose(res, f(x, y))
-        assert qml.math.allclose(dres, x**2)
+        assert qp.math.allclose(res, f(x, y))
+        assert qp.math.allclose(dres, x**2)
 
     @pytest.mark.parametrize("argnum_name", ("argnum", "argnums"))
     def test_vjp_argnums(self, argnum_name):
@@ -749,23 +749,23 @@ class TestCatalystGrad:
         def f(x, y):
             return y * x**2
 
-        @qml.qjit
+        @qp.qjit
         def w(x, y):
-            return qml.vjp(f, [x, y], [1.0], **{argnum_name: [1]})
+            return qp.vjp(f, [x, y], [1.0], **{argnum_name: [1]})
 
         x = jnp.array(0.5)
         y = jnp.array(3.0)
 
         if argnum_name == "argnum":
             with pytest.warns(
-                qml.exceptions.PennyLaneDeprecationWarning, match="argnum in qml.vjp"
+                qp.exceptions.PennyLaneDeprecationWarning, match="argnum in qp.vjp"
             ):
                 res, dres = w(x, y)
         else:
             res, dres = w(x, y)
 
-        assert qml.math.allclose(res, f(x, y))
-        assert qml.math.allclose(dres, x**2)
+        assert qp.math.allclose(res, f(x, y))
+        assert qp.math.allclose(dres, x**2)
 
     def test_jvp_without_qjit(self):
         """Test that an error is raised when using JVP without QJIT."""
@@ -775,7 +775,7 @@ class TestCatalystGrad:
                 y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
                 return jnp.stack(y)
 
-            return qml.jvp(f, [params], [tangent])
+            return qp.jvp(f, [params], [tangent])
 
         x = jnp.array([0.1, 0.2])
         tangent = jnp.array([0.3, 0.6])
@@ -788,13 +788,13 @@ class TestCatalystGrad:
     def test_vjp(self):
         """Test that the correct VJP is returned with QJIT."""
 
-        @qml.qjit
+        @qp.qjit
         def vjp(params, cotangent):
             def f(x):
                 y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
                 return jnp.stack(y)
 
-            return qml.vjp(f, [params], [cotangent])
+            return qp.vjp(f, [params], [cotangent])
 
         x = jnp.array([0.1, 0.2])
         dy = jnp.array([-0.5, 0.1, 0.3])
@@ -812,7 +812,7 @@ class TestCatalystGrad:
                 y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
                 return jnp.stack(y)
 
-            return qml.vjp(f, [params], [cotangent])
+            return qp.vjp(f, [params], [cotangent])
 
         x = jnp.array([0.1, 0.2])
         dy = jnp.array([-0.5, 0.1, 0.3])
@@ -824,21 +824,21 @@ class TestCatalystGrad:
 
 
 class TestCatalystSample:
-    """Test qml.sample with Catalyst."""
+    """Test qp.sample with Catalyst."""
 
     def test_sample_measure(self):
-        """Test that qml.sample can be used with catalyst.measure."""
+        """Test that qp.sample can be used with catalyst.measure."""
 
-        dev = qml.device("lightning.qubit", wires=1)
+        dev = qp.device("lightning.qubit", wires=1)
 
-        @qml.qjit
-        @qml.set_shots(1)
-        @qml.qnode(dev)
+        @qp.qjit
+        @qp.set_shots(1)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.RY(x, wires=0)
+            qp.RY(x, wires=0)
             m = catalyst.measure(0)
-            qml.PauliX(0)
-            return qml.sample(m)
+            qp.PauliX(0)
+            return qp.sample(m)
 
         assert circuit(0.0) == 0
         assert circuit(jnp.pi) == 1
@@ -850,76 +850,76 @@ class TestCatalystMCMs:
     @pytest.mark.parametrize(
         "measure_f",
         [
-            qml.counts,
-            qml.expval,
-            qml.probs,
+            qp.counts,
+            qp.expval,
+            qp.probs,
         ],
     )
-    @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
+    @pytest.mark.parametrize("meas_obj", [qp.PauliZ(0), [0], "mcm"])
     def test_dynamic_one_shot_simple(self, measure_f, meas_obj, seed):
         """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
         circuit with a mid-circuit measurement."""
 
-        if measure_f in (qml.counts, qml.probs, qml.sample) and isinstance(meas_obj, qml.PauliZ):
+        if measure_f in (qp.counts, qp.probs, qp.sample) and isinstance(meas_obj, qp.PauliZ):
             pytest.skip("Can't use observables with counts, probs or sample")
 
-        if measure_f in (qml.var, qml.expval) and (isinstance(meas_obj, list)):
+        if measure_f in (qp.var, qp.expval) and (isinstance(meas_obj, list)):
             pytest.skip("Can't use wires/mcm lists with var or expval")
 
-        if measure_f == qml.var and (not isinstance(meas_obj, list) and not meas_obj == "mcm"):
+        if measure_f == qp.var and (not isinstance(meas_obj, list) and not meas_obj == "mcm"):
             pytest.xfail("isa<UnrealizedConversionCastOp>")
 
         shots = 8000
 
-        dq = qml.device("default.qubit", seed=seed)
+        dq = qp.device("default.qubit", seed=seed)
 
-        @qml.defer_measurements
-        @qml.set_shots(shots)
-        @qml.qnode(dq)
+        @qp.defer_measurements
+        @qp.set_shots(shots)
+        @qp.qnode(dq)
         def ref_func(x, y):
-            qml.RX(x, wires=0)
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.RY)(y, wires=1)
+            qp.RX(x, wires=0)
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.RY)(y, wires=1)
 
             meas_key = "wires" if isinstance(meas_obj, list) else "op"
             meas_value = m0 if isinstance(meas_obj, str) else meas_obj
             kwargs = {meas_key: meas_value}
-            if measure_f is qml.counts:
+            if measure_f is qp.counts:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
 
-        @qml.qjit
-        @qml.set_shots(shots)
-        @qml.qnode(dev, mcm_method="one-shot")
+        @qp.qjit
+        @qp.set_shots(shots)
+        @qp.qnode(dev, mcm_method="one-shot")
         def func(x, y):
-            qml.RX(x, wires=0)
+            qp.RX(x, wires=0)
             m0 = catalyst.measure(0)
 
             @catalyst.cond(m0 == 1)
             def ansatz():
-                qml.RY(y, wires=1)
+                qp.RY(y, wires=1)
 
             ansatz()
 
             meas_key = "wires" if isinstance(meas_obj, list) else "op"
             meas_value = m0 if isinstance(meas_obj, str) else meas_obj
             kwargs = {meas_key: meas_value}
-            if measure_f is qml.counts:
+            if measure_f is qp.counts:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
         params = jnp.pi / 4 * jnp.ones(2)
         results0 = ref_func(*params)
         results1 = func(*params)
-        if measure_f is qml.counts:
+        if measure_f is qp.counts:
 
             def fname(x):
                 return format(x, f"0{len(meas_obj)}b") if isinstance(meas_obj, list) else x
 
             results1 = {fname(int(state)): count for state, count in zip(*results1)}
-        if measure_f is qml.sample:
+        if measure_f is qp.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]
         mcm_utils.validate_measurements(measure_f, shots, results1, results0)

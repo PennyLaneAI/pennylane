@@ -34,7 +34,7 @@ class TestLogging:
         "Test logging of device creation"
 
         with caplog.at_level(logging.DEBUG):
-            qml.device("default.qubit", wires=2)
+            qp.device("default.qubit", wires=2)
 
         assert len(caplog.records) == 1
         assert "Calling <__init__(self=<default.qubit device" in caplog.text
@@ -42,15 +42,15 @@ class TestLogging:
     def test_qd_qnode_creation(self, caplog):
         "Test logging of QNode creation"
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         # Single log entry, QNode creation
         with caplog.at_level(logging.DEBUG):
 
-            @qml.qnode(dev, diff_method=None)
+            @qp.qnode(dev, diff_method=None)
             def circuit():  # pylint: disable=unused-variable
-                qml.PauliX(wires=0)
-                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+                qp.PauliX(wires=0)
+                return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(0))
 
         assert len(caplog.records) == 1
         assert "Creating QNode" in caplog.text
@@ -58,15 +58,15 @@ class TestLogging:
     def test_dq_qnode_execution(self, caplog):
         "Test logging of QNode forward pass"
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         with caplog.at_level(logging.DEBUG):
-            params = qml.numpy.array(0.1234)
+            params = qp.numpy.array(0.1234)
 
-            @qml.qnode(dev, diff_method=None)
+            @qp.qnode(dev, diff_method=None)
             def circuit(params):
-                qml.RX(params, wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qp.RX(params, wires=0)
+                return qp.expval(qp.PauliZ(0))
 
             circuit(params)
         assert len(caplog.records) == 11
@@ -111,18 +111,18 @@ class TestLogging:
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parametrized gradients"
 
-        dev = qml.device("default.qubit", wires=2)
-        params = qml.numpy.array(0.1234)
+        dev = qp.device("default.qubit", wires=2)
+        params = qp.numpy.array(0.1234)
 
         # Single log entry, QNode creation
         with caplog.at_level(logging.DEBUG):
 
-            @qml.qnode(dev, diff_method=diff_method)
+            @qp.qnode(dev, diff_method=diff_method)
             def circuit(params):
-                qml.RX(params, wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qp.RX(params, wires=0)
+                return qp.expval(qp.PauliZ(0))
 
-            qml.grad(circuit)(params)
+            qp.grad(circuit)(params)
 
         assert len(caplog.records) == num_records
 
@@ -153,13 +153,13 @@ class TestLogging:
         """Test logging of QNode forward pass from default qutrit mixed."""
 
         with caplog.at_level(logging.DEBUG):
-            dev = qml.device("default.qutrit.mixed", wires=2)
-            params = qml.numpy.array(0.1234)
+            dev = qp.device("default.qutrit.mixed", wires=2)
+            params = qp.numpy.array(0.1234)
 
-            @qml.qnode(dev, diff_method=None)
+            @qp.qnode(dev, diff_method=None)
             def circuit(params):
-                qml.TRX(params, wires=0)
-                return qml.expval(qml.GellMann(0, 3))
+                qp.TRX(params, wires=0)
+                return qp.expval(qp.GellMann(0, 3))
 
             circuit(params)
 

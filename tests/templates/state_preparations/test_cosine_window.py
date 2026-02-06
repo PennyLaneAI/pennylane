@@ -30,9 +30,9 @@ from pennylane.wires import Wires
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
-    op = qml.CosineWindow(wires=[0, 1])
+    op = qp.CosineWindow(wires=[0, 1])
 
-    qml.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -48,9 +48,9 @@ class TestDecomposition:
     )
     def test_decomposition_new(self, wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.CosineWindow(wires=wires)
+        op = qp.CosineWindow(wires=wires)
 
-        for rule in qml.list_decomps(qml.CosineWindow):
+        for rule in qp.list_decomps(qp.CosineWindow):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
@@ -65,9 +65,9 @@ class TestDecomposition:
     @pytest.mark.capture
     def test_decomposition_new_capture(self, wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.CosineWindow(wires=wires)
+        op = qp.CosineWindow(wires=wires)
 
-        for rule in qml.list_decomps(qml.CosineWindow):
+        for rule in qp.list_decomps(qp.CosineWindow):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.integration
@@ -81,7 +81,7 @@ class TestDecomposition:
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         def f():
-            qml.CosineWindow(wires=[0, 1])
+            qp.CosineWindow(wires=[0, 1])
 
         decomposed_f = DecomposeInterpreter(
             gate_set={"Hadamard", "RZ", "PhaseShift", "ControlledPhaseShift", "SWAP"}
@@ -90,17 +90,17 @@ class TestDecomposition:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         assert collector.state["ops"] == [
-            qml.Hadamard(1),
-            qml.RZ(3.141592653589793, wires=[1]),
-            qml.adjoint(qml.QFT(wires=[0, 1])),
-            qml.PhaseShift(jnp.array(-2.89760778e19), wires=[0]),
-            qml.PhaseShift(jnp.array(1.44880389e19), wires=[1]),
+            qp.Hadamard(1),
+            qp.RZ(3.141592653589793, wires=[1]),
+            qp.adjoint(qp.QFT(wires=[0, 1])),
+            qp.PhaseShift(jnp.array(-2.89760778e19), wires=[0]),
+            qp.PhaseShift(jnp.array(1.44880389e19), wires=[1]),
         ]
 
     def test_correct_gates_single_wire(self):
         """Test that the correct gates are applied."""
 
-        op = qml.CosineWindow(wires=[0])
+        op = qp.CosineWindow(wires=[0])
         queue = op.decomposition()
 
         assert queue[0].name == "Hadamard"
@@ -113,7 +113,7 @@ class TestDecomposition:
     def test_correct_gates_many_wires(self):
         """Test that the correct gates are applied on two wires."""
 
-        op = qml.CosineWindow(wires=[0, 1, 2, 3, 4])
+        op = qp.CosineWindow(wires=[0, 1, 2, 3, 4])
         queue = op.decomposition()
 
         assert queue[0].name == "Hadamard"
@@ -127,18 +127,18 @@ class TestDecomposition:
     def test_custom_wire_labels(self):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+        dev = qp.device("default.qubit", wires=3)
+        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.CosineWindow(wires=range(3))
-            return qml.expval(qml.Identity(0)), qml.state()
+            qp.CosineWindow(wires=range(3))
+            return qp.expval(qp.Identity(0)), qp.state()
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.CosineWindow(wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z")), qml.state()
+            qp.CosineWindow(wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z")), qp.state()
 
         res1, state1 = circuit()
         res2, state2 = circuit2()
@@ -153,13 +153,13 @@ class TestRepresentation:
     def test_id(self):
         """Tests that the id attribute can be set."""
         wires = [0, 1, 2]
-        template = qml.CosineWindow(wires=wires, id="a")
+        template = qp.CosineWindow(wires=wires, id="a")
         assert template.id == "a"
         assert template.wires == Wires(wires)
 
     def test_label(self):
         """Test label method returns CosineWindow"""
-        op = qml.CosineWindow(wires=[0, 1])
+        op = qp.CosineWindow(wires=[0, 1])
         assert op.label() == "CosineWindow"
 
 
@@ -168,36 +168,36 @@ class TestStateVector:
 
     def test_CosineWindow_state_vector(self):
         """Tests that the state vector is correct for a single wire."""
-        op = qml.CosineWindow(wires=[0])
+        op = qp.CosineWindow(wires=[0])
         res = op.state_vector()
         expected = np.array([0.0, 1.0])
         assert np.allclose(res, expected)
 
-        op = qml.CosineWindow(wires=[0, 1])
+        op = qp.CosineWindow(wires=[0, 1])
         res = np.reshape(op.state_vector() ** 2, (-1,))
         expected = np.array([0.0, 0.25, 0.5, 0.25])
         assert np.allclose(res, expected)
 
     def test_CosineWindow_state_vector_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""
-        qsv_op = qml.CosineWindow(wires=[0, 1])
+        qsv_op = qp.CosineWindow(wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all CosineWindow wires"):
             qsv_op.state_vector(wire_order=[1, 2])
 
     def test_CosineWindow_state_vector_wire_order(self):
         """Tests that the state vector works with a different order of wires."""
-        op = qml.CosineWindow(wires=[0, 1])
+        op = qp.CosineWindow(wires=[0, 1])
         res = np.reshape(op.state_vector(wire_order=[1, 0]) ** 2, (-1,))
         expected = np.array([0.0, 0.5, 0.25, 0.25])
         assert np.allclose(res, expected)
 
     def test_CosineWindow_state_vector_subset_of_wires(self):
         """Tests that the state vector works with not all state wires."""
-        op = qml.CosineWindow([2, 1])
+        op = qp.CosineWindow([2, 1])
         res = op.state_vector(wire_order=[0, 1, 2])
         assert res.shape == (2, 2, 2)
 
-        expected_10 = qml.CosineWindow([0, 1]).state_vector(wire_order=[1, 0])
+        expected_10 = qp.CosineWindow([0, 1]).state_vector(wire_order=[1, 0])
         expected = np.stack([expected_10, np.zeros_like(expected_10)])
         assert np.allclose(res, expected)
 
@@ -210,15 +210,15 @@ class TestInterfaces:
         """Test that the template correctly compiles with JAX JIT   ."""
         import jax
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.CosineWindow(wires=[0, 1])
-            return qml.probs(wires=[0, 1])
+            qp.CosineWindow(wires=[0, 1])
+            return qp.probs(wires=[0, 1])
 
         circuit2 = jax.jit(circuit)
 
         res = circuit()
         res2 = circuit2()
-        assert qml.math.allclose(res, res2, atol=1e-6, rtol=0)
+        assert qp.math.allclose(res, res2, atol=1e-6, rtol=0)

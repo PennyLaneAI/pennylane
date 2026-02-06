@@ -154,8 +154,8 @@ class TestOperations:
         op_queue raises no error"""
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            queue = [qml.QutritUnitary(U, wires=0), qml.QutritUnitary(U, wires=0)]
+        with qp.queuing.AnnotatedQueue() as q:
+            queue = [qp.QutritUnitary(U, wires=0), qp.QutritUnitary(U, wires=0)]
 
         tape = QuantumScript.from_queue(q)
         call_history = []
@@ -174,10 +174,10 @@ class TestOperations:
         assert call_history == queue
 
         assert len(call_history) == 2
-        assert isinstance(call_history[0], qml.QutritUnitary)
+        assert isinstance(call_history[0], qp.QutritUnitary)
         assert call_history[0].wires == Wires([0])
 
-        assert isinstance(call_history[1], qml.QutritUnitary)
+        assert isinstance(call_history[1], qp.QutritUnitary)
         assert call_history[1].wires == Wires([0])
 
     def test_unsupported_operations_raise_error(self, mock_qutrit_device):
@@ -185,11 +185,11 @@ class TestOperations:
         U = unitary_group.rvs(3, random_state=10)
 
         queue = [
-            qml.QutritUnitary(U, wires=0),
-            qml.Hadamard(wires=1),
-            qml.QutritUnitary(U, wires=2),
+            qp.QutritUnitary(U, wires=0),
+            qp.Hadamard(wires=1),
+            qp.QutritUnitary(U, wires=2),
         ]
-        observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
+        observables = [qp.expval(qp.Identity(0)), qp.var(qp.Identity(1))]
 
         tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
@@ -198,15 +198,15 @@ class TestOperations:
 
     unitaries = [unitary_group.rvs(3, random_state=1967) for _ in range(3)]
     numeric_queues = [
-        [qml.QutritUnitary(unitaries[0], wires=[0])],
+        [qp.QutritUnitary(unitaries[0], wires=[0])],
         [
-            qml.QutritUnitary(unitaries[0], wires=[0]),
-            qml.QutritUnitary(unitaries[1], wires=[1]),
-            qml.QutritUnitary(unitaries[2], wires=[2]),
+            qp.QutritUnitary(unitaries[0], wires=[0]),
+            qp.QutritUnitary(unitaries[1], wires=[1]),
+            qp.QutritUnitary(unitaries[2], wires=[2]),
         ],
     ]
 
-    observables = [[qml.Identity(0)], [qml.Identity(1)]]
+    observables = [[qp.Identity(0)], [qp.Identity(1)]]
 
     @pytest.mark.parametrize("observables", observables)
     @pytest.mark.parametrize("queue", numeric_queues)
@@ -215,7 +215,7 @@ class TestOperations:
     ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             for op in queue + observables:
                 op.queue()
 
@@ -250,8 +250,8 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         U = unitary_group.rvs(3, random_state=10)
 
-        queue = [qml.QutritUnitary(U, wires=0)]
-        observables = [qml.expval(qml.Hadamard(0))]
+        queue = [qp.QutritUnitary(U, wires=0)]
+        observables = [qp.expval(qp.Hadamard(0))]
 
         tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
@@ -266,9 +266,9 @@ class TestObservables:
 
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QutritUnitary(U, wires=0)
-            UnsupportedMeasurement(obs=qml.Identity(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.QutritUnitary(U, wires=0)
+            UnsupportedMeasurement(obs=qp.Identity(0))
 
         tape = QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
@@ -301,10 +301,10 @@ class TestExtractStatistics:
     @pytest.mark.parametrize(
         "measurement",
         [
-            ExpectationMP(obs=qml.PauliX(0)),
-            VarianceMP(obs=qml.PauliX(0)),
-            SampleMP(obs=qml.PauliX(0)),
-            ProbabilityMP(obs=qml.PauliX(0)),
+            ExpectationMP(obs=qp.PauliX(0)),
+            VarianceMP(obs=qp.PauliX(0)),
+            SampleMP(obs=qp.PauliX(0)),
+            ProbabilityMP(obs=qp.PauliX(0)),
             StateMP(),
             CountsMP(),
         ],
@@ -323,7 +323,7 @@ class TestExtractStatistics:
     def test_results_no_state(self, mock_qutrit_device, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QutritDevice does not have a state attribute"""
-        qscript = QuantumScript(measurements=[qml.state()])
+        qscript = QuantumScript(measurements=[qp.state()])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device()
@@ -379,10 +379,10 @@ class TestExtractStatistics:
         """
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QutritUnitary(U, wires=0)
-            qml.state()
-            qml.probs(wires=0)
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.QutritUnitary(U, wires=0)
+            qp.state()
+            qp.probs(wires=0)
 
         tape = QuantumScript.from_queue(q)
         dev = mock_qutrit_device_extract_stats()
@@ -407,7 +407,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
-        obs = qml.measurements.sample(op=None, wires=None)
+        obs = qp.measurements.sample(op=None, wires=None)
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 2], [0, 1]])
         dev._samples = generated_samples
@@ -420,7 +420,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
-        obs = qml.measurements.sample(op=None, wires=[1])
+        obs = qp.measurements.sample(op=None, wires=[1])
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [2, 1]])
         dev._samples = generated_samples
@@ -435,11 +435,11 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 2]])
 
-        class SomeObservable(qml.operation.Operator):
+        class SomeObservable(qp.operation.Operator):
             num_wires = 1
 
         obs = SomeObservable(wires=0)
-        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
+        with pytest.raises(qp.operation.EigvalsUndefinedError, match="Cannot compute samples"):
             dev.sample(obs)
 
     def test_samples_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
@@ -448,7 +448,7 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 1], [2, 0], [2, 1], [1, 1], [2, 2], [1, 2]])
         dev._samples = samples
-        obs = qml.measurements.sample(op=None, wires=[0, 1])
+        obs = qp.measurements.sample(op=None, wires=[0, 1])
 
         shot_range = [0, 6]
         bin_size = 3
@@ -464,7 +464,7 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 1], [2, 0], [2, 0], [0, 1], [2, 2], [1, 2]])
         dev._samples = samples
-        obs = qml.measurements.sample(op=None, wires=[0, 1])
+        obs = qp.measurements.sample(op=None, wires=[0, 1])
 
         out = dev.sample(obs, counts=True)
         expected_counts = {
@@ -498,7 +498,7 @@ class TestSample:
             ]
         )
         dev._samples = samples
-        obs = qml.measurements.sample(op=None, wires=[0, 1])
+        obs = qp.measurements.sample(op=None, wires=[0, 1])
 
         shot_range = [0, 12]
         bin_size = 4
@@ -666,7 +666,7 @@ class TestExpval:
         Additional QutritDevice methods that are mocked:
         -probability
         """
-        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        obs = qp.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
         probs = [0.5, 0.25, 0.25]
         dev = mock_qutrit_device_with_original_statistics()
 
@@ -686,7 +686,7 @@ class TestExpval:
         -sample
         -numpy.mean
         """
-        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        obs = qp.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
         dev = mock_qutrit_device_with_original_statistics()
 
         dev.shots = 1000
@@ -705,16 +705,16 @@ class TestExpval:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Operator):
+        class MyObs(qp.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
-                raise qml.operation.EigvalsUndefinedError
+                raise qp.operation.EigvalsUndefinedError
 
         obs = MyObs(wires=0)
 
         with pytest.raises(
-            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic expectations"
+            qp.operation.EigvalsUndefinedError, match="Cannot compute analytic expectations"
         ):
             dev.expval(obs)
 
@@ -728,7 +728,7 @@ class TestVar:
         Additional QutritDevice methods that are mocked:
         -probability
         """
-        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        obs = qp.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
         probs = [0.5, 0.25, 0.25]
         dev = mock_qutrit_device_with_original_statistics()
 
@@ -748,7 +748,7 @@ class TestVar:
         -sample
         -numpy.var
         """
-        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        obs = qp.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
         dev = mock_qutrit_device_with_original_statistics()
 
         dev.shots = 1000
@@ -766,16 +766,16 @@ class TestVar:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Operator):
+        class MyObs(qp.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
-                raise qml.operation.EigvalsUndefinedError
+                raise qp.operation.EigvalsUndefinedError
 
         obs = MyObs(wires=0)
 
         with pytest.raises(
-            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+            qp.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
         ):
             dev.var(obs)
 
@@ -899,9 +899,9 @@ class TestActiveWires:
 
     def test_active_wires_from_queue(self, mock_qutrit_device):
         queue = [
-            qml.QutritUnitary(np.eye(9), wires=[0, 2]),
-            qml.QutritUnitary(np.eye(3), wires=0),
-            qml.expval(qml.Identity(wires=5)),
+            qp.QutritUnitary(np.eye(9), wires=[0, 2]),
+            qp.QutritUnitary(np.eye(3), wires=0),
+            qp.expval(qp.Identity(wires=5)),
         ]
 
         dev = mock_qutrit_device(wires=6)
@@ -936,12 +936,12 @@ class TestExecution:
         dev_1 = mock_qutrit_device_extract_stats(wires=2)
 
         def circuit_1(U1, U2, U3):
-            qml.QutritUnitary(U1, wires=[0])
-            qml.QutritUnitary(U2, wires=[1])
-            qml.QutritUnitary(U3, wires=[0, 1])
-            return qml.state()
+            qp.QutritUnitary(U1, wires=[0])
+            qp.QutritUnitary(U2, wires=[1])
+            qp.QutritUnitary(U3, wires=[0, 1])
+            return qp.state()
 
-        node_1 = qml.QNode(circuit_1, dev_1)
+        node_1 = qp.QNode(circuit_1, dev_1)
         num_evals_1 = 10
 
         for _ in range(num_evals_1):
@@ -950,11 +950,11 @@ class TestExecution:
 
         # test a new circuit on an existing instance of a qutrit device
         def circuit_3(U1, U2):
-            qml.QutritUnitary(U1, wires=[0])
-            qml.QutritUnitary(U2, wires=[0, 1])
-            return qml.state()
+            qp.QutritUnitary(U1, wires=[0])
+            qp.QutritUnitary(U2, wires=[0, 1])
+            return qp.state()
 
-        node_3 = qml.QNode(circuit_3, dev_1)
+        node_3 = qp.QNode(circuit_3, dev_1)
         num_evals_3 = 7
 
         for _ in range(num_evals_3):
@@ -965,17 +965,17 @@ class TestExecution:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.queuing.AnnotatedQueue() as q1:
-        qml.QutritUnitary(np.eye(3), wires=0)
+    with qp.queuing.AnnotatedQueue() as q1:
+        qp.QutritUnitary(np.eye(3), wires=0)
         _ = (
-            qml.expval(qml.Identity(0)),
-            qml.expval(qml.Identity(1)),
+            qp.expval(qp.Identity(0)),
+            qp.expval(qp.Identity(1)),
         )
 
     tape1 = QuantumScript.from_queue(q1)
-    with qml.queuing.AnnotatedQueue() as q2:
-        qml.QutritUnitary(np.eye(3), wires=0)
-        qml.expval(qml.Identity(0))
+    with qp.queuing.AnnotatedQueue() as q2:
+        qp.QutritUnitary(np.eye(3), wires=0)
+        qp.expval(qp.Identity(0))
 
     tape2 = QuantumScript.from_queue(q2)
 
@@ -1059,9 +1059,9 @@ class TestShotList:
         """Test a probability return"""
         dev = mock_qutrit_device_shots(wires=2)
 
-        shots = qml.measurements.Shots(shot_list)
+        shots = qp.measurements.Shots(shot_list)
 
-        @qml.qnode(dev, shots=shot_list)
+        @qp.qnode(dev, shots=shot_list)
         def circuit(x, z):
             RZ_01 = pnp.array(
                 [
@@ -1075,9 +1075,9 @@ class TestShotList:
             s = pnp.sin(x / 2) * 1j
             RX_01 = pnp.array([[c, -s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
 
-            qml.QutritUnitary(RZ_01, wires=0)
-            qml.QutritUnitary(RX_01, wires=1)
-            return qml.probs(wires=[0, 1])
+            qp.QutritUnitary(RZ_01, wires=0)
+            qp.QutritUnitary(RX_01, wires=1)
+            return qp.probs(wires=[0, 1])
 
         res = circuit(0.1, 0.6)
 
@@ -1093,7 +1093,7 @@ class TestShotList:
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
-        # res = qml.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
+        # res = qp.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
 
     marginal_shot_data = [
         [[1, 2, 3, 10], (4, 3)],
@@ -1107,9 +1107,9 @@ class TestShotList:
     def test_marginal_probs(self, mock_qutrit_device_shots, shot_list, expected_shape):
         dev = mock_qutrit_device_shots(wires=2)
 
-        shots = qml.measurements.Shots(shot_list)
+        shots = qp.measurements.Shots(shot_list)
 
-        @qml.qnode(dev, shots=shot_list)
+        @qp.qnode(dev, shots=shot_list)
         def circuit(x, z):
             RZ_01 = pnp.array(
                 [
@@ -1123,9 +1123,9 @@ class TestShotList:
             s = pnp.sin(x / 2) * 1j
             RX_01 = pnp.array([[c, -s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
 
-            qml.QutritUnitary(RZ_01, wires=0)
-            qml.QutritUnitary(RX_01, wires=1)
-            return qml.probs(wires=0)
+            qp.QutritUnitary(RZ_01, wires=0)
+            qp.QutritUnitary(RX_01, wires=1)
+            return qp.probs(wires=0)
 
         res = circuit(0.1, 0.6)
 
@@ -1142,7 +1142,7 @@ class TestShotList:
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
         # for QutritUnitary exists
-        # res = qml.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
+        # res = qp.jacobian(circuit, argnums=[0, 1])(0.1, 0.6)
 
     shot_data = [
         [[1, 2, 3, 10], (4, 3, 2)],
@@ -1157,14 +1157,14 @@ class TestShotList:
         """Test multiple probability returns"""
         dev = mock_qutrit_device_shots(wires=2)
 
-        shots = qml.measurements.Shots(shot_list)
+        shots = qp.measurements.Shots(shot_list)
 
-        @qml.qnode(dev, shots=shot_list)
+        @qp.qnode(dev, shots=shot_list)
         def circuit(U):
-            qml.QutritUnitary(np.eye(3), wires=0)
-            qml.QutritUnitary(np.eye(3), wires=0)
-            qml.QutritUnitary(U, wires=[0, 1])
-            return qml.probs(wires=0), qml.probs(wires=1)
+            qp.QutritUnitary(np.eye(3), wires=0)
+            qp.QutritUnitary(np.eye(3), wires=0)
+            qp.QutritUnitary(U, wires=[0, 1])
+            return qp.probs(wires=0), qp.probs(wires=1)
 
         res = circuit(pnp.eye(9))
 
@@ -1181,7 +1181,7 @@ class TestShotList:
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
         # for QutritUnitary exists
-        # res = qml.jacobian(circuit, argnums=[0])(pnp.eye(9, dtype=np.complex128))
+        # res = qp.jacobian(circuit, argnums=[0])(pnp.eye(9, dtype=np.complex128))
 
 
 class TestUnimplemented:
@@ -1231,8 +1231,8 @@ class TestUnimplemented:
     def test_classical_shadow(self, mock_qutrit_device):
         """Test that classical_shadow is unimplemented"""
         dev = mock_qutrit_device()
-        qs = qml.tape.QuantumScript()
-        obs = qml.GellMann(1, 1)
+        qs = qp.tape.QuantumScript()
+        obs = qp.GellMann(1, 1)
 
         with pytest.raises(QuantumFunctionError, match="Qutrit devices don't support"):
             dev.classical_shadow(obs, qs)
@@ -1240,8 +1240,8 @@ class TestUnimplemented:
     def test_shadow_expval(self, mock_qutrit_device):
         """Test that shadow_expval is unimplemented"""
         dev = mock_qutrit_device()
-        qs = qml.tape.QuantumScript()
-        obs = qml.GellMann(1, 1)
+        qs = qp.tape.QuantumScript()
+        obs = qp.GellMann(1, 1)
 
         with pytest.raises(QuantumFunctionError, match="Qutrit devices don't support"):
             dev.shadow_expval(obs, qs)

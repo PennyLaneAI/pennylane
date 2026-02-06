@@ -27,8 +27,8 @@ from pennylane import numpy as np
         # two-electron tensor computed as
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
-        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         (
             np.array(
@@ -80,7 +80,7 @@ from pennylane import numpy as np
 )
 def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
     r"""Test that factorize function returns the correct values."""
-    factors, eigvals, eigvecs = qml.qchem.factorize(two_tensor, tol_f, tol_s)
+    factors, eigvals, eigvecs = qp.qchem.factorize(two_tensor, tol_f, tol_s)
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
 
     assert np.allclose(factors, factors_ref)
@@ -94,8 +94,8 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
         # two-electron tensor computed as
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
-        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         np.array(
             [
@@ -113,11 +113,11 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
 )
 def test_factorize_reproduce(two_tensor):
     r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
-    factors1, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=False)
-    factors2, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=True)
+    factors1, _, _ = qp.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=False)
+    factors2, _, _ = qp.qchem.factorize(two_tensor, 1e-5, 1e-5, cholesky=True)
 
-    assert qml.math.allclose(np.tensordot(factors1, factors1, axes=([0], [0])), two_tensor)
-    assert qml.math.allclose(np.tensordot(factors2, factors2, axes=([0], [0])), two_tensor)
+    assert qp.math.allclose(np.tensordot(factors1, factors1, axes=([0], [0])), two_tensor)
+    assert qp.math.allclose(np.tensordot(factors2, factors2, axes=([0], [0])), two_tensor)
 
 
 @pytest.mark.external
@@ -127,8 +127,8 @@ def test_factorize_reproduce(two_tensor):
         # two-electron tensor computed as
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
-        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         np.array(
             [
@@ -150,7 +150,7 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
     r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
     optax = pytest.importorskip("optax")
 
-    factors, cores, leaves = qml.qchem.factorize(
+    factors, cores, leaves = qp.qchem.factorize(
         two_tensor,
         cholesky=cholesky,
         compressed=True,
@@ -158,9 +158,9 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
         optimizer=optax.adam(learning_rate=0.001),
     )
 
-    assert qml.math.allclose(np.einsum("tpqi,trsi->pqrs", factors, factors), two_tensor, atol=1e-3)
-    assert qml.math.allclose(
-        qml.math.einsum("tpk,tqk,tkl,trl,tsl->pqrs", leaves, leaves, cores, leaves, leaves),
+    assert qp.math.allclose(np.einsum("tpqi,trsi->pqrs", factors, factors), two_tensor, atol=1e-3)
+    assert qp.math.allclose(
+        qp.math.einsum("tpk,tqk,tkl,trl,tsl->pqrs", leaves, leaves, cores, leaves, leaves),
         two_tensor,
         atol=1e-3,
     )
@@ -173,8 +173,8 @@ def test_factorize_compressed_reproduce(two_tensor, cholesky, regularization):
         # two-electron tensor computed as
         # symbols  = ['H', 'H']
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
-        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # mol = qp.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qp.qchem.electron_integrals(mol)()
         # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         np.array(
             [
@@ -195,7 +195,7 @@ def test_regularization_error(two_tensor):
     _ = pytest.importorskip("optax")
 
     with pytest.raises(ValueError, match="Supported regularization types include"):
-        qml.qchem.factorize(two_tensor, compressed=True, regularization=True)
+        qp.qchem.factorize(two_tensor, compressed=True, regularization=True)
 
 
 @pytest.mark.parametrize(
@@ -215,7 +215,7 @@ def test_shape_error(two_tensor):
     r"""Test that the factorize function raises an error when the two-electron integral tensor does
     not have the correct shape."""
     with pytest.raises(ValueError, match="The two-electron repulsion tensor must have"):
-        qml.qchem.factorize(two_tensor, 1e-5, 1e-5)
+        qp.qchem.factorize(two_tensor, 1e-5, 1e-5)
 
 
 @pytest.mark.parametrize(
@@ -239,10 +239,10 @@ def test_empty_error(two_tensor):
     r"""Test that the factorize function raises an error when all factors or their eigenvectors are
     discarded."""
     with pytest.raises(ValueError, match="All factors are discarded."):
-        qml.qchem.factorize(two_tensor, 1e1, 1e-5)
+        qp.qchem.factorize(two_tensor, 1e1, 1e-5)
 
     with pytest.raises(ValueError, match="All eigenvectors are discarded."):
-        qml.qchem.factorize(two_tensor, 1e-5, 1e1)
+        qp.qchem.factorize(two_tensor, 1e-5, 1e1)
 
 
 @pytest.mark.parametrize(
@@ -251,8 +251,8 @@ def test_empty_error(two_tensor):
         (  # one_matrix and two_tensor are obtained with:
             # symbols  = ['H', 'H']
             # geometry = np.array([[0.0, 0.0, 0.0], [1.39839789, 0.0, 0.0]], requires_grad = False)
-            # mol = qml.qchem.Molecule(symbols, geometry)
-            # core, one_matrix, two_tensor = qml.qchem.electron_integrals(mol)()
+            # mol = qp.qchem.Molecule(symbols, geometry)
+            # core, one_matrix, two_tensor = qp.qchem.electron_integrals(mol)()
             np.array([[-1.25330978e00, -2.11164419e-13], [-2.10831352e-13, -4.75068865e-01]]),
             np.array(  # two-electron integral tensor in physicist notation
                 [
@@ -313,46 +313,46 @@ def test_empty_error(two_tensor):
             ],
             [  # computed manually
                 [
-                    qml.PauliZ(wires=[0]),
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[0]),
+                    qp.Identity(wires=[0]),
+                    qp.PauliZ(wires=[1]),
+                    qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[3]),
                 ],
                 [
-                    qml.PauliZ(wires=[0]),
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[0]),
+                    qp.Identity(wires=[0]),
+                    qp.PauliZ(wires=[1]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[1]),
+                    qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[3]),
                 ],
                 [
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.Identity(wires=[2]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[1]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[3]),
+                    qp.Identity(wires=[2]),
+                    qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[3]),
                 ],
                 [
-                    qml.PauliZ(wires=[0]),
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[0]),
+                    qp.Identity(wires=[0]),
+                    qp.PauliZ(wires=[1]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[1]),
+                    qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[0]) @ qp.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[2]),
+                    qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[3]),
+                    qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[3]),
                 ],
             ],
             [  # computed manually
@@ -396,15 +396,15 @@ def test_basis_rotation_output(
     one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref
 ):
     r"""Test that basis_rotation function returns the correct values."""
-    coeffs, ops, eigvecs = qml.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
+    coeffs, ops, eigvecs = qp.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
 
     for i, coeff in enumerate(coeffs):
         assert np.allclose(np.sort(coeff), np.sort(coeffs_ref[i]))
 
     for j, op in enumerate(ops):
-        ops_ref_str = [qml.pauli.pauli_word_to_string(t) for t in ops_ref[j]]
+        ops_ref_str = [qp.pauli.pauli_word_to_string(t) for t in ops_ref[j]]
         for o in op:
-            assert (qml.pauli.pauli_word_to_string(o) or "I") in ops_ref_str
+            assert (qp.pauli.pauli_word_to_string(o) or "I") in ops_ref_str
 
     for i, vecs in enumerate(eigvecs):
         checks = []
@@ -446,7 +446,7 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
     A new Hamiltonian is generated from these operators and is compared with the original
     Hamiltonian.
     """
-    *_, u_transform = qml.qchem.basis_rotation(one_electron, two_electron)
+    *_, u_transform = qp.qchem.basis_rotation(one_electron, two_electron)
 
     a_cr = [  # fermionic creation operators
         np.array(
@@ -778,18 +778,18 @@ def test_chemist_transform(
     r"""Test that `_chemist_transform` builds correct two-body tensors in
     chemist notation with correct one-body corrections"""
     # pylint: disable=protected-access
-    one_body_corr, chemist_two_body = qml.qchem.factorization._chemist_transform(
+    one_body_corr, chemist_two_body = qp.qchem.factorization._chemist_transform(
         two_body_tensor=two_body_tensor, spatial_basis=spatial_basis
     )
     assert np.allclose(one_body_corr, one_body_correction)
     assert np.allclose(chemist_two_body, chemist_two_body_coeffs)
 
-    (chemist_one_body,) = qml.qchem.factorization._chemist_transform(
+    (chemist_one_body,) = qp.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction, spatial_basis=spatial_basis
     )
     assert np.allclose(chemist_one_body, one_body_correction)
 
-    chemist_one_body, chemist_two_body = qml.qchem.factorization._chemist_transform(
+    chemist_one_body, chemist_two_body = qp.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction,
         two_body_tensor=two_body_tensor,
         spatial_basis=spatial_basis,
@@ -807,10 +807,10 @@ def test_chemist_transform(
         # number of electrons.
         #
         # >>> f_chemist = chemist_fermionic_observable(core_shifted, one_body_shifted, two_body_shifted)
-        # >>> H_chemist = qml.jordan_wigner(f_chemist)
+        # >>> H_chemist = qp.jordan_wigner(f_chemist)
         # >>> eigvals, eigvecs = np.linalg.eigh(H_chemist.matrix())
         # >>> for eigval, eigvec in zip(eigvals, eigvecs.T):
-        # ...    if (eigvec @ qml.matrix(qml.qchem.particle_number(4)) @ eigvec.conj().T) == 2:
+        # ...    if (eigvec @ qp.matrix(qp.qchem.particle_number(4)) @ eigvec.conj().T) == 2:
         # ...        print(eigval)
         # ...        break
         # -2.688647053431185
@@ -835,13 +835,13 @@ def test_chemist_transform(
 def test_symmetry_shift(core_shifted, one_body_shifted, two_body_shifted):
     """Test that `symmetry_shift` builds correct two-body tensors with accurate correction terms"""
     symbols = ["He", "H"]
-    geometry = qml.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
-    mol = qml.qchem.Molecule(symbols, geometry, charge=1, basis_name="STO-3G")
-    core, one, two = qml.qchem.electron_integrals(mol)()
+    geometry = qp.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    mol = qp.qchem.Molecule(symbols, geometry, charge=1, basis_name="STO-3G")
+    core, one, two = qp.qchem.electron_integrals(mol)()
 
     # pylint: disable=protected-access
-    cone, ctwo = qml.qchem.factorization._chemist_transform(one, two, spatial_basis=True)
-    score, sone, stwo = qml.qchem.symmetry_shift(core, cone, ctwo, n_elec=mol.n_electrons)
+    cone, ctwo = qp.qchem.factorization._chemist_transform(one, two, spatial_basis=True)
+    score, sone, stwo = qp.qchem.symmetry_shift(core, cone, ctwo, n_elec=mol.n_electrons)
 
     assert np.allclose(score, core_shifted)
     assert np.allclose(sone, one_body_shifted)

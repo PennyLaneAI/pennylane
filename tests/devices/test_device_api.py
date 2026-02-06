@@ -149,8 +149,8 @@ class TestSetupExecutionConfig:
     @pytest.mark.parametrize(
         "create_temporary_toml_file, mcm_method, shots, expected_transform, expected_error",
         [
-            (EXAMPLE_TOML_FILE, "deferred", 10, qml.defer_measurements, None),
-            (EXAMPLE_TOML_FILE, "deferred", None, qml.defer_measurements, None),
+            (EXAMPLE_TOML_FILE, "deferred", 10, qp.defer_measurements, None),
+            (EXAMPLE_TOML_FILE, "deferred", None, qp.defer_measurements, None),
             (
                 EXAMPLE_TOML_FILE,
                 "one-shot",
@@ -190,7 +190,7 @@ class TestSetupExecutionConfig:
 
         dev = DeviceWithMCM()
         mcm_config = MCMConfig(mcm_method=mcm_method)
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
+        tape = QuantumScript([qp.ops.MidMeasure(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
 
         if expected_error is not None:
@@ -219,7 +219,7 @@ class TestSetupExecutionConfig:
 
         dev = CustomDevice()
         mcm_config = MCMConfig(mcm_method=mcm_method)
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
+        tape = QuantumScript([qp.ops.MidMeasure(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
         if expected_error:
             with pytest.raises(QuantumFunctionError, match=expected_error):
@@ -244,7 +244,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(qml.devices.Device):
+        class CustomDevice(qp.devices.Device):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -254,7 +254,7 @@ class TestSetupExecutionConfig:
                 return 0
 
         dev = CustomDevice()
-        tape = QuantumScript([qml.ops.MidMeasure(0)], [], shots=shots)
+        tape = QuantumScript([qp.ops.MidMeasure(0)], [], shots=shots)
         config = dev.setup_execution_config(ExecutionConfig(), tape)
         assert config.mcm_config.mcm_method == expected_method
 
@@ -295,8 +295,8 @@ class TestPreprocessTransforms:
     @pytest.mark.parametrize(
         "create_temporary_toml_file, mcm_method, expected_transform",
         [
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "one-shot", qml.transforms.dynamic_one_shot),
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "deferred", qml.transforms.defer_measurements),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "one-shot", qp.transforms.dynamic_one_shot),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, "deferred", qp.transforms.defer_measurements),
             (EXAMPLE_TOML_FILE_ALL_SUPPORT, "device", None),
         ],
         indirect=("create_temporary_toml_file",),
@@ -305,9 +305,9 @@ class TestPreprocessTransforms:
         """Tests that the correct MCM transform is included in the program."""
 
         mcm_transforms = {
-            qml.transforms.dynamic_one_shot,
-            qml.transforms.defer_measurements,
-            qml.devices.preprocess.mid_circuit_measurements,
+            qp.transforms.dynamic_one_shot,
+            qp.transforms.defer_measurements,
+            qp.devices.preprocess.mid_circuit_measurements,
         }
 
         class CustomDevice(Device):
@@ -360,14 +360,14 @@ class TestPreprocessTransforms:
         dev = CustomDevice()
         config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="deferred"))
         program = dev.preprocess_transforms(config)
-        tape = QuantumScript([qml.ops.MidMeasure(0, postselect=0)], [], shots=10)
+        tape = QuantumScript([qp.ops.MidMeasure(0, postselect=0)], [], shots=10)
 
         if not supports_projector:
             with pytest.raises(ValueError, match="Postselection is not allowed on the device"):
                 program((tape,))
         else:
             tapes, _ = program((tape,))
-            assert isinstance(tapes[0].operations[0], qml.Projector)
+            assert isinstance(tapes[0].operations[0], qp.Projector)
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
@@ -402,16 +402,16 @@ class TestPreprocessTransforms:
 
         dev = CustomDevice()
         program = dev.preprocess_transforms()
-        tape = QuantumScript([qml.Rot(0.1, 0.2, 0.3, wires=0)], shots=shots)
+        tape = QuantumScript([qp.Rot(0.1, 0.2, 0.3, wires=0)], shots=shots)
         tapes, _ = program((tape,))
         if shots:
             assert tapes[0].operations == [
-                qml.RZ(0.1, wires=0),
-                qml.RY(0.2, wires=0),
-                qml.RZ(0.3, wires=0),
+                qp.RZ(0.1, wires=0),
+                qp.RY(0.2, wires=0),
+                qp.RZ(0.3, wires=0),
             ]
         else:
-            assert tapes[0].operations == [qml.Rot(0.1, 0.2, 0.3, wires=0)]
+            assert tapes[0].operations == [qp.Rot(0.1, 0.2, 0.3, wires=0)]
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
@@ -456,23 +456,23 @@ class TestPreprocessTransforms:
         dev = CustomDevice()
         program = dev.preprocess_transforms()
 
-        valid_tape = QuantumScript([], [qml.expval(qml.Z(0))], shots=shots)
+        valid_tape = QuantumScript([], [qp.expval(qp.Z(0))], shots=shots)
         _, __ = program((valid_tape,))
 
-        invalid_tape = QuantumScript([], [qml.var(qml.PauliZ(0))], shots=shots)
+        invalid_tape = QuantumScript([], [qp.var(qp.PauliZ(0))], shots=shots)
         with pytest.raises(DeviceError, match=r"Measurement var\(Z\(0\)\) not accepted"):
             _, __ = program((invalid_tape,))
 
         invalid_tape = QuantumScript(
-            [], [qml.expval(qml.Hermitian([[1.0, 0], [0, 1.0]], 0))], shots=shots
+            [], [qp.expval(qp.Hermitian([[1.0, 0], [0, 1.0]], 0))], shots=shots
         )
         with pytest.raises(DeviceError, match=r"Observable Hermitian"):
             _, __ = program((invalid_tape,))
 
-        shots_only_meas_tape = QuantumScript([], [qml.counts()], shots=shots)
-        shots_only_obs_tape = QuantumScript([], [qml.expval(qml.Y(0))], shots=shots)
-        analytic_only_obs_tape = QuantumScript([], [qml.expval(qml.H(0))], shots=shots)
-        analytic_only_meas_tape = QuantumScript([], [qml.state()], shots=shots)
+        shots_only_meas_tape = QuantumScript([], [qp.counts()], shots=shots)
+        shots_only_obs_tape = QuantumScript([], [qp.expval(qp.Y(0))], shots=shots)
+        analytic_only_obs_tape = QuantumScript([], [qp.expval(qp.H(0))], shots=shots)
+        analytic_only_meas_tape = QuantumScript([], [qp.state()], shots=shots)
 
         if shots:
 
@@ -529,25 +529,25 @@ class TestPreprocessTransforms:
         program = dev.preprocess_transforms()
 
         if not overlapping_obs:
-            assert qml.transforms.split_non_commuting in program
-            assert qml.transforms.split_to_single_terms not in program
+            assert qp.transforms.split_non_commuting in program
+            assert qp.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform is qml.transforms.split_non_commuting:
+                if transform_container._transform is qp.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "wires"
         elif not non_commuting_obs:
-            assert qml.transforms.split_non_commuting in program
-            assert qml.transforms.split_to_single_terms not in program
+            assert qp.transforms.split_non_commuting in program
+            assert qp.transforms.split_to_single_terms not in program
             for transform_container in program:
-                if transform_container._transform is qml.transforms.split_non_commuting:
+                if transform_container._transform is qp.transforms.split_non_commuting:
                     assert "grouping_strategy" in transform_container._kwargs
                     assert transform_container._kwargs["grouping_strategy"] == "qwc"
         elif not sum_support:
-            assert qml.transforms.split_to_single_terms in program
-            assert qml.transforms.split_non_commuting not in program
+            assert qp.transforms.split_to_single_terms in program
+            assert qp.transforms.split_non_commuting not in program
         else:
-            assert qml.transforms.split_to_single_terms not in program
-            assert qml.transforms.split_to_single_terms not in program
+            assert qp.transforms.split_to_single_terms not in program
+            assert qp.transforms.split_to_single_terms not in program
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
@@ -588,17 +588,17 @@ class TestPreprocessTransforms:
         dev = CustomDevice()
         program = dev.preprocess_transforms()
         if non_commuting_obs is True:
-            assert qml.transforms.diagonalize_measurements not in program
+            assert qp.transforms.diagonalize_measurements not in program
         elif all_obs_support is True:
-            assert qml.transforms.diagonalize_measurements not in program
+            assert qp.transforms.diagonalize_measurements not in program
         else:
-            assert qml.transforms.diagonalize_measurements in program
+            assert qp.transforms.diagonalize_measurements in program
             for transform_container in program:
-                if transform_container._transform is qml.transforms.diagonalize_measurements:
+                if transform_container._transform is qp.transforms.diagonalize_measurements:
                     assert transform_container._kwargs["supported_base_obs"] == {
-                        qml.Z,
-                        qml.X,
-                        qml.Y,
+                        qp.Z,
+                        qp.X,
+                        qp.Y,
                     }
 
 
@@ -635,13 +635,13 @@ class TestMinimalDevice:
     def test_shots(self):
         """Test default behavior for shots."""
 
-        assert self.dev.shots == qml.measurements.Shots(None)
+        assert self.dev.shots == qp.measurements.Shots(None)
 
         with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
         ):
             shots_dev = self.MinimalDevice(shots=100)
-        assert shots_dev.shots == qml.measurements.Shots(100)
+        assert shots_dev.shots == qp.measurements.Shots(100)
 
         with pytest.raises(
             AttributeError, match="Shots can no longer be set on a device instance."
@@ -659,13 +659,13 @@ class TestMinimalDevice:
 
     def test_tracker_set_on_initialization(self):
         """Test that a new tracker instance is initialized with the class."""
-        assert isinstance(self.dev.tracker, qml.Tracker)
+        assert isinstance(self.dev.tracker, qp.Tracker)
         assert self.dev.tracker is not self.MinimalDevice.tracker
 
     def test_preprocess_single_circuit(self):
         """Test that preprocessing wraps a circuit into a batch."""
 
-        circuit1 = qml.tape.QuantumScript()
+        circuit1 = qp.tape.QuantumScript()
         program, config = self.dev.preprocess()
         batch, fn = program((circuit1,))
         assert isinstance(batch, tuple)
@@ -680,7 +680,7 @@ class TestMinimalDevice:
     def test_preprocess_batch_circuits(self):
         """Test that preprocessing a batch doesn't do anything."""
 
-        circuit = qml.tape.QuantumScript()
+        circuit = qp.tape.QuantumScript()
         in_config = ExecutionConfig()
         in_batch = (circuit, circuit)
         program, config = self.dev.preprocess(in_config)
@@ -700,10 +700,10 @@ class TestMinimalDevice:
         """Test that compute derivatives raises a notimplementederror."""
 
         with pytest.raises(NotImplementedError):
-            self.dev.compute_derivatives(qml.tape.QuantumScript())
+            self.dev.compute_derivatives(qp.tape.QuantumScript())
 
         with pytest.raises(NotImplementedError):
-            self.dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
+            self.dev.execute_and_compute_derivatives(qp.tape.QuantumScript())
 
     def test_supports_jvp_default(self):
         """Test that the default behaviour of supports_jvp is false."""
@@ -712,10 +712,10 @@ class TestMinimalDevice:
     def test_compute_jvp_not_implemented(self):
         """Test that compute_jvp is not implemented by default."""
         with pytest.raises(NotImplementedError):
-            self.dev.compute_jvp(qml.tape.QuantumScript(), (0.1,))
+            self.dev.compute_jvp(qp.tape.QuantumScript(), (0.1,))
 
         with pytest.raises(NotImplementedError):
-            self.dev.execute_and_compute_jvp(qml.tape.QuantumScript(), (0.1,))
+            self.dev.execute_and_compute_jvp(qp.tape.QuantumScript(), (0.1,))
 
     def test_supports_vjp_default(self):
         """Test that the default behavior of supports_jvp is false."""
@@ -724,10 +724,10 @@ class TestMinimalDevice:
     def test_compute_vjp_not_implemented(self):
         """Test that compute_vjp is not implemented by default."""
         with pytest.raises(NotImplementedError):
-            self.dev.compute_vjp(qml.tape.QuantumScript(), (0.1,))
+            self.dev.compute_vjp(qp.tape.QuantumScript(), (0.1,))
 
         with pytest.raises(NotImplementedError):
-            self.dev.execute_and_compute_vjp(qml.tape.QuantumScript(), (0.1,))
+            self.dev.execute_and_compute_vjp(qp.tape.QuantumScript(), (0.1,))
 
     @pytest.mark.parametrize(
         "wires, expected",
@@ -800,7 +800,7 @@ class TestProvidingDerivatives:
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
 
-        out = dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
+        out = dev.execute_and_compute_derivatives(qp.tape.QuantumScript())
         assert out[0] == "a"
         assert out[1] == ("b",)
 
@@ -820,7 +820,7 @@ class TestProvidingDerivatives:
         dev = WithJvp()
         assert dev.supports_jvp()
 
-        out = dev.execute_and_compute_jvp(qml.tape.QuantumScript(), (1.0,))
+        out = dev.execute_and_compute_jvp(qp.tape.QuantumScript(), (1.0,))
         assert out[0] == "a"
         assert out[1] == ("c",)
 
@@ -845,7 +845,7 @@ class TestProvidingDerivatives:
         dev = WithVjp()
         assert dev.supports_vjp()
 
-        out = dev.execute_and_compute_vjp(qml.tape.QuantumScript(), (1.0,))
+        out = dev.execute_and_compute_vjp(qp.tape.QuantumScript(), (1.0,))
         assert out[0] == "a"
         assert out[1] == ("c",)
 

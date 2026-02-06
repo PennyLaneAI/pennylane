@@ -38,7 +38,7 @@ def dummyfunc():
     return None
 
 
-class DummyDevice(qml.devices.LegacyDevice):
+class DummyDevice(qp.devices.LegacyDevice):
     """A minimal device that does not do anything."""
 
     author = "some string"
@@ -100,8 +100,8 @@ class TestValidation:
         @qnode(dev)
         def circuit(x):
             """a circuit."""
-            qml.RX(x, wires=0)
-            return qml.probs(wires=0)
+            qp.RX(x, wires=0)
+            return qp.probs(wires=0)
 
         expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
@@ -145,10 +145,10 @@ class TestValidation:
             match="does not support adjoint with requested circuit.",
         ):
 
-            @qml.set_shots(1)
+            @qp.set_shots(1)
             @qnode(dev, diff_method="adjoint")
             def circ():
-                return qml.expval(qml.PauliZ(0))
+                return qp.expval(qp.PauliZ(0))
 
             circ()
 
@@ -160,22 +160,22 @@ class TestValidation:
 
         @qnode(dev, diff_method="backprop")
         def circuit(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
+            qp.RX(param, wires=0)
+            return qp.expval(qp.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
             QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
-            qml.grad(circuit, argnums=0)([0.5])
+            qp.grad(circuit, argnums=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
         dev = DefaultQubitLegacy(wires=1)
 
         def func(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         qn = QNode(func, dev)
 
@@ -195,7 +195,7 @@ class TestValidation:
         assert np.allclose(qn(0.5), np.cos(0.5), rtol=0)
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            grad = qml.grad(qn)(0.5)
+            grad = qp.grad(qn)(0.5)
 
         assert np.allclose(grad, 0)
 
@@ -203,13 +203,13 @@ class TestValidation:
         """Test that checks that the tracker is switched to the new device."""
         dev = DefaultQubitLegacy(wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(params):
-            qml.RX(params, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        with qml.Tracker(dev) as tracker:
-            circuit(qml.numpy.array(0.1, requires_grad=True))
+        with qp.Tracker(dev) as tracker:
+            circuit(qp.numpy.array(0.1, requires_grad=True))
 
         assert tracker.totals == {"executions": 1, "batches": 1, "batch_len": 1}
         assert np.allclose(tracker.history.pop("results")[0], 0.99500417)
@@ -234,18 +234,18 @@ class TestValidation:
         except for the deprecation warnings which will be caught by the fixture."""
         dev = DefaultQubitLegacy(wires=1)
 
-        @qml.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="autograd")
         def circuit(params):
-            qml.RX(params, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(params, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-        circuit(qml.numpy.array(0.1, requires_grad=True))
+        circuit(qp.numpy.array(0.1, requires_grad=True))
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning."""
 
         with warnings.catch_warnings(record=True) as record:
-            qml.QNode(lambda f: f, DefaultQubitLegacy(wires=1))
+            qp.QNode(lambda f: f, DefaultQubitLegacy(wires=1))
 
         assert len(record) == 0
 
@@ -258,10 +258,10 @@ class TestTapeConstruction:
         dev = DefaultQubitLegacy(wires=2)
 
         def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         qn = QNode(func, dev)
 
@@ -269,7 +269,7 @@ class TestTapeConstruction:
         y = pnp.array(0.54, requires_grad=True)
 
         res = qn(x, y)
-        tape = qml.workflow.construct_tape(qn)(x, y)
+        tape = qp.workflow.construct_tape(qn)(x, y)
 
         assert isinstance(tape, QuantumScript)
         assert len(tape.operations) == 3
@@ -277,13 +277,13 @@ class TestTapeConstruction:
         assert tape.num_params == 2
         assert tape.shots.total_shots is None
 
-        expected = qml.execute([tape], dev, None)
+        expected = qp.execute([tape], dev, None)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # when called, a new quantum tape is constructed
         old_tape = tape
         res2 = qn(x, y)
-        new_tape = qml.workflow.construct_tape(qn)(x, y)
+        new_tape = qp.workflow.construct_tape(qn)(x, y)
 
         assert np.allclose(res, res2, atol=tol, rtol=0)
         assert new_tape is not old_tape
@@ -294,9 +294,9 @@ class TestTapeConstruction:
         dev = DefaultQubitLegacy(wires=2)
 
         def func0(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.CNOT(wires=[0, 1])
             return 5
 
         qn = QNode(func0, dev)
@@ -305,10 +305,10 @@ class TestTapeConstruction:
             qn(5, 1)
 
         def func2(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), 5
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), 5
 
         qn = QNode(func2, dev)
 
@@ -316,9 +316,9 @@ class TestTapeConstruction:
             qn(5, 1)
 
         def func3(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.CNOT(wires=[0, 1])
             return []
 
         qn = QNode(func3, dev)
@@ -332,11 +332,11 @@ class TestTapeConstruction:
         dev = DefaultQubitLegacy(wires=2)
 
         def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            m = qml.expval(qml.PauliZ(0))
-            return qml.expval(qml.PauliX(1)), m
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.CNOT(wires=[0, 1])
+            m = qp.expval(qp.PauliZ(0))
+            return qp.expval(qp.PauliX(1)), m
 
         qn = QNode(func, dev)
 
@@ -354,11 +354,11 @@ class TestTapeConstruction:
         contents = []
 
         def func(x, y):
-            op1 = qml.RX(x, wires=0)
-            op2 = qml.RY(y, wires=1)
-            op3 = qml.CNOT(wires=[0, 1])
-            m1 = qml.expval(qml.PauliZ(0))
-            m2 = qml.expval(qml.PauliX(1))
+            op1 = qp.RX(x, wires=0)
+            op2 = qp.RY(y, wires=1)
+            op3 = qp.CNOT(wires=[0, 1])
+            m1 = qp.expval(qp.PauliZ(0))
+            m2 = qp.expval(qp.PauliX(1))
             contents.append(op1)
             contents.append(op2)
             contents.append(op3)
@@ -367,7 +367,7 @@ class TestTapeConstruction:
             return [m1, m2]
 
         qn = QNode(func, dev)
-        tape = qml.workflow.construct_tape(qn)(5, 1)
+        tape = qp.workflow.construct_tape(qn)(5, 1)
         assert tape.operations == contents[0:3]
         assert tape.measurements == contents[3:]
 
@@ -380,31 +380,31 @@ class TestTapeConstruction:
         dev = DefaultQubitLegacy(wires=2)
 
         def circuit1(param):
-            qml.Hadamard(0)
-            qml.RX(param, wires=1)
-            qml.CNOT([1, 0])
-            return qml.counts()
+            qp.Hadamard(0)
+            qp.RX(param, wires=1)
+            qp.CNOT([1, 0])
+            return qp.counts()
 
-        qn = qml.set_shots(qml.QNode(circuit1, dev), shots=5)
+        qn = qp.set_shots(qp.QNode(circuit1, dev), shots=5)
         jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
-            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qp.counts."
         ):
             jitted_qnode1(0.123)
 
         # Test with qnode decorator syntax
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit2(param):
-            qml.Hadamard(0)
-            qml.RX(param, wires=1)
-            qml.CNOT([1, 0])
-            return qml.counts()
+            qp.Hadamard(0)
+            qp.RX(param, wires=1)
+            qp.CNOT([1, 0])
+            return qp.counts()
 
         jitted_qnode2 = jax.jit(circuit2)
 
         with pytest.raises(
-            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qp.counts."
         ):
             jitted_qnode2(0.123)
 
@@ -416,10 +416,10 @@ def test_decorator(tol):
     @qnode(dev)
     def func(x, y):
         """My function docstring"""
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(x, wires=0)
+        qp.RY(y, wires=1)
+        qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.PauliZ(0))
 
     assert isinstance(func, QNode)
     assert func.__doc__ == "My function docstring"
@@ -428,20 +428,20 @@ def test_decorator(tol):
     y = pnp.array(0.54, requires_grad=True)
 
     res = func(x, y)
-    tape = qml.workflow.construct_tape(func)(x, y)
+    tape = qp.workflow.construct_tape(func)(x, y)
 
     assert isinstance(tape, QuantumScript)
     assert len(tape.operations) == 3
     assert len(tape.observables) == 1
     assert tape.num_params == 2
 
-    expected = qml.execute([tape], dev, None)
+    expected = qp.execute([tape], dev, None)
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
     # when called, a new quantum tape is constructed
     old_tape = tape
     res2 = func(x, y)
-    new_tape = qml.workflow.construct_tape(func)(x, y)
+    new_tape = qp.workflow.construct_tape(func)(x, y)
 
     assert np.allclose(res, res2, atol=tol, rtol=0)
     assert new_tape is not old_tape
@@ -455,9 +455,9 @@ class TestIntegration:
         """Test that number of executions are tracked in the autograd interface."""
 
         def func():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         dev = DefaultQubitLegacy(wires=2)
         qn = QNode(func, dev, interface="autograd")
@@ -479,9 +479,9 @@ class TestIntegration:
         """Test that number of executions are tracked in the tf interface."""
 
         def func():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         dev = DefaultQubitLegacy(wires=2)
         qn = QNode(func, dev, interface=interface)
@@ -508,9 +508,9 @@ class TestIntegration:
         """Test that number of executions are tracked in the torch interface."""
 
         def func():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
 
         dev = DefaultQubitLegacy(wires=2)
         qn = QNode(func, dev, interface=interface)
@@ -539,10 +539,10 @@ class TestIntegration:
 
         cache = {}
 
-        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        @qp.qnode(dev, diff_method="backprop", cache=cache)
         def circuit():
-            qml.RY(0.345, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(0.345, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         for _ in range(15):
             circuit()
@@ -560,18 +560,18 @@ class TestIntegration:
 
         cache = {}
 
-        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        @qp.qnode(dev, diff_method="backprop", cache=cache)
         def circuit0():
-            qml.RY(0.345, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RY(0.345, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         for _ in range(15):
             circuit0()
 
-        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        @qp.qnode(dev, diff_method="backprop", cache=cache)
         def circuit2():
-            qml.RZ(0.345, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RZ(0.345, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         for _ in range(15):
             circuit2()
@@ -600,12 +600,12 @@ class TestIntegration:
             dev, diff_method=diff_method, gradient_kwargs={"argnum": [1]}
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qp.RX(x, wires=[0])
+            qp.RY(y, wires=[1])
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
 
-        res = qml.grad(circuit)(x, y)
+        res = qp.grad(circuit)(x, y)
         assert len(res) == 2
 
         expected = (0, np.cos(y) * np.cos(x))
@@ -617,50 +617,50 @@ class TestIntegration:
         QNode construction if the device supports mid-circuit measurements."""
         dev = DefaultQubitLegacy(wires=3)
         mocker.patch.object(
-            qml.devices.LegacyDevice, "_capabilities", {"supports_mid_measure": True}
+            qp.devices.LegacyDevice, "_capabilities", {"supports_mid_measure": True}
         )
-        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
+        spy = mocker.spy(qp.defer_measurements, "_tape_transform")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.expval(qml.PauliZ(1))
+            qp.PauliX(0)
+            qp.measure(0)
+            return qp.expval(qp.PauliZ(1))
 
         circuit.construct(tuple(), {})
 
         spy.assert_not_called()
-        tape = qml.workflow.construct_tape(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
         assert len(tape.operations) == 2
-        assert isinstance(tape.operations[1], qml.ops.MidMeasure)
+        assert isinstance(tape.operations[1], qp.ops.MidMeasure)
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
-        """Tests that a QNode with qml.sample and mid-circuit measurements
+        """Tests that a QNode with qp.sample and mid-circuit measurements
         returns the expected results."""
         dev = DefaultQubitLegacy(wires=3)
 
         first_par = np.pi
 
-        @qml.set_shots(1000)
-        @qml.qnode(dev)
+        @qp.set_shots(1000)
+        @qp.qnode(dev)
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.BasisState(basis_state, wires=[0, 1])
-            qml.CRY(x, wires=[0, 1])
-            return qml.sample(qml.PauliZ(1))
+            qp.BasisState(basis_state, wires=[0, 1])
+            qp.CRY(x, wires=[0, 1])
+            return qp.sample(qp.PauliZ(1))
 
-        @qml.set_shots(1000)
-        @qml.qnode(dev)
+        @qp.set_shots(1000)
+        @qp.qnode(dev)
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.BasisState(basis_state, wires=[0, 1])
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.sample(qml.PauliZ(1))
+            qp.BasisState(basis_state, wires=[0, 1])
+            m_0 = qp.measure(0)
+            qp.cond(m_0, qp.RY)(x, wires=1)
+            return qp.sample(qp.PauliZ(1))
 
-        spy = mocker.spy(qml.defer_measurements, "_tape_transform")
+        spy = mocker.spy(qp.defer_measurements, "_tape_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
@@ -674,24 +674,24 @@ class TestIntegration:
 
         dev = DefaultQubitLegacy(wires=3)
 
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            qml.CRY(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(1)
+            qp.RY(1.234, wires=0)
+            qp.CRY(x, wires=[0, 1])
+            return qp.expval(qp.PauliZ(1))
 
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        @qml.defer_measurements
+        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qp.defer_measurements
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(1)
+            qp.RY(1.234, wires=0)
+            m_0 = qp.measure(0)
+            qp.cond(m_0, qp.RY)(x, wires=1)
+            return qp.expval(qp.PauliZ(1))
 
         x_ = -0.654
         x1 = tf.Variable(x_, dtype=tf.float64)
@@ -717,23 +717,23 @@ class TestIntegration:
 
         dev = DefaultQubitLegacy(wires=3)
 
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            qml.CRY(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(1)
+            qp.RY(1.234, wires=0)
+            qp.CRY(x, wires=[0, 1])
+            return qp.expval(qp.PauliZ(1))
 
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(1)
+            qp.RY(1.234, wires=0)
+            m_0 = qp.measure(0)
+            qp.cond(m_0, qp.RY)(x, wires=1)
+            return qp.expval(qp.PauliZ(1))
 
         x1 = torch.tensor(-0.654, dtype=torch.float64, requires_grad=True)
         x2 = torch.tensor(-0.654, dtype=torch.float64, requires_grad=True)
@@ -756,23 +756,23 @@ class TestIntegration:
         jnp = jax.numpy
         dev = DefaultQubitLegacy(wires=3)
 
-        @qml.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
+        @qp.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            qml.CRY(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(1)
+            qp.RY(1.234, wires=0)
+            qp.CRY(x, wires=[0, 1])
+            return qp.expval(qp.PauliZ(1))
 
-        @qml.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
+        @qp.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.Hadamard(1)
-            qml.RY(1.234, wires=0)
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qp.Hadamard(1)
+            qp.RY(1.234, wires=0)
+            m_0 = qp.measure(0)
+            qp.cond(m_0, qp.RY)(x, wires=1)
+            return qp.expval(qp.PauliZ(1))
 
         x1 = jnp.array(-0.654)
         x2 = jnp.array(-0.654)
@@ -787,15 +787,15 @@ class TestIntegration:
         """Test that operators in QNodes are not queued to surrounding contexts."""
         dev = DefaultQubitLegacy(wires=1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.PauliZ(0)
-            return qml.expval(qml.PauliX(0))
+            qp.PauliZ(0)
+            return qp.expval(qp.PauliX(0))
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qp.queuing.AnnotatedQueue() as q:
             circuit()
 
-        tape = qml.workflow.construct_tape(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
         assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert len(tape.operations) == 1
 
@@ -813,10 +813,10 @@ class TestShots:
             dev = DefaultQubitLegacy(wires=1, shots=10)
 
             @qnode(dev)
-            @qml.qnode(dev)
+            @qp.qnode(dev)
             def circuit(a):
-                qml.RX(a, wires=0)
-                return qml.sample(qml.PauliZ(wires=0))
+                qp.RX(a, wires=0)
+                return qp.sample(qp.PauliZ(wires=0))
 
             assert len(circuit(0.8)) == 10
             with pytest.warns(
@@ -835,8 +835,8 @@ class TestShots:
 
         @qnode(dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+            qp.Hadamard(wires=0)
+            return qp.expval(qp.PauliZ(wires=0))
 
         # check that the circuit is analytic
         res1 = [circuit() for _ in range(100)]
@@ -864,8 +864,8 @@ class TestShots:
         dev = DefaultQubitLegacy(wires=2, shots=10)
 
         def circuit(a, shots=0):
-            qml.RX(a, wires=shots)
-            return qml.sample(qml.PauliZ(wires=0))
+            qp.RX(a, wires=shots)
+            return qp.sample(qp.PauliZ(wires=0))
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
@@ -877,15 +877,15 @@ class TestShots:
                 circuit = QNode(circuit, dev)
 
         assert len(circuit(0.8)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8)
+        tape = qp.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
         assert len(circuit(0.8, shots=1)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        tape = qp.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
         assert len(circuit(0.8, shots=0)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        tape = qp.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
@@ -895,8 +895,8 @@ class TestShots:
         dev = DefaultQubitLegacy(wires=[0, 1])
 
         def ansatz0(a, shots):
-            qml.RX(a, wires=shots)
-            return qml.sample(qml.PauliZ(wires=0))
+            qp.RX(a, wires=shots)
+            return qp.sample(qp.PauliZ(wires=0))
 
         # assert that warning is still raised
         with pytest.warns(
@@ -905,7 +905,7 @@ class TestShots:
             circuit = QNode(ansatz0, dev, shots=10)
 
         assert len(circuit(0.8, 1)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, 1)
+        tape = qp.workflow.construct_tape(circuit)(0.8, 1)
         assert tape.operations[0].wires.labels == (1,)
 
         dev = DefaultQubitLegacy(wires=2)
@@ -916,11 +916,11 @@ class TestShots:
 
             @qnode(dev, shots=10)
             def ansatz1(a, shots):
-                qml.RX(a, wires=shots)
-                return qml.sample(qml.PauliZ(wires=0))
+                qp.RX(a, wires=shots)
+                return qp.sample(qp.PauliZ(wires=0))
 
         assert len(ansatz1(0.8, shots=0)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, 0)
+        tape = qp.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
@@ -935,8 +935,8 @@ class TestShots:
 
             @qnode(dev)
             def circuit(a):
-                qml.RX(a, wires=0)
-                return qml.sample(qml.PauliZ(wires=0))
+                qp.RX(a, wires=0)
+                return qp.sample(qp.PauliZ(wires=0))
 
         assert dev.shots == 3
         with pytest.warns(
@@ -955,10 +955,10 @@ class TestShots:
             match="shots on device is deprecated",
         ):
 
-            @qml.qnode(dev, cache={})
+            @qp.qnode(dev, cache={})
             def circuit(x):
-                qml.RZ(x, wires=0)
-                return qml.expval(qml.PauliZ(0))
+                qp.RZ(x, wires=0)
+                return qp.expval(qp.PauliZ(0))
 
         # no warning on the first execution
         circuit(0.3)
@@ -970,40 +970,40 @@ class TestShots:
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = DefaultQubitLegacy(wires=1)
 
-        @qml.set_shots(5)
-        @qml.qnode(dev, cache={})
+        @qp.set_shots(5)
+        @qp.qnode(dev, cache={})
         def circuit(x):
-            qml.RZ(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RZ(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         # no warning on the first execution
         circuit(0.3)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
-            qml.set_shots(shots=5)(circuit)(0.3)
+            qp.set_shots(shots=5)(circuit)(0.3)
 
     def test_warning_finite_shots_tape(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = DefaultQubitLegacy(wires=1)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RZ(0.3, wires=0)
-            qml.expval(qml.PauliZ(0))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.RZ(0.3, wires=0)
+            qp.expval(qp.PauliZ(0))
 
         tape = QuantumScript.from_queue(q, shots=5)
         # no warning on the first execution
         cache = {}
-        qml.execute([tape], dev, None, cache=cache)
+        qp.execute([tape], dev, None, cache=cache)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
-            qml.execute([tape], dev, None, cache=cache)
+            qp.execute([tape], dev, None, cache=cache)
 
     def test_no_warning_infinite_shots(self):
         """Tests that no warning is raised when caching is used with infinite shots."""
         dev = DefaultQubitLegacy(wires=1)
 
-        @qml.qnode(dev, cache={})
+        @qp.qnode(dev, cache={})
         def circuit(x):
-            qml.RZ(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RZ(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
@@ -1015,15 +1015,15 @@ class TestShots:
         """Tests that no warning is raised when only the internal cache is reused."""
         dev = DefaultQubitLegacy(wires=1)
 
-        @qml.set_shots(5)
-        @qml.qnode(dev, cache=True)
+        @qp.set_shots(5)
+        @qp.qnode(dev, cache=True)
         def circuit(x):
-            qml.RZ(x, wires=0)
-            return qml.probs(wires=0)
+            qp.RZ(x, wires=0)
+            return qp.probs(wires=0)
 
         with warnings.catch_warnings():
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
-            qml.jacobian(circuit, argnums=0)(0.3)
+            qp.jacobian(circuit, argnums=0)(0.3)
 
     # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
@@ -1040,9 +1040,9 @@ class TestShots:
         dev = DefaultQubitLegacy(wires=2, shots=5)
 
         def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(qp.PauliZ(0))
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
@@ -1052,7 +1052,7 @@ class TestShots:
             qn = QNode(func, dev)
 
         # No override
-        tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
+        tape = qp.workflow.construct_tape(qn)(0.1, 0.2)
         assert tape.shots.total_shots == 5
 
         # Override
@@ -1060,7 +1060,7 @@ class TestShots:
             PennyLaneDeprecationWarning,
             match="Specifying 'shots' when executing a QNode is deprecated",
         ):
-            tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
+            tape = qp.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
@@ -1072,12 +1072,12 @@ class TestShots:
 
             @qnode(dev)
             def qn2(x, y):
-                qml.RX(x, wires=0)
-                qml.RY(y, wires=1)
-                return qml.expval(qml.PauliZ(0))
+                qp.RX(x, wires=0)
+                qp.RY(y, wires=1)
+                return qp.expval(qp.PauliZ(0))
 
         # No override
-        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2)
+        tape = qp.workflow.construct_tape(qn2)(0.1, 0.2)
         assert tape.shots.total_shots == 5
 
         # Override
@@ -1085,7 +1085,7 @@ class TestShots:
             PennyLaneDeprecationWarning,
             match="Specifying 'shots' when executing a QNode is deprecated",
         ):
-            tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
+            tape = qp.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
@@ -1098,23 +1098,23 @@ class TestCompilePipelineIntegration:
         def null_postprocessing(results):
             return results[0]
 
-        @qml.transform
+        @qp.transform
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
-                qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
+                qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
         @just_pauli_x_out
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qp.qnode(dev, interface=None, diff_method=None)
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         assert circuit.transform_program[0].tape_transform == just_pauli_x_out.tape_transform
 
-        assert qml.math.allclose(circuit(0.1), -1)
+        assert qp.math.allclose(circuit(0.1), -1)
 
         with circuit.device.tracker as tracker:
             circuit(0.1)
@@ -1128,25 +1128,25 @@ class TestCompilePipelineIntegration:
 
         dev = DefaultQubitLegacy(wires=2)
 
-        @qml.transform
+        @qp.transform
         def pin_result(
             tape: QuantumScript, requested_result
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-            def postprocessing(_: qml.typing.ResultBatch) -> qml.typing.Result:
+            def postprocessing(_: qp.typing.ResultBatch) -> qp.typing.Result:
                 return requested_result
 
             return (tape,), postprocessing
 
         @pin_result(requested_result=3.0)
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qp.qnode(dev, interface=None, diff_method=None)
         def circuit(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         assert circuit.transform_program[0].tape_transform == pin_result.tape_transform
         assert circuit.transform_program[0].kwargs == {"requested_result": 3.0}
 
-        assert qml.math.allclose(circuit(0.1), 3.0)
+        assert qp.math.allclose(circuit(0.1), 3.0)
 
     def test_transform_order_circuit_processing(self):
         """Test that transforms are applied in the correct order in integration."""
@@ -1156,44 +1156,44 @@ class TestCompilePipelineIntegration:
         def null_postprocessing(results):
             return results[0]
 
-        @qml.transform
+        @qp.transform
         def just_pauli_x_out(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
-                qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
+                qp.tape.QuantumScript([qp.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
-        @qml.transform
+        @qp.transform
         def repeat_operations(
             tape: QuantumScript,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-            new_tape = qml.tape.QuantumScript(
+            new_tape = qp.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
             return (new_tape,), null_postprocessing
 
         @repeat_operations
         @just_pauli_x_out
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qp.qnode(dev, interface=None, diff_method=None)
         def circuit1(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         with circuit1.device.tracker as tracker:
-            assert qml.math.allclose(circuit1(0.1), 1.0)
+            assert qp.math.allclose(circuit1(0.1), 1.0)
 
         assert tracker.history["resources"][0].gate_types["PauliX"] == 2
 
         @just_pauli_x_out
         @repeat_operations
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qp.qnode(dev, interface=None, diff_method=None)
         def circuit2(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.PauliZ(0))
+            qp.RX(x, 0)
+            return qp.expval(qp.PauliZ(0))
 
         with circuit2.device.tracker as tracker:
-            assert qml.math.allclose(circuit2(0.1), -1.0)
+            assert qp.math.allclose(circuit2(0.1), -1.0)
 
         assert tracker.history["resources"][0].gate_types["PauliX"] == 1
 
@@ -1208,59 +1208,59 @@ class TestCompilePipelineIntegration:
         def add_shift(results, shift):
             return results[0] + shift
 
-        @qml.transform
+        @qp.transform
         def scale_output(
             tape: QuantumScript, factor
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(scale_by_factor, factor=factor)
 
-        @qml.transform
+        @qp.transform
         def shift_output(tape: QuantumScript, shift) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
         @shift_output(shift=1.0)
         @scale_output(factor=2.0)
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qp.qnode(dev, interface=None, diff_method=None)
         def circuit1():
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         # first add one, then scale by 2.0.  Outer postprocessing transforms are applied first
-        assert qml.math.allclose(circuit1(), 4.0)
+        assert qp.math.allclose(circuit1(), 4.0)
 
         @scale_output(factor=2.0)
         @shift_output(shift=1.0)
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qp.qnode(dev, interface=None, diff_method=None)
         def circuit2():
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         # first scale by 2, then add one. Outer postprocessing transforms are applied first
-        assert qml.math.allclose(circuit2(), 3.0)
+        assert qp.math.allclose(circuit2(), 3.0)
 
     def test_scaling_shots_transform(self):
         """Test a transform that scales the number of shots used in an execution."""
 
         # note that this won't work with the old device interface :(
-        dev = qml.devices.DefaultQubit()
+        dev = qp.devices.DefaultQubit()
 
         def num_of_shots_from_sample(results):
             return len(results[0])
 
-        @qml.transform
+        @qp.transform
         def use_n_shots(tape: QuantumScript, n) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
-                qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
+                qp.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
 
         @use_n_shots(n=100)
-        @qml.qnode(dev, interface=None, diff_method=None)
+        @qp.qnode(dev, interface=None, diff_method=None)
         def circuit():
-            return qml.sample(wires=0)
+            return qp.sample(wires=0)
 
         assert circuit() == 100
 
 
 # pylint: disable=unused-argument
-class CustomDevice(qml.devices.Device):
+class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
@@ -1283,18 +1283,18 @@ class TestTapeExpansion:
         dev = DefaultQubitLegacy(wires=1)
 
         # pylint: disable=too-few-public-methods
-        class UnsupportedOp(qml.operation.Operation):
+        class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
             num_wires = 1
 
             def decomposition(self):
-                return [qml.RX(3 * self.data[0], wires=self.wires)]
+                return [qp.RX(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, diff_method=diff_method, grad_on_execution=mode)
         def circuit(x):
             UnsupportedOp(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         if diff_method == "adjoint" and mode:
             spy = mocker.spy(circuit.device, "execute_and_compute_derivatives")
@@ -1316,7 +1316,7 @@ class TestTapeExpansion:
         dev = DefaultQubitLegacy(wires=1)
 
         # pylint: disable=too-few-public-methods
-        class UnsupportedOp(qml.operation.Operation):
+        class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
             num_wires = 1
@@ -1325,18 +1325,18 @@ class TestTapeExpansion:
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
             def decomposition(self):
-                return [qml.RX(3 * self.data[0], wires=self.wires)]
+                return [qp.RX(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             UnsupportedOp(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qp.expval(qp.PauliZ(0))
 
         x = pnp.array(0.5, requires_grad=True)
-        qml.grad(circuit)(x)
+        qp.grad(circuit)(x)
 
         # check second derivative
-        assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
+        assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
@@ -1345,45 +1345,45 @@ class TestTapeExpansion:
         dev = DefaultQubitLegacy(wires=1)
 
         # pylint: disable=too-few-public-methods
-        class PhaseShift(qml.PhaseShift):
+        class PhaseShift(qp.PhaseShift):
             """custom phase shift."""
 
             grad_method = None
 
             def decomposition(self):
-                return [qml.RY(3 * self.data[0], wires=self.wires)]
+                return [qp.RY(3 * self.data[0], wires=self.wires)]
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
             PhaseShift(x, wires=0)
-            return qml.expval(qml.PauliX(0))
+            return qp.expval(qp.PauliX(0))
 
         x = pnp.array(0.5, requires_grad=True)
         circuit(x)
 
-        res = qml.grad(circuit)(x)
+        res = qp.grad(circuit)(x)
 
         assert np.allclose(res, -3 * np.sin(3 * x))
 
         # test second order derivatives
-        res = qml.grad(qml.grad(circuit))(x)
+        res = qp.grad(qp.grad(circuit))(x)
         assert np.allclose(res, -9 * np.cos(3 * x))
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""
         dev = DefaultQubitLegacy(wires=3, shots=None)
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
-        H = qml.Hamiltonian(c, obs)
+        H = qp.Hamiltonian(c, obs)
         H.compute_grouping()
 
         assert len(H.grouping_indices) == 2
 
         @qnode(dev)
         def circuit():
-            return qml.expval(H)
+            return qp.expval(H)
 
         res = circuit()
         assert np.allclose(res, c[2], atol=0.1)
@@ -1393,19 +1393,19 @@ class TestTapeExpansion:
         are non-commuting groups and the number of shots is finite"""
         dev = DefaultQubitLegacy(wires=3)
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
-        H = qml.Hamiltonian(c, obs)
+        H = qp.Hamiltonian(c, obs)
         H.compute_grouping()
 
         assert len(H.grouping_indices) == 2
 
-        @qml.set_shots(50000)
+        @qp.set_shots(50000)
         @qnode(dev)
         def circuit():
-            return qml.expval(H)
+            return qp.expval(H)
 
-        spy = mocker.spy(qml.devices._legacy_device, "split_non_commuting")
+        spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.3)
 
@@ -1420,41 +1420,41 @@ class TestTapeExpansion:
 
         dev = DefaultQubitLegacy(wires=3)
 
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliZ(1), qp.PauliZ(0) @ qp.PauliZ(1)]
         c = np.array([-0.6543, 0.24, 0.54])
-        H = qml.Hamiltonian(c, obs)
+        H = qp.Hamiltonian(c, obs)
 
         if grouping:
             H.compute_grouping()
             assert len(H.grouping_indices) == 2
 
-        @qml.set_shots(50000)
+        @qp.set_shots(50000)
         @qnode(dev)
         def circuit():
-            return qml.expval(H), qml.expval(H)
+            return qp.expval(H), qp.expval(H)
 
         res = circuit()
-        assert qml.math.allclose(res, [0.54, 0.54], atol=0.05)
+        assert qp.math.allclose(res, [0.54, 0.54], atol=0.05)
         assert res[0] == res[1]
 
     def test_expansion_multiple_qwc_observables(self, mocker):
         """Test that the QNode correctly expands tapes that return
         multiple measurements of commuting observables"""
         dev = DefaultQubitLegacy(wires=2)
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliY(1)]
+        obs = [qp.PauliX(0), qp.PauliX(0) @ qp.PauliY(1)]
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return [qml.expval(o) for o in obs]
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return [qp.expval(o) for o in obs]
 
         spy_expand = mocker.spy(circuit.device.target_device, "expand_fn")
         params = [0.1, 0.2]
         res = circuit(*params)
 
         tape = spy_expand.spy_return
-        rotations, observables = qml.pauli.diagonalize_qwc_pauli_words(obs)
+        rotations, observables = qp.pauli.diagonalize_qwc_pauli_words(obs)
 
         assert tape.observables[0].name == observables[0].name
         assert tape.observables[1].name == observables[1].name
@@ -1466,13 +1466,13 @@ class TestTapeExpansion:
 
         # check output value is consistent with a Hamiltonian expectation
         coeffs = np.array([1.0, 1.0])
-        H = qml.Hamiltonian(coeffs, obs)
+        H = qp.Hamiltonian(coeffs, obs)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit2(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return qml.expval(H)
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            return qp.expval(H)
 
         res_H = circuit2(*params)
         assert np.allclose(coeffs @ res, res_H)
@@ -1547,19 +1547,19 @@ class TestDefaultQubitLegacySeeding:
         dev1 = DefaultQubitLegacy(wires=2, seed=seed)
         dev2 = DefaultQubitLegacy(wires=2, seed=seed)
 
-        @qml.set_shots(num_shots)
-        @qml.qnode(dev1)
+        @qp.set_shots(num_shots)
+        @qp.qnode(dev1)
         def circuit1():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            return qml.sample(wires=[0, 1])
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            return qp.sample(wires=[0, 1])
 
-        @qml.set_shots(num_shots)
-        @qml.qnode(dev2)
+        @qp.set_shots(num_shots)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            return qml.sample(wires=[0, 1])
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            return qp.sample(wires=[0, 1])
 
         # Execute both circuits - they should produce identical results
         # since both devices start fresh with the same seed
@@ -1581,19 +1581,19 @@ class TestDefaultQubitLegacySeeding:
         dev1 = DefaultQubitLegacy(wires=2, seed=seed)
         dev2 = DefaultQubitLegacy(wires=2, seed=seed)
 
-        @qml.set_shots(num_shots)
-        @qml.qnode(dev1)
+        @qp.set_shots(num_shots)
+        @qp.qnode(dev1)
         def circuit1():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            return qml.classical_shadow(wires=[0, 1], seed=seed)
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            return qp.classical_shadow(wires=[0, 1], seed=seed)
 
-        @qml.set_shots(num_shots)
-        @qml.qnode(dev2)
+        @qp.set_shots(num_shots)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            return qml.classical_shadow(wires=[0, 1], seed=seed)
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            return qp.classical_shadow(wires=[0, 1], seed=seed)
 
         result1 = circuit1()
         result2 = circuit2()
@@ -1689,11 +1689,11 @@ class TestDefaultQubitLegacySeeding:
 
         dev = DefaultQubitLegacy(wires=2, seed=seed)
 
-        @qml.set_shots(num_shots)
-        @qml.qnode(dev)
+        @qp.set_shots(num_shots)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
-            return qml.classical_shadow(wires=[0], seed=seed)
+            qp.Hadamard(0)
+            return qp.classical_shadow(wires=[0], seed=seed)
 
         # First execution
         result1 = circuit()
@@ -1721,8 +1721,8 @@ class TestDefaultQubitLegacySeeding:
         dev = DefaultQubitLegacy(wires=1, shots=num_shots, seed=seed)
 
         # Create a simple tape for execution
-        tape = qml.tape.QuantumScript(
-            [qml.Hadamard(0)], [qml.classical_shadow(wires=[0], seed=seed)]
+        tape = qp.tape.QuantumScript(
+            [qp.Hadamard(0)], [qp.classical_shadow(wires=[0], seed=seed)]
         )
 
         # First execution

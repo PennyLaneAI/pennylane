@@ -25,9 +25,9 @@ from pennylane.exceptions import QuantumFunctionError
 @pytest.mark.jax
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
-    op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
-    assert op.target_wires == qml.wires.Wires([0, 1])
-    qml.ops.functions.assert_valid(op)
+    op = qp.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
+    assert op.target_wires == qp.wires.Wires([0, 1])
+    qp.ops.functions.assert_valid(op)
 
 
 class TestError:
@@ -41,42 +41,42 @@ class TestError:
     def test_error_operator(self, operator_error, expected_error):
         """Test that QPE error is correct for a given custom operator."""
 
-        class CustomOP(qml.resource.ErrorOperation):
+        class CustomOP(qp.resource.ErrorOperation):
             # pylint: disable=too-few-public-methods
             def error(self):
-                return qml.resource.SpectralNormError(operator_error)
+                return qp.resource.SpectralNormError(operator_error)
 
         operator = CustomOP(wires=[0])
-        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
+        qpe_error = qp.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
 
         assert np.allclose(qpe_error, expected_error)
 
     def test_error_zero(self):
         """Test that QPE error is zero for an operator with no error method."""
-        unitary = qml.RX(0.1, wires=0)
-        qpe_error = qml.QuantumPhaseEstimation(unitary, estimation_wires=range(1, 3)).error().error
+        unitary = qp.RX(0.1, wires=0)
+        qpe_error = qp.QuantumPhaseEstimation(unitary, estimation_wires=range(1, 3)).error().error
 
         assert qpe_error == 0.0
 
     def test_error_unitary(self):
         """Test that QPE error is correct for a given unitary error."""
 
-        u_exact = qml.RY(0.50, wires=0)
-        u_apprx = qml.RY(0.51, wires=0)
+        u_exact = qp.RY(0.50, wires=0)
+        u_apprx = qp.RY(0.51, wires=0)
 
-        class CustomOP(qml.resource.ErrorOperation):
+        class CustomOP(qp.resource.ErrorOperation):
             # pylint: disable=too-few-public-methods
             def error(self):
-                error_value = qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
-                return qml.resource.SpectralNormError(error_value)
+                error_value = qp.resource.SpectralNormError.get_error(u_exact, u_apprx)
+                return qp.resource.SpectralNormError(error_value)
 
-        m_exact = qml.matrix(qml.QuantumPhaseEstimation(u_exact, estimation_wires=range(1, 3)))
-        m_apprx = qml.matrix(qml.QuantumPhaseEstimation(u_apprx, estimation_wires=range(1, 3)))
+        m_exact = qp.matrix(qp.QuantumPhaseEstimation(u_exact, estimation_wires=range(1, 3)))
+        m_apprx = qp.matrix(qp.QuantumPhaseEstimation(u_apprx, estimation_wires=range(1, 3)))
 
-        matrix_error = qml.math.max(qml.math.svd(m_exact - m_apprx, compute_uv=False))
+        matrix_error = qp.math.max(qp.math.svd(m_exact - m_apprx, compute_uv=False))
 
         operator = CustomOP(wires=[0])
-        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
+        qpe_error = qp.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
 
         assert np.allclose(qpe_error, matrix_error, atol=1e-4)
 
@@ -90,18 +90,18 @@ class TestError:
     def test_error_interfaces(self, operator_error, interface, expected_error):
         """Test that the error method works with all interfaces."""
 
-        class CustomOP(qml.resource.ErrorOperation):
+        class CustomOP(qp.resource.ErrorOperation):
             # pylint: disable=too-few-public-methods
             def error(self):
-                spectral_norm_error = qml.resource.SpectralNormError(
-                    qml.math.array(operator_error, like=interface)
+                spectral_norm_error = qp.resource.SpectralNormError(
+                    qp.math.array(operator_error, like=interface)
                 )
                 return spectral_norm_error
 
         operator = CustomOP(wires=[0])
-        qpe_error = qml.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
+        qpe_error = qp.QuantumPhaseEstimation(operator, estimation_wires=range(1, 3)).error().error
 
-        assert qml.math.get_interface(qpe_error) == interface
+        assert qp.math.get_interface(qpe_error) == interface
         assert np.allclose(qpe_error, expected_error)
 
 
@@ -111,34 +111,34 @@ class TestDecomposition:
     def test_expected_qscript(self):
         """Tests if QuantumPhaseEstimation populates the quantum script as expected for a fixed example"""
 
-        m = qml.RX(0.3, wires=0).matrix()
+        m = qp.RX(0.3, wires=0).matrix()
 
-        op = qml.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
-        qscript = qml.tape.QuantumScript(op.decomposition())
+        op = qp.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+        qscript = qp.tape.QuantumScript(op.decomposition())
 
-        unitary = qml.QubitUnitary(m, wires=[0])
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Hadamard(1)
-            qml.Hadamard(2)
-            qml.ctrl(qml.pow(unitary, 2), control=[1])
-            qml.ctrl(qml.pow(unitary, 1), control=[2])
-            qml.adjoint(qml.QFT(wires=[1, 2]))
-        qscript2 = qml.tape.QuantumScript.from_queue(q)
+        unitary = qp.QubitUnitary(m, wires=[0])
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.Hadamard(1)
+            qp.Hadamard(2)
+            qp.ctrl(qp.pow(unitary, 2), control=[1])
+            qp.ctrl(qp.pow(unitary, 1), control=[2])
+            qp.adjoint(qp.QFT(wires=[1, 2]))
+        qscript2 = qp.tape.QuantumScript.from_queue(q)
         assert len(qscript) == len(qscript2)
-        # qml.equal doesn't work for Adjoint or Pow op yet, so we stop before we get to it.
+        # qp.equal doesn't work for Adjoint or Pow op yet, so we stop before we get to it.
         for op1, op2 in zip(qscript[:2], qscript2[:2]):
-            qml.assert_equal(op1, op2)
+            qp.assert_equal(op1, op2)
 
-        qml.assert_equal(qscript[2].base.base, qscript2[2].base.base)
+        qp.assert_equal(qscript[2].base.base, qscript2[2].base.base)
         assert qscript[2].base.z, qscript2[2].base.z
         assert qscript[2].control_wires == qscript2[2].control_wires
 
-        qml.assert_equal(qscript[3].base.base, qscript2[3].base.base)
+        qp.assert_equal(qscript[3].base.base, qscript2[3].base.base)
         assert qscript[3].base.z == qscript2[3].base.z
         assert qscript[3].control_wires == qscript2[3].control_wires
 
-        assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)  # pylint: disable=no-member
-        qml.assert_equal(qscript[-1].base, qml.QFT(wires=(1, 2)))
+        assert isinstance(qscript[-1], qp.ops.op_math.Adjoint)  # pylint: disable=no-member
+        qp.assert_equal(qscript[-1].base, qp.QFT(wires=(1, 2)))
 
         assert np.allclose(qscript[1].matrix(), qscript[1].matrix())
         assert np.allclose(qscript[3].matrix(), qscript[3].matrix())
@@ -151,21 +151,21 @@ class TestDecomposition:
         wire_range = range(2, 10)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
-            m = qml.RX(phase, wires=0).matrix()
+            dev = qp.device("default.qubit", wires=wires)
+            m = qp.RX(phase, wires=0).matrix()
             target_wires = [0]
             estimation_wires = range(1, wires)
 
-            with qml.queuing.AnnotatedQueue() as q:
+            with qp.queuing.AnnotatedQueue() as q:
                 # We want to prepare an eigenstate of RX, in this case |+>
-                qml.Hadamard(wires=target_wires)
+                qp.Hadamard(wires=target_wires)
 
-                qml.QuantumPhaseEstimation(
+                qp.QuantumPhaseEstimation(
                     m, target_wires=target_wires, estimation_wires=estimation_wires
                 )
-                qml.probs(estimation_wires)
+                qp.probs(estimation_wires)
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tapes, _ = dev.preprocess_transforms()([tape])
             assert len(tapes) == 1
 
@@ -203,21 +203,21 @@ class TestDecomposition:
         wire_range = range(3, 11)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qp.device("default.qubit", wires=wires)
 
             target_wires = [0, 1]
             estimation_wires = range(2, wires)
 
-            with qml.queuing.AnnotatedQueue() as q:
+            with qp.queuing.AnnotatedQueue() as q:
                 # We want to prepare an eigenstate of RX, in this case |+>
-                qml.StatePrep(state, wires=target_wires)
+                qp.StatePrep(state, wires=target_wires)
 
-                qml.QuantumPhaseEstimation(
+                qp.QuantumPhaseEstimation(
                     unitary, target_wires=target_wires, estimation_wires=estimation_wires
                 )
-                qml.probs(estimation_wires)
+                qp.probs(estimation_wires)
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qp.tape.QuantumScript.from_queue(q)
             tapes, _ = dev.preprocess_transforms()([tape])
             assert len(tapes) == 1
             res = dev.execute(tapes)[0].flatten()
@@ -243,7 +243,7 @@ class TestDecomposition:
         """Tests that the QPE works correctly for a single operator"""
         # pylint: disable=cell-var-from-loop
 
-        unitary = qml.RX(param, wires=[0])
+        unitary = qp.RX(param, wires=[0])
 
         # Analytical eigenvectors and phase of the unitary
         eig_vec = np.array([-1 / np.sqrt(2), 1 / np.sqrt(2)])
@@ -253,17 +253,17 @@ class TestDecomposition:
         wire_range = range(3, 11)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qp.device("default.qubit", wires=wires)
 
             estimation_wires = range(1, wires - 1)
             target_wires = [0]
 
-            tape = qml.tape.QuantumScript(
+            tape = qp.tape.QuantumScript(
                 [
-                    qml.StatePrep(eig_vec, wires=target_wires),
-                    qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
+                    qp.StatePrep(eig_vec, wires=target_wires),
+                    qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
                 ],
-                [qml.probs(estimation_wires)],
+                [qp.probs(estimation_wires)],
             )
 
             tapes, _ = dev.preprocess_transforms()([tape])
@@ -287,7 +287,7 @@ class TestDecomposition:
         """Tests that the QPE works correctly for compound operators"""
         # pylint: disable=cell-var-from-loop
 
-        unitary = qml.RX(param, wires=[0]) @ qml.CNOT(wires=[0, 1])
+        unitary = qp.RX(param, wires=[0]) @ qp.CNOT(wires=[0, 1])
 
         # Analytical eigenvectors and phase of the unitary
         eig_vec = np.array([-1 / 2, -1 / 2, 1 / 2, 1 / 2])
@@ -297,18 +297,18 @@ class TestDecomposition:
         wire_range = range(3, 11)
 
         for wires in wire_range:
-            dev = qml.device("default.qubit", wires=wires)
+            dev = qp.device("default.qubit", wires=wires)
 
             # Offset the index of target wires to test the wire maÏp
             estimation_wires = range(2, wires)
             target_wires = [0, 1]
 
-            tape = qml.tape.QuantumScript(
+            tape = qp.tape.QuantumScript(
                 [
-                    qml.StatePrep(eig_vec, wires=target_wires),
-                    qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
+                    qp.StatePrep(eig_vec, wires=target_wires),
+                    qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
                 ],
-                [qml.probs(estimation_wires)],
+                [qp.probs(estimation_wires)],
             )
 
             tapes, _ = dev.preprocess_transforms()([tape])
@@ -336,29 +336,29 @@ class TestDecomposition:
             QuantumFunctionError,
             match="Target wires must be specified if the unitary is expressed as a matrix.",
         ):
-            qml.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
+            qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
 
-        unitary = qml.RX(3, wires=[0])
+        unitary = qp.RX(3, wires=[0])
         with pytest.raises(
             QuantumFunctionError,
             match="The unitary is expressed as an operator, which already has target wires "
             "defined, do not additionally specify target wires.",
         ):
-            qml.QuantumPhaseEstimation(unitary, target_wires=[1], estimation_wires=[2, 3])
+            qp.QuantumPhaseEstimation(unitary, target_wires=[1], estimation_wires=[2, 3])
 
         with pytest.raises(
             QuantumFunctionError,
             match="No estimation wires specified.",
         ):
-            qml.QuantumPhaseEstimation(unitary)
+            qp.QuantumPhaseEstimation(unitary)
 
     def test_map_wires(self):
         """Tests that QPE behaves correctly in a wire map"""
         # pylint: disable=protected-access
 
-        unitary = qml.RX(np.pi / 4, wires=[0]) @ qml.CNOT(wires=[0, 1])
-        qpe = qml.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
-        new_qpe = qml.map_wires(
+        unitary = qp.RX(np.pi / 4, wires=[0]) @ qp.CNOT(wires=[0, 1])
+        qpe = qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
+        new_qpe = qp.map_wires(
             qpe,
             wire_map={
                 0: 2,
@@ -375,29 +375,29 @@ class TestDecomposition:
 
     def test_adjoint(self):
         """Test that the QPE adjoint works."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qp.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def qpe_circuit():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.QuantumPhaseEstimation(
-                qml.PauliX.compute_matrix(),
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
+            qp.QuantumPhaseEstimation(
+                qp.PauliX.compute_matrix(),
                 target_wires=[0],
                 estimation_wires=[1, 2],
             )
 
-            qml.adjoint(qml.QuantumPhaseEstimation)(
-                qml.PauliX.compute_matrix(),
+            qp.adjoint(qp.QuantumPhaseEstimation)(
+                qp.PauliX.compute_matrix(),
                 target_wires=[0],
                 estimation_wires=[1, 2],
             )
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
 
-            return qml.state()
+            return qp.state()
 
-        assert qml.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
+        assert qp.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
 
     @pytest.mark.jax
     def test_jit(self):
@@ -406,25 +406,25 @@ class TestDecomposition:
 
         phase = 5
         target_wires = [0]
-        unitary = qml.RX(phase, wires=0).matrix()
+        unitary = qp.RX(phase, wires=0).matrix()
         n_estimation_wires = 5
         estimation_wires = range(1, n_estimation_wires + 1)
 
-        dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
+        dev = qp.device("default.qubit", wires=n_estimation_wires + 1)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(wires=target_wires)
+            qp.Hadamard(wires=target_wires)
 
-            qml.QuantumPhaseEstimation(
+            qp.QuantumPhaseEstimation(
                 unitary, target_wires=target_wires, estimation_wires=estimation_wires
             )
 
-            return qml.probs(estimation_wires)
+            return qp.probs(estimation_wires)
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.allclose(circuit(), jit_circuit())
+        assert qp.math.allclose(circuit(), jit_circuit())
 
 
 class TestInputs:
@@ -435,11 +435,11 @@ class TestInputs:
         common element"""
 
         with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
-            qml.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
+            qp.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.QuantumPhaseEstimation(
+        template = qp.QuantumPhaseEstimation(
             np.eye(4), target_wires=[0, 1], estimation_wires=[2, 3], id="a"
         )
         assert template.id == "a"

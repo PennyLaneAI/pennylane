@@ -22,13 +22,13 @@ import pennylane as qp
 
 def test_pass_positional_wires_to_observable():
     """Tests whether the ability to pass wires as positional argument is retained"""
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    obs = qml.Identity(0)
+    obs = qp.Identity(0)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        return qml.expval(obs)
+        return qp.expval(obs)
 
-    tape = qml.workflow.construct_tape(circuit)()
+    tape = qp.workflow.construct_tape(circuit)()
     assert obs in tape.observables

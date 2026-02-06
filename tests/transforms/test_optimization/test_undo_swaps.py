@@ -30,19 +30,19 @@ class TestUndoSwaps:
         """Test that the transform works on non-standard operations with nesting or hyperparameters."""
 
         ops = [
-            qml.adjoint(qml.S(0)),
-            qml.PauliRot(1.2, "XY", wires=(0, 2)),
-            qml.ctrl(qml.PauliX(0), [2, 3], control_values=[0, 0]),
-            qml.SWAP((0, 1)),
+            qp.adjoint(qp.S(0)),
+            qp.PauliRot(1.2, "XY", wires=(0, 2)),
+            qp.ctrl(qp.PauliX(0), [2, 3], control_values=[0, 0]),
+            qp.SWAP((0, 1)),
         ]
 
-        tape = qml.tape.QuantumScript(ops, [qml.state()], shots=100)
-        batch, fn = qml.transforms.undo_swaps(tape)
+        tape = qp.tape.QuantumScript(ops, [qp.state()], shots=100)
+        batch, fn = qp.transforms.undo_swaps(tape)
 
         expected_ops = [
-            qml.adjoint(qml.S(1)),
-            qml.PauliRot(1.2, "XY", wires=(1, 2)),
-            qml.ctrl(qml.PauliX(1), [2, 3], control_values=[0, 0]),
+            qp.adjoint(qp.S(1)),
+            qp.PauliRot(1.2, "XY", wires=(1, 2)),
+            qp.ctrl(qp.PauliX(1), [2, 3], control_values=[0, 0]),
         ]
         assert len(batch) == 1
         assert batch[0].shots == tape.shots
@@ -56,27 +56,27 @@ class TestUndoSwaps:
         """Test that a single-qubit gate changes correctly with a SWAP."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.SWAP(wires=[0, 1])
-            return qml.probs(1)
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
+            qp.SWAP(wires=[0, 1])
+            return qp.probs(1)
 
         transformed_qfunc = undo_swaps(qfunc)
 
-        tape = qml.tape.make_qscript(transformed_qfunc)()
-        res = qml.device("default.qubit", wires=2).execute(tape)
+        tape = qp.tape.make_qscript(transformed_qfunc)()
+        res = qp.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
         assert np.allclose(res[0], 0.5)
 
     def test_one_qubit_gates_transform_qnode(self):
         """Test that a single-qubit gate changes correctly with a SWAP."""
 
-        @qml.qnode(device=dev)
+        @qp.qnode(device=dev)
         def circuit():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.SWAP(wires=[0, 1])
-            return qml.probs(1)
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
+            qp.SWAP(wires=[0, 1])
+            return qp.probs(1)
 
         transformed_qnode = undo_swaps(circuit)
         res = transformed_qnode()
@@ -86,15 +86,15 @@ class TestUndoSwaps:
         """Test that a two-qubit gate changes correctly with a SWAP."""
 
         def qfunc():
-            qml.PauliX(wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.SWAP(wires=[0, 1])
-            return qml.state()
+            qp.PauliX(wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.SWAP(wires=[0, 1])
+            return qp.state()
 
         transformed_qfunc = undo_swaps(qfunc)
 
-        tape = qml.tape.make_qscript(transformed_qfunc)()
-        res = qml.device("default.qubit", wires=2).execute(tape)
+        tape = qp.tape.make_qscript(transformed_qfunc)()
+        res = qp.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
         assert np.allclose(res[2], 1.0)
 
@@ -102,25 +102,25 @@ class TestUndoSwaps:
         """Test that a template changes correctly with a SWAP."""
 
         def qfunc1():
-            qml.RX(2, wires=0)
-            qml.RY(-3, wires=1)
-            qml.QFT(wires=[0, 1, 2])
-            qml.SWAP(wires=[1, 2])
-            return qml.state()
+            qp.RX(2, wires=0)
+            qp.RY(-3, wires=1)
+            qp.QFT(wires=[0, 1, 2])
+            qp.SWAP(wires=[1, 2])
+            return qp.state()
 
         def qfunc2():
-            qml.RX(2, wires=0)
-            qml.RY(-3, wires=2)
-            qml.QFT(wires=[0, 2, 1])
-            return qml.state()
+            qp.RX(2, wires=0)
+            qp.RY(-3, wires=2)
+            qp.QFT(wires=[0, 2, 1])
+            return qp.state()
 
         transformed_qfunc = undo_swaps(qfunc1)
 
-        tape1 = qml.tape.make_qscript(transformed_qfunc)()
-        res1 = qml.device("default.qubit", wires=3).execute(tape1)
+        tape1 = qp.tape.make_qscript(transformed_qfunc)()
+        res1 = qp.device("default.qubit", wires=3).execute(tape1)
 
-        tape2 = qml.tape.make_qscript(qfunc2)()
-        res2 = qml.device("default.qubit", wires=3).execute(tape2)
+        tape2 = qp.tape.make_qscript(qfunc2)()
+        res2 = qp.device("default.qubit", wires=3).execute(tape2)
 
         assert np.allclose(res1, res2)
 
@@ -128,26 +128,26 @@ class TestUndoSwaps:
         """Test that transform works with several SWAPs."""
 
         def qfunc1():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.SWAP(wires=[0, 1])
-            qml.SWAP(wires=[0, 2])
-            qml.PauliY(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
+            qp.SWAP(wires=[0, 1])
+            qp.SWAP(wires=[0, 2])
+            qp.PauliY(wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         def qfunc2():
-            qml.Hadamard(wires=1)
-            qml.PauliX(wires=2)
-            qml.PauliY(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=1)
+            qp.PauliX(wires=2)
+            qp.PauliY(wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         transformed_qfunc = undo_swaps(qfunc1)
 
-        tape1 = qml.tape.make_qscript(transformed_qfunc)()
-        res1 = qml.device("default.qubit", wires=3).execute(tape1)
+        tape1 = qp.tape.make_qscript(transformed_qfunc)()
+        res1 = qp.device("default.qubit", wires=3).execute(tape1)
 
-        tape2 = qml.tape.make_qscript(qfunc2)()
-        res2 = qml.device("default.qubit", wires=3).execute(tape2)
+        tape2 = qp.tape.make_qscript(qfunc2)()
+        res2 = qp.device("default.qubit", wires=3).execute(tape2)
 
         assert np.allclose(res1, res2)
 
@@ -157,32 +157,32 @@ class TestUndoSwaps:
         spy = mocker.spy(dev, "execute")
 
         @undo_swaps
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.SWAP(wires=[0, 1])
-            qml.SWAP(wires=[0, 2])
-            qml.PauliY(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
+            qp.SWAP(wires=[0, 1])
+            qp.SWAP(wires=[0, 2])
+            qp.PauliY(wires=0)
+            return qp.expval(qp.PauliZ(0))
 
         assert np.allclose(qfunc(), -1)
         [[tape]], _ = spy.call_args
-        assert tape.operations == [qml.Hadamard(1), qml.PauliX(2), qml.PauliY(0)]
+        assert tape.operations == [qp.Hadamard(1), qp.PauliX(2), qp.PauliY(0)]
 
 
 # Example QNode and device for interface testing
-dev = qml.device("default.qubit", wires=3)
+dev = qp.device("default.qubit", wires=3)
 
 
 # Test each of single-qubit, two-qubit, and Rot gates
 def qfunc_all_ops(theta):
-    qml.Hadamard(wires=0)
-    qml.RX(theta[0], wires=1)
-    qml.SWAP(wires=[0, 1])
-    qml.SWAP(wires=[0, 2])
-    qml.RY(theta[1], wires=0)
-    return qml.expval(qml.PauliZ(0))
+    qp.Hadamard(wires=0)
+    qp.RX(theta[0], wires=1)
+    qp.SWAP(wires=[0, 1])
+    qp.SWAP(wires=[0, 2])
+    qp.RY(theta[1], wires=0)
+    return qp.expval(qp.PauliZ(0))
 
 
 transformed_qfunc_all_ops = undo_swaps(qfunc_all_ops)
@@ -202,21 +202,21 @@ class TestUndoSwapsInterfaces:
     def test_undo_swaps_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+        assert qp.math.allclose(original_qnode(input), transformed_qnode(input))
 
         # Check that the gradient is the same
-        assert qml.math.allclose(
-            qml.grad(original_qnode)(input), qml.grad(transformed_qnode)(input)
+        assert qp.math.allclose(
+            qp.grad(original_qnode)(input), qp.grad(transformed_qnode)(input)
         )
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(input)
         compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
@@ -224,8 +224,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([0.1, 0.2], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -234,16 +234,16 @@ class TestUndoSwapsInterfaces:
         transformed_result = transformed_qnode(transformed_input)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_result, transformed_result.detach().numpy())
+        assert qp.math.allclose(original_result, transformed_result.detach().numpy())
 
         # Check that the gradient is the same
         original_result.backward()
         transformed_result.backward()
 
-        assert qml.math.allclose(original_input.grad, transformed_input.grad)
+        assert qp.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)
         compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
@@ -251,8 +251,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.1, 0.2])
         transformed_input = tf.Variable([0.1, 0.2])
@@ -261,7 +261,7 @@ class TestUndoSwapsInterfaces:
         transformed_result = transformed_qnode(transformed_input)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_result, transformed_result)
+        assert qp.math.allclose(original_result, transformed_result)
 
         # Check that the gradient is the same
         with tf.GradientTape() as tape:
@@ -272,10 +272,10 @@ class TestUndoSwapsInterfaces:
             loss = transformed_qnode(transformed_input)
         transformed_grad = tape.gradient(loss, transformed_input)
 
-        assert qml.math.allclose(original_grad, transformed_grad)
+        assert qp.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)
         compare_operation_lists(tape.operations, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -284,20 +284,20 @@ class TestUndoSwapsInterfaces:
         import jax
         from jax import numpy as jnp
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.1, 0.2], dtype=jnp.float64)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+        assert qp.math.allclose(original_qnode(input), transformed_qnode(input))
 
         # Check that the gradient is the same
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
         )
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(input)
         ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)

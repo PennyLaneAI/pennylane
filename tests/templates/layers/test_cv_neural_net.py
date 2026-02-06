@@ -75,8 +75,8 @@ class TestDecomposition:
         shapes = expected_shapes(1, n_wires)
         weights = [np.random.random(shape) for shape in shapes]
 
-        op = qml.CVNeuralNetLayers(*weights, wires=range(n_wires))
-        tape = qml.tape.QuantumScript(op.decomposition())
+        op = qp.CVNeuralNetLayers(*weights, wires=range(n_wires))
+        tape = qp.tape.QuantumScript(op.decomposition())
 
         i = 0
         for gate in tape.operations:
@@ -98,15 +98,15 @@ class TestDecomposition:
         dev = DummyDevice(wires=3)
         dev2 = DummyDevice(wires=["z", "a", "k"])
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.CVNeuralNetLayers(*weights, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            qp.CVNeuralNetLayers(*weights, wires=range(3))
+            return qp.expval(qp.Identity(0))
 
-        @qml.qnode(dev2)
+        @qp.qnode(dev2)
         def circuit2():
-            qml.CVNeuralNetLayers(*weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            qp.CVNeuralNetLayers(*weights, wires=["z", "a", "k"])
+            return qp.expval(qp.Identity("z"))
 
         circuit()
         circuit2()
@@ -126,10 +126,10 @@ class TestInputs:
 
         dev = DummyDevice(wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.CVNeuralNetLayers(*weights, wires=range(2))
-            return qml.expval(qml.QuadX(0))
+            qp.CVNeuralNetLayers(*weights, wires=range(2))
+            return qp.expval(qp.QuadX(0))
 
         with pytest.raises(ValueError, match="The first dimension of all parameters"):
             circuit()
@@ -142,10 +142,10 @@ class TestInputs:
 
         dev = DummyDevice(wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.CVNeuralNetLayers(*weights, wires=range(2))
-            return qml.expval(qml.QuadX(0))
+            qp.CVNeuralNetLayers(*weights, wires=range(2))
+            return qp.expval(qp.QuadX(0))
 
         with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
             circuit()
@@ -155,7 +155,7 @@ class TestInputs:
         shapes = expected_shapes(1, 2)
         weights = [np.random.random(shape) for shape in shapes]
 
-        template = qml.CVNeuralNetLayers(*weights, wires=range(2), id="a")
+        template = qp.CVNeuralNetLayers(*weights, wires=range(2), id="a")
         assert template.id == "a"
 
 
@@ -174,52 +174,52 @@ class TestAttributes:
         """Test that the shape method returns the correct shapes for
         the weight tensors"""
 
-        shapes = qml.CVNeuralNetLayers.shape(n_layers, n_wires)
+        shapes = qp.CVNeuralNetLayers.shape(n_layers, n_wires)
         expected = expected_shapes(n_layers, n_wires)
 
         assert np.allclose(shapes, expected, atol=tol, rtol=0)
 
 
 def circuit_template(*weights):
-    qml.CVNeuralNetLayers(*weights, range(2))
-    return qml.expval(qml.QuadX(0))
+    qp.CVNeuralNetLayers(*weights, range(2))
+    return qp.expval(qp.QuadX(0))
 
 
 def circuit_decomposed(*weights):
     # Interferometer (replace with operation once this template is refactored)
-    qml.Beamsplitter(weights[0][0, 0], weights[1][0, 0], wires=[0, 1])
-    qml.Rotation(weights[2][0, 0], wires=0)
-    qml.Rotation(weights[2][0, 1], wires=1)
+    qp.Beamsplitter(weights[0][0, 0], weights[1][0, 0], wires=[0, 1])
+    qp.Rotation(weights[2][0, 0], wires=0)
+    qp.Rotation(weights[2][0, 1], wires=1)
 
-    qml.Squeezing(weights[3][0, 0], weights[4][0, 0], wires=0)
-    qml.Squeezing(weights[3][0, 1], weights[4][0, 1], wires=1)
+    qp.Squeezing(weights[3][0, 0], weights[4][0, 0], wires=0)
+    qp.Squeezing(weights[3][0, 1], weights[4][0, 1], wires=1)
 
     # Interferometer
-    qml.Beamsplitter(weights[5][0, 0], weights[6][0, 0], wires=[0, 1])
-    qml.Rotation(weights[7][0, 0], wires=0)
-    qml.Rotation(weights[7][0, 1], wires=1)
+    qp.Beamsplitter(weights[5][0, 0], weights[6][0, 0], wires=[0, 1])
+    qp.Rotation(weights[7][0, 0], wires=0)
+    qp.Rotation(weights[7][0, 1], wires=1)
 
-    qml.Displacement(weights[8][0, 0], weights[9][0, 0], wires=0)
-    qml.Displacement(weights[8][0, 1], weights[9][0, 1], wires=1)
-    qml.Kerr(weights[10][0, 0], wires=0)
-    qml.Kerr(weights[10][0, 1], wires=1)
-    return qml.expval(qml.QuadX(0))
+    qp.Displacement(weights[8][0, 0], weights[9][0, 0], wires=0)
+    qp.Displacement(weights[8][0, 1], weights[9][0, 1], wires=1)
+    qp.Kerr(weights[10][0, 0], wires=0)
+    qp.Kerr(weights[10][0, 1], wires=1)
+    return qp.expval(qp.QuadX(0))
 
 
 def test_adjoint():
     """Test that the adjoint method works"""
     dev = DummyDevice(wires=2)
 
-    shapes = qml.CVNeuralNetLayers.shape(n_layers=1, n_wires=2)
+    shapes = qp.CVNeuralNetLayers.shape(n_layers=1, n_wires=2)
     weights = [np.random.random(shape) for shape in shapes]
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.CVNeuralNetLayers(*weights, wires=[0, 1])
-        qml.adjoint(qml.CVNeuralNetLayers)(*weights, wires=[0, 1])
-        return qml.expval(qml.QuadX(0))
+        qp.CVNeuralNetLayers(*weights, wires=[0, 1])
+        qp.adjoint(qp.CVNeuralNetLayers)(*weights, wires=[0, 1])
+        return qp.expval(qp.QuadX(0))
 
-    assert qml.math.allclose(circuit(), 0)
+    assert qp.math.allclose(circuit(), 0)
 
 
 class TestInterfaces:
@@ -234,17 +234,17 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         weights_tuple = tuple(w for w in weights)
         res = circuit(*weights_tuple)
         res2 = circuit2(*weights_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd(self, tol):
@@ -256,17 +256,17 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qp.grad(circuit)
         grads = grad_fn(*weights)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qp.grad(circuit2)
         grads2 = grad_fn2(*weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -284,12 +284,12 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(*weights)
@@ -312,12 +312,12 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qp.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(*weights)
@@ -325,7 +325,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(*weights)
 
-        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
@@ -339,12 +339,12 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         with tf.GradientTape() as tape:
             res = circuit(*weights)
@@ -368,12 +368,12 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit = qp.QNode(circuit_template, dev)
+        circuit2 = qp.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(*weights)
         res.backward()

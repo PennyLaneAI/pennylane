@@ -26,25 +26,25 @@ from pennylane.decomposition.utils import translate_op_alias
 def test_toggle_graph_decomposition():
     """Test the toggling of the graph-based decomposition system."""
 
-    assert not qml.decomposition.enabled_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
-    qml.decomposition.enable_graph()
-    assert qml.decomposition.enabled_graph()
+    qp.decomposition.enable_graph()
+    assert qp.decomposition.enabled_graph()
 
-    qml.decomposition.disable_graph()
-    assert not qml.decomposition.enabled_graph()
+    qp.decomposition.disable_graph()
+    assert not qp.decomposition.enabled_graph()
 
 
 @pytest.mark.unit

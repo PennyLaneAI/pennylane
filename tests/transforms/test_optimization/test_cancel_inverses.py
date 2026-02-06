@@ -35,12 +35,12 @@ class TestCancelInverses:
         """Test that a single-qubit circuit with adjacent self-inverse gate cancels."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.tape.make_qscript(transformed_qfunc)()
+        new_tape = qp.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -48,12 +48,12 @@ class TestCancelInverses:
         """Test that a single-qubit circuit with adjacent adjoint gate cancels."""
 
         def qfunc():
-            qml.S(wires=0)
-            qml.adjoint(qml.S)(wires=0)
+            qp.S(wires=0)
+            qp.adjoint(qp.S)(wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.tape.make_qscript(transformed_qfunc)()
+        new_tape = qp.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -61,12 +61,12 @@ class TestCancelInverses:
         """Test that a single-qubit circuit with adjacent adjoint gate cancels."""
 
         def qfunc():
-            qml.adjoint(qml.S)(wires=0)
-            qml.S(wires=0)
+            qp.adjoint(qp.S)(wires=0)
+            qp.S(wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.tape.make_qscript(transformed_qfunc)()
+        new_tape = qp.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -74,13 +74,13 @@ class TestCancelInverses:
         """Test that a one-qubit circuit with a gate in the way does not cancel the inverses."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.RZ(0.3, wires=0)
-            qml.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+            qp.RZ(0.3, wires=0)
+            qp.Hadamard(wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "RZ", "Hadamard"]
         wires_expected = [Wires(0)] * 3
@@ -90,12 +90,12 @@ class TestCancelInverses:
         """Test that a two-qubit circuit self-inverse on each qubit does not cancel."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=1)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard"] * 2
         wires_expected = [Wires(0), Wires(1)]
@@ -105,15 +105,15 @@ class TestCancelInverses:
         """Test that a three-qubit circuit with a CNOT still allows cancellation."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.CNOT(wires=[0, 2])
-            qml.RZ(0.5, wires=2)
-            qml.PauliX(wires=1)
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
+            qp.CNOT(wires=[0, 2])
+            qp.RZ(0.5, wires=2)
+            qp.PauliX(wires=1)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "CNOT", "RZ"]
         wires_expected = [Wires(0), Wires([0, 2]), Wires(2)]
@@ -123,15 +123,15 @@ class TestCancelInverses:
         """Test that a three-qubit circuit with a blocking CNOT causes no cancellation."""
 
         def qfunc():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.5, wires=2)
-            qml.PauliX(wires=1)
+            qp.Hadamard(wires=0)
+            qp.PauliX(wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RZ(0.5, wires=2)
+            qp.PauliX(wires=1)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "PauliX", "CNOT", "RZ", "PauliX"]
         wires_expected = [Wires(0), Wires(1), Wires([0, 1]), Wires(2), Wires(1)]
@@ -141,11 +141,11 @@ class TestCancelInverses:
         """Test that different operations do not cancel."""
 
         def qfunc():
-            qml.RX(0.1, wires=0)
-            qml.adjoint(qml.RX)(0.2, wires=0)
+            qp.RX(0.1, wires=0)
+            qp.adjoint(qp.RX)(0.2, wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["RX", "Adjoint(RX)"]
         wires_expected = [Wires(0), Wires(0)]
@@ -156,16 +156,16 @@ class TestCancelInverses:
 
         def qfunc():
             # These two will cancel
-            qml.Toffoli(wires=["a", "b", "c"])
-            qml.Toffoli(wires=["b", "a", "c"])
+            qp.Toffoli(wires=["a", "b", "c"])
+            qp.Toffoli(wires=["b", "a", "c"])
             # These three will not cancel
-            qml.Toffoli(wires=["a", "b", "c"])
-            qml.Toffoli(wires=["a", "c", "b"])
-            qml.Toffoli(wires=["a", "c", "d"])
+            qp.Toffoli(wires=["a", "b", "c"])
+            qp.Toffoli(wires=["a", "c", "b"])
+            qp.Toffoli(wires=["a", "c", "d"])
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Toffoli"] * 3
         wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"]), Wires(["a", "c", "d"])]
@@ -175,12 +175,12 @@ class TestCancelInverses:
         """Test that two adjacent CNOTs cancel."""
 
         def qfunc():
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[0, 1])
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 0
 
@@ -188,12 +188,12 @@ class TestCancelInverses:
         """Test that two adjacent CNOTs with the control/target flipped do NOT cancel."""
 
         def qfunc():
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 0])
+            qp.CNOT(wires=[0, 1])
+            qp.CNOT(wires=[1, 0])
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CNOT"] * 2
         wires_expected = [Wires([0, 1]), Wires([1, 0])]
@@ -203,12 +203,12 @@ class TestCancelInverses:
         """Test that two adjacent CZ with the control/target flipped do cancel due to symmetry."""
 
         def qfunc():
-            qml.CZ(wires=[0, 1])
-            qml.CZ(wires=[1, 0])
+            qp.CZ(wires=[0, 1])
+            qp.CZ(wires=[1, 0])
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 0
 
@@ -218,17 +218,17 @@ class TestCancelInverses:
 
         def qfunc():
             if wrapped:
-                qml.X(0)
-            qml.S(0)
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.adjoint(qml.S(0))
+                qp.X(0)
+            qp.S(0)
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+            qp.adjoint(qp.S(0))
             if wrapped:
-                qml.Y(0)
+                qp.Y(0)
 
         transformed_qfunc = cancel_inverses(qfunc, recursive=False)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         if wrapped:
             names_expected = ["PauliX", "S", "Adjoint(S)", "PauliY"]
@@ -244,17 +244,17 @@ class TestCancelInverses:
 
         def qfunc():
             if wrapped:
-                qml.X(0)
-            qml.S(0)
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.adjoint(qml.S(0))
+                qp.X(0)
+            qp.S(0)
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+            qp.adjoint(qp.S(0))
             if wrapped:
-                qml.Y(0)
+                qp.Y(0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         if wrapped:
             names_expected = ["PauliX", "PauliY"]
@@ -270,12 +270,12 @@ class TestCancelInverses:
         def qfunc():
             xs = np.arange(500)
             for x in xs:
-                qml.RX(x, 0)
+                qp.RX(x, 0)
             for x in xs[::-1]:
-                qml.adjoint(qml.RX(x, 0))
+                qp.adjoint(qp.RX(x, 0))
 
         transformed_qfunc = cancel_inverses(qfunc)
-        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = []
         wires_expected = []
@@ -287,15 +287,15 @@ class TestCancelInverses:
 
         def qfunc(x):
             if adjoint_first:
-                qml.adjoint(qml.MultiRZ(x, [2, 0, 1]))
-                qml.MultiRZ(x, [0, 1, 2])
+                qp.adjoint(qp.MultiRZ(x, [2, 0, 1]))
+                qp.MultiRZ(x, [0, 1, 2])
             else:
-                qml.MultiRZ(x, [2, 0, 1])
-                qml.adjoint(qml.MultiRZ(x, [0, 1, 2]))
+                qp.MultiRZ(x, [2, 0, 1])
+                qp.adjoint(qp.MultiRZ(x, [0, 1, 2]))
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.tape.make_qscript(transformed_qfunc)(1.5).operations
+        ops = qp.tape.make_qscript(transformed_qfunc)(1.5).operations
 
         names_expected = []
         wires_expected = []
@@ -303,23 +303,23 @@ class TestCancelInverses:
 
 
 # Example QNode and device for interface testing
-dev = qml.device("default.qubit", wires=3)
+dev = qp.device("default.qubit", wires=3)
 
 
 def qfunc_all_ops(theta):
     """Qfunc with ops."""
-    qml.Hadamard(wires=0)
-    qml.PauliX(wires=1)
-    qml.S(wires=1)
-    qml.adjoint(qml.S)(wires=1)
-    qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.RZ(theta[0], wires=2)
-    qml.PauliX(wires=1)
-    qml.CZ(wires=[1, 0])
-    qml.RY(theta[1], wires=2)
-    qml.CZ(wires=[0, 1])
-    return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+    qp.Hadamard(wires=0)
+    qp.PauliX(wires=1)
+    qp.S(wires=1)
+    qp.adjoint(qp.S)(wires=1)
+    qp.Hadamard(wires=0)
+    qp.CNOT(wires=[0, 1])
+    qp.RZ(theta[0], wires=2)
+    qp.PauliX(wires=1)
+    qp.CZ(wires=[1, 0])
+    qp.RY(theta[1], wires=2)
+    qp.CZ(wires=[0, 1])
+    return qp.expval(qp.PauliX(0) @ qp.PauliX(2))
 
 
 transformed_qfunc_all_ops = cancel_inverses(qfunc_all_ops)
@@ -335,21 +335,21 @@ class TestCancelInversesInterfaces:
     def test_cancel_inverses_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+        assert qp.math.allclose(original_qnode(input), transformed_qnode(input))
 
         # Check that the gradient is the same
-        assert qml.math.allclose(
-            qml.grad(original_qnode)(input), qml.grad(transformed_qnode)(input)
+        assert qp.math.allclose(
+            qp.grad(original_qnode)(input), qp.grad(transformed_qnode)(input)
         )
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(input)
         ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
@@ -358,8 +358,8 @@ class TestCancelInversesInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([0.1, 0.2], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -368,16 +368,16 @@ class TestCancelInversesInterfaces:
         transformed_result = transformed_qnode(transformed_input)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_result, transformed_result)
+        assert qp.math.allclose(original_result, transformed_result)
 
         # Check that the gradient is the same
         original_result.backward()
         transformed_result.backward()
 
-        assert qml.math.allclose(original_input.grad, transformed_input.grad)
+        assert qp.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)
         ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
@@ -386,8 +386,8 @@ class TestCancelInversesInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.1, 0.2])
         transformed_input = tf.Variable([0.1, 0.2])
@@ -396,7 +396,7 @@ class TestCancelInversesInterfaces:
         transformed_result = transformed_qnode(transformed_input)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_result, transformed_result)
+        assert qp.math.allclose(original_result, transformed_result)
 
         # Check that the gradient is the same
         with tf.GradientTape() as tape:
@@ -407,10 +407,10 @@ class TestCancelInversesInterfaces:
             loss = transformed_qnode(transformed_input)
         transformed_grad = tape.gradient(loss, transformed_input)
 
-        assert qml.math.allclose(original_grad, transformed_grad)
+        assert qp.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)
         ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
@@ -420,21 +420,21 @@ class TestCancelInversesInterfaces:
         import jax
         from jax import numpy as jnp
 
-        original_qnode = qml.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
+        original_qnode = qp.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.1, 0.2], dtype=jnp.float64)
 
         # Check that the numerical output is the same
-        assert qml.math.allclose(original_qnode(input), transformed_qnode(input))
+        assert qp.math.allclose(original_qnode(input), transformed_qnode(input))
 
         # Check that the gradient is the same
-        assert qml.math.allclose(
+        assert qp.math.allclose(
             jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
         )
 
         # Check operation list
-        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        tape = qp.workflow.construct_tape(transformed_qnode)(input)
         ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
@@ -445,14 +445,14 @@ class TestCancelInversesInterfaces:
 
         @jax.jit
         @cancel_inverses
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(x):
-            qml.adjoint(qml.RX(x + 0.0, 0))
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
+            qp.adjoint(qp.RX(x + 0.0, 0))
+            qp.RX(x, 0)
+            return qp.expval(qp.Z(0))
 
         res = circuit(jax.numpy.array(0))
-        qml.math.allclose(res, 1.0)
+        qp.math.allclose(res, 1.0)
 
     @pytest.mark.jax
     def test_cancel_inverses_abstract_wires(self):
@@ -462,13 +462,13 @@ class TestCancelInversesInterfaces:
 
         @jax.jit
         def f(w):
-            tape = qml.tape.QuantumScript([qml.H(0), qml.CNOT([w, 1]), qml.H(0)])
+            tape = qp.tape.QuantumScript([qp.H(0), qp.CNOT([w, 1]), qp.H(0)])
             [tape], _ = cancel_inverses(tape)
             return len(tape.operations)
 
         @jax.jit
         def f2(w):
-            tape = qml.tape.QuantumScript([qml.X(0), qml.X(0), qml.CNOT([w, 1])])
+            tape = qp.tape.QuantumScript([qp.X(0), qp.X(0), qp.CNOT([w, 1])])
             [tape], _ = cancel_inverses(tape)
             return len(tape.operations)
 
@@ -477,57 +477,57 @@ class TestCancelInversesInterfaces:
 
 
 ### Tape
-with qml.queuing.AnnotatedQueue() as q:
-    qml.Hadamard(wires=0)
-    qml.PauliX(wires=1)
-    qml.S(wires=1)
-    qml.adjoint(qml.S)(wires=1)
-    qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.RZ(0.1, wires=2)
-    qml.PauliX(wires=1)
-    qml.CZ(wires=[1, 0])
-    qml.RY(0.2, wires=2)
-    qml.CZ(wires=[0, 1])
-    qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+with qp.queuing.AnnotatedQueue() as q:
+    qp.Hadamard(wires=0)
+    qp.PauliX(wires=1)
+    qp.S(wires=1)
+    qp.adjoint(qp.S)(wires=1)
+    qp.Hadamard(wires=0)
+    qp.CNOT(wires=[0, 1])
+    qp.RZ(0.1, wires=2)
+    qp.PauliX(wires=1)
+    qp.CZ(wires=[1, 0])
+    qp.RY(0.2, wires=2)
+    qp.CZ(wires=[0, 1])
+    qp.expval(qp.PauliX(0) @ qp.PauliX(2))
 
-tape_circuit = qml.tape.QuantumTape.from_queue(q)
+tape_circuit = qp.tape.QuantumTape.from_queue(q)
 
 
 ### QFunc
 def qfunc_circuit(theta):
     """Qfunc circuit"""
-    qml.Hadamard(wires=0)
-    qml.PauliX(wires=1)
-    qml.S(wires=1)
-    qml.adjoint(qml.S)(wires=1)
-    qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.RZ(theta[0], wires=2)
-    qml.PauliX(wires=1)
-    qml.CZ(wires=[1, 0])
-    qml.RY(theta[1], wires=2)
-    qml.CZ(wires=[0, 1])
+    qp.Hadamard(wires=0)
+    qp.PauliX(wires=1)
+    qp.S(wires=1)
+    qp.adjoint(qp.S)(wires=1)
+    qp.Hadamard(wires=0)
+    qp.CNOT(wires=[0, 1])
+    qp.RZ(theta[0], wires=2)
+    qp.PauliX(wires=1)
+    qp.CZ(wires=[1, 0])
+    qp.RY(theta[1], wires=2)
+    qp.CZ(wires=[0, 1])
 
 
 ### QNode
-dev = qml.devices.DefaultQubit()
+dev = qp.devices.DefaultQubit()
 
 
-@qml.qnode(device=dev)
+@qp.qnode(device=dev)
 def qnode_circuit(theta):
-    qml.Hadamard(wires=0)
-    qml.PauliX(wires=1)
-    qml.S(wires=1)
-    qml.adjoint(qml.S)(wires=1)
-    qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    qml.RZ(theta[0], wires=2)
-    qml.PauliX(wires=1)
-    qml.CZ(wires=[1, 0])
-    qml.RY(theta[1], wires=2)
-    qml.CZ(wires=[0, 1])
-    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+    qp.Hadamard(wires=0)
+    qp.PauliX(wires=1)
+    qp.S(wires=1)
+    qp.adjoint(qp.S)(wires=1)
+    qp.Hadamard(wires=0)
+    qp.CNOT(wires=[0, 1])
+    qp.RZ(theta[0], wires=2)
+    qp.PauliX(wires=1)
+    qp.CZ(wires=[1, 0])
+    qp.RY(theta[1], wires=2)
+    qp.CZ(wires=[0, 1])
+    return qp.expval(qp.PauliZ(0) @ qp.PauliZ(2))
 
 
 class TestTransformDispatch:
@@ -543,12 +543,12 @@ class TestTransformDispatch:
     def test_qfunc(self):
         """Test the transform on a qfunc inside a qnode."""
 
-        @qml.qnode(device=dev)
+        @qp.qnode(device=dev)
         def new_circuit(a):
             cancel_inverses(qfunc_circuit)(a)
-            return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+            return qp.expval(qp.PauliX(0) @ qp.PauliX(2))
 
-        tape = qml.workflow.construct_tape(new_circuit)([0.1, 0.2])
+        tape = qp.workflow.construct_tape(new_circuit)([0.1, 0.2])
         assert len(tape.operations) == 5
 
     def test_qnode(self):

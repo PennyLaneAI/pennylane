@@ -291,12 +291,12 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
     s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
     n = 4
     wires = range(n)
-    dev = qml.device("default.qubit", wires=n)
+    dev = qp.device("default.qubit", wires=n)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(weights):
         UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=np.array([1, 1, 0, 0]))
-        return [qml.expval(qml.PauliZ(w)) for w in range(n)]
+        return [qp.expval(qp.PauliZ(w)) for w in range(n)]
 
     res = circuit(weights)
     assert np.allclose(res, np.array(expected))
@@ -346,7 +346,7 @@ def test_hf_state(electrons, orbitals, basis, exp_state):
 def test_hf_state_basis(electrons, symbols, geometry, charge):
     r"""Test the correctness of the generated HF state in a circuit."""
 
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    mol = qp.qchem.Molecule(symbols, geometry, charge)
     h_ferm = qchem.fermionic_hamiltonian(mol)()
     qubits = len(h_ferm.wires)
 
@@ -354,16 +354,16 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
     state_parity = qchem.hf_state(electrons, qubits, basis="parity")
     state_bk = qchem.hf_state(electrons, qubits, basis="bravyi_kitaev")
 
-    h_occ = qml.jordan_wigner(h_ferm, ps=True, tol=1e-16).operation()
-    h_parity = qml.parity_transform(h_ferm, qubits, ps=True, tol=1e-16).operation()
-    h_bk = qml.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16).operation()
+    h_occ = qp.jordan_wigner(h_ferm, ps=True, tol=1e-16).operation()
+    h_parity = qp.parity_transform(h_ferm, qubits, ps=True, tol=1e-16).operation()
+    h_bk = qp.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16).operation()
 
-    dev = qml.device("default.qubit", wires=qubits)
+    dev = qp.device("default.qubit", wires=qubits)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(hf_state, h):
-        qml.BasisState(hf_state, wires=range(qubits))
-        return qml.expval(h)
+        qp.BasisState(hf_state, wires=range(qubits))
+        return qp.expval(h)
 
     assert circuit(state_occ, h_occ) == circuit(state_parity, h_parity)
     assert circuit(state_occ, h_occ) == circuit(state_bk, h_bk)

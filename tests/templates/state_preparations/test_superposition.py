@@ -121,8 +121,8 @@ def test_standard_validity():
         [[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]]
     )
 
-    op = qml.Superposition(coeffs, bases=bases, wires=range(5), work_wire=5)
-    qml.ops.functions.assert_valid(op)
+    op = qp.Superposition(coeffs, bases=bases, wires=range(5), work_wire=5)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestSuperposition:
@@ -133,14 +133,14 @@ class TestSuperposition:
     def test_correct_output(self, probs, bases):
         """Test the correct output of the Superposition template."""
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Superposition(
+            qp.Superposition(
                 np.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(bases[0])))
+            return qp.probs(range(len(bases[0])))
 
         output = circuit()
         for i, base in enumerate(bases):
@@ -149,27 +149,27 @@ class TestSuperposition:
 
     def test_decomposition(self):
         """Test the decomposition of the Superposition template."""
-        decomposition = qml.Superposition(
+        decomposition = qp.Superposition(
             np.sqrt([0.5, 0.5]), [[0, 0], [1, 1]], wires=range(2), work_wire=2
         ).decomposition()
 
         expected = [
-            qml.StatePrep(np.array([0.70710678, 0.70710678]), pad_with=0, wires=[1]),
-            qml.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
-            qml.CNOT(wires=[2, 0]),
-            qml.Toffoli(wires=[0, 1, 2]),
+            qp.StatePrep(np.array([0.70710678, 0.70710678]), pad_with=0, wires=[1]),
+            qp.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
+            qp.CNOT(wires=[2, 0]),
+            qp.Toffoli(wires=[0, 1, 2]),
         ]
 
         for op1, op2 in zip(decomposition, expected):
-            assert qml.equal(op1, op2)
+            assert qp.equal(op1, op2)
 
     @pytest.mark.parametrize(("probs", "bases"), PROBS_BASES)
     def test_decomposition_new(self, probs, bases):
         """Test the decomposition of the Superposition template."""
-        op = qml.Superposition(
+        op = qp.Superposition(
             np.sqrt(probs), bases, wires=range(len(bases[0])), work_wire=len(bases[0])
         )
-        for rule in qml.list_decomps(qml.Superposition):
+        for rule in qp.list_decomps(qp.Superposition):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
@@ -202,7 +202,7 @@ class TestSuperposition:
 
         with pytest.raises(ValueError, match=msg_match):
             n_wires = len(bases[0])
-            qml.Superposition(coeffs, bases, wires=range(n_wires), work_wire=n_wires)
+            qp.Superposition(coeffs, bases, wires=range(n_wires), work_wire=n_wires)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -214,19 +214,19 @@ class TestSuperposition:
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
         checks that the gradient is calculated without an error."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(state_vector):
-            qml.Superposition(state_vector, bases=[[1], [0]], wires=range(1), work_wire=1)
-            return qml.expval(qml.PauliZ(0))
+            qp.Superposition(state_vector, bases=[[1], [0]], wires=range(1), work_wire=1)
+            return qp.expval(qp.PauliZ(0))
 
-        qml.grad(circuit)(state_vector)
+        qp.grad(circuit)(state_vector)
 
     def test_access_work_wire(self):
         """Test that the work_wire can be accessed."""
-        op = qml.Superposition(np.sqrt([0.5, 0.5]), [[0, 0], [1, 1]], wires=range(2), work_wire=2)
-        assert op.work_wire == qml.wires.Wires(2)
+        op = qp.Superposition(np.sqrt([0.5, 0.5]), [[0, 0], [1, 1]], wires=range(2), work_wire=2)
+        assert op.work_wire == qp.wires.Wires(2)
 
 
 @pytest.mark.parametrize(
@@ -266,14 +266,14 @@ class TestInterfaces:
 
         probs = jnp.array(probs)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Superposition(
+            qp.Superposition(
                 jnp.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(bases[0])))
+            return qp.probs(range(len(bases[0])))
 
         output = circuit()
         for i, base in enumerate(bases):
@@ -288,15 +288,15 @@ class TestInterfaces:
 
         probs = jnp.array(probs)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
         @jax.jit
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Superposition(
+            qp.Superposition(
                 jnp.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(bases[0])))
+            return qp.probs(range(len(bases[0])))
 
         output = circuit()
         for i, base in enumerate(bases):
@@ -309,14 +309,14 @@ class TestInterfaces:
         import tensorflow as tf
 
         probs = tf.Variable(probs)
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Superposition(
+            qp.Superposition(
                 tf.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(bases[0])))
+            return qp.probs(range(len(bases[0])))
 
         output = circuit()
         for i, base in enumerate(bases):
@@ -330,16 +330,16 @@ class TestInterfaces:
 
         probs = torch.tensor(probs, dtype=torch.float64)
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Superposition(
+            qp.Superposition(
                 torch.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
             )
-            return qml.probs(range(len(bases[0])))
+            return qp.probs(range(len(bases[0])))
 
         output = circuit()
         for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
-            assert qml.math.isclose(output[dec], probs[i])
+            assert qp.math.isclose(output[dec], probs[i])

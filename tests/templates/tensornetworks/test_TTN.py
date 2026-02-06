@@ -28,23 +28,23 @@ def test_flatten_unflatten_methods():
     """Tests the _flatten and _unflatten methods."""
 
     def block(weights, wires):
-        qml.CNOT(wires=[wires[0], wires[1]])
-        qml.RY(weights[0], wires=wires[0])
-        qml.RY(weights[1], wires=wires[1])
+        qp.CNOT(wires=[wires[0], wires[1]])
+        qp.RY(weights[0], wires=wires[0])
+        qp.RY(weights[1], wires=wires[1])
 
     n_wires = 4
     n_block_wires = 2
     n_params_block = 2
-    n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+    n_blocks = qp.MPS.get_n_blocks(range(n_wires), n_block_wires)
     template_weights = [[0.1, -0.3]] * n_blocks
 
-    wires = qml.wires.Wires((0, 1, 2, 3))
+    wires = qp.wires.Wires((0, 1, 2, 3))
 
-    op = qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+    op = qp.TTN(wires, n_block_wires, block, n_params_block, template_weights)
 
     data, metadata = op._flatten()
     assert len(data) == 1
-    assert qml.math.allclose(data[0], template_weights)
+    assert qp.math.allclose(data[0], template_weights)
 
     assert metadata[0] == wires
     assert dict(metadata[1]) == op.hyperparameters
@@ -52,42 +52,42 @@ def test_flatten_unflatten_methods():
     # make sure metadata hashable
     assert hash(metadata)
 
-    new_op = qml.TTN._unflatten(*op._flatten())
-    qml.assert_equal(new_op, op)
+    new_op = qp.TTN._unflatten(*op._flatten())
+    qp.assert_equal(new_op, op)
     assert new_op._name == "TTN"  # make sure acutally initialized
     assert new_op is not op
 
 
 def circuit0_block(wires):
-    qml.PauliX(wires=wires[1])
-    qml.PauliZ(wires=wires[0])
+    qp.PauliX(wires=wires[1])
+    qp.PauliZ(wires=wires[0])
 
 
 def circuit1_block(weights1, weights2, weights3, wires):
-    qml.RX(weights1, wires=wires[0])
-    qml.RX(weights2, wires=wires[1])
-    qml.RY(weights3, wires=wires[1])
+    qp.RX(weights1, wires=wires[0])
+    qp.RX(weights2, wires=wires[1])
+    qp.RY(weights3, wires=wires[1])
 
 
 def circuit2_block(weights, wires):
-    qml.RZ(weights[0], wires=wires[0])
-    qml.RZ(weights[1], wires=wires[1])
+    qp.RZ(weights[0], wires=wires[0])
+    qp.RZ(weights[1], wires=wires[1])
 
 
 def circuit2_TTN(weights, wires):
-    qml.RZ(weights[0][0], wires=wires[0])
-    qml.RZ(weights[0][1], wires=wires[1])
-    qml.RZ(weights[1][0], wires=wires[2])
-    qml.RZ(weights[1][1], wires=wires[3])
-    qml.RZ(weights[2][0], wires=wires[1])
-    qml.RZ(weights[2][1], wires=wires[3])
+    qp.RZ(weights[0][0], wires=wires[0])
+    qp.RZ(weights[0][1], wires=wires[1])
+    qp.RZ(weights[1][0], wires=wires[2])
+    qp.RZ(weights[1][1], wires=wires[3])
+    qp.RZ(weights[2][0], wires=wires[1])
+    qp.RZ(weights[2][1], wires=wires[3])
 
 
 def circuit3_block(weights, wires):
     SELWeights = np.array(
         [[[weights[0], weights[1], weights[2]], [weights[0], weights[1], weights[2]]]]
     )
-    qml.StronglyEntanglingLayers(SELWeights, wires)
+    qp.StronglyEntanglingLayers(SELWeights, wires)
 
 
 def circuit3_TTN(weights, wires):
@@ -115,9 +115,9 @@ def circuit3_TTN(weights, wires):
             ]
         ]
     )
-    qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
-    qml.StronglyEntanglingLayers(SELWeights2, wires=wires[2:4])
-    qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[1], wires[3]])
+    qp.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
+    qp.StronglyEntanglingLayers(SELWeights2, wires=wires[2:4])
+    qp.StronglyEntanglingLayers(SELWeights3, wires=[wires[1], wires[3]])
 
 
 class TestIndicesTTN:
@@ -292,12 +292,12 @@ class TestTemplateInputs:
     )
     def test_block_params(self, block, n_params_block, wires, n_block_wires, template_weights):
         """Verify that the template works with arbitrary block parameters"""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
+            qp.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            return qp.expval(qp.PauliZ(wires=wires[-1]))
 
         circuit()
 
@@ -316,7 +316,7 @@ class TestAttributes:
             match=f"The number of wires should be n_block_wires times 2\\^n; "
             f"got n_wires/n_block_wires = {len(wires)/n_block_wires}",
         ):
-            qml.TTN.get_n_blocks(wires, n_block_wires)
+            qp.TTN.get_n_blocks(wires, n_block_wires)
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -332,7 +332,7 @@ class TestAttributes:
     def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks):
         """Test that the number of blocks attribute returns the correct number of blocks."""
 
-        assert qml.TTN.get_n_blocks(wires, n_block_wires) == expected_n_blocks
+        assert qp.TTN.get_n_blocks(wires, n_block_wires) == expected_n_blocks
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -347,7 +347,7 @@ class TestAttributes:
             match=f"n_block_wires must be smaller than or equal to the number of wires; "
             f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
         ):
-            qml.TTN.get_n_blocks(wires, n_block_wires)
+            qp.TTN.get_n_blocks(wires, n_block_wires)
 
 
 class TestDifferentiability:
@@ -361,14 +361,14 @@ class TestDifferentiability:
         self, block, n_params_block, wires, n_block_wires, template_weights
     ):
         """Test that the template is differentiable for different inputs."""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit(template_weights):
-            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
+            qp.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            return qp.expval(qp.PauliZ(wires=wires[-1]))
 
-        qml.grad(circuit)(qml.numpy.array(template_weights, requires_grad=True))
+        qp.grad(circuit)(qp.numpy.array(template_weights, requires_grad=True))
 
 
 class TestTemplateOutputs:
@@ -404,19 +404,19 @@ class TestTemplateOutputs:
         self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
     ):
         """Verifies that the output of the circuits is correct."""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_template():
-            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
-            return qml.expval(qml.PauliX(wires=wires[-1]))
+            qp.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            return qp.expval(qp.PauliX(wires=wires[-1]))
 
         template_result = circuit_template()
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_manual():
             expected_circuit(template_weights, wires)
-            return qml.expval(qml.PauliX(wires=wires[-1]))
+            return qp.expval(qp.PauliX(wires=wires[-1]))
 
         manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
@@ -450,13 +450,13 @@ class TestTemplateOutputs:
     def test_jax_jit(self, block, n_params_block, wires, n_block_wires, template_weights):
         import jax
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qp.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
-            return qml.expval(qml.PauliX(wires=wires[-1]))
+            qp.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            return qp.expval(qp.PauliX(wires=wires[-1]))
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.allclose(circuit(), jit_circuit())
+        assert qp.math.allclose(circuit(), jit_circuit())

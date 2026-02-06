@@ -28,14 +28,14 @@ def test_chained_modifiers():
 
     @simulator_tracking
     @single_tape_support
-    class DummyDev(qml.devices.Device):
+    class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config: qml.devices.ExecutionConfig | None = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
     assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
 
-    tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))], shots=50)
+    tape = qp.tape.QuantumScript([], [qp.expval(qp.X(0))], shots=50)
     dev = DummyDev()
 
     with dev.tracker:
@@ -61,28 +61,28 @@ class TestModifierDefaultBeahviour:
         """Test that a ValueError is raised is called on something that is not a subclass of Device."""
 
         with pytest.raises(ValueError, match=f"{modifier.__name__} only accepts"):
-            modifier(qml.devices.DefaultQutrit)
+            modifier(qp.devices.DefaultQutrit)
 
     def test_adds_to_applied_modifiers_private_property(self, modifier):
         """Test that the modifier is added to the `_applied_modifiers` property."""
 
         @modifier
-        class DummyDev(qml.devices.Device):
+        class DummyDev(qp.devices.Device):
 
             def execute(
-                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
+                self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
             ):
                 return 0.0
 
         assert DummyDev._applied_modifiers == [modifier]
 
         @modifier
-        class DummyDev2(qml.devices.Device):
+        class DummyDev2(qp.devices.Device):
 
             _applied_modifiers = [None]  # some existing value
 
             def execute(
-                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
+                self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
             ):
                 return 0.0
 
@@ -92,10 +92,10 @@ class TestModifierDefaultBeahviour:
         """Test that undefined methods are left the same as the Device class methods."""
 
         @modifier
-        class DummyDev(qml.devices.Device):
+        class DummyDev(qp.devices.Device):
 
             def execute(
-                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
+                self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
             ):
                 return 0.0
 

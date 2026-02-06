@@ -48,16 +48,16 @@ class TestQROMStatePreparation:
         state = np.random.rand(2**4)
         state /= np.linalg.norm(state)
 
-        wires = qml.registers({"work_wires": 3, "precision_wires": 3, "embedding_wires": 4})
+        wires = qp.registers({"work_wires": 3, "precision_wires": 3, "embedding_wires": 4})
 
-        op = qml.QROMStatePreparation(
+        op = qp.QROMStatePreparation(
             state_vector=state,
             wires=wires["embedding_wires"],
             precision_wires=wires["precision_wires"],
             work_wires=wires["work_wires"],
         )
 
-        qml.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("state", "msg_match"),
@@ -75,7 +75,7 @@ class TestQROMStatePreparation:
     def test_QROMStatePrep_error(self, state, msg_match):
         """Test that proper errors are raised for QROMStatePreparation"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.QROMStatePreparation(state, wires=[0, 1], precision_wires=[2, 3], work_wires=[])
+            qp.QROMStatePreparation(state, wires=[0, 1], precision_wires=[2, 3], work_wires=[])
 
     @pytest.mark.parametrize(
         ("state", "num_wires", "num_work_wires", "num_precision_wires"),
@@ -100,22 +100,22 @@ class TestQROMStatePreparation:
     )
     def test_correctness(self, state, num_wires, num_work_wires, num_precision_wires):
 
-        wires = qml.registers(
+        wires = qp.registers(
             {"work": num_work_wires, "precision": num_precision_wires, "state": num_wires}
         )
 
-        dev = qml.device("default.qubit", wires=num_work_wires + num_precision_wires + num_wires)
+        dev = qp.device("default.qubit", wires=num_work_wires + num_precision_wires + num_wires)
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     state,
                     wires=wires["state"],
                     work_wires=wires["work"],
                     precision_wires=wires["precision"],
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
@@ -127,9 +127,9 @@ class TestQROMStatePreparation:
     def test_decomposition(self):
         """Test that the correct gates are added in the decomposition"""
 
-        wires = qml.registers({"work": 3, "precision": 3, "state": 2})
+        wires = qp.registers({"work": 3, "precision": 3, "state": 2})
 
-        decomposition = qml.QROMStatePreparation.compute_decomposition(
+        decomposition = qp.QROMStatePreparation.compute_decomposition(
             np.array([1 / 2, 1j / 2, -1 / 2, -1j / 2]),
             wires=range(8),
             input_wires=wires["state"],
@@ -148,42 +148,42 @@ class TestQROMStatePreparation:
 
         state = [1 / 2, -1 / 2, 1j / 2, -1j / 2]
 
-        wires = qml.registers({"work": 2, "precision": 2, "state": 2})
-        dev = qml.device("default.qubit", wires=6)
+        wires = qp.registers({"work": 2, "precision": 2, "state": 2})
+        dev = qp.device("default.qubit", wires=6)
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     jnp.array(state),
                     wires=wires["state"],
                     work_wires=wires["work"],
                     precision_wires=wires["precision"],
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_jax = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     state,
                     wires=wires["state"],
                     work_wires=wires["work"],
                     precision_wires=wires["precision"],
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_jax)
+        assert qp.math.allclose(output, output_jax)
 
     @pytest.mark.torch
     def test_interface_torch(self):
@@ -193,42 +193,42 @@ class TestQROMStatePreparation:
 
         state = [1 / 2, -1 / 2, 1j / 2, -1j / 2]
 
-        wires = qml.registers({"work": 2, "precision": 2, "state": 2})
-        dev = qml.device("default.qubit", wires=6)
+        wires = qp.registers({"work": 2, "precision": 2, "state": 2})
+        dev = qp.device("default.qubit", wires=6)
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     torch.tensor(state, dtype=torch.complex64),
                     wires=wires["state"],
                     work_wires=wires["work"],
                     precision_wires=wires["precision"],
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_torch = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     state,
                     wires=wires["state"],
                     work_wires=wires["work"],
                     precision_wires=wires["precision"],
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_torch)
+        assert qp.math.allclose(output, output_torch)
 
     @pytest.mark.tf
     def test_interface_tf(self):
@@ -238,39 +238,39 @@ class TestQROMStatePreparation:
 
         state = [1 / 2, -1 / 2, 1 / 2, -1 / 2]
 
-        wires = qml.registers({"work": 2, "precision": 2, "state": 2})
-        dev = qml.device("default.qubit", wires=6)
+        wires = qp.registers({"work": 2, "precision": 2, "state": 2})
+        dev = qp.device("default.qubit", wires=6)
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     tf.Variable(state),
                     wires=wires["state"],
                     work_wires=wires["work"],
                     precision_wires=wires["precision"],
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output_tf = dev.execute(tape[0])[0]
 
-        qs = qml.tape.QuantumScript(
+        qs = qp.tape.QuantumScript(
             [
-                qml.QROMStatePreparation(
+                qp.QROMStatePreparation(
                     state,
                     wires=wires["state"],
                     work_wires=wires["work"],
                     precision_wires=wires["precision"],
                 )
             ],
-            [qml.state()],
+            [qp.state()],
         )
 
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert qml.math.allclose(output, output_tf)
+        assert qp.math.allclose(output, output_tf)

@@ -65,14 +65,14 @@ def test_custom_operator_with_matrix(one_qutrit_state):
     )
 
     # pylint: disable=too-few-public-methods
-    class CustomOp(qml.operation.Operation):
+    class CustomOp(qp.operation.Operation):
         num_wires = 1
 
         def matrix(self):
             return mat
 
     new_state = apply_operation(CustomOp(0), one_qutrit_state)
-    assert qml.math.allclose(new_state, mat @ one_qutrit_state @ np.conj(mat).T)
+    assert qp.math.allclose(new_state, mat @ one_qutrit_state @ np.conj(mat).T)
 
 
 # TODO: add tests for special cases [sc-79348]
@@ -93,7 +93,7 @@ class TestSnapshot:
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
-        new_state = apply_operation(qml.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
+        new_state = apply_operation(qp.Snapshot(), initial_state, is_state_batched=len(shape) != 2)
         assert new_state.shape == initial_state.shape
         assert math.allclose(new_state, initial_state)
 
@@ -104,7 +104,7 @@ class TestSnapshot:
 
         debugger = Debugger()
         new_state = apply_operation(
-            qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+            qp.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
         )
 
         assert new_state.shape == initial_state.shape
@@ -122,7 +122,7 @@ class TestSnapshot:
         debugger = Debugger()
         tag = "dense"
         new_state = apply_operation(
-            qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
+            qp.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
         )
 
         assert new_state.shape == initial_state.shape
@@ -141,7 +141,7 @@ class TestSnapshot:
         debugger = Debugger()
 
         new_state = apply_operation(
-            qml.Snapshot(tag, measurement=qml.expval(qml.GellMann(0, 1))),
+            qp.Snapshot(tag, measurement=qp.expval(qp.GellMann(0, 1))),
             initial_state,
             debugger=debugger,
             is_state_batched=len(shape) != 2,
@@ -167,30 +167,30 @@ class TestOperation:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     broadcasted_ops = [
-        qml.TRX(np.array([np.pi, np.pi / 2]), wires=0, subspace=(0, 1)),
-        qml.TRY(np.array([np.pi, np.pi / 2]), wires=1, subspace=(0, 1)),
-        qml.TRZ(np.array([np.pi, np.pi / 2]), wires=2, subspace=(1, 2)),
-        qml.QutritUnitary(
+        qp.TRX(np.array([np.pi, np.pi / 2]), wires=0, subspace=(0, 1)),
+        qp.TRY(np.array([np.pi, np.pi / 2]), wires=1, subspace=(0, 1)),
+        qp.TRZ(np.array([np.pi, np.pi / 2]), wires=2, subspace=(1, 2)),
+        qp.QutritUnitary(
             np.array([unitary_group.rvs(27), unitary_group.rvs(27)]),
             wires=[0, 1, 2],
         ),
     ]
     unbroadcasted_ops = [
-        qml.THadamard(wires=0),
-        qml.TClock(wires=1),
-        qml.TShift(wires=2),
-        qml.TAdd(wires=[1, 2]),
-        qml.TRX(np.pi / 3, wires=0, subspace=(0, 2)),
-        qml.TRY(2 * np.pi / 3, wires=1, subspace=(1, 2)),
-        qml.TRZ(np.pi / 6, wires=2, subspace=(0, 1)),
-        qml.QutritUnitary(unitary_group.rvs(27), wires=[0, 1, 2]),
+        qp.THadamard(wires=0),
+        qp.TClock(wires=1),
+        qp.TShift(wires=2),
+        qp.TAdd(wires=[1, 2]),
+        qp.TRX(np.pi / 3, wires=0, subspace=(0, 2)),
+        qp.TRY(2 * np.pi / 3, wires=1, subspace=(1, 2)),
+        qp.TRZ(np.pi / 6, wires=2, subspace=(0, 1)),
+        qp.QutritUnitary(unitary_group.rvs(27), wires=[0, 1, 2]),
     ]
     num_qutrits = 3
     num_batched = 2
 
     @classmethod
     def expand_matrices(cls, op, batch_size=0):
-        """Find expanded operator matrices, since qml.matrix isn't working for qutrits #4367"""
+        """Find expanded operator matrices, since qp.matrix isn't working for qutrits #4367"""
         pre_wires_identity = np.eye(3 ** op.wires[0])
         post_wires_identity = np.eye(3 ** ((cls.num_qutrits - 1) - op.wires[-1]))
         mat = op.matrix()
@@ -214,19 +214,19 @@ class TestOperation:  # pylint: disable=too-few-public-methods
     def test_no_broadcasting(self, op, ml_framework, three_qutrit_state):
         """Tests that unbatched operations are applied correctly to an unbatched state."""
         state = three_qutrit_state
-        res = apply_operation(op, qml.math.asarray(state, like=ml_framework))
+        res = apply_operation(op, qp.math.asarray(state, like=ml_framework))
 
         expanded_operator = self.expand_matrices(op)
         expected = self.get_expected_state(expanded_operator, state)
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, ml_framework, three_qutrit_state):
         """Tests that batched operations are applied correctly to an unbatched state."""
         state = three_qutrit_state
-        res = apply_operation(op, qml.math.asarray(state, like=ml_framework))
+        res = apply_operation(op, qp.math.asarray(state, like=ml_framework))
         expanded_operators = self.expand_matrices(op, self.num_batched)
 
         def get_expected(m):
@@ -234,14 +234,14 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
         expected = [get_expected(expanded_operators[i]) for i in range(self.num_batched)]
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_broadcasted_state(self, op, ml_framework, three_qutrit_batched_state):
         """Tests that unbatched operations are applied correctly to a batched state."""
         state = three_qutrit_batched_state
-        res = apply_operation(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        res = apply_operation(op, qp.math.asarray(state, like=ml_framework), is_state_batched=True)
         expanded_operator = self.expand_matrices(op)
 
         def get_expected(s):
@@ -249,14 +249,14 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
         expected = [get_expected(state[i]) for i in range(self.num_batched)]
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op_broadcasted_state(self, op, ml_framework, three_qutrit_batched_state):
         """Tests that batched operations are applied correctly to a batched state."""
         state = three_qutrit_batched_state
-        res = apply_operation(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        res = apply_operation(op, qp.math.asarray(state, like=ml_framework), is_state_batched=True)
         expanded_operators = self.expand_matrices(op, self.num_batched)
 
         expected = [
@@ -264,14 +264,14 @@ class TestOperation:  # pylint: disable=too-few-public-methods
             for i in range(self.num_batched)
         ]
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     def test_batch_size_set_if_missing(self, ml_framework, one_qutrit_state):
         """Tests that the batch_size is set on an operator if it was missing before."""
-        param = qml.math.asarray([0.1, 0.2], like=ml_framework)
+        param = qp.math.asarray([0.1, 0.2], like=ml_framework)
         state = one_qutrit_state
-        op = qml.TRX(param, 0)
+        op = qp.TRX(param, 0)
         op._batch_size = None  # pylint:disable=protected-access
         state = apply_operation(op, state)
         assert state.shape == (self.num_batched, 3, 3)
@@ -332,8 +332,8 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         expanded_krons = self.expand_krons(test_channel)
         expected = self.get_expected_state(expanded_krons, state)
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
     def test_broadcasted_state(self, ml_framework, wire, two_qutrit_batched_state):
         """Tests that Channel operations are applied correctly to a batched state."""
@@ -347,8 +347,8 @@ class TestChannels:  # pylint: disable=too-few-public-methods
             self.get_expected_state(expanded_krons, state[i]) for i in range(self.num_batched)
         ]
 
-        assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qp.math.get_interface(res) == ml_framework
+        assert qp.math.allclose(res, expected)
 
 
 @pytest.mark.parametrize("subspace", [(0, 1), (0, 2), (1, 2)])
@@ -360,20 +360,20 @@ class TestTRXCalcGrad:
     @staticmethod
     def compare_expected_result(phi, state, probs, subspace, jacobian):
         """Compare the expected result for this circuit and gradient with observed values"""
-        trx = qml.TRX.compute_matrix(phi, subspace)
-        trx_adj = qml.TRX.compute_matrix(-phi, subspace)
+        trx = qp.TRX.compute_matrix(phi, subspace)
+        trx_adj = qp.TRX.compute_matrix(-phi, subspace)
         state = math.reshape(state, (9, 9))
 
         expected_probs = math.real(
             math.diagonal(np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3)))
         )
-        assert qml.math.allclose(probs, expected_probs)
+        assert qp.math.allclose(probs, expected_probs)
 
         if subspace[0] == 0:
             gell_mann_index = 1 if subspace[1] == 1 else 4
         else:
             gell_mann_index = 6
-        gell_mann_matrix = qml.GellMann.compute_matrix(gell_mann_index)
+        gell_mann_matrix = qp.GellMann.compute_matrix(gell_mann_index)
         trx_derivative = -0.5j * gell_mann_matrix @ trx
         trx_adj_derivative = 0.5j * gell_mann_matrix @ trx_adj
 
@@ -381,23 +381,23 @@ class TestTRXCalcGrad:
             np.kron(trx_derivative, np.eye(3)) @ state @ np.kron(trx_adj, np.eye(3))
         ) + (np.kron(trx, np.eye(3)) @ state @ np.kron(trx_adj_derivative, np.eye(3)))
         expected_derivative = np.real(np.diagonal(expected_derivative_state))
-        assert qml.math.allclose(jacobian, expected_derivative)
+        assert qp.math.allclose(jacobian, expected_derivative)
 
     @pytest.mark.autograd
     def test_trx_grad_autograd(self, two_qutrit_state, subspace):
         """Test that the application of a trx gate is differentiable with autograd."""
 
-        state = qml.numpy.array(two_qutrit_state)
+        state = qp.numpy.array(two_qutrit_state)
 
         def f(phi):
-            op = qml.TRX(phi, wires=0, subspace=subspace)
+            op = qp.TRX(phi, wires=0, subspace=subspace)
             new_state = apply_operation(op, state)
-            return measure(qml.probs(), new_state)
+            return measure(qp.probs(), new_state)
 
-        phi = qml.numpy.array(self.phi, requires_grad=True)
+        phi = qp.numpy.array(self.phi, requires_grad=True)
 
         probs = f(phi)
-        jacobian = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
+        jacobian = qp.jacobian(lambda x: qp.math.real(f(x)))(phi)
         self.compare_expected_result(phi, state, probs, subspace, jacobian)
 
     @pytest.mark.jax
@@ -410,9 +410,9 @@ class TestTRXCalcGrad:
         state = jax.numpy.array(two_qutrit_state)
 
         def f(phi):
-            op = qml.TRX(phi, wires=0, subspace=subspace)
+            op = qp.TRX(phi, wires=0, subspace=subspace)
             new_state = apply_operation(op, state)
-            return measure(qml.probs(), new_state)
+            return measure(qp.probs(), new_state)
 
         if use_jit:
             f = jax.jit(f)
@@ -430,9 +430,9 @@ class TestTRXCalcGrad:
         state = torch.tensor(two_qutrit_state)
 
         def f(phi):
-            op = qml.TRX(phi, wires=0, subspace=subspace)
+            op = qp.TRX(phi, wires=0, subspace=subspace)
             new_state = apply_operation(op, state)
-            return measure(qml.probs(), new_state)
+            return measure(qp.probs(), new_state)
 
         phi = torch.tensor(self.phi, requires_grad=True)
 
@@ -456,9 +456,9 @@ class TestTRXCalcGrad:
         phi = tf.Variable(0.8589, trainable=True, dtype="float64")
 
         with tf.GradientTape() as grad_tape:
-            op = qml.TRX(phi, wires=0, subspace=subspace)
+            op = qp.TRX(phi, wires=0, subspace=subspace)
             new_state = apply_operation(op, state)
-            probs = measure(qml.probs(), new_state)
+            probs = measure(qp.probs(), new_state)
 
         jacobians = grad_tape.jacobian(probs, [phi])
         phi_jacobian = jacobians[0]
@@ -482,27 +482,27 @@ class TestChannelCalcGrad:
 
         expected_state = (1 - p) * state + (p * state_kraus_applied)
         expected_probs = np.diagonal(expected_state)
-        assert qml.math.allclose(new_state, expected_probs)
+        assert qp.math.allclose(new_state, expected_probs)
 
         expected_derivative_state = state_kraus_applied - state
         expected_derivative = np.diagonal(expected_derivative_state)
-        assert qml.math.allclose(jacobian, expected_derivative)
+        assert qp.math.allclose(jacobian, expected_derivative)
 
     @pytest.mark.autograd
     def test_channel_grad_autograd(self, two_qutrit_state):
         """Test that the application of a channel is differentiable with autograd."""
 
-        state = qml.numpy.array(two_qutrit_state)
+        state = qp.numpy.array(two_qutrit_state)
 
         def f(p):
             channel = CustomChannel(p, wires=1)
             new_state = apply_operation(channel, state)
-            return measure(qml.probs(), new_state)
+            return measure(qp.probs(), new_state)
 
-        p = qml.numpy.array(self.p, requires_grad=True)
+        p = qp.numpy.array(self.p, requires_grad=True)
 
         probs = f(p)
-        jacobian = qml.jacobian(lambda x: qml.math.real(f(x)))(p)
+        jacobian = qp.jacobian(lambda x: qp.math.real(f(x)))(p)
         self.compare_expected_result(p, state, probs, jacobian)
 
     @pytest.mark.jax
@@ -517,7 +517,7 @@ class TestChannelCalcGrad:
         def f(p):
             op = CustomChannel(p, wires=1)
             new_state = apply_operation(op, state)
-            return measure(qml.probs(), new_state)
+            return measure(qp.probs(), new_state)
 
         if use_jit:
             f = jax.jit(f)
@@ -537,7 +537,7 @@ class TestChannelCalcGrad:
         def f(p):
             op = CustomChannel(p, wires=1)
             new_state = apply_operation(op, state)
-            return measure(qml.probs(), new_state)
+            return measure(qp.probs(), new_state)
 
         p = torch.tensor(self.p, requires_grad=True)
 
@@ -562,7 +562,7 @@ class TestChannelCalcGrad:
         with tf.GradientTape() as grad_tape:
             op = CustomChannel(p, wires=1)
             new_state = apply_operation(op, state)
-            probs = measure(qml.probs(), new_state)
+            probs = measure(qp.probs(), new_state)
 
         jacobians = grad_tape.jacobian(probs, [p])
         # tf takes gradient with respect to conj(z), so we need to conj the gradient

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the transform ``qml.transform.split_to_single_terms``"""
+"""Tests for the transform ``qp.transform.split_to_single_terms``"""
 
 # pylint: disable=import-outside-toplevel,unnecessary-lambda
 
@@ -24,34 +24,34 @@ from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.split_to_single_terms import null_postprocessing
 
 single_term_obs_list = [
-    qml.X(0),
-    qml.Y(0),
-    qml.Z(1),
-    qml.X(0) @ qml.Y(1),
-    qml.Y(0) @ qml.Z(1),
+    qp.X(0),
+    qp.Y(0),
+    qp.Z(1),
+    qp.X(0) @ qp.Y(1),
+    qp.Y(0) @ qp.Z(1),
 ]
 
 
 # contains the following observables: X(0), Y(0), Y(0) @ Z(1), X(1), Z(1), X(0) @ Y(1)
 complex_obs_list = [
-    qml.X(0),  # single observable
-    0.5 * qml.Y(0),  # scalar product
-    qml.X(0) + qml.Y(0) @ qml.Z(1) + 2.0 * qml.X(1) + qml.I(),  # sum
-    qml.Hamiltonian(
-        [0.1, 0.2, 0.3, 0.4], [qml.Z(1), qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.Z(1), qml.I()]
+    qp.X(0),  # single observable
+    0.5 * qp.Y(0),  # scalar product
+    qp.X(0) + qp.Y(0) @ qp.Z(1) + 2.0 * qp.X(1) + qp.I(),  # sum
+    qp.Hamiltonian(
+        [0.1, 0.2, 0.3, 0.4], [qp.Z(1), qp.X(0) @ qp.Y(1), qp.Y(0) @ qp.Z(1), qp.I()]
     ),
-    1.5 * qml.I(),  # identity
+    1.5 * qp.I(),  # identity
 ]
 
 
 # pylint: disable=too-few-public-methods
-class NoTermsDevice(qml.devices.DefaultQubit):
+class NoTermsDevice(qp.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 
-    def execute(self, circuits, execution_config: qml.devices.ExecutionConfig | None = None):
+    def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
         for t in circuits:
             for mp in t.measurements:
-                if mp.obs and isinstance(mp.obs, qml.ops.Sum):
+                if mp.obs and isinstance(mp.obs, qp.ops.Sum):
                     raise ValueError(
                         "no terms device does not accept observables with multiple terms"
                     )
@@ -65,7 +65,7 @@ class TestUnits:
         """Test that the transform does not affect a circuit that
         contains only an observable with a single term"""
 
-        tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
+        tape = qp.tape.QuantumScript([], [qp.expval(qp.X(0))])
         tapes, fn = split_to_single_terms(tape)
 
         assert len(tapes) == 1
@@ -76,29 +76,29 @@ class TestUnits:
         """Test that if the tape contains no measurements, the transform doesn't
         modify it"""
 
-        tape = qml.tape.QuantumScript([qml.X(0)])
+        tape = qp.tape.QuantumScript([qp.X(0)])
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
         assert tapes[0] == tape
         assert fn(tapes) == tape
 
-    @pytest.mark.parametrize("measure_fn", [qml.probs, qml.counts, qml.sample])
+    @pytest.mark.parametrize("measure_fn", [qp.probs, qp.counts, qp.sample])
     def test_all_wire_measurements(self, measure_fn):
         """Tests that measurements based on wires don't need to be split, so the
         transform does nothing"""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliZ(0)
-            qml.Hadamard(0)
-            qml.CNOT((0, 1))
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.PauliZ(0)
+            qp.Hadamard(0)
+            qp.CNOT((0, 1))
             measure_fn()
             measure_fn(wires=[0])
             measure_fn(wires=[1])
             measure_fn(wires=[0, 1])
-            measure_fn(op=qml.PauliZ(0))
-            measure_fn(op=qml.PauliZ(0) @ qml.PauliZ(2))
+            measure_fn(op=qp.PauliZ(0))
+            measure_fn(op=qp.PauliZ(0) @ qp.PauliZ(2))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qp.tape.QuantumScript.from_queue(q)
         tapes, fn = split_to_single_terms(tape)
 
         assert len(tapes) == 1
@@ -108,55 +108,55 @@ class TestUnits:
     def test_single_sum(self):
         """Test that the transform works as expected for a circuit that
         returns a single sum"""
-        tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0) + qml.Y(1))])
+        tape = qp.tape.QuantumScript([], [qp.expval(qp.X(0) + qp.Y(1))])
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
-        assert tapes[0].measurements == [qml.expval(qml.X(0)), qml.expval(qml.Y(1))]
+        assert tapes[0].measurements == [qp.expval(qp.X(0)), qp.expval(qp.Y(1))]
         assert np.allclose(fn(([0.1, 0.2],)), 0.3)
 
     def test_multiple_sums(self):
         """Test that the transform works as expected for a circuit that
         returns multiple sums"""
-        tape = qml.tape.QuantumScript(
-            [], [qml.expval(qml.X(0) + qml.Y(1)), qml.expval(qml.X(2) + qml.Z(3))]
+        tape = qp.tape.QuantumScript(
+            [], [qp.expval(qp.X(0) + qp.Y(1)), qp.expval(qp.X(2) + qp.Z(3))]
         )
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
         assert tapes[0].measurements == [
-            qml.expval(qml.X(0)),
-            qml.expval(qml.Y(1)),
-            qml.expval(qml.X(2)),
-            qml.expval(qml.Z(3)),
+            qp.expval(qp.X(0)),
+            qp.expval(qp.Y(1)),
+            qp.expval(qp.X(2)),
+            qp.expval(qp.Z(3)),
         ]
         assert fn(([0.1, 0.2, 0.3, 0.4],)) == (0.1 + 0.2, 0.3 + 0.4)
 
     def test_multiple_sums_overlapping(self):
         """Test that the transform works as expected for a circuit that
         returns multiple sums, where some terms are included in multiple sums"""
-        tape = qml.tape.QuantumScript(
-            [], [qml.expval(qml.X(0) + qml.Y(1)), qml.expval(qml.X(2) + qml.Y(1))]
+        tape = qp.tape.QuantumScript(
+            [], [qp.expval(qp.X(0) + qp.Y(1)), qp.expval(qp.X(2) + qp.Y(1))]
         )
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
         assert tapes[0].measurements == [
-            qml.expval(qml.X(0)),
-            qml.expval(qml.Y(1)),
-            qml.expval(qml.X(2)),
+            qp.expval(qp.X(0)),
+            qp.expval(qp.Y(1)),
+            qp.expval(qp.X(2)),
         ]
         assert fn(([0.1, 0.2, 0.3],)) == (0.1 + 0.2, 0.3 + 0.2)
 
     def test_multiple_sums_duplicated(self):
         """Test that the transform works as expected for a circuit that returns multiple sums, where each
         sum includes the same term more than once"""
-        tape = qml.tape.QuantumScript(
-            [], [qml.expval(qml.X(0) + qml.X(0)), qml.expval(qml.X(1) + qml.Y(1) + qml.Y(1))]
+        tape = qp.tape.QuantumScript(
+            [], [qp.expval(qp.X(0) + qp.X(0)), qp.expval(qp.X(1) + qp.Y(1) + qp.Y(1))]
         )
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
         assert tapes[0].measurements == [
-            qml.expval(qml.X(0)),
-            qml.expval(qml.X(1)),
-            qml.expval(qml.Y(1)),
+            qp.expval(qp.X(0)),
+            qp.expval(qp.X(1)),
+            qp.expval(qp.Y(1)),
         ]
         assert fn(([0.1, 0.2, 0.3],)) == (0.1 + 0.1, 0.2 + 0.3 + 0.3)
 
@@ -165,52 +165,52 @@ class TestUnits:
         """Test that `split_to_single_terms` can transform a batch of tapes with multi-term observables"""
 
         tape_batch = [
-            qml.tape.QuantumScript([qml.RX(1.2, 0)], [qml.expval(qml.X(0) + qml.Y(0) + qml.X(1))]),
-            qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(qml.Z(0) + qml.Y(0))]),
+            qp.tape.QuantumScript([qp.RX(1.2, 0)], [qp.expval(qp.X(0) + qp.Y(0) + qp.X(1))]),
+            qp.tape.QuantumScript([qp.RY(0.5, 0)], [qp.expval(qp.Z(0) + qp.Y(0))]),
         ]
         tape_batch = batch_type(tape_batch)
 
         tapes, fn = split_to_single_terms(tape_batch)
 
         expected_tapes = [
-            qml.tape.QuantumScript(
-                [qml.RX(1.2, 0)],
-                [qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.X(1))],
+            qp.tape.QuantumScript(
+                [qp.RX(1.2, 0)],
+                [qp.expval(qp.X(0)), qp.expval(qp.Y(0)), qp.expval(qp.X(1))],
             ),
-            qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]),
+            qp.tape.QuantumScript([qp.RY(0.5, 0)], [qp.expval(qp.Z(0)), qp.expval(qp.Y(0))]),
         ]
         for actual_tape, expected_tape in zip(tapes, expected_tapes):
-            qml.assert_equal(actual_tape, expected_tape)
+            qp.assert_equal(actual_tape, expected_tape)
 
         result = ([0.1, 0.2, 0.3], [0.4, 0.2])
         assert fn(result) == ((0.1 + 0.2 + 0.3), (0.4 + 0.2))
 
     @pytest.mark.parametrize(
-        "non_pauli_obs", [qml.Projector([0], wires=[1]), qml.Hadamard(wires=[1])]
+        "non_pauli_obs", [qp.Projector([0], wires=[1]), qp.Hadamard(wires=[1])]
     )
     def test_tape_with_non_pauli_obs(self, non_pauli_obs):
         """Tests that the tape is split correctly when containing non-Pauli observables"""
 
         measurements = [
-            qml.expval(qml.X(0) + qml.Y(0) + qml.X(1)),
-            qml.expval(non_pauli_obs + qml.Z(3)),
+            qp.expval(qp.X(0) + qp.Y(0) + qp.X(1)),
+            qp.expval(non_pauli_obs + qp.Z(3)),
         ]
-        tape = qml.tape.QuantumScript([qml.RX(1.2, 0)], measurements=measurements)
+        tape = qp.tape.QuantumScript([qp.RX(1.2, 0)], measurements=measurements)
 
         tapes, fn = split_to_single_terms(tape)
 
-        expected_tape = qml.tape.QuantumScript(
-            [qml.RX(1.2, 0)],
+        expected_tape = qp.tape.QuantumScript(
+            [qp.RX(1.2, 0)],
             [
-                qml.expval(qml.X(0)),
-                qml.expval(qml.Y(0)),
-                qml.expval(qml.X(1)),
-                qml.expval(non_pauli_obs),
-                qml.expval(qml.Z(3)),
+                qp.expval(qp.X(0)),
+                qp.expval(qp.Y(0)),
+                qp.expval(qp.X(1)),
+                qp.expval(non_pauli_obs),
+                qp.expval(qp.Z(3)),
             ],
         )
 
-        qml.assert_equal(tapes[0], expected_tape)
+        qp.assert_equal(tapes[0], expected_tape)
 
         result = [[0.1, 0.2, 0.3, 0.4, 0.5]]
         assert fn(result) == ((0.1 + 0.2 + 0.3), (0.4 + 0.5))
@@ -218,14 +218,14 @@ class TestUnits:
     @pytest.mark.parametrize(
         "observable",
         [
-            qml.X(0) + qml.Y(1),
-            2 * (qml.X(0) + qml.Y(1)),
-            3 * (2 * (qml.X(0) + qml.Y(1)) + qml.X(1)),
+            qp.X(0) + qp.Y(1),
+            2 * (qp.X(0) + qp.Y(1)),
+            3 * (2 * (qp.X(0) + qp.Y(1)) + qp.X(1)),
         ],
     )
     def test_splitting_sums_in_unsupported_mps_raises_error(self, observable):
 
-        tape = qml.tape.QuantumScript([qml.X(0)], measurements=[qml.counts(observable)])
+        tape = qp.tape.QuantumScript([qp.X(0)], measurements=[qp.counts(observable)])
         with pytest.raises(
             RuntimeError, match="Cannot split up terms in sums for MeasurementProcess"
         ):
@@ -245,16 +245,16 @@ class TestIntegration:
 
         dev = NoTermsDevice(wires=2)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.RX(1.2, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, obs))
+            qp.RX(1.2, wires=0)
+            return qp.expval(qp.Hamiltonian(coeffs, obs))
 
         @split_to_single_terms
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit_split():
-            qml.RX(1.2, wires=0)
-            return qml.expval(qml.Hamiltonian(coeffs, obs))
+            qp.RX(1.2, wires=0)
+            return qp.expval(qp.Hamiltonian(coeffs, obs))
 
         with pytest.raises(ValueError, match="does not accept observables with multiple terms"):
             circuit()
@@ -293,17 +293,17 @@ class TestIntegration:
         """Tests that a QNode with a single expval measurement is executed correctly"""
 
         coeffs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-        obs = single_term_obs_list + [qml.I()]  # test constant offset
+        obs = single_term_obs_list + [qp.I()]  # test constant offset
 
         dev = NoTermsDevice(wires=2, seed=seed)
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def circuit(angles):
-            qml.RX(angles[0], wires=0)
-            qml.RY(angles[1], wires=0)
-            qml.RX(angles[0], wires=1)
-            qml.RY(angles[1], wires=1)
-            return qml.expval(qml.Hamiltonian(coeffs, obs))
+            qp.RX(angles[0], wires=0)
+            qp.RY(angles[1], wires=0)
+            qp.RX(angles[0], wires=1)
+            qp.RY(angles[1], wires=1)
+            return qp.expval(qp.Hamiltonian(coeffs, obs))
 
         circuit = split_to_single_terms(circuit)
         res = circuit(params)
@@ -314,11 +314,11 @@ class TestIntegration:
         expected = np.dot(coeffs, expected_results)
 
         if isinstance(shots, list):
-            assert qml.math.shape(res) == (3,) if len(np.shape(res)) == 1 else (3, 2)
+            assert qp.math.shape(res) == (3,) if len(np.shape(res)) == 1 else (3, 2)
             for i in range(3):
-                assert qml.math.allclose(res[i], expected, atol=0.05)
+                assert qp.math.allclose(res[i], expected, atol=0.05)
         else:
-            assert qml.math.allclose(res, expected, atol=0.05)
+            assert qp.math.allclose(res, expected, atol=0.05)
 
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
@@ -368,23 +368,23 @@ class TestIntegration:
 
         obs_list = complex_obs_list
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def circuit(angles):
-            qml.RX(angles[0], wires=0)
-            qml.RY(angles[1], wires=0)
-            qml.RX(angles[0], wires=1)
-            qml.RY(angles[1], wires=1)
-            return [qml.expval(obs) for obs in obs_list]
+            qp.RX(angles[0], wires=0)
+            qp.RY(angles[1], wires=0)
+            qp.RX(angles[0], wires=1)
+            qp.RY(angles[1], wires=1)
+            return [qp.expval(obs) for obs in obs_list]
 
         circuit = split_to_single_terms(circuit)
         res = circuit(params)
 
         if isinstance(shots, list):
-            assert qml.math.shape(res) == (3, *np.shape(expected_results))
+            assert qp.math.shape(res) == (3, *np.shape(expected_results))
             for i in range(3):
-                assert qml.math.allclose(res[i], expected_results, atol=0.05)
+                assert qp.math.allclose(res[i], expected_results, atol=0.05)
         else:
-            assert qml.math.allclose(res, expected_results, atol=0.05)
+            assert qp.math.allclose(res, expected_results, atol=0.05)
 
     @pytest.mark.parametrize("shots", [20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
@@ -434,18 +434,18 @@ class TestIntegration:
 
         obs_list = complex_obs_list
 
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def circuit(angles):
-            qml.RX(angles[0], wires=0)
-            qml.RY(angles[1], wires=0)
-            qml.RX(angles[0], wires=1)
-            qml.RY(angles[1], wires=1)
+            qp.RX(angles[0], wires=0)
+            qp.RY(angles[1], wires=0)
+            qp.RX(angles[0], wires=1)
+            qp.RY(angles[1], wires=1)
             return (
-                qml.probs(wires=0),
-                qml.probs(wires=[0, 1]),
-                qml.counts(wires=0),
-                qml.sample(wires=0),
-                *[qml.expval(obs) for obs in obs_list],
+                qp.probs(wires=0),
+                qp.probs(wires=[0, 1]),
+                qp.counts(wires=0),
+                qp.sample(wires=0),
+                *[qp.expval(obs) for obs in obs_list],
             )
 
         circuit = split_to_single_terms(circuit)
@@ -458,37 +458,37 @@ class TestIntegration:
                 prob_res_1 = res[i][1]
                 counts_res = res[i][2]
                 sample_res = res[i][3]
-                if len(qml.math.shape(params)) == 1:
-                    assert qml.math.shape(prob_res_0) == (2,)
-                    assert qml.math.shape(prob_res_1) == (4,)
+                if len(qp.math.shape(params)) == 1:
+                    assert qp.math.shape(prob_res_0) == (2,)
+                    assert qp.math.shape(prob_res_1) == (4,)
                     assert isinstance(counts_res, dict)
-                    assert qml.math.shape(sample_res) == (shots[i], 1)
+                    assert qp.math.shape(sample_res) == (shots[i], 1)
                 else:
-                    assert qml.math.shape(prob_res_0) == (2, 2)
-                    assert qml.math.shape(prob_res_1) == (2, 4)
+                    assert qp.math.shape(prob_res_0) == (2, 2)
+                    assert qp.math.shape(prob_res_1) == (2, 4)
                     assert all(isinstance(_res, dict) for _res in counts_res)
-                    assert qml.math.shape(sample_res) == (2, shots[i], 1)
+                    assert qp.math.shape(sample_res) == (2, shots[i], 1)
 
                 expval_res = res[i][4:]
-                assert qml.math.allclose(expval_res, expected_results, atol=0.05)
+                assert qp.math.allclose(expval_res, expected_results, atol=0.05)
         else:
             prob_res_0 = res[0]
             prob_res_1 = res[1]
             counts_res = res[2]
             sample_res = res[3]
-            if len(qml.math.shape(params)) == 1:
-                assert qml.math.shape(prob_res_0) == (2,)
-                assert qml.math.shape(prob_res_1) == (4,)
+            if len(qp.math.shape(params)) == 1:
+                assert qp.math.shape(prob_res_0) == (2,)
+                assert qp.math.shape(prob_res_1) == (4,)
                 assert isinstance(counts_res, dict)
-                assert qml.math.shape(sample_res) == (shots, 1)
+                assert qp.math.shape(sample_res) == (shots, 1)
             else:
-                assert qml.math.shape(prob_res_0) == (2, 2)
-                assert qml.math.shape(prob_res_1) == (2, 4)
+                assert qp.math.shape(prob_res_0) == (2, 2)
+                assert qp.math.shape(prob_res_1) == (2, 4)
                 assert all(isinstance(_res, dict) for _res in counts_res)
-                assert qml.math.shape(sample_res) == (2, shots, 1)
+                assert qp.math.shape(sample_res) == (2, shots, 1)
 
             expval_res = res[4:]
-            assert qml.math.allclose(expval_res, expected_results, atol=0.05)
+            assert qp.math.allclose(expval_res, expected_results, atol=0.05)
 
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     def test_sum_with_only_identity(self, shots, seed):
@@ -496,15 +496,15 @@ class TestIntegration:
         are treated separately as offsets in the transform)"""
 
         dev = NoTermsDevice(wires=2, seed=seed)
-        H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
+        H = qp.Hamiltonian([1.5, 2.5], [qp.I(), qp.I()])
 
         @split_to_single_terms
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def circuit():
-            return qml.expval(H)
+            return qp.expval(H)
 
         res = circuit()
-        assert qml.math.allclose(res, 1.5 + 2.5)
+        assert qp.math.allclose(res, 1.5 + 2.5)
 
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     def test_sum_with_identity_and_observable(self, shots, seed):
@@ -512,16 +512,16 @@ class TestIntegration:
         are treated separately as offsets in the transform) and other observables"""
 
         dev = NoTermsDevice(wires=2, seed=seed)
-        H = qml.Hamiltonian([1.5, 2.5], [qml.I(0), qml.Y(0)])
+        H = qp.Hamiltonian([1.5, 2.5], [qp.I(0), qp.Y(0)])
 
         @split_to_single_terms
-        @qml.qnode(dev, shots=shots)
+        @qp.qnode(dev, shots=shots)
         def circuit():
-            qml.RX(-np.pi / 2, 0)
-            return qml.expval(H)
+            qp.RX(-np.pi / 2, 0)
+            return qp.expval(H)
 
         res = circuit()
-        assert qml.math.allclose(res, 4.0)
+        assert qp.math.allclose(res, 4.0)
 
     def test_non_pauli_obs_in_circuit(self):
         """Tests that the tape is executed correctly with non-pauli observables"""
@@ -529,15 +529,15 @@ class TestIntegration:
         dev = NoTermsDevice(wires=1)
 
         @split_to_single_terms
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
-            return qml.expval(qml.Projector([0], wires=[0]) + qml.Projector([1], wires=[0]))
+            qp.Hadamard(0)
+            return qp.expval(qp.Projector([0], wires=[0]) + qp.Projector([1], wires=[0]))
 
         with dev.tracker:
             res = circuit()
         assert dev.tracker.totals["simulations"] == 1
-        assert qml.math.allclose(res, 1, atol=0.01)
+        assert qp.math.allclose(res, 1, atol=0.01)
 
 
 class TestDifferentiability:
@@ -552,16 +552,16 @@ class TestDifferentiability:
         dev = NoTermsDevice(wires=2, seed=seed)
 
         @split_to_single_terms
-        @qml.qnode(dev, shots=50000)
+        @qp.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
-            qml.RX(np.pi / 4, wires=0)
-            qml.RY(np.pi / 4, wires=1)
-            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+            qp.RX(np.pi / 4, wires=0)
+            qp.RY(np.pi / 4, wires=1)
+            return qp.expval(qp.Hamiltonian([coeff1, coeff2], [qp.Y(0) @ qp.Z(1), qp.X(1)]))
 
         params = pnp.array(pnp.pi / 4), pnp.array(3 * pnp.pi / 4)
-        actual = qml.jacobian(circuit)(*params)
+        actual = qp.jacobian(circuit)(*params)
 
-        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
@@ -574,11 +574,11 @@ class TestDifferentiability:
         dev = NoTermsDevice(wires=2, seed=seed)
 
         @split_to_single_terms
-        @qml.qnode(dev, shots=50000)
+        @qp.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
-            qml.RX(np.pi / 4, wires=0)
-            qml.RY(np.pi / 4, wires=1)
-            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+            qp.RX(np.pi / 4, wires=0)
+            qp.RY(np.pi / 4, wires=1)
+            return qp.expval(qp.Hamiltonian([coeff1, coeff2], [qp.Y(0) @ qp.Z(1), qp.X(1)]))
 
         if use_jit:
             circuit = jax.jit(circuit)
@@ -586,7 +586,7 @@ class TestDifferentiability:
         params = jnp.array(np.pi / 4), jnp.array(3 * np.pi / 4)
         actual = jax.jacobian(circuit, argnums=[0, 1])(*params)
 
-        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
     @pytest.mark.torch
     def test_trainable_hamiltonian_torch(self, seed):
@@ -598,16 +598,16 @@ class TestDifferentiability:
         dev = NoTermsDevice(wires=2, seed=seed)
 
         @split_to_single_terms
-        @qml.qnode(dev, shots=50000)
+        @qp.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
-            qml.RX(np.pi / 4, wires=0)
-            qml.RY(np.pi / 4, wires=1)
-            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+            qp.RX(np.pi / 4, wires=0)
+            qp.RY(np.pi / 4, wires=1)
+            return qp.expval(qp.Hamiltonian([coeff1, coeff2], [qp.Y(0) @ qp.Z(1), qp.X(1)]))
 
         params = torch.tensor(np.pi / 4), torch.tensor(3 * np.pi / 4)
         actual = jacobian(circuit, params)
 
-        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
     @pytest.mark.tf
     def test_trainable_hamiltonian_tensorflow(self, seed):
@@ -617,11 +617,11 @@ class TestDifferentiability:
 
         dev = NoTermsDevice(wires=2, seed=seed)
 
-        @qml.qnode(dev, shots=50000)
+        @qp.qnode(dev, shots=50000)
         def circuit(coeff1, coeff2):
-            qml.RX(np.pi / 4, wires=0)
-            qml.RY(np.pi / 4, wires=1)
-            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+            qp.RX(np.pi / 4, wires=0)
+            qp.RY(np.pi / 4, wires=1)
+            return qp.expval(qp.Hamiltonian([coeff1, coeff2], [qp.Y(0) @ qp.Z(1), qp.X(1)]))
 
         params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
 
@@ -630,4 +630,4 @@ class TestDifferentiability:
 
         actual = tape.jacobian(cost, params)
 
-        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
