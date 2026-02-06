@@ -101,6 +101,7 @@ def _ignore_unsolved_ops():
         | set(qml.ops.channel.__all__)
         | set(qml.ops.cv.__all__)
         | UNSUPPORTED_TEMPLATES
+        | {"Exp", "Evolution"}
     )
 
 
