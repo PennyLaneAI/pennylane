@@ -14,6 +14,7 @@
 """
 Contains the QSVT template and qsvt wrapper function.
 """
+
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
@@ -1280,7 +1281,7 @@ def _compute_qsp_angles_iteratively_optax(poly):
         import jax
         import jax.numpy as jnp
         import optax  # noqa: F401  # pylint: disable=unused-import
-    except ImportError as e:
+    except ImportError as e:  # pragma: no cover
         raise ImportError(
             "The 'iterative_optax' solver requires JAX and Optax. "
             "Please install them via: pip install jax optax"

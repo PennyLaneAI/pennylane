@@ -233,3 +233,15 @@ class TestOptaxInternalFunctions:
         # Grid points should have correct length: (degree + 1) // 2 + (degree + 1) % 2
         d = (degree + 1) // 2 + (degree + 1) % 2
         assert len(grid) == d
+
+    def test_x64_disabled_raises_error(self):
+        """Test that RuntimeError is raised when JAX x64 mode is disabled."""
+        # pylint: disable=import-outside-toplevel
+        from pennylane.templates.subroutines.qsvt import _compute_qsp_angles_iteratively_optax
+
+        jax.config.update("jax_enable_x64", False)
+        try:
+            with pytest.raises(RuntimeError, match="JAX must be in 64-bit mode"):
+                _compute_qsp_angles_iteratively_optax([0, 1])
+        finally:
+            jax.config.update("jax_enable_x64", True)
