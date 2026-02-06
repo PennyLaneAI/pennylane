@@ -24,7 +24,7 @@ from typing import Union
 
 from scipy.sparse import kron as sparse_kron
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.capture.autograph import wraps
 from pennylane.operation import Operator

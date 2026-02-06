@@ -59,7 +59,7 @@ jobs:
 
       - name: Print Dependencies
         run: |
-          python -c "import pennylane as qml; qml.about()"
+          python -c "import pennylane as qp; qml.about()"
           python -m pip list
 
       # TODO: Remove the --ignore options as layers are tested and verified

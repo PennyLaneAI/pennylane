@@ -22,7 +22,7 @@ from operator import matmul
 import numpy as np
 import scipy.sparse as sps
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.math.utils import is_abstract
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
@@ -285,7 +285,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
             ``padding=False``), or if the matrix is empty.
 
     Example:
-        >>> import pennylane as qml
+        >>> import pennylane as qp
         >>> import scipy.sparse as sps
         >>> # Decompose a 2-qubit sparse matrix: Z(0) @ Z(1) + 0.5 * X(0)
         >>> # Matrix: [[1, 0, 0.5, 0], [0, -1, 0, 0.5], [0.5, 0, -1, 0], [0, 0.5, 0, 1]]
@@ -452,7 +452,7 @@ def pauli_decompose(
     We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
     matrix:
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> import numpy as np
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])

@@ -14,7 +14,7 @@
 """This module contains the tape expansion function for expanding a
 broadcasted tape into multiple tapes."""
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import SampleMP
 from pennylane.ops import MidMeasure
 from pennylane.tape import QuantumScript, QuantumScriptBatch

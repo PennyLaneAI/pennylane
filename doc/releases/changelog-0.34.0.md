@@ -14,7 +14,7 @@
   `qml.expval()`. For example:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit")
 
@@ -128,7 +128,7 @@
   the previously-compiled binary, resulting in significant performance improvements.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("lightning.qubit", wires=2)
 
@@ -303,7 +303,7 @@
   The subroutine can be used similarly to mid-circuit measurements:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit", shots=5)
 

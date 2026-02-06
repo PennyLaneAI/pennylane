@@ -57,7 +57,7 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from functools import partial
 
         qml.decomposition.enable_graph()

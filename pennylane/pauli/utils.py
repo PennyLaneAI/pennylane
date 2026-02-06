@@ -25,7 +25,7 @@ from itertools import product
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.wires import Wires
 

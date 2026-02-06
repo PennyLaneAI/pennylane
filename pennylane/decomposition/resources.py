@@ -21,7 +21,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import cached_property
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 
 

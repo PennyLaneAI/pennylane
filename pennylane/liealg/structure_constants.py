@@ -255,7 +255,7 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
 
     Let us generate the DLA of the transverse field Ising model using :func:`~lie_closure`.
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> from pennylane import X, Y, Z, I
     >>> n = 4
     >>> gens = [qml.X(i) @ qml.X(i+1) + qml.Y(i) @ qml.Y(i+1) + qml.Z(i) @ qml.Z(i+1) for i in range(n-1)]

@@ -21,7 +21,7 @@ import functools
 import numpy as np
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation

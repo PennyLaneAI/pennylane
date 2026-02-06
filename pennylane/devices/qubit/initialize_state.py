@@ -18,7 +18,7 @@ from collections.abc import Iterable
 import numpy as np
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 
 
 def create_initial_state(

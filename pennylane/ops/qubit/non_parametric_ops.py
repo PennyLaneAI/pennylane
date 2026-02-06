@@ -24,7 +24,7 @@ from functools import lru_cache
 import numpy as np
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,

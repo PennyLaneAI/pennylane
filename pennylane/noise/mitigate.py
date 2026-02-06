@@ -388,7 +388,7 @@ def mitigate_with_zne(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         dev = qml.device("default.mixed", wires=2)
 

@@ -17,7 +17,7 @@ Contains the batch dimension transform for partial use of QNodes.
 import functools
 import inspect
 
-import pennylane as qml
+import pennylane as qp
 
 
 def _convert_to_args(sig, args, kwargs):

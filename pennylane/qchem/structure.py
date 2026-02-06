@@ -22,7 +22,7 @@ from shutil import copyfile
 import numpy as np
 from scipy.constants import angstrom, physical_constants
 
-import pennylane as qml
+import pennylane as qp
 
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 

@@ -154,7 +154,7 @@ class Qubitization(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane.wires import Wires
 
         >>> print(qml.Qubitization.compute_decomposition(hamiltonian=0.1 * qml.Z(0), control=Wires(1)))

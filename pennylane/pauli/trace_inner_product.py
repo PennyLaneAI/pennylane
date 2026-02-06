@@ -14,7 +14,7 @@
 """Utility tools for dynamical Lie algebra functionality"""
 from collections.abc import Iterable
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 from pennylane.typing import TensorLike

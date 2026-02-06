@@ -100,7 +100,7 @@ class AllSinglesDoubles(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
 
             electrons = 2

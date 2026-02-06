@@ -106,7 +106,7 @@ import warnings
 import tensorflow as tf
 from tensorflow.python.eager import context
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import Shots
 
 logger = logging.getLogger(__name__)

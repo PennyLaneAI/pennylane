@@ -33,7 +33,7 @@
   (``"110"``):
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   bitstrings = ["010", "111", "110", "000"]
   bitstring_size = 3
@@ -216,7 +216,7 @@
   required quantum resources using the :func:`~.estimator.estimate.estimate` function:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   import pennylane.estimator as qre
 
   pattern = [[[0]],[[1]],[[0,1]]]
@@ -330,7 +330,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   basis:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("null.qubit", wires=3)
 
@@ -524,7 +524,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   therein will be applied to the circuit:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
 
@@ -554,7 +554,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   returns a dictionary of error types and their computed values:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   
   Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
   
@@ -1094,7 +1094,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8738)](https://github.com/PennyLaneAI/pennylane/pull/8738)
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from pennylane.labs.transforms import select_pauli_rot_phase_gradient
   import numpy as np
 
@@ -1342,7 +1342,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   the gates in the ``gate_set`` or when the ``stopping_condition`` is satisfied.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   @qml.transforms.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
   @qml.qnode(qml.device("default.qubit"))

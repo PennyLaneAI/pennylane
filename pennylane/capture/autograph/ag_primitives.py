@@ -29,7 +29,7 @@ from malt.impl.api import converted_call as ag_converted_call
 from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import AutoGraphError
 
 has_jax = True

@@ -88,7 +88,7 @@ try:
 except (ImportError, NameError) as e:  # pragma: no cover
     pass
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.capture import FlatFn, QmlPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger

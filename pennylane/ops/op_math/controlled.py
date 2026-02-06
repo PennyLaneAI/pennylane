@@ -28,7 +28,7 @@ from typing import Any, Literal, overload
 import numpy as np
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math, pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler

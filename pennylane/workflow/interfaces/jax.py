@@ -146,7 +146,7 @@ from collections.abc import Callable
 import jax
 import jax.numpy as jnp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.typing import ResultBatch

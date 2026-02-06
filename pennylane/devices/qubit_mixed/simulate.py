@@ -15,7 +15,7 @@
 
 from numpy.random import default_rng
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit.sampling import jax_random_split
 from pennylane.math.interface_utils import Interface
 from pennylane.typing import Result

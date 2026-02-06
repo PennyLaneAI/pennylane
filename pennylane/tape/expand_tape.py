@@ -15,7 +15,7 @@
 This module contains functions for tape expansion
 """
 # pylint: disable=protected-access
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator, StatePrepBase
 from pennylane.queuing import QueuingManager

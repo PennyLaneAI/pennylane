@@ -71,7 +71,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from qiskit import QuantumCircuit
 
         qc = QuantumCircuit(2, 2)
@@ -173,7 +173,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import numpy as np
 
             dev = qml.device("default.qubit")
@@ -225,7 +225,7 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from qiskit import QuantumCircuit
 
             qc = QuantumCircuit(2, 2)
@@ -365,7 +365,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
 
     To convert the ``SparsePauliOp`` into a PennyLane :class:`pennylane.operation.Operator`, use:
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> qml.from_qiskit_op(qiskit_op)
     I(0) + X(1) @ Y(0)
 
@@ -457,7 +457,7 @@ def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
 
     This noise model can be converted into PennyLane using:
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> qml.from_qiskit_noise(noise_model)
     NoiseModel({
         OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)

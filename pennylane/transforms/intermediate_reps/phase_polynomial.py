@@ -50,7 +50,7 @@ def phase_polynomial(
 
     .. code-block: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         def circuit():
             qml.CNOT((1, 0))

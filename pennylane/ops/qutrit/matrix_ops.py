@@ -18,7 +18,7 @@ accept a unitary matrix as a parameter.
 
 import warnings
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 

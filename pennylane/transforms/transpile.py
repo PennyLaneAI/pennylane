@@ -4,7 +4,7 @@ Contains the transpiler transform.
 
 from functools import partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops import LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP

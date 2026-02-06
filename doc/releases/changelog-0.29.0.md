@@ -218,7 +218,7 @@
   Here is an example of using JAX-JIT to compute the Hessian of a circuit:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   import jax
   from jax import numpy as jnp
 
@@ -260,7 +260,7 @@
   coordinates.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from pennylane import numpy as np
   import jax
 
@@ -384,7 +384,7 @@
   [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from pennylane import numpy as np
 
   V = np.array([[ 0.53672126+0.j        , -0.1126064 -2.41479668j],

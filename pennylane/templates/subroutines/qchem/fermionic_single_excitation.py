@@ -108,7 +108,7 @@ class FermionicSingleExcitation(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             dev = qml.device('default.qubit', wires=3)
 

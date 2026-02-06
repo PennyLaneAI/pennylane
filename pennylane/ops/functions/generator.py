@@ -20,7 +20,7 @@ import warnings
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 

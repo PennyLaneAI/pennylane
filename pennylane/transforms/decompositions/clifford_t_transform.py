@@ -18,7 +18,7 @@ import warnings
 from functools import lru_cache, partial
 from itertools import product
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops import Adjoint, MeasurementValue
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition

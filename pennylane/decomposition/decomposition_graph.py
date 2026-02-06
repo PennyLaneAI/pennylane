@@ -33,7 +33,7 @@ from dataclasses import dataclass, replace
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.exceptions import DecompositionError
 from pennylane.operation import Operator
@@ -167,7 +167,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         @qml.register_resources({qml.H: 2, qml.CNOT: 1})
         def my_cz(wires):

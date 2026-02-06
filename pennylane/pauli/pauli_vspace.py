@@ -19,7 +19,7 @@ from functools import reduce
 import numpy as np
 import scipy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 
 from .pauli_arithmetic import PauliSentence

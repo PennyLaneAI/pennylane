@@ -16,7 +16,7 @@ JAX interface
 
     .. code::
 
-        import pennylane as qml
+        import pennylane as qp
         import jax
         import jax.numpy as jnp
 
@@ -173,7 +173,7 @@ Example:
 .. code-block:: python
 
     import jax
-    import pennylane as qml
+    import pennylane as qp
 
 
     @jax.jit
@@ -219,7 +219,7 @@ used to optimize a QNode that is transformed by ``jax.jit``:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     import jax
     import jaxopt
 
@@ -247,7 +247,7 @@ QNode:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from jax import numpy as jnp
     import jax
     import optax

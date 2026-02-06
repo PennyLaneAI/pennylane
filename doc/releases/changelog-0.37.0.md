@@ -25,7 +25,7 @@
   network architecture can be efficiently simulated using `method="tn"`.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   n_wires = 16
   dev = qml.device("default.tensor", method="tn")

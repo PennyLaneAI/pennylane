@@ -25,7 +25,7 @@ from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices import Device, ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.devices.preprocess import (
@@ -241,7 +241,7 @@ class DefaultTensor(Device):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         num_qubits = 100
 
@@ -286,7 +286,7 @@ class DefaultTensor(Device):
 
             .. code-block:: python
 
-                import pennylane as qml
+                import pennylane as qp
                 import numpy as np
 
                 theta = 0.5
@@ -337,7 +337,7 @@ class DefaultTensor(Device):
 
             .. code-block:: python
 
-                import pennylane as qml
+                import pennylane as qp
 
                 phi = 0.1
                 depth = 10
@@ -537,7 +537,7 @@ class DefaultTensor(Device):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             dev = qml.device("default.tensor", method="mps", wires=15)
 

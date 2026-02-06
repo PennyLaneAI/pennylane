@@ -19,7 +19,7 @@ from functools import lru_cache, reduce
 import numpy as np
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager

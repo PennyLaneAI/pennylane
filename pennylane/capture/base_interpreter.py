@@ -24,7 +24,7 @@ from importlib.metadata import version
 import jax
 from packaging.version import Version
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 
 from .flatfn import FlatFn

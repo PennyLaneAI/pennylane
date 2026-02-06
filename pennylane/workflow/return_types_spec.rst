@@ -35,7 +35,7 @@ a Tensor-like (Python number, numpy array, ML array), but may also be any other 
 For example, :class:`~.CountsMP` corresponds to a dictionary. We can also imagine a scenario where
 a measurement corresponds to some other type of custom data structure.
 
->>> import pennylane as qml
+>>> import pennylane as qp
 >>> import numpy as np
 >>> def example_value(m):
 ...     tape = qml.tape.QuantumScript((), (m,), shots=10)

@@ -45,7 +45,7 @@ Pending deprecations
 
   .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from functools import partial
 
     @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)

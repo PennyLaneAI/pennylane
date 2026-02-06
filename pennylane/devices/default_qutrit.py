@@ -23,7 +23,7 @@ import logging
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane._version import __version__
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.logging import debug_logger, debug_logger_init

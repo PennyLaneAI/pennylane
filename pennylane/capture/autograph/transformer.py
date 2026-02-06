@@ -28,7 +28,7 @@ from contextlib import ContextDecorator
 from malt.core import ag_ctx, converter
 from malt.impl.api import PyToPy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 
 from . import ag_primitives, operator_update
@@ -328,7 +328,7 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
 
     .. code-block::
 
-        import pennylane as qml
+        import pennylane as qp
         import jax
 
         from jax import make_jaxpr

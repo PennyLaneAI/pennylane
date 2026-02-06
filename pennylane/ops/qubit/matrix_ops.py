@@ -23,7 +23,7 @@ import scipy as sp
 from scipy.linalg import fractional_matrix_power
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.decomposition import add_decomps, register_resources, resource_rep

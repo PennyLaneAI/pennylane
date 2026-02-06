@@ -15,7 +15,7 @@ r"""Contains the QROMStatePreparation template."""
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 

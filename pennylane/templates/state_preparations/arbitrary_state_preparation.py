@@ -18,7 +18,7 @@ Contains the ArbitraryStatePreparation template.
 import functools
 from collections import Counter
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import register_resources
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, resource_rep

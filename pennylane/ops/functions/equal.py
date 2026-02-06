@@ -19,7 +19,7 @@ This module contains the qml.equal function.
 from collections.abc import Iterable
 from functools import singledispatch
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP

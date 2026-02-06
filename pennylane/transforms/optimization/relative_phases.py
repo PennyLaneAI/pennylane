@@ -23,7 +23,7 @@ Giles, Brett, and Peter Selinger. "Exact Synthesis of Multiqubit Clifford+T Circ
 arXiv:1212.0506, arXiv, 2013. doi:10.48550/arXiv.1212.0506.
 """
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -57,7 +57,7 @@ def match_relative_phase_toffoli(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         @qml.transforms.match_relative_phase_toffoli
         @qml.qnode(qml.device("default.qubit"))
@@ -154,7 +154,7 @@ def match_controlled_iX_gate(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         @qml.transforms.match_controlled_iX_gate(num_controls=2)
         @qml.qnode(qml.device("default.qubit"))

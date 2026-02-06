@@ -87,7 +87,7 @@ class QuantumPhaseEstimation(ErrorOperation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane.templates import QuantumPhaseEstimation
             from pennylane import numpy as np
 

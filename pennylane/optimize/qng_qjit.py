@@ -67,7 +67,7 @@ class QNGOptimizerQJIT:
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import jax.numpy as jnp
 
         @qml.qjit(autograph=True)
@@ -103,7 +103,7 @@ class QNGOptimizerQJIT:
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import jax.numpy as jnp
         import jax
         from functools import partial

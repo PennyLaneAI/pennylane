@@ -17,7 +17,7 @@ from copy import deepcopy
 from functools import lru_cache
 from math import pi as PI
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3Matrix, ZOmega
 
 is_jax = True

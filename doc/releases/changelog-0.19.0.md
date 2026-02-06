@@ -415,7 +415,7 @@
   as well as trainable parameters `w` as arguments to the QNode.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   import numpy as np
 
   n_qubits = 3
@@ -938,7 +938,7 @@
   an upcoming release:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device('default.qubit', wires=1)
 
@@ -954,7 +954,7 @@
   Preferred approaches include specifying the `requires_grad` attribute:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from pennylane import numpy as np
 
   dev = qml.device('default.qubit', wires=1)
@@ -971,7 +971,7 @@
   Or specifying the `argnum` argument when using `qml.grad` or `qml.jacobian`:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device('default.qubit', wires=1)
 

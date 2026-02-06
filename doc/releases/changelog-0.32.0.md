@@ -75,7 +75,7 @@
   Consider the following code that is contained in `my_code.py`:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   qml.logging.enable_logging()  # enables logging
 
   dev = qml.device("default.qubit", wires=2)

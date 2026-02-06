@@ -18,7 +18,7 @@ import functools
 from collections.abc import Callable, Sequence
 from typing import Union
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps

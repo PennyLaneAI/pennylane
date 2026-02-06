@@ -90,7 +90,7 @@ are callables. The callables defining the parametrized coefficients must have th
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from jax import numpy as jnp
 
     # defining the coefficients fj(p, t) for the two parametrized terms

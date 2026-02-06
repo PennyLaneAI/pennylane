@@ -17,7 +17,7 @@ from collections.abc import Sequence
 from copy import copy
 from functools import lru_cache, partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import AmplitudeEmbedding
 from pennylane.exceptions import DeviceError, TransformError
 from pennylane.math import flatten, is_abstract, reshape

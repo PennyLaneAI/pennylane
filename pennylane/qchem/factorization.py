@@ -19,7 +19,7 @@ from functools import partial
 import numpy as np
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 
 has_jax_optax = True
 try:  # pragma: no cover

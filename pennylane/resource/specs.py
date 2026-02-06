@@ -22,7 +22,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
 
-import pennylane as qml
+import pennylane as qp
 
 from .resource import CircuitSpecs, SpecsResources, resources_from_tape
 

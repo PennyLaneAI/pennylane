@@ -19,7 +19,7 @@ from collections.abc import Callable
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit.sampling import _group_measurements, jax_random_split, sample_probs
 from pennylane.measurements import ExpectationMP, SampleMeasurement, Shots
 from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP

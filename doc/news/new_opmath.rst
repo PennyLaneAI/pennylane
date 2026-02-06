@@ -167,7 +167,7 @@ Summary of the update
     The familiar ``qml.Hamiltonian`` can still be used, which dispatches to ``LinearCombination`` and offers the same
     usage and functionality but with different implementation details.
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> from pennylane import X
     >>> H = qml.Hamiltonian([0.5, 0.5], [X(0), X(1)])
     >>> type(H)

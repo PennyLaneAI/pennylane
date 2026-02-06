@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -396,7 +396,7 @@ def rowcol(tape: QuantumScript, connectivity=None) -> tuple[QuantumScriptBatch, 
 
     .. code-block: python
 
-        import pennylane as qml
+        import pennylane as qp
         def qfunc():
             for i in range(4):
                 qml.CNOT((i, i+1))

@@ -19,7 +19,7 @@ from functools import partial, reduce
 
 import scipy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import transform
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScript, QuantumScriptBatch

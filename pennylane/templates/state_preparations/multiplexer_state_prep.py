@@ -15,7 +15,7 @@ r"""Contains the MultiplexerStatePreparation template."""
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math, queuing
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation

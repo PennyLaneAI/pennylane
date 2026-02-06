@@ -20,7 +20,7 @@ from itertools import combinations
 import numpy as np
 from scipy.linalg import sqrtm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord, trace_inner_product

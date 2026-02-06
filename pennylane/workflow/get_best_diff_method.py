@@ -18,7 +18,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import TYPE_CHECKING
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.workflow.qnode import _make_execution_config
 from pennylane.workflow.resolution import _resolve_execution_config
 

@@ -36,7 +36,7 @@ them via keys (i.e., ``pennylane.default_config["main.shots"]``), and save/load 
 
 For example:
 
->>> import pennylane as qml
+>>> import pennylane as qp
 >>> qml.default_config.path
 'config.toml'
 >>> print(qml.default_config)

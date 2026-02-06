@@ -20,7 +20,7 @@ from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
 
 import numpy as base_numpy
 import scipy as base_scipy
-import pennylane as qml
+import pennylane as qp
 
 try:
     import jax

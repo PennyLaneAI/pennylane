@@ -20,7 +20,7 @@ from functools import lru_cache
 
 from scipy import sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation

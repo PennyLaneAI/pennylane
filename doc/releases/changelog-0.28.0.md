@@ -113,7 +113,7 @@
   [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
 
   ```pycon
-  >>> import pennylane as qml
+  >>> import pennylane as qp
   >>> from pennylane.qchem import mol_data
   >>> mol_data("BeH2")
   (['Be', 'H', 'H'],

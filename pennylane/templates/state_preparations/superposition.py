@@ -17,7 +17,7 @@ Contains the Superposition template.
 from collections import Counter
 from functools import reduce
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
@@ -169,7 +169,7 @@ class Superposition(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import numpy as np
 
         coeffs = np.sqrt(np.array([1/3, 1/3, 1/3]))

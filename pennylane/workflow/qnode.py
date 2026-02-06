@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Literal, get_args
 
 from cachetools import Cache
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger

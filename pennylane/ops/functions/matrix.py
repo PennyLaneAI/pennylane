@@ -16,7 +16,7 @@ This module contains the qml.matrix function.
 """
 from functools import partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import transform
 from pennylane.exceptions import MatrixUndefinedError, TransformError
 from pennylane.operation import Operator

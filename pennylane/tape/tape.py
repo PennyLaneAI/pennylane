@@ -19,7 +19,7 @@ import copy
 from collections.abc import Sequence
 from threading import RLock
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.pytrees import register_pytree

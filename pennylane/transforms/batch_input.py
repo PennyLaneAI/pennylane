@@ -17,7 +17,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
 from pennylane.transforms.core import transform

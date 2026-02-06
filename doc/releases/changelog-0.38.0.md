@@ -184,7 +184,7 @@
   depolarizing errors based on the presence of different gates in the circuit:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   import qiskit_aer.noise as noise
 
   error_1 = noise.depolarizing_error(0.001, 1) # 1-qubit noise

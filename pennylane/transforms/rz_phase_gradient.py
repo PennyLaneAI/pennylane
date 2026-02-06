@@ -17,7 +17,7 @@ A transform for decomposing RZ rotations using a phase gradient catalyst state.
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch

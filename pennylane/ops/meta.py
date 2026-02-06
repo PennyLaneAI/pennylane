@@ -22,7 +22,7 @@ from collections.abc import Hashable, Sequence
 from copy import copy
 from typing import Literal
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.wires import Wires, WiresLike
 

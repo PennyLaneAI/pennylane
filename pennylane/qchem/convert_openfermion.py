@@ -17,7 +17,7 @@ This module contains the functions for converting between OpenFermion and PennyL
 
 from functools import singledispatch
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
 from pennylane.ops import LinearCombination, Sum
@@ -58,7 +58,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 
     **Example**
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> from openfermion import FermionOperator, QubitOperator
     >>> of_op = 0.5 * FermionOperator('0^ 2') + FermionOperator('0 2^')
     >>> pl_op = qml.from_openfermion(of_op)
@@ -123,7 +123,7 @@ def to_openfermion(
 
     **Example**
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> fermi_s = qml.FermiSentence({w1 : 1.2, w2: 3.1})

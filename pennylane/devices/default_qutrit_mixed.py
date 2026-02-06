@@ -21,7 +21,7 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels

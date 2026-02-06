@@ -72,7 +72,7 @@ def to_ppr(tape):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         qml.capture.enable()
 
@@ -166,7 +166,7 @@ def commute_ppr(tape, *, max_pauli_size=0):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import jax.numpy as jnp
 
         qml.capture.enable()
@@ -279,7 +279,7 @@ def merge_ppr_ppm(tape=None, *, max_pauli_size=0):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import jax.numpy as jnp
 
         qml.capture.enable()
@@ -387,7 +387,7 @@ def ppr_to_ppm(tape=None, *, decompose_method="pauli-corrected", avoid_y_measure
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from functools import partial
         import jax.numpy as jnp
 
@@ -512,7 +512,7 @@ def ppm_compilation(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         qml.capture.enable()
 
@@ -613,7 +613,7 @@ def reduce_t_depth(qnode):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import jax.numpy as jnp
 
         qml.capture.enable()
@@ -709,7 +709,7 @@ def decompose_arbitrary_ppr(qnode):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         qml.capture.enable()
 

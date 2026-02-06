@@ -91,7 +91,7 @@ def register_condition(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.math.decomposition import zyz_rotation_angles
 
         # The parameters must be consistent with ``qml.QubitUnitary.resource_keys``
@@ -182,7 +182,7 @@ def register_resources(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         qml.decomposition.enable_graph()
 
@@ -315,7 +315,7 @@ def register_resources(
 
        .. code-block:: python
 
-          import pennylane as qml
+          import pennylane as qp
           from pennylane.allocation import allocate
           from pennylane.decomposition import controlled_resource_rep
 
@@ -482,7 +482,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import numpy as np
 
         @qml.register_resources({qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1})
@@ -549,7 +549,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
 
     **Example**
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> qml.list_decomps(qml.CRX)
     [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
      <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
@@ -611,7 +611,7 @@ def null_decomp(*_, **__):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.decomposition import null_decomp
 
         qml.decomposition.enable_graph()

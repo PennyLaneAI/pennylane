@@ -24,7 +24,7 @@ import warnings
 
 from scipy.constants import angstrom, physical_constants
 
-import pennylane as qml
+import pennylane as qp
 
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data

@@ -301,7 +301,7 @@ class DefaultClifford(Device):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
             dev = qml.device("default.clifford")
 
@@ -353,7 +353,7 @@ class DefaultClifford(Device):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
 
             dev = qml.device("default.clifford", seed=42)

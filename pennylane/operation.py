@@ -191,7 +191,7 @@ from typing import Any, ClassVar, Literal, Optional, Union
 import numpy as np
 from scipy.sparse import spmatrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import capture
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -437,7 +437,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
 
         class FlipAndRotate(qml.operation.Operation):

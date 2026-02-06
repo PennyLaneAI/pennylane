@@ -85,7 +85,7 @@ using arithmetic operators for more complex conditioning:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     dev = qml.device("default.qubit", wires=3)
 
@@ -110,7 +110,7 @@ long as they are not collected in a sequence, e.g., ``[m1 + m2, m1 - m2]`` is no
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     dev = qml.device("default.qubit", wires=3)
 
@@ -138,7 +138,7 @@ obtained of a given state:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane.measurements import SampleMeasurement
 
     class CountState(SampleMeasurement):

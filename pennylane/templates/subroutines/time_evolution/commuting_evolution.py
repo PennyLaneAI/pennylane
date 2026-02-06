@@ -92,7 +92,7 @@ class CommutingEvolution(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             n_wires = 2
             dev = qml.device('default.qubit', wires=n_wires)

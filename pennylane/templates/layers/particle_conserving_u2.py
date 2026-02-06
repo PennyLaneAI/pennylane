@@ -114,7 +114,7 @@ class ParticleConservingU2(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
             from functools import partial
 

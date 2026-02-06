@@ -18,7 +18,7 @@ from functools import lru_cache, partial
 from numbers import Number
 from warnings import warn
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,

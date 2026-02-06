@@ -56,7 +56,7 @@ with ``default.qubit``).
 
 .. code-block:: python 
 
-    import pennylane as qml
+    import pennylane as qp
 
     qml.capture.enable()
 
@@ -76,7 +76,7 @@ method:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     qml.capture.enable()
 
@@ -201,7 +201,7 @@ when tape conversion happens.
 
 .. code-block:: python 
 
-    import pennylane as qml 
+    import pennylane as qp 
     import jax 
 
     qml.capture.enable() 
@@ -232,7 +232,7 @@ argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -250,7 +250,7 @@ TypeError: Argument '<pennylane.capture.autograph.ag_primitives.PRange object at
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -276,7 +276,7 @@ For example, the positional argument in ``qml.MultiRZ`` can't be a list:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -294,7 +294,7 @@ But a list can be passed to ``qml.MultiRZ`` as a keyword argument:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -311,7 +311,7 @@ Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     import jax.numpy as jnp
 
@@ -335,7 +335,7 @@ to QNodes and quantum functions:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
     
@@ -367,7 +367,7 @@ For instance, consider this example with ``RZ``:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -393,7 +393,7 @@ expected:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -414,7 +414,7 @@ is also required.
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     qml.capture.enable()
 
@@ -467,7 +467,7 @@ Here is an example a toy transform called ``shift_rx_to_end``, which just moves
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -492,7 +492,7 @@ corresponding to ``stop`` in ``qml.for_loop``.
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     @shift_rx_to_end
     @qml.qnode(qml.device("default.qubit", wires=4))
@@ -521,7 +521,7 @@ this behaviour:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -576,7 +576,7 @@ example:
 
 .. code-block:: python
     
-    import pennylane as qml
+    import pennylane as qp
 
     qml.capture.enable()
 
@@ -604,7 +604,7 @@ but can be switched off with the ``autograph`` keyword argument.
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
     def circuit():
@@ -649,7 +649,7 @@ Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_a
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
     import jax
 
     qml.capture.enable()
@@ -687,7 +687,7 @@ argument. If ``ratio_imprim`` is passed as a traced value, an error occurs:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -713,7 +713,7 @@ As a workaround, we can pass ``ratio_imprim`` as a regular (non-traced) constant
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
     import jax.numpy as jnp
 
     qml.capture.enable()
@@ -743,7 +743,7 @@ then a ``False`` branch much be provided that returns the same generic type:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     qml.capture.enable()
 
@@ -766,7 +766,7 @@ the condition is ``False``, a ``false_fn`` must be provided:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     qml.capture.enable()
 
@@ -791,7 +791,7 @@ Or the ``true_fn`` itself can be an operator type itself:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
 
     qml.capture.enable()
 
@@ -813,7 +813,7 @@ function:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -841,7 +841,7 @@ As a workaround, set the ``lambda`` to a callable variable,
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -870,7 +870,7 @@ or use a regular Python function,
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -904,7 +904,7 @@ a QNode, and will raise an error:
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 
@@ -921,7 +921,7 @@ TransformError: Input is not an Operator, tape, QNode, or quantum function
 
 .. code-block:: python
 
-    import pennylane as qml 
+    import pennylane as qp 
 
     qml.capture.enable()
 

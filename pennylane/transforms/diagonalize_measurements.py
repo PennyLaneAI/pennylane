@@ -16,7 +16,7 @@
 from copy import copy
 from functools import singledispatch
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words

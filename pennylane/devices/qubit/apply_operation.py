@@ -20,7 +20,7 @@ from string import ascii_letters as alphabet
 import numpy as np
 import scipy as sp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math, ops
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, MidMeasure

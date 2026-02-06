@@ -17,7 +17,7 @@
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel

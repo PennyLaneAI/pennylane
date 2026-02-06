@@ -277,7 +277,7 @@ or to check whether two gates causally influence each other.
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane import CircuitGraph
     from pennylane.workflow import construct_tape
 

@@ -18,7 +18,7 @@ from collections.abc import Callable
 from functools import lru_cache, partial
 from typing import overload
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler

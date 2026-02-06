@@ -83,7 +83,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane import numpy as np
 
     dev = qml.device("default.qubit", wires=2)

@@ -19,7 +19,7 @@ from string import ascii_letters as alphabet
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.operation import Channel, Operator

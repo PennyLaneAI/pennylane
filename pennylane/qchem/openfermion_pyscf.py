@@ -18,7 +18,7 @@ import os
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 
 from .basis_data import atomic_numbers
 

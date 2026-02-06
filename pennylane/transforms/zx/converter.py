@@ -20,7 +20,7 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript

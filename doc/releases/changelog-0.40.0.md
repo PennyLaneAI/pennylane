@@ -15,7 +15,7 @@
   must be rank-2, while all intermediate tensors should be rank-3.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   import numpy as np
 
   mps = [

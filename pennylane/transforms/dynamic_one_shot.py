@@ -22,7 +22,7 @@ from functools import partial, singledispatch
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (

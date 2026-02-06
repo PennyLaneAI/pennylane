@@ -100,7 +100,7 @@ class ApproxTimeEvolution(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import ApproxTimeEvolution
 
             n_wires = 2
@@ -199,7 +199,7 @@ class ApproxTimeEvolution(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import ApproxTimeEvolution
 
             num_qubits = 2

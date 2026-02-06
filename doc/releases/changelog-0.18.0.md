@@ -15,7 +15,7 @@
   [release notes](https://github.com/PennyLaneAI/pennylane-lightning/blob/v0.18.0/.github/CHANGELOG.md#new-features-since-last-release) for more details! The device can be accessed in the following way:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   wires = 3
   layers = 2

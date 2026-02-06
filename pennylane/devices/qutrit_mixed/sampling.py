@@ -19,7 +19,7 @@ from collections.abc import Callable
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.measurements import (
     CountsMP,

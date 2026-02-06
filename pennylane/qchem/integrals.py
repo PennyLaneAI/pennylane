@@ -20,7 +20,7 @@ import itertools as it
 import numpy as np
 from scipy.special import factorial2 as fac2
 
-import pennylane as qml
+import pennylane as qp
 
 
 def primitive_norm(l, alpha):

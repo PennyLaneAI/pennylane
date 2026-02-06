@@ -65,7 +65,7 @@ def layer(template, depth, *args, **kwargs):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
 
             def subroutine():

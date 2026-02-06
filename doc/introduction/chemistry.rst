@@ -22,7 +22,7 @@ to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane import numpy as np
 
     symbols = ["H", "H"]

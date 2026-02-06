@@ -16,7 +16,7 @@ Contains the CosineWindow template.
 """
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import capture, math, register_resources
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, resource_rep

@@ -128,7 +128,7 @@ class UCCSD(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import numpy as np
 
             # Define the molecule

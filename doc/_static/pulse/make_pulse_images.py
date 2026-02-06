@@ -20,7 +20,7 @@ import pathlib
 import matplotlib.pyplot as plt
 from jax import numpy as jnp
 
-import pennylane as qml
+import pennylane as qp
 
 folder = pathlib.Path(__file__).parent
 

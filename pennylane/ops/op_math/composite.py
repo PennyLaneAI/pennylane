@@ -20,7 +20,7 @@ import copy
 from collections.abc import Callable
 from functools import wraps
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires

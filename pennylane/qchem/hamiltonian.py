@@ -18,7 +18,7 @@ from functools import singledispatch
 
 from scipy.constants import angstrom, physical_constants
 
-import pennylane as qml
+import pennylane as qp
 
 from .basis_data import atomic_numbers
 from .hartree_fock import nuclear_energy, scf

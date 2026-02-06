@@ -837,7 +837,7 @@ def expectation_value(
     The expectation value for any operator can obtained by passing their matrix representation as an argument.
     For example, for a 2 qubit state, we can compute the expectation value of the operator :math:`Z \otimes I` as
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> import numpy as np
     >>> state_vector = [1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]
     >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0, 1])
@@ -1550,7 +1550,7 @@ def choi_matrix(Ks, check_Ks=False):
 
     The simplest quantum channel is a single unitary gate. In that case, the Kraus operators reduce to the unitary gate itself.
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> Ks = [qml.matrix(qml.CNOT((0, 1)))]
     >>> Lambda = qml.math.choi_matrix(Ks)
     >>> Lambda.shape

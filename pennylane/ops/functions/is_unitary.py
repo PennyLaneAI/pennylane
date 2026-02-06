@@ -14,7 +14,7 @@
 """
 This module contains the qml.is_unitary function.
 """
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 
 

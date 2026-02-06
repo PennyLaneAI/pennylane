@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""This module contains the base class for qubit management"""
 
-import pennylane as qml
+import pennylane as qp
 
 
 class QubitManager:

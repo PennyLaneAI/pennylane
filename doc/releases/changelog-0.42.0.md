@@ -21,7 +21,7 @@
   decomposition system is enabled via :func:`~.decomposition.enable_graph`:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from functools import partial
 
   qml.decomposition.enable_graph()
@@ -350,7 +350,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit", wires=[0, 1, 2])
   

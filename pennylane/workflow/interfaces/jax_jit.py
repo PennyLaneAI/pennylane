@@ -47,7 +47,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.typing import ResultBatch
 from pennylane.workflow.jacobian_products import _compute_jvps
 

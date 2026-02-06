@@ -18,7 +18,7 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, TensorLike
@@ -43,7 +43,7 @@ def parity_matrix(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         from pennylane.transforms import parity_matrix
 
         def circuit():

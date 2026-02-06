@@ -114,7 +114,7 @@ class TTN(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
 
             def block(weights, wires):

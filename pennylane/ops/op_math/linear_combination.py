@@ -20,7 +20,7 @@ import numbers
 # pylint: disable=too-many-arguments,protected-access
 from copy import copy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 
 from .sprod import SProd
@@ -234,7 +234,7 @@ class LinearCombination(Sum):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             a = qml.X(0)
             b = qml.prod(qml.X(0), qml.X(1))

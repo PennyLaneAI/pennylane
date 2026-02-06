@@ -22,7 +22,7 @@ from collections import Counter
 from collections.abc import Iterable
 from copy import copy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -89,7 +89,7 @@ def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             a = qml.s_prod(1.0, qml.X(0))
             b = qml.s_prod(2.0, qml.prod(qml.X(0), qml.X(1)))
@@ -512,7 +512,7 @@ class Sum(CompositeOp):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             a = qml.X(0)
             b = qml.prod(qml.X(0), qml.X(1))

@@ -55,7 +55,7 @@ body:
     id: system
     attributes:
       label:  System information
-      description: Please post the output of `import pennylane as qml; qml.about()` or, if not possible/relevant, a note on why this is not included. This will be automatically formatted into code, so no need for backticks.
+      description: Please post the output of `import pennylane as qp; qml.about()` or, if not possible/relevant, a note on why this is not included. This will be automatically formatted into code, so no need for backticks.
       render: shell
     validations:
       required: true

@@ -19,7 +19,7 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
@@ -121,7 +121,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import numpy as np
         import jax.numpy as jnp
         import jax

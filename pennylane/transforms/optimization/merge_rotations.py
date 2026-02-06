@@ -16,7 +16,7 @@
 
 from functools import lru_cache, partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager

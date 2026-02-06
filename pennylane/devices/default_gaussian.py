@@ -28,7 +28,7 @@ import math
 import numpy as np
 from scipy.special import factorial as fac
 
-import pennylane as qml
+import pennylane as qp
 from pennylane._version import __version__
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Identity

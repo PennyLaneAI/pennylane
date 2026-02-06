@@ -101,7 +101,7 @@ def circuit_spectrum(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         import numpy as np
 
         n_layers = 2

@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for computing the dipole moment.
 """
-import pennylane as qml
+import pennylane as qp
 from pennylane.fermi import FermiSentence, FermiWord
 
 from .basis_data import atomic_numbers

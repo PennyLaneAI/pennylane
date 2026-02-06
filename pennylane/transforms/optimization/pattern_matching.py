@@ -20,7 +20,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import adjoint
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires

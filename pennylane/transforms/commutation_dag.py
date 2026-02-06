@@ -18,7 +18,7 @@ import heapq
 from collections import OrderedDict
 from functools import partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn

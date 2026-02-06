@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import allocation
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources

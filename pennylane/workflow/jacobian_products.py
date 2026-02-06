@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from cachetools import LRUCache
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 
 logger = logging.getLogger(__name__)

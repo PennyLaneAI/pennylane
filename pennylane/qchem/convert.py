@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 
 # pylint: disable=import-outside-toplevel
-import pennylane as qml
+import pennylane as qp
 from pennylane.wires import Wires
 
 

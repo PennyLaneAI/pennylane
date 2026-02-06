@@ -17,7 +17,7 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.math import Interface
 
 from .resolution import _resolve_execution_config

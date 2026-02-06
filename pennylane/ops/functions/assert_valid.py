@@ -25,7 +25,7 @@ from string import ascii_lowercase
 import numpy as np
 import scipy.sparse
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.decomposition import DecompositionRule
 from pennylane.exceptions import EigvalsUndefinedError
 

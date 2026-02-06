@@ -23,7 +23,7 @@
     `qml.from_qiskit`. Consider this simple Qiskit circuit:
 
     ```python
-    import pennylane as qml
+    import pennylane as qp
     from qiskit import QuantumCircuit
 
     qc = QuantumCircuit(2)
@@ -171,7 +171,7 @@
   and the number of shots is not too high.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit", shots=10)
 
@@ -299,7 +299,7 @@
   [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328):
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.clifford", tableau=True)
   @qml.qnode(dev)
@@ -364,7 +364,7 @@
   It is now possible to transform a fermionic Hamiltonian to a qubit Hamiltonian with parity mapping.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   fermi_ham = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
 
   qubit_ham = qml.fermi.parity_transform(fermi_ham, n=6)

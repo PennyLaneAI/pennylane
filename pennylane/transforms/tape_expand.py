@@ -16,7 +16,7 @@ generate such functions from."""
 # pylint: disable=unused-argument
 import contextlib
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.measurements import MeasurementProcess
 

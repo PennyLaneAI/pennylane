@@ -34,7 +34,7 @@ new features are available:
   new :func:`qml.list_decomps <pennylane.list_decomps>` function:
 
   ```pycon
-  >>> import pennylane as qml
+  >>> import pennylane as qp
   >>> qml.decomposition.enable_graph()
   >>> qml.list_decomps(qml.CRX)
   [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
@@ -532,7 +532,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   This function accepts and outputs matrices when `matrix=True`.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from pennylane import X, Y, Z, I
   n = 2
   gens = [qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)]
@@ -695,7 +695,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   Using them in your code is just like any other differentiation method in PennyLane:
   
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit")
 
@@ -727,7 +727,7 @@ The new :mod:`qml.liealg <pennylane.liealg>` module provides a variety of Lie al
   After constructing a QNode,
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   @qml.qnode(device=qml.device("default.qubit"))
   def circuit():

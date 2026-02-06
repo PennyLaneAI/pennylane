@@ -22,7 +22,7 @@ import itertools
 import numpy as np
 import scipy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.math.utils import binary_finite_reduced_row_echelon
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix_from_pws

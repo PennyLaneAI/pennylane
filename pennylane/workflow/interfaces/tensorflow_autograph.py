@@ -21,7 +21,7 @@ from functools import reduce
 import numpy as np
 import tensorflow as tf
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import SampleMP, StateMP
 
 from .tensorflow import _res_restructured, _to_tensors, set_parameters_on_copy

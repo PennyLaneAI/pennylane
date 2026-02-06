@@ -17,7 +17,7 @@ This module contains the functions needed for creating fermionic and qubit obser
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.pauli import PauliSentence
 

@@ -25,7 +25,7 @@ from typing import Literal
 import numpy as np
 from scipy.linalg import block_diag
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.allocation import allocate
 from pennylane.decomposition import (
     add_decomps,

@@ -18,7 +18,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.transforms.core import CompilePipeline, transform
 
 from ._setup_transform_program import _setup_transform_program

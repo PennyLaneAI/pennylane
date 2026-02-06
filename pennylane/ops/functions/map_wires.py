@@ -19,7 +19,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import overload
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator

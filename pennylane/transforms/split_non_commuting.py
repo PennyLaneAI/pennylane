@@ -27,7 +27,7 @@ from typing import Literal
 import numpy as np
 from scipy.stats import multinomial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMP
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -313,7 +313,7 @@ def split_non_commuting(
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane.transforms import split_non_commuting
 
             ham = qml.Hamiltonian(

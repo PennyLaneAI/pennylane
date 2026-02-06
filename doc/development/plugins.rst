@@ -745,7 +745,7 @@ which allows the device to be initialized in the following way:
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     dev1 = qml.device(name)
 
 where ``name`` is a string that uniquely identifies the device. The ``name``

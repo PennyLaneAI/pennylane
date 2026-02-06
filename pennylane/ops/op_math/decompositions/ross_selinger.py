@@ -14,7 +14,7 @@
 """Ross-Selinger (arXiv:1403.2975v3) implementation for approximate Pauli-Z rotation gate decomposition."""
 import math
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.ops.op_math.decompositions.grid_problems import GridIterator
 from pennylane.ops.op_math.decompositions.norm_solver import _solve_diophantine

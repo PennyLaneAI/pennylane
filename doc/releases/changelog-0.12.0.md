@@ -112,7 +112,7 @@
   [(#818)](https://github.com/XanaduAI/pennylane/pull/818)
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit", wires=3)
   qml.enable_tape()

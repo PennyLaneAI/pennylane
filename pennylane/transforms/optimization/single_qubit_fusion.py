@@ -16,7 +16,7 @@
 
 from functools import lru_cache, partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager

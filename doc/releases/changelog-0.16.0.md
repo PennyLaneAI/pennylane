@@ -384,7 +384,7 @@
   possible single and double excitations.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from pennylane import numpy as np
 
   electrons = 2

@@ -19,7 +19,7 @@ from typing import Literal
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import allocation, control_flow, math, ops, queuing
 from pennylane.decomposition import (
     adjoint_resource_rep,

@@ -45,7 +45,7 @@ class TwoLocalSwapNetwork(Operation):
 
     **Example**
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> dev = qml.device('default.qubit', wires=5)
     >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
     >>> @qml.qnode(dev)
@@ -169,7 +169,7 @@ class TwoLocalSwapNetwork(Operation):
 
         **Example**
 
-        >>> import pennylane as qml
+        >>> import pennylane as qp
         >>> dev = qml.device('default.qubit', wires=5)
         >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
         >>> qml.TwoLocalSwapNetwork.compute_decomposition(wires=dev.wires,

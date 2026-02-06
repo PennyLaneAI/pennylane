@@ -73,7 +73,7 @@ class SimplifiedTwoDesign(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from math import pi
 
             n_wires = 3

@@ -149,7 +149,7 @@ def breakpoint():
     .. code-block:: python3
         :linenos:
 
-        import pennylane as qml
+        import pennylane as qp
 
         dev = qml.device("default.qubit", wires=2)
 

@@ -23,7 +23,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init

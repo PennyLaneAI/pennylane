@@ -29,7 +29,7 @@ This new module includes the following features:
   :func:`~.estimator.estimate.estimate` function works as follows:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   import pennylane.estimator as qre
 
   dev = qml.device("null.qubit")
@@ -279,7 +279,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   context manager:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
@@ -444,7 +444,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   As an example, consider the following circuit:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit")
 
@@ -1060,7 +1060,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8432)](https://github.com/PennyLaneAI/pennylane/pull/8432)  
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   @qml.draw
   @qml.qnode(qml.device("lightning.qubit", wires=4))

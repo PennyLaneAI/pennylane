@@ -153,7 +153,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
         reg = qml.registers(
             {
                 "control": num_control_wires,
@@ -428,7 +428,7 @@ class HybridQRAM(Operation):
         num_control_wires = 3
         num_work_wires = 1 + 1 + 3 * (1 << (num_control_wires - k) - 1)
 
-        import pennylane as qml
+        import pennylane as qp
         reg = qml.registers(
             {
                 "control": num_control_wires,
@@ -897,7 +897,7 @@ class SelectOnlyQRAM(Operation):
         num_select_wires = 1
         select_value = 0
 
-        import pennylane as qml
+        import pennylane as qp
         reg = qml.registers(
             {
                 "control": num_control_wires,

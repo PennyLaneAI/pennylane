@@ -16,7 +16,7 @@
 
 from collections.abc import Callable, Sequence
 
-import pennylane as qml
+import pennylane as qp
 
 from .autograph import run_autograph
 

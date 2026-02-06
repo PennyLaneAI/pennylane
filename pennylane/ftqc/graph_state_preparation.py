@@ -17,7 +17,7 @@ r"""This module contains the GraphStatePrep template."""
 
 import networkx as nx
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 

@@ -140,7 +140,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
@@ -262,7 +262,7 @@ def allocate(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit():

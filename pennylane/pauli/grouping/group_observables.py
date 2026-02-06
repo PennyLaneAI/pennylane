@@ -25,7 +25,7 @@ from typing import Literal
 import numpy as np
 import rustworkx as rx
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,

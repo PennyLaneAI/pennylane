@@ -19,7 +19,7 @@ from typing import Union
 
 from scipy.linalg import fractional_matrix_power
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math as qmlmath
 from pennylane.exceptions import (
     AdjointUndefinedError,

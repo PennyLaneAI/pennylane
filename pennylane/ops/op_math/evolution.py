@@ -18,7 +18,7 @@ This submodule defines the Evolution class.
 from copy import copy
 from warnings import warn
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.exceptions import GeneratorUndefinedError
 

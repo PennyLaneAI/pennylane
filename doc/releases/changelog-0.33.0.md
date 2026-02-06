@@ -12,7 +12,7 @@
   `0` or `1`, corresponding to the basis states.
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   dev = qml.device("default.qubit")
 

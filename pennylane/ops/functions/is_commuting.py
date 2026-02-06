@@ -17,7 +17,7 @@ Defines `is_commuting`, an function for determining if two functions commute.
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Prod, SProd, Sum
 

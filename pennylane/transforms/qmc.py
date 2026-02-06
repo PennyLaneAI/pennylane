@@ -16,7 +16,7 @@ Contains the quantum_monte_carlo transform.
 """
 from copy import copy
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.templates import QFT

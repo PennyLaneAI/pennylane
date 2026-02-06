@@ -17,7 +17,7 @@ computing the scalar product of operations.
 """
 
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
 from pennylane.operation import Operator

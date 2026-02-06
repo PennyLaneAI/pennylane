@@ -67,7 +67,7 @@ import numpy as np
 import torch
 import torch.utils._pytree as pytree
 
-import pennylane as qml
+import pennylane as qp
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

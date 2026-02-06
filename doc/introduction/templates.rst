@@ -411,7 +411,7 @@ The shape can for example be used to construct random weights at the beginning o
 
 .. code-block:: python
 
-    import pennylane as qml
+    import pennylane as qp
     from pennylane.templates import BasicEntanglerLayers
     from pennylane import numpy as np
 

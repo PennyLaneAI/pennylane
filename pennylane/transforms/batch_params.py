@@ -16,7 +16,7 @@ Contains the batch dimension transform.
 """
 
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 

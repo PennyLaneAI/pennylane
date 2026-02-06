@@ -16,7 +16,7 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 """
 from functools import lru_cache, partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch

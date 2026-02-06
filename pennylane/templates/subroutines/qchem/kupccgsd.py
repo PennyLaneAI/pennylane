@@ -125,7 +125,7 @@ class kUpCCGSD(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             from pennylane import numpy as np
 
             # Build the electronic Hamiltonian

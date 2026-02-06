@@ -21,7 +21,7 @@ for developers when making any change that might impact the resulting figures.
 
 import pathlib
 import matplotlib.pyplot as plt
-import pennylane as qml
+import pennylane as qp
 
 
 from pennylane.drawer import tape_mpl, use_style as use_drawer_style

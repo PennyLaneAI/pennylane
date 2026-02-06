@@ -27,7 +27,7 @@
   spectral norm error between two unitaries via `get_error`:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   from pennylane.resource import ErrorOperation, SpectralNormError
 
   intended_op = qml.RY(0.40, 0)

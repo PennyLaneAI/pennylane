@@ -53,7 +53,7 @@ def parity_synth(tape):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         qml.capture.enable()
         dev = qml.device("lightning.qubit", wires=2)

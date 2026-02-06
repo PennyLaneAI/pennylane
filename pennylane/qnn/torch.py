@@ -253,7 +253,7 @@ class TorchLayer(Module):
         .. code-block:: python
 
             import numpy as np
-            import pennylane as qml
+            import pennylane as qp
             import torch
             import sklearn.datasets
 

@@ -47,7 +47,7 @@ class Permute(Operation):
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         dev = qml.device('default.qubit', wires=5)
 
@@ -89,7 +89,7 @@ class Permute(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             op = qml.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
             tape = qml.tape.QuantumTape([op])

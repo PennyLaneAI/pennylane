@@ -15,7 +15,7 @@
 from collections.abc import Sequence
 from functools import partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch

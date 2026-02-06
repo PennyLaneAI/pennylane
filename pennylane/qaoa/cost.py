@@ -655,7 +655,7 @@ def max_weight_cycle(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph, constrained: b
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
             import networkx as nx
 

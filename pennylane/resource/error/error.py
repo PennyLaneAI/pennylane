@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import partial
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operation, Operator
 
 
@@ -221,7 +221,7 @@ def algo_error(
 
     .. code-block:: python
 
-        import pennylane as qml
+        import pennylane as qp
 
         dev = qml.device("null.qubit", wires=2)
         Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])

@@ -246,7 +246,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             H = qml.PauliY(2) @ qml.PauliZ(1) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
             measurement = [qml.expval(H)]

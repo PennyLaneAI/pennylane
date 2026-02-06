@@ -546,7 +546,7 @@ def decompose(
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.CRX(0.5, wires=[0, 1])
@@ -627,7 +627,7 @@ def decompose(
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             qml.decomposition.enable_graph()
 
@@ -686,7 +686,7 @@ def decompose(
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             qml.decomposition.enable_graph()
 

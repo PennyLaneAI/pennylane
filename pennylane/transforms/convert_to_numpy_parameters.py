@@ -16,7 +16,7 @@ This file contains preprocessings steps that may be called internally
 during execution.
 """
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform

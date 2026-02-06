@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.ops.identity import GlobalPhase
 from pennylane.wires import Wires
 

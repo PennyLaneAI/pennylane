@@ -65,7 +65,7 @@ def cost_layer(gamma, hamiltonian):
         .. code-block:: python3
 
             from pennylane import qaoa
-            import pennylane as qml
+            import pennylane as qp
 
             cost_h = qml.Hamiltonian([1, 1], [qml.Z(0), qml.Z(0) @ qml.Z(1)])
 
@@ -123,7 +123,7 @@ def mixer_layer(alpha, hamiltonian):
         .. code-block:: python3
 
             from pennylane import qaoa
-            import pennylane as qml
+            import pennylane as qp
 
             mixer_h = qml.Hamiltonian([1, 1], [qml.X(0), qml.X(0) @ qml.X(1)])
 

@@ -15,7 +15,7 @@
 
 from collections.abc import Iterable
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 
 

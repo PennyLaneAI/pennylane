@@ -236,7 +236,7 @@ def estimate(
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import pennylane.estimator as qre
 
             @qml.qnode(qml.device("default.qubit"))

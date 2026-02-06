@@ -82,7 +82,7 @@ class AdaptiveOptimizer:
     `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_ algorithm for building an
     adaptive circuit for the :math:`\text{H}_3^+` cation.
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> from pennylane import numpy as np
 
     The molecule is defined and the Hamiltonian is computed with:

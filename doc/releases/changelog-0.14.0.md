@@ -45,7 +45,7 @@
   Example use:
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
 
   wires = 1
   device = qml.device("default.qubit", wires=wires)
@@ -133,7 +133,7 @@
   [(#952)](https://github.com/PennyLaneAI/pennylane/pull/952)
 
   ```python
-  import pennylane as qml
+  import pennylane as qp
   dev = qml.device('default.qubit', wires=5)
 
   @qml.qnode(dev)

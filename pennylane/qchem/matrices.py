@@ -19,7 +19,7 @@ import itertools as it
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 
 from .integrals import (
     _check_requires_grad,

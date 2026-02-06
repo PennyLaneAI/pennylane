@@ -21,7 +21,7 @@ from warnings import warn
 import numpy as np
 from scipy.sparse.linalg import expm as sparse_expm
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math, queuing
 from pennylane.decomposition import (
     add_decomps,

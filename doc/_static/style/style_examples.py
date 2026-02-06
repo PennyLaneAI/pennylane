@@ -20,7 +20,7 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.drawer.style import _styles_map
 import matplotlib.pyplot as plt
 

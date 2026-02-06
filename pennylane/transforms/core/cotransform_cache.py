@@ -16,7 +16,7 @@ This submodule contains the CotransformCache for handling the classical cotransf
 """
 from functools import partial
 
-import pennylane as qml  # for qml.workflow.construct_tape
+import pennylane as qp  # for qml.workflow.construct_tape
 from pennylane import math
 from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError

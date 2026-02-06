@@ -33,7 +33,7 @@ from .transform_dispatcher import BoundTransform, Transform
 if TYPE_CHECKING:
     import jax
 
-    import pennylane as qml
+    import pennylane as qp
 
 
 def _batch_postprocessing(

@@ -22,7 +22,7 @@ import numpy as np
 import scipy as sp
 from scipy.sparse import csr_array, csr_matrix
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
@@ -254,7 +254,7 @@ class StatePrep(StatePrepBase):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             dev = qml.device('default.qubit', wires=2)
 
@@ -628,7 +628,7 @@ class QubitDensityMatrix(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             nr_wires = 2
             rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
             rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state

@@ -17,7 +17,7 @@ from numbers import Number
 
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.logging import debug_logger
 from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumScript

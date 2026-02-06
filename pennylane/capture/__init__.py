@@ -77,7 +77,7 @@ By default, the mechanism is disabled:
 
 .. code-block:: pycon
 
-    >>> import pennylane as qml
+    >>> import pennylane as qp
     >>> qml.capture.enabled()
     False
     >>> qml.capture.enable()

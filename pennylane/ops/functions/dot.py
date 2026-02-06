@@ -19,7 +19,7 @@ a vector and a list of operators.
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse import ParametrizedHamiltonian
@@ -115,7 +115,7 @@ def dot(
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
 
             a = qml.X(0)
             b = qml.prod(qml.X(0), qml.X(1))
