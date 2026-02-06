@@ -416,12 +416,12 @@ The shape can for example be used to construct random weights at the beginning o
     from pennylane import numpy as np
 
     n_wires = 3
-    dev = qml.device('default.qubit', wires=n_wires)
+    dev = qp.device('default.qubit', wires=n_wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(weights):
         BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-        return qml.expval(qml.PauliZ(0))
+        return qp.expval(qp.PauliZ(0))
 
     shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=n_wires)
     np.random.seed(42)  # to make the result reproducible
@@ -444,15 +444,15 @@ statement:
 
     def MyTemplate(a, b, wires):
         c = np.sin(a) + b
-        qml.RX(c, wires=wires[0])
+        qp.RX(c, wires=wires[0])
 
     n_wires = 3
-    dev = qml.device('default.qubit', wires=n_wires)
+    dev = qp.device('default.qubit', wires=n_wires)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(a, b):
         MyTemplate(a, b, wires=range(n_wires))
-        return qml.expval(qml.PauliZ(0))
+        return qp.expval(qp.PauliZ(0))
 
 >>> circuit(2, 3)
 -0.7195065654396784
@@ -474,7 +474,7 @@ Layering Function
 
 The layer function creates a new template by repeatedly applying a sequence of quantum
 gates to a set of wires. You can import this function both via
-``qml.layer`` and ``qml.templates.layer``.
+``qp.layer`` and ``qp.templates.layer``.
 
 .. autosummary::
 

@@ -1,4 +1,4 @@
-qml.concurrency
+qp.concurrency
 ===============
 
 .. currentmodule:: pennylane.concurrency

@@ -1,4 +1,4 @@
-qml.pulse
+qp.pulse
 =========
 
 .. currentmodule:: pennylane.pulse

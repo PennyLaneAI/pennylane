@@ -1,4 +1,4 @@
-qml.ops.op_math
+qp.ops.op_math
 ===============
 
 .. currentmodule:: pennylane.ops.op_math

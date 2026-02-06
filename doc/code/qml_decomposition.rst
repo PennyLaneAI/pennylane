@@ -1,4 +1,4 @@
-qml.decomposition
+qp.decomposition
 =================
 
 .. currentmodule:: pennylane.decomposition

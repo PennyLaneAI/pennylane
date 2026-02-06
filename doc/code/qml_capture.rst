@@ -1,4 +1,4 @@
-qml.capture
+qp.capture
 ===========
 
 .. currentmodule:: pennylane.capture

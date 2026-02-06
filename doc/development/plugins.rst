@@ -50,13 +50,13 @@ For example:
             circuits: QuantumScriptOrBatch,
             execution_config: ExecutionConfig | None = None
         )
-            return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
+            return 0.0 if isinstance(circuits, qp.tape.QuantumScript) else tuple(0.0 for c in circuits)
 
     dev = MyDevice()
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        return qml.state()
+        return qp.state()
 
     circuit()
 
@@ -83,9 +83,9 @@ the number of shots specified in the :attr:`~.QuantumScript.shots` property for 
 By pulling shots dynamically for each circuit, users can efficiently distribute a shot budget across batch of
 circuits.
 
->>> tape0 = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
->>> tape1 = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
->>> dev = qml.device('default.qubit')
+>>> tape0 = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=5)
+>>> tape1 = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=10)
+>>> dev = qp.device('default.qubit')
 >>> dev.execute((tape0, tape1))
 (array([[0],
         [0],
@@ -106,7 +106,7 @@ circuits.
 The :class:`~.measurements.Shots` class describes the shots. Users can optionally specify a shot vector, or
 different numbers of shots to use when calculating the final expectation value.
 
->>> tape0 = qml.tape.QuantumScript([], [qml.expval(qml.PauliX(0))], shots=(5, 500, 1000))
+>>> tape0 = qp.tape.QuantumScript([], [qp.expval(qp.PauliX(0))], shots=(5, 500, 1000))
 >>> tape0.shots.shot_vector
 (ShotCopies(5 shots x 1),
  ShotCopies(500 shots x 1),
@@ -160,7 +160,7 @@ The :meth:`~.devices.Device.preprocess_transforms` method should start with crea
 
 .. code-block:: python
 
-    program = qml.CompilePipeline()
+    program = qp.CompilePipeline()
 
 Once a program is created, individual transforms can be added to the program with the :meth:`~.CompilePipeline.add_transform` method.
 
@@ -168,16 +168,16 @@ Once a program is created, individual transforms can be added to the program wit
 
     from pennylane.devices.preprocess import validate_device_wires, validate_measurements, decompose
 
-    program.add_transform(validate_device_wires, wires=qml.wires.Wires((0,1,2)), name="my_device")
+    program.add_transform(validate_device_wires, wires=qp.wires.Wires((0,1,2)), name="my_device")
     program.add_transform(validate_measurements, name="my_device")
-    program.add_transform(qml.defer_measurements)
-    program.add_transform(qml.transforms.split_non_commuting)
+    program.add_transform(qp.defer_measurements)
+    program.add_transform(qp.transforms.split_non_commuting)
 
     def supports_operation(op): 
         return getattr(op, "name", None) in operation_names
         
     program.add_transform(decompose, stopping_condition=supports_operation, name="my_device")
-    program.add_transform(qml.transforms.broadcast_expand)
+    program.add_transform(qp.transforms.broadcast_expand)
 
 Preprocessing and validation can also exist inside the :meth:`~devices.Device.execute` method, but placing them
 in the preprocessing program has several benefits. Validation can happen earlier, leading to fewer resources
@@ -187,17 +187,17 @@ gradients are used, the preprocessing transforms are tracked by the machine lear
 ML framework tracking the classical component of preprocessing, the device does not need to manually track the
 classical component of any decompositions or compilation. For example,
 
->>> @qml.qnode(qml.device('reference.qubit', wires=2))
+>>> @qp.qnode(qp.device('reference.qubit', wires=2))
 ... def circuit(x):
-...     qml.IsingXX(x, wires=(0,1))
-...     qml.CH((0,1))
-...     return qml.expval(qml.X(0))
->>> print(qml.draw(circuit, level="device")(0.5))
+...     qp.IsingXX(x, wires=(0,1))
+...     qp.CH((0,1))
+...     return qp.expval(qp.X(0))
+>>> print(qp.draw(circuit, level="device")(0.5))
 0: ─╭●──RX(0.50)─╭●────────────╭●──RY(-1.57)─┤  <Z>
 1: ─╰X───────────╰X──RY(-0.79)─╰Z──RY(0.79)──┤     
 
 Allows the user to see that both ``IsingXX`` and ``CH`` are decomposed by the device, and that
-the diagonalizing gates for ``qml.expval(qml.X(0))`` are applied.
+the diagonalizing gates for ``qp.expval(qp.X(0))`` are applied.
 
 Even with these benefits, devices can still opt to place some transforms inside the ``execute``
 method. For example, ``default.qubit`` maps wires to simulation indices inside ``execute`` instead
@@ -207,12 +207,12 @@ The :meth:`~.devices.Device.execute` method can assume that device preprocessing
 tapes, and has no obligation to re-validate the input or provide sensible error messages. In the below example,
 we see that ``default.qubit`` errors out when unsupported operations and unsupported measurements are present.
 
->>> op = qml.Permute([2,1,0], wires=(0,1,2))
->>> tape = qml.tape.QuantumScript([op], [qml.probs(wires=(0,1))])
->>> qml.device('default.qubit').execute(tape)
+>>> op = qp.Permute([2,1,0], wires=(0,1,2))
+>>> tape = qp.tape.QuantumScript([op], [qp.probs(wires=(0,1))])
+>>> qp.device('default.qubit').execute(tape)
 MatrixUndefinedError:
->>> tape = qml.tape.QuantumScript([], [qml.density_matrix(wires=0)], shots=50)
->>> qml.device('default.qubit').execute(tape)
+>>> tape = qp.tape.QuantumScript([], [qp.density_matrix(wires=0)], shots=50)
+>>> qp.device('default.qubit').execute(tape)
 AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
 
 Devices may define their own transforms following the description in the :ref:`transforms` module,
@@ -266,14 +266,14 @@ to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decom
         return op.name in {"IsingXX", "RX", "RY"}
 
     def custom_decomposer(op):
-        if isinstance(op, qml.CNOT):
+        if isinstance(op, qp.CNOT):
             wires = op.wires
             return [
-                qml.RY(np.pi/2, wires=wires[0]),
-                qml.IsingXX(np.pi/2, wires=wires),
-                qml.RX(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[0]),
-                qml.RY(-np.pi/2, wires=wires[1])
+                qp.RY(np.pi/2, wires=wires[0]),
+                qp.IsingXX(np.pi/2, wires=wires),
+                qp.RX(-np.pi/2, wires=wires[0]),
+                qp.RY(-np.pi/2, wires=wires[0]),
+                qp.RY(-np.pi/2, wires=wires[1])
             ]
         return op.decomposition()
     
@@ -285,7 +285,7 @@ to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decom
     )
 
 There is also an experimental graph-based decomposition algorithm (activated via
-:func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`) that can
+:func:`qp.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`) that can
 be leveraged when overriding the decompositions of certain operators. To make your device
 compatible with this new system, the ``target_gates`` kwarg in the :func:`pennylane.devices.preprocess.decompose` transform
 needs to be specified as part of the compile pipeline. Note that the stopping condition function
@@ -293,26 +293,26 @@ defines whether an operator should be decomposed, while the ``target_gates`` def
 types that the graph-based decomposition algorithm needs to target.
 
 In this case, the decomposition for the CNOT needs to be specified as a quantum function, ``decompose_cnot``, and
-registered with ``qml.add_decomps``:
+registered with ``qp.add_decomps``:
 
 .. code-block:: python
 
-    @qml.register_resources({qml.RY: 3, qml.RX: 1, qml.IsingXX: 1})
+    @qp.register_resources({qp.RY: 3, qp.RX: 1, qp.IsingXX: 1})
     def decompose_cnot(wires, **_):
-        qml.RY(np.pi/2, wires=wires[0])
-        qml.IsingXX(np.pi/2, wires=wires)
-        qml.RX(-np.pi/2, wires=wires[0])
-        qml.RY(-np.pi/2, wires=wires[0])
-        qml.RY(-np.pi/2, wires=wires[1])
+        qp.RY(np.pi/2, wires=wires[0])
+        qp.IsingXX(np.pi/2, wires=wires)
+        qp.RX(-np.pi/2, wires=wires[0])
+        qp.RY(-np.pi/2, wires=wires[0])
+        qp.RY(-np.pi/2, wires=wires[1])
 
-    qml.add_decomps(qml.CNOT, decompose_cnot)
+    qp.add_decomps(qp.CNOT, decompose_cnot)
 
     program.add_transform(
         decompose,
         stopping_condition=stopping_condition,
         decomposer=custom_decomposer,
         device_wires=[0, 1],
-        target_gates={qml.IsingXX, "RX", "RY"},
+        target_gates={qp.IsingXX, "RX", "RY"},
         name="my_device"
     )
 
@@ -445,7 +445,7 @@ how to fill these fields. All headers and fields are generally required, unless 
     supported_mcm_methods = [ ]
 
 This TOML configuration file is optional for PennyLane but required for Catalyst integration,
-i.e., compatibility with ``qml.qjit``. For more details, see `Custom Devices <https://docs.pennylane.ai/projects/catalyst/en/stable/dev/custom_devices.html>`_.
+i.e., compatibility with ``qp.qjit``. For more details, see `Custom Devices <https://docs.pennylane.ai/projects/catalyst/en/stable/dev/custom_devices.html>`_.
 
 Mid Circuit Measurements
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -480,8 +480,8 @@ Option 2 allows workflows to change the number and labeling of wires over time, 
 to enforce a wire convention and labels. If a user does provide wires, :meth:`~.devices.Device.preprocess_transforms` should
 validate that submitted circuits only have wires in the requested range.
 
->>> dev = qml.device('default.qubit', wires=1)
->>> circuit = qml.tape.QuantumScript([qml.CNOT((0,1))], [qml.state()])
+>>> dev = qp.device('default.qubit', wires=1)
+>>> circuit = qp.tape.QuantumScript([qp.CNOT((0,1))], [qp.state()])
 >>> dev.preprocess_transforms()((circuit,))
 WireError: Cannot run circuit(s) of default.qubit as they contain wires not found on the device.
 
@@ -497,9 +497,9 @@ other constraints can make it so that operations on qubit 1 cannot be arbitraril
 on qubit 2. In such a situation, the device can hard code a list of the only acceptable wire labels. In such a case, it
 will be on the user to deliberately map wires if they wish such a thing to occur.
 
->>> qml.device('my_hardware').wires
+>>> qp.device('my_hardware').wires
 <Wires = [0, 1, 2, 3]>
->>> qml.device('my_hardware', wires=(10, 11, 12, 13))
+>>> qp.device('my_hardware', wires=(10, 11, 12, 13))
 TypeError: MyHardware.__init__() got an unexpected keyword argument 'wires'
 
 To implement such validation, a device developer can simply leave ``wires`` from the initialization
@@ -508,14 +508,14 @@ call signature and hard code the ``wires`` property. They should additionally ma
 
 .. code-block:: python
 
-    class MyDevice(qml.devices.Device):
+    class MyDevice(qp.devices.Device):
 
         def __init__(self, shots=None):
             super().__init__(shots=shots)
 
         @property
         def wires(self):
-            return qml.wires.Wires((0,1,2,3))
+            return qp.wires.Wires((0,1,2,3))
 
 .. _execution_config:
 
@@ -536,7 +536,7 @@ with default values on initialization. These values should be placed into the ``
 dictionary in :meth:`~.devices.Device.setup_execution_config`. Note that we do provide a default
 implementation of this method, but you will most likely need to override it yourself.
 
->>> dev = qml.device('default.tensor', wires=2, max_bond_dim=4, contract="nonlocal", c_dtype=np.complex64)
+>>> dev = qp.device('default.tensor', wires=2, max_bond_dim=4, contract="nonlocal", c_dtype=np.complex64)
 >>> dev.setup_execution_config().device_options
 {'contract': 'nonlocal',
  'contraction_optimizer': 'auto-hq',
@@ -550,9 +550,9 @@ Even if the property is stored as an attribute on the device, execution should p
 these properties from the config instead of from the device instance. While not yet integrated at
 the top user level, we aim to allow dynamic configuration of the device.
 
->>> dev = qml.device('default.qubit')
->>> config = qml.devices.ExecutionConfig(device_options={"rng": 42})
->>> tape = qml.tape.QuantumTape([qml.Hadamard(0)], [qml.sample(wires=0)], shots=10)
+>>> dev = qp.device('default.qubit')
+>>> config = qp.devices.ExecutionConfig(device_options={"rng": 42})
+>>> tape = qp.tape.QuantumTape([qp.Hadamard(0)], [qp.sample(wires=0)], shots=10)
 >>> dev.execute(tape, config)
 array([[1],
        [1],
@@ -597,8 +597,8 @@ is ``True``, this takes precedence over calculating the full jacobian. If the de
 jax, ``convert_to_numpy=False`` should be specified. Then the parameters will not be converted, and special
 interface-specific processing (like executing inside a ``jax.pure_callback`` when using ``jax.jit``) will be needed.
 
->>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
->>> processed_config = qml.device('default.qubit').setup_execution_config(config)
+>>> config = qp.devices.ExecutionConfig(gradient_method="adjoint")
+>>> processed_config = qp.device('default.qubit').setup_execution_config(config)
 >>> processed_config.use_device_jacobian_product
 True
 >>> processed_config.use_device_gradient
@@ -629,7 +629,7 @@ to squeeze out singleton dimensions when we have no shot vector or a single meas
 
 .. code-block:: python
 
-    def single_tape_execution(tape) -> qml.typing.Result:
+    def single_tape_execution(tape) -> qp.typing.Result:
         samples = get_samples(tape)
         results = []
         for lower, upper in tape.shots.bins():
@@ -659,13 +659,13 @@ to handle a single circuit. See the documentation for each modifier for more det
 
     @simulator_tracking
     @single_tape_support
-    class MyDevice(qml.devices.Device):
+    class MyDevice(qp.devices.Device):
 
         def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
->>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
+>>> tape = qp.tape.QuantumTape([qp.S(0)], [qp.expval(qp.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out
@@ -699,7 +699,7 @@ to the device:
 
 .. code-block:: python
 
-    @qml.devices.modifiers.simulator_tracking
+    @qp.devices.modifiers.simulator_tracking
     class MyDevice(Device):
         ...
 
@@ -746,7 +746,7 @@ which allows the device to be initialized in the following way:
 .. code-block:: python
 
     import pennylane as qp
-    dev1 = qml.device(name)
+    dev1 = qp.device(name)
 
 where ``name`` is a string that uniquely identifies the device. The ``name``
 should have the form ``pluginname.devicename``, using periods for delimitation.

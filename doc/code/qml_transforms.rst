@@ -1,4 +1,4 @@
-qml.transforms
+qp.transforms
 ==============
 
 .. currentmodule:: pennylane.transforms

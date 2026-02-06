@@ -349,11 +349,11 @@ When writing code examples for docstrings, use the following guidelines:
 
   .. code-block:: pycon
 
-      >>> dev = qml.device("default.qubit", wires=1)
-      >>> @qml.qnode(dev)
+      >>> dev = qp.device("default.qubit", wires=1)
+      >>> @qp.qnode(dev)
       >>> def circuit(x):
-      ...     qml.RX(x, wires=0)
-      ...     return qml.expval(qml.PauliZ(0))
+      ...     qp.RX(x, wires=0)
+      ...     return qp.expval(qp.PauliZ(0))
       >>> circuit(0.5)
       0.8775825618903726
 
@@ -364,11 +364,11 @@ When writing code examples for docstrings, use the following guidelines:
 
       .. code-block:: python3
 
-          dev = qml.device("default.qubit", wires=1)
-          @qml.qnode(dev)
+          dev = qp.device("default.qubit", wires=1)
+          @qp.qnode(dev)
           def circuit(x):
-              qml.RX(x, wires=0)
-              return qml.expval(qml.PauliZ(0))
+              qp.RX(x, wires=0)
+              return qp.expval(qp.PauliZ(0))
 
       Executing this circuit:
 

@@ -1,4 +1,4 @@
-qml.data
+qp.data
 =========
 
 .. currentmodule:: pennylane.data

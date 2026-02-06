@@ -35,15 +35,15 @@ but this can also be specified explicitly by passing the ``interface='autograd'`
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='autograd')
+    @qp.qnode(dev, interface='autograd')
     def circuit1(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0)), qp.expval(qp.Hadamard(1))
 
 The QNode ``circuit1()`` is a NumPy-interfacing QNode, accepting standard Python
 data types such as ints, floats, lists, and tuples, as well as NumPy arrays, and
@@ -69,18 +69,18 @@ multiple devices, or even use different classical interfaces:
 
 .. code-block:: python
 
-    dev1 = qml.device('default.qubit', wires=2)
-    dev2 = qml.device('forest.wavefunction', wires=2)
+    dev1 = qp.device('default.qubit', wires=2)
+    dev2 = qp.device('forest.wavefunction', wires=2)
 
     def circuit2(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0)), qp.expval(qp.Hadamard(1))
 
-    qnode1 = qml.QNode(circuit2, dev1)
-    qnode2 = qml.QNode(circuit2, dev2)
+    qnode1 = qp.QNode(circuit2, dev1)
+    qnode2 = qp.QNode(circuit2, dev2)
 
 By default, all QNodes created this way are NumPy interfacing QNodes.
 
@@ -95,15 +95,15 @@ For example, consider the following QNode:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit3(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
 We can now use :func:`~.grad` to create a QNode *gradient function*,
 with respect to both QNode parameters ``phi`` and ``theta``:
@@ -112,7 +112,7 @@ with respect to both QNode parameters ``phi`` and ``theta``:
 
     phi = np.array([0.5, 0.1], requires_grad=True)
     theta = np.array(0.2, requires_grad=True)
-    dcircuit = qml.grad(circuit3)
+    dcircuit = qp.grad(circuit3)
 
 Evaluating this gradient function at specific parameter values:
 
@@ -156,17 +156,17 @@ the following QNode that accepts two arguments ``data`` and ``weights``:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=5)
+    dev = qp.device('default.qubit', wires=5)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(data, weights):
-        qml.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.RZ(weights[2], wires=2)
-        qml.CNOT(wires=[0, 1])
-        qml.CNOT(wires=[0, 2])
-        return qml.expval(qml.PauliZ(0))
+        qp.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
+        qp.RX(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.RZ(weights[2], wires=2)
+        qp.CNOT(wires=[0, 1])
+        qp.CNOT(wires=[0, 2])
+        return qp.expval(qp.PauliZ(0))
 
     rng = np.random.default_rng(seed=42)  # make the results reproducible
     data = rng.random([2 ** 3], requires_grad=False)
@@ -176,7 +176,7 @@ When we compute the derivative, arguments with ``requires_grad=False`` as well a
 passed as keyword arguments are ignored by :func:`~.grad`, which in this case means no gradient
 is computed at all:
 
->>> qml.grad(circuit)(data, weights=weights)
+>>> qp.grad(circuit)(data, weights=weights)
 UserWarning: Attempted to differentiate a function with no trainable parameters. If this is unintended, please add trainable parameters via the 'requires_grad' attribute or 'argnum' keyword.
 ()
 
@@ -210,20 +210,20 @@ lead to a final expectation value of 0.5:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit4(x):
-        qml.RX(x[0], wires=0)
-        qml.RZ(x[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(x[2], wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(x[0], wires=0)
+        qp.RZ(x[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(x[2], wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     def cost(x):
         return np.abs(circuit4(x) - 0.5)**2
 
-    opt = qml.GradientDescentOptimizer(stepsize=0.4)
+    opt = qp.GradientDescentOptimizer(stepsize=0.4)
 
     steps = 100
     params = np.array([0.011, 0.012, 0.05], requires_grad=True)
@@ -251,20 +251,20 @@ How does automatic differentiation work in the case where the QNode returns mult
 
 .. code::
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit5(params):
-        qml.Hadamard(wires=0)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(params[0], wires=0)
-        qml.RY(params[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(1))
+        qp.Hadamard(wires=0)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(params[0], wires=0)
+        qp.RY(params[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(1))
 
 If we were to naively try computing the gradient of ``circuit5`` using the :func:`~.grad` function,
 
->>> g1 = qml.grad(circuit5)
+>>> g1 = qp.grad(circuit5)
 >>> params = np.array([np.pi/2, 0.2], requires_grad=True)
 >>> g1(params)
 TypeError: Grad only applies to real scalar-output functions. Try jacobian, elementwise_grad or holomorphic_grad.
@@ -278,7 +278,7 @@ This can be accessed in PennyLane as :func:`~pennylane.jacobian`.
 As the ``circuit5`` returns a tuple of numpy arrays instead of a single numpy array, the results need
 to be stacked into a single array before use with :func:`~pennylane.jacobian`.
 
->>> j1 = qml.jacobian(lambda x: np.stack(circuit5(x)))
+>>> j1 = qp.jacobian(lambda x: np.stack(circuit5(x)))
 >>> j1(params)
 array([[ 0.        , -0.98006658],
        [-0.98006658,  0.        ]])
@@ -348,15 +348,15 @@ to the ``scipy.minimize`` function:
 
     from scipy.optimize import minimize
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RX(x[0], wires=0)
-        qml.RZ(x[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(x[2], wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(x[0], wires=0)
+        qp.RZ(x[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(x[2], wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     def cost(x):
         return np.abs(circuit(x) - 0.5) ** 2
@@ -367,11 +367,11 @@ to the ``scipy.minimize`` function:
 
 Some of the SciPy minimization methods require information about the gradient
 of the cost function via the ``jac`` keyword argument. This is easy to include; we
-can simply create a function that computes the gradient using ``qml.grad``. Since
+can simply create a function that computes the gradient using ``qp.grad``. Since
 ``minimize`` does not use our wrapped version of numpy, we need to explicitly
 specify which arguments are trainable via the ``argnum`` keyword.
 
->>> minimize(cost, params, method='BFGS', jac=qml.grad(cost, argnum=0))
+>>> minimize(cost, params, method='BFGS', jac=qp.grad(cost, argnum=0))
       fun: 6.3491130264451484e-18
  hess_inv: array([[ 1.85642354e+00, -8.84954187e-22,  3.89539943e+00],
        [-8.84954187e-22,  1.00000000e+00, -4.02571211e-21],

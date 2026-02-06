@@ -1,4 +1,4 @@
-qml.qcut
+qp.qcut
 ========
 
 

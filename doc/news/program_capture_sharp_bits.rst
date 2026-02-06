@@ -58,16 +58,16 @@ with ``default.qubit``).
 
     import pennylane as qp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    @qml.qnode(qml.device('default.qubit'))
+    @qp.qnode(qp.device('default.qubit'))
     def circuit():
-        qml.Hadamard(0)
-        return qml.state()
+        qp.Hadamard(0)
+        return qp.state()
 
 >>> circuit()
 NotImplementedError: devices must specify wires for integration with program capture.
->>> circuit = circuit.update(device = qml.device('default.qubit', wires=1)) 
+>>> circuit = circuit.update(device = qp.device('default.qubit', wires=1)) 
 >>> circuit()
 Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
 
@@ -78,15 +78,15 @@ method:
 
     import pennylane as qp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('default.qubit', wires=1)
+    dev = qp.device('default.qubit', wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0)
-        return qml.state()
+        qp.RX(x, wires=0)
+        m0 = qp.measure(0)
+        return qp.state()
 
 >>> circuit(0.1)
 ...
@@ -97,7 +97,7 @@ the physical MCM as a controlled operation, deferring the measurement until the
 end of the circuit. By adding an additional wire to the device, the above circuit
 executes as expected: 
 
->>> circuit = circuit.update(device = qml.device('default.qubit', wires=2))
+>>> circuit = circuit.update(device = qp.device('default.qubit', wires=2))
 >>> circuit(0.1)
 Array([0.99875027+0.j        , 0.        +0.j        ,
        0.        +0.j        , 0.        -0.04997917j], dtype=complex64)
@@ -115,14 +115,14 @@ with program capture enabled, and will raise an error if used.
 
     import jax 
 
-    qml.capture.enable() 
+    qp.capture.enable() 
 
-    dev = qml.device('default.qubit', wires=1)
+    dev = qp.device('default.qubit', wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
     bp_qn = circuit.update(diff_method="backprop")
     adj_qn = circuit.update(diff_method="adjoint")
@@ -147,15 +147,15 @@ For example, the following code will raise an error:
 
     import jax
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit",wires=2)
+    dev = qp.device("default.qubit",wires=2)
 
-    @qml.qnode(dev, diff_method="adjoint")
+    @qp.qnode(dev, diff_method="adjoint")
     def f(x):
         for i in range(2):
-            qml.RX(x, wires=i)
-        return qml.expval(qml.Z(0))
+            qp.RX(x, wires=i)
+        return qp.expval(qp.Z(0))
 
 >>> x = jax.numpy.array(jax.numpy.pi / 4)
 >>> jax.jacobian(f)(x)
@@ -164,21 +164,21 @@ NotImplementedError: Primitive for_loop does not have a jvp rule and is not supp
 Higher-order primitives and diff_method="adjoint"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Higher-order primitives like ``qml.ctrl`` and ``qml.adjoint`` are not currently supported
+Higher-order primitives like ``qp.ctrl`` and ``qp.adjoint`` are not currently supported
 when using ``"adjoint"`` with ``default.qubit``. For example, the following code will raise an error:
 
 .. code-block:: python
 
     import jax
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit",wires=2)
+    dev = qp.device("default.qubit",wires=2)
 
-    @qml.qnode(dev, diff_method="adjoint")
+    @qp.qnode(dev, diff_method="adjoint")
     def f(x):
-        qml.ctrl(qml.RX, control=0)(x, 1)
-        return qml.expval(qml.Z(0))
+        qp.ctrl(qp.RX, control=0)(x, 1)
+        return qp.expval(qp.Z(0))
 
 >>> x = jax.numpy.array(jax.numpy.pi / 4)
 >>> jax.jacobian(f)(x)
@@ -204,13 +204,13 @@ when tape conversion happens.
     import pennylane as qp 
     import jax 
 
-    qml.capture.enable() 
+    qp.capture.enable() 
 
-    @qml.qnode(device=qml.device("lightning.qubit", wires=1)) 
+    @qp.qnode(device=qp.device("lightning.qubit", wires=1)) 
     def circuit(x, y): 
-        qml.RY(y, 0) 
-        qml.RX(x, 0) 
-        return qml.expval(qml.Z(0)) 
+        qp.RY(y, 0) 
+        qp.RX(x, 0) 
+        return qp.expval(qp.Z(0)) 
 
 >>> args = (0.1, 0.2) 
 >>> jax.jacobian(circuit)(*args)
@@ -235,14 +235,14 @@ argument in :class:`~.pennylane.MultiRZ`, and will result in an error:
     import pennylane as qp 
     import jax.numpy as jnp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.MultiRZ(jnp.array([0.1, 0.2]), wires=range(2))
-        return qml.expval(qml.X(0))
+        qp.MultiRZ(jnp.array([0.1, 0.2]), wires=range(2))
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 ...
@@ -253,14 +253,14 @@ TypeError: Argument '<pennylane.capture.autograph.ag_primitives.PRange object at
     import pennylane as qp 
     import jax.numpy as jnp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.MultiRZ(jnp.array([0.1, 0.2]), wires=[0, 1])
-        return qml.expval(qml.X(0))
+        qp.MultiRZ(jnp.array([0.1, 0.2]), wires=[0, 1])
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array([0., 0.], dtype=float32)
@@ -272,37 +272,37 @@ Python ``lists`` are valid Pytrees, but there are cases with program capture ena
 where they can lead to errors, and we recommend using ``jax.numpy`` arrays in place 
 of Python lists wherever possible.
 
-For example, the positional argument in ``qml.MultiRZ`` can't be a list:
+For example, the positional argument in ``qp.MultiRZ`` can't be a list:
 
 .. code-block:: python
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('default.qubit', wires=2)
-    @qml.qnode(dev)
+    dev = qp.device('default.qubit', wires=2)
+    @qp.qnode(dev)
     def circuit():
-        qml.MultiRZ([0.1, 0.2], wires=[0, 1])
-        return qml.expval(qml.X(0))
+        qp.MultiRZ([0.1, 0.2], wires=[0, 1])
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 ...
 TypeError: Value [0.1, 0.2] with type <class 'list'> is not a valid JAX type
 
-But a list can be passed to ``qml.MultiRZ`` as a keyword argument:
+But a list can be passed to ``qp.MultiRZ`` as a keyword argument:
 
 .. code-block:: python
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('default.qubit', wires=2)
-    @qml.qnode(dev)
+    dev = qp.device('default.qubit', wires=2)
+    @qp.qnode(dev)
     def circuit():
-        qml.MultiRZ(theta=[0.1, 0.2], wires=[0, 1])
-        return qml.expval(qml.X(0))
+        qp.MultiRZ(theta=[0.1, 0.2], wires=[0, 1])
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array([0., 0.], dtype=float32)
@@ -315,14 +315,14 @@ Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
 
     import jax.numpy as jnp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        qml.MultiRZ(jnp.array([0.1, 0.2]), wires=[0, 1])
-        return qml.expval(qml.X(0))
+        qp.MultiRZ(jnp.array([0.1, 0.2]), wires=[0, 1])
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array([0., 0.], dtype=float32)
@@ -337,17 +337,17 @@ to QNodes and quantum functions:
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
     
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x, range_of_wires=None):
         for w in range_of_wires:
-            qml.RZ(x[0], wires=w)
-            qml.RX(x[1], wires=w)
+            qp.RZ(x[0], wires=w)
+            qp.RX(x[1], wires=w)
 
-        return qml.expval(qml.X(0))
+        return qp.expval(qp.X(0))
 
 >>> circuit([0.1, 0.2], range_of_wires=range(2))
 Array(0., dtype=float32)
@@ -370,14 +370,14 @@ For instance, consider this example with ``RZ``:
     import pennylane as qp 
     import jax.numpy as jnp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(angle):
-        qml.RX(phi=angle, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(phi=angle, wires=0)
+        return qp.expval(qp.Z(0))
 
 >>> angle = jnp.array(0.1)
 >>> circuit(angle)
@@ -395,12 +395,12 @@ expected:
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(angle):
-        qml.RX(angle, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(angle, wires=0)
+        return qp.expval(qp.Z(0))
 
 >>> angle = jnp.array(0.1)
 >>> circuit(angle)
@@ -409,22 +409,22 @@ Array(0.9950042, dtype=float32)
 Using program capture with Catalyst
 -----------------------------------
 
-To use the program capture feature with Catalyst, the ``qml.capture.enable()`` toggle
+To use the program capture feature with Catalyst, the ``qp.capture.enable()`` toggle
 is also required.
 
 .. code-block:: python
 
     import pennylane as qp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('lightning.qubit', wires=1)
+    dev = qp.device('lightning.qubit', wires=1)
 
-    @qml.qjit
-    @qml.qnode(dev)
+    @qp.qjit
+    @qp.qnode(dev)
     def circuit():
-        qml.RX(0.1, wires=0)
-        return qml.state()
+        qp.RX(0.1, wires=0)
+        return qp.state()
 
 >>> circuit()
 Array([0.99875026+0.j        , 0.        -0.04997917j], dtype=complex128)
@@ -458,9 +458,9 @@ to be used with certain limitations:
   in the circuit whose wires are dynamic parameters).
 * Tape transforms will fail to execute if the transformed quantum function or QNode contains:
 
-   * ``qml.cond`` with dynamic parameters as predicates.
-   * ``qml.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
-   * ``qml.while_loop``.
+   * ``qp.cond`` with dynamic parameters as predicates.
+   * ``qp.for_loop`` with dynamic parameters for ``start``, ``stop``, or ``step``.
+   * ``qp.while_loop``.
 
 Here is an example a toy transform called ``shift_rx_to_end``, which just moves 
 ``RX`` gates to the end of the circuit.
@@ -469,15 +469,15 @@ Here is an example a toy transform called ``shift_rx_to_end``, which just moves
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    @qml.transform
+    @qp.transform
     def shift_rx_to_end(tape):
         """Transform that moves all RX gates to the end of the operations list."""
         new_ops, rxs = [], []
 
         for op in tape.operations:
-            if isinstance(op, qml.RX):
+            if isinstance(op, qp.RX):
                 rxs.append(op)
             else:
                 new_ops.append(op)
@@ -488,24 +488,24 @@ Here is an example a toy transform called ``shift_rx_to_end``, which just moves
 
 When used in a workflow that contains a dynamic parameter that affects the transform's
 action, an error will be raised. Consider this QNode that has a dynamic argument 
-corresponding to ``stop`` in ``qml.for_loop``.
+corresponding to ``stop`` in ``qp.for_loop``.
 
 .. code-block:: python
 
     import pennylane as qp 
 
     @shift_rx_to_end
-    @qml.qnode(qml.device("default.qubit", wires=4))
+    @qp.qnode(qp.device("default.qubit", wires=4))
     def circuit(stop):
 
-        @qml.for_loop(0, stop, 1)
+        @qp.for_loop(0, stop, 1)
         def loop(i):
-            qml.RX(0.1, wires=i)
-            qml.H(wires=i)
+            qp.RX(0.1, wires=i)
+            qp.H(wires=i)
         
         loop(stop)
 
-        return qml.state()
+        return qp.state()
 
 >>> circuit(4)
 TracerIntegerConversionError: The __index__() method was called on traced array with shape int32[].
@@ -523,22 +523,22 @@ this behaviour:
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device('default.qubit', wires=1)
+    dev = qp.device('default.qubit', wires=1)
 
-    @qml.transforms.merge_rotations
-    @qml.qnode(dev)
+    @qp.transforms.merge_rotations
+    @qp.qnode(dev)
     def circuit():
-        qml.RX(0.1, wires=0)
+        qp.RX(0.1, wires=0)
 
         for _ in range(4):
-            qml.RX(0.1, wires=0)
-            qml.RX(0.1, wires=0)
+            qp.RX(0.1, wires=0)
+            qp.RX(0.1, wires=0)
 
-        qml.RX(0.1, wires=0)
+        qp.RX(0.1, wires=0)
 
-        return qml.state()
+        return qp.state()
 
 The above example should result in a single ``RX`` gate with an angle of ``1.0``, 
 but transforms are unable to transfer through the circuit in its entirety.
@@ -546,7 +546,7 @@ but transforms are unable to transfer through the circuit in its entirety.
 To illustrate what is actually happening internally, consider the plxpr representation 
 of this program: 
 
->>> print(qml.capture.make_plxpr(circuit)())
+>>> print(qp.capture.make_plxpr(circuit)())
 { ...
     qfunc_jaxpr={ lambda ; . let
         _:AbstractOperator() = RX[n_wires=1] 0.1 0
@@ -578,17 +578,17 @@ example:
     
     import pennylane as qp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    @qml.transforms.merge_rotations
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.transforms.merge_rotations
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def f(x):
-        qml.X(0)
-        qml.X(0)
-        qml.RX(x, 0)
-        qml.RX(x, 0)
+        qp.X(0)
+        qp.X(0)
+        qp.RX(x, 0)
+        qp.RX(x, 0)
 
->>> print(qml.draw(f)(1.5))
+>>> print(qp.draw(f)(1.5))
 0: ──RX(Traced<ShapedArray(float32[], weak_type=True)>with<DynamicJaxprTrace(level=1/0)>)─┤  
 
 The output does not show the two ``X`` gates, and the ``RX`` gate's value is inconsistent 
@@ -606,12 +606,12 @@ but can be switched off with the ``autograph`` keyword argument.
 
     import pennylane as qp
 
-    @qml.qnode(qml.device("default.qubit", wires=2), autograph=False)
+    @qp.qnode(qp.device("default.qubit", wires=2), autograph=False)
     def circuit():
         for _ in range(10):
-            qml.RX(0.1, 0)
+            qp.RX(0.1, 0)
 
-        return qml.state()
+        return qp.state()
 
 >>> circuit()
 array([0.87758256+0.j        , 0.        +0.j        ,
@@ -652,14 +652,14 @@ Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_a
     import pennylane as qp 
     import jax
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
 >>> x = jnp.array([0.1, 0.2, 0.3])
 >>> vmap_circuit = jax.vmap(circuit)
@@ -690,15 +690,15 @@ argument. If ``ratio_imprim`` is passed as a traced value, an error occurs:
     import pennylane as qp 
     import jax.numpy as jnp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.transforms.decompose
-    @qml.qnode(dev)
+    @qp.transforms.decompose
+    @qp.qnode(dev)
     def circuit(weights, arg):
-        qml.RandomLayers(weights, wires=[0, 1], ratio_imprim=arg)
-        return qml.expval(qml.Z(0))
+        qp.RandomLayers(weights, wires=[0, 1], ratio_imprim=arg)
+        return qp.expval(qp.Z(0))
 
 >>> weights = jnp.array([[0.1, -2.1, 1.4]])
 >>> arg = 0.5
@@ -716,15 +716,15 @@ As a workaround, we can pass ``ratio_imprim`` as a regular (non-traced) constant
     import pennylane as qp 
     import jax.numpy as jnp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.transforms.decompose
-    @qml.qnode(dev)
+    @qp.transforms.decompose
+    @qp.qnode(dev)
     def circuit(weights):
-        qml.RandomLayers(weights, wires=[0, 1], ratio_imprim=0.5)
-        return qml.expval(qml.Z(0))
+        qp.RandomLayers(weights, wires=[0, 1], ratio_imprim=0.5)
+        return qp.expval(qp.Z(0))
 
 >>> circuit(jnp.array([[0.1, -2.1, 1.4]]))
 Array(0.99500424, dtype=float32)
@@ -735,7 +735,7 @@ Currently, the operators that define a ``compute_qfunc_decomposition`` are:
 * :class:`~.GroverOperator`
 * :class:`~.QFT`
 
-qml.cond
+qp.cond
 --------
 
 When using :func:`~.cond`, if the ``True`` branch of a condition returns something, 
@@ -745,18 +745,18 @@ then a ``False`` branch much be provided that returns the same generic type:
 
     import pennylane as qp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def circuit():
 
         def true_branch(x):
-            return qml.X(0)
+            return qp.X(0)
 
-        m0 = qml.measure(0)
-        qml.cond(m0, true_branch)(4)
+        m0 = qp.measure(0)
+        qp.cond(m0, true_branch)(4)
 
-        return qml.expval(qml.X(0))
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 ValueError: The false branch must be provided if the true branch returns any variables
@@ -768,21 +768,21 @@ the condition is ``False``, a ``false_fn`` must be provided:
 
     import pennylane as qp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def circuit():
 
         def true_branch(x):
-            return qml.X(0)
+            return qp.X(0)
 
         def false_branch(x):
-            return qml.Identity(0)
+            return qp.Identity(0)
 
-        m0 = qml.measure(0)
-        qml.cond(m0, true_fn=true_branch, false_fn=false_branch)(4)
+        m0 = qp.measure(0)
+        qp.cond(m0, true_fn=true_branch, false_fn=false_branch)(4)
 
-        return qml.expval(qml.X(0))
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array(0., dtype=float32)
@@ -793,14 +793,14 @@ Or the ``true_fn`` itself can be an operator type itself:
 
     import pennylane as qp
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qp.qnode(qp.device("default.qubit", wires=2))
     def circuit():
-        m0 = qml.measure(0)
-        qml.cond(m0, true_fn=qml.X)(0)
+        m0 = qp.measure(0)
+        qp.cond(m0, true_fn=qp.X)(0)
 
-        return qml.expval(qml.X(0))
+        return qp.expval(qp.X(0))
 
 >>> circuit()
 Array(0., dtype=float32)
@@ -815,14 +815,14 @@ function:
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
 
-        @qml.while_loop(lambda a: a > 3)
+        @qp.while_loop(lambda a: a > 3)
         def loop(a):
             a += 1
             return a
@@ -830,12 +830,12 @@ function:
         a = 0
         loop(a)
 
-        qml.RX(0, wires=0)
-        return qml.state()
+        qp.RX(0, wires=0)
+        return qp.state()
 
 >>> circuit()
 ...
-AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`. Please define the condition using a named function rather than a lambda function.
+AutoGraph currently does not support lambda functions as a loop condition for `qp.while_loop`. Please define the condition using a named function rather than a lambda function.
 
 As a workaround, set the ``lambda`` to a callable variable,
 
@@ -843,16 +843,16 @@ As a workaround, set the ``lambda`` to a callable variable,
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
 
         func = lambda x: x > 3
 
-        @qml.while_loop(func)
+        @qp.while_loop(func)
         def loop(a):
             a += 1
             return a
@@ -860,8 +860,8 @@ As a workaround, set the ``lambda`` to a callable variable,
         a = 0
         loop(a)
         
-        qml.RX(0, wires=0)
-        return qml.state()
+        qp.RX(0, wires=0)
+        return qp.state()
 
 >>> circuit()
 Array([1.+0.j, 0.+0.j], dtype=complex64)
@@ -872,17 +872,17 @@ or use a regular Python function,
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
     def func(x):
         return x > 3
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
 
-        @qml.while_loop(func)
+        @qp.while_loop(func)
         def loop(a):
             a += 1
             return a
@@ -890,8 +890,8 @@ or use a regular Python function,
         a = 0
         loop(a)
         
-        qml.RX(0, wires=0)
-        return qml.state()
+        qp.RX(0, wires=0)
+        return qp.state()
 
 >>> circuit()
 Array([1.+0.j, 0.+0.j], dtype=complex64)
@@ -906,14 +906,14 @@ a QNode, and will raise an error:
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        mat = qml.matrix(qml.X(0))
-        return qml.state()
+        mat = qp.matrix(qp.X(0))
+        return qp.state()
 
 >>> circuit()
 ...
@@ -923,14 +923,14 @@ TransformError: Input is not an Operator, tape, QNode, or quantum function
 
     import pennylane as qp 
 
-    qml.capture.enable()
+    qp.capture.enable()
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit():
-        mat = qml.matrix(qml.X)(0)
-        return qml.state()
+        mat = qp.matrix(qp.X)(0)
+        return qp.state()
 
 >>> circuit()
 ...

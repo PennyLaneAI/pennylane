@@ -45,7 +45,7 @@ PennyLane Documentation
 
 .. index-card::
     :name: API
-    :link: code/qml.html
+    :link: code/qp.html
     :description: Explore the PennyLane API
 
 .. raw:: html

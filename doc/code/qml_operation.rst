@@ -1,4 +1,4 @@
-qml.operation
+qp.operation
 =============
 
 .. currentmodule:: pennylane.operation

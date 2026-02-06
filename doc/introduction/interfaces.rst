@@ -26,13 +26,13 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 
 .. code-block:: python
 
-    @qml.qnode(dev, interface="torch")
+    @qp.qnode(dev, interface="torch")
     def my_quantum_circuit(...):
         ...
 
 .. note::
     If no interface is specified, PennyLane will automatically determine the interface based on provided arguments and keyword arguments.
-    See ``qml.math.SUPPORTED_INTERFACE_NAMES`` for a list of all accepted interface strings.
+    See ``qp.math.SUPPORTED_INTERFACE_NAMES`` for a list of all accepted interface strings.
 
 .. warning::
 
@@ -202,7 +202,7 @@ Check out the `JAXopt <https://github.com/google/jaxopt>`_ and the `Optax
 :ref:`PennyLane JAX framework <jax_interf>`.
 
 For quantum-specific optimizers (not available in `Optax <https://optax.readthedocs.io/en/latest/>`_),
-PennyLane offers a built-in Jax-based implementation compatible with ``jax.jit`` and ``qml.qjit``.
+PennyLane offers a built-in Jax-based implementation compatible with ``jax.jit`` and ``qp.qjit``.
 
 :html:`<div class="summary-table">`
 
@@ -226,10 +226,10 @@ When creating a QNode, you can specify the `differentiation method
 
 .. code-block:: python
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qp.qnode(dev, diff_method="parameter-shift")
     def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.probs(wires=0)
+        qp.RX(x, wires=0)
+        return qp.probs(wires=0)
 
 PennyLane currently provides the following differentiation methods for QNodes:
 
@@ -281,25 +281,25 @@ with the number of trainable circuit parameters.
   observable being measured and the generators of the unitary operations in the
   circuit are reversed; the generators are now the observables, and the Pauli
   decomposition of the observables are now gates in the circuit. More information 
-  can be found in the documentation for :func:`qml.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` 
+  can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` 
   and the `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
 
 * ``"direct-hadamard"``: Use a variant of ``"hadamard"``, where the additional auxiliary
   qubit needed in ``"hadamard"`` is exchanged for additional circuit executions.
-  More information can be found in the documentation for :func:`qml.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` 
+  More information can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` 
   and the `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
 
 * ``"reversed-direct-hadamard"``: Use a variant of ``"direct-hadamard"``, where 
   the role of the observable and the generators of the unitary operations in the 
   circuit swap in a similar fashion to the ``"reversed-hadamard"`` method. More 
-  information can be found in the documentation for :func:`qml.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` 
+  information can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>` 
   and the
   `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
 
-* :func:`qml.gradients.stoch_pulse_grad <pennylane.gradients.stoch_pulse_grad>`: Use a stochastic variant of the
+* :func:`qp.gradients.stoch_pulse_grad <pennylane.gradients.stoch_pulse_grad>`: Use a stochastic variant of the
   parameter-shift rule for pulse programs.
 
-* :func:`qml.gradients.pulse_odegen <pennylane.gradients.pulse_odegen>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
+* :func:`qp.gradients.pulse_odegen <pennylane.gradients.pulse_odegen>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
 
 
 Device gradients
@@ -322,7 +322,7 @@ Gradient transforms
 
 In addition to registering the differentiation method of QNodes to be used with autodifferentiation
 frameworks, PennyLane also provides a library of **gradient transforms** via the
-:mod:`qml.gradients <pennylane.gradients>` module.
+:mod:`qp.gradients <pennylane.gradients>` module.
 
 Quantum gradient transforms are strategies for computing the gradient of a quantum
 circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
@@ -335,31 +335,31 @@ rules; these can be applied *directly* to QNodes:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(weights):
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        return qml.probs(wires=1)
+        qp.RX(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(weights[2], wires=1)
+        return qp.probs(wires=1)
 
 >>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 >>> circuit(weights)
 tensor([0.9658079, 0.0341921], requires_grad=True)
->>> qml.gradients.param_shift(circuit)(weights)
+>>> qp.gradients.param_shift(circuit)(weights)
 (tensor([-0.04673668,  0.04673668], requires_grad=True),
  tensor([-0.09442394,  0.09442394], requires_grad=True),
  tensor([-0.14409127,  0.14409127], requires_grad=True))
 
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
-``qml.grad()`` if using Autograd, or ``loss.backward()`` for PyTorch).
+``qp.grad()`` if using Autograd, or ``loss.backward()`` for PyTorch).
 This is because gradient transforms do not take into account classical computation nodes, and only
 support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
-gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
+gradient transform, please see the :mod:`qp.gradients <pennylane.gradients>` documentation.
 
 
 Differentiating gradient transforms and higher-order derivatives
@@ -370,26 +370,26 @@ gradients to be computed:
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(weights):
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        return qml.expval(qml.PauliZ(1))
+        qp.RX(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(weights[2], wires=1)
+        return qp.expval(qp.PauliZ(1))
 
 >>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 >>> circuit(weights)
 tensor(0.9316158, requires_grad=True)
->>> qml.gradients.param_shift(circuit)(weights)  # gradient
+>>> qp.gradients.param_shift(circuit)(weights)  # gradient
 (tensor(-0.09347337, requires_grad=True),
  tensor(-0.18884787, requires_grad=True),
  tensor(-0.28818254, requires_grad=True))
 >>> def f(weights):
-...     return np.stack(qml.gradients.param_shift(circuit)(weights))
->>> qml.jacobian(f)(weights)  # hessian
+...     return np.stack(qp.gradients.param_shift(circuit)(weights))
+>>> qp.jacobian(f)(weights)  # hessian
 array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
         [ 0.01894799, -0.9316158 ,  0.05841749],
         [ 0.0289147 ,  0.05841749, -0.9316158 ]]])
@@ -399,23 +399,23 @@ Another way to compute higher-order derivatives is by passing the ``max_diff`` a
 
 .. code-block:: python
 
-    @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+    @qp.qnode(dev, diff_method="parameter-shift", max_diff=2)
     def circuit(weights):
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        return qml.expval(qml.PauliZ(1))
+        qp.RX(weights[0], wires=0)
+        qp.RY(weights[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(weights[2], wires=1)
+        return qp.expval(qp.PauliZ(1))
 
 >>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
->>> qml.jacobian(qml.jacobian(circuit))(weights)  # hessian
+>>> qp.jacobian(qp.jacobian(circuit))(weights)  # hessian
 array([[-0.9316158 ,  0.01894799,  0.0289147 ],
        [ 0.01894799, -0.9316158 ,  0.05841749],
        [ 0.0289147 ,  0.05841749, -0.9316158 ]])
 
 Note that the ``max_diff`` argument only applies to gradient transforms and that its default value is ``1``; failing to
 set its value correctly may yield incorrect results for higher-order derivatives. Also, passing
-``diff_method="parameter-shift"`` is equivalent to passing ``diff_method=qml.gradients.param_shift``.
+``diff_method="parameter-shift"`` is equivalent to passing ``diff_method=qp.gradients.param_shift``.
 
 Supported configurations
 ------------------------
@@ -449,7 +449,7 @@ At the moment, it takes into account the following parameters:
 
 * The interface, e.g. ``"jax"``
 * The differentiation method, e.g. ``"parameter-shift"``
-* The return value of the QNode, e.g. ``qml.expval()`` or ``qml.probs()``
+* The return value of the QNode, e.g. ``qp.expval()`` or ``qp.probs()``
 * The number of shots, either None or an integer > 0
 
 .. raw:: html

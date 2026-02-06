@@ -1,4 +1,4 @@
-qml.noise
+qp.noise
 =========
 
 This module contains the functionality for building and manipulating insertion-based noise models,
@@ -55,8 +55,8 @@ quantum circuit. One can construct standard Boolean functions using the followin
 For example, a Boolean function that checks if an operation is on wire ``0`` can be created
 as follows:
 
->>> fn = qml.noise.wires_eq(0)
->>> op1, op2 = qml.PauliX(0), qml.PauliX(1)
+>>> fn = qp.noise.wires_eq(0)
+>>> op1, op2 = qp.PauliX(0), qp.PauliX(1)
 >>> fn(op1)
 True
 >>> fn(op2)
@@ -77,9 +77,9 @@ with a maximum parameter value:
 
 .. code-block:: python
 
-    @qml.BooleanFn
+    @qp.BooleanFn
     def rx_condition(op, **metadata):
-        return isinstance(op, qml.RX) and op.parameters[0] < 1.0
+        return isinstance(op, qp.RX) and op.parameters[0] < 1.0
 
 Boolean functions can be combined using standard bitwise operators, such as
 ``&``, ``|``, ``^``, or ``~``. The result will be another Boolean function. It
@@ -100,9 +100,9 @@ to the ``RX`` gate:
 .. code-block:: python
 
     def noisy_rx(op, **metadata):
-        qml.RX(op.parameters[0] * 0.05, op.wires)
+        qp.RX(op.parameters[0] * 0.05, op.wires)
 
-    noise_model = qml.NoiseModel({rx_condition: noisy_rx})
+    noise_model = qp.NoiseModel({rx_condition: noisy_rx})
 
 A common use case is to have a single-operation :ref:`noise channel <intro_ref_ops_channels>`
 whose wires are the same as the preceding operation. This can be constructed using:
@@ -116,11 +116,11 @@ whose wires are the same as the preceding operation. This can be constructed usi
 
 For example, a constant-valued over-rotation can be created using:
 
->>> rx_constant = qml.noise.partial_wires(qml.RX(0.1, wires=[0]))
+>>> rx_constant = qp.noise.partial_wires(qp.RX(0.1, wires=[0]))
 >>> rx_constant(2)
 RX(0.1, 2)
 
->>> qml.NoiseModel({rx_condition: rx_constant})
+>>> qp.NoiseModel({rx_condition: rx_constant})
 NoiseModel({
     BooleanFn(rx_condition): RX(phi=0.1)
 })
@@ -133,27 +133,27 @@ The following example shows how to set up an artificial noise model in PennyLane
 .. code-block:: python
 
   # Set up the conditions
-  c0 = qml.noise.op_eq(qml.PauliX) | qml.noise.op_eq(qml.PauliY)
-  c1 = qml.noise.op_eq(qml.Hadamard) & qml.noise.wires_in([0, 1])
-  c2 = qml.noise.op_eq(qml.RX)
+  c0 = qp.noise.op_eq(qp.PauliX) | qp.noise.op_eq(qp.PauliY)
+  c1 = qp.noise.op_eq(qp.Hadamard) & qp.noise.wires_in([0, 1])
+  c2 = qp.noise.op_eq(qp.RX)
 
-  @qml.BooleanFn
+  @qp.BooleanFn
   def c3(op, **metadata):
-      return isinstance(op, qml.RY) and op.parameters[0] >= 0.5
+      return isinstance(op, qp.RY) and op.parameters[0] >= 0.5
 
   # Set up noisy ops
-  n0 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+  n0 = qp.noise.partial_wires(qp.AmplitudeDamping, 0.4)
 
   def n1(op, **metadata):
       ThermalRelaxationError(0.4, metadata["t1"], 0.2, 0.6, op.wires)
 
   def n2(op, **metadata):
-      qml.RX(op.parameters[0] * 0.05, op.wires)
+      qp.RX(op.parameters[0] * 0.05, op.wires)
 
-  n3 = qml.noise.partial_wires(qml.PhaseDamping, 0.9)
+  n3 = qp.noise.partial_wires(qp.PhaseDamping, 0.9)
   
   # Set up noise model
-  noise_model = qml.NoiseModel({c0: n0, c1: n1, c2: n2}, t1=0.04)
+  noise_model = qp.NoiseModel({c0: n0, c1: n1, c2: n2}, t1=0.04)
   noise_model += {c3: n3}  # One-at-a-time construction
 
 >>> noise_model

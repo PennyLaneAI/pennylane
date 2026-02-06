@@ -14,7 +14,7 @@ To enable logging support with the default options defined in ``log_config.toml`
 .. code:: python
 
    import pennylane as qp
-   qml.logging.enable_logging()
+   qp.logging.enable_logging()
    ...
 
 

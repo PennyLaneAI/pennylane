@@ -37,9 +37,9 @@ them via keys (i.e., ``pennylane.default_config["main.shots"]``), and save/load 
 For example:
 
 >>> import pennylane as qp
->>> qml.default_config.path
+>>> qp.default_config.path
 'config.toml'
->>> print(qml.default_config)
+>>> print(qp.default_config)
 {'main': {'shots': 1000},
  'default': {'gaussian': {'hbar': 2}},
  'strawberryfields': {'fock': {'cutoff_dim': 10, 'shots': 1000, 'hbar': 2}}

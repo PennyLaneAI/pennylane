@@ -1,4 +1,4 @@
-qml.pytrees
+qp.pytrees
 ===========
 
 .. currentmodule:: pennylane.pytrees

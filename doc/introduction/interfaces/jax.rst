@@ -59,15 +59,15 @@ a JAX-capable QNode in PennyLane. Simply specify the ``interface='jax'`` keyword
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='jax')
+    @qp.qnode(dev, interface='jax')
     def circuit1(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0)), qp.expval(qp.Hadamard(1))
 
 The QNode ``circuit1()`` is now a JAX-capable QNode, accepting ``jax.Array`` objects
 as input, and returning ``jax.Array`` objects. It can now be used like any other JAX function:
@@ -90,15 +90,15 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='jax')
+    @qp.qnode(dev, interface='jax')
     def circuit3(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RY(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.PhaseShift(theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(phi[0], wires=0)
+        qp.RY(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.PhaseShift(theta, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     phi = jnp.array([0.5, 0.1])
     theta = jnp.array(0.2)
@@ -124,16 +124,16 @@ the ``@jax.jit`` decorator can be directly applied to the QNode.
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=2)
+    dev = qp.device('default.qubit', wires=2)
 
     @jax.jit  # QNode calls will now be jitted, and should run faster.
-    @qml.qnode(dev, interface='jax')
+    @qp.qnode(dev, interface='jax')
     def circuit4(phi, theta):
-        qml.RX(phi[0], wires=0)
-        qml.RZ(phi[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(phi[0], wires=0)
+        qp.RZ(phi[1], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(theta, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
 .. note::
 
@@ -163,7 +163,7 @@ explicitly seeded. (See the `JAX random package documentation
 details).
 
 When simulations include randomness (i.e., if the device has a finite ``shots`` value, or the qnode
-returns ``qml.sample()``), the JAX device requires a ``jax.random.PRNGKey``. Usually, PennyLane
+returns ``qp.sample()``), the JAX device requires a ``jax.random.PRNGKey``. Usually, PennyLane
 automatically handles this for you. However, if you wish to use jitting with randomness, both the
 qnode and the device need to be created in the context of the ``jax.jit`` decorator. This can be
 achieved by wrapping device and qnode creation into a function decorated by ``@jax.jit``:
@@ -181,16 +181,16 @@ Example:
 
         # Device construction should happen inside a `jax.jit` decorated
         # method when using a PRNGKey.
-        dev = qml.device('default.qubit', wires=2, seed=key)
+        dev = qp.device('default.qubit', wires=2, seed=key)
 
-        @qml.set_shots(shots=100)
-        @qml.qnode(dev, interface='jax', diff_method=None)
+        @qp.set_shots(shots=100)
+        @qp.qnode(dev, interface='jax', diff_method=None)
         def circuit(phi, theta):
-            qml.RX(phi[0], wires=0)
-            qml.RZ(phi[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(theta, wires=0)
-            return qml.sample() # Here, we take samples instead.
+            qp.RX(phi[0], wires=0)
+            qp.RZ(phi[1], wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RX(theta, wires=0)
+            return qp.sample() # Here, we take samples instead.
 
         return circuit(phi, theta)
 
@@ -225,14 +225,14 @@ used to optimize a QNode that is transformed by ``jax.jit``:
 
     jax.config.update("jax_enable_x64", True)
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
     @jax.jit
-    @qml.set_shots(shots=None)
-    @qml.qnode(dev, interface="jax")
+    @qp.set_shots(shots=None)
+    @qp.qnode(dev, interface="jax")
     def energy(a):
-        qml.RX(a, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(a, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     gd = jaxopt.GradientDescent(energy, maxiter=5)
 
@@ -254,14 +254,14 @@ QNode:
 
     learning_rate = 0.15
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qp.device("default.qubit", wires=1)
 
     @jax.jit
-    @qml.set_shots(shots=None)
-    @qml.qnode(dev, interface="jax")
+    @qp.set_shots(shots=None)
+    @qp.qnode(dev, interface="jax")
     def energy(a):
-        qml.RX(a, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        qp.RX(a, wires=0)
+        return qp.expval(qp.PauliZ(0))
 
     optimizer = optax.adam(learning_rate)
 

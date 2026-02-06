@@ -9,7 +9,7 @@ To enable logging support in your PennyLane work-flow simply run the following l
 .. code:: python
 
    import pennylane as qp
-   qml.logging.enable_logging()
+   qp.logging.enable_logging()
 
 
 This will ensure all levels of the execution pipeline log function entries and
@@ -83,7 +83,7 @@ level.
 
 PennyLane logging defaults are contained in a configuration file in the logging module titled 
 ``log_config.toml``, which is imported when logging is enabled. 
-The file path can be accessed with :func:`qml.logging.config_path()`. To change log-levels that are 
+The file path can be accessed with :func:`qp.logging.config_path()`. To change log-levels that are 
 reporting on a package or module-wide basis, it is possible to do so by 
 modifying the entries in the ``log_config.toml`` file, under the ``[loggers]``
 section. In addition, if we want to send the logs elsewhere, we can
@@ -294,7 +294,7 @@ process, and surrounding operations:
     import logging
 
     # Enable logging
-    qml.logging.enable_logging()
+    qp.logging.enable_logging()
 
     # Get logger for use by this script only.
     logger = logging.getLogger(__name__)
@@ -305,14 +305,14 @@ process, and surrounding operations:
     @jax.jit
     def circuit(key, param):
        logger.info(f"Creating {dev_name} device with {num_wires} wires with {key} PNRG")
-       dev = qml.device(dev_name, wires=num_wires, prng_key=key)
+       dev = qp.device(dev_name, wires=num_wires, prng_key=key)
 
-       @qml.set_shots(shots=num_shots)
-       @qml.qnode(dev, interface="jax", diff_method="backprop")
+       @qp.set_shots(shots=num_shots)
+       @qp.qnode(dev, interface="jax", diff_method="backprop")
        def my_circuit():
-           qml.RX(param, wires=0)
-           qml.CNOT(wires=[0, 1])
-           return qml.expval(qml.PauliZ(0))
+           qp.RX(param, wires=0)
+           qp.CNOT(wires=[0, 1])
+           return qp.expval(qp.PauliZ(0))
 
        logger.info(f"Created QNODE={my_circuit}")
        res =  my_circuit()
@@ -357,7 +357,7 @@ tie-into the execution pipeline for devices without backprop supports:
     import pennylane as qp
     import logging
 
-    qml.logging.enable_logging()
+    qp.logging.enable_logging()
 
     logger = logging.getLogger(__name__)
     dev_name = "lightning.qubit"
@@ -366,14 +366,14 @@ tie-into the execution pipeline for devices without backprop supports:
 
     def circuit(param):
        logger.info(f"Creating {dev_name} device with {num_wires} wires")
-       dev = qml.device(dev_name, wires=num_wires)
+       dev = qp.device(dev_name, wires=num_wires)
 
-       @qml.set_shots(shots=num_shots)
-       @qml.qnode(dev, diff_method="adjoint")
+       @qp.set_shots(shots=num_shots)
+       @qp.qnode(dev, diff_method="adjoint")
        def my_circuit(param):
-           qml.RX(param, wires=0)
-           qml.CNOT(wires=[0, 1])
-           return qml.expval(qml.PauliZ(0))
+           qp.RX(param, wires=0)
+           qp.CNOT(wires=[0, 1])
+           return qp.expval(qp.PauliZ(0))
 
        logger.info(f"Created QNODE={my_circuit}")
        res =  my_circuit(param)
@@ -381,14 +381,14 @@ tie-into the execution pipeline for devices without backprop supports:
 
        return res
 
-    par = qml.numpy.array([0.1,0.2])
+    par = qp.numpy.array([0.1,0.2])
 
     logger.info(f"Running circuit with par={par[0]}")
     circuit(par[0])
     logger.info(f"Running circuit with par={par[1]}")
     circuit(par[1])
     logger.info(f"Calculating jacobian circuit with par={par}")
-    logger.info(f"Jacobian={qml.jacobian(circuit)(par[0])}")
+    logger.info(f"Jacobian={qp.jacobian(circuit)(par[0])}")
 
 By using ``lightning.qubit`` we can now treat the execution environment
 as a black-box, and see the log-level messages as they hit the custom

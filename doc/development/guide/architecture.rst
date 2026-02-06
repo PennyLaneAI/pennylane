@@ -62,7 +62,7 @@ trainable parameters can be tensors of any supported autodifferentiation framewo
 These four defining properties are accessible for all :class:`~.Operator` instances:
 
 >>> from jax import numpy as jnp
->>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+>>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
 
 >>> op.name
 Rot
@@ -81,13 +81,13 @@ details in the documentation on :doc:`adding operations </development/adding_ope
 
 * Representation as a product of operators
 
-  >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
+  >>> op = qp.Rot(0.1, 0.2, 0.3, wires=["a"])
   >>> op.decomposition()
   [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
 * Representation as a matrix
 
-  >>> op = qml.PauliRot(0.2, "X", wires=["b"])
+  >>> op = qp.PauliRot(0.2, "X", wires=["b"])
   >>> op.matrix()
   [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
    [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
@@ -104,7 +104,7 @@ Each measurement in pennylane has a specific class that inherits from :class:`pe
 The measurement functions such as :func:`~pennylane.expval` create an instance of its corresponding
 class (:class:`pennylane.measurements.ExpectationMP`). 
 
->>> m = qml.expval(qml.PauliZ("a"))
+>>> m = qp.expval(qp.PauliZ("a"))
 >>> type(m)
 <class 'pennylane.measurements.expval.ExpectationMP'>
 
@@ -125,10 +125,10 @@ The user defines the circuit by constructing a quantum function, such as:
 .. code-block:: python
 
     def qfunc(params):
-        qml.RX(params[0], wires='b')
-        qml.CNOT(wires=['a', 'b'])
-        qml.RY(params[1], wires='a')
-        return qml.expval(qml.PauliZ(wires='b'))
+        qp.RX(params[0], wires='b')
+        qp.CNOT(wires=['a', 'b'])
+        qp.RY(params[1], wires='a')
+        return qp.expval(qp.PauliZ(wires='b'))
 
 Internally, a quantum function is translated to a quantum tape, which is
 the central representation of a quantum circuit. The tape is a context manager that stores lists
@@ -139,7 +139,7 @@ gates are stored in the tape's ``operation`` property, while the
 measurement functions such as :func:`~pennylane.expval` are responsible for adding measurement processes
 to the tape's ``measurement`` property.
 
->>> with qml.tape.QuantumTape() as tape:
+>>> with qp.tape.QuantumTape() as tape:
 ...	    qfunc(params)
 
 >>> tape.operations
@@ -166,7 +166,7 @@ within the :class:`pennylane.devices.Device` class. The main job of devices is t
 interpret and execute tapes. The most important method is ``batch_execute``,
 which executes a list of tapes, such as a list of the single tape created above:
 
->>> device = qml.device("default.qubit", wires=['a', 'b'], shots=None)
+>>> device = qp.device("default.qubit", wires=['a', 'b'], shots=None)
 >>> device.batch_execute([tape])
 [array([0.87758256])]
 
@@ -193,11 +193,11 @@ information processing on a quantum device. It is created by a quantum function 
 >>> from jax import numpy as jnp
 >>> params = jnp.array([0.5, 0.2])
 
->>> qnode = qml.QNode(qfunc, device, interface='jax')
+>>> qnode = qp.QNode(qfunc, device, interface='jax')
 >>> qnode(params)
 0.8776
 
->>> qnode_drawer = qml.draw(qnode)
+>>> qnode_drawer = qp.draw(qnode)
 >>> print(qnode_drawer(params))
 a: ───────────╭●──RY(0.20)─┤     
 b: ──RX(0.50)─╰X───────────┤  <Z>

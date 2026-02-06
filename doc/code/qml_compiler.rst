@@ -1,4 +1,4 @@
-qml.compiler
+qp.compiler
 ============
 
 .. currentmodule:: pennylane.compiler

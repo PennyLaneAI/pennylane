@@ -36,7 +36,7 @@ Summary of the update
     Anyone using the latest PennyLane will automatically use the updated operator arithmetic. Ideally, your code
     should not break when making this update. If it still does, it likely only requires some minor changes.
     For that, see the :ref:`Troubleshooting_opmath` section. If you were using any of the functions explictly
-    provided to continue using the deprecated behaviour, like ``qml.operation.disable_new_opmath()``, that
+    provided to continue using the deprecated behaviour, like ``qp.operation.disable_new_opmath()``, that
     code will need to be removed.
 
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
@@ -105,11 +105,11 @@ Summary of the update
     | scalar products                            | ``ops.Hamiltonian``  | ``ops.SProd``             |
     | ``1.5 * X(1)``                             |                      |                           |
     +--------------------------------------------+----------------------+---------------------------+
-    | ``qml.dot(coeffs,ops)``                    | ``ops.Sum``          | ``ops.Sum``               |
+    | ``qp.dot(coeffs,ops)``                    | ``ops.Sum``          | ``ops.Sum``               |
     +--------------------------------------------+----------------------+---------------------------+
-    | ``qml.Hamiltonian(coeffs, ops)``           | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
+    | ``qp.Hamiltonian(coeffs, ops)``           | ``ops.Hamiltonian``  | ``ops.LinearCombination`` |
     +--------------------------------------------+----------------------+---------------------------+
-    | ``qml.ops.LinearCombination(coeffs, ops)`` | n/a                  | ``ops.LinearCombination`` |
+    | ``qp.ops.LinearCombination(coeffs, ops)`` | n/a                  | ``ops.LinearCombination`` |
     +--------------------------------------------+----------------------+---------------------------+
 
 
@@ -121,7 +121,7 @@ Summary of the update
     Besides the python operators, you can also use the constructors :func:`~.pennylane.s_prod`, :func:`~.pennylane.prod`, and :func:`~.pennylane.sum`.
     For composite operators, we can access their constituents via the ``op.operands`` attribute.
 
-    >>> op = qml.sum(X(0), X(1), X(2))
+    >>> op = qp.sum(X(0), X(1), X(2))
     >>> op.operands
     (X(0), X(1), X(2))
 
@@ -139,7 +139,7 @@ Summary of the update
     >>> op = 0.5 * X(0) + 0.5 * Y(0) - 1.5 * X(0) - 0.5 * Y(0) # no simplification by default
     >>> op.simplify()
     -1.0 * X(0)
-    >>> qml.simplify(op)
+    >>> qp.simplify(op)
     -1.0 * X(0)
 
     Note that the simplification never happens in-place, such that the original operator is left unaltered.
@@ -161,15 +161,15 @@ Summary of the update
 
     As seen by this example, this method already takes care of arithmetic simplifications.
 
-    **qml.Hamiltonian**
+    **qp.Hamiltonian**
 
     The classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.ops.Hamiltonian` have been removed.
-    The familiar ``qml.Hamiltonian`` can still be used, which dispatches to ``LinearCombination`` and offers the same
+    The familiar ``qp.Hamiltonian`` can still be used, which dispatches to ``LinearCombination`` and offers the same
     usage and functionality but with different implementation details.
 
     >>> import pennylane as qp
     >>> from pennylane import X
-    >>> H = qml.Hamiltonian([0.5, 0.5], [X(0), X(1)])
+    >>> H = qp.Hamiltonian([0.5, 0.5], [X(0), X(1)])
     >>> type(H)
     pennylane.ops.op_math.linear_combination.LinearCombination
 
@@ -187,7 +187,7 @@ To help identify a fix, select the option below that describes your situation.
 
     We recommend to do the following checks:
 
-    * Check explicit use of the legacy :class:`~Tensor` class. If you find it in your script it can just be changed from ``Tensor(*terms)`` to ``qml.prod(*terms)`` with the same call signature.
+    * Check explicit use of the legacy :class:`~Tensor` class. If you find it in your script it can just be changed from ``Tensor(*terms)`` to ``qp.prod(*terms)`` with the same call signature.
 
     * Check explicit use of the ``op.obs`` attribute, where ``op`` is some operator. This is how the terms of a tensor product are accessed in :class:`~.pennylane.operation.Tensor` instances. Use ``op.operands`` instead.
 
@@ -196,7 +196,7 @@ To help identify a fix, select the option below that describes your situation.
           op = X(0) @ X(1)
           assert op.operands == (X(0), X(1))
     
-    * Check explicit use of ``qml.ops.Hamiltonian``. In that case, simply change to ``qml.Hamiltonian``.
+    * Check explicit use of ``qp.ops.Hamiltonian``. In that case, simply change to ``qp.Hamiltonian``.
       This will dispatch to the ``LinearCombination`` class, which offers the same API and functionality
       with different implementation details.
 
@@ -205,16 +205,16 @@ To help identify a fix, select the option below that describes your situation.
     on the PennyLane GitHub page.
 
 .. details::
-    :title: Sharp bits about the qml.Hamiltonian dispatch
+    :title: Sharp bits about the qp.Hamiltonian dispatch
     :href: sharp-bits-hamiltonian
 
-    The API of :class:`~.ops.op_math.LinearCombination` is mostly identical to that of the removed ``qml.ops.Hamiltonian``.
+    The API of :class:`~.ops.op_math.LinearCombination` is mostly identical to that of the removed ``qp.ops.Hamiltonian``.
 
     One small difference is that ``Hamiltonian.simplify()`` no longer alters the instance in-place. Instead, you must do the
 
     following:
 
-    >>> H1 = qml.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(0) @ X(1)])
+    >>> H1 = qp.Hamiltonian([0.5, 0.5], [X(0) @ X(1), X(0) @ X(1)])
     >>> H1 = H1.simplify()
 
 .. details::
@@ -261,13 +261,13 @@ To help identify a fix, select the option below that describes your situation.
     >>> op1 = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
     >>> op2 = (0.5 * X(0)) @ X(1) + (0.5 * Y(0)) @ Y(1)
     >>> op3 = 0.5 * (X(0) @ X(1) + Y(0) @ Y(1))
-    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
+    >>> qp.equal(op1, op2), qp.equal(op2, op3), qp.equal(op3, op1)
     (True, False, False)
 
     >>> op1 = op1.simplify()
     >>> op2 = op2.simplify()
     >>> op3 = op3.simplify()
-    >>> qml.equal(op1, op2), qml.equal(op2, op3), qml.equal(op3, op1)
+    >>> qp.equal(op1, op2), qp.equal(op2, op3), qp.equal(op3, op1)
     (True, True, True)
 
     >>> op1, op2, op3

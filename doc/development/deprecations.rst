@@ -3,7 +3,7 @@
 Deprecations
 ============
 
-All PennyLane deprecations will raise a ``qml.exceptions.PennyLaneDeprecationWarning``. Pending and completed
+All PennyLane deprecations will raise a ``qp.exceptions.PennyLaneDeprecationWarning``. Pending and completed
 deprecations are listed below.
 
 Pending deprecations
@@ -16,8 +16,8 @@ Pending deprecations
   - Deprecated in v0.44
   - Will be removed in v0.45
   
-* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-  in 0.45. Instead, with ``qml.decomposition.enable_graph()``, new decomposition rules can be defined as
+* The ``custom_decomps`` keyword argument to ``qp.device`` has been deprecated and will be removed
+  in 0.45. Instead, with ``qp.decomposition.enable_graph()``, new decomposition rules can be defined as
   quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
   - Deprecated in v0.44
@@ -48,14 +48,14 @@ Pending deprecations
     import pennylane as qp
     from functools import partial
 
-    @partial(qml.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
-    @qml.qnode(qml.device("default.qubit"))
+    @partial(qp.transforms.decompose, gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+    @qp.qnode(qp.device("default.qubit"))
     def circuit():
-        qml.Hadamard(wires=[0])
-        qml.Toffoli(wires=[0,1,2])
-        return qml.expval(qml.Z(0))
+        qp.Hadamard(wires=[0])
+        qp.Toffoli(wires=[0,1,2])
+        return qp.expval(qp.Z(0))
 
-  >>> print(qml.draw(circuit)())
+  >>> print(qp.draw(circuit)())
   0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
   1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
   2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
@@ -64,15 +64,15 @@ Pending deprecations
 * Access to the following functions and classes from the `~pennylane.resources` module are 
   deprecated. Instead, these functions must be imported from the `~pennylane.estimator` module.
 
-    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+    - ``qp.estimator.estimate_shots`` in favor of ``qp.resources.estimate_shots``
+    - ``qp.estimator.estimate_error`` in favor of ``qp.resources.estimate_error``
+    - ``qp.estimator.FirstQuantization`` in favor of ``qp.resources.FirstQuantization``
+    - ``qp.estimator.DoubleFactorization`` in favor of ``qp.resources.DoubleFactorization``
 
   - Deprecated in v0.44
   - Removed in v0.45
 
-* ``argnum`` has been renamed ``argnums`` in ``qml.grad``, ``qml.jacobian``, ``qml.jvp``, and ``qml.vjp``
+* ``argnum`` has been renamed ``argnums`` in ``qp.grad``, ``qp.jacobian``, ``qp.jvp``, and ``qp.vjp``
   to better match catalyst and jax.
 
   - Deprecated in v0.44
@@ -93,14 +93,14 @@ Pending deprecations
 
   .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, shots=1000)
+    @qp.qnode(dev, shots=1000)
     def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
-    circuit_analytic = qml.set_shots(circuit, None)
+    circuit_analytic = qp.set_shots(circuit, None)
 
   - Deprecated in v0.43
   - Will be removed in a future version
@@ -128,7 +128,7 @@ for details on how to port your legacy code to the new system. The following fun
 
 * In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`pennylane.operation.enable_new_opmath`,
   :func:`pennylane.operation.disable_new_opmath`, :class:`pennylane.ops.Hamiltonian`, and :class:`pennylane.operation.Tensor`. Note
-  that ``qml.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
+  that ``qp.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
 
   - Deprecated in v0.39
   - Removed in v0.40
@@ -148,7 +148,7 @@ Completed deprecation cycles
 ----------------------------
 
 * The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
-  Instead, the ``qml.to_openqasm`` function should be used.
+  Instead, the ``qp.to_openqasm`` function should be used.
 
   - Deprecated in v0.43
   - Removed in v0.44
@@ -166,12 +166,12 @@ Completed deprecation cycles
   .. code-block:: python
 
     coeffs = [0.5, -0.6]
-    ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
-    H_flat = qml.dot(coeffs, ops)
+    ops = [qp.X(0), qp.X(0) @ qp.Y(1)]
+    H_flat = qp.dot(coeffs, ops)
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
-  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  >>> qp.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
@@ -179,14 +179,14 @@ Completed deprecation cycles
 
   The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
-  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
-  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  >>> decomp_ops = qp.adjoint(qp.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qp.simplify, op.decomposition())]
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
 
-* ``qml.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
+* ``qp.qnn.cost.SquaredErrorLoss`` has been removed. Instead, this hybrid workflow can be accomplished 
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
 
   - Deprecated in v0.43
@@ -198,7 +198,7 @@ Completed deprecation cycles
   - Deprecated in v0.43	
   - Removed in v0.44
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+* Specifying the ``work_wire_type`` argument in ``qp.ctrl`` and other controlled operators as ``"clean"`` or 
   ``"dirty"`` is disallowed. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are restored to their original state upon completing the decomposition.
@@ -206,7 +206,7 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.44
 
-* Some unnecessary methods of the ``qml.CircuitGraph`` class have been removed:
+* Some unnecessary methods of the ``qp.CircuitGraph`` class have been removed:
 
     - ``print_contents`` in favor of ``print(obj)``
     - ``observables_in_order`` in favor of ``observables``
@@ -217,7 +217,7 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.44
 
-* The ``qml.QNode.add_transform`` method is removed.
+* The ``qp.QNode.add_transform`` method is removed.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
 
   - Deprecated in v0.43
@@ -231,14 +231,14 @@ Completed deprecation cycles
   - Deprecated in v0.43
   - Removed in v0.44
 
-* ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use ``qml.devices.ExecutionConfig()``
+* ``pennylane.devices.DefaultExecutionConfig`` has been removed. Instead, use ``qp.devices.ExecutionConfig()``
   to create a default execution configuration.
 
   - Deprecated in v0.43
   - Removed in v0.44
 
 * ``MeasurementProcess.expand`` is removed. The relevant method can be replaced with 
-  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
+  ``qp.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
   
   - Deprecated in v0.43
   - Removed in v0.44
@@ -261,7 +261,7 @@ Completed deprecation cycles
     from pennylane.operation import TermsUndefinedError, Operator
 
     def not_tape(obj):
-        return not isinstance(obj, qml.tape.QuantumScript)
+        return not isinstance(obj, qp.tape.QuantumScript)
 
     def has_gen(obj):
         return obj.has_generator
@@ -276,10 +276,10 @@ Completed deprecation cycles
         return obj.num_params == 0
 
     def has_unitary_gen(obj):
-        return obj in qml.ops.qubit.attributes.has_unitary_generator
+        return obj in qp.ops.qubit.attributes.has_unitary_generator
 
     def is_measurement(obj):
-        return isinstance(obj, qml.measurements.MeasurementProcess)
+        return isinstance(obj, qp.measurements.MeasurementProcess)
 
     def defines_diagonalizing_gates(obj):
         return obj.has_diagonalizing_gates
@@ -294,7 +294,7 @@ Completed deprecation cycles
         except TermsUndefinedError:
             return False
 
-* ``lie_closure``, ``structure_constants``, and ``center`` can no longer be accessed via ``qml.pauli``. Top level import and usage is advised. They now live in
+* ``lie_closure``, ``structure_constants``, and ``center`` can no longer be accessed via ``qp.pauli``. Top level import and usage is advised. They now live in
   the ``liealg`` module.
 
   .. code-block:: python
@@ -305,7 +305,7 @@ Completed deprecation cycles
   - Deprecated in v0.40
   - Removed in v0.43
 
-* ``qml.operation.Observable`` has been removed. To indicate that an operator is an observable, operator developers should manually set
+* ``qp.operation.Observable`` has been removed. To indicate that an operator is an observable, operator developers should manually set
   ``is_hermitian = True`` and update the ``queue`` function to stop it from being
   processed into the circuit.
 
@@ -314,24 +314,24 @@ Completed deprecation cycles
       class MyObs(Operator):
           is_hermitian = True
 
-          def queue(self, context=qml.QueuingManager):
+          def queue(self, context=qp.QueuingManager):
               return self
 
   To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
 
-  Instead of ``Observable.compare``, ``qml.equal`` and ``op1 == op2`` should be used to compare instances.
+  Instead of ``Observable.compare``, ``qp.equal`` and ``op1 == op2`` should be used to compare instances.
 
   - Deprecated in v0.42
   - Removed in v0.43
 
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` have been removed. If an operation can act
+* ``qp.operation.WiresEnum``, ``qp.operation.AllWires``, and ``qp.operation.AnyWires`` have been removed. If an operation can act
   on any number of wires, ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
   to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
 
   - Deprecated in v0.42
   - Removed in v0.43
 
-* The ``qml.QNode.get_gradient_fn`` method has been removed. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+* The ``qp.QNode.get_gradient_fn`` method has been removed. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
 
   - Deprecated in v0.42
   - Removed in v0.43
@@ -355,14 +355,14 @@ Completed deprecation cycles
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
+* The ``KerasLayer`` class in ``qp.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
   Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`_ 
   or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``qml.gradients.hamiltonian_grad`` function has been removed because this gradient recipe is no
+* The ``qp.gradients.hamiltonian_grad`` function has been removed because this gradient recipe is no
   longer required with the :doc:`new operator arithmetic system </news/new_opmath>`.
 
   - Deprecated in v0.41
@@ -374,14 +374,14 @@ Completed deprecation cycles
   - Deprecated in v0.36
   - Removed in v0.42
 
-* The ``mcm_config`` keyword argument to ``qml.execute`` has been removed.
+* The ``mcm_config`` keyword argument to ``qp.execute`` has been removed.
   Instead, use the ``mcm_method`` and ``postselect_mode`` arguments.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``inner_transform`` and ``config`` keyword arguments in ``qml.execute`` have been removed.
-  If more detailed control over the execution is required, use ``qml.workflow.run`` with these arguments instead.
+* The ``inner_transform`` and ``config`` keyword arguments in ``qp.execute`` have been removed.
+  If more detailed control over the execution is required, use ``qp.workflow.run`` with these arguments instead.
 
   - Deprecated in v0.41
   - Removed in v0.42
@@ -392,20 +392,20 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.42
 
-* Specifying ``pipeline=None`` with ``qml.compile`` has been removed. 
+* Specifying ``pipeline=None`` with ``qp.compile`` has been removed. 
   A sequence of transforms should now always be specified.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
-* The ``control_wires`` argument in the ``qml.ControlledQubitUnitary`` class has been removed. 
+* The ``control_wires`` argument in the ``qp.ControlledQubitUnitary`` class has been removed. 
   Instead, please use the ``wires`` argument.
 
   - Deprecated in v0.41
   - Removed in v0.42
 
 * The ``ControlledQubitUnitary`` no longer accepts `QubitUnitary` objects as arguments as its ``base``. 
-  Instead, use ``qml.ctrl`` to construct a controlled `QubitUnitary`.
+  Instead, use ``qp.ctrl`` to construct a controlled `QubitUnitary`.
 
   - Deprecated in v0.41
   - Removed in v0.42  
@@ -431,41 +431,41 @@ Completed deprecation cycles
   - Removed in v0.41
 
 * The ``tape`` and ``qtape`` properties of ``QNode`` have been removed. 
-  Instead, use the ``qml.workflow.construct_tape`` function.
+  Instead, use the ``qp.workflow.construct_tape`` function.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``gradient_fn`` keyword argument to ``qml.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
+* The ``gradient_fn`` keyword argument to ``qp.execute`` has been removed. Instead, it has been replaced with ``diff_method``.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
 * The ``QNode.get_best_method`` and ``QNode.best_method_str`` methods have been removed. 
-  Instead, use the ``qml.workflow.get_best_diff_method`` function. 
+  Instead, use the ``qp.workflow.get_best_diff_method`` function. 
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``output_dim`` property of ``qml.tape.QuantumScript`` has been removed. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
+* The ``output_dim`` property of ``qp.tape.QuantumScript`` has been removed. Instead, use method ``shape`` of ``QuantumScript`` or ``MeasurementProcess`` to get the same information.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``qml.qsvt_legacy`` function has been removed.
-  Instead, use ``qml.qsvt``. The new functionality takes an input polynomial instead of angles.
+* The ``qp.qsvt_legacy`` function has been removed.
+  Instead, use ``qp.qsvt``. The new functionality takes an input polynomial instead of angles.
 
   - Deprecated in v0.40
   - Removed in v0.41
 
-* The ``qml.qinfo`` module has been removed. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
+* The ``qp.qinfo`` module has been removed. Please see the respective functions in the ``qp.math`` and ``qp.measurements``
   modules instead.
 
   - Deprecated in v0.39
   - Removed in v0.40
 
 * Top level access to ``Device``, ``QubitDevice``, and ``QutritDevice`` have been removed. Instead, they
-  are available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  are available as ``qp.devices.LegacyDevice``, ``qp.devices.QubitDevice``, and ``qp.devices.QutritDevice``
   respectively.
 
   - Deprecated in v0.39
@@ -478,12 +478,12 @@ Completed deprecation cycles
   - Removed in v0.40
 
 
-* The ``qml.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
+* The ``qp.QubitStateVector`` template has been removed. Instead, use :class:`~pennylane.StatePrep`.
 
   - Deprecated in v0.39
   - Removed in v0.40
 
-* ``qml.broadcast`` has been removed. Users should use ``for`` loops instead.
+* ``qp.broadcast`` has been removed. Users should use ``for`` loops instead.
 
   - Deprecated in v0.39
   - Removed in v0.40
@@ -505,7 +505,7 @@ Completed deprecation cycles
   - Deprecated in v0.39
   - Removed in v0.40
 
-* The ``qml.workflow.set_shots`` helper function has been removed. We no longer interact with the legacy device interface in our code.
+* The ``qp.workflow.set_shots`` helper function has been removed. We no longer interact with the legacy device interface in our code.
   Instead, shots should be specified on the tape, and the device should use these shots.
 
   - Deprecated in v0.38
@@ -517,8 +517,8 @@ Completed deprecation cycles
   - Deprecated in v0.39
   - Removed in v0.40
 
-* The ``qml.shadows.shadow_expval`` transform has been removed. Instead, please use the
-  ``qml.shadow_expval`` measurement process.
+* The ``qp.shadows.shadow_expval`` transform has been removed. Instead, please use the
+  ``qp.shadow_expval`` measurement process.
 
   - Deprecated in v0.39
   - Removed in v0.40
@@ -528,19 +528,19 @@ Completed deprecation cycles
   - Last supported version of ``manylinux2014`` with v0.36
   - Fully migrated to ``manylinux_2_28`` with v0.37
 
-* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
-  Instead, ``qml.simplify()`` can be called on the constructed operator.
+* The ``simplify`` argument in ``qp.Hamiltonian`` and ``qp.ops.LinearCombination`` has been removed.
+  Instead, ``qp.simplify()`` can be called on the constructed operator.
 
   - Deprecated in v0.37
   - Removed in v0.39
 
-* The ``decomp_depth`` argument in ``qml.device`` is removed.
+* The ``decomp_depth`` argument in ``qp.device`` is removed.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed and migrated to the ``qml.gradients``
-  module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+* The functions ``qp.qinfo.classical_fisher`` and ``qp.qinfo.quantum_fisher`` have been removed and migrated to the ``qp.gradients``
+  module. Therefore, ``qp.gradients.classical_fisher`` and ``qp.gradients.quantum_fisher`` should be used instead.
 
   - Deprecated in v0.38
   - Removed in v0.39
@@ -557,54 +557,54 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
+* `Operator.expand` is now removed. Use `qp.tape.QuantumScript(op.decomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``expansion_strategy`` attribute of ``qml.QNode`` is removed.
-  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
+* The ``expansion_strategy`` attribute of ``qp.QNode`` is removed.
+  Users should make use of ``qp.workflow.construct_batch``, should they require fine control over the output tape(s).
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is removed. 
+* The ``expansion_strategy`` argument in ``qp.specs``, ``qp.draw``, and ``qp.draw_mpl`` is removed. 
   Instead, use the ``level`` argument which provides a superset of options.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``max_expansion`` argument in ``qml.QNode`` is removed.
+* The ``max_expansion`` argument in ``qp.QNode`` is removed.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``expand_fn`` argument in ``qml.execute`` is removed.
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+* The ``expand_fn`` argument in ``qp.execute`` is removed.
+  Instead, please create a ``qp.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qp.execute``.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``max_expansion`` argument in ``qml.execute`` is removed.
-  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
+* The ``max_expansion`` argument in ``qp.execute`` is removed.
+  Instead, please use ``qp.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qp.execute``.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``override_shots`` argument in ``qml.execute`` is removed.
+* The ``override_shots`` argument in ``qp.execute`` is removed.
   Instead, please add the shots to the ``QuantumTape``\ s to be executed.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The ``device_batch_transform`` argument in ``qml.execute`` is removed.
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+* The ``device_batch_transform`` argument in ``qp.execute`` is removed.
+  Instead, please create a ``qp.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qp.execute``.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are removed.
-  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
+* The functions ``qp.transforms.sum_expand`` and ``qp.transforms.hamiltonian_expand`` are removed.
+  Instead, ``qp.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
   - Deprecated in v0.38
   - Removed in v0.39
@@ -614,27 +614,27 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.38
 
-* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
+* ``qp.from_qasm`` no longer removes measurements from the QASM code. Use 
   ``measurements=[]`` to remove measurements from the original circuit.
 
   - Deprecated in v0.37
   - Default behaviour changed in v0.38
 
-* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+* ``qp.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
   See :func:`~.pennylane.transform` for more information.
 
   - Deprecated in v0.37
   - Removed in v0.38
 
-* ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
+* ``qp.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qp.from_qasm``.
 
   >>> with open("test.qasm", "r") as f:
-  ...     circuit = qml.from_qasm(f.read())
+  ...     circuit = qp.from_qasm(f.read())
 
   - Deprecated in v0.36
   - Removed in v0.37
 
-* The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
+* The ``qp.load`` function is a general-purpose way to convert circuits into PennyLane from other
   libraries. It has been removed in favour of the more specific functions ``from_qiskit``, ``from_qasm``, etc.
 
   - Deprecated in v0.36
@@ -642,7 +642,7 @@ Completed deprecation cycles
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
   ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
-  ``qml.transform`` function. Please refer to
+  ``qp.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
   to see how this can be done.
 
@@ -662,17 +662,17 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.36
 
-* Calling ``qml.matrix`` without providing a ``wire_order`` on objects where the wire order could be
+* Calling ``qp.matrix`` without providing a ``wire_order`` on objects where the wire order could be
   ambiguous now raises an error. This includes tapes with multiple wires, QNodes with a device that
   does not provide wires, or quantum functions.
 
   - Deprecated in v0.35
   - Raises an error in v0.36
 
-* ``qml.pauli.pauli_mult`` and ``qml.pauli.pauli_mult_with_phase`` are now removed. Instead, you
-  should use ``qml.simplify(qml.prod(pauli_1, pauli_2))`` to get the reduced operator.
+* ``qp.pauli.pauli_mult`` and ``qp.pauli.pauli_mult_with_phase`` are now removed. Instead, you
+  should use ``qp.simplify(qp.prod(pauli_1, pauli_2))`` to get the reduced operator.
 
-  >>> op = qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+  >>> op = qp.simplify(qp.prod(qp.PauliX(0), qp.PauliZ(0)))
   >>> op
   -1j*(PauliY(wires=[0]))
   >>> [phase], [base] = op.terms()
@@ -688,20 +688,20 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.36
 
-* The contents of ``qml.interfaces`` is moved inside ``qml.workflow``.
+* The contents of ``qp.interfaces`` is moved inside ``qp.workflow``.
 
   - Contents moved in v0.35
   - Old import path removed in v0.36
 
 * The method ``Operator.validate_subspace(subspace)``, only employed under a specific set of qutrit
-  operators, has been relocated to the ``qml.ops.qutrit.parametric_ops`` module and has been removed
+  operators, has been relocated to the ``qp.ops.qutrit.parametric_ops`` module and has been removed
   from the ``Operator`` class.
 
   - Deprecated in v0.35
   - Removed in v0.36
 
-* ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
-  you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.
+* ``qp.transforms.one_qubit_decomposition`` and ``qp.transforms.two_qubit_decomposition`` are removed. Instead,
+  you should use ``qp.ops.one_qubit_decomposition`` and ``qp.ops.two_qubit_decomposition``.
 
   - Deprecated in v0.34
   - Removed in v0.35
@@ -714,8 +714,8 @@ Completed deprecation cycles
 
     from functools import partial
 
-    @partial(qml.metric_tensor, approx="block-diag")
-    @qml.qnode(dev)
+    @partial(qp.metric_tensor, approx="block-diag")
+    @qp.qnode(dev)
     def circuit(weights):
         ...
 
@@ -723,8 +723,8 @@ Completed deprecation cycles
 
   .. code-block:: python
 
-    @qml.metric_tensor(approx="block-diag")
-    @qml.qnode(dev)
+    @qp.metric_tensor(approx="block-diag")
+    @qp.qnode(dev)
     def circuit(weights):
         ...
 
@@ -732,11 +732,11 @@ Completed deprecation cycles
 
   .. code-block:: python
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def circuit(weights):
         ...
 
-    transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
+    transformed_circuit = qp.metric_tensor(circuit, approx="block-diag")
 
   - Deprecated in v0.33
   - Removed in v0.35
@@ -768,24 +768,24 @@ Completed deprecation cycles
   - Deprecated in v0.34
   - Removed in v0.35
 
-* ``qml.ExpvalCost`` has been removed. Users should use ``qml.expval()`` instead.
+* ``qp.ExpvalCost`` has been removed. Users should use ``qp.expval()`` instead.
 
   .. code-block:: python
 
-    @qml.qnode(dev)
+    @qp.qnode(dev)
     def cost_function(params):
         some_qfunc(params)
-        return qml.expval(Hamiltonian)
+        return qp.expval(Hamiltonian)
 
   - Deprecated in v0.24
   - Removed in v0.35
 
-* Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
+* Specifying ``control_values`` passed to ``qp.ctrl`` as a string is no longer supported.
 
   - Deprecated in v0.25
   - Removed in v0.34
 
-* ``qml.gradients.pulse_generator`` has become ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions.
+* ``qp.gradients.pulse_generator`` has become ``qp.gradients.pulse_odegen`` to adhere to paper naming conventions.
 
   - Deprecated in v0.33
   - Removed in v0.34
@@ -821,28 +821,28 @@ Completed deprecation cycles
   has been updated to reflect the incoming changes.
 
   The changes to operator equality allow users to use operator equality the same way as
-  with ``qml.equal``. With the changes to hashing, unique operators that are equal now have the same
+  with ``qp.equal``. With the changes to hashing, unique operators that are equal now have the same
   hash. These changes now allow behaviour such as the following:
 
-  >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
+  >>> qp.RX(0.1, wires=0) == qp.RX(0.1, wires=0)
   True
-  >>> {qml.PauliZ(0), qml.PauliZ(0)}
+  >>> {qp.PauliZ(0), qp.PauliZ(0)}
   {PauliZ(wires=[0])}
 
   Meanwhile, the previous behaviour is shown below:
 
-  >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
+  >>> qp.RX(0.1, wires=0) == qp.RX(0.1, wires=0)
   False
-  >>> {qml.PauliZ(0), qml.PauliZ(0)}
+  >>> {qp.PauliZ(0), qp.PauliZ(0)}
   {PauliZ(wires=[0]), PauliZ(wires=[0])}
 
   - Added in v0.32
   - Behaviour changed in v0.33
 
-* ``qml.qchem.jordan_wigner`` had been removed.
-  Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
-  is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
-  ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
+* ``qp.qchem.jordan_wigner`` had been removed.
+  Use ``qp.jordan_wigner`` instead. List input to define the fermionic operator
+  is no longer accepted; the fermionic operators ``qp.FermiA``, ``qp.FermiC``,
+  ``qp.FermiWord`` and ``qp.FermiSentence`` should be used instead. See the
   :mod:`pennylane.fermi` module documentation and the
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
@@ -858,7 +858,7 @@ Completed deprecation cycles
   - Deprecated in v0.32
   - Removed in v0.33
 
-* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
+* The ``sampler_seed`` argument of ``qp.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
   to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
   ``np.random.default_rng(seed)``.
@@ -888,7 +888,7 @@ Completed deprecation cycles
   - Removed in v0.32
 
 
-* The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
+* The CV observables ``qp.X`` and ``qp.P`` have been removed. Use ``qp.QuadX`` and ``qp.QuadP`` instead.
 
   - Deprecated in v0.32
   - Removed in v0.33
@@ -906,14 +906,14 @@ Completed deprecation cycles
 
     from pennylane.transforms import convert_to_numpy_parameters
 
-    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
-                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
+    qscript = qp.tape.QuantumTape([qp.RX(torch.tensor(0.1234), 0)],
+                                     [qp.expval(qp.Hermitian(torch.eye(2), 0))] )
     unwrapped_qscript = convert_to_numpy_parameters(qscript)
 
     torch_params = qscript.get_parameters()
     numpy_params = unwrapped_qscript.get_parameters()
 
-* ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
+* ``qp.enable_return`` and ``qp.disable_return`` have been removed. The old return types are no longer available.
 
   - Deprecated in v0.32
   - Removed in v0.33
@@ -924,21 +924,21 @@ Completed deprecation cycles
   - Deprecated in v0.32
   - Removed in v0.33
 
-* ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
-  ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as
-  input. Please call ``qml.math.dm_from_state_vector`` on the input before passing to any of these functions.
+* ``qp.math.purity``, ``qp.math.vn_entropy``, ``qp.math.mutual_info``, ``qp.math.fidelity``,
+  ``qp.math.relative_entropy``, and ``qp.math.max_entropy`` no longer support state vectors as
+  input. Please call ``qp.math.dm_from_state_vector`` on the input before passing to any of these functions.
 
   - Still accepted in v0.31
   - Removed in v0.32
 
-* The ``do_queue`` keyword argument in ``qml.operation.Operator`` has been removed. This affects
+* The ``do_queue`` keyword argument in ``qp.operation.Operator`` has been removed. This affects
   all child classes, such as ``Operation``, ``Observable``, ``SymbolicOp`` and more. Instead of
-  setting ``do_queue=False``, use the ``qml.QueuingManager.stop_recording()`` context.
+  setting ``do_queue=False``, use the ``qp.QueuingManager.stop_recording()`` context.
 
   - Deprecated in v0.31
   - Removed in v0.32
 
-* The ``qml.specs`` dictionary longer supports direct key access to certain keys. Instead
+* The ``qp.specs`` dictionary longer supports direct key access to certain keys. Instead
   these quantities can be accessed as fields of the new ``Resources`` object saved under
   ``specs_dict["resources"]``:
 
@@ -950,7 +950,7 @@ Completed deprecation cycles
 
   These keys were still accessible in v0.31 and removed in v0.32.
 
-* ``qml.math.reduced_dm`` has been removed. Please use ``qml.math.reduce_dm`` or ``qml.math.reduce_statevector`` instead.
+* ``qp.math.reduced_dm`` has been removed. Please use ``qp.math.reduce_dm`` or ``qp.math.reduce_statevector`` instead.
 
   - Still accessible in v0.31
   - Removed in v0.32
@@ -982,7 +982,7 @@ Completed deprecation cycles
   .. code-block:: python
 
     H, qubits = molecular_hamiltonian(symbols, coordinates)
-    grouped_h = qml.Hamiltonian(
+    grouped_h = qp.Hamiltonian(
         H.coeffs,
         H.ops,
         grouping_type=grouping_type,
@@ -995,7 +995,7 @@ Completed deprecation cycles
   - Deprecated in v0.31
   - Removed in v0.32
 
-* The ``qml.utils.sparse_hamiltonian`` function has been removed. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+* The ``qp.utils.sparse_hamiltonian`` function has been removed. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
   - Deprecated in v0.29
   - Removed in v0.31
@@ -1005,7 +1005,7 @@ Completed deprecation cycles
   - Deprecated in v0.29
   - Removed in v0.31
 
-* ``qml.op_sum`` has been removed. Users should use ``qml.sum`` instead.
+* ``qp.op_sum`` has been removed. Users should use ``qp.sum`` instead.
 
   - Deprecated in v0.29.
   - Removed in v0.31.
@@ -1020,7 +1020,7 @@ Completed deprecation cycles
   - Transition warning added in v0.29.
   - Updated to current behaviour in v0.30.
 
-* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` has been removed.
+* The ``seed_recipes`` argument in ``qp.classical_shadow`` and ``qp.shadow_expval`` has been removed.
   An argument ``seed`` which defaults to ``None`` can contain an integer with the wanted seed.
 
   - Still accessible in v0.28, v0.29
@@ -1042,46 +1042,46 @@ Completed deprecation cycles
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
   have been consolidated in the ``pauli/grouping/`` directory.
 
-* ``qml.VQECost`` is removed.
+* ``qp.VQECost`` is removed.
 
    - Deprecated in 0.13
    - Removed in 0.29
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead.
+  use ``qp.adjoint`` or ``qp.pow`` instead.
 
   - Still accessible in v0.27 and v0.28
   - Removed in v0.29
 
   Don't use:
 
-  >>> v1 = qml.PauliX(0).inv()
-  >>> v2 = qml.PauliX(0)
+  >>> v1 = qp.PauliX(0).inv()
+  >>> v2 = qp.PauliX(0)
   >>> v2.inverse = True
 
   Instead, use:
 
-  >>> qml.adjoint(qml.PauliX(0))
+  >>> qp.adjoint(qp.PauliX(0))
   Adjoint(PauliX(wires=[0]))
-  >>> qml.pow(qml.PauliX(0), -1)
+  >>> qp.pow(qp.PauliX(0), -1)
   PauliX(wires=[0])**-1
-  >>> qml.pow(qml.PauliX(0), -1, lazy=False)
+  >>> qp.pow(qp.PauliX(0), -1, lazy=False)
   PauliX(wires=[0])
-  >>> qml.PauliX(0) ** -1
+  >>> qp.PauliX(0) ** -1
   PauliX(wires=[0])**-1
 
-* The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
-  use ``qml.pauli_decompose()``.
+* The ``qp.utils.decompose_hamiltonian()`` method is removed. Please
+  use ``qp.pauli_decompose()``.
 
   - Still accessible in v0.27
   - Removed in v0.28
 
-* ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
+* ``qp.tape.get_active_tape`` is deprecated. Please use ``qp.QueuingManager.active_context()`` instead.
 
   - Deprecated in v0.27
   - Removed in v0.28
 
-* ``qml.transforms.qcut.remap_tape_wires`` is deprecated. Please use ``qml.map_wires`` instead.
+* ``qp.transforms.qcut.remap_tape_wires`` is deprecated. Please use ``qp.map_wires`` instead.
 
   - Deprecated in v0.27
   - Removed in v0.28
@@ -1092,7 +1092,7 @@ Completed deprecation cycles
   - Deprecated in v0.27
   - Removed in v0.28
 
-* ``qml.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qml.QueuingManager.stop_recording``
+* ``qp.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qp.QueuingManager.stop_recording``
 
   - Deprecated in v0.27
   - Removed in v0.28
@@ -1113,25 +1113,25 @@ Completed deprecation cycles
   - Deprecated in v0.23
   - Removed in v0.27
 
-* The ``qml.utils.expand`` function is deprecated. ``qml.math.expand_matrix`` should be used
+* The ``qp.utils.expand`` function is deprecated. ``qp.math.expand_matrix`` should be used
   instead.
 
   - Deprecated in v0.24
   - Removed in v0.27
 
-* The ``qml.Operation.get_parameter_shift`` method is removed. Use the methods of the ``gradients`` module
+* The ``qp.Operation.get_parameter_shift`` method is removed. Use the methods of the ``gradients`` module
   for general parameter-shift rules instead.
 
   - Deprecated in v0.22
   - Removed in v0.28
 
-* ``qml.transforms.measurement_grouping`` has been removed. Please use ``qml.transforms.hamiltonian_expand``
+* ``qp.transforms.measurement_grouping`` has been removed. Please use ``qp.transforms.hamiltonian_expand``
   instead.
 
   - Deprecated in v0.28
   - Removed in v0.29
 
-* ``qml.transforms.make_tape`` was previously deprecated, but there is no longer a plan to remove it.
+* ``qp.transforms.make_tape`` was previously deprecated, but there is no longer a plan to remove it.
   It no longer raises a warning, and the functionality is unchanged.
 
   - Deprecated in v0.28

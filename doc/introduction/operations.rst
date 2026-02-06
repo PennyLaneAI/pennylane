@@ -16,11 +16,11 @@ These operators can be used in quantum functions, like shown in the following ex
     import pennylane as qp
 
     def my_quantum_function(x, y):
-        qml.RZ(x, wires=0)
-        qml.CNOT(wires=[0,1])
-        qml.RY(y, wires=1)
-        qml.AmplitudeDamping(0.1, wires=0)
-        return qml.expval(qml.PauliZ(1))
+        qp.RZ(x, wires=0)
+        qp.CNOT(wires=[0,1])
+        qp.RY(y, wires=1)
+        qp.AmplitudeDamping(0.1, wires=0)
+        return qp.expval(qp.PauliZ(1))
 
 This quantum function uses the :class:`RZ <pennylane.RZ>`,
 :class:`CNOT <pennylane.CNOT>`,
@@ -64,9 +64,9 @@ Operator to Operator functions
 
 These operator functions act on operators to produce new operators.
 
->>> op = qml.prod(qml.PauliX(0), qml.PauliZ(1))
->>> op = qml.sum(qml.Hadamard(0), op)
->>> op = qml.s_prod(1.2, op)
+>>> op = qp.prod(qp.PauliX(0), qp.PauliZ(1))
+>>> op = qp.sum(qp.Hadamard(0), op)
+>>> op = qp.s_prod(1.2, op)
 >>> op
 1.2 * (H(0) + X(0) @ Z(1))
 
@@ -86,15 +86,15 @@ Operator to Other functions
 These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators.
 
->>> op = qml.RX(0.54, wires=0)
->>> qml.matrix(op)
+>>> op = qp.RX(0.54, wires=0)
+>>> qp.matrix(op)
 [[0.9637709+0.j         0.       -0.26673144j]
 [0.       -0.26673144j 0.9637709+0.j        ]]
 
 Some operator functions can also be used in a functional form:
 
 >>> x = torch.tensor(0.6, requires_grad=True)
->>> matrix_fn = qml.matrix(qml.RX)
+>>> matrix_fn = qp.matrix(qp.RX)
 >>> matrix_fn(x, wires=0)
 tensor([[0.9553+0.0000j, 0.0000-0.2955j],
         [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<StackBackward0>)
@@ -110,9 +110,9 @@ Some operator transforms can also act on multiple operators, by passing
 quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
-...     qml.RX(theta, wires=1)
-...     qml.Z(wires=0)
->>> qml.matrix(circuit)(np.pi / 4)
+...     qp.RX(theta, wires=1)
+...     qp.Z(wires=0)
+>>> qp.matrix(circuit)(np.pi / 4)
 array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
 [ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
@@ -131,7 +131,7 @@ These functions take a matrix and return an associated native PennyLane operator
 For example:
 
 >>> mat = np.array([[1, 1], [1, -1]])
->>> h = qml.pauli_decompose(mat)
+>>> h = qp.pauli_decompose(mat)
 >>> type(h)
 pennylane.ops.op_math.linear_combination.LinearCombination
 >>> print(h)
