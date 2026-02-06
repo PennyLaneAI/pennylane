@@ -45,10 +45,10 @@ else:  # pragma: no cover
     is_jax_available = False
     jax = None
 
-if util.find_spec("optax") is not None:
+if util.find_spec("optax") is not None:  # pragma: no cover
     optax = import_module("optax")
     is_optax_available = True
-else:  # pragma: no cover
+else:
     is_optax_available = False
     optax = None
 
