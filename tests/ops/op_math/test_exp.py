@@ -995,7 +995,8 @@ class TestDifferentiation:
             Exp(qml.RX(x, 0), coeff)
             return qml.expval(qml.PauliZ(0))
 
-        circuit(np.array(2.0), np.array(0.5))
+        with pytest.warns(UserWarning):
+            circuit(np.array(2.0), np.array(0.5))
 
         tape = qml.workflow.construct_tape(circuit)(np.array(2.0), np.array(0.5))
         assert tape.trainable_params == [0, 1]
