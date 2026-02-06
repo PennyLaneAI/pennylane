@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices import ExecutionConfig, NullQubit
+from pennylane.devices import ExecutionConfig, NullQubit, preprocess
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -105,6 +105,9 @@ def test_set_device_target():
         for i, arg in enumerate(t1.args):
             if not callable(arg):
                 assert arg == t2.args[i]
+
+        if t1.tape_transform == preprocess.decompose.tape_transform:
+            assert t1.kwargs.pop("strict") is False
 
         assert len(t1.kwargs) == len(t2.kwargs)
         for k in t1.kwargs:
