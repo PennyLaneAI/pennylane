@@ -407,7 +407,6 @@ class TestDifferentModes:
             expected = 1 / np.sqrt(2) * (1.0 - 2.0) + 1 / np.sqrt(2) * (3.0 - 4.0)
             assert qml.math.allclose(out, expected)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_auto_mode_with_multiple_trainable_params(self, mocker):
         # In this case, the RX gets the standard treatment, but the evolution gets reversed.
 
