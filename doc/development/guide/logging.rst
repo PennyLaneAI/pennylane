@@ -121,10 +121,10 @@ sections to discuss how these can be adjusted to suit needs:
    ###############################################################################
 
    [formatters]
-   [formatters.qml_default_formatter]
+   [formatters.qp_default_formatter]
    "()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
 
-   [formatters.qml_alt_formatter]
+   [formatters.qp_alt_formatter]
    "()" = "pennylane.logging.formatters.formatter.AnotherLogFormatter"
 
    [formatters.local_detailed]
@@ -148,11 +148,11 @@ as ``false`` unless required otherwise.
 
    [filters]
    # Filter to show messages from the same local process as the Python script
-   [filters.qml_LocalProcessFilter]
+   [filters.qp_LocalProcessFilter]
    "()" = "pennylane.logging.filter.LocalProcessFilter"
 
    # Filter to show debug level messages only
-   [filters.qml_DebugOnlyFilter]
+   [filters.qp_DebugOnlyFilter]
    "()" = "pennylane.logging.filter.DebugOnlyFilter"
 
 The above section defines how to filter log messages (known as
@@ -168,32 +168,32 @@ can be used in the next section.
    ###############################################################################
 
    [handlers]
-   [handlers.qml_debug_stream]
+   [handlers.qp_debug_stream]
    class = "logging.StreamHandler"
-   formatter = "qml_default_formatter"
+   formatter = "qp_default_formatter"
    level = "DEBUG"
    stream = "ext://sys.stdout"
 
-   [handlers.qml_debug_stream_alt]
+   [handlers.qp_debug_stream_alt]
    class = "logging.StreamHandler"
-   formatter = "qml_alt_formatter"
+   formatter = "qp_alt_formatter"
    level = "DEBUG"
    stream = "ext://sys.stdout"
 
-   [handlers.qml_debug_file]
+   [handlers.qp_debug_file]
    class = "logging.handlers.RotatingFileHandler"
    formatter = "local_standard"
    level = "DEBUG"
-   filename ='qml_debug.log' # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
+   filename ='qp_debug.log' # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
    maxBytes = 16777216 # 16MB per file before splitting
-   backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' files and rollover when maxBytes is reached
+   backupCount = 10 # Create 'qp_debug.log.1', ... 'qp_debug.log.backupCount' files and rollover when maxBytes is reached
 
    [handlers.local_filtered_detailed_stdout]
    class = "logging.StreamHandler"
    formatter = "local_standard"
    level = "DEBUG"
    stream = "ext://sys.stdout"
-   filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
+   filters = ["qp_LocalProcessFilter", "qp_DebugOnlyFilter"]
 
 The above defines how ``LogRecord`` messages are handled, and directs
 them to the appropriate sink. The logging framework supports many such
@@ -214,20 +214,20 @@ formatters so that the consumed message fits the needs of the user.
 
    # Control JAX logging 
    [loggers.jax]
-   handlers = ["qml_debug_stream",]
+   handlers = ["qp_debug_stream",]
    level = "WARN"
    propagate = false
 
    # Control logging across pennylane
    [loggers.pennylane]
-   handlers = ["qml_debug_stream",]
+   handlers = ["qp_debug_stream",]
    level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 
    # Control logging specifically in the pennylane.qnode module
    # Note the required quotes to overcome TOML nesting issues
    [loggers."pennylane.qnode"]
-   handlers = ["qml_debug_stream_alt",]
+   handlers = ["qp_debug_stream_alt",]
    level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 
@@ -238,13 +238,13 @@ across the packages we are using. Python’s logging framework follows a
 parent-child hierarchy, where a logging configuration set at a parent
 level will set all child levels with the same features. In this
 instance, we have configured JAX, PennyLane and our script to all log
-into the ``qml_debug_stream`` handler we defined earlier, and modified
+into the ``qp_debug_stream`` handler we defined earlier, and modified
 the child logger ``"pennylane.qnode"`` (quotes needed due to TOML
 parsing limitations) to use a different logger, in this case
-``qml_debug_stream_alt``. We are free to define the module/package
+``qp_debug_stream_alt``. We are free to define the module/package
 log-level here (we opt for ``DEBUG`` for all), and to also use multiple
 handlers per logger (such as for logging to the standard output and
-files through ``qml_debug_stream`` and ``qml_debug_file``
+files through ``qp_debug_stream`` and ``qp_debug_file``
 simultaneously). Given the complexity explosion with configuring these
 options, the default features in ``log_config.toml`` all use the same
 log-level, and handler, which can be adjusted based on developer needs.
@@ -263,7 +263,7 @@ file as:
 .. code:: toml
 
    [loggers.jax]
-   handlers = ["qml_debug_stream"]
+   handlers = ["qp_debug_stream"]
    level = "DEBUG"
    propagate = false
 
@@ -279,7 +279,7 @@ warnings and more severe, by making the following change:
 .. code:: toml
 
    [loggers.pennylane]
-   handlers = ["qml_debug_stream"]
+   handlers = ["qp_debug_stream"]
    level = "WARN"
    propagate = false
 
@@ -337,7 +337,7 @@ messages from JAX, and info-level messages for the given script. To modify the l
 
    # Control logging in the executing Python script
    [loggers.__main__]
-   handlers = ["qml_debug_stream",]
+   handlers = ["qp_debug_stream",]
    level = "INFO"
    propagate = false
 

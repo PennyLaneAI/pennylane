@@ -16,7 +16,7 @@ corresponding subclasses, are found in ``pennylane/operations.py``.
 
 .. note::
 
-  Check :doc:`/code/qml_measurements` for documentation on how to create new measurements.
+  Check :doc:`/code/qp_measurements` for documentation on how to create new measurements.
 
 Abstraction
 ###########

@@ -117,7 +117,7 @@ For example:
                                   ╚════════════════════════════╡  Probs[MCM]
 
 More information, including various fine-tuning options, can be found in
-the :doc:`drawing module <../code/qml_drawer>`.
+the :doc:`drawing module <../code/qp_drawer>`.
 
 Debugging with mid-circuit snapshots
 ------------------------------------
@@ -254,7 +254,7 @@ We can also visualize the circuit and dynamically queue operations directly to t
     0: ──RX─╭●─────┤  
     1: ──H──╰X──RZ─┤
 
-See :doc:`/code/qml_debugging` for more information and detailed examples.
+See :doc:`/code/qp_debugging` for more information and detailed examples.
 
 Graph representation
 --------------------
@@ -385,7 +385,7 @@ Fourier representation
 Parametrized quantum circuits often compute functions in the parameters that
 can be represented by Fourier series of a low degree.
 
-The :doc:`../code/qml_fourier` module contains functionality to compute and visualize
+The :doc:`../code/qp_fourier` module contains functionality to compute and visualize
 properties of such Fourier series.
 
 .. image:: ../_static/fourier_vis_radial_box.png

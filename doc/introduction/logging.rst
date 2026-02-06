@@ -19,13 +19,13 @@ To enable logging support with the default options defined in ``log_config.toml`
 
 
 This will ensure all levels of the execution pipeline logs function entries, and
-outputs to the default configured handler, which is directed to the standard output stream. To also direct logging output to a file named ``qml_debug.log`` in the directory of execution, the ``qml_debug_file`` handler can be added to the defined loggers in ``log_config.toml`` as follows:
+outputs to the default configured handler, which is directed to the standard output stream. To also direct logging output to a file named ``qp_debug.log`` in the directory of execution, the ``qp_debug_file`` handler can be added to the defined loggers in ``log_config.toml`` as follows:
 
 .. code:: toml
 
    # Control logging across pennylane
    [loggers.pennylane]
-   handlers = ["qml_debug_stream", "qml_debug_file"]
+   handlers = ["qp_debug_stream", "qp_debug_file"]
    level = "DEBUG" # Set to TRACE for highest verbosity
    propagate = false
 

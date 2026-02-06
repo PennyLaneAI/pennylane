@@ -87,7 +87,7 @@ markup, and are formatted `Google-style <https://www.sphinx-doc.org/en/master/us
 Docstrings are a part of Python; an objects' docstring is stored under the ``__doc__``
 attribute, and accessible to the user via the ``help()`` function. In addition, docstrings
 are automatically extracted and rendered by Sphinx, and inserted into the
-:doc:`API </code/qml>` section of the documentation.
+:doc:`API </code/qp>` section of the documentation.
 
 Guiding principles
 ~~~~~~~~~~~~~~~~~~
@@ -335,7 +335,7 @@ Code examples
 Code examples are very important; they *show* readers how the function or class should be used.
 When writing code examples for docstrings, use the following guidelines:
 
-- You may assume that PennyLane is imported as ``qml`` and NumPy is imported as ``np`` in the code examples.
+- You may assume that PennyLane is imported as ``qp`` and NumPy is imported as ``np`` in the code examples.
   All other imports must be specified explicitly.
 
 - For single line statements and associated output, use Python console syntax (``pycon``):
@@ -463,12 +463,12 @@ There are several steps to adding a new module to the documentation:
 1. Make sure your module has a one- to two-line module docstring, that summarizes
    what the module purpose is, and what it contains.
 
-2. Add a file ``doc/code/qml_module_name.rst``, that contains the following:
+2. Add a file ``doc/code/qp_module_name.rst``, that contains the following:
 
    .. literalinclude:: example_module_rst.txt
        :language: rest
 
-3. Add ``code/qml_module_name`` to the table of contents at the bottom of ``doc/index.rst``.
+3. Add ``code/qp_module_name`` to the table of contents at the bottom of ``doc/index.rst``.
 
 
 Adding a new package to the docs
@@ -488,12 +488,12 @@ a module:
 
    All modules should also contain a module docstring that summarizes the module.
 
-3. Add a file ``doc/code/qml_package_name.rst``, that contains the following:
+3. Add a file ``doc/code/qp_package_name.rst``, that contains the following:
 
    .. literalinclude:: example_package_rst.txt
        :language: rest
 
-4. Add ``code/qml_package_name`` to the table of contents at the bottom of ``doc/index.rst``.
+4. Add ``code/qp_package_name`` to the table of contents at the bottom of ``doc/index.rst``.
 
 
 Building the documentation

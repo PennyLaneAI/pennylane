@@ -437,7 +437,7 @@ transform QNodes in a NumPy-like way and to create their own transforms with eas
 Your favourite transforms will still work with program capture enabled (including
 custom transforms), but there are a few caveats to be aware of.
 
-Some transforms in the :doc:`/code/qml_transforms` module have natively support 
+Some transforms in the :doc:`/code/qp_transforms` module have natively support 
 program capture:
 
 * :func:`~.pennylane.transforms.merge_rotations`

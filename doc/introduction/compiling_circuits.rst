@@ -13,7 +13,7 @@ operators. For example, such a transformation could replace a gate type with ano
 fuse gates, exploit mathematical relations that simplify an observable, or replace a
 large circuit by a number of smaller circuits.
 
-Compilation functionality is mostly designed as **transforms**; see the :doc:`transforms documentation <../code/qml_transforms>` 
+Compilation functionality is mostly designed as **transforms**; see the :doc:`transforms documentation <../code/qp_transforms>` 
 for more details, as well as information on how to write your own custom transforms.
 
 In addition to quantum circuit transforms, PennyLane also supports experimental 
@@ -133,7 +133,7 @@ the number of gates in the following quantum circuit can be reduced by almost a 
 
 For more details on :class:`~.CompilePipeline` and the available compilation transforms, visit
 `the compilation documentation
-<../code/qml_transforms.html#transforms-for-circuit-compilation>`_.
+<../code/qp_transforms.html#transforms-for-circuit-compilation>`_.
 
 Gate decompositions
 -------------------
@@ -623,4 +623,4 @@ observables and coefficients:
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :doc:`pauli module <../code/qml_pauli>`.
+This and more logic to manipulate Pauli observables is found in the :doc:`pauli module <../code/qp_pauli>`.
