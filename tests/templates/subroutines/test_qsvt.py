@@ -953,13 +953,13 @@ class TestRootFindingSolver:
                 [0, 0.1, 0, 0.3, 0, 0.2],
                 "QSVT",
                 "Pitagoras",
-                "Unknown angle_solver",
+                "Invalid angle solver",
             ),
             (
                 [0, 0.1, 0, 0.3, 0, 0.2],
                 "QSP",
                 "Pitagoras",
-                "Unknown angle_solver",
+                "Invalid angle solver",
             ),
             (
                 [0, 2, 0, 0.3, 0, 0.2],

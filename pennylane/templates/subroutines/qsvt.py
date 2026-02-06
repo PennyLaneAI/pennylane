@@ -1564,7 +1564,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
             return transform_angles(_compute_qsp_angles_iteratively_optax(poly), "QSP", "QSVT")
 
         raise ValueError(
-            f"Unknown angle_solver: '{angle_solver}'. "
+            f"Invalid angle solver method: '{angle_solver}'. "
             "Supported solvers: ['root-finding', 'iterative', 'iterative_optax']"
         )
 
@@ -1576,7 +1576,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
         if angle_solver == "iterative_optax":
             return _compute_qsp_angles_iteratively_optax(poly)
         raise ValueError(
-            f"Unknown angle_solver: '{angle_solver}'. "
+            f"Invalid angle solver method: '{angle_solver}'. "
             "Supported solvers: ['root-finding', 'iterative', 'iterative_optax']"
         )
 
