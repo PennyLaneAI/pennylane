@@ -251,12 +251,40 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
 
+def _to_general_c_qu_resource(num_target_wires, **kwargs):
+    return {
+        resource_rep(
+            qml.ops.Controlled,
+            base_class=qml.QubitUnitary,
+            base_params={"num_wires": num_target_wires},
+            **kwargs,
+        ): 1
+    }
+
+
+# pylint: disable=too-many-arguments
+@qml.register_condition(lambda num_target_wires, **_: num_target_wires > 2)
+@qml.register_resources(_to_general_c_qu_resource)
+def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_wire_type, **_):
+    """A convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
+    the graph finds the general decomposition rule of applying control to the decomposition
+    of the base QubitUnitary."""
+    qml.ops.Controlled(
+        qml.QubitUnitary(U, wires=wires[: len(wires) - len(control_wires)]),
+        control_wires=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
 add_decomps(
     ControlledQubitUnitary,
     flip_zero_control(ctrl_decomp_bisect_rule),
     flip_zero_control(single_ctrl_decomp_zyz_rule),
     flip_zero_control(multi_control_decomp_zyz_rule),
     controlled_two_qubit_unitary_rule,
+    _to_general_c_qu,
 )
 
 
