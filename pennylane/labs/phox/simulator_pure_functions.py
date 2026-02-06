@@ -47,6 +47,7 @@ class CircuitConfig:
     init_state: tuple[ArrayLike, ArrayLike] | None = None
     phase_layer: Callable | None = None
 
+
 def _phase(pauli: str, qubit: int) -> complex:
     """
     For a Pauli P return the phase applied by Conjugation with Hadamard (HPH).
@@ -177,6 +178,7 @@ def iqp_expval(config: CircuitConfig):
         E = C @ (expanded_params[:, None] * B.T)
 
         if config.phase_layer is not None:
+
             def compute_phase(p_params, sample, b_flips):
                 return config.phase_layer(p_params, sample) - config.phase_layer(
                     p_params, (sample + b_flips) % 2

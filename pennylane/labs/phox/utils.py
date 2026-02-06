@@ -19,11 +19,12 @@ from itertools import combinations
 import networkx as nx
 import numpy as np
 
+
 def create_local_gates(n_qubits: int, max_weight: int = 2) -> dict[int, list[list[int]]]:
     """
-    Generates a gate dictionary for the Phox simulator containing all gates whose 
+    Generates a gate dictionary for the Phox simulator containing all gates whose
     generators have Pauli weight less or equal to max_weight.
-    
+
     Each gate is assigned a unique parameter index.
 
     Args:
@@ -41,7 +42,10 @@ def create_local_gates(n_qubits: int, max_weight: int = 2) -> dict[int, list[lis
             param_idx += 1
     return gates
 
-def create_lattice_gates(rows: int, cols: int, distance: int = 1, max_weight: int = 2, periodic: bool = False) -> dict[int, list[list[int]]]:
+
+def create_lattice_gates(
+    rows: int, cols: int, distance: int = 1, max_weight: int = 2, periodic: bool = False
+) -> dict[int, list[list[int]]]:
     """
     Generates gates based on nearest-neighbor interactions on a 2D lattice.
 
@@ -59,19 +63,19 @@ def create_lattice_gates(rows: int, cols: int, distance: int = 1, max_weight: in
     # Convert labels (i, j) to integers 0..N-1
     mapping = {(i, j): i * cols + j for i in range(rows) for j in range(cols)}
     G = nx.relabel_nodes(G, mapping)
-    
+
     gates_list = []
-    
+
     # Analyze graph connectivity
     for source in list(G.nodes):
         # BFS for distance
         lengths = nx.single_source_shortest_path_length(G, source, cutoff=distance)
         neighbors = [n for n in lengths if n != source]
-        
-        for weight in range(max_weight): # weight here is additional qubits
+
+        for weight in range(max_weight):  # weight here is additional qubits
             # If max_weight=2, we want weight=1 loop (pairs), weight=0 loop (singles handled separately usually?)
             # The original logic was: weight in range(0, max_weight)
-            # gate = combo + [source]. 
+            # gate = combo + [source].
             # if weight=0 -> gate=[source] (1-body)
             # if weight=1 -> gate=[neighbor, source] (2-body)
             for combo in combinations(neighbors, weight):
@@ -84,10 +88,13 @@ def create_lattice_gates(rows: int, cols: int, distance: int = 1, max_weight: in
     gates_dict = {}
     for i, g in enumerate(gates_list):
         gates_dict[i] = [g]
-        
+
     return gates_dict
 
-def create_random_gates(n_qubits: int, n_gates: int, min_weight: int = 1, max_weight: int = 2, seed: int = None) -> dict[int, list[list[int]]]:
+
+def create_random_gates(
+    n_qubits: int, n_gates: int, min_weight: int = 1, max_weight: int = 2, seed: int = None
+) -> dict[int, list[list[int]]]:
     """
     Generates a dictionary of random gates.
 
@@ -103,17 +110,20 @@ def create_random_gates(n_qubits: int, n_gates: int, min_weight: int = 1, max_we
     """
     rng = np.random.default_rng(seed)
     gates_dict = {}
-    
+
     for i in range(n_gates):
         weight = rng.integers(min_weight, max_weight + 1)
         # Choose 'weight' unique qubits
         gate = sorted(list(rng.choice(range(n_qubits), size=weight, replace=False)))
         # Map is {i: [gate]} meaning each random gate gets its own param
         gates_dict[i] = [[int(q) for q in gate]]
-        
+
     return gates_dict
 
-def generate_pauli_observables(n_qubits: int, orders: list[int] = (1,), bases: list[str] = ('Z',)) -> list[list[str]]:
+
+def generate_pauli_observables(
+    n_qubits: int, orders: list[int] = (1,), bases: list[str] = ("Z",)
+) -> list[list[str]]:
     """
     Generates a batch of Pauli observables.
 
@@ -127,7 +137,7 @@ def generate_pauli_observables(n_qubits: int, orders: list[int] = (1,), bases: l
                          Example for 2 qubits, order 1, base Z: [['Z', 'I'], ['I', 'Z']]
     """
     observables = []
-    
+
     for order in orders:
         if order > n_qubits:
             continue
@@ -138,6 +148,5 @@ def generate_pauli_observables(n_qubits: int, orders: list[int] = (1,), bases: l
                 for pos in positions:
                     obs_row[pos] = base
                 observables.append(obs_row)
-                
-    return observables
 
+    return observables
