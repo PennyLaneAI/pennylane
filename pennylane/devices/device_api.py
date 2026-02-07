@@ -667,7 +667,7 @@ class Device(abc.ABC):
             >>> dev.execute(tape)
             array(1.0)
 
-            If execute recieves a batch of scripts, then it should return a tuple of results:
+            If execute receives a batch of scripts, then it should return a tuple of results:
 
             >>> dev.execute([tape, tape])
             (array(1.0), array(1.0))

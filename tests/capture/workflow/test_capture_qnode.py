@@ -527,7 +527,7 @@ class TestUserTransforms:
 
     @pytest.mark.unit
     def test_device_jaxpr(self, monkeypatch, disable_around_qnode):
-        """Test that jaxpr recieved by a device when executing a transformed qnode has been
+        """Test that jaxpr received by a device when executing a transformed qnode has been
         transformed appropriately."""
 
         device_jaxpr = None
