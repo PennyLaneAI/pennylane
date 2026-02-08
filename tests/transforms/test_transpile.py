@@ -336,9 +336,7 @@ class TestTranspile:
 
         assert isinstance(transpiled_ops[4], qml.GlobalPhase)
 
-        assert qml.math.allclose(
-            original_probs, transpiled_probs, atol=np.finfo(float).eps
-        )
+        assert qml.math.allclose(original_probs, transpiled_probs, atol=np.finfo(float).eps)
 
     def test_transpile_ops_anywires_1_qubit_qnode(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains
