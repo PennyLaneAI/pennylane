@@ -334,6 +334,10 @@ def c():
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where `qml.transforms.transpile` would fail when `qml.GlobalPhase` gates
+  were present in a circuit.
+  [(#9041)](https://github.com/PennyLaneAI/pennylane/pull/9041)
+
 * Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
   to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
   ``Controlled.map_wires`` to preserve ``work_wires``.
@@ -389,6 +393,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Olivia Di Matteo,
 Marcus Edwards,
 Christina Lee,
 Andrija Paurevic,
