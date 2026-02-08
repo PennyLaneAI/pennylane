@@ -336,7 +336,7 @@ class TestTranspile:
 
         assert isinstance(transpiled_ops[3], qml.GlobalPhase)
 
-    assert qml.math.allclose(
+        assert qml.math.allclose(
             original_probs, transpiled_probs, atol=np.finfo(float).eps
         )
 
