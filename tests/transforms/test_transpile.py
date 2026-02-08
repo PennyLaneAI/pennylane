@@ -323,7 +323,7 @@ class TestTranspile:
         tape = qml.workflow.construct_tape(original_qnode)()
         transpiled_tape = qml.workflow.construct_tape(transpiled_qnode)()
         original_ops = list(tape)
-        transpiled_ops = list(tape)
+        transpiled_ops = list(transpiled_tape)
         qml.assert_equal(transpiled_ops[0], original_ops[0])
         qml.assert_equal(transpiled_ops[1], original_ops[1])
 
@@ -334,7 +334,7 @@ class TestTranspile:
         assert isinstance(transpiled_ops[3], qml.CNOT)
         assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
 
-        assert isinstance(transpiled_ops[3], qml.GlobalPhase)
+        assert isinstance(transpiled_ops[4], qml.GlobalPhase)
 
         assert qml.math.allclose(
             original_probs, transpiled_probs, atol=np.finfo(float).eps
