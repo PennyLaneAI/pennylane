@@ -299,6 +299,47 @@ class TestTranspile:
         assert new_tape.operations == expected_ops
         assert new_tape.shots == tape.shots
 
+    def test_transpile_global_phase(self):
+        """Test that transpile can be used on circuits with global phases."""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.CNOT([0, 2])
+            qml.GlobalPhase(0.3)
+            return qml.probs()
+
+        # build circuit without transpile
+        original_qfunc = circuit
+        original_qnode = qml.QNode(original_qfunc, dev)
+        original_probs = original_qnode()
+
+        # build circuit with transpile
+        transpiled_qfunc = transpile(original_qfunc, coupling_map=[(0, 1), (1, 2)])
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        transpiled_probs = transpiled_qnode()
+
+        tape = qml.workflow.construct_tape(original_qnode)()
+        transpiled_tape = qml.workflow.construct_tape(transpiled_qnode)()
+        original_ops = list(tape)
+        transpiled_ops = list(tape)
+        qml.assert_equal(transpiled_ops[0], original_ops[0])
+        qml.assert_equal(transpiled_ops[1], original_ops[1])
+
+        # SWAP to ensure connectivity
+        assert isinstance(transpiled_ops[2], qml.SWAP)
+        assert transpiled_ops[2].wires == qml.wires.Wires([1, 2])
+
+        assert isinstance(transpiled_ops[3], qml.CNOT)
+        assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
+
+        assert isinstance(transpiled_ops[3], qml.GlobalPhase)
+
+    assert qml.math.allclose(
+            original_probs, transpiled_probs, atol=np.finfo(float).eps
+        )
+
     def test_transpile_ops_anywires_1_qubit_qnode(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains
         1-qubit operations with num_wires=None defined for the operation"""
