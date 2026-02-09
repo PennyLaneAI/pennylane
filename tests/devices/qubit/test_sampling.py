@@ -150,7 +150,7 @@ class TestSampleState:
         flat_state = state.flatten()
         expected_probs = np.real(flat_state) ** 2 + np.imag(flat_state) ** 2
 
-        samples = sample_state(state, shots)
+        samples = sample_state(state, shots, rng=seed)
         approx_probs = samples_to_probs(samples, n)
         assert np.allclose(approx_probs, expected_probs, atol=APPROX_ATOL)
 
