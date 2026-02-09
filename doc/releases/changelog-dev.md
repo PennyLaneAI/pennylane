@@ -321,8 +321,8 @@ def expval(x: float):
 
 * Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
-  Operator classes that used to have ``_queue_category=None`` have been updated to 
-  ``_queue_category="_ops"``, so that they are queued now.
+  Operator classes that used to have ``_queue_category=None`` have been updated
+  to ``_queue_category="_ops"`` , so that they are queued now.
   [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
 
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
