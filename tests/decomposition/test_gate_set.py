@@ -86,6 +86,27 @@ class TestGateSet:
         gate_set = gate_set_one | gate_set_two
         assert gate_set._gate_set == {"RX": 1, "RY": 1, "CNOT": 1}
 
+        gate_set = gate_set | {qml.RZ}
+        assert gate_set._gate_set == {"RX": 1, "RY": 1, "CNOT": 1, "RZ": 1}
+
+    def test_gate_set_subtract(self):
+        """Tests subtracting a set of gates from a gate set."""
+
+        gate_set = GateSet({qml.RX, qml.RZ, qml.RY, qml.CNOT, qml.H})
+        gate_set_two = gate_set - {qml.RX}
+        assert gate_set_two._gate_set == {"RZ": 1, "RY": 1, "CNOT": 1, "Hadamard": 1}
+
+    def test_gate_set_unsupported_arithmetic(self):
+        """Tests that a TypeError is raised."""
+
+        gate_set = GateSet({qml.RZ, qml.RY})
+
+        with pytest.raises(TypeError):
+            _ = gate_set - 1
+
+        with pytest.raises(TypeError):
+            _ = gate_set | 1
+
     def test_gate_set_iter(self):
         """Tests that iterating over a GateSet is supported."""
 
