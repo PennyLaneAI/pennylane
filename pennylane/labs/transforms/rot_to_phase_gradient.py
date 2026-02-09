@@ -16,7 +16,7 @@ Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
 import numpy as np
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.operation import Operator
 
 # from pennylane.queuing import QueuingManager
@@ -54,10 +54,10 @@ def _binary_repr_int(phi, precision):
 #     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
 #     binary_int = _binary_repr_int(phi, precision)
 
-#     compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
-#     target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+#     compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
+#     target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
 
-#     return qml.change_op_basis(compute_op, target_op, compute_op)
+#     return qp.change_op_basis(compute_op, target_op, compute_op)
 
 
 # pylint: disable=too-many-arguments
@@ -77,16 +77,14 @@ def _select_pauli_rot_phase_gradient(
     binary_int = [_binary_repr_int(phi, precision) for phi in phis]
 
     ops = [
-        qml.QROM(
+        qp.QROM(
             binary_int, control_wires, angle_wires, work_wires=work_wires[len(angle_wires) - 1 :]
         )
-    ] + [
-        qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires
-    ]
+    ] + [qp.ctrl(qp.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires]
 
-    return qml.change_op_basis(
-        qml.prod(*ops[::-1]),
-        qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
+    return qp.change_op_basis(
+        qp.prod(*ops[::-1]),
+        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
     )
 
 
@@ -119,7 +117,7 @@ def rot_to_phase_gradient(
             Needs to be at least :math:`b-1` wires.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -138,8 +136,8 @@ def rot_to_phase_gradient(
         def phase_gradient(wires):
             # prepare phase gradient state
             for i, w in enumerate(wires):
-                qml.H(w)
-                qml.PhaseShift(-np.pi / 2**i, w)
+                qp.H(w)
+                qp.PhaseShift(-np.pi / 2**i, w)
 
         @partial(
             select_pauli_rot_phase_gradient,
@@ -147,16 +145,16 @@ def rot_to_phase_gradient(
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,
         )
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def select_pauli_rot_circ(phis, control_wires, target_wire):
             phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
             for wire in control_wires:
-                qml.Hadamard(wire)
+                qp.Hadamard(wire)
 
-            qml.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
+            qp.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
 
-            return qml.probs(target_wire)
+            return qp.probs(target_wire)
 
         phis = [
             (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,
@@ -183,7 +181,7 @@ def rot_to_phase_gradient(
     global_phases = []
 
     for op in tape.operations:
-        if isinstance(op, qml.SelectPauliRot):
+        if isinstance(op, qp.SelectPauliRot):
             control_wires = op.wires[:-1]
             target_wire = op.wires[-1]
             rot_axis = op.hyperparameters["rot_axis"]
@@ -202,24 +200,24 @@ def rot_to_phase_gradient(
             match rot_axis:
                 case "X":
                     operations.append(
-                        qml.change_op_basis(
-                            qml.Hadamard(target_wire),
+                        qp.change_op_basis(
+                            qp.Hadamard(target_wire),
                             pg_op,
-                            qml.Hadamard(target_wire),
+                            qp.Hadamard(target_wire),
                         )
                     )
                 case "Y":
                     operations.append(
-                        qml.change_op_basis(
-                            qml.Hadamard(target_wire) @ qml.adjoint(qml.S(target_wire)),
+                        qp.change_op_basis(
+                            qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire)),
                             pg_op,
-                            qml.S(target_wire) @ qml.Hadamard(target_wire),
+                            qp.S(target_wire) @ qp.Hadamard(target_wire),
                         )
                     )
                 case "Z":
                     operations.append(pg_op)
 
-        elif isinstance(op, qml.RZ):
+        elif isinstance(op, qp.RZ):
             wire = op.wires
             phi = op.parameters[0]
             global_phases.append(phi / 2)
@@ -234,19 +232,19 @@ def rot_to_phase_gradient(
                 )
             )
 
-        elif isinstance(op, (qml.RX, qml.RY)):
+        elif isinstance(op, (qp.RX, qp.RY)):
             wire = op.wires
             phi = op.parameters[0]
             global_phases.append(phi / 2)
 
             diagonalizing_gate = (
-                qml.Hadamard(wire)
-                if isinstance(op, qml.RX)
-                else qml.Hadamard(wire) @ qml.adjoint(qml.S(wire))
+                qp.Hadamard(wire)
+                if isinstance(op, qp.RX)
+                else qp.Hadamard(wire) @ qp.adjoint(qp.S(wire))
             )
 
             operations.append(
-                qml.change_op_basis(
+                qp.change_op_basis(
                     diagonalizing_gate,
                     _rz_phase_gradient(
                         phi,
@@ -261,7 +259,7 @@ def rot_to_phase_gradient(
         else:
             operations.append(op)
 
-    operations.append(qml.GlobalPhase(sum(global_phases)))
+    operations.append(qp.GlobalPhase(sum(global_phases)))
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
