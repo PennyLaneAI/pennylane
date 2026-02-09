@@ -72,19 +72,13 @@ def _select_pauli_rot_phase_gradient(
 def rot_to_phase_gradient(
     tape: QuantumScript, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    r"""Quantum function transform to decompose all instances of :class:`~.SelectPauliRot` gates into additions
-    using a phase gradient resource state.
+    r"""Quantum function transform to discretize all rotation gates using the `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/>`__.
 
     For this routine to work, the provided ``phase_grad_wires`` need to hold the phase gradient
     state :math:`|\nabla_Z\rangle = \frac{1}{\sqrt{2^n}} \sum_{m=0}^{2^n-1} e^{-2 \pi i \frac{m}{2^n}} |m\rangle`.
     Because this state is not modified and can be re-used at a later stage, the transform does not prepare it but
     rather assumes it has been prepared on those wires at an earlier stage. Look at the example below to see how
     this state can be prepared.
-
-    .. figure:: ../../../_static/multiplexer_QROM.png
-                    :align: center
-                    :width: 70%
-                    :target: javascript:void(0);
 
     Note that this operator contains :class:`~.SemiAdder` that typically uses additional ``work_wires`` for the semi-in-place addition
     :math:`\text{SemiAdder}|x\rangle_\text{ang} |y\rangle_\text{phg} = |x\rangle_\text{ang} |x + y\rangle_\text{phg}`.
@@ -165,6 +159,7 @@ def rot_to_phase_gradient(
 
     operations = []
     global_phases = []
+
     for op in tape.operations:
         if isinstance(op, qml.SelectPauliRot):
             control_wires = op.wires[:-1]
@@ -202,7 +197,9 @@ def rot_to_phase_gradient(
                 case "Z":
                     operations.append(pg_op)
 
-        if isinstance(op, qml.RZ):
+        elif isinstance(op, qml.RZ):
+            print(op)
+            print("qml.RZ branch TRIGGERED")
             wire = op.wires
             phi = op.parameters[0]
             global_phases.append(phi / 2)
