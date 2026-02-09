@@ -52,7 +52,7 @@ class BasicEntanglerLayers(Operation):
         weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
             for the rotation.
         wires (Iterable): wires that the template acts on
-        rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
+        rotation (Type[pennylane.operation.Operation]): one-parameter single-qubit gate to use,
             if ``None``, :class:`~pennylane.ops.RX` is used as default
 
     Raises:
