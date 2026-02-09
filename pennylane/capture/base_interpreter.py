@@ -37,6 +37,7 @@ from .primitives import (
     jvp_prim,
     qnode_prim,
     value_and_grad_prim,
+    quantum_subroutine_prim,
     vjp_prim,
     while_loop_prim,
 )
@@ -228,8 +229,9 @@ class PlxprInterpreter:
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
 
-    def __init__(self):
+    def __init__(self, *, subroutine_cache=None):
         self._env = {}
+        self.subroutine_cache = subroutine_cache or {}
 
     @classmethod
     def register_primitive(
@@ -621,6 +623,17 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
     )
 
 
+@PlxprInterpreter.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine(self, *invals, jaxpr, **params):
+    if jaxpr in self.subroutine_cache:
+        new_jaxpr = self.subroutine_cache[jaxpr]
+    else:
+        new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr.jaxpr, jaxpr.consts, *invals)
+        self.subroutine_cache[jaxpr] = new_jaxpr
+
+    return quantum_subroutine_prim.bind(*invals, jaxpr=new_jaxpr, **params)
+
+
 @PlxprInterpreter.register_primitive(jacobian_prim)
 def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     """Handle the jacobian primitive."""
@@ -699,6 +712,11 @@ def _pjit_primitive(self, *invals, jaxpr, **params):
 
     subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
     return pjit_p.bind(*subfuns, *invals, **params)
+
+
+@FlattenedInterpreter.register_primitive(quantum_subroutine_prim)
+def _quantum_subroutine_eval(self, *invals, jaxpr, **params):
+    return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)

@@ -21,6 +21,7 @@ import re
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
+from functools import partial
 
 import numpy as np
 import pytest
@@ -2027,18 +2028,28 @@ class TestSymbolicOpComparison:
                 assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
-    def test_controlled_work_wires_comparison(self, wire1, wire2, res):
+    @pytest.mark.parametrize(
+        "wwt1, wwt2", [("zeroed", "zeroed"), ("borrowed", "borrowed"), ("borrowed", "zeroed")]
+    )
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qml.MultiRZ(1.23, [0, 1])
         base2 = qml.MultiRZ(1.23, [0, 1])
-        op1 = Controlled(base1, control_wires=2, work_wires=wire1)
-        op2 = Controlled(base2, control_wires=2, work_wires=wire2)
+        op1 = Controlled(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
+        op2 = Controlled(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
+        # res is given by the wire parametrization, but is overwritten to False if the work
+        # wire types differ. match is only used if res=False, and is adjusted if res was True
+        match = "op1 and op2 have different work wires."
+        if res and wwt1 != wwt2:
+            match = "op1 and op2 have different work wire types."
+            res = False
+
+        assert qml.equal(op1, op2) is res
+
         if res:
-            assert qml.equal(op1, op2) == res
             assert_equal(op1, op2)
         else:
-            assert qml.equal(op1, op2) is False
-            with pytest.raises(AssertionError, match="op1 and op2 have different work wires."):
+            with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
 
     def test_controlled_arithmetic_depth(self):
@@ -3129,3 +3140,88 @@ def test_select():
     op2 = qml.Select((qml.X(0),), control=2)
     qml.assert_equal(op1, op2)
     assert qml.equal(op1, op2) is True
+
+
+# pylint: disable=unused-argument
+class TestCompareSubroutines:
+
+    def test_different_subroutine_defs(self):
+        """Test SubroutineOp are not equal if their Subroutines are not equal."""
+
+        @qml.templates.Subroutine
+        def Subroutine1(wires):
+            qml.X(wires)
+
+        @qml.templates.Subroutine
+        def Subroutine2(wires):
+            qml.Y(wires)
+
+        op1 = qml.tape.make_qscript(Subroutine1)(0)[0]
+        op2 = qml.tape.make_qscript(Subroutine2)(0)[0]
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op1 is <Subroutine: Subroutine1>"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_static_args(self):
+        """Test they are different if they have different static args."""
+
+        @partial(qml.templates.Subroutine, static_argnames=("a",))
+        def f(a, wires):
+            pass
+
+        op1 = qml.tape.make_qscript(f)("val1", 0)[0]
+        op2 = qml.tape.make_qscript(f)("val2", 0)[0]
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op2 has value val2 for input a"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_wires(self):
+        """Test they are different if their wires are different."""
+
+        @partial(qml.templates.Subroutine, wire_argnames=("reg1", "reg2"))
+        def f(reg1, reg2):
+            pass
+
+        op1 = qml.tape.make_qscript(f)((0,), (1,))[0]
+        op2 = qml.tape.make_qscript(f)((1,), (0,))[0]
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match=r"has value Wires\(\[1\]\) for register reg1"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_pytree_inputs(self):
+        """Test that if the pytrees for an input are different, the ops are different."""
+
+        @qml.templates.Subroutine
+        def f(x, wires):
+            pass
+
+        op1 = qml.tape.make_qscript(f)((0.5,), 0)[0]
+        op2 = qml.tape.make_qscript(f)((0.5, 0.6), 0)[0]
+
+        assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="have different pytree structures"):
+            qml.assert_equal(op1, op2)
+
+    def test_different_data(self):
+        """Test that if there is different data, they are different operators."""
+
+        @qml.templates.Subroutine
+        def f(x, wires):
+            pass
+
+        op1 = qml.tape.make_qscript(f)(np.array(0.5), 0)[0]
+        op2 = qml.tape.make_qscript(f)(np.array(0.5 + 1e-5), 0)[0]
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, rtol=1e-4)
+        assert qml.equal(op1, op2, atol=1e-4)
+
+        op3 = qml.tape.make_qscript(f)(qml.numpy.array(0.5, requires_grad=False), 0)[0]
+        assert not qml.equal(op1, op3)
+        assert qml.equal(op1, op3, check_interface=False)
+
+        op4 = qml.tape.make_qscript(f)(qml.numpy.array(0.5), 0)[0]
+        assert not qml.equal(op3, op4)
+        assert qml.equal(op3, op4, check_trainability=False)
