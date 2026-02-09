@@ -515,6 +515,28 @@ class TestQueueing:
         assert len(q) == 1
         assert q.queue[0] is op
 
+    def test_queueing_observable(self):
+        """Test queuing and metadata when both Adjoint and a Hermitian
+        base defined inside a recording context."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            base = qml.Hermitian(np.eye(4), wires=[0, "x"])
+            _ = Adjoint(base)
+
+        assert base not in q
+        assert len(q) == 1
+
+    def test_queuing_base_defined_outside_observable(self):
+        """Test that a Hermitian base isn't added to queue if it's
+        defined outside the recording context."""
+
+        base = qml.Hermitian(np.eye(4), wires=[0, "x"])
+        with qml.queuing.AnnotatedQueue() as q:
+            op = Adjoint(base)
+
+        assert len(q) == 1
+        assert q.queue[0] is op
+
 
 class TestMatrix:
     """Test the matrix method for a variety of interfaces."""
