@@ -283,6 +283,29 @@ class TestCollectOpsandMeas:
         ):
             collector(w)(0.5)
 
+    def test_jvp_not_implemented_error(self):
+        """Test that an error is raised if user tries to collect the jvp of a function"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def g(x):
+            @qml.qnode(dev)
+            def f(x):
+                qml.RX(x, 0)
+                return qml.expval(qml.Z(0))
+
+            return f(x) ** 2
+
+        def w(x):
+            return qml.jvp(g, (x,), (1.0,))
+
+        collector = CollectOpsandMeas()
+        with pytest.raises(
+            NotImplementedError,
+            match="CollectOpsandMeas cannot handle the jvp primitive",
+        ):
+            collector(w)(0.5)
+
     def test_qnode(self):
         """Test that collecting ops from a QNode works."""
         dev = qml.device("default.qubit", wires=3)
@@ -546,3 +569,21 @@ class TestPlxprToTape:
         assert tape.operations[2].wires == tape.operations[1].wires
         assert isinstance(tape.operations[3], qml.allocation.Deallocate)
         assert tape.operations[3].wires == tape.operations[1].wires
+
+    def test_subroutine(self):
+        """Test that jaxpr's with subroutines can be converted to a tape."""
+
+        @qml.capture.subroutine
+        def some_func(x):
+            qml.RX(x, 0)
+
+        def c(x):
+            some_func(x)
+            some_func(x)
+
+        jaxpr = jax.make_jaxpr(c)(0.5)
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5)
+        assert isinstance(tape, qml.tape.QuantumScript)
+        assert len(tape) == 2
+        qml.assert_equal(tape[0], qml.RX(0.5, 0))
+        qml.assert_equal(tape[1], qml.RX(0.5, 0))
