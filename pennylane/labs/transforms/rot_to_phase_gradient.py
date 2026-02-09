@@ -18,6 +18,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
+
+# from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
@@ -36,6 +38,26 @@ def _binary_repr_int(phi, precision):
     phi = phi % (4 * np.pi)
     phi_round = np.round(2**precision * phi / (2 * np.pi))
     return bin(int(np.floor(phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
+
+
+# @QueuingManager.stop_recording()
+# def _rz_phase_gradient(
+#     phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
+# ) -> Operator:
+#     """Function that transforms the RZ gate to the phase gradient circuit
+#     The precision is implicitly defined by the length of ``angle_wires``
+#     Note that the global phases are collected and added as one big global phase in the main function
+#     """
+#     # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient without the need to collect global phases, as done in
+
+#     precision = len(angle_wires)
+#     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
+#     binary_int = _binary_repr_int(phi, precision)
+
+#     compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
+#     target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+
+#     return qml.change_op_basis(compute_op, target_op, compute_op)
 
 
 # pylint: disable=too-many-arguments
@@ -198,8 +220,6 @@ def rot_to_phase_gradient(
                     operations.append(pg_op)
 
         elif isinstance(op, qml.RZ):
-            print(op)
-            print("qml.RZ branch TRIGGERED")
             wire = op.wires
             phi = op.parameters[0]
             global_phases.append(phi / 2)
@@ -211,6 +231,30 @@ def rot_to_phase_gradient(
                     angle_wires=angle_wires,
                     phase_grad_wires=phase_grad_wires,
                     work_wires=work_wires,
+                )
+            )
+
+        elif isinstance(op, (qml.RX, qml.RY)):
+            wire = op.wires
+            phi = op.parameters[0]
+            global_phases.append(phi / 2)
+
+            diagonalizing_gate = (
+                qml.Hadamard(wire)
+                if isinstance(op, qml.RX)
+                else qml.Hadamard(wire) @ qml.adjoint(qml.S(wire))
+            )
+
+            operations.append(
+                qml.change_op_basis(
+                    diagonalizing_gate,
+                    _rz_phase_gradient(
+                        phi,
+                        wire,
+                        angle_wires=angle_wires,
+                        phase_grad_wires=phase_grad_wires,
+                        work_wires=work_wires,
+                    ),
                 )
             )
 

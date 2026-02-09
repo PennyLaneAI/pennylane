@@ -193,8 +193,8 @@ class TestSelectPauliRotDecompositions:
         assert np.allclose(expected_probs[0], 1)
 
 
-class TestRZDecomposition:
-    """Test cases with RZ gates"""
+class TestPauliRotationDecomposition:
+    """Test cases with RZ, RX, RY gates"""
 
     @pytest.mark.parametrize("p", [2, 3, 4])
     def test_units_rz_phase_gradient(self, p):
@@ -273,6 +273,7 @@ class TestRZDecomposition:
                 work_wires=work_wires,
             )
 
+    @pytest.mark.parametrize("RGate", [qp.RZ, qp.RX, qp.RY])
     @pytest.mark.parametrize(
         "phi",
         [
@@ -282,8 +283,8 @@ class TestRZDecomposition:
             -(1 / 2) * 2 * np.pi,
         ],
     )
-    def test_integration(self, phi):
-        """Test that the transform applies the RZ gate correctly by doing an X rotation via two Hadamards"""
+    def test_integration(self, phi, RGate):
+        """Test that the transform applies the RZ, RX, and RY gates correctly"""
         precision = 3
         wire = "targ"
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(precision)])
@@ -291,21 +292,21 @@ class TestRZDecomposition:
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(precision - 1)])
         wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
 
-        rz_circ = qp.tape.QuantumScript(
+        rot_circ = qp.tape.QuantumScript(
             [
                 qp.Hadamard(wire),  # prepare |+>
                 *prepare_phase_gradient(phase_grad_wires),
-                qp.RZ(phi, wire),
+                RGate(phi, wire),
                 *[qp.adjoint(op) for op in prepare_phase_gradient(phase_grad_wires)[::-1]],
                 qp.Hadamard(wire),  # unprepare |+>
             ]
         )
 
-        res, fn = rot_to_phase_gradient(rz_circ, angle_wires, phase_grad_wires, work_wires)
+        res, fn = rot_to_phase_gradient(rot_circ, angle_wires, phase_grad_wires, work_wires)
         tapes = fn(res)
         output = qp.matrix(tapes, wire_order=wire_order)[:, 0]
 
-        output_expected = qp.matrix(qp.RX(phi, 0))[:, 0]
+        output_expected = qp.matrix(qp.Hadamard(0) @ RGate(phi, 0) @ qp.Hadamard(0))[:, 0]
         output_expected = np.kron(output_expected, np.eye(2 ** (len(wire_order) - 1))[0])
 
         assert np.allclose(output, output_expected)
