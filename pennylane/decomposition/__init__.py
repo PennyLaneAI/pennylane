@@ -115,7 +115,7 @@ guarantee a decomposition to the desired target gate set:
         qml.CRX(0.5, wires=[0, 1])
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+    [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 
 >>> pprint(new_tape.operations)
 [RZ(np.float64(1.5707963267948966), wires=[1]),
@@ -128,7 +128,7 @@ guarantee a decomposition to the desired target gate set:
 With the new system enabled, the transform produces the expected outcome.
 
 >>> qml.decomposition.enable_graph()
->>> [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+>>> [new_tape], _ = qml.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 >>> pprint(new_tape.operations)
 [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
@@ -172,7 +172,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qml.RY(np.pi/2, wires[1])
         qml.Z(wires[1])
 
-    @qml.transforms.decompose(
+    @qml.decompose(
         gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
         alt_decomps={qml.CNOT: [my_cnot1, my_cnot2]},
         fixed_decomps={qml.IsingXX: isingxx_decomp},

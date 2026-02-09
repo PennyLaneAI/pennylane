@@ -1592,6 +1592,8 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
+            (qml.QFT.compute_matrix(2), 2),
+            (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [2, 0])), 2),
             (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
             (qml.QFT.compute_matrix(5), 5),
             (qml.GroverOperator.compute_matrix(6, []), 6),
