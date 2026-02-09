@@ -168,7 +168,7 @@ def zxz_rotation_angles(U, return_global_phase=False):
 
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
-    theta = math.where(abs_a < abs_b, 2 * math.arccos(abs_a), 2 * math.arcsin(abs_b))
+    theta = 2 * math.arctan2(abs_b, abs_a)
 
     half_phi_plus_lam = math.angle(U[..., 1, 1] + EPS)
     half_phi_minus_lam = math.angle(1j * U[..., 1, 0] + EPS)

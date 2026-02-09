@@ -492,6 +492,9 @@ def expval(x: float):
 * Fixes a bug where the graph-based decomposition system is unbale to find a decomposition for a `ControlledQubitUnitary` with more than two target wires.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Fixes a numerical instability in the ZXZ decomposition of a single-qubit unitary.
+  [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
