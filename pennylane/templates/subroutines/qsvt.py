@@ -834,11 +834,6 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-# =============================================================================
-# Legacy Scipy-based iterative solver (backward compatible, no extra dependencies)
-# =============================================================================
-
-
 def _cheby_pol_scipy(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
 
@@ -1061,11 +1056,6 @@ def _compute_qsp_angles_iteratively_scipy(poly):
     return angles
 
 
-# =============================================================================
-# Optax-based iterative solver (PR #8685 contribution, requires JAX + Optax)
-# =============================================================================
-
-
 @jit_if_jax_available
 def _cheby_pol_optax(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
@@ -1199,10 +1189,7 @@ def _obj_function_optax(phi, x, y):
 
 @partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
 def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
-    """Dispatch optimization to the L-BFGS of optax.
-
-    This is the PR #8685 contribution, renamed to preserve git history.
-    """
+    """Dispatch optimization to the L-BFGS of optax."""
     # pylint: disable=import-outside-toplevel,redefined-outer-name
     import jax
     import optax
@@ -1237,8 +1224,6 @@ def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
 def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e-30):
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by
     minimizing the distance between the target and qsp polynomial over the grid.
-
-    This is the PR #8685 contribution using Optax L-BFGS optimizer.
     """
     # pylint: disable=import-outside-toplevel,redefined-outer-name
     import jax
