@@ -97,11 +97,11 @@ test_cases_zyz = [
     (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
     (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
     (H, [np.pi, np.pi / 2, 0.0, -np.pi / 2]),
-    (X, [np.pi / 2, np.pi, 7 * np.pi / 2, -np.pi / 2]),
+    (X, [np.pi / 2, np.pi, -np.pi / 2, -np.pi / 2]),
     # Single rotations
     (qml.RZ(0.3, wires=0).matrix(), [0.15, 0.0, 0.15, 0]),
-    (qml.RZ(-0.5, wires=0).matrix(), [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [0.2, 0.5, 4 * np.pi - 0.3, 0]),
+    (qml.RZ(-0.5, wires=0).matrix(), [-0.25, 0.0, -0.25, 0]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [0.2, 0.5, -0.3, 0]),
     # Other random unitaries
     (
         np.array(
@@ -110,11 +110,11 @@ test_cases_zyz = [
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
-        [12.382273469673908, np.pi, 0.18409714468526372, 0],
+        [-0.18409714468526372, np.pi, 0.18409714468526372, 0],
     ),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
-        [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0, -0.02],
+        [-1.0, 2.0, -3.0, -0.02],
     ),
     # Broadcasted unitaries, one coming from RZ and another from Rot
     (

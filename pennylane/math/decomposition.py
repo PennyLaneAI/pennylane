@@ -44,21 +44,16 @@ def zyz_rotation_angles(U, return_global_phase=False):
     """
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
-    # assume U = [[a, b], [c, d]], then here we take U[0, 1] as b
-    abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
-    theta = 2 * math.arcsin(abs_b)
 
-    EPS = math.finfo(U.dtype).eps
-    half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
-    half_omega_minus_phi = math.angle(U[..., 1, 0] + EPS)
+    abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
+    abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
+    theta = 2 * math.arctan2(abs_b, abs_a)
+
+    half_phi_plus_omega = math.angle(U[..., 1, 1])
+    half_omega_minus_phi = math.angle(U[..., 1, 0])
 
     phi = half_phi_plus_omega - half_omega_minus_phi
     omega = half_phi_plus_omega + half_omega_minus_phi
-
-    # Normalize the angles
-    phi = math.squeeze(phi % (4 * np.pi))
-    theta = math.squeeze(theta % (4 * np.pi))
-    omega = math.squeeze(omega % (4 * np.pi))
 
     return (phi, theta, omega, alpha) if return_global_phase else (phi, theta, omega)
 
