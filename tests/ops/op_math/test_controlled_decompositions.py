@@ -1096,3 +1096,70 @@ class TestMCXDecomposition:
             _ = _decompose_mcx_with_two_workers_old(
                 control_wires, target_wire, work_wires, work_wire_type="zeroed"
             )
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "n_ctrl_wires, n_work_wires",
+        [
+            (1, 0),
+            (1, 1),
+            (2, 0),
+            (2, 1),
+            (2, 2),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+            (3, 3),
+            (4, 0),  # Will xfail, not supported by recursive decomp
+            (4, 1),
+            (4, 2),
+            (4, 3),
+            (4, 4),
+            (5, 0),  # Will xfail, not supported by recursive decomp
+            (5, 1),
+            (5, 2),
+            (5, 3),
+            (5, 4),
+        ],
+    )
+    @pytest.mark.parametrize("ww_type", ["zeroed", "borrowed"])
+    def test_decompose_mcx_with_jit(self, n_ctrl_wires, n_work_wires, ww_type, seed):
+        """Test that ``decompose_mcx`` is JIT-compatible."""
+
+        if n_ctrl_wires > 3 and n_work_wires == 0:
+            pytest.xfail(reason="Recursive decomposition without work wires does not support JIT.")
+
+        # Set up wires
+        n_all_wires = n_ctrl_wires + 1 + n_work_wires
+        control_wires = Wires(range(n_ctrl_wires))
+        target_wire = Wires(n_ctrl_wires)
+        work_wires = Wires(range(n_ctrl_wires + 1, n_all_wires))
+
+        # Initial state
+        rng = np.random.default_rng(seed)
+        n_state_wires = n_all_wires if ww_type == "borrowed" else n_ctrl_wires + 1
+        state_wires = Wires(range(n_state_wires))
+        state = rng.random(2**n_state_wires)
+        state /= np.linalg.norm(state)
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=n_all_wires))
+        def node():
+            qml.StatePrep(state, state_wires)
+            decompose_mcx(control_wires, target_wire[0], work_wires, ww_type)
+            qml.MultiControlledX(
+                list(range(n_ctrl_wires + 1)),
+                work_wires=list(range(n_ctrl_wires + 1, n_all_wires)),
+                work_wire_type=ww_type,
+            )
+            return qml.state()
+
+        out = node()
+
+        # If we used zeroed work wires, we extract the state on the |0..0> subspace of the work
+        # wires, making sure that there is no overlap with the other subspaces.
+        if ww_type == "zeroed":
+            for _ in range(n_work_wires):
+                assert qml.math.allclose(out[1::2], 0.0)
+                out = out[::2]
+        assert qml.math.allclose(out, state)
