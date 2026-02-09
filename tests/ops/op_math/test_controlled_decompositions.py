@@ -1097,6 +1097,7 @@ class TestMCXDecomposition:
                 control_wires, target_wire, work_wires, work_wire_type="zeroed"
             )
 
+    @pytest.mark.catalyst
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "n_ctrl_wires, n_work_wires",
