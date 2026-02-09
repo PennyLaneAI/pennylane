@@ -279,7 +279,7 @@ class TestSubroutineCall:
         """Test that Subroutine's can handle accepting an id."""
 
         @Subroutine
-        def f(wires, id=None):
+        def f(wires):
             pass
 
         op = f.operator(0, id="val")
@@ -425,6 +425,21 @@ class TestSubroutineCapture:
 
         inner_xpr = subroutine_eqn.params["jaxpr"]
         assert inner_xpr.eqns[-1].primitive == qml.capture.primitives.cond_prim
+
+    def test_id_ignored(self):
+        """Test that id is ignored with program capture."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        @Subroutine
+        def f(wires):
+            pass
+
+        def w():
+            return f(0, id="val")
+
+        jaxpr = jax.make_jaxpr(w)()
+        assert "id" not in jaxpr.eqns[-1].params
 
 
 @pytest.mark.integration
