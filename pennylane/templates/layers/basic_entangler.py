@@ -173,7 +173,7 @@ class BasicEntanglerLayers(Operation):
             weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
                 for the rotation.
             wires (Any or Iterable[Any]): wires that the operator acts on
-            rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use
+            rotation (Type[pennylane.ops.Operation]): one-parameter single-qubit gate to use
 
         Returns:
             list[.Operator]: decomposition of the operator
