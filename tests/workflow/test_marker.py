@@ -18,6 +18,9 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.core.compile_pipeline import ProtectedLevel
 
+jax = pytest.importorskip("jax")
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestMarkerQNode:
