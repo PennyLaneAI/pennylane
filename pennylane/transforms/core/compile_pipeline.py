@@ -172,7 +172,7 @@ class CompilePipeline:
       [3] merge_rotations()
     )
 
-    We can add markers in the pipeline to help mark important positions,
+    We can add markers in the pipeline to mark important positions,
 
     >>> pipeline.add_marker("final-transform")
     >>> print(pipeline)
@@ -180,28 +180,34 @@ class CompilePipeline:
       [1] commute_controlled(),
       [2] cancel_inverses(recursive=True),
       [3] merge_rotations()
-       └─▶ final-transform
+       └─▶ final-transform # marker
     )
     >>> pipeline.markers
     ['final-transform']
+
+    A marker's level in the compilation pipeline can be retrieved with,
+
     >>> print(pipeline.get_marker_level("final-transform"))
     3
 
-    and we can remove markers,
+    and said marker can be removed with,
 
     >>> pipeline.remove_marker("final-transform")
     >>> pipeline.markers
     []
 
-    As can be seen above, the pipeline is visualized organized as follows,
+    As can be seen above, the pipeline is visualizally organized as follows,
 
     .. code-block::
-
         CompilePipeline(
-          ...
-          [level] pass_name(),
-           └─▶ marker
-          ...
+            ├─▶ Optional[markers] # optional marker for level=0
+           [1] pass_name(),
+            ├─▶ Optional[markers]
+           [2] pass_name(),
+            ├─▶ Optional[markers]
+           ...
+           [n] pass_name(),
+            └─▶ Optional[markers] # marker for level=len(pipeline)
         )
 
     Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
