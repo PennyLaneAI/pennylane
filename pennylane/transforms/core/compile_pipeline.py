@@ -161,6 +161,7 @@ class CompilePipeline:
         )
 
         @pipeline
+        @qml.marker("no-transforms")
         @qml.qnode(qml.device("default.qubit"))
         def circuit(x, y):
             qml.CNOT([1, 0])
@@ -173,6 +174,16 @@ class CompilePipeline:
             qml.RX(y, wires=0)
             return qml.expval(qml.Z(1))
 
+    >>> print(circuit.compile_pipeline)
+    CompilePipeline(
+       ├─▶ no-transforms
+      [1] commute_controlled(),
+      [2] cancel_inverses(recursive=True),
+      [3] merge_rotations()
+    )
+    >>> print(qml.draw(circuit, level="no-transforms")(0.1, 0.2))
+    0: ─╭X──X─╭X──H──H──X──RX(0.10)──RX(0.20)─┤
+    1: ─╰●────╰●──────────────────────────────┤  <Z>
     >>> print(qml.draw(circuit)(0.1, 0.2))
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
@@ -182,7 +193,7 @@ class CompilePipeline:
 
     **Inspecting and Marking**
 
-    We can inspect the pipeline by printing it,
+    We can inspect the original pipeline by printing it,
 
     >>> print(pipeline)
     CompilePipeline(
@@ -866,12 +877,13 @@ class CompilePipeline:
         for container in self:
             result = container(result)
 
-        # Ensure markers are preserved if we add them to a pipeline
-        # before we call said pipeline on a QNode.
+        # Merge markers, don't overwrite.
         # NOTE: Duck type a QNode object so we don't have to import it here
         if hasattr(result, "compile_pipeline"):
+            offset = len(result.compile_pipeline) - len(self)
             # pylint: disable=protected-access
-            result._compile_pipeline._markers = self._markers.copy()
+            for name, pos in self._markers.items():
+                result.compile_pipeline._markers[name] = pos + offset
 
         return result
 
