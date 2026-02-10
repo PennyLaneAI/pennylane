@@ -47,7 +47,7 @@ def _pkg_location():
 
 
 def catalyst_version() -> str | None:
-    """Catalyst version if installed."""
+    """Get the version of the installed `pennylane-catalyst` package, if available."""
     try:
         return str(version("pennylane_catalyst"))
     except PackageNotFoundError:
