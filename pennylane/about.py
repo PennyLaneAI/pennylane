@@ -47,7 +47,10 @@ def _pkg_location():
 
 
 def catalyst_version() -> str | None:
-    """Get the version of the installed `pennylane-catalyst` package, if available."""
+    """Get the version of the installed Catalyst package, if available."""
+    if not find_spec("catalyst"):
+        return None
+
     try:
         return str(version("pennylane_catalyst"))
     except PackageNotFoundError:
@@ -112,9 +115,10 @@ def about():
     print(f"Scipy version:           {scipy.__version__}")
     print(f"JAX version:             {jax_version}")
 
-    if cat_version := catalyst_version():
-        print(f"Catalyst version:        {cat_version}")
+    # Compiler information
+    print(f"Catalyst version:        {catalyst_version()}")
 
+    # Plugin devices
     print("Installed devices:")
 
     for d in plugin_devices:
