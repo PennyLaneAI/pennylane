@@ -188,7 +188,7 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
         else math.real(coeff)
     )
     pauli_word = qml.pauli.pauli_word_to_string(base)
-    qml.PauliRot(coeff, pauli_word, wires)
+    qml.PauliRot(coeff, pauli_word, base.wires)
 
 
 qml.add_decomps(Evolution, pauli_rot_decomp)
