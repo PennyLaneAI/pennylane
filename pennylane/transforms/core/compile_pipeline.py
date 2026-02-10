@@ -247,7 +247,7 @@ class CompilePipeline:
                 ├─▶ markers for level 1 (after 1st transform)
                [2] transform_2(),
                ...
-               [n] pass_name()
+               [n] transform_n()
                 └─▶ markers for level n (after nth transform)
             )
 
