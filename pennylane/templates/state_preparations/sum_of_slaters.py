@@ -595,6 +595,39 @@ class SumOfSlatersPrep(Operation):
                 op_list.append(qml.apply(op))
         return op_list
 
+    @staticmethod
+    def required_register_sizes(D, num_bits, num_wires):
+        """Compute the register sizes required for ``SumOfSlatersPrep``, for given
+        numbers of bitstrings ``D``, of bits per bitstring (``num_bits``, already reduced via
+        ``select_sos_rows``) and target wires (``num_wires``).
+
+        Args:
+            D (int): Number of bitstrings encoded by ``SumOfSlatersPrep``.
+            num_bits (int): Number of bits per bitstring.
+            num_wires (int): Number of target wires on which ``SumOfSlatersPrep`` will prepare
+                the state.
+
+        Returns:
+            dict[str, int]: Required register size per register name
+
+        """
+        d = math.ceil_log2(D)
+        if num_bits <= 2 * d - 1:
+            # Identity encoding works
+            num_identification = 0
+            num_mcx_work = num_bits
+        else:
+            m = 2 * d - 1
+            num_identification = num_mcx_work = m
+
+        return {
+            "target_wires": num_wires,
+            "enumeration_wires": d,
+            "identification_wires": num_identification,
+            "qrom_work_wires": d - 1,
+            "mcx_work_wires": num_mcx_work,
+        }
+
 
 def _sos_state_prep_resources(D, num_bits, num_wires):
     if D == 1:
@@ -686,8 +719,11 @@ def _sos_state_prep(
     # if precomputed_bits is None:
     # if selector_ids has length r, vtilde_bits has shape (r, D)
     selector_ids, vtilde_bits = select_sos_rows(v_bits)
+    selected_target_wires = [target_wires[idx] for idx in selector_ids]
     # u_bits has shape (2d-1, r), b_bits has shape (2d-1, D)
     u_bits, b_bits = compute_sos_encoding(vtilde_bits)  # u_bits has shape
+    identity_encoding = np.allclose(u_bits, np.eye(len(u_bits)))
+    print(f"{identity_encoding=}")
     # else:
     # selector_ids, u_bits, b_bits = precomputed_bits
 
@@ -723,55 +759,82 @@ def _sos_state_prep(
         # inner_loop()
 
         for j in range(r):
-            qml.cond(u[j], qml.CNOT([target_wires[selector_ids[j]], identification_wires[i]]))
+            qml.cond(u[j], qml.CNOT)([selected_target_wires[j], identification_wires[i]])
 
         return u_bits, selector_ids
 
     # encoding(u_bits, selector_ids)
 
-    for i in range(m):
-        u_bits, selector_ids = encoding(i, u_bits, selector_ids)
+    if not identity_encoding:
+        for i in range(m):
+            u_bits, selector_ids = encoding(i, u_bits, selector_ids)
+
+    mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
 
     # Step 5): Use the identification register to uncompute the enumeration register
-    # @for_loop(D)
+    # @for_loop(1, D)
     def uncompute_enumeration(k, b_bits):
         bits = list(map(int, b_bits[:, k]))
         # bits = b_bits[:, k] # A bit more jit-compatible but no longer compatible with MCX
 
-        qml.MultiControlledX(
-            wires=qml.wires.Wires.all_wires([identification_wires, mcx_work_wires[:1]]),
-            control_values=bits,
-            work_wires=mcx_work_wires[1:],
-            work_wire_type="zeroed",
-        )
+        bit_count = np.bitwise_count(k)
+        if bit_count == 1:
+            # If k is a power of two, we can directly use an MCX gate
+            target = math.ceil_log2(k)
+            qml.MultiControlledX(
+                wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
+                control_values=bits,
+                work_wires=mcx_work_wires,
+                work_wire_type="zeroed",
+            )
+        elif bit_count == 2:
+            # If k is a sum of two powers of two, we can directly use two MCX gates
+            target0 = math.ceil_log2(k) - 1
+            target1 = math.ceil_log2(k - 2**target0)
+            for target in [target0, target1]:
+                qml.MultiControlledX(
+                    wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
+                    control_values=bits,
+                    work_wires=mcx_work_wires,
+                    work_wire_type="zeroed",
+                )
+        else:
+            # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
+            # control to flip the targets
+            qml.MultiControlledX(
+                wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_work_wires[:1]]),
+                control_values=bits,
+                work_wires=mcx_work_wires[1:],
+                work_wire_type="zeroed",
+            )
 
-        # @for_loop(d)
-        # def inner_loop(j):
-        # bit_is_set = (k >> d - j) & 1
-        # qml.cond(bit_is_set, qml.CNOT([mcx_work_wires[0], enumeration_wires[j]]))
+            # @for_loop(d)
+            # def inner_loop(j):
+            # bit_is_set = (k >> d - j) & 1
+            # qml.cond(bit_is_set, qml.CNOT([mcx_work_wires[0], enumeration_wires[j]]))
 
-        # inner_loop()
+            # inner_loop()
 
-        for j in range(d):
-            bit_is_set = (k >> d - j) & 1
-            qml.cond(bit_is_set, qml.CNOT([mcx_work_wires[0], enumeration_wires[j]]))
+            for j in range(d):
+                bit_is_set = (k >> (d - j - 1)) & 1
+                qml.cond(bit_is_set, qml.CNOT)([mcx_work_wires[0], enumeration_wires[j]])
 
-        qml.MultiControlledX(
-            wires=qml.wires.Wires.all_wires([identification_wires, mcx_work_wires[:1]]),
-            control_values=bits,
-            work_wires=mcx_work_wires[1:],
-            work_wire_type="zeroed",
-        )
-        return b_bits
+            qml.MultiControlledX(
+                wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_work_wires[:1]]),
+                control_values=bits,
+                work_wires=mcx_work_wires[1:],
+                work_wire_type="zeroed",
+            )
 
     # uncompute_enumeration(b_bits)
-    for k in range(D):
-        b_bits = uncompute_enumeration(k, b_bits)
+    for k in range(1, D):
+        uncompute_enumeration(k, b_bits)
 
     # Step 6): Uncompute the b_i in the identification register (self-adjoint)
     # encoding(u_bits, selector_ids)
-    for i in range(m):
-        u_bits, selector_ids = encoding(i, u_bits, selector_ids)
+    if not identity_encoding:
+        for i in range(m):
+            u_bits, selector_ids = encoding(i, u_bits, selector_ids)
 
 
 add_decomps(SumOfSlatersPrep, _sos_state_prep)
