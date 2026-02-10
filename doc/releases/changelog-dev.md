@@ -358,6 +358,11 @@ def expval(x: float):
 
 <h3>Internal changes ⚙️</h3>
 
+* `qml.marker` is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
+  it is a utility function that modifies a compilation pipeline's internal dictionary that stores the mapping
+  between levels and marker labels.
+  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
