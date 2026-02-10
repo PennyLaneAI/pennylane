@@ -95,6 +95,7 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
     0: ──RX(1.00)─┤  Probs
 
     or even display our circuit before any transformations,
+
     >>> print(qml.draw(c, level="nothing-applied")()) # or level=0
     0: ──RX(0.50)──H──H──RX(0.50)─┤  Probs
 
