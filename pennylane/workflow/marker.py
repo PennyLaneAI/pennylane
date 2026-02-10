@@ -21,6 +21,17 @@ from .qnode import QNode
 def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callable:
     """Mark a location in a compilation pipeline for easy access with inspection utilities.
 
+    Args:
+        obj (QNode | None): The QNode containing the compilation pipeline to be marked.
+            If not provided, the function is assumed to used as a decorator.
+        level (str | None): The label for the level in the compilation pipeline to mark.
+
+    Returns:
+        QNode | Callable:
+
+    Raises:
+        ValueError: The 'level' argument must be provided.
+
     **Example:**
 
     .. code-block:: python
