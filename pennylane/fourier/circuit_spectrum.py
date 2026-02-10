@@ -41,19 +41,30 @@ def circuit_spectrum(
         define a ``generator``, and will fail if gates marked as inputs do not
         have this attribute.
 
-    Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
-    If two gates have the same ``id``, they are considered
+    Gates are marked as input-encoding gates in the quantum function by giving them an ``tag``.
+
+    >>> from pennylane.fourier.mark import mark
+    >>> my_op = qml.H(0)
+    >>> print(my_op.label())
+    H
+    >>> marked_op = mark(my_op, tag="tagged-h")
+    >>> print(marked_op.hyperparameters["tag"])
+    tagged-h
+    >>> print(marked_op.label())
+    H[tagged-h]
+
+    If two gates have the same ``tag``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
-    to indicate that only gates with a specific ``id`` should be interpreted as input-encoding gates.
-    Otherwise, all gates with an explicit ``id`` are considered to be input-encoding gates.
+    to indicate that only gates with a specific ``tag`` should be interpreted as input-encoding gates.
+    Otherwise, all gates with an explicit ``tag`` are considered to be input-encoding gates.
 
     .. note::
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit in which
-            input-encoding gates are marked by their ``id`` attribute
-        encoding_gates (list[str]): list of input-encoding gate ``id`` strings
+            input-encoding gates are marked by their ``tag`` attribute
+        encoding_gates (list[str]): list of input-encoding gate ``tag`` strings
             for which to compute the frequency spectra
         decimals (int): number of decimals to which to round frequencies.
 
@@ -61,7 +72,7 @@ def circuit_spectrum(
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will return a dictionary with the input-encoding gate ``id`` as keys and their frequency spectra as values.
+        will return a dictionary with the input-encoding gate ``tag`` as keys and their frequency spectra as values.
 
 
     **Details**
@@ -164,7 +175,7 @@ def circuit_spectrum(
 
     .. note::
         The ``circuit_spectrum`` function does not check if the result of the
-        circuit is an expectation, or if gates with the same ``id``
+        circuit is an expectation, or if gates with the same ``tag``
         take the same value in a given call of the function.
 
     The ``circuit_spectrum`` function works in all interfaces:
@@ -229,7 +240,7 @@ def circuit_spectrum(
             spec = sorted(spec)
             freqs[tag] = [-f for f in spec[:0:-1]] + spec
 
-        # Add trivial spectrum for requested gate ids that are not in the circuit
+        # Add trivial spectrum for requested gate tags that are not in the circuit
         if encoding_gates is not None:
             for tag in set(encoding_gates).difference(freqs):
                 freqs[tag] = []
