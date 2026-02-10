@@ -19,7 +19,7 @@ from .qnode import QNode
 
 
 def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callable:
-    """Mark a location in a compilation pipeline for easy access with inspection utilities.
+    """Register a checkpoint within a compilation pipeline for inspection.
 
     Args:
         obj (QNode | None): The ``QNode`` containing the compilation pipeline to be marked.
