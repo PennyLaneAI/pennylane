@@ -559,7 +559,8 @@ def pauli_decompose(
             }
         )
 
-    return qml.Hamiltonian(coeffs, obs)
+    with qml.queuing.QueuingManager.stop_recording():
+        return qml.Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):
