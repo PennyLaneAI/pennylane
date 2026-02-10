@@ -45,6 +45,11 @@ def zyz_rotation_angles(U, return_global_phase=False):
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
 
+    # The matrix is [[a, b],[c, d]], where a = cos(theta)*exp(i...)
+    # and b = sin(theta)*exp(i...). Taking the magnitude of a and b
+    # we get |b| = sin(theta) and |a| = cos(theta). We can use either
+    # one to find theta, but the most numerically robust approach
+    # is to use arctan2 so that both matrix elements are used.
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = 2 * math.arctan2(abs_b, abs_a)
