@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added the Catalyst version to :func:`~.about`.
+  [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
+
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent to 
   ``int(np.ceil(np.log2(n)))``.
@@ -158,6 +161,10 @@ def c():
 
 * Applying `qml.ctrl` on `Snapshot` no longer produces a `Controlled(Snapshot)`. Instead, it now returns the original `Snapshot`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* When the new graph-based decomposition system is enabled, the `decompose` transform no longer tries to find
+  a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
+  [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -516,6 +523,12 @@ def circuit():
 * When the new graph-based decomposition system is enabled, `Exp` no longer decomposes to nothing when the exponent
   is the identity. Instead, a `PauliRot` is always produced, which in this case decomposes to a `GlobalPhase`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* Fixes a bug where the graph-based decomposition system is unbale to find a decomposition for a `ControlledQubitUnitary` with more than two target wires.
+  [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
+  [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
 <h3>Contributors ✍️</h3>
 
