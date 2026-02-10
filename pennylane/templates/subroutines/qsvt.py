@@ -14,7 +14,6 @@
 """
 Contains the QSVT template and qsvt wrapper function.
 """
-
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
