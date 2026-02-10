@@ -44,18 +44,20 @@ def zyz_rotation_angles(U, return_global_phase=False):
     """
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
-    # assume U = [[a, b], [c, d]], then here we take U[0, 1] as b
-    abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
-    theta = 2 * math.arcsin(abs_b)
-
     EPS = math.finfo(U.dtype).eps
+
+    abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
+    abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
+    theta = 2 * math.arctan2(abs_b, abs_a)
+
     half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
     half_omega_minus_phi = math.angle(U[..., 1, 0] + EPS)
 
     phi = half_phi_plus_omega - half_omega_minus_phi
     omega = half_phi_plus_omega + half_omega_minus_phi
 
-    # Normalize the angles
+    # Normalize the angles. The convention that we take in PennyLane is that the
+    # rotation angles are in the range [0, 4pi)
     phi = math.squeeze(phi % (4 * np.pi))
     theta = math.squeeze(theta % (4 * np.pi))
     omega = math.squeeze(omega % (4 * np.pi))
@@ -80,22 +82,10 @@ def xyx_rotation_angles(U, return_global_phase=False):
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
 
-    EPS = math.finfo(U.dtype).eps
-    half_lam_plus_phi = math.arctan2(-math.imag(U[..., 0, 1]), math.real(U[..., 0, 0]) + EPS)
-    half_lam_minus_phi = math.arctan2(math.imag(U[..., 0, 0]), -math.real(U[..., 0, 1]) + EPS)
-    lam = half_lam_plus_phi + half_lam_minus_phi
-    phi = half_lam_plus_phi - half_lam_minus_phi
+    C = math.cast_like(math.array([[1, -1], [1, 1]]) / np.sqrt(2), U)
+    U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    theta = math.where(
-        math.isclose(math.sin(half_lam_plus_phi), math.zeros_like(half_lam_plus_phi)),
-        2 * math.arccos(math.clip(math.real(U[..., 1, 1]) / math.cos(half_lam_plus_phi), -1, 1)),
-        2 * math.arccos(math.clip(-math.imag(U[..., 0, 1]) / math.sin(half_lam_plus_phi), -1, 1)),
-    )
-
-    phi = math.squeeze(phi % (4 * np.pi))
-    theta = math.squeeze(theta % (4 * np.pi))
-    lam = math.squeeze(lam % (4 * np.pi))
-
+    lam, theta, phi = zyz_rotation_angles(U)
     return (lam, theta, phi, alpha) if return_global_phase else (lam, theta, phi)
 
 
@@ -115,36 +105,11 @@ def xzx_rotation_angles(U, return_global_phase=False):
     """
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
-    EPS = math.finfo(U.dtype).eps
 
-    # Compute \phi, \theta and \lambda after analytically solving for them from
-    # U = RX(\phi) RZ(\theta) RX(\lambda)
-    sum_diagonal_real = math.real(U[..., 0, 0] + U[..., 1, 1])
-    sum_off_diagonal_imag = math.imag(U[..., 0, 1] + U[..., 1, 0])
-    half_phi_plus_lambdas = math.arctan2(-sum_off_diagonal_imag, sum_diagonal_real + EPS)
-    diff_diagonal_imag = math.imag(U[..., 0, 0] - U[..., 1, 1])
-    diff_off_diagonal_real = math.real(U[..., 0, 1] - U[..., 1, 0])
-    half_phi_minus_lambdas = math.arctan2(diff_off_diagonal_real, -diff_diagonal_imag + EPS)
-    lam = half_phi_plus_lambdas - half_phi_minus_lambdas
-    phi = half_phi_plus_lambdas + half_phi_minus_lambdas
+    C = math.cast_like(math.array([[1, -1j], [1, 1j]]) / np.sqrt(2), U)
+    U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    # Compute \theta
-    theta = math.where(
-        math.isclose(math.sin(half_phi_plus_lambdas), math.zeros_like(half_phi_plus_lambdas)),
-        2
-        * math.arccos(
-            math.clip(sum_diagonal_real / (2 * math.cos(half_phi_plus_lambdas) + EPS), -1, 1)
-        ),
-        2
-        * math.arccos(
-            math.clip(-sum_off_diagonal_imag / (2 * math.sin(half_phi_plus_lambdas) + EPS), -1, 1)
-        ),
-    )
-
-    phi = math.squeeze(phi % (4 * np.pi))
-    theta = math.squeeze(theta % (4 * np.pi))
-    lam = math.squeeze(lam % (4 * np.pi))
-
+    lam, theta, phi = zyz_rotation_angles(U)
     return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
 
 

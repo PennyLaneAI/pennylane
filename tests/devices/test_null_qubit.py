@@ -107,7 +107,10 @@ def test_set_device_target():
                 assert arg == t2.args[i]
 
         if t1.tape_transform == preprocess.decompose.tape_transform:
-            assert t1.kwargs.pop("strict") is False
+            assert t1.kwargs.pop("strict") is False, (
+                "null.qubit should add strict=False to the decompose transform to allow "
+                "pass-through of ops that do not define a decomposition."
+            )
 
         assert len(t1.kwargs) == len(t2.kwargs)
         for k in t1.kwargs:
