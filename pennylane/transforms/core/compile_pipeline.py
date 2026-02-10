@@ -843,8 +843,17 @@ class CompilePipeline:
             The transformed object.
         """
         result = obj
+
         for container in self:
             result = container(result)
+
+        # Ensure markers are preserved if we add them to a pipeline
+        # before we call said pipeline on a QNode.
+        # NOTE: Duck type a QNode object so we don't have to import it here
+        if hasattr(result, "compile_pipeline"):
+            # pylint: disable=protected-access
+            result._compile_pipeline._markers = self._markers.copy()
+
         return result
 
     @overload

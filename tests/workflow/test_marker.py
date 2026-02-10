@@ -92,22 +92,29 @@ class TestMarkerQNode:
         assert c.compile_pipeline.get_marker_level("after-merge-rotations") == 1
         assert c.compile_pipeline.get_marker_level("after-cancel-inverses") == 2
 
-    def test_pipeline_applied_as_decorator(self):
-        """Tests that the pipeline can be applied as a decorator."""
+    def test_marker_embedded_before_pipeline_decorator(self):
+        """Tests that markers applied before the pipeline decorator are included."""
 
         pipeline = qml.CompilePipeline()
         pipeline.add_marker("no-transforms")
         pipeline += qml.transforms.cancel_inverses
+        pipeline.add_marker("after-cancel-inverses")
 
-        assert pipeline.markers == ["no-transforms"]
+        assert pipeline.markers == ["no-transforms", "after-cancel-inverses"]
         assert pipeline.get_marker_level("no-transforms") == 0
+        assert pipeline.get_marker_level("after-cancel-inverses") == 1
 
-        @qml.marker("after-cancel-inverses")
+        @qml.marker("after-pipeline")
         @pipeline
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
 
-        assert c.compile_pipeline.markers == ["no-transforms", "after-cancel-inverses"]
+        assert c.compile_pipeline.markers == [
+            "no-transforms",
+            "after-cancel-inverses",
+            "after-pipeline",
+        ]
         assert c.compile_pipeline.get_marker_level("no-transforms") == 0
         assert c.compile_pipeline.get_marker_level("after-cancel-inverses") == 1
+        assert c.compile_pipeline.get_marker_level("after-pipeline") == 1
