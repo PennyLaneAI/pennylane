@@ -12,7 +12,8 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-
+  workflow_call:
+  
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -84,7 +85,6 @@ jobs:
           --ignore=pennylane/ops/qubit
           --ignore=pennylane/ops/qutrit
           --ignore=pennylane/capture
-          --ignore=pennylane/decomposition
           --ignore=pennylane/devices
           "
           IGNORE_OPTS_AUXILIARY="

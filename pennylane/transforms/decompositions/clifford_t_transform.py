@@ -435,7 +435,7 @@ class _CachedCallable:
 def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
     raise NotImplementedError(
         "The clifford_t_decomposition is incompatible with program capture. "
-        "Please use qml.transforms.decompose and qml.transforms.gridsynth instead."
+        "Please use qml.decompose and qml.transforms.gridsynth instead."
     )
 
 

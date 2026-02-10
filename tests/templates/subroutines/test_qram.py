@@ -27,14 +27,21 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
 
+has_jax = True
+try:
+    from jax import numpy as jnp
+except ImportError:
+    has_jax = False
+
+
 dev = device("default.qubit")
 
 
 @qnode(dev)
-def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
+def bb_quantum(data, control_wires, target_wires, work_wires, address):
     BasisEmbedding(address, wires=control_wires)
     BBQRAM(
-        bitstrings,
+        data,
         control_wires=control_wires,
         target_wires=target_wires,
         work_wires=work_wires,
@@ -42,73 +49,85 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
     return probs(wires=target_wires)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
-        "bitstrings",
+        "data",
         "control_wires",
         "target_wires",
-        "bus",
-        "dir_wires",
-        "portL_wires",
-        "portR_wires",
+        "work_wires",
         "address",
         "probabilities",
     ),
     [
         (
-            ["010", "111", "110", "000"],
+            [
+                "010",
+                "111",
+                "110",
+                "000",
+            ],
             [0, 1],
             [2, 3, 4],
-            5,
-            [6, 7, 8],
-            [9, 10, 11],
-            [12, 13, 14],
+            [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
         (
-            ["010", "111", "110", "000"],
-            [0, 1],
-            [2, 3, 4],
-            5,
-            [11, 10, 9],
-            [6, 7, 8],
-            [12, 13, 14],
+            np.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5, 11, 10, 9, 6, 7, 8, 12, 13, 14]),
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
         (
-            ["010", "111", "110", "000"],
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
             [0, 1],
             [2, 3, 4],
-            5,
-            [6, 7, 8],
-            [12, 13, 14],
-            [9, 10, 11],
+            [5, 6, 7, 8, 12, 13, 14, 9, 10, 11],
             0,
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
     ],
 )
 def test_bb_quantum(
-    bitstrings,
+    data,
     control_wires,
     target_wires,
-    bus,
-    dir_wires,
-    portL_wires,
-    portR_wires,
+    work_wires,
     address,
     probabilities,
 ):  # pylint: disable=too-many-arguments
+
+    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
+        data, control_wires, target_wires, work_wires = (
+            jnp.array(data),
+            jnp.array(control_wires),
+            jnp.array(target_wires),
+            jnp.array(work_wires),
+        )
+
     assert np.allclose(
         probabilities,
         bb_quantum(
-            bitstrings,
+            data,
             control_wires,
             target_wires,
-            [bus] + dir_wires + portL_wires + portR_wires,
+            work_wires,
             address,
         ),
     )
@@ -125,31 +144,26 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "bitstrings' cannot be empty.",
+            "data' cannot be empty.",
         ),
         (
             (
-                ["000", "00", "111", "10", "100"],
+                [[0, 0, 0], [1, 1, 1]],
                 [0, 1],
                 [2, 3, 4],
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "All bitstrings must have equal length.",
+            "data.shape[0] must be 2^(len(control_wires)).",
         ),
         (
             (
-                ["000", "111"],
-                [0, 1],
-                [2, 3, 4],
-                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            ),
-            ValueError,
-            "len(bitstrings) must be 2^(len(control_wires)).",
-        ),
-        (
-            (
-                ["010", "111", "110", "000"],
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
                 [0, 1],
                 [2, 3],
                 [4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
@@ -159,7 +173,12 @@ def test_bb_quantum(
         ),
         (
             (
-                ["010", "111", "110", "000"],
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
                 [0, 1],
                 [2, 3, 4],
                 [5, 6, 7, 8, 9, 10, 11, 12, 13],
@@ -176,7 +195,7 @@ def test_raises(params, error, match):
 
 @pytest.mark.parametrize(
     (
-        "bitstrings",
+        "data",
         "control_wires",
         "target_wires",
         "bus",
@@ -186,7 +205,12 @@ def test_raises(params, error, match):
     ),
     [
         (
-            ["010", "111", "110", "000"],
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
             [0, 1],
             [2, 3, 4],
             5,
@@ -195,7 +219,12 @@ def test_raises(params, error, match):
             [12, 13, 14],
         ),
         (
-            ["010", "111", "110", "000"],
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
             [0, 1],
             [2, 3, 4],
             5,
@@ -204,7 +233,12 @@ def test_raises(params, error, match):
             [12, 13, 14],
         ),
         (
-            ["010", "111", "110", "000"],
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
             [0, 1],
             [2, 3, 4],
             5,
@@ -215,7 +249,7 @@ def test_raises(params, error, match):
     ],
 )
 def test_bbqram_decomposition_new(
-    bitstrings,
+    data,
     control_wires,
     target_wires,
     bus,
@@ -224,7 +258,7 @@ def test_bbqram_decomposition_new(
     portR_wires,
 ):  # pylint: disable=too-many-arguments
     op = BBQRAM(
-        bitstrings,
+        data,
         control_wires,
         target_wires,
         [bus] + dir_wires + portL_wires + portR_wires,
@@ -236,11 +270,11 @@ def test_bbqram_decomposition_new(
 
 @qnode(dev)
 def hybrid_quantum(
-    bitstrings, control_wires, target_wires, work_wires, k, address
+    data, control_wires, target_wires, work_wires, k, address
 ):  # pylint: disable=too-many-arguments
     BasisEmbedding(address, wires=control_wires)
     HybridQRAM(
-        bitstrings,
+        data,
         control_wires=control_wires,
         target_wires=target_wires,
         work_wires=work_wires,
@@ -249,17 +283,14 @@ def hybrid_quantum(
     return probs(wires=target_wires)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
-        "bitstrings",
+        "data",
         "control_wires",
         "target_wires",
-        "signal",
-        "bus",
-        "dir_wires",
-        "portL_wires",
-        "portR_wires",
+        "work_wires",
         "k",
         "address",
         "probabilities",
@@ -267,14 +298,17 @@ def hybrid_quantum(
     ),
     [
         (
-            ["010", "111", "110", "000"],
-            [0, 1],
-            [2, 3, 4],
-            5,
-            6,
-            [7, 8, 9],
-            [10, 11, 12],
-            [13, 14, 15],
+            np.array(
+                [
+                    "010",
+                    "111",
+                    "110",
+                    "000",
+                ]
+            ),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
             0,
             2,  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
@@ -377,14 +411,15 @@ def hybrid_quantum(
             ],
         ),
         (
-            ["010", "111", "110", "000"],
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
             [0, 1],
             [2, 3, 4],
-            5,
-            6,
-            [7],
-            [10],
-            [13],
+            [5, 6, 7, 10, 13],
             1,
             0,  # addressed from the left
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
@@ -461,33 +496,38 @@ def hybrid_quantum(
     ],
 )
 def test_hybrid_quantum(
-    bitstrings,
+    data,
     control_wires,
     target_wires,
-    signal,
-    bus,
-    dir_wires,
-    portL_wires,
-    portR_wires,
+    work_wires,
     k,
     address,
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
+
+    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
+        data, control_wires, target_wires, work_wires = (
+            jnp.array(data),
+            jnp.array(control_wires),
+            jnp.array(target_wires),
+            jnp.array(work_wires),
+        )
+
     real_probs = hybrid_quantum(
-        bitstrings,
+        data,
         control_wires,
         target_wires,
-        [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        work_wires,
         k,
         address,
     )
     assert np.allclose(probabilities, real_probs)
     tape = workflow.construct_tape(hybrid_quantum, level="device")(
-        bitstrings,
+        data,
         control_wires,
         target_wires,
-        [signal] + [bus] + dir_wires + portL_wires + portR_wires,
+        work_wires,
         k,
         address,
     )
@@ -496,7 +536,7 @@ def test_hybrid_quantum(
 
 @pytest.mark.parametrize(
     (
-        "bitstrings",
+        "data",
         "control_wires",
         "target_wires",
         "signal",
@@ -508,7 +548,12 @@ def test_hybrid_quantum(
     ),
     [
         (
-            ["010", "111", "110", "000"],
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
             [0, 1],
             [2, 3, 4],
             5,
@@ -519,7 +564,12 @@ def test_hybrid_quantum(
             0,
         ),
         (
-            ["010", "111", "110", "000"],
+            [
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+            ],
             [0, 1],
             [2, 3, 4],
             5,
@@ -532,7 +582,7 @@ def test_hybrid_quantum(
     ],
 )
 def test_hybrid_decomposition_new(
-    bitstrings,
+    data,
     control_wires,
     target_wires,
     signal,
@@ -543,7 +593,7 @@ def test_hybrid_decomposition_new(
     k,
 ):  # pylint: disable=too-many-arguments
     op = HybridQRAM(
-        bitstrings,
+        data,
         control_wires=control_wires,
         target_wires=target_wires,
         work_wires=[signal] + [bus] + dir_wires + portL_wires + portR_wires,
@@ -559,37 +609,59 @@ def test_hybrid_decomposition_new(
         (
             ([], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 0),
             ValueError,
-            "bitstrings' cannot be empty.",
+            "data' cannot be empty.",
         ),
         (
             (
-                ["000", "00", "111", "10", "100"],
+                [[0, 0, 0], [1, 1, 1]],
                 [0, 1],
                 [2, 3, 4],
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-                1,
+                0,
             ),
             ValueError,
-            "All bitstrings must have equal length.",
+            "data.shape[0] must be 2^(len(control_wires)).",
         ),
         (
-            (["000", "111"], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 0),
-            ValueError,
-            "len(bitstrings) must be 2^(len(control_wires)).",
-        ),
-        (
-            (["010", "111", "110", "000"], [0, 1], [2, 3], [4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 1),
+            (
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
+                [0, 1],
+                [2, 3],
+                [4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+                1,
+            ),
             ValueError,
             "len(target_wires) must equal bitstring length.",
         ),
         (
-            (["010", "111", "110", "000"], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13], 0),
+            (
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6, 7, 8, 9, 10, 11, 12, 13],
+                0,
+            ),
             ValueError,
             "work_wires must have length 11",
         ),
         (
             (
-                ["010", "111", "110", "000"],
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
                 [0, 1],
                 [2, 3, 4],
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
@@ -600,7 +672,12 @@ def test_hybrid_decomposition_new(
         ),
         (
             (
-                ["010", "111", "110", "000"],
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
                 [],
                 [2, 3, 4],
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
@@ -618,11 +695,11 @@ def test_hybrid_raises(params, error, match):
 
 @qnode(dev)
 def select_only_quantum(
-    bitstrings, control_wires, target_wires, select_wires, select_value, address
+    data, control_wires, target_wires, select_wires, select_value, address
 ):  # pylint: disable=too-many-arguments
     BasisEmbedding(address, wires=control_wires)
     SelectOnlyQRAM(
-        bitstrings,
+        data,
         control_wires=control_wires,
         target_wires=target_wires,
         select_wires=select_wires,
@@ -631,10 +708,11 @@ def select_only_quantum(
     return probs(wires=target_wires)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
-        "bitstrings",
+        "data",
         "control_wires",
         "target_wires",
         "select_wires",
@@ -704,27 +782,29 @@ def select_only_quantum(
             ],
         ),
         (
-            [
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-            ],
-            [0, 1],
-            [2, 3, 4],
-            [5, 6],
+            np.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5, 6]),
             0,  # Note: if this were set to 1, the test would not pass... due to the select.
             2,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
@@ -763,27 +843,29 @@ def select_only_quantum(
             ],
         ),
         (
-            [
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-            ],
-            [0, 1],
-            [2, 3, 4],
-            [5, 6],
+            np.array(
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ]
+            ),
+            np.array([0, 1]),
+            np.array([2, 3, 4]),
+            np.array([5, 6]),
             None,
             1,
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
@@ -881,10 +963,10 @@ def select_only_quantum(
         ),
         (
             [
-                "010",
-                "111",
-                "110",
-                "000",
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
             ],
             [0, 1],
             [2, 3, 4],
@@ -913,7 +995,7 @@ def select_only_quantum(
     ],
 )
 def test_select_only_quantum(
-    bitstrings,
+    data,
     control_wires,
     target_wires,
     select_wires,
@@ -922,8 +1004,17 @@ def test_select_only_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
+
+    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
+        data, control_wires, target_wires, select_wires = (
+            jnp.array(data),
+            jnp.array(control_wires),
+            jnp.array(target_wires),
+            jnp.array(select_wires),
+        )
+
     real_probs = select_only_quantum(
-        bitstrings,
+        data,
         control_wires,
         target_wires,
         select_wires,
@@ -932,7 +1023,7 @@ def test_select_only_quantum(
     )
     assert np.allclose(probabilities, real_probs)
     tape = workflow.construct_tape(select_only_quantum, level="device")(
-        bitstrings,
+        data,
         control_wires,
         target_wires,
         select_wires,
@@ -946,13 +1037,24 @@ def test_select_only_quantum(
     ("params", "error", "match"),
     [
         (
-            (["000", "111"], [0, 1], [2, 3, 4], [5, 6], 2),
+            (
+                [[0, 0, 0], [1, 1, 1]],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6],
+                2,
+            ),
             ValueError,
-            "len(bitstrings) must be 2^(len(select_wires)+len(control_wires)).",
+            "data.shape[0] must be 2^(len(select_wires)+len(control_wires)).",
         ),
         (
             (
-                ["000", "111", "010", "101"],
+                [
+                    [0, 0, 0],
+                    [1, 1, 1],
+                    [0, 1, 0],
+                    [1, 0, 1],
+                ],
                 [0, 1],
                 [2, 3, 4],
                 [],
@@ -963,7 +1065,16 @@ def test_select_only_quantum(
         ),
         (
             (
-                ["000", "111", "010", "101", "000", "111", "010", "101"],
+                [
+                    [0, 0, 0],
+                    [1, 1, 1],
+                    [0, 1, 0],
+                    [1, 0, 1],
+                    [0, 0, 0],
+                    [1, 1, 1],
+                    [0, 1, 0],
+                    [1, 0, 1],
+                ],
                 [0, 1],
                 [2, 3, 4],
                 [15],
@@ -980,21 +1091,16 @@ def test_select_only_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "bitstrings' cannot be empty.",
+            "data' cannot be empty.",
         ),
         (
             (
-                ["000", "00", "111", "10", "100"],
-                [0, 1],
-                [2, 3, 4],
-                [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            ),
-            ValueError,
-            "All bitstrings must have equal length.",
-        ),
-        (
-            (
-                ["010", "111", "110", "000"],
+                [
+                    [0, 1, 0],
+                    [1, 1, 1],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
                 [0, 1],
                 [2, 3],
                 [4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
@@ -1011,7 +1117,7 @@ def test_select_only_raises(params, error, match):
 
 @pytest.mark.parametrize(
     (
-        "bitstrings",
+        "data",
         "control_wires",
         "target_wires",
         "select_wires",
@@ -1020,22 +1126,22 @@ def test_select_only_raises(params, error, match):
     [
         (
             [
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
             ],
             [0, 1],
             [2, 3, 4],
@@ -1044,22 +1150,22 @@ def test_select_only_raises(params, error, match):
         ),
         (
             [
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
-                "010",
-                "111",
-                "110",
-                "000",
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
             ],
             [0, 1],
             [2, 3, 4],
@@ -1068,10 +1174,10 @@ def test_select_only_raises(params, error, match):
         ),
         (
             [
-                "010",
-                "111",
-                "110",
-                "000",
+                [0, 1, 0],
+                [1, 1, 1],
+                [1, 1, 0],
+                [0, 0, 0],
             ],
             [0, 1],
             [2, 3, 4],
@@ -1081,10 +1187,10 @@ def test_select_only_raises(params, error, match):
     ],
 )
 def test_select_decomposition_new(
-    bitstrings, control_wires, target_wires, select_wires, select_value
+    data, control_wires, target_wires, select_wires, select_value
 ):  # pylint: disable=too-many-arguments
     op = SelectOnlyQRAM(
-        bitstrings,
+        data,
         control_wires,
         target_wires,
         select_wires,

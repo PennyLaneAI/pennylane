@@ -700,6 +700,26 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr2.consts == [scalar]
         assert len(jaxpr2.eqns[0].params["qfunc_jaxpr"].constvars) == 1
 
+    def test_subroutine(self):
+        """Test subroutines can be processed with interpreters."""
+
+        @qml.capture.subroutine
+        def some_func(x):
+            _ = qml.RX(x, 0) ** 2
+
+        @SimplifyInterpreter()
+        def c(x):
+            some_func(x)
+            some_func(x)
+
+        jaxpr = jax.make_jaxpr(c)(0.5)
+
+        jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
+        assert jaxpr0.eqns[0].primitive.name == "mul"
+        assert jaxpr0.eqns[1].primitive == qml.RX._primitive  # pylint: disable=protected-access
+
+        assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
+
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac(self, grad_f):
         """Test interpreters can handle grad and jacobian HOP's."""
@@ -744,6 +764,27 @@ class TestHigherOrderPrimitiveRegistrations:
         assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
 
+    def test_jvp(self):
+        """Test interpreters can handle the jvp primitive.."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                _ = qml.RX(y, 0) ** 2
+                return qml.expval(qml.Z(0) + qml.Z(0))
+
+            return qml.jvp(circuit, (x,), (1.0,))
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+
+        assert jaxpr.eqns[0].primitive == qml.capture.primitives.jvp_prim
+        jvp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        qfunc_jaxpr = jvp_jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
+        assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert qfunc_jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
+
     @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
     def test_grad_and_jac_consts(self, grad_f):
         """Test interpreters can handle grad and jacobian HOP's and propagate consts correctly."""
@@ -778,6 +819,28 @@ class TestHigherOrderPrimitiveRegistrations:
                 return qml.expval(qml.Z(0) + qml.Z(0))
 
             return qml.vjp(circuit, (x,), (1.0,))
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
+        assert jaxpr2.eqns[0].params["argnums"] == (1,)  # shifted by one
+
+    def test_jvp_consts(self):
+        """Test interpreters can handle jvp HOP's and propagate consts correctly."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                exponent = add_3.bind(0)
+                _ = qml.RX(y, 0) ** exponent
+                return qml.expval(qml.Z(0) + qml.Z(0))
+
+            return qml.jvp(circuit, (x,), (1.0,))
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         assert len(jaxpr.consts) == 0

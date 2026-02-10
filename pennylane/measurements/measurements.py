@@ -108,8 +108,10 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         if isinstance(getattr(obs, "aval", None), _get_abstract_operator()):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
-            return cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
-        return cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
+            out = cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
+            return tuple(out) if isinstance(out, list) else out
+        out = cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
+        return tuple(out) if isinstance(out, list) else out
 
     # pylint: disable=unused-argument
     @classmethod

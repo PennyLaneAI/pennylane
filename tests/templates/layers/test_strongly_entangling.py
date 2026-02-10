@@ -252,6 +252,7 @@ class TestDynamicDecomposition:
     @pytest.mark.parametrize(
         "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
     )
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_strongly_entangling_state(
         self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
     ):  # pylint:disable=too-many-arguments

@@ -744,10 +744,10 @@ class TestSparseMatrix:
 class TestProperties:
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_queue_category(self, op_scalar_tup):
-        """Test queue_category property is always None."""  # currently not supporting queuing SProd
+        """Test queue_category property is "_ops" by inheritance."""
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
-        assert sprod_op._queue_category is None  # pylint: disable=protected-access
+        assert sprod_op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
