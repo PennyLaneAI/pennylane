@@ -271,7 +271,6 @@ def rot_to_phase_gradient(
                 *[qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])][::-1]
             )
 
-            print("phi in rot_to_phase..:", phi)
             operations.append(
                 qp.change_op_basis(
                     diagonalizing_gate,
