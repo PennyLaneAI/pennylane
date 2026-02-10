@@ -279,6 +279,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     target_gates: set | None = None,
     name: str = "device",
     error: type[Exception] | None = None,
+    strict: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -306,6 +307,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
             fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
+        strict (bool): If ``False``, operators that do not define a decomposition will be treated
+            as supported. Defaults to ``True``
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -382,7 +385,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             minimize_work_wires=False,
             fixed_decomps=None,
             alt_decomps=None,
-            strict=True,
+            strict=strict,
         )
 
     if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:

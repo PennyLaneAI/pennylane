@@ -45,6 +45,9 @@ def c():
   allows the decomposition graph to treat operators without a decomposition as part of the gate set.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
+* New decomposition rules are added to `Evolution` and `RZ`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
 <h3>Improvements 🛠</h3>
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
@@ -137,6 +140,23 @@ def c():
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
+* A new `DecompositionWarning` is now raised if the decomposition graph is unable to find a solution
+  for an operator, instead of a general `UserWarning`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* With the new graph-based decomposition system enabled, the `decompose` transform no longer raise
+  warnings when the graph is unable to find a decomposition for an operator that does not define a
+  decomposition in the following scenarios where operators that does not define a decomposition are
+  treated as supported.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+  - When the device is `null.qubit`.
+  - With `qml.compile`.
+  - Within the `expand_transform` of `hadamard_grad` and `param_shift`.
+
+* Applying `qml.ctrl` on `Snapshot` no longer produces a `Controlled(Snapshot)`. Instead, it now returns the original `Snapshot`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -407,6 +427,9 @@ def expval(x: float):
 
 <h3>Documentation 📝</h3>
 
+* The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
+  [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
@@ -460,6 +483,13 @@ def expval(x: float):
 
 * Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
+
+* The `decompose` transform no longer warns about being unable to decompose `Barrier` and `Snapshot`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* When the new graph-based decomposition system is enabled, `Exp` no longer decomposes to nothing when the exponent
+  is the identity. Instead, a `PauliRot` is always produced, which in this case decomposes to a `GlobalPhase`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
 
 <h3>Contributors ✍️</h3>
 
