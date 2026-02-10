@@ -31,7 +31,6 @@ from pennylane.exceptions import (
 )
 from pennylane.math import is_abstract, requires_grad
 from pennylane.measurements import (
-    MeasurementProcess,
     SampleMeasurement,
     StateMeasurement,
     counts,
@@ -374,8 +373,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     graph_solution = None
     if target_gates is not None and enabled_graph():
-        # Filter out MeasurementProcess instances that shouldn't be decomposed
-        decomposable_ops = [op for op in tape.operations if not isinstance(op, MeasurementProcess)]
+        # Filter out instances of ops that don't need to be decomposed
+        decomposable_ops = [op for op in tape.operations if not stopping_condition(op)]
 
         # Construct and solve the decomposition graph
         graph_solution = _construct_and_solve_decomp_graph(

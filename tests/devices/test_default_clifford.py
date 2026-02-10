@@ -22,7 +22,7 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
 
 stim = pytest.importorskip("stim")
 
@@ -668,7 +668,11 @@ def test_clifford_error(check):
         DeviceError,
         match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
-        circuit()
+        if qml.decomposition.enabled_graph() and check:
+            with pytest.warns(DecompositionWarning):
+                circuit()
+        else:
+            circuit()
 
 
 def test_meas_error_noisy():
