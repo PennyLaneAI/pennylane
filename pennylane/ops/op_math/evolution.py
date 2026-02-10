@@ -182,6 +182,7 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     if isinstance(base, qml.ops.SProd):
         coeff, base = coeff * base.scalar, base.base
     coeff = 2j * coeff  # The 2j cancels the coefficient added by PauliRot
+    coeff = math.real_if_close(coeff)  # only cast to real if close
     pauli_word = qml.pauli.pauli_word_to_string(base)
     qml.PauliRot(coeff, pauli_word, wires)
 
