@@ -317,11 +317,10 @@ class CompilePipeline:
             self += obj
 
     def __copy__(self):
-        old_markers = self._markers.copy()
         new_pipeline = CompilePipeline(
             self._compile_pipeline[:], cotransform_cache=self.cotransform_cache
         )
-        new_pipeline._markers = old_markers
+        new_pipeline._markers = self._markers.copy()
         return new_pipeline
 
     def __iter__(self):

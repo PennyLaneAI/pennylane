@@ -360,7 +360,30 @@ def expval(x: float):
 
 * `qml.marker` is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
   it is a utility function that modifies a compilation pipeline's internal dictionary that stores the mapping
-  between levels and marker labels.
+  between levels and marker labels. Markers are now added manually to the compilation pipeline using a new API.
+
+```python
+from pennylane.transforms.core import CompilePipeline
+from pennylane.workflow import marker
+
+pipeline = CompilePipeline()
+pipeline.add_marker("no-transforms")
+pipeline += qml.transforms.cancel_inverses
+
+@marker("after-cancel-inverses")
+@pipeline
+@qml.qnode(qml.device("default.qubit"))
+def circuit():
+  qml.H(0)
+  qml.H(0)
+  return qml.probs()
+```
+
+>>> print(qml.draw(c, level="no-transforms")())
+0: ──X──H──H─┤  Probs
+>>> print(qml.draw(c, level="after-cancel-inverses")())
+0: ──X─┤  Probs
+
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
 
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.

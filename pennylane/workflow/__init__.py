@@ -29,6 +29,7 @@ Execution functions and utilities
     ~workflow.get_transform_program
     ~workflow.get_best_diff_method
     ~workflow.set_shots
+    ~workflow.marker
 
 Jacobian Product Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
