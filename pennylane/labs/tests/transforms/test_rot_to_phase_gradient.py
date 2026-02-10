@@ -273,7 +273,7 @@ class TestPauliRotationDecomposition:
                 work_wires=work_wires,
             )
 
-    @pytest.mark.parametrize("RGate", [qp.RZ, qp.RX, qp.RY])
+    @pytest.mark.parametrize("RGate", [qp.RZ, qp.RX, qp.RY, qp.MultiRZ])
     @pytest.mark.parametrize(
         "phi",
         [
@@ -283,7 +283,7 @@ class TestPauliRotationDecomposition:
             -(1 / 2) * 2 * np.pi,
         ],
     )
-    def test_integration(self, phi, RGate):
+    def test_integration_single_wire(self, phi, RGate):
         """Test that the transform applies the RZ, RX, and RY gates correctly"""
         precision = 3
         wire = "targ"
@@ -310,3 +310,48 @@ class TestPauliRotationDecomposition:
         output_expected = np.kron(output_expected, np.eye(2 ** (len(wire_order) - 1))[0])
 
         assert np.allclose(output, output_expected)
+
+    @pytest.mark.parametrize("RGate", [qp.MultiRZ])
+    @pytest.mark.parametrize(
+        "phi",
+        [
+            (1 / 2 + 1 / 4) * 2 * np.pi,
+            -(1 / 2 + 1 / 4) * 2 * np.pi,
+            (1 / 4) * 2 * np.pi,
+            -(1 / 2) * 2 * np.pi,
+        ],
+    )
+    def test_integration_multi_wire(self, phi, RGate, seed):
+        """Test that the transform applies the multi-qubit gates correctly"""
+        # This test applies a random state to the unitary circuit and compares the result with the expected result
+
+        precision = 2  # otherwise becomes too large
+        wires = [f"targ{i}" for i in range(3)]
+        angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(precision)])
+        phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(precision)])
+        work_wires = qp.wires.Wires([f"work_{i}" for i in range(precision - 1)])
+        wire_order = wires + angle_wires + phase_grad_wires + work_wires
+
+        rot_circ = qp.tape.QuantumScript(
+            [
+                *prepare_phase_gradient(phase_grad_wires),
+                RGate(phi, wires),
+                *[qp.adjoint(op) for op in prepare_phase_gradient(phase_grad_wires)[::-1]],
+            ]
+        )
+
+        res, fn = rot_to_phase_gradient(rot_circ, angle_wires, phase_grad_wires, work_wires)
+        tapes = fn(res)
+        full_U = qp.matrix(tapes, wire_order=wire_order)
+
+        rng = np.random.default_rng(seed=seed)
+        in_state = rng.random(2 ** len(wires))
+        in_state /= np.linalg.norm(in_state)
+
+        out_state_expected = qp.matrix(RGate(phi, wires)) @ in_state
+
+        zeros = np.eye(2 ** (precision * 3 - 1))[0]
+        in_state_and_zeros = np.kron(in_state, zeros)
+        out_state_and_zeros = full_U @ in_state_and_zeros
+
+        assert np.allclose(out_state_and_zeros, np.kron(out_state_expected, zeros))

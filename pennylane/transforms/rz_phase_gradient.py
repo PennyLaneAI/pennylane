@@ -45,10 +45,12 @@ def _rz_phase_gradient(
     The precision is implicitly defined by the length of ``angle_wires``
     Note that the global phases are collected and added as one big global phase in the main function
     """
-
+    print("phi in _rz_phase_gradient..:", phi)
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
     binary_int = _binary_repr_int(phi, precision)
+
+    print("phi in _rz_phase_gradient.. in binary:", binary_int)
 
     compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
     target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)

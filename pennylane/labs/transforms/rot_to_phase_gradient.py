@@ -18,11 +18,11 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.operation import Operator
-
-# from pennylane.queuing import QueuingManager
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
+
+# from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -40,24 +40,30 @@ def _binary_repr_int(phi, precision):
     return bin(int(np.floor(phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
 
 
-# @QueuingManager.stop_recording()
-# def _rz_phase_gradient(
-#     phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
-# ) -> Operator:
-#     """Function that transforms the RZ gate to the phase gradient circuit
-#     The precision is implicitly defined by the length of ``angle_wires``
-#     Note that the global phases are collected and added as one big global phase in the main function
-#     """
-#     # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient without the need to collect global phases, as done in
+def _binary_repr_int2(phi, precision):
+    phi = phi % (2 * np.pi)
+    phi_round = np.round(2**precision * phi / (2 * np.pi))
+    return int(bin(int(np.floor(phi_round + 1e-10)))[-precision:], 2)
 
-#     precision = len(angle_wires)
-#     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-#     binary_int = _binary_repr_int(phi, precision)
 
-#     compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
-#     target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+@QueuingManager.stop_recording()
+def _rz_phase_gradient(
+    phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
+) -> Operator:
+    """Function that transforms the RZ gate to the phase gradient circuit
+    The precision is implicitly defined by the length of ``angle_wires``
+    Note that the global phases are collected and added as one big global phase in the main function
+    """
+    # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient without the need to collect global phases, as done in
 
-#     return qp.change_op_basis(compute_op, target_op, compute_op)
+    precision = len(angle_wires)
+    # BasisEmbedding can handle integer inputs, no need to actually translate to binary
+    binary_int = int(_binary_repr_int(phi * 2, precision), base=2)
+
+    compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+
+    return qp.change_op_basis(compute_op, target_op, compute_op)
 
 
 # pylint: disable=too-many-arguments
@@ -217,7 +223,7 @@ def rot_to_phase_gradient(
                 case "Z":
                     operations.append(pg_op)
 
-        elif isinstance(op, qp.RZ):
+        elif isinstance(op, qp.RZ) or (isinstance(op, qp.MultiRZ) and len(op.wires) == 1):
             wire = op.wires
             phi = op.parameters[0]
             global_phases.append(phi / 2)
@@ -249,6 +255,29 @@ def rot_to_phase_gradient(
                     _rz_phase_gradient(
                         phi,
                         wire,
+                        angle_wires=angle_wires,
+                        phase_grad_wires=phase_grad_wires,
+                        work_wires=work_wires,
+                    ),
+                )
+            )
+
+        elif isinstance(op, qp.MultiRZ) and len(op.wires) > 1:
+            wires = op.wires
+            phi = op.parameters[0]
+            global_phases.append(phi / 2)
+
+            diagonalizing_gate = qp.prod(
+                *[qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])][::-1]
+            )
+
+            print("phi in rot_to_phase..:", phi)
+            operations.append(
+                qp.change_op_basis(
+                    diagonalizing_gate,
+                    _rz_phase_gradient(
+                        phi,
+                        wires[:1],
                         angle_wires=angle_wires,
                         phase_grad_wires=phase_grad_wires,
                         work_wires=work_wires,
