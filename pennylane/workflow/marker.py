@@ -72,7 +72,7 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
     These markers are then recognized by a few of our inspectibility features.
     For example, we can verify that the Hadamard gates cancel using :func:`~.specs`,
 
-    >>> print(qml.specs(c, level="after-cancel-inverses")())
+    >>> print(qml.specs(c, level="after-cancel-inverses")()) # or level=1
     Device: null.qubit
     Device wires: None
     Shots: Shots(total=None)
@@ -91,8 +91,12 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
 
     and that the rotation gates merge using :func:`~.draw`,
 
-    >>> print(qml.draw(c, level="after-merge-rotations")())
+    >>> print(qml.draw(c, level="after-merge-rotations")()) # or level=2
     0: ──RX(1.00)─┤  Probs
+
+    or even display our circuit before any transformations,
+    >>> print(qml.draw(c, level="nothing-applied")()) # or level=0
+    0: ──RX(0.50)──H──H──RX(0.50)─┤  Probs
 
     """
 
