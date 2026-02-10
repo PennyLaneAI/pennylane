@@ -38,6 +38,7 @@ def _create_transform_primitive():
     try:
         # pylint: disable=import-outside-toplevel
         from pennylane.capture.custom_primitives import QmlPrimitive
+        from pennylane.capture.dynamic_shapes import register_custom_staging_rule
     except ImportError:
         return None
 
@@ -55,6 +56,23 @@ def _create_transform_primitive():
     @transform_prim.def_abstract_eval
     def _abstract_eval(*_, inner_jaxpr, **__):
         return [out.aval for out in inner_jaxpr.outvars]
+
+    def get_outvars(params):
+        return params["inner_jaxpr"].outvars
+
+    def create_initial_env(params, invars):
+        args = invars[slice(*params["args_slice"])]
+        consts = invars[slice(*params["consts_slice"])]
+
+        j = params["inner_jaxpr"]
+        env = dict(zip(j.invars, args))
+        for branch_const, new_const in zip(j.constvars, consts):
+            env[branch_const] = new_const
+        return env
+
+    register_custom_staging_rule(
+        transform_prim, get_outvars_from_params=get_outvars, create_initial_env=create_initial_env
+    )
 
     return transform_prim
 
