@@ -33,7 +33,7 @@ from .transform import BoundTransform, Transform
 if TYPE_CHECKING:
     import jax
 
-    import pennylane as qml
+    from pennylane.workflow import QNode
 
 
 def _batch_postprocessing(
@@ -862,7 +862,7 @@ class CompilePipeline:
     ) -> jax.extend.core.ClosedJaxpr: ...
 
     @overload
-    def __call__(self, qnode: qml.QNode, *args, **kwargs) -> qml.QNode: ...
+    def __call__(self, qnode: QNode, *args, **kwargs) -> QNode: ...
 
     @overload
     def __call__(
