@@ -153,6 +153,72 @@ def c():
 
 <h3>Breaking changes 💔</h3>
 
+* All operator classes are now queued by default, unless they implement a custom ``queue`` 
+  method that changes this behaviour.
+  
+  ** Operator math**
+
+  This change also affects operators commonly used for operator math, such as 
+  
+  - :class:`~.Hermitian`
+  - :class:`~.ops.op_math.SProd`
+  - :class:`~.ops.op_math.Sum`
+  - :class:`~.SparseHamiltonian`
+  - :class:`~.Projector`
+  - :class:`~.BasisStateProjector`
+
+  All operators are de-queued when used to construct new operators, so the following example
+  does *not* show changed behaviour (creating ``B`` removes ``A`` from the queue):
+  
+```python
+import pennylane as qml
+import numpy as np
+coeff = np.array([0.2, 0.1])
+
+@qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+def expval(x: float):
+    qml.RX(x, 1)
+    A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
+    B = A @ qml.Z(2)  
+    return qml.expval(B)
+```
+
+```pycon
+>>> print(qml.draw(expval)(0.4))
+0: ───────────┤ ╭<𝓗(0.20,0.10)>
+1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
+2: ───────────┤ ╰<𝓗(0.20,0.10)>
+```
+
+  However, if we convert an operator ``A`` to numerical data, from which a new 
+  operator ``B`` is constructed, the chain of operator dependencies is broken and de-queuing will
+  not work as expected:
+  
+```python
+coeff = np.array([0.2, 0.1])
+
+@qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+def expval(x: float):
+    qml.RX(x, 1)
+    A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
+    numerical_data = A.matrix()
+    B = qml.Hermitian(numerical_data, wires=[2, 0])
+    return qml.expval(B)
+```
+
+```pycon
+>>> print(qp.draw(expval)(0.4))
+0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
+1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │       
+2: ─────────────────────────┤ ╰<𝓗(M0)>
+```
+
+  As we can see, the ``Hamiltonian`` instance ``A`` remained in the queue.
+  In cases where such a conversion to numerical data is unavoidable, perform the conversion
+  outside of the quantum circuit.
+  [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
+  [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
+
 * Dropped support for NumPy 1.x following its end-of-life. NumPy 2.0 or higher is now required.
   [(#8914)](https://github.com/PennyLaneAI/pennylane/pull/8914)
   [(#8954)](https://github.com/PennyLaneAI/pennylane/pull/8954)
@@ -253,6 +319,12 @@ def c():
 
 <h3>Deprecations 👋</h3>
 
+* Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
+  queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
+  Operator classes that used to have ``_queue_category=None`` have been updated
+  to ``_queue_category="_ops"`` , so that they are queued now.
+  [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
+
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
   [(#8985)](https://github.com/PennyLaneAI/pennylane/pull/8985)
 
@@ -336,6 +408,10 @@ def c():
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
+  of an operator product via the dunder method ``__matmul__``. 
+  [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
 
 * Fixed :attr:`~.ops.Controlled.map_wires` and :func:`~.equal` with ``Controlled`` instances
   to handle the ``work_wire_type`` correctly within ``map_wires``. Also fixed 
