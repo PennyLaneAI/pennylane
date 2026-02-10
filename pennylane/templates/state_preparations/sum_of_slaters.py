@@ -652,15 +652,18 @@ def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
     return (x[None] >> np.arange(length - 1, -1, -1)[:, None]) % 2
 
 
+"""
 def _sos_state_prep_work_wires(D, num_bits, **_):
     d = math.ceil_log2(D)
     m = min(num_bits, 2 * d - 1)
     return {"zeroed": d + m + (d - 1) + m}
+"""
 
 
-@register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
+@register_resources(_sos_state_prep_resources, exact=False)
 def _sos_state_prep(
     coefficients,
+    wires=None,
     target_wires=None,
     enumeration_wires=None,
     identification_wires=None,
@@ -709,8 +712,6 @@ def _sos_state_prep(
         work_wires=qrom_work_wires,
     )
 
-    selector_ids = qml.math.array(selector_ids)
-
     # Step 3-4): Encode the b_bits from Lemma 1 in the identification register
     # @for_loop(m)
     def encoding(i, u_bits, selector_ids):
@@ -738,7 +739,7 @@ def _sos_state_prep(
         # bits = b_bits[:, k] # A bit more jit-compatible but no longer compatible with MCX
 
         qml.MultiControlledX(
-            wires=qml.math.concatenate([identification_wires, mcx_work_wires[:1]]),
+            wires=qml.wires.Wires.all_wires([identification_wires, mcx_work_wires[:1]]),
             control_values=bits,
             work_wires=mcx_work_wires[1:],
             work_wire_type="zeroed",
@@ -756,7 +757,7 @@ def _sos_state_prep(
             qml.cond(bit_is_set, qml.CNOT([mcx_work_wires[0], enumeration_wires[j]]))
 
         qml.MultiControlledX(
-            wires=qml.math.concatenate([identification_wires, mcx_work_wires[:1]]),
+            wires=qml.wires.Wires.all_wires([identification_wires, mcx_work_wires[:1]]),
             control_values=bits,
             work_wires=mcx_work_wires[1:],
             work_wire_type="zeroed",
