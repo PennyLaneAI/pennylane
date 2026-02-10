@@ -248,7 +248,7 @@ class CompilePipeline:
                [2] transform_2(),
                ...
                [n] pass_name()
-                └─▶ markers for level n (after nth transforms)
+                └─▶ markers for level n (after nth transform)
             )
 
         **Manipulating Pipelines**
