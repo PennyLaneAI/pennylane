@@ -47,6 +47,7 @@ def c():
 
 * New decomposition rules are added to `Evolution` and `RZ`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+  [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
 
 <h3>Improvements 🛠</h3>
 
@@ -427,6 +428,9 @@ def expval(x: float):
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
 <h3>Documentation 📝</h3>
+
+* The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
+  [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
 <h3>Bug fixes 🐛</h3>
 
