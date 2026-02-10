@@ -404,7 +404,6 @@ class TestSnapshotSupportedQNode:
         )
 
     # pylint: disable=protected-access
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_default_qutrit_mixed_finite_shot(self, diff_method):
         """Test that multiple snapshots are returned correctly on the qutrit density-matrix simulator."""
@@ -701,7 +700,6 @@ class TestSnapshotUnsupportedQNode:
         assert qml.math.allclose(out[0], out["execution_results"])
 
     # pylint: disable=protected-access
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_qutrit(self, method):
         """Test that multiple snapshots are returned correctly on the pure qutrit simulator."""

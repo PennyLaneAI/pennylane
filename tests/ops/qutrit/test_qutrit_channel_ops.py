@@ -23,8 +23,6 @@ from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.ops.qutrit import channel
 
-pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
-
 QUDIT_DIM = 3
 
 

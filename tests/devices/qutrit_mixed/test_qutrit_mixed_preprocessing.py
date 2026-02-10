@@ -26,8 +26,6 @@ from pennylane.devices.default_qutrit_mixed import (
 )
 from pennylane.exceptions import DeviceError
 
-pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
-
 
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit."""
@@ -260,6 +258,7 @@ class TestPreprocessingIntegration:
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the batched and expanded tapes have
         unsupported operators."""
