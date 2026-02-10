@@ -24,14 +24,13 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.decomposition import gate_sets
-from pennylane.devices.preprocess import decompose
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.operation import Operator
 from pennylane.ops import Sum
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import split_to_single_terms
+from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, ResultBatch
 from pennylane.wires import Wires
@@ -76,11 +75,9 @@ def _expand_transform_hadamard(
     """Expand function to be applied before hadamard gradient."""
     batch, postprocessing = decompose(
         tape,
-        target_gates=gate_sets.ROTATIONS_PLUS_CNOT,
+        gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
         stopping_condition=_hadamard_stopping_condition,
-        skip_initial_state_prep=False,
-        name="hadamard",
-        error=DecompositionUndefinedError,
+        strict=False,
     )
     if any(math.requires_grad(d) for mp in tape.measurements for d in getattr(mp.obs, "data", [])):
         try:
