@@ -36,6 +36,9 @@ def c():
 >>> print(qml.draw(c)())
 0: ──MyTemplate(0.10,0.20)─┤  State
 
+The following classes have been ported over:
+- `qml.MottonenStatePreparation` [(#9047)](https://github.com/PennyLaneAI/pennylane/pull/9047)
+
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
