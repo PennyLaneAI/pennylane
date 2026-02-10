@@ -22,9 +22,10 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
     """Mark a location in a compilation pipeline for easy access with inspection utilities.
 
     Args:
-        obj (QNode | None): The QNode containing the compilation pipeline to be marked.
-            If not provided, the function is assumed to used as a decorator.
-        level (str | None): The label for the level in the compilation pipeline to mark.
+        obj (QNode | None): The ``QNode`` containing the compilation pipeline to be marked.
+            If ``None``, this function acts as a decorator for a ``QNode``.
+        level (str | None): A descriptive label for this specific stage in the compilation process. Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of this argument.
+
 
     Returns:
         QNode | Callable:
