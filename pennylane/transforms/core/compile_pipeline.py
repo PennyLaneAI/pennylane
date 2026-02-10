@@ -18,10 +18,9 @@ This module contains the ``CompilePipeline`` class.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from contextlib import contextmanager
 from copy import copy
 from functools import partial
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -167,92 +166,61 @@ class CompilePipeline:
     example, the transforms can be added together with ``+``:
 
     >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
-    >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses)
+    >>> print(pipeline)
+    CompilePipeline(
+      [0] merge_rotations(),
+      [1] cancel_inverses(recursive=True)
+    )
 
     Or multiplied by a scalar via ``*``:
+
     >>> pipeline += 2 * qml.transforms.commute_controlled
-    >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+    >>> print(pipeline)
+    CompilePipeline(
+      [0] merge_rotations(),
+      [1] cancel_inverses(recursive=True),
+      [2] commute_controlled(),
+      [3] commute_controlled()
+    )
 
     A compilation pipeline can also be easily modified using operations similar to Python lists, including
     ``insert``, ``append``, ``extend`` and ``pop``:
 
     >>> pipeline.insert(0, qml.transforms.remove_barrier)
-    >>> pipeline
-    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+    >>> print(pipeline)
+    CompilePipeline(
+      [0] remove_barrier(),
+      [1] merge_rotations(),
+      [2] cancel_inverses(recursive=True),
+      [3] commute_controlled(),
+      [4] commute_controlled()
+    )
 
     Additionally, multiple compilation pipelines can be concatenated:
 
-    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
-    >>> another_pipeline + pipeline
-    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
+    >>> another_pipeline = qml.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+    >>> print(another_pipeline + pipeline)
+    CompilePipeline(
+      [0] decompose(gate_set=...),
+      [1] combine_global_phases(),
+      [2] remove_barrier(),
+      [3] merge_rotations(),
+      [4] cancel_inverses(recursive=True),
+      [5] commute_controlled(),
+      [6] commute_controlled()
+    )
 
     We can create a new pipeline that will do multiple passes of the original with multiplication:
 
     >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
-    >>> 2 * original
-    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
+    >>> print(2 * original)
+    CompilePipeline(
+      [0] merge_rotations(),
+      [1] cancel_inverses(),
+      [2] merge_rotations(),
+      [3] cancel_inverses()
+    )
 
-    We can create a new pipeline that will do multiple passes of the original with multiplication:
-
-    >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
-    >>> 2 * original
-    CompilePipeline(merge_rotations, cancel_inverses, merge_rotations, cancel_inverses)
-
-    You can specify a transform program (``pipeline``) by passing these transforms to the ``CompilePipeline``
-    class. By applying the created ``pipeline`` directly on a quantum function as a decorator, the circuit will
-    be transformed with each pass within the pipeline sequentially:
-
-    .. code-block:: python
-
-        pipeline = qml.CompilePipeline(
-            qml.transforms.commute_controlled,
-            qml.transforms.cancel_inverses(recursive=True),
-            qml.transforms.merge_rotations,
-        )
-
-        @pipeline
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit(x, y):
-            qml.CNOT([1, 0])
-            qml.X(0)
-            qml.CNOT([1, 0])
-            qml.H(0)
-            qml.H(0)
-            qml.X(0)
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=0)
-            return qml.expval(qml.Z(1))
-
-    >>> print(qml.draw(circuit)(0.1, 0.2))
-    0: ──RX(0.30)─┤
-    1: ───────────┤  <Z>
-
-    Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
-    example, the transforms can be added toguether with ``+``:
-
-    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
-    >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses)
-
-    Or multiplied by a scalar via ``*``:
-    >>> pipeline += 2 * qml.transforms.commute_controlled
-    >>> pipeline
-    CompilePipeline(merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
-
-    A compilation pipeline can also be easily modified using operations similar to Python lists, including
-    ``insert``, ``append``, ``extend`` and ``pop``:
-
-    >>> pipeline.insert(0, qml.transforms.remove_barrier)
-    >>> pipeline
-    CompilePipeline(remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
-
-    Additionally, multiple compilation pipelines can be concatenated:
-
-    >>> another_pipeline = qml.transforms.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
-    >>> another_pipeline + pipeline
-    CompilePipeline(decompose, combine_global_phases, remove_barrier, merge_rotations, cancel_inverses, commute_controlled, commute_controlled)
     """
 
     @overload
@@ -321,7 +289,6 @@ class CompilePipeline:
         return bool(self._compile_pipeline)
 
     def __add__(self, other: CompilePipeline | BoundTransform | Transform) -> CompilePipeline:
-
         # Convert dispatcher to container if needed
         if isinstance(other, Transform):
             other = BoundTransform(other)
@@ -339,8 +306,7 @@ class CompilePipeline:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
             transforms = self._compile_pipeline[:]
-            with _exclude_terminal_transform(transforms):
-                transforms.extend(other._compile_pipeline)
+            transforms.extend(other._compile_pipeline)
 
             cotransform_cache = None
             if self.cotransform_cache:
@@ -400,8 +366,7 @@ class CompilePipeline:
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
 
-            with _exclude_terminal_transform(self._compile_pipeline):
-                self._compile_pipeline.extend(other._compile_pipeline)
+            self._compile_pipeline.extend(other._compile_pipeline)
 
             if other.cotransform_cache:
                 if self.cotransform_cache:
@@ -436,11 +401,44 @@ class CompilePipeline:
 
     __rmul__ = __mul__
 
-    def __repr__(self):
-        """The string representation of the compile pipeline class."""
-        gen = (f"{t.tape_transform.__name__ if t.tape_transform else t.pass_name}" for t in self)
-        contents = ", ".join(gen)
-        return f"CompilePipeline({contents})"
+    def _ipython_display_(self):
+        """Displays __str__ in ipython instead of __repr__"""
+        # See https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
+        print(str(self))
+
+    def __str__(self) -> str:
+        """Returns a user friendly representation of the compile pipeline."""
+        if not self:
+            return "CompilePipeline()"
+
+        def truncate(val: Any) -> str:
+            _CHAR_THRESHOLD = 50
+            val_str = str(val)
+            return "..." if len(val_str) > _CHAR_THRESHOLD else val_str
+
+        lines = []
+        for i, transform in enumerate(self):
+            args_str = ", ".join(truncate(a) for a in transform.args)
+            kwargs_str = ", ".join(f"{k}={truncate(v)}" for k, v in transform.kwargs.items())
+
+            sep = ", " if args_str and kwargs_str else ""
+            transform_str = f"{transform.tape_transform.__name__}({args_str}{sep}{kwargs_str})"
+            lines.append(f"  [{i}] {transform_str}")
+
+        contents = ",\n".join(lines)
+        return f"CompilePipeline(\n{contents}\n)"
+
+    def __repr__(self) -> str:
+        """The detailed string representation of the compile pipeline."""
+        if not self:
+            return "CompilePipeline()"
+
+        lines = []
+        for i, transform in enumerate(self):
+            lines.append(f"  [{i}] {repr(transform)}")
+
+        contents = ",\n".join(lines)
+        return f"CompilePipeline(\n{contents}\n)"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, CompilePipeline):
@@ -497,10 +495,9 @@ class CompilePipeline:
         if self.has_final_transform and transform.is_final_transform:
             raise TransformError("The compile pipeline already has a terminal transform.")
 
-        with _exclude_terminal_transform(self._compile_pipeline):
-            if expand_transform := transform.expand_transform:
-                self._compile_pipeline.append(expand_transform)
-            self._compile_pipeline.append(transform)
+        if expand_transform := transform.expand_transform:
+            self._compile_pipeline.append(expand_transform)
+        self._compile_pipeline.append(transform)
 
     def extend(self, transforms: CompilePipeline | Sequence[BoundTransform | Transform]):
         """Extend the pipeline by appending transforms from an iterable.
@@ -578,12 +575,12 @@ class CompilePipeline:
         Returns:
             bool: Boolean
         """
-        return self[-1].is_informative if self else False
+        return any(t.is_informative for t in self)
 
     @property
     def has_final_transform(self) -> bool:
         """``True`` if the compile pipeline has a terminal transform."""
-        return self[-1].is_final_transform if self else False  # pylint: disable=no-member
+        return any(t.is_final_transform for t in self)
 
     def has_classical_cotransform(self) -> bool:
         """Check if the compile pipeline has some classical cotransforms.
@@ -736,17 +733,6 @@ def _apply_to_program(obj: CompilePipeline, transform, *targs, **tkwargs):
     program = copy(obj)
     program.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
     return program
-
-
-@contextmanager
-def _exclude_terminal_transform(transforms: list[BoundTransform]):
-    terminal_transforms = []
-    if transforms and transforms[-1].is_final_transform:
-        terminal_transforms.append(transforms.pop())
-        if transforms and terminal_transforms[0].expand_transform == transforms[-1]:
-            terminal_transforms.insert(0, transforms.pop())
-    yield
-    transforms.extend(terminal_transforms)
 
 
 TransformProgram = CompilePipeline

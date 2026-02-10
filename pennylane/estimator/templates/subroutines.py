@@ -17,6 +17,7 @@ import math
 from collections import defaultdict
 
 import pennylane.estimator as qre
+from pennylane import math as pl_math
 from pennylane import numpy as qnp
 from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
@@ -245,6 +246,183 @@ class IQP(ResourceOperator):
     def tracking_name(num_wires, pattern, spin_sym) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"IQP({num_wires}, {pattern}, {spin_sym})"
+
+
+class SelectOnlyQRAM(ResourceOperator):
+    r"""Resource class for SelectOnlyQRAM.
+
+    Args:
+        data (TensorLike | Sequence[str]):
+            The classical memory array to retrieve values from.
+        num_wires (int):
+            The number of qubits the operation acts upon.
+        num_control_wires (int):
+            The number of ``control_wires``.
+        num_select_wires (int):
+            The number of ``select_wires``.
+        control_wires (WiresLike, optional):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike, optional):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        select_wires (WiresLike, optional):
+            Wires used to perform the selection.
+        select_value (int, optional):
+            If provided, only entries whose select bits match this value are loaded.
+            The ``select_value`` must be an integer in :math:`[0, 2^{\texttt{len(select_wires)}}]`,
+            and cannot be used if no ``select_wires`` are provided.
+
+    Raises:
+        ValueError: if the number of wires provided does not match ``num_wires``
+
+    Resources:
+        The resources are obtained from the SelectOnlyQRAM implementation in PennyLane.
+
+    .. seealso:: :class:`~.SelectOnlyQRAM`
+    """
+
+    resource_keys = {
+        "data",
+        "num_control_wires",
+        "select_value",
+        "num_select_wires",
+    }
+
+    def __init__(
+        self,
+        data,
+        num_wires,
+        num_control_wires,
+        num_select_wires,
+        control_wires=None,
+        target_wires=None,
+        select_wires=None,
+        select_value=None,
+    ):
+        all_wires = None
+        if control_wires and target_wires and select_wires:
+            all_wires = list(control_wires) + list(target_wires) + list(select_wires)
+            if len(all_wires) != num_wires:
+                raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
+
+        if isinstance(data, (list, tuple)):
+            data = pl_math.array(data)
+        if isinstance(data[0], str):
+            data = pl_math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
+        self.data = data
+
+        self.num_wires = num_wires
+        self.select_value = select_value
+        self.num_control_wires = num_control_wires
+        self.num_select_wires = num_select_wires
+        super().__init__(wires=all_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * data (TensorLike | Sequence[str]): the classical memory array to retrieve values from
+                * num_wires (int): the number of qubits the operation acts upon
+                * select_value (int or None): if provided, only entries whose select bits match this value are loaded
+                * num_select_wires (int): the number of ``select_wires``
+                * num_control_wires (int): the number of ``control_wires``
+        """
+        return {
+            "data": self.data,
+            "num_wires": self.num_wires,
+            "select_value": self.select_value,
+            "num_select_wires": self.num_select_wires,
+            "num_control_wires": self.num_control_wires,
+        }
+
+    @classmethod
+    def resource_rep(cls, data, num_wires, select_value, num_select_wires, num_control_wires):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            data (TensorLike | Sequence[str]): the classical memory array to retrieve values from
+            num_wires (int): the number of qubits the operation acts upon
+            select_value (int or None): if provided, only entries whose select bits match this value are loaded
+            num_select_wires (int): the number of ``select_wires``
+            num_control_wires (int): the number of ``control_wires``
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "data": data,
+            "num_wires": num_wires,
+            "select_value": select_value,
+            "num_select_wires": num_select_wires,
+            "num_control_wires": num_control_wires,
+        }
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(cls, data, num_wires, select_value, num_select_wires, num_control_wires):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            data (TensorLike | Sequence[str]): the classical memory array to retrieve values from
+            num_wires (int): the number of qubits the operation acts upon
+            select_value (int or None): if provided, only entries whose select bits match this value are loaded
+            num_select_wires (int): the number of ``select_wires``
+            num_control_wires (int): the number of ``control_wires``
+
+        Resources:
+            The resources are obtained from the SelectOnlyQRAM implementation in PennyLane.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears in the decomposition.
+        """
+        n_total = num_control_wires + num_select_wires
+
+        basis_embedding = resource_rep(qre.BasisEmbedding, {"num_wires": num_select_wires})
+        paulix = resource_rep(qre.X)
+        mcx = qre.Controlled.resource_rep(resource_rep(qre.X), n_total, 0)
+
+        basis_embedding_count = 0
+        if select_value is not None and num_select_wires > 0:
+            basis_embedding_count = 1
+
+        mcx_count = 0
+        paulix_count = 0
+
+        for addr, bits in enumerate(data):
+            if (
+                select_value is not None
+                and num_select_wires > 0
+                and (addr >> num_control_wires) != select_value
+            ):
+                continue
+
+            control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
+            paulix_count += control_values.count(0) * 2
+
+            for j in range(data.shape[1]):
+                if bits[j] == 1:
+                    mcx_count += 1
+
+        ret = []
+        if paulix_count > 0:
+            ret.append(GateCount(paulix, paulix_count))
+        if mcx_count > 0:
+            ret.append(GateCount(mcx, mcx_count))
+        if basis_embedding_count > 0:
+            ret.append(GateCount(basis_embedding, basis_embedding_count))
+
+        return ret
+
+    @staticmethod
+    def tracking_name(data, num_wires, select_value, num_select_wires, num_control_wires) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"SelectOnlyQRAM({data}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
 
 
 class PhaseGradient(ResourceOperator):
@@ -1814,6 +1992,198 @@ class BasisRotation(ResourceOperator):
     def tracking_name(dim) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"BasisRotation({dim})"
+
+
+class HybridQRAM(ResourceOperator):
+    r"""Resource class for HybridQRAM.
+
+    Args:
+        data (TensorLike | Sequence[str]):
+            The classical memory to retrieve values from.
+        num_wires (int):
+            The number of qubits the operation acts upon.
+        num_select_wires (int):
+            The number of "select" bits taken from ``control_wires``.
+        num_control_wires (int):
+            The number of ``control_wires`` including select and tree control wires.
+        control_wires (WiresLike):
+            The register that stores the index for the entry of the classical data we want to
+            access.
+        target_wires (WiresLike):
+            The register in which the classical data gets loaded. The size of this register must
+            equal each bitstring length in ``bitstrings``.
+        work_wires (WiresLike):
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
+            ``target_wires`` register. The ``work_wires`` register includes the signal, bus,
+            direction, left port and right port wires in that order for a tree of depth
+            :math:`(n-k)`. For more details, consult
+            `section 3 of arXiv:2306.03242 <https://arxiv.org/abs/2306.03242>`__.
+
+    Raises:
+        ValueError: if the number of wires provided does not match ``num_wires``
+
+    Resources:
+        The resources are obtained from the HybridQRAM implementation in PennyLane. Please find more
+        details about the algorithm in `Systems Architecture for Quantum Random Access Memory <https://arxiv.org/abs/2306.03242>`_.
+
+    .. seealso:: :class:`~.HybridQRAM`
+    """
+
+    resource_keys = {"data", "num_target_wires", "num_select_wires", "num_control_wires"}
+
+    def __init__(
+        self,
+        data,
+        num_wires,
+        num_select_wires,
+        num_control_wires,
+        control_wires=None,
+        target_wires=None,
+        work_wires=None,
+    ):
+        all_wires = None
+        if control_wires and target_wires and work_wires:
+            all_wires = list(control_wires) + list(target_wires) + list(work_wires)
+            assert num_control_wires == len(control_wires)
+            if len(all_wires) != num_wires:
+                raise ValueError(f"Expected {num_wires} wires, got {len(all_wires)}.")
+
+        if isinstance(data, (list, tuple)):
+            data = pl_math.array(data)
+        if isinstance(data[0], str):
+            data = pl_math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
+        self.data = data
+
+        self.num_wires = num_wires
+        self.num_select_wires = num_select_wires
+        self.num_control_wires = num_control_wires
+        super().__init__(wires=all_wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters.
+                * data (TensorLike | Sequence[str]): the classical memory to retrieve values from
+                * num_wires (int): the number of qubits the operation acts upon
+                * num_select_wires (int): the number of select wires
+                * num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
+        """
+        return {
+            "data": self.data,
+            "num_wires": self.num_wires,
+            "num_select_wires": self.num_select_wires,
+            "num_tree_control_wires": self.num_control_wires - self.num_select_wires,
+        }
+
+    @classmethod
+    def resource_rep(cls, data, num_wires, num_select_wires, num_tree_control_wires):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            data (TensorLike | Sequence[str]): the classical memory to retrieve values from
+            num_wires (int): the number of qubits the operation acts upon
+            num_select_wires (int): the number of select wires
+            num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+        """
+        params = {
+            "data": data,
+            "num_wires": num_wires,
+            "num_select_wires": num_select_wires,
+            "num_tree_control_wires": num_tree_control_wires,
+        }
+        return CompressedResourceOp(cls, num_wires, params)
+
+    @classmethod
+    def resource_decomp(cls, data, num_wires, num_select_wires, num_tree_control_wires):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            data (TensorLike | Sequence[str]): the classical memory to retrieve values from
+            num_wires (int): the number of qubits the operation acts upon
+            num_select_wires (int): the number of select wires
+            num_tree_control_wires (int): the number of ``work_wires`` minus the number of select wires
+
+        Resources:
+            The resources are obtained from the HybridQRAM implementation in PennyLane. Please find more
+            details about the algorithm in `Systems Architecture for Quantum Random Access Memory <https://arxiv.org/abs/2306.03242>`_.
+
+        Returns:
+            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+                represents a specific quantum gate and the number of times it appears in the decomposition.
+        """
+        num_blocks = 1 << num_select_wires
+        num_target_wires = data.shape[1]
+
+        paulix = resource_rep(qre.X)
+        cnot = resource_rep(qre.CNOT)
+        cswap_one = resource_rep(qre.CSWAP)
+        cswap_zero = qre.Controlled.resource_rep(resource_rep(qre.SWAP), 1, 1)
+        ccswap_zero = qre.Controlled.resource_rep(cswap_zero, 1, 0)
+        ccswap_one = qre.Controlled.resource_rep(cswap_one, 1, 0)
+        ch = qre.Controlled.resource_rep(resource_rep(qre.Hadamard), 1, 0)
+        cz = qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0)
+
+        paulix_counts = (num_select_wires <= 0) * num_blocks * 2
+        cswap_counts = (
+            (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
+        ) * num_blocks
+        ccswap_count = (
+            (
+                ((1 << num_tree_control_wires) - 1 - num_tree_control_wires)
+                + ((1 << num_tree_control_wires) - 1) * num_target_wires
+            )
+            * num_blocks
+            * 2
+        )
+        ch_count = num_target_wires * num_blocks * 2
+
+        cnot_count = 0
+        cz_count = 0
+        cnot_zeroes = defaultdict(int)
+
+        for block_index in range(num_blocks):
+            zero_control_values = [
+                (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
+            ].count(0)
+            if zero_control_values == 0:
+                cnot_count += (num_select_wires > 0) * 2
+            else:
+                cnot_zeroes[
+                    qre.Controlled.resource_rep(
+                        resource_rep(qre.X), num_select_wires, zero_control_values
+                    )
+                ] += (num_select_wires > 0) * 2
+
+        cz_count = int(pl_math.sum(data))
+
+        ret = [
+            GateCount(cswap_one, cswap_counts),
+            GateCount(ccswap_zero, ccswap_count),
+            GateCount(ccswap_one, ccswap_count),
+            GateCount(ch, ch_count),
+            GateCount(cz, cz_count),
+        ]
+
+        for rep, count in cnot_zeroes.items():
+            ret.append(GateCount(rep, count))
+        if cnot_count != 0:
+            ret.append(GateCount(cnot, cnot_count))
+        if paulix_counts != 0:
+            ret.append(GateCount(paulix, paulix_counts))
+
+        return ret
+
+    @staticmethod
+    def tracking_name(data, num_wires, num_select_wires, num_tree_control_wires) -> str:
+        r"""Returns the tracking name built with the operator's parameters."""
+        return f"HybridQRAM({data}, {num_wires}, {num_select_wires}, {num_tree_control_wires})"
 
 
 class BBQRAM(ResourceOperator):

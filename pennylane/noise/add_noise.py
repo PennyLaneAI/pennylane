@@ -138,39 +138,107 @@ def add_noise(tape, noise_model, level="user"):
 
             noisy_circuit = qml.noise.add_noise(circuit, noise_model)
 
-        >>> qml.workflow.get_transform_program(circuit)
-        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.workflow.get_transform_program(circuit))
+         CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=Wires([0, 1])),
+          [4] metric_tensor(device_wires=Wires([0, 1])),
+          [5] defer_measurements(allow_postselect=False),
+          [6] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [7] no_sampling(name=backprop + default.mixed),
+          [8] validate_device_wires(Wires([0, 1]), name=default.mixed),
+          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [10] validate_observables(stopping_condition=..., name=default.mixed)
+        )
 
-        >>> qml.workflow.get_transform_program(noisy_circuit)
-        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, add_noise, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.workflow.get_transform_program(noisy_circuit))
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=Wires([0, 1])),
+          [4] metric_tensor(device_wires=Wires([0, 1])),
+          [5] add_noise(...),
+          [6] defer_measurements(allow_postselect=False),
+          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [8] no_sampling(name=backprop + default.mixed),
+          [9] validate_device_wires(Wires([0, 1]), name=default.mixed),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [11] validate_observables(stopping_condition=..., name=default.mixed)
+        )
 
         However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
         transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, as determined using the
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline
-        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=Wires([0, 1])),
+          [4] metric_tensor(device_wires=Wires([0, 1])),
+          [5] defer_measurements(allow_postselect=False),
+          [6] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [7] no_sampling(name=backprop + default.mixed),
+          [8] validate_device_wires(Wires([0, 1]), name=default.mixed),
+          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [10] validate_observables(stopping_condition=..., name=default.mixed),
+          [11] add_noise(..., level=device)
+        )
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
         to an empty compile pipeline, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
         end of device-specific transforms, and `"gradient"` will allow addition at the end of transforms that expand trainable operations. For example:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="top").compile_pipeline
-        CompilePipeline(add_noise)
+        >>> print(qml.noise.add_noise(circuit, noise_model, level="top").compile_pipeline)
+        CompilePipeline(
+          [0] add_noise(..., level=top)
+        )
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="user").compile_pipeline
-        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, add_noise, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.noise.add_noise(circuit, noise_model, level="user").compile_pipeline)
+         CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=Wires([0, 1])),
+          [4] metric_tensor(device_wires=Wires([0, 1])),
+          [5] add_noise(..., level=user)
+        )
 
-        >>> qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline
-        CompilePipeline(cancel_inverses, merge_rotations, undo_swaps, defer_measurements, decompose, no_sampling, validate_device_wires, validate_measurements, validate_observables, add_noise, _expand_metric_tensor, metric_tensor)
+        >>> print(qml.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=Wires([0, 1])),
+          [4] metric_tensor(device_wires=Wires([0, 1])),
+          [5] defer_measurements(allow_postselect=False),
+          [6] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [7] no_sampling(name=backprop + default.mixed),
+          [8] validate_device_wires(Wires([0, 1]), name=default.mixed),
+          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [10] validate_observables(stopping_condition=..., name=default.mixed),
+          [11] add_noise(..., level=device)
+        )
 
         Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the compile pipeline. For example, one can do:
 
-        >>> qml.noise.add_noise(circuit, noise_model, level=2).compile_pipeline
-        CompilePipeline(cancel_inverses, merge_rotations, add_noise)
+        >>> print(qml.noise.add_noise(circuit, noise_model, level=2).compile_pipeline)
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] add_noise(..., level=2)
+        )
 
-        >>> qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline
-        CompilePipeline(merge_rotations, undo_swaps, add_noise)
+        >>> print(qml.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline)
+        CompilePipeline(
+          [0] merge_rotations(),
+          [1] undo_swaps(),
+          [2] add_noise(..., level=slice(1, 3, None))
+        )
 
     """
     if not hasattr(noise_model, "model_map") or not hasattr(noise_model, "metadata"):
