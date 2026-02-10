@@ -924,7 +924,7 @@ def _bisect_compute_a(u):
         return _param_su2(ar, ai, br, bi)
 
     return math.cond(
-        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1 + 0j]]) * 2**-0.5, _compute_a, ()
+        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1]], dtype=complex) * 2**-0.5, _compute_a, ()
     )
 
 
