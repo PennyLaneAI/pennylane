@@ -177,6 +177,9 @@ class CompilePipeline:
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
 
+    .. details::
+        :title: Usage Details
+
     **Inspecting and Marking**
 
     We can inspect the pipeline by printing it,
