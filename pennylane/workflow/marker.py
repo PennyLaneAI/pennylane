@@ -36,25 +36,51 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
 
     .. code-block:: python
 
-        @qml.marker("after-cancel-inverses")
-        @qml.transforms.cancel_inverses
         @qml.marker("after-merge-rotations")
         @qml.transforms.merge_rotations
+        @qml.marker("after-cancel-inverses")
+        @qml.transforms.cancel_inverses
         @qml.marker("nothing-applied")
         @qml.qnode(qml.device("null.qubit"))
         def c():
-            return qml.state()
+            qml.RX(0.5, 0)
+            qml.H(0)
+            qml.H(0)
+            qml.RX(0.5, 0)
+            return qml.probs()
 
     >>> print(c.compile_pipeline)
     CompilePipeline(
        ├─▶ nothing-applied
-      [1] merge_rotations(),
-       ├─▶ after-merge-rotations
-      [2] cancel_inverses()
-       └─▶ after-cancel-inverses
+      [1] cancel_inverses(),
+       ├─▶ after-cancel-inverses
+      [2] merge_rotations()
+       └─▶ after-merge-rotations
     )
-    >>> print(c.markers)
-    ['nothing-applied', 'after-merge-rotations', 'after-cancel-inverses']
+    >>> print(c.compile_pipeline.markers)
+    ['nothing-applied', 'after-cancel-inverses', 'after-merge-rotations']
+
+    These markers can then be picked up by a few of our inspectibility features,
+
+    >>> print(qml.specs(c, level="after-cancel-inverses")())
+    Device: null.qubit
+    Device wires: None
+    Shots: Shots(total=None)
+    Level: after-cancel-inverses
+    <BLANKLINE>
+    Resource specifications:
+      Total wire allocations: 1
+      Total gates: 2
+      Circuit depth: 2
+    <BLANKLINE>
+      Gate types:
+        RX: 2
+    <BLANKLINE>
+      Measurements:
+        probs(all wires): 1
+
+    >>> print(qml.draw(c, level="after-merge-rotations")())
+    0: ──RX(1.00)─┤  Probs
 
     """
 
