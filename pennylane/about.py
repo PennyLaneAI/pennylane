@@ -48,9 +48,6 @@ def _pkg_location():
 
 def catalyst_version() -> str | None:
     """Get the version of the installed Catalyst package, if available."""
-    if not find_spec("catalyst"):
-        return None
-
     if find_spec("catalyst"):
         return version("pennylane_catalyst")
     return None
