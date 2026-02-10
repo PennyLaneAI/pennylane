@@ -5,6 +5,12 @@ qml.labs
 
 .. automodule:: pennylane.labs
 
+.. toctree::
+	:maxdepth: 1
+	:caption: Submodules
+
+	qml_labs_phox
+
 
 Phox IQP simulator
 -------------------
