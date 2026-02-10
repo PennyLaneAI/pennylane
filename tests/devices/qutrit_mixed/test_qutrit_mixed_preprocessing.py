@@ -26,8 +26,6 @@ from pennylane.devices.default_qutrit_mixed import (
 )
 from pennylane.exceptions import DeviceError
 
-pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
-
 
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit."""
@@ -39,6 +37,12 @@ class NoMatOp(qml.operation.Operation):
 
     def decomposition(self):
         return [qml.TShift(self.wires), qml.TClock(self.wires)]
+
+
+@qml.register_resources({qml.TShift: 1, qml.TClock: 1})
+def _no_mat_op_decomp(wires):
+    qml.TShift(wires)
+    qml.TClock(wires)
 
 
 # pylint: disable=too-few-public-methods
@@ -220,7 +224,10 @@ class TestPreprocessingIntegration:
         ]
 
         program, _ = DefaultQutritMixed().preprocess()
-        res_tapes, batch_fn = program(tapes)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NoMatOp, _no_mat_op_decomp)
+            res_tapes, batch_fn = program(tapes)
 
         expected = [qml.THadamard(0), qml.TShift(1), qml.TClock(1), qml.TRZ(0.123, wires=1)]
 
@@ -243,7 +250,11 @@ class TestPreprocessingIntegration:
         ]
 
         program = DefaultQutritMixed().preprocess_transforms()
-        res_tapes, batch_fn = program(tapes)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(NoMatOp, _no_mat_op_decomp)
+            res_tapes, batch_fn = program(tapes)
+
         expected_ops = [
             qml.THadamard(0),
             qml.TShift(1),
@@ -260,6 +271,7 @@ class TestPreprocessingIntegration:
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
         assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the batched and expanded tapes have
         unsupported operators."""
