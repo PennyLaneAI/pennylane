@@ -195,7 +195,7 @@ def qsvt(
             - ``"iterative"``: Uses Scipy (L-BFGS-B). Stable, no extra dependencies.
               Effective for polynomials of degree higher than :math:`\sim 1000`.
             - ``"iterative_optax"``: Uses JAX+Optax for optimization. Requires ``jax`` and
-              ``optax`` to be installed. x64 mode can provide higher precision and better convergence for high degree polynomials.
+              ``optax`` to be installed. x64 mode can provide higher precision and better convergence. Recommended for high-degree polynomials **when running the solver multiple times or repeatedly evaluating QNodes with different polynomials of the same degree**; may be slower for a single call due to JIT compilation overhead.
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -1429,7 +1429,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
               Effective for polynomials of degree higher than :math:`\sim 1000` for
               the ``"QSP"`` and ``"QSVT"`` routines.
             - ``"iterative_optax"``: Uses JAX+Optax. Requires ``jax`` and ``optax`` installed
-              and JAX enabled in 64-bit mode. Faster for high-degree polynomials.
+              and JAX enabled in 64-bit mode. Recommended for high-degree polynomials **when running the solver multiple times or repeatedly evaluating QNodes with different polynomials of the same degree**; may be slower for a single call due to JIT compilation overhead.
 
         **kwargs: Additional keyword arguments passed to the underlying solver.
 
