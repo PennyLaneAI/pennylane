@@ -20,6 +20,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
+from .mark import MarkedOp
 from .utils import get_spectrum, join_spectra
 
 
@@ -102,6 +103,7 @@ def circuit_spectrum(
     .. code-block:: python
 
         import pennylane as qml
+        from pennylane.fourier import mark
         import numpy as np
 
         n_layers = 2
@@ -112,9 +114,9 @@ def circuit_spectrum(
         def circuit(x, w):
             for l in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x[i], wires=i, id="x"+str(i))
+                    mark(qml.RX(x[i], wires=i), "x"+str(i))
                     qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
-            qml.RZ(x[0], wires=0, id="x0")
+            mark(qml.RZ(x[0], wires=0), "x0")
             return qml.expval(qml.Z(0))
 
         x = np.array([1, 2, 3])
@@ -123,9 +125,9 @@ def circuit_spectrum(
         res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1.00,"x0")──Rot(0.77,0.44,0.86)──RX(1.00,"x0")──Rot(0.45,0.37,0.93)──RZ(1.00,"x0")─┤  <Z>
-    1: ──RX(2.00,"x1")──Rot(0.70,0.09,0.98)──RX(2.00,"x1")──Rot(0.64,0.82,0.44)────────────────┤
-    2: ──RX(3.00,"x2")──Rot(0.76,0.79,0.13)──RX(3.00,"x2")──Rot(0.23,0.55,0.06)────────────────┤
+    0: ──RX(1.00)[x0]──Rot(0.77,0.44,0.86)──RX(1.00)[x0]──Rot(0.45,0.37,0.93)──RZ(1.00)[x0]─┤  <Z>
+    1: ──RX(2.00)[x1]──Rot(0.70,0.09,0.98)──RX(2.00)[x1]──Rot(0.64,0.82,0.44)───────────────┤
+    2: ──RX(3.00)[x2]──Rot(0.76,0.79,0.13)──RX(3.00)[x2]──Rot(0.23,0.55,0.06)───────────────┤
 
     >>> for inp, freqs in res.items():
     ...     print(f"{inp}: {freqs}")
@@ -148,9 +150,9 @@ def circuit_spectrum(
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[0], wires=0, id="x0")
-            qml.RX(x[1], wires=0, id="x1")
+            mark(qml.RX(x[0], wires=0), "x0")
+            mark(qml.PhaseShift(x[0], wires=0), "x0")
+            mark(qml.RX(x[1], wires=0), "x1")
             return qml.expval(qml.Z(0))
 
         x = np.array([1, 2])
@@ -173,8 +175,8 @@ def circuit_spectrum(
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[1], wires=0, id="x1")
+            mark(qml.RX(x[0], wires=0), "x0")
+            mark(qml.PhaseShift(x[1], wires=0), "x1")
             return qml.expval(qml.Z(0))
 
         x = torch.tensor([1, 2])
@@ -192,15 +194,20 @@ def circuit_spectrum(
         tape = tapes[0]
         freqs = {}
         for op in tape.operations:
-            id = op.id
+            # NOTE: Here for backwards compatibility remove once 'id' deprecation is complete
+            # pylint: disable=protected-access
+            if (id := op._id) is not None:
+                op = MarkedOp(op, tag=id)
 
-            # if the operator has no specific ID, move to the next
-            if id is None:
+            # If the operator is not marked, move to the next
+            if not isinstance(op, MarkedOp):
                 continue
 
-            # if user has not specified encoding_gate id's,
-            # consider any id
-            is_encoding_gate = encoding_gates is None or id in encoding_gates
+            tag = op.hyperparameters.get("tag")
+
+            # if user has not specified encoding_gate tag's,
+            # consider any tag
+            is_encoding_gate = encoding_gates is None or tag in encoding_gates
 
             if is_encoding_gate:
                 if len(op.parameters) != 1:
@@ -211,21 +218,21 @@ def circuit_spectrum(
 
                 spec = get_spectrum(op, decimals=decimals)
 
-                # if id has been seen before, join this spectrum to another one
-                if id in freqs:
-                    spec = join_spectra(freqs[id], spec)
+                # if tag has been seen before, join this spectrum to another one
+                if tag in freqs:
+                    spec = join_spectra(freqs[tag], spec)
 
-                freqs[id] = spec
+                freqs[tag] = spec
 
         # Turn spectra into sorted lists and include negative frequencies
-        for id, spec in freqs.items():
+        for tag, spec in freqs.items():
             spec = sorted(spec)
-            freqs[id] = [-f for f in spec[:0:-1]] + spec
+            freqs[tag] = [-f for f in spec[:0:-1]] + spec
 
         # Add trivial spectrum for requested gate ids that are not in the circuit
         if encoding_gates is not None:
-            for id in set(encoding_gates).difference(freqs):
-                freqs[id] = []
+            for tag in set(encoding_gates).difference(freqs):
+                freqs[tag] = []
 
         return freqs
 

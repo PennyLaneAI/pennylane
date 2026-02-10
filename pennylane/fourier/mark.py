@@ -22,9 +22,26 @@ from pennylane.ops.op_math import SymbolicOp
 class MarkedOp(SymbolicOp):
     """Creates a marked operator."""
 
+    resource_keys = {"base_class", "base_params"}
+
     def __init__(self, base: Operator, tag: str):
         super().__init__(base)
         self.hyperparameters["tag"] = tag
+
+    @property
+    def resource_params(self) -> dict:
+        return {"base_class": type(self.base), "base_params": self.base.resource_params}
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self) -> bool:
+        return self.base.has_generator
+
+    def generator(self):
+        return self.base.generator()
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return f"{self.base.label(decimals, base_label, cache)}[{self.hyperparameters['tag']}]"
 
 
 def mark(op: Operator, tag: str) -> MarkedOp:

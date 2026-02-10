@@ -26,6 +26,9 @@ class LabelledOp(SymbolicOp):
         super().__init__(base)
         self.hyperparameters["custom_label"] = custom_label
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return f"{self.base.label(decimals, base_label, cache)}[{self.hyperparameters['custom_label']}]"
+
 
 def label(op: Operator, new_label: str) -> LabelledOp:
     """Labels an operator with a custom label."""
