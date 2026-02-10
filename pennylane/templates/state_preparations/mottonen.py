@@ -14,11 +14,13 @@
 r"""
 Contains the MottonenStatePreparation template.
 """
+from functools import partial
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.templates import Subroutine
 from pennylane.typing import TensorLike
 
 
@@ -120,27 +122,16 @@ def compute_theta(alpha: TensorLike, num_qubits: int | None = None):
 
 
 def _uniform_rotation_dagger_ops(gate, alpha, control_wires, target_wire):
-    r"""Returns a list of operators that applies a uniformly-controlled rotation to the target qubit.
+    r"""Applies operators that implement a uniformly-controlled rotation to the target qubit.
 
     Args:
         gate (.Operation): gate to be applied, needs to have exactly one parameter
         alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
-
-    Returns:
-          list[.Operator]: sequence of operators defined by this function
-
     """
 
-    with qml.queuing.AnnotatedQueue() as q:
-        _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire)
-
-    if qml.queuing.QueuingManager.recording():
-        for op in q.queue:
-            qml.apply(op)
-
-    return q.queue
+    _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire)
 
 
 def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
@@ -274,7 +265,50 @@ def _get_alpha_y(a, n, k):
     return 2 * qml.math.arcsin(qml.math.sqrt(division))
 
 
-class MottonenStatePreparation(Operation):
+def setup_mottonen(state_vector, wires):
+    # check if the `state_vector` param is batched
+    batched = len(qml.math.shape(state_vector)) > 1
+
+    state_batch = state_vector if batched else [state_vector]
+
+    # apply checks to each state vector in the batch
+    for i, state in enumerate(state_batch):
+        shape = qml.math.shape(state)
+
+        if len(shape) != 1:
+            raise ValueError(
+                f"State vectors must be one-dimensional; vector {i} has shape {shape}."
+            )
+
+        n_amplitudes = shape[0]
+        if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
+            raise ValueError(
+                f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
+            )
+
+        if not qml.math.is_abstract(state):
+            norm = qml.math.sum(qml.math.abs(state) ** 2)
+            if not (qml.math.is_abstract(norm) or qml.math.allclose(norm, 1.0, atol=1e-3)):
+                raise ValueError(
+                    f"State vectors have to be of norm 1.0, vector {i} has squared norm {norm}"
+                )
+
+    return (state_vector, wires), {}
+
+
+def mottonen_decomp_resources(state_vector, wires):
+    n = 2 ** len(wires) - 1  # Equal to `sum(2**i for i in range(len(wires)))`
+
+    return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
+
+
+@partial(
+    Subroutine,
+    static_argnames=[],
+    setup_inputs=setup_mottonen,
+    compute_resources=mottonen_decomp_resources,
+)
+def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
     by `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_.
@@ -335,128 +369,38 @@ class MottonenStatePreparation(Operation):
         True
 
     """
+    if len(qml.math.shape(state_vector)) > 1:
+        raise ValueError(
+            "Broadcasting with MottonenStatePreparation is not supported. Please use the "
+            "qml.transforms.broadcast_expand transform to use broadcasting with "
+            "MottonenStatePreparation."
+        )
 
-    resource_keys = frozenset({"num_wires"})
+    a = qml.math.abs(state_vector)
+    omega = qml.math.angle(state_vector)
+    # change ordering of wires, since original code
+    # was written for IBM machines
+    wires_reverse = wires[::-1]
 
-    @property
-    def resource_params(self):
-        return {"num_wires": len(self.wires)}
+    # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
+    for k in range(len(wires_reverse), 0, -1):
+        alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
+        control = wires_reverse[k:]
+        target = wires_reverse[k - 1]
+        _uniform_rotation_dagger_ops(qml.RY, alpha_y_k, control, target)
 
-    grad_method = None
-    ndim_params = (1,)
-
-    def __init__(self, state_vector, wires, id=None):
-        # check if the `state_vector` param is batched
-        batched = len(qml.math.shape(state_vector)) > 1
-
-        state_batch = state_vector if batched else [state_vector]
-
-        # apply checks to each state vector in the batch
-        for i, state in enumerate(state_batch):
-            shape = qml.math.shape(state)
-
-            if len(shape) != 1:
-                raise ValueError(
-                    f"State vectors must be one-dimensional; vector {i} has shape {shape}."
-                )
-
-            n_amplitudes = shape[0]
-            if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
-                raise ValueError(
-                    f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
-                )
-
-            if not qml.math.is_abstract(state):
-                norm = qml.math.sum(qml.math.abs(state) ** 2)
-                if not (qml.math.is_abstract(norm) or qml.math.allclose(norm, 1.0, atol=1e-3)):
-                    raise ValueError(
-                        f"State vectors have to be of norm 1.0, vector {i} has squared norm {norm}"
-                    )
-
-        super().__init__(state_vector, wires=wires, id=id)
-
-    @property
-    def num_params(self):
-        return 1
-
-    @staticmethod
-    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-
-        .. seealso:: :meth:`~.MottonenStatePreparation.decomposition`.
-
-        Args:
-            state_vector (tensor_like): Normalized state vector of shape ``(2^len(wires),)``
-            wires (Any or Iterable[Any]): wires that the operator acts on
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-
-        **Example**
-
-        >>> state_vector = torch.tensor([0.5, 0.5, 0.5, 0.5])
-        >>> ops = qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
-        >>> from pprint import pprint
-        >>> pprint(ops)
-        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
-        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CNOT(wires=['a', 'b'])]
-
-        """
-        if len(qml.math.shape(state_vector)) > 1:
-            raise ValueError(
-                "Broadcasting with MottonenStatePreparation is not supported. Please use the "
-                "qml.transforms.broadcast_expand transform to use broadcasting with "
-                "MottonenStatePreparation."
-            )
-
-        a = qml.math.abs(state_vector)
-        omega = qml.math.angle(state_vector)
-        # change ordering of wires, since original code
-        # was written for IBM machines
-        wires_reverse = wires[::-1]
-
-        op_list = []
-
-        # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
+    # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
+    if (
+        qml.math.is_abstract(omega)
+        or qml.math.requires_grad(omega)
+        or not qml.math.allclose(omega, 0)
+    ):
         for k in range(len(wires_reverse), 0, -1):
-            alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
+            alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
             control = wires_reverse[k:]
             target = wires_reverse[k - 1]
-            op_list.extend(_uniform_rotation_dagger_ops(qml.RY, alpha_y_k, control, target))
+            if len(alpha_z_k) > 0:
+                _uniform_rotation_dagger_ops(qml.RZ, alpha_z_k, control, target)
 
-        # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
-        if (
-            qml.math.is_abstract(omega)
-            or qml.math.requires_grad(omega)
-            or not qml.math.allclose(omega, 0)
-        ):
-            for k in range(len(wires_reverse), 0, -1):
-                alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
-                control = wires_reverse[k:]
-                target = wires_reverse[k - 1]
-                if len(alpha_z_k) > 0:
-                    op_list.extend(_uniform_rotation_dagger_ops(qml.RZ, alpha_z_k, control, target))
-
-            global_phase = qml.math.sum(-1 * qml.math.angle(state_vector) / len(state_vector))
-            op_list.extend([qml.GlobalPhase(global_phase, wires=wires)])
-
-        return op_list
-
-
-def _mottonen_resources(num_wires):
-    n = 2**num_wires - 1  # Equal to `sum(2**i for i in range(num_wires))`
-
-    return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
-
-
-mottonen_decomp = qml.register_resources(
-    _mottonen_resources, MottonenStatePreparation.compute_decomposition, exact=False
-)
-
-qml.add_decomps(MottonenStatePreparation, mottonen_decomp)
+        global_phase = qml.math.sum(-1 * qml.math.angle(state_vector) / len(state_vector))
+        qml.GlobalPhase(global_phase, wires=wires)
