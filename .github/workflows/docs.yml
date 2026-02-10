@@ -28,6 +28,7 @@ on:
   # Scheduled trigger on Monday at 2:47am UTC
   schedule:
     - cron: "47 2 * * 1"
+  workflow_call:
 
 permissions: write-all
 
@@ -87,6 +88,7 @@ jobs:
           cat doc.txt
 
       - name: Upload frozen requirements
+        if: ${{ github.event_name != 'workflow_dispatch' }} 
         uses: actions/upload-artifact@v4
         with:
           name: frozen-doc
