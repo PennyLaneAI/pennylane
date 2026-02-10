@@ -96,6 +96,9 @@ class TestGateSet:
         gate_set_two = gate_set - {qml.RX}
         assert gate_set_two._gate_set == {"RZ": 1, "RY": 1, "CNOT": 1, "Hadamard": 1}
 
+        gate_set_three = gate_set - {qml.RY, qml.S}
+        assert gate_set_three._gate_set == {"RZ": 1, "RX": 1, "CNOT": 1, "Hadamard": 1}
+
     def test_gate_set_unsupported_arithmetic(self):
         """Tests that a TypeError is raised."""
 
