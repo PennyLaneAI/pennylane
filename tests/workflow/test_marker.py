@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane.transforms.core.compile_pipeline import ProtectedLevel
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
 class TestMarkerQNode:
     """Tests the integration with compile pipeline."""
 
