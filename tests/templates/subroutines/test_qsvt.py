@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
-    _cheby_pol_scipy,
+    _cheby_pol,
     _complementary_poly,
     _poly_func_scipy,
     _qsp_iterate_broadcast_scipy,
@@ -1011,7 +1011,7 @@ class TestIterativeSolver:
             np.sum(
                 np.array(
                     [
-                        2 * np.sqrt(cost_func) * abs(_cheby_pol_scipy(degree=2 * i, x=x_point))
+                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i, x=x_point))
                         for i in range(len(target_polynomial_coeffs))
                     ]
                 )
@@ -1020,7 +1020,7 @@ class TestIterativeSolver:
             else np.sum(
                 np.array(
                     [
-                        2 * np.sqrt(cost_func) * abs(_cheby_pol_scipy(degree=2 * i + 1, x=x_point))
+                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i + 1, x=x_point))
                         for i in range(len(target_polynomial_coeffs))
                     ]
                 )
@@ -1042,10 +1042,10 @@ class TestIterativeSolver:
             (-0.79500, 11),
         ],
     )
-    def test_cheby_pol_scipy(self, x, degree):
-        """Test internal function _cheby_pol_scipy"""
+    def test_cheby_pol(self, x, degree):
+        """Test internal function _cheby_pol"""
         coeffs = [0.0] * (degree) + [1.0]
-        assert np.isclose(_cheby_pol_scipy(x, degree), Chebyshev(coeffs)(x))
+        assert np.isclose(_cheby_pol(x, degree), Chebyshev(coeffs)(x))
 
     @pytest.mark.parametrize(
         "coeffs, parity, x",

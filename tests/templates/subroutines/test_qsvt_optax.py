@@ -30,7 +30,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.templates.subroutines.qsvt import (
-    _cheby_pol_optax,
+    _cheby_pol,
     _grid_pts_optax,
     _poly_func_optax,
     _qsp_iterate_broadcast_optax,
@@ -160,7 +160,7 @@ class TestOptaxInternalFunctions:
         tolerance = np.sum(
             np.array(
                 [
-                    2 * np.sqrt(cost_func) * abs(_cheby_pol_optax(degree=i, x=x_point))
+                    2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=i, x=x_point))
                     for i in range(len(target_polynomial_coeffs))
                 ]
             )

@@ -834,19 +834,6 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-def _cheby_pol_scipy(x, degree):
-    r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
-
-    Args:
-        x (float): |x| \leq 1 is point at which to evaluate cos(degree * cos(\cdot))
-        degree (int): degree of the Chebyshev polynomial
-
-    Returns:
-        float: value of cos(degree*arcos(x))
-    """
-    return math.cos(degree * math.arccos(x))
-
-
 def _poly_func_scipy(coeffs, parity, x):
     r"""Evaluate a polynomial function of a given parity expressed in the Chebyshev basis at value x
 
@@ -859,7 +846,7 @@ def _poly_func_scipy(coeffs, parity, x):
         float: \sum c_kT_{2k} if even else \sum c_kT_{2k+1} if odd where T_k(x)=cos(k \arccos(x))
     """
     ind = math.arange(len(coeffs))
-    return sum(coeffs[i] * _cheby_pol_scipy(x, degree=2 * i + parity) for i in ind)
+    return sum(coeffs[i] * _cheby_pol(x, degree=2 * i + parity) for i in ind)
 
 
 def _z_rotation_scipy(phi, interface):
@@ -886,12 +873,12 @@ def _W_of_x_scipy(x, interface):
     return math.array(
         [
             [
-                _cheby_pol_scipy(x=x, degree=1.0),
-                1j * math.sqrt(1 - _cheby_pol_scipy(x=x, degree=1.0) ** 2),
+                _cheby_pol(x=x, degree=1.0),
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
             ],
             [
-                1j * math.sqrt(1 - _cheby_pol_scipy(x=x, degree=1.0) ** 2),
-                _cheby_pol_scipy(x=x, degree=1.0),
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
+                _cheby_pol(x=x, degree=1.0),
             ],
         ],
         like=interface,
@@ -1057,7 +1044,7 @@ def _compute_qsp_angles_iteratively_scipy(poly):
 
 
 @jit_if_jax_available
-def _cheby_pol_optax(x, degree):
+def _cheby_pol(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
 
     Args:
@@ -1074,7 +1061,7 @@ def _cheby_pol_optax(x, degree):
 def _poly_func_optax(coeffs, x):
     r"""\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
     return jax.numpy.sum(
-        coeffs @ jax.vmap(_cheby_pol_optax, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
+        coeffs @ jax.vmap(_cheby_pol, in_axes=(None, 0))(x, np.arange(coeffs.shape[0]))
     )
 
 
@@ -1104,12 +1091,12 @@ def _W_of_x_optax(x, interface):
     return math.array(
         [
             [
-                _cheby_pol_optax(x=x, degree=1.0),
-                1j * math.sqrt(1 - _cheby_pol_optax(x=x, degree=1.0) ** 2),
+                _cheby_pol(x=x, degree=1.0),
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
             ],
             [
-                1j * math.sqrt(1 - _cheby_pol_optax(x=x, degree=1.0) ** 2),
-                _cheby_pol_optax(x=x, degree=1.0),
+                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
+                _cheby_pol(x=x, degree=1.0),
             ],
         ],
         like=interface,
