@@ -199,7 +199,7 @@ class CompilePipeline:
 
         CompilePipeline(
           ...
-          [index] pass_name(),
+          [level] pass_name(),
            └─▶ marker
           ...
         )
