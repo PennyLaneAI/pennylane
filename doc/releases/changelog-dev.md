@@ -413,6 +413,7 @@ def circuit():
 0: ──X─┤  Probs
 
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+  [(#9055)](https://github.com/PennyLaneAI/pennylane/pull/9055)
 
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
