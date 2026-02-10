@@ -19,7 +19,7 @@ from .qnode import QNode
 
 
 def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callable:
-    """Marks the compile pipeline of a QNode with a level label."""
+    """Mark a location in a compilation pipeline for easy access with inspection utilities."""
 
     if isinstance(obj, QNode) and level is not None:
         obj.compile_pipeline.add_marker(level)
