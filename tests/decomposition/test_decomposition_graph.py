@@ -30,8 +30,8 @@ from pennylane.decomposition import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.decomposition_graph import _to_name
-from pennylane.exceptions import DecompositionError
+from pennylane.decomposition.utils import to_name
+from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operation
 
 # pylint: disable=protected-access,no-name-in-module
@@ -70,7 +70,7 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
 @pytest.mark.unit
 @patch(
     "pennylane.decomposition.decomposition_graph.list_decomps",
-    side_effect=lambda x: decompositions[_to_name(x)],
+    side_effect=lambda x: decompositions[to_name(x)],
 )
 class TestDecompositionGraph:
     def test_weighted_graph_solve(self, _):
@@ -317,7 +317,7 @@ class TestDecompositionGraph:
 
         op = qml.Hadamard(wires=[0])
         graph = DecompositionGraph(operations=[op], gate_set={"RX", "RY", "GlobalPhase"})
-        with pytest.warns(UserWarning, match="unable to find a decomposition for {'Hadamard'}"):
+        with pytest.warns(DecompositionWarning, match="find a decomposition for {'Hadamard'}"):
             graph.solve()
 
     @pytest.mark.parametrize(

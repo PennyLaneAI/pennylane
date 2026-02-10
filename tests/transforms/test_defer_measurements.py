@@ -26,7 +26,7 @@ from device_shots_to_analytic import shots_to_analytic
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionWarning, DeviceError
 from pennylane.ops import Controlled, MeasurementValue, MidMeasure
 
 
@@ -118,7 +118,11 @@ def test_postselection_error_with_wrong_device():
             "Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
         ),
     ):
-        _ = circ()
+        if qml.decomposition.enabled_graph():
+            with pytest.warns(DecompositionWarning):
+                _ = circ()
+        else:
+            _ = circ()
 
 
 @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])

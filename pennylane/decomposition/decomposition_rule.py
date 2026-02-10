@@ -25,10 +25,10 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
 
-from pennylane.decomposition.gate_set import _to_name
 from pennylane.operation import Operator
 
 from .resources import Resources, auto_wrap
+from .utils import to_name
 
 
 @dataclass(frozen=True)
@@ -528,7 +528,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
-    _decompositions_var.get()[_to_name(op_type)].extend(decomps)
+    _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
@@ -573,7 +573,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    return _decompositions_var.get()[_to_name(op)][:]
+    return _decompositions_var.get()[to_name(op)][:]
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -595,7 +595,7 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    op_name = _to_name(op)
+    op_name = to_name(op)
     _decompositions = _decompositions_var.get()
     return op_name in _decompositions and len(_decompositions[op_name]) > 0
 

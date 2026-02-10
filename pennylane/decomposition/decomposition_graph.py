@@ -35,9 +35,8 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
-from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DecompositionError
+from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
@@ -58,9 +57,9 @@ from .symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
-from .utils import translate_op_alias
+from .utils import to_name
 
-IGNORED_UNSOLVED_OPS = {Allocate, Deallocate}
+IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
 
 
 @dataclass(frozen=True)
@@ -257,8 +256,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
         alt_decomps = alt_decomps or {}
-        self._fixed_decomps = {_to_name(k): v for k, v in fixed_decomps.items()}
-        self._alt_decomps = {_to_name(k): v for k, v in alt_decomps.items()}
+        self._fixed_decomps = {to_name(k): v for k, v in fixed_decomps.items()}
+        self._alt_decomps = {to_name(k): v for k, v in alt_decomps.items()}
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
@@ -311,8 +310,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._all_op_indices[op_node] = op_node_idx
         self._op_to_op_nodes[op].add(op_node)
 
-        if op.name in self._gate_set_weights:
-            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
+        if op in self._gate_set_weights:
+            self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
         rules = [rule for rule in self._get_decompositions(op) if rule.is_applicable(**op.params)]
@@ -321,7 +320,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if not rules and not self._strict:
             # Assign a prohibitively high cost to this operator so that nothing decomposes to
             # this op unless there is no other choice.
-            self._gate_set_weights |= GateSet({_to_name(op): math.inf})
+            self._gate_set_weights |= GateSet({to_name(op): math.inf})
             self._graph.add_edge(self._start, op_node_idx, math.inf)
             return op_node_idx
 
@@ -404,7 +403,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
-        op_name = _to_name(op)
+        op_name = to_name(op)
 
         if op_name in self._fixed_decomps:
             return [self._fixed_decomps[op_name]]
@@ -549,13 +548,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {op.name for op in unsolved_ops if op.op_type not in IGNORED_UNSOLVED_OPS}
+            op_names = {to_name(op) for op in unsolved_ops} - IGNORED_UNSOLVED_OPS
             # If unsolved operators are left after filtering for those to be ignored, warn
             if op_names:
                 warnings.warn(
                     f"The graph-based decomposition system is unable to find a decomposition for "
                     f"{op_names} to the target gate set {set(self._gate_set_weights)}.",
-                    UserWarning,
+                    DecompositionWarning,
                 )
         return DecompGraphSolution(
             visitor, self._all_op_indices, self._op_to_op_nodes, num_work_wires
@@ -743,7 +742,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
     def __init__(  # pylint: disable=too-many-arguments
         self,
         graph: rx.PyDiGraph,
-        gate_set: Mapping,
+        gate_set: GateSet,
         original_op_indices: set[int],
         num_available_work_wires: int | None = None,
         lazy: bool = True,
@@ -820,7 +819,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         target_node = self._graph[target_idx]
         if self._graph[src_idx] is None and isinstance(target_node, _OperatorNode):
             # This branch applies to operators in the target gate set.
-            weight = self._gate_weights[_to_name(target_node.op)]
+            weight = self._gate_weights[target_node.op]
             self.distances[target_idx] = Resources({target_node.op: 1}, weight)
             self.num_work_wires_used[target_idx] = 0
         elif isinstance(target_node, _DecompositionNode):
@@ -829,12 +828,3 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]
             self.num_work_wires_used[target_idx] = self.num_work_wires_used[src_idx]
-
-
-def _to_name(op):
-    if isinstance(op, type):
-        return op.__name__
-    if isinstance(op, CompressedResourceOp):
-        return op.name
-    assert isinstance(op, str)
-    return translate_op_alias(op)
