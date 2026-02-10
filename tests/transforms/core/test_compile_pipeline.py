@@ -31,6 +31,7 @@ from pennylane.transforms.core import (
 )
 from pennylane.transforms.core.compile_pipeline import (
     CotransformCache,
+    ProtectedLevel,
     _apply_postprocessing_stack,
     _batch_postprocessing,
     null_postprocessing,
@@ -1944,9 +1945,7 @@ class TestMarkers:
         with pytest.raises(ValueError, match="No marker found for level 'test'"):
             pipeline.remove_marker("test")
 
-    @pytest.mark.parametrize(
-        "protected_name", ["top", "user", "gradient", "device", "all", "all-mlir"]
-    )
+    @pytest.mark.parametrize("protected_name", [level.value for level in ProtectedLevel])
     def test_add_marker_with_protected_name(self, protected_name):
         """Test that adding a marker with a protected name raises an error."""
 

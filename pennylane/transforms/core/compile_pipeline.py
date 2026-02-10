@@ -20,6 +20,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Sequence
 from copy import copy
+from enum import StrEnum
 from functools import partial
 from typing import TYPE_CHECKING, Any, overload
 
@@ -34,6 +35,17 @@ if TYPE_CHECKING:
     import jax
 
     from pennylane.workflow import QNode
+
+
+class ProtectedLevel(StrEnum):
+    """Enum for the protected levels of inspection."""
+
+    TOP = "top"
+    USER = "user"
+    GRADIENT = "gradient"
+    DEVICE = "device"
+    ALL = "all"
+    ALL_MLIR = "all-mlir"
 
 
 def _batch_postprocessing(
@@ -630,10 +642,9 @@ class CompilePipeline:
 
     def add_marker(self, level: str) -> None:
         """Adds a mark at the current level."""
-        protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
-        if level in protected_options:
+        if level in (protected_levels := [level.value for level in ProtectedLevel]):
             raise ValueError(
-                f"Found marker for protected level '{level}'. Protected options are {protected_options}."
+                f"Found marker for protected level '{level}'. Protected options are {', '.join(protected_levels)}."
             )
         if level in self._markers:
             raise ValueError(f"Found multiple markers for level '{level}'. Markers must be unique.")

@@ -16,6 +16,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane.transforms.core.compile_pipeline import ProtectedLevel
 
 
 class TestMarkerQNode:
@@ -30,17 +31,21 @@ class TestMarkerQNode:
         ):
 
             @qml.marker(level="something")
+            @qml.transforms.merge_rotations
             @qml.marker(level="something")
             @qml.qnode(qml.device("null.qubit"))
             def c():
                 return qml.state()
 
-    def test_protected_levels(self):
+    @pytest.mark.parametrize("protected_level_str", [level.value for level in ProtectedLevel])
+    def test_protected_levels(self, protected_level_str):
         """Test an error is raised for using a protected level."""
 
-        with pytest.raises(ValueError, match="Found marker for protected level 'gradient'"):
+        with pytest.raises(
+            ValueError, match=f"Found marker for protected level '{protected_level_str}'"
+        ):
 
-            @qml.marker(level="gradient")
+            @qml.marker(level=protected_level_str)
             @qml.qnode(qml.device("null.qubit"))
             def c():
                 return qml.state()
