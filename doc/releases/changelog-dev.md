@@ -286,6 +286,9 @@ def c():
 
 <h3>Internal changes ⚙️</h3>
 
+* Added nightly sync of RC docs into the RC branch.
+  [(9031)](https://github.com/PennyLaneAI/pennylane/pull/9031)
+  
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
