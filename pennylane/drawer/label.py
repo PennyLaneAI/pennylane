@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides the circuit drawing functionality used to display circuits visually.
-
-.. currentmodule:: pennylane.drawer
-.. autosummary::
-    :toctree: api
-
+Contains the 'label' function for customizing operator labels.
 """
 
-from .draw import draw, draw_mpl
-from .label import label
-from .mpldrawer import MPLDrawer
-from .style import available_styles, use_style
-from .tape_mpl import tape_mpl
-from .tape_text import tape_text
+from pennylane.operation import Operator
+from pennylane.ops.op_math import SymbolicOp
+
+
+class LabelledOp(SymbolicOp):
+    """Creates a labelled operator."""
+
+
+def label(op: Operator, new_label: str) -> LabelledOp:
+    """Labels an operator with a custom label."""
+    return LabelledOp(op, new_label)
