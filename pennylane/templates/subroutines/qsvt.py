@@ -927,22 +927,6 @@ def _qsp_iterate_broadcast_scipy(phis, x, interface):
     return math.real(matrix_iterate[0, 0])
 
 
-def _grid_pts_scipy(degree, interface):
-    r"""Generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials
-    are evaluated and the optimization is carried defined in page 8 (https://arxiv.org/pdf/2002.11649)
-
-    Args:
-        degree (int): degree of polynomial function
-
-    Returns:
-        tensor_like: optimization grid points
-    """
-    d = (degree + 1) // 2 + (degree + 1) % 2
-    return math.array(
-        [math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], like=interface
-    )
-
-
 def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     r"""
     Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing
@@ -966,7 +950,7 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     except ModuleNotFoundError:
         from autograd import jacobian
 
-    grid_points = _grid_pts_scipy(degree, interface=interface)
+    grid_points = _grid_pts(degree, interface=interface)
 
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
     initial_guess = math.array(initial_guess, like=interface)
@@ -1138,7 +1122,7 @@ def _qsp_iterate_broadcast_optax(phis, x, interface):
     return math.real(matrix_iterate[0, 0])
 
 
-def _grid_pts_optax(degree, interface):
+def _grid_pts(degree, interface):
     r"""Generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials
     are evaluated and the optimization is carried defined in page 8 (https://arxiv.org/pdf/2002.11649)
 
@@ -1215,7 +1199,7 @@ def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e
     # pylint: disable=import-outside-toplevel,redefined-outer-name
     import jax
 
-    grid_points = _grid_pts_optax(degree, "jax")
+    grid_points = _grid_pts(degree, "jax")
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
 
     initial_guess = jax.numpy.array(initial_guess)

@@ -31,7 +31,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
-    _grid_pts_optax,
+    _grid_pts,
     _poly_func_optax,
     _qsp_iterate_broadcast_optax,
     _qsp_iterate_optax,
@@ -225,9 +225,9 @@ class TestOptaxInternalFunctions:
 
     @pytest.mark.parametrize("degree", [4, 5, 10])
     @pytest.mark.parametrize("interface", ["jax"])
-    def test_grid_pts_optax(self, degree, interface):
-        """Test internal function _grid_pts_optax"""
-        grid = _grid_pts_optax(degree, interface)
+    def test_grid_pts(self, degree, interface):
+        """Test internal function _grid_pts"""
+        grid = _grid_pts(degree, interface)
         # Grid points should be in [-1, 1]
         assert all(-1 <= x <= 1 for x in grid)
         # Grid points should have correct length: (degree + 1) // 2 + (degree + 1) % 2
