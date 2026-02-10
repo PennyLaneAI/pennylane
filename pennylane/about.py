@@ -46,6 +46,14 @@ def _pkg_location():
         return "(unknown)"
 
 
+def catalyst_version() -> str | None:
+    """Catalyst version if installed."""
+    try:
+        return str(version("pennylane_catalyst"))
+    except PackageNotFoundError:
+        return None
+
+
 def about():
     """
     Prints the information for pennylane installation.
@@ -103,6 +111,9 @@ def about():
     print(f"Numpy version:           {numpy.__version__}")
     print(f"Scipy version:           {scipy.__version__}")
     print(f"JAX version:             {jax_version}")
+
+    if version := catalyst_version():
+        print(f"Catalyst version:        {version}")
 
     print("Installed devices:")
 
