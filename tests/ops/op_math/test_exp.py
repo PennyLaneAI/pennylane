@@ -535,6 +535,7 @@ class TestDecomposition:
 
         [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
         assert len(decomp_tape) == 1
+        assert not qml.math.iscomplex(decomp_tape[0].data[0])
         actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
         expected_matrix = qml.matrix(op, wire_order=op.wires)
         assert qml.math.allclose(actual_matrix, expected_matrix)

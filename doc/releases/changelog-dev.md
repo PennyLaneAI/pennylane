@@ -47,6 +47,7 @@ def c():
 
 * New decomposition rules are added to `Evolution` and `RZ`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+  [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
 
 <h3>Improvements 🛠</h3>
 
