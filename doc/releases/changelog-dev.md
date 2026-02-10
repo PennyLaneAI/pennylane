@@ -427,6 +427,9 @@ def expval(x: float):
 
 <h3>Documentation 📝</h3>
 
+* The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
+  [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
