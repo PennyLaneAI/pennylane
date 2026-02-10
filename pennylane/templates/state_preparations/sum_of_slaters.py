@@ -300,10 +300,15 @@ def compute_sos_encoding(bits):
     the Sum of Slaters paper
     (`Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__).
     This is the major classical coprocessing required for the state preparation.
+    It maps :math:`D` different bitstrings of length :math:`r` to :math:`D` different
+    bitstrings :math:`b` of length :math:`m = \min(r, 2d-1)` where
+    :math:`d=\lceil\log_2(D)\rceil`. This enables the Sum of Slaters state preparation to achieve
+    its resource efficiency.
 
     Args:
-        bits (np.ndarray): Reduced bitstrings that are input into Lemma 1. The i-th bitstring
-            v_i is stored in the i-th column, so that the input shape is ``(r, D)``.
+        bits (np.ndarray): Bitstrings of length :math:`r` that are input into Lemma 1. The i-th
+            bitstring :math:`v_i` is stored in the :math:`i`-th column, so that for :math:`D`
+            bitstrings, the input shape is :math:`(r, D)`.
 
     Returns:
         tuple[np.ndarray]: Two bit arrays. The first is :math:`U`, which maps the input ``bits``
@@ -311,17 +316,26 @@ def compute_sos_encoding(bits):
         :math:`m=2\lceil \log_2(D)\rceil-1`. The second array are the bitstrings
         :math:`\{b_i\}` themselves, stored as columns.
 
+    .. warning::
+
+        It is recommended to first subselect bits via :func:`~.select_sos_rows` in order to
+        work with a reduced input here.
+        Furthermore, this function assumes that the bitstrings are not overly redundant, so in
+        that it might error out if ``select_sos_rows`` is not used.
+
+    .. seealso:: :func:`~.select_sos_rows`
+
     **Example**
 
     Consider an array of bits with distinct columns:
 
     >>> bits = np.array([
-    ...     [0, 1, 1, 0, 1, 0],
-    ...     [0, 0, 1, 1, 1, 0],
-    ...     [1, 1, 1, 1, 1, 1],
-    ...     [0, 0, 1, 0, 0, 0],
-    ...     [1, 1, 0, 0, 0, 0],
-    ...     [0, 0, 0, 0, 0, 1],
+    ...     [0, 1, 1, 0, 1, 0, 0],
+    ...     [0, 0, 1, 1, 1, 0, 0],
+    ...     [1, 1, 1, 1, 1, 1, 1],
+    ...     [0, 0, 1, 0, 0, 0, 1],
+    ...     [1, 1, 0, 0, 0, 0, 1],
+    ...     [0, 0, 0, 0, 0, 1, 1],
     ... ])
     >>> from pennylane.templates.state_preparations.sum_of_slaters import (
     ...     compute_sos_encoding, _columns_differ
@@ -329,7 +343,7 @@ def compute_sos_encoding(bits):
     >>> print(_columns_differ(bits))
     True
     >>> print(bits.shape)
-    (6, 6)
+    (6, 7)
 
     Our goal is to encode these bitstrings as new, distinct bitstrings of length ``m=5``:
 
@@ -349,27 +363,28 @@ def compute_sos_encoding(bits):
      [0 0 0 1 0 0]
      [0 0 0 0 1 0]]
     >>> print(b)
-    [[0 1 1 0 1 0]
-     [0 0 1 1 1 0]
-     [1 1 1 1 1 1]
-     [0 0 1 0 0 0]
-     [1 1 0 0 0 0]]
+     [[0 1 1 0 1 0 0]
+     [0 0 1 1 1 0 0]
+     [1 1 1 1 1 1 1]
+     [0 0 1 0 0 0 1]
+     [1 1 0 0 0 0 1]]
     >>> print(_columns_differ(b))
     True
 
     Note that in this particular example, we could have achieved the reduction simply by selecting
-    ``4<m`` rows of the input bits:
+    ``4<m`` rows of the input bits, still obtaining different bitstrings. There is a function
+    that does just that:
 
     >>> from pennylane.templates.state_preparations.sum_of_slaters import select_sos_rows
     >>> select_ids, sub_bits = select_sos_rows(bits)
     >>> print(sub_bits)
-    [[0 1 1 0 1 0]
-     [0 0 1 1 1 0]
-     [0 0 1 0 0 0]
-     [1 1 0 0 0 0]]
+    [[0 1 1 0 1 0 0]
+     [0 0 1 1 1 0 0]
+     [0 0 1 0 0 0 1]
+     [1 1 0 0 0 0 1]]
 
-    In practice, this sub-selection of bits is combined with ``compute_sos_encoding`` to achieve
-    lowest cost.
+    In practice, this sub-selection of bits via ``select_sos_rows`` is combined with
+    ``compute_sos_encoding`` to achieve lowest cost.
 
     .. details::
         :title: Implementation notes
@@ -383,14 +398,15 @@ def compute_sos_encoding(bits):
 
         .. math::
 
-            U(v_i-v_j)\neq 0 \forall i, j, \text{and} U(v_i)\neq 0 \forall i \text{unless} v_i=0.
+            U(v_i-v_j)\neq 0 \ \ \forall i, j, \quad\text{and}\quad
+            U(v_i)\neq 0 \ \ \forall i \quad\text{unless}\quad v_i=0.
 
         It will be instructive to rewrite this as
 
         .. math::
 
-            v_i-v_j\not\in \ker U \forall i, j, \text{and} v_i\not\in \ker U \forall i
-            \text{unless} v_i=0.   (1)
+            v_i-v_j\not\in \ker U \ \ \forall i, j, \quad\text{and}\quad
+            v_i\not\in \ker U \ \ \forall i \quad\text{unless}\quad v_i=0.\qquad(1)
 
         We will speak of :math:`U` and its matrix representation of zeros and ones interchangeably.
         Since :math:`k` bits can represent at most :math:`2^k` different bitstrings, we know that
@@ -398,30 +414,30 @@ def compute_sos_encoding(bits):
         be represented, i.e. we know that :math:`r\geq d`. We will proceed in two cases from
         here on, differentiated by :math:`r`.
 
-        **Case 1: :math:`d\leq r\leq 2d-1`**
+        **Case 1:** :math:`d\leq r\leq 2d-1`
 
         In this case, we do not really need to do anything; the bitstrings :math:`\{v_i\}` already
         have length :math:`m:=r\leq 2d-1`, so we simply set :math:`U` to be the identity map.
 
-        **Case 2: :math:`2d-1 < r`**
+        **Case 2:** :math:`2d-1 < r`
 
         Fix :math:`m=2d-1` and define :math:`t:=r-m` so that :math:`r=m+t`. According to the rank
-        theorem, any candidate linear map :math:`U` satisfies :math:`\dim \Im U + \dim \ker U=r`.
+        theorem, any candidate linear map :math:`U` satisfies :math:`\dim (\mathrm{Im} U) + \dim (\ker U)=r`.
         If we guarantee linear independence of the rows of :math:`U`, we know that
-        :math:`\dim \Im U` matches the dimensions of the target space, :math:`m`, and thus
-        :math:`\dim \ker U=r-m=t`.
+        :math:`\dim (\mathrm{Im} U)` matches the dimensions of the target space, :math:`m`, and thus
+        :math:`\dim (\ker U)=r-m=t`.
 
         Our strategy now will be to find :math:`t` linearly independent vectors :math:`\{w_k\}`
-        such that the space :math:`\mathcal{W}:=\span\{w_1, \dots w_t\}` spanned by them satisfies
+        such that the space :math:`\mathcal{W}:=\operatorname{span}\{w_1, \dots w_t\}` spanned by them satisfies
 
         .. math::
 
-            v_i-v_j\not\in \mathcal{W} \forall i, j, \text{and} v_i\not\in \mathcal{W} \forall i
-            \text{unless} v_i=0.   (2)
+            v_i-v_j\not\in \mathcal{W} \ \ \forall i, j, \quad\text{and}\quad
+            v_i\not\in \mathcal{W} \ \ \forall i \quad\text{unless}\quad v_i=0.\qquad (2)
 
         and to construct a map :math:`U` with linearly independent rows such that
-        :math:`U w_k=0 \forall k`, i.e. :math:`\mathcal{W}\subset\ker U`. Given that we know the
-        kernel dimension to be :math:`t` and :math:`\dim\mathcal{W}=t`, this implies
+        :math:`U w_k=0 \ \ \forall k`, i.e. :math:`\mathcal{W}\subset\ker U`. Given that we know the
+        kernel dimension to be :math:`t` and :math:`\dim(\mathcal{W})=t`, this implies
         :math:`\mathcal{W}=\ker U`. To see that this actually ensures :math:`U` to have the
         properties we are after, assume that :math:`U v_i=0` for some :math:`i` with
         :math:`v_i\neq 0` (or :math:`U(v_i-v_j)` for some :math:`(i,j)`). Due to
@@ -438,8 +454,8 @@ def compute_sos_encoding(bits):
         reproduce the proof of correctness from the paper. Given :math:`D` vectors :math:`\{v_i\}`
         of length :math:`r` with rank :math:`r` (there are at least :math:`r` linearly independent
         vectors), our task is to build :math:`t=r-(2\lceil \log_2 (D)\rceil -1)` linearly
-        independent vectors :math:`\{w_k\}` from the space :math:`\span\{v_i\}` such that the
-        resulting vector space :math:`\mathcal{W}=\span\{w_k\}` does not contain the
+        independent vectors :math:`\{w_k\}` from the space :math:`\operatorname{span}\{v_i\}` such that the
+        resulting vector space :math:`\mathcal{W}=\operatorname{span}\{w_k\}` does not contain the
         :math:`\{v_i\}` or their pairwise differences, see Eq.(2). If :math:`t=1`, there is a
         particularly simple method: we can brute-force a search of :math:`w_1` over
         :math:`\mathbb{Z}_2^r\setminus (\{v_i\}\cup \{v_i-v_j\})`. This is implemented
