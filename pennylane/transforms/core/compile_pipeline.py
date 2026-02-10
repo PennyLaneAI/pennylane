@@ -137,8 +137,6 @@ class CompilePipeline:
     The ``CompilePipeline`` class allows you to chain together multiple quantum function transforms
     to create custom circuit optimization pipelines.
 
-    **Constructing a Pipeline**
-
     For example, consider if you wanted to apply the following optimizations to a quantum circuit:
 
     - pushing all commuting single-qubit gates as far right as possible
@@ -191,154 +189,154 @@ class CompilePipeline:
     .. details::
         :title: Usage Details
 
-    **Inspecting and Marking**
+        **Inspecting and Marking**
 
-    We can inspect the original pipeline by printing it,
+        We can inspect the original pipeline by printing it,
 
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] commute_controlled(),
-      [2] cancel_inverses(recursive=True),
-      [3] merge_rotations()
-    )
-
-    We can add markers (that act as checkpoints) in the pipeline to mark important positions,
-
-    >>> pipeline.add_marker("final-transform")
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] commute_controlled(),
-      [2] cancel_inverses(recursive=True),
-      [3] merge_rotations()
-       └─▶ final-transform
-    )
-
-    Two different markers can be used to make the same level, causing them to stack,
-
-    >>> pipeline.add_marker("after-merge-rotations")
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] commute_controlled(),
-      [2] cancel_inverses(recursive=True),
-      [3] merge_rotations()
-       └─▶ final-transform, after-merge-rotations
-    )
-    >>> pipeline.markers
-    ['final-transform', 'after-merge-rotations']
-
-    A marker's level (the index of the transform it follows) is retrieved with,
-
-    >>> print(pipeline.get_marker_level("final-transform"))
-    3
-    >>> print(pipeline.get_marker_level("after-merge-rotations"))
-    3
-
-    Markers can be removed with,
-
-    >>> pipeline.remove_marker("final-transform")
-    >>> pipeline.markers
-    ['after-merge-rotations']
-
-    The pipeline structure and marker placement are represented as follows,
-
-    .. code-block::
-
+        >>> print(pipeline)
         CompilePipeline(
-            ├─▶ markers for level 0 (no transforms)
-           [1] transform_1(),
-            ├─▶ markers for level 1 (after 1st transform)
-           [2] transform_2(),
-           ...
-           [n] pass_name()
-            └─▶ markers for level n (after nth transforms)
+          [1] commute_controlled(),
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
         )
 
-    **Manipulating Pipelines**
+        We can add markers (that act as checkpoints) in the pipeline to mark important positions,
 
-    Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
-    example, the transforms can be added together with ``+``:
+        >>> pipeline.add_marker("final-transform")
+        >>> print(pipeline)
+        CompilePipeline(
+          [1] commute_controlled(),
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
+           └─▶ final-transform
+        )
 
-    >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] merge_rotations(),
-      [2] cancel_inverses(recursive=True)
-    )
+        Two different markers can be used to make the same level, causing them to stack,
 
-    Or multiplied by a scalar via ``*``:
+        >>> pipeline.add_marker("after-merge-rotations")
+        >>> print(pipeline)
+        CompilePipeline(
+          [1] commute_controlled(),
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
+           └─▶ final-transform, after-merge-rotations
+        )
+        >>> pipeline.markers
+        ['final-transform', 'after-merge-rotations']
 
-    >>> pipeline += 2 * qml.transforms.commute_controlled
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] merge_rotations(),
-      [2] cancel_inverses(recursive=True),
-      [3] commute_controlled(),
-      [4] commute_controlled()
-    )
+        A marker's level (the index of the transform it follows) is retrieved with,
 
-    A compilation pipeline can also be easily modified using operations similar to Python lists, including
-    ``insert``, ``append``, ``extend`` and ``pop``:
+        >>> print(pipeline.get_marker_level("final-transform"))
+        3
+        >>> print(pipeline.get_marker_level("after-merge-rotations"))
+        3
 
-    >>> pipeline.insert(0, qml.transforms.remove_barrier)
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] remove_barrier(),
-      [2] merge_rotations(),
-      [3] cancel_inverses(recursive=True),
-      [4] commute_controlled(),
-      [5] commute_controlled()
-    )
+        Markers can be removed with,
 
-    Additionally, multiple compilation pipelines can be concatenated:
+        >>> pipeline.remove_marker("final-transform")
+        >>> pipeline.markers
+        ['after-merge-rotations']
 
-    >>> another_pipeline = qml.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
-    >>> print(another_pipeline + pipeline)
-    CompilePipeline(
-      [1] decompose(gate_set=...),
-      [2] combine_global_phases(),
-      [3] remove_barrier(),
-      [4] merge_rotations(),
-      [5] cancel_inverses(recursive=True),
-      [6] commute_controlled(),
-      [7] commute_controlled()
-    )
+        The pipeline structure and marker placement are represented as follows,
 
-    We can create a new pipeline that will do multiple passes of the original with multiplication:
+        .. code-block::
 
-    >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
-    >>> print(2 * original)
-    CompilePipeline(
-      [1] merge_rotations(),
-      [2] cancel_inverses(),
-      [3] merge_rotations(),
-      [4] cancel_inverses()
-    )
+            CompilePipeline(
+                ├─▶ markers for level 0 (no transforms)
+               [1] transform_1(),
+                ├─▶ markers for level 1 (after 1st transform)
+               [2] transform_2(),
+               ...
+               [n] pass_name()
+                └─▶ markers for level n (after nth transforms)
+            )
 
-    Markers are correctly maintained after pipeline manipulations,
+        **Manipulating Pipelines**
 
-    >>> original.add_marker("test")
-    >>> original * 2
-    CompilePipeline(
-      [1] <merge_rotations()>,
-      [2] <cancel_inverses()>,
-       ├─▶ test
-      [3] <merge_rotations()>,
-      [4] <cancel_inverses()>
-    )
-    >>> original + qml.transforms.undo_swaps
-    CompilePipeline(
-      [1] <merge_rotations()>,
-      [2] <cancel_inverses()>,
-       ├─▶ test
-      [3] <undo_swaps()>
-    )
-    >>> original.pop()
-    <cancel_inverses()>
-    >>> print(original)
-    CompilePipeline(
-      [1] merge_rotations()
-       └─▶ test
-    )
+        Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
+        example, the transforms can be added together with ``+``:
+
+        >>> pipeline = qml.transforms.merge_rotations + qml.transforms.cancel_inverses(recursive=True)
+        >>> print(pipeline)
+        CompilePipeline(
+          [1] merge_rotations(),
+          [2] cancel_inverses(recursive=True)
+        )
+
+        Or multiplied by a scalar via ``*``:
+
+        >>> pipeline += 2 * qml.transforms.commute_controlled
+        >>> print(pipeline)
+        CompilePipeline(
+          [1] merge_rotations(),
+          [2] cancel_inverses(recursive=True),
+          [3] commute_controlled(),
+          [4] commute_controlled()
+        )
+
+        A compilation pipeline can also be easily modified using operations similar to Python lists, including
+        ``insert``, ``append``, ``extend`` and ``pop``:
+
+        >>> pipeline.insert(0, qml.transforms.remove_barrier)
+        >>> print(pipeline)
+        CompilePipeline(
+          [1] remove_barrier(),
+          [2] merge_rotations(),
+          [3] cancel_inverses(recursive=True),
+          [4] commute_controlled(),
+          [5] commute_controlled()
+        )
+
+        Additionally, multiple compilation pipelines can be concatenated:
+
+        >>> another_pipeline = qml.decompose(gate_set={qml.RX, qml.RZ, qml.CNOT}) + qml.transforms.combine_global_phases
+        >>> print(another_pipeline + pipeline)
+        CompilePipeline(
+          [1] decompose(gate_set=...),
+          [2] combine_global_phases(),
+          [3] remove_barrier(),
+          [4] merge_rotations(),
+          [5] cancel_inverses(recursive=True),
+          [6] commute_controlled(),
+          [7] commute_controlled()
+        )
+
+        We can create a new pipeline that will do multiple passes of the original with multiplication:
+
+        >>> original = qml.transforms.merge_rotations + qml.transforms.cancel_inverses
+        >>> print(2 * original)
+        CompilePipeline(
+          [1] merge_rotations(),
+          [2] cancel_inverses(),
+          [3] merge_rotations(),
+          [4] cancel_inverses()
+        )
+
+        Markers are correctly maintained after pipeline manipulations,
+
+        >>> original.add_marker("test")
+        >>> original * 2
+        CompilePipeline(
+          [1] <merge_rotations()>,
+          [2] <cancel_inverses()>,
+           ├─▶ test
+          [3] <merge_rotations()>,
+          [4] <cancel_inverses()>
+        )
+        >>> original + qml.transforms.undo_swaps
+        CompilePipeline(
+          [1] <merge_rotations()>,
+          [2] <cancel_inverses()>,
+           ├─▶ test
+          [3] <undo_swaps()>
+        )
+        >>> original.pop()
+        <cancel_inverses()>
+        >>> print(original)
+        CompilePipeline(
+          [1] merge_rotations()
+           └─▶ test
+        )
 
     """
 
