@@ -273,6 +273,25 @@ class TestPauliRotationDecomposition:
                 work_wires=work_wires,
             )
 
+    def test_IsingXY_not_supported(self):
+        """Test that an error is raised when phg wires are fewer than angle wires"""
+
+        circ = qp.tape.QuantumScript([qp.IsingXY(0.5, [0, 1])])
+
+        angle_wires = qp.wires.Wires([f"angle_{i}" for i in range(3)])
+        phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(3)])
+        work_wires = qp.wires.Wires([f"work_{i}" for i in range(2)])
+
+        with pytest.raises(
+            TypeError, match="IsingXY currently not supported by rot_to_phase_gradient transform"
+        ):
+            _ = rot_to_phase_gradient(
+                circ,
+                angle_wires=angle_wires,
+                phase_grad_wires=phase_grad_wires,
+                work_wires=work_wires,
+            )
+
     @pytest.mark.parametrize(
         "RGate",
         [
@@ -325,8 +344,13 @@ class TestPauliRotationDecomposition:
         "RGate",
         [
             qp.MultiRZ,
-            partial(qp.PauliRot, pauli_word="ZZZ"),
-            partial(qp.PauliRot, pauli_word="XYZ"),
+            partial(qp.PauliRot, pauli_word="ZZ"),
+            partial(qp.PauliRot, pauli_word="XY"),
+            partial(qp.PauliRot, pauli_word="ZX"),
+            qp.IsingXX,
+            # qp.IsingXY, # not supported atm
+            qp.IsingYY,
+            qp.IsingZZ,
         ],
     )
     @pytest.mark.parametrize(
@@ -343,7 +367,7 @@ class TestPauliRotationDecomposition:
         # This test applies a random state to the unitary circuit and compares the result with the expected result
 
         precision = 2  # otherwise becomes too large
-        wires = [f"targ{i}" for i in range(3)]
+        wires = [f"targ{i}" for i in range(2)]
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(precision)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(precision)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(precision - 1)])

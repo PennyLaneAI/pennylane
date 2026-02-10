@@ -287,32 +287,16 @@ def rot_to_phase_gradient(
                 )
             )
 
-        elif isinstance(op, qp.PauliRot):
-            wires = op.wires
-            phi = op.parameters[0]
-            global_phases.append(phi / 2)
-
-            # collect diagonalizing gates of each wire
-            # this turns any rotation to MultiRZ
-            diagonalizing_gates = []
-            for sub_op in op.decomposition():
-                if isinstance(sub_op, qp.MultiRZ):
-                    break
-                diagonalizing_gates.append(sub_op)
-            diagonalizing_gate = fanout(wires) @ qp.prod(*diagonalizing_gates[::-1])
-
-            operations.append(
-                qp.change_op_basis(
-                    diagonalizing_gate,
-                    _rz_phase_gradient(
-                        phi,
-                        wires[:1],
-                        angle_wires=angle_wires,
-                        phase_grad_wires=phase_grad_wires,
-                        work_wires=work_wires,
-                    ),
-                )
+        elif isinstance(op, (qp.PauliRot, qp.IsingXX, qp.IsingYY, qp.IsingZZ)):
+            new_op, global_phase = _pauli_rot_phase_gradient(
+                op, angle_wires, phase_grad_wires, work_wires
             )
+
+            operations.append(new_op)
+            global_phases.append(global_phase)
+
+        elif isinstance(op, qp.IsingXY):
+            raise TypeError("IsingXY currently not supported by rot_to_phase_gradient transform")
 
         else:
             operations.append(op)
@@ -327,3 +311,34 @@ def rot_to_phase_gradient(
         return results[0]
 
     return [new_tape], null_postprocessing
+
+
+def _pauli_rot_phase_gradient(op, angle_wires, phase_grad_wires, work_wires):
+    wires = op.wires
+    phi = op.parameters[0]
+    if isinstance(op, (qp.IsingXX, qp.IsingYY, qp.IsingZZ)):
+        with QueuingManager.stop_recording():
+            pauli_word = op.name[-2:]
+            op = qp.PauliRot(phi, pauli_word=pauli_word, wires=wires)
+
+    # collect diagonalizing gates of each wire
+    # this turns any rotation to MultiRZ
+    diagonalizing_gates = []
+    for sub_op in op.decomposition():
+        if isinstance(sub_op, qp.MultiRZ):
+            break
+        diagonalizing_gates.append(sub_op)
+    diagonalizing_gate = fanout(wires) @ qp.prod(*diagonalizing_gates[::-1])
+
+    new_op = qp.change_op_basis(
+        diagonalizing_gate,
+        _rz_phase_gradient(
+            phi,
+            wires[:1],
+            angle_wires=angle_wires,
+            phase_grad_wires=phase_grad_wires,
+            work_wires=work_wires,
+        ),
+    )
+
+    return new_op, phi / 2  # op to be appended, global phase
