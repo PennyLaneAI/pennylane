@@ -196,9 +196,10 @@ class CompilePipeline:
     >>> pipeline.markers
     []
 
-    As can be seen above, the pipeline is visualizally organized as follows,
+    As can be seen above, the pipeline is visually organized as follows,
 
     .. code-block::
+
         CompilePipeline(
             ├─▶ Optional[markers] # optional marker for level=0
            [1] pass_name(),
