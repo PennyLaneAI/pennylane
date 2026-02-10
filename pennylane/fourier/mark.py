@@ -22,6 +22,10 @@ from pennylane.ops.op_math import SymbolicOp
 class MarkedOp(SymbolicOp):
     """Creates a marked operator."""
 
+    def __init__(self, base: Operator, tag: str):
+        super().__init__(base)
+        self.hyperparameters["tag"] = tag
+
 
 def mark(op: Operator, tag: str) -> MarkedOp:
     """Marks an operator with a custom tag."""

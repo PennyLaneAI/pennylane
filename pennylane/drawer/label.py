@@ -22,6 +22,10 @@ from pennylane.ops.op_math import SymbolicOp
 class LabelledOp(SymbolicOp):
     """Creates a labelled operator."""
 
+    def __init__(self, base: Operator, custom_label: str):
+        super().__init__(base)
+        self.hyperparameters["custom_label"] = custom_label
+
 
 def label(op: Operator, new_label: str) -> LabelledOp:
     """Labels an operator with a custom label."""
