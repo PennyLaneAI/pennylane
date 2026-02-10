@@ -137,6 +137,8 @@ class CompilePipeline:
     The ``CompilePipeline`` class allows you to chain together multiple quantum function transforms
     to create custom circuit optimization pipelines.
 
+    **Constructing a Pipeline**
+
     For example, consider if you wanted to apply the following optimizations to a quantum circuit:
 
     - pushing all commuting single-qubit gates as far right as possible
@@ -174,6 +176,8 @@ class CompilePipeline:
     >>> print(qml.draw(circuit)(0.1, 0.2))
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
+
+    **Inspecting and Marking**
 
     We can inspect the pipeline by printing it,
 
@@ -222,7 +226,7 @@ class CompilePipeline:
             └─▶ markers for level n (after nth transforms)
         )
 
-    where each transform corresponds to a ``level`` indicated by the ``[X]``.
+    **Manipulating Pipelines**
 
     Alternatively, the transform program can be constructed intuitively by combining multiple transforms. For
     example, the transforms can be added together with ``+``:
