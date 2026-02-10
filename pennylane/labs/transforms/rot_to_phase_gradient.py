@@ -21,8 +21,6 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-
-# from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -40,12 +38,6 @@ def _binary_repr_int(phi, precision):
     return bin(int(np.floor(phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
 
 
-def _binary_repr_int2(phi, precision):
-    phi = phi % (2 * np.pi)
-    phi_round = np.round(2**precision * phi / (2 * np.pi))
-    return int(bin(int(np.floor(phi_round + 1e-10)))[-precision:], 2)
-
-
 @QueuingManager.stop_recording()
 def _rz_phase_gradient(
     phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
@@ -54,7 +46,9 @@ def _rz_phase_gradient(
     The precision is implicitly defined by the length of ``angle_wires``
     Note that the global phases are collected and added as one big global phase in the main function
     """
-    # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient without the need to collect global phases, as done in
+    # variation of pennylane.transforms.rz_phase_gradient._rz_phase_gradient
+    # adapted to the slightly different _binary_repr_int from
+    # pennylane.labs.transforms.select_pauli_rot_phase_gradient
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary

@@ -20,8 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.labs.transforms.rot_to_phase_gradient import _binary_repr_int
 from pennylane.labs.transforms.select_pauli_rot_phase_gradient import (
-    _binary_repr_int,
     _select_pauli_rot_phase_gradient,
     select_pauli_rot_phase_gradient,
 )
