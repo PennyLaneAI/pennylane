@@ -577,7 +577,6 @@ class Device(abc.ABC):
         program.add_transform(broadcast_expand)
 
         # Handle validations
-        print(self.name)
         program.add_transform(validate_device_wires, self.wires, name=self.name)
         program.add_transform(
             validate_measurements,
