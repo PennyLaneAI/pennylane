@@ -458,6 +458,9 @@ def expval(x: float):
 * Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
 
+* Fixes unnecessary classical registers from being created when using `qml.to_openqasm` and `measure_all=False`.
+  [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -470,5 +473,6 @@ Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
 Jay Soni,
+Nate Stemen,
 David Wierichs,
 Jake Zaia.
