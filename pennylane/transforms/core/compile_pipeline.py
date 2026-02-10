@@ -180,7 +180,7 @@ class CompilePipeline:
       [1] commute_controlled(),
       [2] cancel_inverses(recursive=True),
       [3] merge_rotations()
-       └─▶ final-transform # marker
+       └─▶ final-transform
     )
     >>> pipeline.markers
     ['final-transform']
