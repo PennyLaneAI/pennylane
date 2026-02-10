@@ -19,7 +19,33 @@ from .qnode import QNode
 
 
 def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callable:
-    """Mark a location in a compilation pipeline for easy access with inspection utilities."""
+    """Mark a location in a compilation pipeline for easy access with inspection utilities.
+
+    **Example:**
+
+    .. code-block:: python
+
+        @qml.marker("after-cancel-inverses")
+        @qml.transforms.cancel_inverses
+        @qml.marker("after-merge-rotations")
+        @qml.transforms.merge_rotations
+        @qml.marker("nothing-applied")
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+    >>> print(c.compile_pipeline)
+    CompilePipeline(
+       ├─▶ nothing-applied
+      [1] merge_rotations(),
+       ├─▶ after-merge-rotations
+      [2] cancel_inverses()
+       └─▶ after-cancel-inverses
+    )
+    >>> print(c.markers)
+    ['nothing-applied', 'after-merge-rotations', 'after-cancel-inverses']
+
+    """
 
     if isinstance(obj, QNode) and level is not None:
         obj.compile_pipeline.add_marker(level)
