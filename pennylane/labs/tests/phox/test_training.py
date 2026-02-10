@@ -16,7 +16,6 @@ Tests for the Phox training module.
 """
 import jax
 import jax.numpy as jnp
-import numpy as np
 import pytest
 
 from pennylane.labs.phox.simulator_pure_functions import CircuitConfig, iqp_expval

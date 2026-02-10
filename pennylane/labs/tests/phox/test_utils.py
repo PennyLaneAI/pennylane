@@ -14,7 +14,6 @@
 """
 Tests for the Phox simulator utility functions.
 """
-import pytest
 import numpy as np
 from pennylane.labs.phox.utils import (
     create_local_gates,
