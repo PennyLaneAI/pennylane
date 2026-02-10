@@ -51,10 +51,9 @@ def catalyst_version() -> str | None:
     if not find_spec("catalyst"):
         return None
 
-    try:
-        return str(version("pennylane_catalyst"))
-    except PackageNotFoundError:
-        return None
+    if find_spec("catalyst"):
+        return version("pennylane_catalyst")
+    return None
 
 
 def about():
