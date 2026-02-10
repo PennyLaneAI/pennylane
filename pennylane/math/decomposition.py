@@ -44,12 +44,17 @@ def zyz_rotation_angles(U, return_global_phase=False):
     """
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
-    EPS = math.finfo(U.dtype).eps
 
+    # The matrix is [[a, b],[c, d]], where a = cos(theta)*exp(i...)
+    # and b = sin(theta)*exp(i...). Taking the magnitude of a and b
+    # we get |b| = sin(theta) and |a| = cos(theta). We can use either
+    # one to find theta, but the most numerically robust approach
+    # is to use arctan2 so that both matrix elements are used.
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = 2 * math.arctan2(abs_b, abs_a)
 
+    EPS = math.finfo(U.dtype).eps
     half_phi_plus_omega = math.angle(U[..., 1, 1] + EPS)
     half_omega_minus_phi = math.angle(U[..., 1, 0] + EPS)
 
@@ -82,6 +87,11 @@ def xyx_rotation_angles(U, return_global_phase=False):
 
     U, alpha = math.convert_to_su2(U, return_global_phase=True)
 
+    # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
+    # and C^T @ RY @ C = RY. Therefore, consider U = RX @ RY @ RX, we find that
+    # C^T U C = C^T RX C C^T RY C C^T RX C = RZ RY RZ. Therefore, we can apply this
+    # basis transform to the original U, and obtain the ZYZ decomposition of the
+    # transformed matrix, we get the same rotation angles for the XYX matrix.
     C = math.cast_like(math.array([[1, -1], [1, 1]]) / np.sqrt(2), U)
     U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
@@ -106,6 +116,11 @@ def xzx_rotation_angles(U, return_global_phase=False):
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
 
+    # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
+    # and C^T @ RZ @ C = RY. Therefore, consider U = RX @ RZ @ RX, we find that
+    # C^T U C = C^T RX C C^T RZ C C^T RX C = RZ RY RZ. Therefore, we can apply this
+    # basis transform to the original U, and obtain the ZYZ decomposition of the
+    # transformed matrix, we get the same rotation angles for the XYX matrix.
     C = math.cast_like(math.array([[1, -1j], [1, 1j]]) / np.sqrt(2), U)
     U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
@@ -129,12 +144,12 @@ def zxz_rotation_angles(U, return_global_phase=False):
     """
 
     U, global_phase = math.convert_to_su2(U, return_global_phase=True)
-    EPS = math.finfo(U.dtype).eps
 
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
     theta = 2 * math.arctan2(abs_b, abs_a)
 
+    EPS = math.finfo(U.dtype).eps
     half_phi_plus_lam = math.angle(U[..., 1, 1] + EPS)
     half_phi_minus_lam = math.angle(1j * U[..., 1, 0] + EPS)
 

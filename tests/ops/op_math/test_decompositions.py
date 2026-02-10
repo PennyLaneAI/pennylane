@@ -48,20 +48,20 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
 
     assert len(obtained_gates) == len(expected_gates), "Incorrect number of gates"
 
-    # for i, gate in enumerate(obtained_gates):
-    #     # Check type of gate
-    #     assert isinstance(gate, expected_gates[i]), "Incorrect type of gate"
-    #
-    #     # Check the wire that the gates act on
-    #     if not isinstance(gate, qml.GlobalPhase):
-    #         assert gate.wires == Wires("a"), "Incorrect wire"
-    #
-    #     # Check gate parameters
-    #     assert qml.math.allclose(
-    #         qml.math.unwrap(gate.parameters),
-    #         expected_params[i],
-    #         atol=1e-7,
-    #     ), "Incorrect gate parameters"
+    for i, gate in enumerate(obtained_gates):
+        # Check type of gate
+        assert isinstance(gate, expected_gates[i]), "Incorrect type of gate"
+
+        # Check the wire that the gates act on
+        if not isinstance(gate, qml.GlobalPhase):
+            assert gate.wires == Wires("a"), "Incorrect wire"
+
+        # Check gate parameters
+        assert qml.math.allclose(
+            qml.math.unwrap(gate.parameters),
+            expected_params[i],
+            atol=1e-7,
+        ), "Incorrect gate parameters"
 
     obtained_mat = reduce(
         qml.math.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
