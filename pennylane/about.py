@@ -112,8 +112,8 @@ def about():
     print(f"Scipy version:           {scipy.__version__}")
     print(f"JAX version:             {jax_version}")
 
-    if version := catalyst_version():
-        print(f"Catalyst version:        {version}")
+    if cat_version := catalyst_version():
+        print(f"Catalyst version:        {cat_version}")
 
     print("Installed devices:")
 
