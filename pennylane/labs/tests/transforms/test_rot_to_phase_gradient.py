@@ -273,7 +273,17 @@ class TestPauliRotationDecomposition:
                 work_wires=work_wires,
             )
 
-    @pytest.mark.parametrize("RGate", [qp.RZ, qp.RX, qp.RY, qp.MultiRZ])
+    @pytest.mark.parametrize(
+        "RGate",
+        [
+            qp.RZ,
+            qp.RX,
+            qp.RY,
+            qp.MultiRZ,
+            partial(qp.PauliRot, pauli_word="X"),
+            partial(qp.PauliRot, pauli_word="Z"),
+        ],
+    )
     @pytest.mark.parametrize(
         "phi",
         [
@@ -296,7 +306,7 @@ class TestPauliRotationDecomposition:
             [
                 qp.Hadamard(wire),  # prepare |+>
                 *prepare_phase_gradient(phase_grad_wires),
-                RGate(phi, wire),
+                RGate(phi, wires=[wire]),
                 *[qp.adjoint(op) for op in prepare_phase_gradient(phase_grad_wires)[::-1]],
                 qp.Hadamard(wire),  # unprepare |+>
             ]
@@ -306,12 +316,19 @@ class TestPauliRotationDecomposition:
         tapes = fn(res)
         output = qp.matrix(tapes, wire_order=wire_order)[:, 0]
 
-        output_expected = qp.matrix(qp.Hadamard(0) @ RGate(phi, 0) @ qp.Hadamard(0))[:, 0]
+        output_expected = qp.matrix(qp.Hadamard(0) @ RGate(phi, wires=[0]) @ qp.Hadamard(0))[:, 0]
         output_expected = np.kron(output_expected, np.eye(2 ** (len(wire_order) - 1))[0])
 
         assert np.allclose(output, output_expected)
 
-    @pytest.mark.parametrize("RGate", [qp.MultiRZ])
+    @pytest.mark.parametrize(
+        "RGate",
+        [
+            qp.MultiRZ,
+            partial(qp.PauliRot, pauli_word="ZZZ"),
+            partial(qp.PauliRot, pauli_word="XYZ"),
+        ],
+    )
     @pytest.mark.parametrize(
         "phi",
         [
@@ -335,7 +352,7 @@ class TestPauliRotationDecomposition:
         rot_circ = qp.tape.QuantumScript(
             [
                 *prepare_phase_gradient(phase_grad_wires),
-                RGate(phi, wires),
+                RGate(phi, wires=wires),
                 *[qp.adjoint(op) for op in prepare_phase_gradient(phase_grad_wires)[::-1]],
             ]
         )
@@ -348,7 +365,7 @@ class TestPauliRotationDecomposition:
         in_state = rng.random(2 ** len(wires))
         in_state /= np.linalg.norm(in_state)
 
-        out_state_expected = qp.matrix(RGate(phi, wires)) @ in_state
+        out_state_expected = qp.matrix(RGate(phi, wires=wires)) @ in_state
 
         zeros = np.eye(2 ** (precision * 3 - 1))[0]
         in_state_and_zeros = np.kron(in_state, zeros)

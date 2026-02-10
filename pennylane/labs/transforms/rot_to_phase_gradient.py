@@ -14,6 +14,8 @@
 r"""
 Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
+# pylint: disable=too-many-branches
+# TODO: make function neat, e.g. using dispatching
 import numpy as np
 
 import pennylane as qp
@@ -36,6 +38,15 @@ def _binary_repr_int(phi, precision):
     phi = phi % (4 * np.pi)
     phi_round = np.round(2**precision * phi / (2 * np.pi))
     return bin(int(np.floor(phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
+
+
+def fanout(wires):
+    """Fanout operator"""
+    if len(wires) == 1:
+        return qp.I(wires)
+    return qp.prod(
+        *[qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])][::-1]
+    )
 
 
 @QueuingManager.stop_recording()
@@ -261,9 +272,34 @@ def rot_to_phase_gradient(
             phi = op.parameters[0]
             global_phases.append(phi / 2)
 
-            diagonalizing_gate = qp.prod(
-                *[qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])][::-1]
+            diagonalizing_gate = fanout(wires)
+
+            operations.append(
+                qp.change_op_basis(
+                    diagonalizing_gate,
+                    _rz_phase_gradient(
+                        phi,
+                        wires[:1],
+                        angle_wires=angle_wires,
+                        phase_grad_wires=phase_grad_wires,
+                        work_wires=work_wires,
+                    ),
+                )
             )
+
+        elif isinstance(op, qp.PauliRot):
+            wires = op.wires
+            phi = op.parameters[0]
+            global_phases.append(phi / 2)
+
+            # collect diagonalizing gates of each wire
+            # this turns any rotation to MultiRZ
+            diagonalizing_gates = []
+            for sub_op in op.decomposition():
+                if isinstance(sub_op, qp.MultiRZ):
+                    break
+                diagonalizing_gates.append(sub_op)
+            diagonalizing_gate = fanout(wires) @ qp.prod(*diagonalizing_gates[::-1])
 
             operations.append(
                 qp.change_op_basis(
