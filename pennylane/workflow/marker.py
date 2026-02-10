@@ -38,11 +38,16 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
 
     .. code-block:: python
 
+        # Build pipeline and add markers
+        pipeline = qml.CompilePipeline()
+        pipeline.add_marker("nothing-applied")
+        pipeline += qml.transforms.cancel_inverses
+        pipeline.add_marker("after-cancel-inverses")
+
+        # Apply additional transforms and markers
         @qml.marker("after-merge-rotations")
         @qml.transforms.merge_rotations
-        @qml.marker("after-cancel-inverses")
-        @qml.transforms.cancel_inverses
-        @qml.marker("nothing-applied")
+        @pipeline
         @qml.qnode(qml.device("null.qubit"))
         def c():
             qml.RX(0.5, 0)
@@ -50,6 +55,8 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
             qml.H(0)
             qml.RX(0.5, 0)
             return qml.probs()
+
+    We can then inspect our user transformations to see our markers,
 
     >>> print(c.compile_pipeline)
     CompilePipeline(
@@ -62,8 +69,8 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
     >>> print(c.compile_pipeline.markers)
     ['nothing-applied', 'after-cancel-inverses', 'after-merge-rotations']
 
-    These markers can then be picked up by a few of our inspectibility features.
-    For example, we can verify that the Hadamard gates cancel,
+    These markers are then recognized by a few of our inspectibility features.
+    For example, we can verify that the Hadamard gates cancel using :func:`~.specs`,
 
     >>> print(qml.specs(c, level="after-cancel-inverses")())
     Device: null.qubit
@@ -82,7 +89,7 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
       Measurements:
         probs(all wires): 1
 
-    and that the rotation gates merge,
+    and that the rotation gates merge using :func:`~.draw`,
 
     >>> print(qml.draw(c, level="after-merge-rotations")())
     0: ──RX(1.00)─┤  Probs
