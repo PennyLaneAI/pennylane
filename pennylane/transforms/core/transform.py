@@ -61,6 +61,7 @@ def _create_transform_primitive():
         return params["inner_jaxpr"].outvars
 
     def create_initial_env(params, invars):
+        # map inner jaxpr variables to outer jaxpr variables
         args = invars[slice(*params["args_slice"])]
         consts = invars[slice(*params["consts_slice"])]
 
@@ -1162,6 +1163,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         import jax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
+        print(args, kwargs)
         jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
         flat_args = jax.tree_util.tree_leaves(args)
 

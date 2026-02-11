@@ -176,8 +176,7 @@ def register_custom_staging_rule(
 
     The return of any ``cond_prim`` will match the output variables of the first jaxpr branch.
 
-    ``create_initial_env`` is used by the ``transform`` prim.
-
+    ``create_initial_env`` can be used when the output shapes contain variables in the input jaxpr.
     """
     # see https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L3538
     # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
