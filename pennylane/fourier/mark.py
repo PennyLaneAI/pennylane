@@ -16,6 +16,11 @@ Contains the 'label' function for customizing operator labels.
 """
 
 from pennylane.operation import Operator
+from pennylane.ops.functions.equal import (
+    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
+    _equal,
+    _equal_dispatch,
+)
 from pennylane.ops.op_math import SymbolicOp
 
 
@@ -83,6 +88,20 @@ class MarkedOp(SymbolicOp):
 
     def matrix(self, wire_order=None):
         return self.base.matrix(wire_order=wire_order)
+
+
+@_equal_dispatch.register
+def _equal_marked_op(op1: MarkedOp, op2: MarkedOp, **kwargs):
+    if op1.marker != op2.marker:
+        return (
+            f"op1 and op2 have different markers. Got {op1.marker} and {op2.marker} respectively."
+        )
+
+    base_equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(base_equal_check, str):
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
+
+    return True
 
 
 def mark(op: Operator, tag: str) -> MarkedOp:
