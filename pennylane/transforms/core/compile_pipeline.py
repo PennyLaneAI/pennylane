@@ -208,6 +208,15 @@ class CompilePipeline:
           [3] merge_rotations()
            └─▶ final-transform
         )
+        >>> pipeline.add_marker("after-commute-controlled", 1)
+        >>> print(pipeline)
+        CompilePipeline(
+          [1] commute_controlled(),
+           ├─▶ after-commute-controlled
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
+           └─▶ final-transform
+        )
 
         Two different markers can be used to make the same level, causing them to stack,
 
@@ -215,12 +224,11 @@ class CompilePipeline:
         >>> print(pipeline)
         CompilePipeline(
           [1] commute_controlled(),
+           ├─▶ after-commute-controlled
           [2] cancel_inverses(recursive=True),
           [3] merge_rotations()
            └─▶ final-transform, after-merge-rotations
         )
-        >>> pipeline.markers
-        ['final-transform', 'after-merge-rotations']
 
         A marker's level (the index of the transform it follows) is retrieved with,
 
@@ -233,7 +241,7 @@ class CompilePipeline:
 
         >>> pipeline.remove_marker("final-transform")
         >>> pipeline.markers
-        ['after-merge-rotations']
+        ['after-commute-controlled', 'after-merge-rotations']
 
         The pipeline structure and marker placement are represented as follows,
 
@@ -694,7 +702,7 @@ class CompilePipeline:
             raise ValueError(f"No marker found for level '{level}'.")
         del self._markers[level]
 
-    def add_marker(self, level: str) -> None:
+    def add_marker(self, level: str, index: int | None = None) -> None:
         """Adds a mark at the current level."""
         if level in (protected_levels := [level.value for level in ProtectedLevel]):
             raise ValueError(
@@ -703,7 +711,10 @@ class CompilePipeline:
         if level in self._markers:
             raise ValueError(f"Found multiple markers for level '{level}'. Markers must be unique.")
 
-        self._markers[level] = len(self._compile_pipeline)
+        if index is None:
+            index = len(self._compile_pipeline)
+
+        self._markers[level] = index
 
     @property
     def markers(self) -> list[str]:

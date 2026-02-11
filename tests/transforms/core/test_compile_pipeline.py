@@ -1924,7 +1924,11 @@ class TestMarkers:
         pipeline.add_marker("test")
         pipeline.add_transform(transform(second_valid_transform))
 
-        assert pipeline.markers == ["test"]
+        # add after the fact with index
+        pipeline.add_marker("initial", 0)
+
+        assert pipeline.markers == ["test", "initial"]
+        assert pipeline.get_marker_level("initial") == 0
         assert pipeline.get_marker_level("test") == 1
 
     def test_remove_marker(self):
