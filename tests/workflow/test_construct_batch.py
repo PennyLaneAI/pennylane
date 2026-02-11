@@ -31,7 +31,7 @@ class TestMarker:
     def test_level_not_found(self):
         """Test the error message when a requested level is not found."""
 
-        @qml.marker(level="something")
+        @qml.marker("something")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
@@ -48,7 +48,7 @@ class TestMarker:
         """Test that custom levels can be specified and accessed."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():
@@ -84,7 +84,7 @@ class TestMarker:
     def test_execution_with_marker_transform(self):
         """Test that the marker transform does not effect execution results."""
 
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.qnode(qml.device("default.qubit"))
         def c(x):
             qml.RX(x, 0)
