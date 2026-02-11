@@ -95,6 +95,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
         ):  # pylint: disable=too-many-arguments
             self.max_expansion = max_expansion
             self._current_depth = 0
+            self.subroutine_cache = {}
 
             if not enabled_graph() and (fixed_decomps or alt_decomps):
                 raise TypeError(

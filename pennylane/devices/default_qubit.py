@@ -135,7 +135,6 @@ ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasureMP"})
 ALL_DQ_GATES_PLUS_MCM.name = "All DefaultQubit Gates With MCM"
 
 _special_operator_support = {
-    "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
     "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
     "IQP": lambda op: len(op.wires) < 6,

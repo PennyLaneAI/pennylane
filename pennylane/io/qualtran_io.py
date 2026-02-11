@@ -49,25 +49,46 @@ except (ModuleNotFoundError, ImportError) as import_error:
     Bloq = object
 
 
-_Subroutine_map: dict = {}
-"""A registry for how to calculate the resources from a SubroutineOp."""
+_Subroutine_call_graph_map: dict = {}
+"""A registry for the call graphs of SubroutineOps."""
+
+_Subroutine_to_bloq_map: dict = {}
+"""A registry for SubroutineOps we want to convert to Bloq."""
 
 
-def _register_subroutine(subroutine: qtemps.Subroutine):
-    """Register a function for calculating the resources of a SubroutineOp using a decorator.
+def _register_subroutine_call_graph(subroutine: qtemps.Subroutine):
+    """Register a function for the call graph of a SubroutineOp using a decorator.
 
     .. code-block::
-        @_register_subroutine(MySubroutine)
+        @_register_subroutine_call_graph(MySubroutine)
         def _call_graph(op: SubroutineOp):
             ...
 
     """
 
     def subroutine_call_graph_decorator(f):
-        _Subroutine_map[subroutine] = f
+        _Subroutine_call_graph_map[subroutine] = f
         return f
 
     return subroutine_call_graph_decorator
+
+
+def _register_subroutine_to_bloq(subroutine: qtemps.Subroutine):
+    """Register a function conversion of a SubroutineOp to Bloq using a decorator.
+
+    .. code-block::
+        @_register_subroutine_to_bloq(MySubroutine)
+        def _to_bloq(op: SubroutineOp):
+            ...
+
+    """
+
+    def subroutine_to_bloq_decorator(f):
+        _Subroutine_call_graph_map[subroutine] = f
+        return f
+
+    return subroutine_to_bloq_decorator
+
 
 def _get_op_call_graph_estimator(op):
     """Return call graph for PennyLane Operator. The call graph depends on the results of calling
@@ -103,8 +124,8 @@ def _get_op_call_graph(op):  # pylint: disable=unused-argument
 
 @_get_op_call_graph.register
 def _call_graph_for_subroutine(op: qtemps.SubroutineOp):
-    if op.subroutine in _Subroutine_map:
-        return _Subroutine_map[op.subroutine](op)
+    if op.subroutine in _Subroutine_call_graph_map:
+        return _Subroutine_call_graph_map[op.subroutine](op)
     raise NotImplementedError(f"Subroutine {op.subroutine} has no registered call graph.")
 
 
@@ -352,7 +373,9 @@ def _(op: qtemps.subroutines.QROM):
     return gate_types
 
 
-@_register_subroutine(qtemps.subroutines.QFT.operator())
+@_register_subroutine_call_graph(
+    qtemps.subroutines.QFT.operator([0, 1, 2])
+)  # TODO: don't want to specify params
 def _(op):
     """Call graph for Quantum Fourier Transform"""
 
@@ -549,6 +572,13 @@ def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
     return None
 
 
+@_map_to_bloq.register
+def _to_bloq_for_subroutine(op: qtemps.SubroutineOp):
+    if op.subroutine in _Subroutine_to_bloq_map:
+        return _Subroutine_to_bloq_map[op.subroutine](op)
+    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered conversion to Bloq.")
+
+
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(
@@ -571,8 +601,10 @@ def _(
 
 
 # pylint: disable=import-outside-toplevel
-@_map_to_bloq.register
-def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
+@_register_subroutine_to_bloq(
+    qtemps.subroutines.QFT.operator([0, 1, 2])
+)  # TODO: don't want to specify params
+def _(op, custom_mapping=None, map_ops=True, **kwargs):
     """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
     from qualtran.bloqs.qft import QFTTextBook
 
