@@ -54,7 +54,7 @@ def c():
   [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
 
 * The custom `adjoint` method of qutrit operators are implemented as decomposition rules compatible with the
-  new grpah-based decomposition system.
+  new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
