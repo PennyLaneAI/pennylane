@@ -386,33 +386,35 @@ def expval(x: float):
 
 <h3>Internal changes ⚙️</h3>
 
-* `qml.marker` is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
-  it is a utility function that modifies a compilation pipeline's internal dictionary that stores the mapping
-  between levels and marker labels. Markers are now added manually to the compilation pipeline using a new API.
-
-```python
-from pennylane.transforms.core import CompilePipeline
-from pennylane.workflow import marker
-
-pipeline = CompilePipeline()
-pipeline.add_marker("no-transforms")
-pipeline += qml.transforms.cancel_inverses
-
-@marker("after-cancel-inverses")
-@pipeline
-@qml.qnode(qml.device("default.qubit"))
-def circuit():
-  qml.H(0)
-  qml.H(0)
-  return qml.probs()
-```
-
->>> print(qml.draw(c, level="no-transforms")())
-0: ──X──H──H─┤  Probs
->>> print(qml.draw(c, level="after-cancel-inverses")())
-0: ──X─┤  Probs
-
+* The :func:`~.marker` utility is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
+  this feature has been re-worked to now be a utility function that adds a marker to a `QNode`'s compilation pipeline.
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+
+  Markers are now added directly to compilation pipelines using the `add_marker` API and retain their old API for 
+  interactions with a `QNode`,
+
+  ```python
+  pipeline = qml.CompilePipeline()
+  pipeline.add_marker("no-transforms")
+  pipeline += qml.transforms.cancel_inverses
+
+  @qml.marker("after-cancel-inverses")
+  @pipeline
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+    qml.H(0)
+    qml.H(0)
+    return qml.probs()
+  ```
+
+  The string supplied to :func:`~.marker` can then be used as an argument to `level` in `draw`
+  and `specs`, showing the cumulative result of applying transforms up to the marker:
+
+  >>> print(qml.draw(c, level="no-transforms")())
+  0: ──X──H──H─┤  Probs
+  >>> print(qml.draw(c, level="after-cancel-inverses")())
+  0: ──X─┤  Probs
+
 
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
