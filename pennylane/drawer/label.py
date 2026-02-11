@@ -20,22 +20,65 @@ from pennylane.ops.op_math import SymbolicOp
 
 
 class LabelledOp(SymbolicOp):
-    """Creates a labelled operator."""
+    """Creates a labelled operator.
+
+    Args:
+        base (Operator): The operator you wish to label.
+        custom_label (str): The custom label to label your operator with.
+
+    **Example:**
+
+    >>> op = qml.RX(1.23456, wires=0)
+    >>> labelled_op = LabelledOp(op, "my-rx")
+    >>> print(labelled_op.hyperparameters["custom_label"])
+    my-rx
+    >>> labelled_op.label()
+    'RX("my-rx")'
+    >>> labelled_op.label(decimals=2)
+    'RX\\n(1.23, "my-rx")'
+
+    This can be used with :func:`~.draw`,
+
+    .. code-block:: python
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            label(qml.H(0), "my-h")
+            qml.CNOT([0,1])
+            return qml.probs()
+
+    >>> print(qml.draw(circuit)())
+    0: ──H("my-h")─╭●─┤  Probs
+    1: ────────────╰X─┤  Probs
+
+    """
 
     def __init__(self, base: Operator, custom_label: str):
         super().__init__(base)
         self.hyperparameters["custom_label"] = custom_label
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(self, decimals=None, base_label=None, cache=None) -> str:
+        """Retrieve the label for this operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+        """
         base_label = self.base.label(decimals, base_label, cache)
-        tag = self.hyperparameters["tag"]
+        custom_label = self.hyperparameters["custom_label"]
 
         # If base label already has parameters, e.g., "RX(0.5)"
         if base_label.endswith(")"):
-            return f'{base_label[:-1]}, "{tag}")'
+            return f'{base_label[:-1]}, "{custom_label}")'
 
         # If base label is a simple label, e.g., "X"
-        return f'{base_label}("{tag}")'
+        return f'{base_label}("{custom_label}")'
 
 
 def label(op: Operator, new_label: str) -> LabelledOp:
