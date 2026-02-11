@@ -402,6 +402,7 @@ def expval(x: float):
   @pipeline
   @qml.qnode(qml.device("default.qubit"))
   def circuit():
+    qml.X(0)
     qml.H(0)
     qml.H(0)
     return qml.probs()
