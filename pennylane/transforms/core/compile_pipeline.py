@@ -442,7 +442,7 @@ class CompilePipeline:
         if isinstance(other, CompilePipeline):
             offset = len(self._compile_pipeline)
             old_markers = self._markers.copy()
-            for name, pos in other._markers.copy().items():
+            for name, pos in other._markers.items():
                 old_markers[name] = pos + offset
 
             if self.has_final_transform and other.has_final_transform:
