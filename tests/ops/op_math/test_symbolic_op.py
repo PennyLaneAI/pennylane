@@ -74,7 +74,7 @@ def test_copy():
 def test_map_wires():
     """Test the map_wires method."""
     base = Operator("a")
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
     # pylint:disable=attribute-defined-outside-init,protected-access
     op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
