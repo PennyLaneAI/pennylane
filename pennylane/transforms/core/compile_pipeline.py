@@ -697,7 +697,7 @@ class CompilePipeline:
             self += t
 
     def remove_marker(self, level: str) -> None:
-        """Removes a mark at the given level."""
+        """Removes a marker with the given name."""
         if level not in self._markers:
             raise ValueError(f"No marker found for level '{level}'.")
         del self._markers[level]
