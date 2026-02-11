@@ -102,9 +102,9 @@ class TestIntToBinary:
 class TestBinaryFiniteReducedRowEchelon:
     """Tests for ``binary_finite_reduced_row_echelon``."""
 
-    def test_input_not_modified_by_default(self):
+    def test_input_not_modified_by_default(self, seed):
         """Test that the input is not modified if ``inplace`` is not specified explicitly."""
-        binary_matrix = _make_random_regular_matrix(5, 30, 9251)
+        binary_matrix = _make_random_regular_matrix(5, 30, seed)
         copy = binary_matrix.copy()
         rref_bin_mat = fn.binary_finite_reduced_row_echelon(binary_matrix)
         assert not np.allclose(rref_bin_mat, binary_matrix)
