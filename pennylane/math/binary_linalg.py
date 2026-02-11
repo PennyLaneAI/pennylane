@@ -162,7 +162,12 @@ def binary_matrix_rank(binary_matrix: np.ndarray) -> int:
 
     Consider the following binary matrix of shape ``(4, 4)``:
 
-    >>> binary_matrix = np.array([[0, 1, 1, 0], [0, 1, 0, 1], [1, 0, 1, 1], [1, 0, 0, 0]])
+    >>> binary_matrix = np.array([
+    ...     [0, 1, 1, 0],
+    ...     [0, 1, 0, 1],
+    ...     [1, 0, 1, 1],
+    ...     [1, 0, 0, 0],
+    ... ])
     >>> print(binary_matrix.shape)
     (4, 4)
 
@@ -213,7 +218,11 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
 
     Consider a simple regular Boolean matrix ``A`` and a coefficient vector ``b``:
 
-    >>> A = np.array([[1, 0, 0], [0, 1, 1], [1, 0, 1]])
+    >>> A = np.array([
+    ...     [1, 0, 0],
+    ...     [0, 1, 1],
+    ...     [1, 0, 1]
+    ... ])
     >>> b = np.array([1, 1, 1])
 
     Then we can solve the system ``A@x=b`` for ``x`` over :math:`\mathbb{Z}_2`:
