@@ -18,13 +18,13 @@ from collections.abc import Callable
 from .qnode import QNode
 
 
-def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callable:
+def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callable:
     """Register a checkpoint within a compilation pipeline for inspection.
 
     Args:
         obj (QNode | None): The ``QNode`` containing the compilation pipeline to be marked.
             If ``None``, this function acts as a decorator for a ``QNode``.
-        level (str | None): A descriptive label for this specific stage in the compilation process.
+        label (str | None): A descriptive label for this specific stage in the compilation process.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of this argument.
 
 
@@ -32,7 +32,7 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
         QNode | Callable: The marked ``QNode`` or a decorator function if ``obj`` is not provided.
 
     Raises:
-        ValueError: The 'level' argument must be provided.
+        ValueError: The 'label' argument must be provided.
 
     .. seealso::
         :func:`~.CompilePipeline.add_marker`
@@ -99,21 +99,21 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
 
     """
 
-    if isinstance(obj, QNode) and level is not None:
-        obj.compile_pipeline.add_marker(level)
+    if isinstance(obj, QNode) and label is not None:
+        obj.compile_pipeline.add_marker(label)
         return obj
 
-    # NOTE: In order to use as decorator: @qml.marker(level="blah")
+    # NOTE: In order to use as decorator: @qml.marker(label="blah")
     if isinstance(obj, str):
-        level = obj
+        label = obj
         obj = None
 
-    if obj is None and level is not None:
+    if obj is None and label is not None:
 
         def decorator(qnode: QNode) -> QNode:
-            qnode.compile_pipeline.add_marker(level)
+            qnode.compile_pipeline.add_marker(label)
             return qnode
 
         return decorator
 
-    raise ValueError("marker requires a 'level' argument.")
+    raise ValueError("marker requires a 'label' argument.")

@@ -702,19 +702,43 @@ class CompilePipeline:
             raise ValueError(f"No marker found for level '{level}'.")
         del self._markers[level]
 
-    def add_marker(self, level: str, index: int | None = None) -> None:
-        """Adds a mark at the current level."""
-        if level in (protected_levels := [level.value for level in ProtectedLevel]):
+    def add_marker(self, label: str, level: int | None = None) -> None:
+        """Add a marker to the compilation pipeline at a given level.
+
+        Args:
+            label (str): The label for the marker.
+            level (int | None): The level position for the marker. If ``None``, the marker
+                will be append to the end of the compilation pipeline.
+
+        **Example:**
+
+        >>> pipeline = CompilePipeline()
+        >>> pipeline += qml.transforms.merge_rotations
+        >>> pipeline.add_marker("after-merge-rotations")
+        >>> print(pipeline)
+        CompilePipeline(
+          [1] merge_rotations()
+           └─▶ after-merge-rotations
+        )
+        >>> pipeline.add_marker("no-transforms", 0)
+        >>> print(pipeline)
+        CompilePipeline(
+           ├─▶ no-transforms
+          [1] merge_rotations()
+           └─▶ after-merge-rotations
+        )
+        """
+        if label in (protected_levels := [level.value for level in ProtectedLevel]):
             raise ValueError(
-                f"Found marker for protected level '{level}'. Protected options are {', '.join(protected_levels)}."
+                f"Found marker for protected level '{label}'. Protected options are {', '.join(protected_levels)}."
             )
-        if level in self._markers:
-            raise ValueError(f"Found multiple markers for level '{level}'. Markers must be unique.")
+        if label in self._markers:
+            raise ValueError(f"Found multiple markers for level '{label}'. Markers must be unique.")
 
-        if index is None:
-            index = len(self._compile_pipeline)
+        if level is None:
+            level = len(self._compile_pipeline)
 
-        self._markers[level] = index
+        self._markers[label] = level
 
     @property
     def markers(self) -> list[str]:

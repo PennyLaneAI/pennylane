@@ -34,9 +34,9 @@ class TestMarkerQNode:
             match="Found multiple markers for level 'something'. Markers must be unique.",
         ):
 
-            @qml.marker(level="something")
+            @qml.marker(label="something")
             @qml.transforms.merge_rotations
-            @qml.marker(level="something")
+            @qml.marker(label="something")
             @qml.qnode(qml.device("null.qubit"))
             def c():
                 return qml.state()
@@ -49,7 +49,7 @@ class TestMarkerQNode:
             ValueError, match=f"Found marker for protected level '{protected_level_str}'"
         ):
 
-            @qml.marker(level=protected_level_str)
+            @qml.marker(label=protected_level_str)
             @qml.qnode(qml.device("null.qubit"))
             def c():
                 return qml.state()
@@ -57,7 +57,7 @@ class TestMarkerQNode:
     def test_simple_qnode(self):
         """Tests that markers are placed in the qnode's compilation pipeline."""
 
-        @qml.marker(level="after-cancel-inverses")
+        @qml.marker(label="after-cancel-inverses")
         @qml.transforms.cancel_inverses
         @qml.marker("after-merge-rotations")
         @qml.transforms.merge_rotations
@@ -72,7 +72,7 @@ class TestMarkerQNode:
     def test_marker_missing_level(self):
         """Tests when the marker is missing level."""
 
-        with pytest.raises(ValueError, match="marker requires a 'level' argument."):
+        with pytest.raises(ValueError, match="marker requires a 'label' argument."):
 
             @qml.marker()
             @qml.transforms.cancel_inverses
