@@ -53,6 +53,15 @@ class LabelledOp(SymbolicOp):
 
     """
 
+    def _flatten(self):
+        hyperparameters = (("custom_label", self.hyperparameters["custom_label"]),)
+        return (self.base,), hyperparameters
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hyperparams_dict = dict(metadata)
+        return cls(data[0], **hyperparams_dict)
+
     def __init__(self, base: Operator, custom_label: str):
         super().__init__(base)
         self.hyperparameters["custom_label"] = custom_label
@@ -79,6 +88,9 @@ class LabelledOp(SymbolicOp):
 
         # If base label is a simple label, e.g., "X"
         return f'{base_label}("{custom_label}")'
+
+    def matrix(self, wire_order=None):
+        return self.base.matrix(wire_order=wire_order)
 
 
 def label(op: Operator, new_label: str) -> LabelledOp:

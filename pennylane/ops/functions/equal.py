@@ -39,6 +39,7 @@ from pennylane.ops import (
     SProd,
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
@@ -899,3 +900,11 @@ def _equal_select(op1: Select, op2: Select, **kwargs):
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True
+
+
+@_equal_dispatch.register
+def _equal_symbolicop(op1: SymbolicOp, op2: SymbolicOp, **kwargs):
+    """Determines whether two SymbolicOp are equal."""
+    if op1.hyperparameters != op2.hyperparameters:
+        return "op1 and op2 have different hyperparameters."
+    return _equal(op1.base, op2.base, **kwargs)

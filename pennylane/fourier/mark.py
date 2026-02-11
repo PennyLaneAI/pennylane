@@ -35,6 +35,15 @@ class MarkedOp(SymbolicOp):
 
     """
 
+    def _flatten(self):
+        hyperparameters = (("marker", self.hyperparameters["marker"]),)
+        return (self.base,), hyperparameters
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hyperparams_dict = dict(metadata)
+        return cls(data[0], **hyperparams_dict)
+
     resource_keys = {"base_class", "base_params"}
 
     def __init__(self, base: Operator, marker: str):
@@ -68,6 +77,9 @@ class MarkedOp(SymbolicOp):
 
         # If base label is a simple label, e.g., "X"
         return f'{base_label}("{marker}")'
+
+    def matrix(self, wire_order=None):
+        return self.base.matrix(wire_order=wire_order)
 
 
 def mark(op: Operator, tag: str) -> MarkedOp:
