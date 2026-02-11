@@ -66,6 +66,14 @@ class LabelledOp(SymbolicOp):
         super().__init__(base)
         self.hyperparameters["custom_label"] = custom_label
 
+    def __repr__(self):
+        return f'LabelledOp({self.base}, custom_label="{self.custom_label}")'
+
+    @property
+    def custom_label(self) -> str:
+        """Retrieve the custom label set on this operator."""
+        return self.hyperparameters["custom_label"]
+
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         """Retrieve the label for this operator.
 

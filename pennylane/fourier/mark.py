@@ -50,6 +50,9 @@ class MarkedOp(SymbolicOp):
         super().__init__(base)
         self.hyperparameters["marker"] = marker
 
+    def __repr__(self):
+        return f'MarkedOp({self.base}, marker="{self.marker}")'
+
     @property
     def resource_params(self) -> dict:
         return {"base_class": type(self.base), "base_params": self.base.resource_params}
