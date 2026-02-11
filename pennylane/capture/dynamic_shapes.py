@@ -164,7 +164,7 @@ def register_custom_staging_rule(
         primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
         get_outvars_from_params (Callable[[dict], list[jax.extend.core.Var]]): A function that takes in the equation's ``params``
             and returns ``jax.extend.core.Var`` we need to mimic for the primitives return.
-        create_initial_env (Callable[[dict, list[jax.extend.core.Var]], list[jax.core.extend.Var]]): A function that
+        create_initial_env (Callable[[dict, list[jax.extend.core.Var]], dict]): A function that
             takes in the equations ``params`` and the primitive's input variables, and outputs a dictionary that maps
             the inner variables to the outer variables
 
