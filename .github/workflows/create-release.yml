@@ -42,7 +42,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           uv pip install setuptools wheel twine
 
       - name: Create PR to bump Catalyst and Lightning versions

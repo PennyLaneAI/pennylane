@@ -60,7 +60,6 @@ jobs:
           
       - name: Update lock files
         run: |
-          pip install uv
           uv lock
 
       - name: Upload frozen requirements 
