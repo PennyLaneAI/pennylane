@@ -2234,3 +2234,16 @@ class TestMarkers:
         assert combined.markers == ["marker1", "marker2"]
         assert combined.get_marker_level("marker1") == 1
         assert combined.get_marker_level("marker2") == 2
+
+    def test_add_multiple_markers(self):
+        """Tests that markers stack properly."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_marker("marker1")
+        pipeline.add_marker("marker2")
+        pipeline.add_marker("marker3")
+
+        assert pipeline.markers == ["marker1", "marker2", "marker3"]
+        assert pipeline.get_marker_level("marker1") == 0
+        assert pipeline.get_marker_level("marker2") == 0
+        assert pipeline.get_marker_level("marker3") == 0
