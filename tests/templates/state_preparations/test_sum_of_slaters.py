@@ -105,19 +105,12 @@ class TestHelperFunctions:
             (np.array([[0, 0], [1, 1]]), False),
             (np.array([[0, 0, 0], [0, 0, 1], [0, 1, 1]]), True),
             (np.eye(64, dtype=int), True),
+            (np.eye(65, dtype=int), True),
         ],
     )
     def test_columns_differ(self, bits, expected):
         """Test the _columns_differ helper function."""
         assert _columns_differ(bits) is expected
-
-    @pytest.mark.parametrize("size", [65, 100])
-    def test_columns_differ_error(self, size):
-        """Test that an error is raised for bitstrings that are too large."""
-        bits = np.ones((size, 4), dtype=int)
-        bits[:4, :] = np.eye(4, dtype=int)
-        with pytest.raises(ValueError, match="Column comparison uses 64-bit integers internally."):
-            _columns_differ(bits)
 
     @pytest.mark.parametrize(
         "bits ",
@@ -267,7 +260,7 @@ class TestHelperFunctions:
         # Convert random bits to basis and add last basis vector.
         set_N = (basis[:, :-1] @ set_N + basis[:, -1:]) % 2
 
-        ell = _find_ell(set_M, set_N, basis)
+        ell = _find_ell(basis, set_M, set_N)
         # Bitstrings that need to be avoided
         shifted_set_N = (set_N + basis[:, -1:]) % 2
 
