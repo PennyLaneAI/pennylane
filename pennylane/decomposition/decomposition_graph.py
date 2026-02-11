@@ -102,7 +102,6 @@ UNSUPPORTED_TEMPLATES = {
 def _ignore_unsolved_ops():
     return (
         IGNORED_UNSOLVED_OPS
-        | set(qml.ops.qutrit.__all__)
         | set(qml.ops.channel.__all__)
         | set(qml.ops.cv.__all__)
         | UNSUPPORTED_TEMPLATES
