@@ -578,6 +578,9 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
 
+    # What this test is expecting is totally not expected. S cannot decompose to RZ if
+    # the device that we're targeting only supports Paulis
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_default_expand_fn_with_invalid_op(self, mock_device_supporting_paulis):
         """Test that default_expand_fn works with an invalid op and some measurement."""
         invalid_tape = qml.tape.QuantumScript([qml.S(0)], [qml.expval(qml.PauliZ(0))])
