@@ -55,7 +55,6 @@ def parity_synth(tape):
 
         import pennylane as qml
 
-        qml.capture.enable()
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -81,7 +80,7 @@ def parity_synth(tape):
 
     .. code-block:: python
 
-        qjit_circuit = qml.qjit(qml.transforms.parity_synth(circuit))
+        qjit_circuit = qml.qjit(qml.transforms.parity_synth(circuit), capture=True)
         specs = qml.specs(qjit_circuit, level="device")(0.52, 0.12, 0.2)
 
 

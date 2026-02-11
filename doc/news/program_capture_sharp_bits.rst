@@ -8,7 +8,8 @@ Program capture sharp bits
 
     Program capture is an experimental feature under active development.
     Bugs and unexpected behaviour may occur, and breaking changes are possible in future releases.
-    Execution without catalyst is no longer being developed or maintained.
+    Execution without Catalyst is no longer being developed or maintained; please use
+    program capture with Catalyst present only, which can be done with `qml.qjit(capture=True)`.
 
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
@@ -49,74 +50,51 @@ devices compatible with program capture.
 Device wires 
 ~~~~~~~~~~~~
 
-With program capture enabled, all currently supported devices require 
-that ``wires`` be specified at device instantiation (this is in contrast to when 
-program capture is disabled, where automatic qubit management takes place internally
-with ``default.qubit``).
+With program capture enabled, all devices that Catalyst supports require 
+that ``wires`` be specified at device instantiation.
 
 .. code-block:: python 
 
     import pennylane as qml
 
-    qml.capture.enable()
-
-    @qml.qnode(qml.device('default.qubit'))
+    @qml.qjit(capture=True)
+    @qml.qnode(qml.device('lightning.qubit'))
     def circuit():
         qml.Hadamard(0)
         return qml.state()
 
 >>> circuit()
 NotImplementedError: devices must specify wires for integration with program capture.
->>> circuit = circuit.update(device = qml.device('default.qubit', wires=1)) 
->>> circuit()
-Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
 
-This also affects mid-circuit measurements (MCMs) with the deferred measurements
-method:
-
-.. code-block:: python
+.. code-block:: python 
 
     import pennylane as qml
 
-    qml.capture.enable()
-
-    dev = qml.device('default.qubit', wires=1)
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0)
+    @qml.qjit(capture=True)
+    @qml.qnode(qml.device('lightning.qubit', wires=1))
+    def circuit():
+        qml.Hadamard(0)
         return qml.state()
 
->>> circuit(0.1)
-...
-TransformError: Too many mid-circuit measurements for the specified number of wires with 'defer_measurements'.
-
-Recall that the deferred measurements MCM method adds a temporary wire and represents 
-the physical MCM as a controlled operation, deferring the measurement until the 
-end of the circuit. By adding an additional wire to the device, the above circuit
-executes as expected: 
-
->>> circuit = circuit.update(device = qml.device('default.qubit', wires=2))
->>> circuit(0.1)
-Array([0.99875027+0.j        , 0.        +0.j        ,
-       0.        +0.j        , 0.        -0.04997917j], dtype=complex64)
+>>> circuit()
+Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
 
 Gradients
 ---------
 
-Currently the devices ``default.qubit``, ``lightning.qubit``, ``lightning.kokkos``, and ``lightning.gpu`` 
-are the only devices that support gradients with program capture enabled. ``default.qubit`` currently 
-supports ``adjoint``, ``backprop`` and ``finite-diff``. ``lightning.qubit``, ``lightning.kokkos``, and 
-``lightning.gpu`` currently only support ``adjoint``. The ``parameter_shift`` method is not yet supported 
-with program capture enabled, and will raise an error if used. 
+Currently the devices ``lightning.qubit``, ``lightning.kokkos``, and ``lightning.gpu`` 
+are the only devices that support gradients with program capture enabled. ``lightning.qubit``, 
+``lightning.kokkos``, and ``lightning.gpu`` currently only support ``adjoint``. 
+The ``parameter_shift`` method is not yet supported with program capture enabled, 
+and will raise an error if used. 
 
 .. code-block:: python
 
+    import pennylane as qml
     import jax 
 
     qml.capture.enable() 
-
+    # TODO
     dev = qml.device('default.qubit', wires=1)
 
     @qml.qnode(dev)
