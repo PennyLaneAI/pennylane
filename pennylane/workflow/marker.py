@@ -34,20 +34,18 @@ def marker(obj: QNode | None = None, level: str | None = None) -> QNode | Callab
     Raises:
         ValueError: The 'level' argument must be provided.
 
+    .. seealso::
+        :func:`~.CompilePipeline.add_marker`
+
     **Example:**
 
     .. code-block:: python
 
-        # Build pipeline and add markers
-        pipeline = qml.CompilePipeline()
-        pipeline.add_marker("nothing-applied")
-        pipeline += qml.transforms.cancel_inverses
-        pipeline.add_marker("after-cancel-inverses")
-
-        # Apply additional transforms and markers
         @qml.marker("after-merge-rotations")
         @qml.transforms.merge_rotations
-        @pipeline
+        @qml.marker("after-cancel-inverses")
+        @qml.transforms.cancel_inverses
+        @qml.marker("nothing-applied")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             qml.RX(0.5, 0)
