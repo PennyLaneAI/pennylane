@@ -150,7 +150,7 @@ def _adjoint_qutrit_unitary_resource(base_class, base_params):  # pylint: disabl
 
 
 @qml.register_resources(_adjoint_qutrit_unitary_resource)
-def _adjoint_qutrit_unitary(U, wires):
+def _adjoint_qutrit_unitary(U, wires, **_):
     QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=wires)
 
 
@@ -377,12 +377,12 @@ def _adjoint_controlled_qu_resource(base_class, base_params):  # pylint: disable
 
 # pylint: disable=unused-argument
 @register_resources(_adjoint_controlled_qu_resource)
-def _adjoint_controlled_qu(U, wires, u_wires, control_wires, control_values):
+def _adjoint_controlled_qu(U, wires, base, **_):
     ControlledQutritUnitary(
         qml.math.conj(qml.math.moveaxis(U, -2, -1)),
-        wires=u_wires,
-        control_wires=control_wires,
-        control_values=control_values,
+        wires=base.hyperparameters["u_wires"],
+        control_wires=base.hyperparameters["control_wires"],
+        control_values=base.hyperparameters["control_values"],
     )
 
 
