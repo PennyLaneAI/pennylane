@@ -1946,7 +1946,7 @@ class TestMarkers:
 
         assert pipeline.markers == []
 
-        with pytest.raises(ValueError, match="No marker found for level 'test'"):
+        with pytest.raises(ValueError, match="No marker found with label 'test'"):
             pipeline.remove_marker("test")
 
     @pytest.mark.parametrize("protected_name", [level.value for level in ProtectedLevel])

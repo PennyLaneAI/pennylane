@@ -696,11 +696,11 @@ class CompilePipeline:
         for t in transforms:
             self += t
 
-    def remove_marker(self, level: str) -> None:
-        """Removes a marker with the given name."""
-        if level not in self._markers:
-            raise ValueError(f"No marker found for level '{level}'.")
-        del self._markers[level]
+    def remove_marker(self, label: str) -> None:
+        """Remove the marker corresponding to the label."""
+        if label not in self._markers:
+            raise ValueError(f"No marker found with label '{label}'.")
+        del self._markers[label]
 
     def add_marker(self, label: str, level: int | None = None) -> None:
         """Add a marker to the compilation pipeline at a given level.
