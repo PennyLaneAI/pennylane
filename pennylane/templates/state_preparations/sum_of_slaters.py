@@ -373,7 +373,7 @@ def compute_sos_encoding(bits):
 
         It is recommended to first subselect bits via :func:`~.select_sos_rows` in order to
         work with a reduced input here.
-        Furthermore, this function assumes that the bitstrings are not overly redundant, so in
+        Furthermore, this function assumes that the bitstrings are not overly redundant, so
         that it might error out if ``select_sos_rows`` is not used.
 
     .. seealso:: :func:`~.select_sos_rows`
@@ -437,15 +437,20 @@ def compute_sos_encoding(bits):
      [1 1 0 0 0 0 1]]
 
     In practice, this sub-selection of bits via ``select_sos_rows`` is combined with
-    ``compute_sos_encoding`` to achieve lowest cost.
+    ``compute_sos_encoding`` to achieve lowest cost. Note that there may be edge cases where
+    ``compute_sos_encoding`` errors out if ``select_sos_rows`` is not used before, because
+    the input bitstrings are too redundant in this case.
 
     .. details::
         :title: Implementation notes
 
+        We are given :math:`D` distinct bitstrings :math:`\{v_i\}` with length :math:`r`.
+        We assume :math:`D\geq r` and :math:`\operatorname{rk}(V)\geq r`, which can always
+        be achieved by first calling ``select_sos_rows`` on the bitstrings.
+
         Our goal is to find a linear map :math:`U:\mathbb{Z}_2^{r}\to \mathbb{Z}_2^{m}` from
-        :math:`D` distinct bitstrings :math:`\{v_i\}` with length :math:`r` to :math:`D` distinct
-        bitstrings with length :math:`m\leq 2d-1`, where :math:`d:=\lceil\log_2(D)\rceil`,
-        such that
+        the input bitstrings to :math:`D` new distinct bitstrings with length
+        :math:`m\leq 2d-1`, where :math:`d:=\lceil\log_2(D)\rceil`, such that
 
         .. math::
 
