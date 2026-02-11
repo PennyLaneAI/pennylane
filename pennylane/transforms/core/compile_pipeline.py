@@ -187,9 +187,7 @@ class CompilePipeline:
     1: ───────────┤  <Z>
 
     .. details::
-        :title: Usage Details
-
-        **Inspecting and Marking**
+        :title: Inspecting and Marking
 
         We can inspect the original pipeline by printing it,
 
@@ -251,7 +249,8 @@ class CompilePipeline:
                 └─▶ markers for level n (after nth transform)
             )
 
-        **Manipulating Pipelines**
+    .. details::
+        :title: Manipulating Compilation Pipelines
 
         Alternatively, the compilation pipeline can be constructed intuitively by combining multiple transforms. For
         example, the transforms can be added together with ``+``:
