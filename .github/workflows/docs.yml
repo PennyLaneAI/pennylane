@@ -80,37 +80,3 @@ jobs:
             && pip3 install openfermionpyscf
             && pip3 install aiohttp fsspec h5py
           build-command: "sphinx-build -b html . _build -W --keep-going"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: 0.9.17
-          enable-cache: true  
-
-      - name: Freeze dependencies
-        shell: bash
-        run: |
-          uv lock
-
-      - name: Upload frozen requirements
-        if: ${{ github.event_name != 'workflow_dispatch' }} 
-        uses: actions/upload-artifact@v4
-        with:
-          name: frozen-lockfile
-          path: uv.lock
-
-  upload-stable-deps:
-    if: github.event_name == 'schedule'
-    needs:
-      - determine_runner
-      - sphinx
-    uses: ./.github/workflows/check_in_artifact.yml
-    with:
-      artifact_name_pattern: "frozen-uv"
-      artifact_save_path: "uv.lock"
-      merge_multiple: true
-      pull_request_head_branch_name: bot/stable-deps-update
-      commit_message_description: Frozen Doc Dependencies Update
-      pull_request_title: Update stable dependency files
-      pull_request_body: |
-        Automatic update of stable requirement files to snapshot valid python environments.
