@@ -53,6 +53,10 @@ def c():
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
   [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
 
+* The custom `adjoint` method of qutrit operators are implemented as decomposition rules compatible with the
+  new graph-based decomposition system.
+  [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
+
 <h3>Improvements 🛠</h3>
 
 * The :func:`~.marker` utility is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
