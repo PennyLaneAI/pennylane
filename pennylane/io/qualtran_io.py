@@ -49,6 +49,26 @@ except (ModuleNotFoundError, ImportError) as import_error:
     Bloq = object
 
 
+_Subroutine_map: dict = {}
+"""A registry for how to calculate the resources from a SubroutineOp."""
+
+
+def _register_subroutine(subroutine: qtemps.Subroutine):
+    """Register a function for calculating the resources of a SubroutineOp using a decorator.
+
+    .. code-block::
+        @_register_subroutine(MySubroutine)
+        def _call_graph(op: SubroutineOp):
+            ...
+
+    """
+
+    def subroutine_call_graph_decorator(f):
+        _Subroutine_map[subroutine] = f
+        return f
+
+    return subroutine_call_graph_decorator
+
 def _get_op_call_graph_estimator(op):
     """Return call graph for PennyLane Operator. The call graph depends on the results of calling
     estimate on said PennyLane Operator."""
@@ -79,6 +99,13 @@ def _get_op_call_graph(op):  # pylint: disable=unused-argument
     return ``None``, which means we will build the call graph via decomposition"""
 
     return None
+
+
+@_get_op_call_graph.register
+def _call_graph_for_subroutine(op: qtemps.SubroutineOp):
+    if op.subroutine in _Subroutine_map:
+        return _Subroutine_map[op.subroutine](op)
+    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered call graph.")
 
 
 @_get_op_call_graph.register
@@ -325,8 +352,8 @@ def _(op: qtemps.subroutines.QROM):
     return gate_types
 
 
-@_get_op_call_graph.register
-def _(op: qtemps.subroutines.QFT):
+@_register_subroutine(qtemps.subroutines.QFT.operator())
+def _(op):
     """Call graph for Quantum Fourier Transform"""
 
     # From PL Decomposition
