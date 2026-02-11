@@ -24,7 +24,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.devices import LegacyDevice as Device
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
 from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
@@ -486,7 +486,19 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
         dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)
-        expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
+
+        if qml.decomposition.enabled_graph() and depth > 0:
+            # TODO: this warning is raised as a result of the following:
+            #       1. The decomposition of BasisEmbedding involves conditionally applying PauliX
+            #       2. This is not supported with jax.jit
+            #       3. With jax.jit + capture disabled + no qjit either, we use RX instead
+            #       4. Because RX could appear, RX is in the resource params
+            #       5. But if we're not using jax.jit with capture disabled, RX isn't needed.
+            #       6. Can we actually just stop promising support for jax.jit?
+            with pytest.warns(DecompositionWarning):
+                expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
+        else:
+            expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
 
         for op, expected_op in zip(
             expanded_tape.operations[expanded_tape.num_preps :],
