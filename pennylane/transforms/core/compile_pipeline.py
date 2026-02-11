@@ -409,9 +409,8 @@ class CompilePipeline:
         """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         compile pipeline"""
         if isinstance(idx, slice):
-            markers = {
-                k: v - (idx.start or 0) for k, v in self._markers.items() if v >= (idx.start or 0)
-            }
+            start = idx.start or 0
+            markers = {k: v - start for k, v in self._markers.items() if v >= start}
             compile_pipeline = CompilePipeline(self._compile_pipeline[idx])
             compile_pipeline._markers = markers
             return compile_pipeline
