@@ -54,6 +54,50 @@ def c():
 
 <h3>Improvements 🛠</h3>
 
+* The :func:`~.marker` utility is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
+  this feature has been re-worked to now be a utility function that adds a marker to a `QNode`'s compilation pipeline.
+  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+
+  Markers are now added directly to compilation pipelines using the `add_marker` API and retain their old API for 
+  interactions with a `QNode`,
+
+  ```python
+  pipeline = qml.CompilePipeline()
+  pipeline.add_marker("no-transforms")
+  pipeline += qml.transforms.cancel_inverses
+
+  @qml.marker("after-cancel-inverses")
+  @pipeline
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+    qml.X(0)
+    qml.H(0)
+    qml.H(0)
+    return qml.probs()
+  ```
+
+  The compilation pipeline can be inspected to reveal the transforms and the markers
+  contained, 
+
+  ```pycon
+  >>> print(circuit.compile_pipeline)
+  CompilePipeline(
+     ├─▶ no-transforms
+    [1] cancel_inverses()
+     └─▶ after-cancel-inverses
+  )
+  ```
+
+  The string supplied to :func:`~.marker` can then be used as an argument to `level` in `draw`
+  and `specs`, showing the cumulative result of applying transforms up to the marker:
+
+  ```pycon
+  >>> print(qml.draw(c, level="no-transforms")())
+  0: ──X──H──H─┤  Probs
+  >>> print(qml.draw(c, level="after-cancel-inverses")())
+  0: ──X─┤  Probs
+  ```
+
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
@@ -385,39 +429,6 @@ def expval(x: float):
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
-
-* The :func:`~.marker` utility is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
-  this feature has been re-worked to now be a utility function that adds a marker to a `QNode`'s compilation pipeline.
-  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
-
-  Markers are now added directly to compilation pipelines using the `add_marker` API and retain their old API for 
-  interactions with a `QNode`,
-
-  ```python
-  pipeline = qml.CompilePipeline()
-  pipeline.add_marker("no-transforms")
-  pipeline += qml.transforms.cancel_inverses
-
-  @qml.marker("after-cancel-inverses")
-  @pipeline
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-    qml.X(0)
-    qml.H(0)
-    qml.H(0)
-    return qml.probs()
-  ```
-
-  The string supplied to :func:`~.marker` can then be used as an argument to `level` in `draw`
-  and `specs`, showing the cumulative result of applying transforms up to the marker:
-
-  ```pycon
-  >>> print(qml.draw(c, level="no-transforms")())
-  0: ──X──H──H─┤  Probs
-  >>> print(qml.draw(c, level="after-cancel-inverses")())
-  0: ──X─┤  Probs
-  ```
-
 
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
