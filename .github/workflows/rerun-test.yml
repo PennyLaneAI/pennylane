@@ -1,0 +1,143 @@
+name: Run tests multiple times
+permissions: write-all
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_count:
+        description: 'Number of times to run the documentation tests'
+        required: false
+        default: 1
+      workflow:
+        description: 'The workflow to run multiple times'
+        required: true
+        default: 'documentation-tests'
+        type: choice
+        options:
+          - documentation-tests
+          - docs
+          - format
+          - module-validation
+          - package-warning-as-errors
+          - autograd-tests
+          - jax-tests
+          - torch-tests
+          - capture-jax-tests
+          - core-tests
+          - all-interfaces-tests
+          - external-libraries-tests
+          - qcut-tests
+          - qchem-tests
+          - gradients-tests
+          - data-tests
+          - device-tests
+
+jobs:
+  prepare-run-count:
+    name: Prepare run count list
+    runs-on: ubuntu-latest
+    outputs:
+      run-count: ${{ steps.set-run-count.outputs.run-count }}
+      skip-tests: ${{ steps.set-skip-tests.outputs.skip-tests }}
+    steps:
+      - name: Set run count
+        id: set-run-count
+        run: |
+          RUN_COUNT_LIST=$(seq -s, 1 ${{ inputs.run_count || 2 }})
+          echo "run-count-list=$RUN_COUNT_LIST" >> $GITHUB_OUTPUT
+          echo "Run count list is set to $RUN_COUNT_LIST"
+          RUN_COUNT_JSON=$(echo "[\"$(echo $RUN_COUNT_LIST | sed 's/,/\",\"/g')\"]")
+          echo "run-count=$RUN_COUNT_JSON" >> $GITHUB_OUTPUT
+          echo "workflow=${{ inputs.workflow }}"
+
+      - name: Set skip tests list
+        if: inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' 
+        id: set-skip-tests
+        run: |
+          ALL_TESTS='torch-tests,gradients-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
+          WORKFLOW='${{ inputs.workflow }}'
+          SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
+          echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
+
+  docs:
+    name: Run docs
+    needs: prepare-run-count
+    if: inputs.workflow == 'docs' 
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/docs.yml
+
+  documentation-tests:
+    name: Run documentation-tests
+    needs: prepare-run-count
+    if: inputs.workflow == 'documentation-tests'
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/documentation-tests.yml
+
+  format:
+    name: Run format
+    needs: prepare-run-count
+    if: inputs.workflow == 'format' 
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/format.yml  
+
+  module-validation:
+    name: Run module-validation
+    needs: prepare-run-count
+    if: inputs.workflow == 'module-validation' 
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/module-validation.yml
+
+  package-warning-as-errors:
+    name:  Run package-warning-as-errors
+    needs: prepare-run-count
+    if: inputs.workflow == 'package-warning-as-errors' 
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/package_warnings_as_errors.yml
+
+  interface-unit-tests:
+    name: Run interface-unit-tests
+    needs: prepare-run-count
+    if: >
+      ${{
+        inputs.workflow == 'autograd-tests' ||
+        inputs.workflow == 'jax-tests' ||
+        inputs.workflow == 'torch-tests' ||
+        inputs.workflow == 'capture-jax-tests' ||
+        inputs.workflow == 'core-tests' ||
+        inputs.workflow == 'all-interfaces-tests' ||
+        inputs.workflow == 'external-libraries-tests' ||
+        inputs.workflow == 'qcut-tests' ||
+        inputs.workflow == 'qchem-tests' ||
+        inputs.workflow == 'gradients-tests' ||
+        inputs.workflow == 'data-tests' ||
+        inputs.workflow == 'device-tests'
+      }}
+    strategy:
+      max-parallel: 5
+      matrix:
+        run-count: ${{ fromJSON(needs.prepare-run-count.outputs.run-count) }}
+    uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      branch: ${{ github.ref }}
+      job_name_suffix:  '${{ inputs.workflow }}'
+      upload_to_codecov: false
+      run_lightened_ci: true  
+      skip_ci_test_jobs: |
+        ${{ needs.prepare-run-count.outputs.skip-tests }}

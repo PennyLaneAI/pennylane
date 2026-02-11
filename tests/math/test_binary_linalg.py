@@ -15,10 +15,32 @@
 import numpy as np
 import pytest
 
-from pennylane import math as fn
+from pennylane import math
 
 
-def _make_random_regular_matrix(n, random_ops, seed):
+def _is_binary(x: np.ndarray) -> bool:
+    """Return whether all entries of a numpy array are binary."""
+    return set(x.flat).issubset({0, 1})
+
+
+def _is_row_echelon(x: np.ndarray) -> bool:
+    """Check whether a matrix ``x`` is in row echelon form."""
+    for i, row in enumerate(x):
+        if np.any(row[:i]):
+            return False
+    return True
+
+
+def _is_reduced_row_echelon(x: np.ndarray) -> bool:
+    """Check whether a matrix ``x`` is in reduced row echelon form."""
+    num_rows = len(x)
+    for i, row in enumerate(x):
+        if np.any(row[:i]) or np.any(row[i + 1 : num_rows]):
+            return False
+    return True
+
+
+def _make_random_regular_matrix(n, random_ops, seed, force_not_ref=False):
     """Create a random regular (=non-singular) binary matrix.
     This is done by performing random row additions on the identity matrix, preserving
     the regularity of the identity matrix itself.
@@ -26,17 +48,19 @@ def _make_random_regular_matrix(n, random_ops, seed):
     In the picture of quantum circuits, we are computing the parity matrix of a random CNOT
     circuit.
     """
+    if force_not_ref:
+        is_ref_already = True
+        while is_ref_already:
+            P = _make_random_regular_matrix(n, random_ops, seed)
+            is_ref_already = _is_row_echelon(P)
+            seed = seed + 1
+        return P
     rng = np.random.default_rng(seed)
     P = np.eye(n, dtype=int)
     for _ in range(random_ops):
         i, j = rng.choice(n, size=2, replace=False)  # Random pair of rows
         P[i] += P[j]  # Add second sampled row to first sampled row
     return P % 2  # Make into binary matrix
-
-
-def _is_binary(x: np.ndarray) -> bool:
-    """Return whether all entries of a numpy array are binary."""
-    return set(x.flat).issubset({0, 1})
 
 
 class TestIntToBinary:
@@ -62,7 +86,7 @@ class TestIntToBinary:
         assert (expected @ 2 ** np.arange(n - 1, -1, -1)) == x
         assert _is_binary(expected)
 
-        out = fn.int_to_binary(x, n)
+        out = math.int_to_binary(x, n)
         assert _is_binary(out)
         assert np.allclose(out, expected)
 
@@ -93,7 +117,7 @@ class TestIntToBinary:
         assert np.allclose((expected @ 2 ** np.arange(n - 1, -1, -1)), x)
         assert _is_binary(expected)
 
-        out = fn.int_to_binary(x, width=n)
+        out = math.int_to_binary(x, width=n)
         assert _is_binary(out)
         assert out.shape == (*x.shape, n)
         assert np.allclose(out, expected)
@@ -102,13 +126,24 @@ class TestIntToBinary:
 class TestBinaryFiniteReducedRowEchelon:
     """Tests for ``binary_finite_reduced_row_echelon``."""
 
-    def test_input_not_modified_by_default(self):
+    def test_input_not_modified_by_default(self, seed):
         """Test that the input is not modified if ``inplace`` is not specified explicitly."""
-        binary_matrix = _make_random_regular_matrix(5, 30, 9251)
+        binary_matrix = _make_random_regular_matrix(5, 30, seed, force_not_ref=True)
         copy = binary_matrix.copy()
-        rref_bin_mat = fn.binary_finite_reduced_row_echelon(binary_matrix)
+        rref_bin_mat = math.binary_finite_reduced_row_echelon(binary_matrix)
         assert not np.allclose(rref_bin_mat, binary_matrix)
         assert np.allclose(copy, binary_matrix)
+
+    @pytest.mark.parametrize("inplace", [False, True])
+    @pytest.mark.parametrize("n", [3, 5, 10, 31, 109])
+    def test_correctness_random(self, n, inplace, seed):
+        """Test that the input is not modified if ``inplace`` is not specified explicitly."""
+        binary_matrix = _make_random_regular_matrix(n, n**2, seed, force_not_ref=True)
+        copy = binary_matrix.copy()
+        rref_bin_mat = math.binary_finite_reduced_row_echelon(binary_matrix, inplace=inplace)
+        assert _is_reduced_row_echelon(rref_bin_mat)
+        assert np.allclose(rref_bin_mat, binary_matrix) is inplace
+        assert np.allclose(copy, binary_matrix) is not inplace
 
     @pytest.mark.parametrize("inplace", [False, True])
     @pytest.mark.parametrize(
@@ -157,53 +192,16 @@ class TestBinaryFiniteReducedRowEchelon:
         ],
     )
     def test_reduced_row_echelon(self, binary_matrix, result, inplace):
-        r"""Test that _reduced_row_echelon returns the correct result."""
-
-        # build row echelon form of the matrix
-        shape = binary_matrix.shape
-        for irow in range(shape[0]):
-            pivot_index = 0
-            if np.count_nonzero(binary_matrix[irow, :]):
-                pivot_index = np.nonzero(binary_matrix[irow, :])[0][0]
-
-            for jrow in range(shape[0]):
-                if jrow != irow and binary_matrix[jrow, pivot_index]:
-                    binary_matrix[jrow, :] = (binary_matrix[jrow, :] + binary_matrix[irow, :]) % 2
-
-        indices = [
-            irow
-            for irow in range(shape[0] - 1)
-            if np.array_equal(binary_matrix[irow, :], np.zeros(shape[1]))
-        ]
-
-        temp_row_echelon_matrix = binary_matrix.copy()
-        for row in indices[::-1]:
-            temp_row_echelon_matrix = np.delete(temp_row_echelon_matrix, row, axis=0)
-
-        row_echelon_matrix = np.zeros(shape, dtype=int)
-        row_echelon_matrix[: shape[0] - len(indices), :] = temp_row_echelon_matrix
-
-        # build reduced row echelon form of the matrix from row echelon form
-        for idx in range(len(row_echelon_matrix))[:0:-1]:
-            nonzeros = np.nonzero(row_echelon_matrix[idx])[0]
-            if len(nonzeros) > 0:
-                redrow = (row_echelon_matrix[idx, :] % 2).reshape(1, -1)
-                coeffs = (
-                    (-row_echelon_matrix[:idx, nonzeros[0]] / row_echelon_matrix[idx, nonzeros[0]])
-                    % 2
-                ).reshape(1, -1)
-                row_echelon_matrix[:idx, :] = (
-                    row_echelon_matrix[:idx, :] + (coeffs.T * redrow) % 2
-                ) % 2
+        r"""Test that ``binary_finite_reduced_row_echelon`` returns the correct hardcoded
+        result."""
 
         # get reduced row echelon form from the implemented function
         input_copy = binary_matrix.copy()
-        rref_bin_mat = fn.binary_finite_reduced_row_echelon(binary_matrix, inplace=inplace)
+        rref_bin_mat = math.binary_finite_reduced_row_echelon(binary_matrix, inplace=inplace)
 
         assert rref_bin_mat.shape == binary_matrix.shape
-        assert set(rref_bin_mat.flat).issubset({0, 1})
-        assert (rref_bin_mat == row_echelon_matrix).all()
-        assert (rref_bin_mat == result).all()
+        assert _is_binary(rref_bin_mat)
+        assert np.array_equal(rref_bin_mat, result)
         assert np.allclose(rref_bin_mat, binary_matrix) is inplace
         assert np.allclose(input_copy, binary_matrix) is not inplace
 
@@ -228,7 +226,7 @@ class TestBinaryRank:
     def test_square_matrix(self, binary_matrix, expected):
         """Test that the binary_matrix_rank function correctly computes
         the rank over Z_2 for a square matrix."""
-        rk = fn.binary_matrix_rank(binary_matrix)
+        rk = math.binary_matrix_rank(binary_matrix)
         assert rk == expected
 
     @pytest.mark.parametrize(
@@ -245,7 +243,7 @@ class TestBinaryRank:
     def test_rectangular_matrix(self, binary_matrix, expected):
         """Test that the binary_matrix_rank function correctly computes
         the rank over Z_2 for a rectangular (non-square) matrix."""
-        rk = fn.binary_matrix_rank(binary_matrix)
+        rk = math.binary_matrix_rank(binary_matrix)
         assert rk == expected
 
     @pytest.mark.parametrize("shape", [(2, 3), (4, 7), (5, 93), (14, 4), (100, 7)])
@@ -254,9 +252,9 @@ class TestBinaryRank:
         rank inferred from the reduced row echelon form of a random matrix."""
         rng = np.random.default_rng(seed)
         binary_matrix = rng.choice(2, size=shape, replace=True)
-        rk_direct = fn.binary_matrix_rank(binary_matrix)
+        rk_direct = math.binary_matrix_rank(binary_matrix)
 
-        rref = fn.binary_finite_reduced_row_echelon(binary_matrix)
+        rref = math.binary_finite_reduced_row_echelon(binary_matrix)
         rk_from_rref = np.sum(np.any(rref, axis=1))
         assert rk_direct == rk_from_rref
 
@@ -297,10 +295,10 @@ class TestSolveBinaryLinearSystem:
     def test_with_regular_matrix(self, A, b, expected):
         """Test that the system is solved for a regular matrix and coefficient vector b."""
         # Input validation
-        assert fn.binary_matrix_rank(A) == len(A)  # Regular matrix
+        assert math.binary_matrix_rank(A) == len(A)  # Regular matrix
         assert np.allclose((A @ expected) % 2, b)  # expected is a solution
 
-        x_sol = fn.binary_solve_linear_system(A, b)
+        x_sol = math.binary_solve_linear_system(A, b)
         assert x_sol.shape == b.shape and x_sol.dtype == np.int64
         assert set(x_sol).issubset({0, 1})
         assert np.allclose(x_sol, expected)  # Solution unique due to regularity, x_sol must match
@@ -315,7 +313,7 @@ class TestSolveBinaryLinearSystem:
     def test_with_singular_matrix_error(self, A, b):
         """Test that an error is raised if a linear system has a singular matrix."""
         with pytest.raises(np.linalg.LinAlgError, match="Singular binary matrix"):
-            _ = fn.binary_solve_linear_system(A, b)
+            _ = math.binary_solve_linear_system(A, b)
 
     @pytest.mark.parametrize("n", [1, 4, 5, 10, 13, 28, 102])
     def test_with_random_regular_matrix(self, n, seed):
@@ -325,7 +323,7 @@ class TestSolveBinaryLinearSystem:
         A = _make_random_regular_matrix(n, random_ops, seed)
         x = np.random.default_rng(seed + 1).integers(0, 2, size=(n,))
         b = (A @ x) % 2
-        x_sol = fn.binary_solve_linear_system(A, b)
+        x_sol = math.binary_solve_linear_system(A, b)
         assert x_sol.shape == (n,) and x_sol.dtype == np.int64
         assert set(x_sol).issubset({0, 1})
         assert np.allclose((A @ x_sol) % 2, b)
@@ -339,7 +337,7 @@ class TestBinaryIsIndependent:
         vector = np.array([1, 0])
         basis = np.eye(3, dtype=int)
         with pytest.raises(ValueError, match="columns of `basis` should have the same length"):
-            fn.binary_is_independent(vector, basis)
+            math.binary_is_independent(vector, basis)
 
     @pytest.mark.parametrize(
         "vector, basis, expected",
@@ -362,9 +360,9 @@ class TestBinaryIsIndependent:
     def test_independence(self, vector, basis, expected):
         """Test that linear independence and dependence are recognized correctly."""
         # input validation. This equality is an assumption of ``binary_is_independent``.
-        assert fn.binary_matrix_rank(basis) == min(basis.shape)
+        assert math.binary_matrix_rank(basis) == min(basis.shape)
 
-        is_indep = fn.binary_is_independent(vector, basis)
+        is_indep = math.binary_is_independent(vector, basis)
         assert is_indep is expected
 
 
@@ -396,10 +394,10 @@ class TestBinarySelectBasis:
         """Test that ``binary_select_basis`` can be used to compute a basis over
         Z_2 out of overcomplete bit strings."""
         r, D = bits.shape
-        basis, other_bits = fn.binary_select_basis(bits)
+        basis, other_bits = math.binary_select_basis(bits)
         assert basis.shape == (r, r)
         assert _is_binary(basis)
-        assert fn.binary_matrix_rank(basis) == r
+        assert math.binary_matrix_rank(basis) == r
 
         assert other_bits.shape == (r, D - r)
         assert _is_binary(other_bits)
@@ -423,9 +421,9 @@ class TestBinarySelectBasis:
         """Test that ``binary_select_basis`` can be used to compute a basis over
         Z_2 out of incomplete (or exactly complete) bit strings (to span the entire space)."""
         r, D = bits.shape
-        basis, other_bits = fn.binary_select_basis(bits)
+        basis, other_bits = math.binary_select_basis(bits)
         assert basis.shape == (r, D)
         assert _is_binary(basis)
-        assert fn.binary_matrix_rank(basis) == D
+        assert math.binary_matrix_rank(basis) == D
 
         assert other_bits.shape == (r, 0)
