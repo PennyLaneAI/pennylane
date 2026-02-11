@@ -152,27 +152,45 @@ class TestSnapshotGeneral:
     def test_sample_measurement_with_analytical_device_fails(self, dev):
         @qml.qnode(dev)
         def circuit():
+            if isinstance(dev, qml.devices.QutritDevice):
+                qml.THadamard(wires=0)
+                qml.Snapshot(measurement=qml.sample())
+                return qml.expval(qml.GellMann(0, index=6))
+
             qml.Hadamard(0)
             qml.Snapshot(measurement=qml.sample())
             return qml.expval(qml.PauliZ(0))
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the analytical device
-        with pytest.raises(DeviceError):
-            qml.snapshots(circuit)()
+        if isinstance(dev, qml.devices.QutritDevice):
+            with pytest.raises(QuantumFunctionError, match="shots has to be explicitly set"):
+                qml.snapshots(circuit)()
+        else:
+            with pytest.raises(DeviceError, match=r"sample\(.*\) not accepted for analytic"):
+                qml.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
         @qml.set_shots(shots=200)
         @qml.qnode(dev)
         def circuit():
+            if isinstance(dev, qml.devices.QutritDevice):
+                qml.THadamard(wires=0)
+                qml.Snapshot(measurement=qml.mutual_info(0, 1))
+                return qml.expval(qml.GellMann(0, index=6))
+
             qml.Hadamard(0)
             qml.Snapshot(measurement=qml.mutual_info(0, 1))
             return qml.expval(qml.PauliZ(0))
 
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
-        with pytest.raises(DeviceError):
-            qml.snapshots(circuit)()
+        if isinstance(dev, qml.devices.QutritDevice):
+            with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
+                qml.snapshots(circuit)()
+        else:
+            with pytest.raises(DeviceError, match=r"not accepted with finite shots"):
+                qml.snapshots(circuit)()
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
         if "lightning" in dev.name or "mixed" in dev.name:
