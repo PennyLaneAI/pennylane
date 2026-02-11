@@ -369,9 +369,7 @@ def setup_state_prep(
 
 # pylint: disable=unused-argument
 def state_prep_decomp_resources(state, wires):
-    return {
-        qml.resource_rep(qml.MottonenStatePreparation, num_wires=len(wires)): 1
-    }  # TODO: what to do about Mottonen having no resource rep?
+    return qml.MottonenStatePreparation.compute_resources(state, wires)
 
 
 @partial(

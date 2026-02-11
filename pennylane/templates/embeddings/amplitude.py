@@ -14,13 +14,19 @@
 r"""
 Contains the AmplitudeEmbedding template.
 """
-from pennylane.decomposition import add_decomps
-from pennylane.ops import StatePrep
-from pennylane.ops.qubit.state_preparation import _state_prep_decomp
+from functools import partial
+
+from pennylane.ops.qubit.state_preparation import StatePrep, setup_state_prep, state_prep_decomp_resources
+from pennylane.templates import Subroutine
 
 
-# pylint: disable=too-many-arguments
-class AmplitudeEmbedding(StatePrep):
+@partial(
+    Subroutine,
+    static_argnames=[],
+    setup_inputs=setup_state_prep,
+    compute_resources=state_prep_decomp_resources,
+)
+def AmplitudeEmbedding(features, wires, pad_with=None, normalize=False, id=None, validate_norm=True):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     By setting ``pad_with`` to a real or complex number, ``features`` is automatically padded to dimension
@@ -105,24 +111,4 @@ class AmplitudeEmbedding(StatePrep):
         array([0.7071+0.j, 0.7071+0.j, 0.    +0.j, 0.    +0.j])
 
     """
-
-    resource_keys = frozenset({"num_wires"})
-
-    @property
-    def resource_params(self):
-        return {"num_wires": len(self.wires)}
-
-    def __init__(
-        self, features, wires, *, pad_with=None, normalize=False, id=None, validate_norm=True
-    ):
-        super().__init__(
-            features,
-            wires=wires,
-            pad_with=pad_with,
-            normalize=normalize,
-            validate_norm=validate_norm,
-            id=id,
-        )
-
-
-add_decomps(AmplitudeEmbedding, _state_prep_decomp)
+    StatePrep(features, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm)
