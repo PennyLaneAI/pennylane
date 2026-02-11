@@ -23,7 +23,6 @@ import pennylane as qml
 
 # pylint: disable=protected-access, unused-argument
 
-
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
 EIGVALS_TEST_DATA = [
     (
