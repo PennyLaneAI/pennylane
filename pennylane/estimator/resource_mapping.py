@@ -79,6 +79,34 @@ def _map_to_resource_op(op: Operation) -> ResourceOperator:
     )
 
 
+_Subroutine_map: dict = {}
+"""A registry for how to calculate the resources from a SubroutineOp."""
+
+
+def _register_subroutine(subroutine: qtemps.Subroutine):
+    """Register a function for calculating the resources of a SubroutineOp using a decorator.
+
+    .. code-block::
+        @_register_subroutine(MySubroutine)
+        def _resources(op: SubroutineOp):
+            return re_estimation_version(...)
+
+    """
+
+    def subroutine_resources_decorator(f):
+        _Subroutine_map[subroutine] = f
+        return f
+
+    return subroutine_resources_decorator
+
+
+@_map_to_resource_op.register
+def _resources_for_subroutine(op: qtemps.SubroutineOp):
+    if op.subroutine in _Subroutine_map:
+        return _Subroutine_map[op.subroutine](op)
+    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered resource equivalent.")
+
+
 @_map_to_resource_op.register
 def _(op: qops.Identity):
     return re_ops.Identity(wires=op.wires)
@@ -275,8 +303,8 @@ def _(op: qtemps.AQFT):
     )
 
 
-@_map_to_resource_op.register
-def _(op: qtemps.BasisRotation):
+@_register_subroutine(qtemps.BasisRotation)
+def _handle_basis_rotation(op):
     return re_temps.BasisRotation(dim=len(op.wires), wires=op.wires)
 
 
