@@ -844,10 +844,10 @@ class TestDefaultQutritIntegration:
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
 
-    # TODO: register adjoint decomposition rules for the qutrit ops [sc-111324]
-    @pytest.mark.usefixtures("disable_graph_decomposition")
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_qutrit_circuit_adjoint_integration(self):
         """Test that using qml.adjoint in a `default.qutrit` qnode works as expected."""
+
         dev = qml.device("default.qutrit", wires=3)
 
         def ansatz(phi, theta, omega, U):
