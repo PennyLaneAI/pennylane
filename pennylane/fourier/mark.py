@@ -20,13 +20,26 @@ from pennylane.ops.op_math import SymbolicOp
 
 
 class MarkedOp(SymbolicOp):
-    """Creates a marked operator."""
+    """Creates a marked operator to be used by the 'fourier' module.
+
+    Args:
+        base (Operator): The operator you wish to mark.
+        tag (str): The custom tag to give to your operator.
+
+    **Example:**
+
+    >>> op = qml.RX(1.23456, wires=0)
+    >>> marked_op = MarkedOp(op, "my-rx")
+    >>> print(marked_op.marker)
+    my-rx
+
+    """
 
     resource_keys = {"base_class", "base_params"}
 
-    def __init__(self, base: Operator, tag: str):
+    def __init__(self, base: Operator, marker: str):
         super().__init__(base)
-        self.hyperparameters["tag"] = tag
+        self.hyperparameters["marker"] = marker
 
     @property
     def resource_params(self) -> dict:
@@ -40,16 +53,21 @@ class MarkedOp(SymbolicOp):
     def generator(self):
         return self.base.generator()
 
+    @property
+    def marker(self) -> str:
+        """Retrieve the marker set on this operator."""
+        return self.hyperparameters["marker"]
+
     def label(self, decimals=None, base_label=None, cache=None):
         base_label = self.base.label(decimals, base_label, cache)
-        tag = self.hyperparameters["tag"]
+        marker = self.hyperparameters["marker"]
 
         # If base label already has parameters, e.g., "RX(0.5)"
         if base_label.endswith(")"):
-            return f'{base_label[:-1]}, "{tag}")'
+            return f'{base_label[:-1]}, "{marker}")'
 
         # If base label is a simple label, e.g., "X"
-        return f'{base_label}("{tag}")'
+        return f'{base_label}("{marker}")'
 
 
 def mark(op: Operator, tag: str) -> MarkedOp:

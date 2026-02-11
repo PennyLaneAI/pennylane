@@ -41,30 +41,30 @@ def circuit_spectrum(
         define a ``generator``, and will fail if gates marked as inputs do not
         have this attribute.
 
-    Gates are marked as input-encoding gates in the quantum function by giving them an ``tag``.
+    Gates are marked as input-encoding gates in the quantum function by giving them an ``mark``.
 
     >>> from pennylane.fourier.mark import mark
     >>> my_op = qml.H(0)
     >>> print(my_op.label())
     H
-    >>> marked_op = mark(my_op, tag="tagged-h")
-    >>> print(marked_op.hyperparameters["tag"])
-    tagged-h
+    >>> marked_op = mark(my_op, "marked-h")
+    >>> print(marked_op.marker)
+    marked-h
     >>> print(marked_op.label())
-    H("tagged-h")
+    H("marked-h")
 
-    If two gates have the same ``tag``, they are considered
+    If two gates have the same ``mark``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
-    to indicate that only gates with a specific ``tag`` should be interpreted as input-encoding gates.
-    Otherwise, all gates with an explicit ``tag`` are considered to be input-encoding gates.
+    to indicate that only gates with a specific ``mark`` should be interpreted as input-encoding gates.
+    Otherwise, all gates with an explicit ``mark`` are considered to be input-encoding gates.
 
     .. note::
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit in which
-            input-encoding gates are marked by their ``tag`` attribute
-        encoding_gates (list[str]): list of input-encoding gate ``tag`` strings
+            input-encoding gates are marked by their ``mark`` attribute
+        encoding_gates (list[str]): list of input-encoding gate ``mark`` strings
             for which to compute the frequency spectra
         decimals (int): number of decimals to which to round frequencies.
 
@@ -72,7 +72,7 @@ def circuit_spectrum(
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will return a dictionary with the input-encoding gate ``tag`` as keys and their frequency spectra as values.
+        will return a dictionary with the input-encoding gate ``mark`` as keys and their frequency spectra as values.
 
 
     **Details**
@@ -175,7 +175,7 @@ def circuit_spectrum(
 
     .. note::
         The ``circuit_spectrum`` function does not check if the result of the
-        circuit is an expectation, or if gates with the same ``tag``
+        circuit is an expectation, or if gates with the same ``mark``
         take the same value in a given call of the function.
 
     The ``circuit_spectrum`` function works in all interfaces:
@@ -208,17 +208,17 @@ def circuit_spectrum(
             # NOTE: Here for backwards compatibility remove once 'id' deprecation is complete
             # pylint: disable=protected-access
             if (id := op._id) is not None:
-                op = MarkedOp(op, tag=id)
+                op = MarkedOp(op, id)
 
             # If the operator is not marked, move to the next
             if not isinstance(op, MarkedOp):
                 continue
 
-            tag = op.hyperparameters.get("tag")
+            mark = op.marker
 
-            # if user has not specified encoding_gate tag's,
-            # consider any tag
-            is_encoding_gate = encoding_gates is None or tag in encoding_gates
+            # if user has not specified encoding_gate mark's,
+            # consider any mark
+            is_encoding_gate = encoding_gates is None or mark in encoding_gates
 
             if is_encoding_gate:
                 if len(op.parameters) != 1:
@@ -229,21 +229,21 @@ def circuit_spectrum(
 
                 spec = get_spectrum(op, decimals=decimals)
 
-                # if tag has been seen before, join this spectrum to another one
-                if tag in freqs:
-                    spec = join_spectra(freqs[tag], spec)
+                # if mark has been seen before, join this spectrum to another one
+                if mark in freqs:
+                    spec = join_spectra(freqs[mark], spec)
 
-                freqs[tag] = spec
+                freqs[mark] = spec
 
         # Turn spectra into sorted lists and include negative frequencies
-        for tag, spec in freqs.items():
+        for mark, spec in freqs.items():
             spec = sorted(spec)
-            freqs[tag] = [-f for f in spec[:0:-1]] + spec
+            freqs[mark] = [-f for f in spec[:0:-1]] + spec
 
-        # Add trivial spectrum for requested gate tags that are not in the circuit
+        # Add trivial spectrum for requested gate marks that are not in the circuit
         if encoding_gates is not None:
-            for tag in set(encoding_gates).difference(freqs):
-                freqs[tag] = []
+            for mark in set(encoding_gates).difference(freqs):
+                freqs[mark] = []
 
         return freqs
 
