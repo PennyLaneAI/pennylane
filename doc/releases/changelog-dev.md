@@ -410,10 +410,12 @@ def expval(x: float):
   The string supplied to :func:`~.marker` can then be used as an argument to `level` in `draw`
   and `specs`, showing the cumulative result of applying transforms up to the marker:
 
+  ```pycon
   >>> print(qml.draw(c, level="no-transforms")())
   0: ──X──H──H─┤  Probs
   >>> print(qml.draw(c, level="after-cancel-inverses")())
   0: ──X─┤  Probs
+  ```
 
 
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
