@@ -35,7 +35,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
         ValueError: The 'label' argument must be provided.
 
     .. seealso::
-        :func:`~.CompilePipeline.add_marker`
+        :meth:`~.CompilePipeline.add_marker`
 
     **Example:**
 
