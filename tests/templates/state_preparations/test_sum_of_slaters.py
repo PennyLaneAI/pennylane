@@ -19,6 +19,8 @@ from itertools import combinations, product
 import numpy as np
 import pytest
 
+import pennylane as qml
+from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
 from pennylane.templates.state_preparations.sum_of_slaters import (
@@ -26,6 +28,8 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
     _find_single_w,
+    _int_to_binary,
+    _sos_state_prep,
     compute_sos_encoding,
     select_sos_rows,
 )
@@ -202,6 +206,14 @@ class TestHelperFunctions:
         selectors, new_bits = select_sos_rows(bits)
         assert set(selectors) == set(range(len(bits))) - set(skip_rows)
         assert np.allclose(new_bits, bits[np.array(selectors)])
+
+    @pytest.mark.parametrize("num_bits", [1, 2, 5])
+    def test_select_sos_rows_single_column(self, num_bits):
+        """Test that the edge case of a single bitstring is handled correctly."""
+        bits = np.array([[0], [1], [0], [1], [1]])[:num_bits]
+        selectors, new_bits = select_sos_rows(bits)
+        assert selectors == [0]
+        assert np.array_equal(new_bits, np.array([[0]]))
 
     @pytest.mark.parametrize(
         "r, len_N, len_M, seed",
@@ -404,16 +416,117 @@ class TestComputeSosEncoding:
 class TestSumOfSlatersPrep:
     """Test the quantum template ``SumOfSlatersPrep``."""
 
+    def make_random_data(self, num_wires, num_entries, seed):
+        """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""
+        rng = np.random.default_rng(seed)
+        coefficients = rng.random(num_entries)
+        coefficients /= np.linalg.norm(coefficients)
+        indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
+        return coefficients, indices
+
     @pytest.mark.parametrize(
         "num_wires, num_entries",
         [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 137), (17, 1421)],
     )
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator."""
-        rng = np.random.default_rng(seed)
-        indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
-        coefficients = rng.random(num_entries)
-        coefficients /= np.linalg.norm(coefficients)
+        coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
         wires = list(range(num_wires))
         op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
+
+    def test_old_decomposition_system_disabled(self):
+        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        decomposition in the old system breaks. Hence we manually deactivated the fallback
+        of compute_decomposition to the new decomp system."""
+        num_wires = 5
+        coefficients, indices = self.make_random_data(num_wires, 13, seed=141)
+        wires = list(range(num_wires))
+        op = SumOfSlatersPrep(coefficients, wires, indices=indices)
+        # In this case, assert_valid actually asserts that compute_decomposition raises an error.
+        assert op.has_decomposition is False
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5])
+    @pytest.mark.parametrize("num_entries", [1, 4, 5, 6])
+    @pytest.mark.parametrize("num_bits", [4, 5, 6])
+    def test_register_sizes(self, num_wires, num_entries, num_bits, seed):
+        """Test for ``SumOfSlatersPrep.required_register_sizes`` and work wire spec of
+        ``_sos_state_prep``."""
+
+        coefficients, _ = self.make_random_data(num_wires, num_entries, seed=seed)
+
+        # In this test we do a bit of gymnastics: We first create random distinct bitstrings,
+        # then make them less redundant via select_sos_rows, and then create the `indices` to
+        # be passed into SumOfSlatersPrep. The effective `num_bits` is then given by the length
+        # of the less redundant bitstrings, rather than the test case input `num_bits`.
+        bits = random_distinct_bitstrings(min(num_bits, num_wires), num_entries, seed)
+        reduced_bits = select_sos_rows(bits)[1]
+        num_bits = len(reduced_bits)
+        indices = 2 ** np.arange(num_bits - 1, -1, -1) @ reduced_bits
+
+        sizes = SumOfSlatersPrep.required_register_sizes(num_entries, num_bits, num_wires)
+        d = ceil_log2(num_entries)
+        assert sizes["wires"] == num_wires
+        assert sizes["enumeration_wires"] == d
+        assert sizes["identification_wires"] == max((num_bits > 2 * d - 1) * (2 * d - 1), 0)
+        assert sizes["qrom_work_wires"] == max(d - 1, 0)
+        assert sizes["mcx_work_wires"] == max(min(num_bits, 2 * d - 1), 0)
+
+        op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
+        exp_resource_params = {"D": num_entries, "num_bits": num_bits, "num_wires": num_wires}
+        assert exp_resource_params == op.resource_params
+
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        assert sum(sizes.values()) - num_wires == registered_work_wires.total
+
+    def test_int_to_binary(self, seed):
+        """Test for ``_int_to_binary`` used in SumOfSlatersPrep decomposition."""
+        rng = np.random.default_rng(seed)
+        x = rng.choice(2**12, size=174, replace=False)
+        out_full_width = _int_to_binary(x, 12)
+        powers = 2 ** np.arange(11, -1, -1)
+        assert np.allclose(powers @ out_full_width, x)
+
+        out_slightly_too_small_width = _int_to_binary(x, 11)
+        powers = 2 ** np.arange(10, -1, -1)
+        assert np.allclose(powers @ out_slightly_too_small_width, x % 2**11)
+
+        out_way_too_small_width = _int_to_binary(x, 6)
+        powers = 2 ** np.arange(5, -1, -1)
+        assert np.allclose(powers @ out_way_too_small_width, x % 2**6)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "num_wires,num_entries",
+        [(3, 1), (3, 2), (3, 3), (4, 3), (4, 15), (5, 4), (5, 21), (10, 63), (10, 123)],
+    )
+    def test_decomposition_prepares_state(self, num_wires, num_entries, seed):
+        """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""
+
+        coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
+
+        for rule in list_decomps(SumOfSlatersPrep):
+
+            @qml.qnode(qml.device("default.qubit"))
+            def func():
+                # pylint: disable=cell-var-from-loop
+                # Make sure that the output state length is at least 2**num_wires
+                qml.Identity(range(num_wires))
+                rule(coefficients, wires=range(num_wires), indices=indices)
+                return qml.state()
+
+            out_state = func()
+
+            # We infer the total and aux wire counts from the state shape, because small-scale
+            # edge cases often have fewer work wires than the general case.
+            num_all_wires = ceil_log2(out_state.shape[0])
+            num_aux_wires = num_all_wires - num_wires
+            for _ in range(num_aux_wires):
+                assert np.allclose(out_state[1::2], 0.0), "\n".join(
+                    [
+                        f"{a} : {b}"
+                        for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
+                    ]
+                )
+                out_state = out_state[::2]
+            assert np.allclose([out_state[key] for key in indices], coefficients)

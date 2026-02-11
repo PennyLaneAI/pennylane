@@ -21,8 +21,8 @@ import numpy as np
 import pennylane as qml
 from pennylane import allocate, for_loop, math
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -139,6 +139,10 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     :math:`(n_{\text{row}}, n_{\text{col}})` is the shape of the input array.
 
     """
+    if bits.shape[1] == 1:
+        # If there is a single column, we can make our life a bit easier
+        return [0], bits[:1]
+
     selectors = list(range(len(bits)))
 
     while True:
@@ -548,23 +552,31 @@ class SumOfSlatersPrep(Operation):
     def resource_params(self):
         indices = self.hyperparameters["indices"]
         D = len(indices)
-        n = len(self.hyperparameters["wires"])
+        n = len(self.wires)
         v_bits = _int_to_binary(np.array(indices), n)  # v_bits.shape = (n, D)
         selector_ids, _ = select_sos_rows(v_bits)
         r = len(selector_ids)
         return {"D": D, "num_bits": r, "num_wires": n}
 
-    def __init__(self, indices, coefficients, wires):
-        super().__init__(indices, coefficients, wires)
+    def __init__(self, coefficients, wires, indices):
+        super().__init__(coefficients, wires)
+        self.hyperparameters["indices"] = indices
+
+    @property
+    def has_decomposition(self):
+        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        decomposition in the old system breaks. Hence we manually deactivate the fallback
+        of ``compute_decomposition`` to the new decomp system that is implemented in
+        ``Operator.compute_decomposition``. Accordingly we set ``has_decomposition=False`` here."""
+        return False
 
     @staticmethod
-    def compute_decomposition(indices, coefficients, wires):  # pylint: disable=arguments-differ
-        with AnnotatedQueue() as q:
-            _sos_state_prep(indices=indices, coefficients=coefficients, wires=wires)
-        if QueuingManager.recording():
-            for op in q:
-                qml.apply(op)
-        return q.queue
+    def compute_decomposition(coefficients, wires, indices):  # pylint: disable=arguments-differ
+        """We are using ``qml.allocate`` in the decomposition, so the validation for
+        decomposition in the old system breaks. Hence we manually deactivate the fallback
+        of ``compute_decomposition`` to the new decomp system that is implemented in
+        ``Operator.compute_decomposition``."""
+        raise DecompositionUndefinedError
 
     @staticmethod
     def required_register_sizes(D, num_bits, num_wires):
@@ -582,6 +594,15 @@ class SumOfSlatersPrep(Operation):
             dict[str, int]: Required register size per register name
 
         """
+        if D == 1:
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_work_wires": 0,
+            }
+
         d = math.ceil_log2(D)
         if num_bits <= 2 * d - 1:
             # Identity encoding works
@@ -605,6 +626,9 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
         return {resource_rep(qml.BasisState, num_wires=num_wires): 1}
     d = math.ceil_log2(D)
     m = min(num_bits, 2 * d - 1)
+
+    identity_encoding = num_bits == m
+
     resources = defaultdict(int)
 
     # Step 1
@@ -620,35 +644,77 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     }
     resources[resource_rep(qml.QROM, **qrom_params)] += 1
 
-    ## Step 3 & 4:
-    resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+    if not identity_encoding:
+        ## Step 3 & 4:
+        resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+
+    for k in range(1, D):
+        bit_count = np.bitwise_count(k)
+        if bit_count == 1:
+            # If k is a power of two, we can directly use an MCX gate
+            mcx_params = {
+                "num_control_wires": m,
+                "num_zero_control_values": m,
+                "num_work_wires": m,
+                "work_wire_type": "zeroed",
+            }
+            resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 1
+        elif bit_count == 2:
+            # If k is a sum of two powers of two, we can directly use two MCX gates
+            mcx_params = {
+                "num_control_wires": m,
+                "num_zero_control_values": m,
+                "num_work_wires": m,
+                "work_wire_type": "zeroed",
+            }
+            resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 2
+        else:
+            # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
+            # control to flip the targets
+            mcx_params = {
+                "num_control_wires": m,
+                "num_zero_control_values": m,
+                "num_work_wires": m - 1,
+                "work_wire_type": "zeroed",
+            }
+            resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 2
+
+            # We use up to d CNOTs for any given bitstring, leading to d*D CNOTs naively.
+            # However, as we actually count up from 0 to D, we know that overall we will have
+            # to flip each bit at most half of the time, so that we have an upper bound of d*D/2
+            #
+            resources[resource_rep(qml.CNOT)] += int(bit_count)
 
     ## Step 5:
     # TODO [dwierichs]: Revisit the following "hack" once [sc-110068] is completed.
     # We have to hack the MultiControlledX resources a little bit, even with exact=False.
     # This is because MultiControlledX resources with differing `num_zero_control_values`
-    # are considered different by the framework. Overall we know that there are 2D MultiControlledX
-    # instances in the decomposition, so we create 2D-m+1 with maximal zeroed control value count,
-    # and one with each other zeroed control value count.
-    # TODO: Update resources for identity_encoding
-    mcx_params = {
-        "num_control_wires": m,
-        "num_zero_control_values": m,
-        "num_work_wires": m - 1,
-        "work_wire_type": "zeroed",
-    }
-    # We use two MultiControlledX operators per bitstring
-    resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 2 * D - m + 1
-    for i in range(m):
-        mcx_params["num_zero_control_values"] = i
-        resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 1
-    # We use up to d CNOTs for any given bitstring, leading to d*D CNOTs naively.
-    # However, as we actually count up from 0 to D, we know that overall we will have to flip each
-    # bit at most half of the time, so that we have an upper bound of d*D/2
-    resources[resource_rep(qml.CNOT)] += d * D // 2
+    # are considered different by the framework. Overall we accounted for all MultiControlledX
+    # instances as having the maximal number of zeroed control values above.
+    # Here we replace m-1 of them with all possible instances of zeroed control values. If we would
+    # be reaching negative counts, we simply add more MCX gates, leading to an upper bound instead
+    for num_work_wires in [m, m - 1]:  # These two numbers appear in the decomposition above
+        for num_zeroed in range(m + 1):
+            mcx_params = {
+                "num_control_wires": m,
+                "num_zero_control_values": num_zeroed,
+                "num_work_wires": num_work_wires,
+                "work_wire_type": "zeroed",
+            }
+            resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 1
+        mcx_params = {
+            "num_control_wires": m,
+            "num_zero_control_values": m,
+            "num_work_wires": num_work_wires,
+            "work_wire_type": "zeroed",
+        }
+        resources[resource_rep(qml.MultiControlledX, **mcx_params)] = max(
+            resources[resource_rep(qml.MultiControlledX, **mcx_params)] - m + 1, 1
+        )
 
     ## Step 6:
-    resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
+    if not identity_encoding:
+        resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     return resources
 
@@ -657,15 +723,14 @@ def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
     return (x[None] >> np.arange(length - 1, -1, -1)[:, None]) % 2
 
 
-def _sos_state_prep_work_wires(D, num_bits, **_):
-    """TODO: Update this"""
-    d = math.ceil_log2(D)
-    m = min(num_bits, 2 * d - 1)
-    return {"zeroed": d + m + (d - 1) + m}
+def _sos_state_prep_work_wires(D, num_bits, num_wires):
+    """See SumOfSlatersPrep.required_register_sizes for details."""
+    sizes = SumOfSlatersPrep.required_register_sizes(D, num_bits, num_wires)
+    return {"zeroed": sum(sizes.values()) - num_wires}
 
 
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-def _sos_state_prep(*_, coefficients, wires, indices, **__):
+def _sos_state_prep(coefficients, wires, indices, **__):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     # pylint: disable=no-value-for-parameter
     n = len(wires)
