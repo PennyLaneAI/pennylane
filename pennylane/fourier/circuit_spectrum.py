@@ -51,7 +51,7 @@ def circuit_spectrum(
     >>> print(marked_op.hyperparameters["tag"])
     tagged-h
     >>> print(marked_op.label())
-    H[tagged-h]
+    H("tagged-h")
 
     If two gates have the same ``tag``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
@@ -136,9 +136,9 @@ def circuit_spectrum(
         res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1.00)[x0]──Rot(0.77,0.44,0.86)──RX(1.00)[x0]──Rot(0.45,0.37,0.93)──RZ(1.00)[x0]─┤  <Z>
-    1: ──RX(2.00)[x1]──Rot(0.70,0.09,0.98)──RX(2.00)[x1]──Rot(0.64,0.82,0.44)───────────────┤
-    2: ──RX(3.00)[x2]──Rot(0.76,0.79,0.13)──RX(3.00)[x2]──Rot(0.23,0.55,0.06)───────────────┤
+    0: ──RX(1.00, "x0")──Rot(0.77,0.44,0.86)──RX(1.00, "x0")──Rot(0.45,0.37,0.93)──RZ(1.00, "x0")─┤  <Z>
+    1: ──RX(2.00, "x1")──Rot(0.70,0.09,0.98)──RX(2.00, "x1")──Rot(0.64,0.82,0.44)─────────────────┤
+    2: ──RX(3.00, "x2")──Rot(0.76,0.79,0.13)──RX(3.00, "x2")──Rot(0.23,0.55,0.06)─────────────────┤
 
     >>> for inp, freqs in res.items():
     ...     print(f"{inp}: {freqs}")

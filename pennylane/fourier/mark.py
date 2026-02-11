@@ -41,7 +41,15 @@ class MarkedOp(SymbolicOp):
         return self.base.generator()
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return f"{self.base.label(decimals, base_label, cache)}[{self.hyperparameters['tag']}]"
+        base_label = self.base.label(decimals, base_label, cache)
+        tag = self.hyperparameters["tag"]
+
+        # If base label already has parameters, e.g., "RX(0.5)"
+        if base_label.endswith(")"):
+            return f'{base_label[:-1]}, "{tag}")'
+
+        # If base label is a simple label, e.g., "X"
+        return f'{base_label}("{tag}")'
 
 
 def mark(op: Operator, tag: str) -> MarkedOp:
