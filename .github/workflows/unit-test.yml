@@ -200,16 +200,6 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
-      - name: Freeze dependencies
-        shell: bash
-        run: uv lock 
-
-      - name: Upload frozen requirements
-        uses: actions/upload-artifact@v4
-        with:
-          name: frozen-${{ inputs.job_name }}
-          path: uv.lock
-
       - name: Upload Durations file as artifact
         if: inputs.pytest_durations_file_path != ''
         uses: actions/upload-artifact@v4

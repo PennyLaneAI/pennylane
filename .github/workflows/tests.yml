@@ -73,7 +73,7 @@ jobs:
     uses: ./.github/workflows/check_in_artifact.yml
     if: github.event_name == 'schedule'
     with:
-      artifact_name_pattern: "frozen-uv"
+      artifact_name_pattern: "frozen-lockfile"
       artifact_save_path: "uv.lock"
       pull_request_head_branch_name: bot/stable-deps-update
       commit_message_description: Frozen Dependencies Update
