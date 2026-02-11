@@ -114,7 +114,11 @@ docs = [
     "sphinx-sitemap",
     "matplotlib==3.10.0",
     "galois",
-    "requests==2.32.4"
+    "requests==2.32.4",
+    "aiohttp",
+    "fsspec",
+    "h5py",
+    "openfermionpyscf"
 ]
 external-libraries = [
     "pyzx",
@@ -126,6 +130,17 @@ external-libraries = [
     "openqasm3",
     "antlr4_python3_runtime",
     "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master"
+]
+qchem = [
+    "openfermionpyscf",
+    "basis-set-exchange",
+    "geometric",
+    "scikit-learn",
+    "numpy<2.4"
+]
+qcut = [
+    "kahypar==1.3.5",
+    "opt_einsum"
 ]
 
 [[project.maintainers]]

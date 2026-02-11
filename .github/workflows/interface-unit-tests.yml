@@ -519,8 +519,7 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        kahypar==1.3.5 
-        opt_einsum
+        --group qcut
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
@@ -561,7 +560,7 @@ jobs:
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}qchem-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       # pyscf is not compatible with numpy 2.4 yet
       additional_pip_packages: |
-        openfermionpyscf basis-set-exchange geometric scikit-learn numpy<2.4
+        --group qchem
         ${{ inputs.additional_python_packages }}
 
   gradients-tests:

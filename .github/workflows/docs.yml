@@ -77,6 +77,4 @@ jobs:
             apt install -y graphviz
             && pip3 install --group docs
             && pip3 install .
-            && pip3 install openfermionpyscf
-            && pip3 install aiohttp fsspec h5py
           build-command: "sphinx-build -b html . _build -W --keep-going"
