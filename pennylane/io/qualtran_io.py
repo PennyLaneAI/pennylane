@@ -142,7 +142,7 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     ).controlled(CtrlSpec(cvs=[1]))
     gate_counts[controlled_unitary] = (2 ** len(op.estimation_wires)) - 1
     adjoint_qft = _map_to_bloq(
-        qtemps.QFT(wires=op.estimation_wires), map_ops=False, call_graph="decomposition"
+        qtemps.QFT.operator(wires=op.estimation_wires), map_ops=False, call_graph="decomposition"
     ).adjoint()
     gate_counts[adjoint_qft] = 1
 
@@ -475,7 +475,7 @@ def _(op: qtemps.subroutines.ModExp):
         num_aux_swap = num_aux_wires - 1
 
     qft = _map_to_bloq(
-        qtemps.QFT(wires=range(num_aux_wires)), map_ops=False, call_graph="decomposition"
+        qtemps.QFT.operator(wires=range(num_aux_wires)), map_ops=False, call_graph="decomposition"
     )
     qft_dag = qft.adjoint()
 
@@ -573,9 +573,11 @@ def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
 
 
 @_map_to_bloq.register
-def _to_bloq_for_subroutine(op: qtemps.SubroutineOp):
+def _to_bloq_for_subroutine(op: qtemps.SubroutineOp, custom_mapping=None, map_ops=True, **kwargs):
     if op.subroutine in _Subroutine_to_bloq_map:
-        return _Subroutine_to_bloq_map[op.subroutine](op)
+        return _Subroutine_to_bloq_map[op.subroutine](
+            op, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+        )
     raise NotImplementedError(f"Subroutine {op.subroutine} has no registered conversion to Bloq.")
 
 
