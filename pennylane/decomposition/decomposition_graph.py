@@ -30,6 +30,7 @@ import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Set
 from dataclasses import dataclass, replace
+from functools import lru_cache
 
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
@@ -60,6 +61,52 @@ from .symbolic_decomposition import (
 from .utils import to_name
 
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
+
+
+UNSUPPORTED_TEMPLATES = {
+    "BlockEncode",
+    "CVNeuralNetLayers",
+    "Adjoint(CVNeuralNetLayers)",
+    "DoubleExcitationPlus",
+    "DoubleExcitationMinus",
+    "DisplacementEmbedding",
+    "FlipAndRotate",
+    "FromBloq",
+    "Interferometer",
+    "GraphStatePrep",
+    "MERA",
+    "MPS",
+    "ParametrizedEvolution",
+    "QDrift",
+    "QROMStatePreparation",
+    "QSVT",
+    "Qubitization",
+    "C(Pow(Qubitization))",
+    "QutritBasisStatePreparation",
+    "QuantumPhaseEstimation",
+    "QuantumMonteCarlo",
+    "RandomLayers",
+    "Adjoint(RandomLayers)",
+    "Select",
+    "SpecialUnitary",
+    "SqueezingEmbedding",
+    "Template",
+    "TrotterizedQfunc",
+    "TTN",
+    "TwoLocalSwapNetwork",
+    "WireCut",
+}
+
+
+@lru_cache
+def _ignore_unsolved_ops():
+    return (
+        IGNORED_UNSOLVED_OPS
+        | set(qml.ops.channel.__all__)
+        | set(qml.ops.cv.__all__)
+        | UNSUPPORTED_TEMPLATES
+        | {"Exp", "Evolution"}
+    )
 
 
 @dataclass(frozen=True)
@@ -548,7 +595,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = (self._graph[op_idx].op for op_idx in visitor.unsolved_op_indices)
             # Remove operators that are to be ignored
-            op_names = {to_name(op) for op in unsolved_ops} - IGNORED_UNSOLVED_OPS
+            op_names = {to_name(op) for op in unsolved_ops} - _ignore_unsolved_ops()
             # If unsolved operators are left after filtering for those to be ignored, warn
             if op_names:
                 warnings.warn(
