@@ -390,30 +390,21 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
                 f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}")
 
 import importlib.metadata
-import functools
 
-@functools.lru_cache(maxsize=1)
-def get_catalyst_docstrings():
+def get_catalyst_passes_docstrings():
     """Finds docstrings for Catalyst functionality that is under the catalyst.docs_to_pennylane entry point."""
-    docs_registry = {}
+    docs_dict = {}
     eps = importlib.metadata.entry_points(group='catalyst.passes')
 
     for ep in eps:
-        try:
-            target_obj = ep.load()
-            if target_obj and hasattr(target_obj, "__doc__") and target_obj.__doc__:
-                docs_registry[ep.name] = target_obj.__doc__.splitlines()
-        except Exception as e:
-            print(f"Warning: Could not load entry point {ep.name}: {e}")
+        target_obj = ep.load()
+        docs_dict[ep.name] = target_obj.__doc__.splitlines()
             
-    return docs_registry
+    return docs_dict
 
-def dynamic_docstring_lookup(app, what, name, obj, options, lines):
-    if what not in ("function", "class", "method"):
-        return
-    
+def catalyst_docstring_lookup(app, what, name, obj, options, lines):
     short_name = name.split('.')[-1]
-    registry = get_catalyst_docstrings()
+    registry = get_catalyst_passes_docstrings()
     
     if short_name in registry:
         new_lines = registry[short_name]
@@ -423,6 +414,6 @@ def dynamic_docstring_lookup(app, what, name, obj, options, lines):
 
 def setup(app):
     """Sphinx entry point for this extension."""
-    app.connect("autodoc-process-docstring", dynamic_docstring_lookup)
+    app.connect("autodoc-process-docstring", catalyst_docstring_lookup)
     app.connect("source-read", add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)
