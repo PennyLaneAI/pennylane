@@ -104,6 +104,6 @@ def _equal_marked_op(op1: MarkedOp, op2: MarkedOp, **kwargs):
     return True
 
 
-def mark(op: Operator, tag: str) -> MarkedOp:
+def mark(op: Operator, marker: str) -> MarkedOp:
     """Marks an operator with a custom tag."""
-    return MarkedOp(op, tag)
+    return MarkedOp(op, marker)
