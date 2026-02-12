@@ -48,7 +48,11 @@ class DummyDevice(DefaultGaussian):
 def ignore_id_deprecation():
     """Fixture to suppress PennyLaneDeprecationWarning for 'id' tests."""
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=PennyLaneDeprecationWarning)
+        warnings.filterwarnings(
+            "ignore",
+            category=PennyLaneDeprecationWarning,
+            message="The 'id' argument is deprecated",
+        )
         yield
 
 
