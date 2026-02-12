@@ -72,7 +72,7 @@ def c():
 
 <h3>Improvements 🛠</h3>
 
-* When inspecting a circuit with an integer ``level`` argument in :func:`~.draw` or :func:`~.specs`,
+* When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
   Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
   of how many markers are present.
