@@ -20,6 +20,7 @@ def to_ppr_setup_inputs():
     r"""
     
     .. autofunction:: pennylane.transforms.to_ppr
+        :no-index:
 
     """
     return (), {}

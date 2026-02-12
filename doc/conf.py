@@ -402,7 +402,6 @@ def get_catalyst_docstrings():
         try:
             target_obj = ep.load()
             if target_obj.__doc__:
-                # Store by the entry point name (e.g., 'clementine')
                 docs_registry[ep.name] = target_obj.__doc__.splitlines()
         except Exception as e:
             print(f"Warning: Could not load entry point {ep.name}: {e}")
@@ -410,8 +409,6 @@ def get_catalyst_docstrings():
     return docs_registry
 
 def dynamic_docstring_lookup(app, what, name, obj, options, lines):
-    # 'name' is the full path (e.g., 'apple.transforms.clementine')
-    # We take the last part ('clementine') to match the entry point name
     short_name = name.split('.')[-1]
     
     registry = get_catalyst_docstrings()
