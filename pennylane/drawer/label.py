@@ -42,20 +42,6 @@ class LabelledOp(SymbolicOp):
     >>> labelled_op.label(decimals=2)
     'RX\\n(1.23, "my-rx")'
 
-    This can be used with :func:`~.draw`,
-
-    .. code-block:: python
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            label(qml.H(0), "my-h")
-            qml.CNOT([0,1])
-            return qml.probs()
-
-    >>> print(qml.draw(circuit)())
-    0: ──H("my-h")─╭●─┤  Probs
-    1: ────────────╰X─┤  Probs
-
     """
 
     def _flatten(self):
@@ -131,6 +117,20 @@ def label(op: Operator, new_label: str) -> LabelledOp:
     >>> labelled_op = label(op, "my-x")
     >>> print(labelled_op.custom_label)
     my-x
+
+    This can be used with :func:`~.draw`,
+
+    .. code-block:: python
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            label(qml.H(0), "my-h")
+            qml.CNOT([0,1])
+            return qml.probs()
+
+    >>> print(qml.draw(circuit)())
+    0: ──H("my-h")─╭●─┤  Probs
+    1: ────────────╰X─┤  Probs
 
     """
     return LabelledOp(op, new_label)
