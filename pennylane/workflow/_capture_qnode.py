@@ -127,6 +127,9 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
         if batch_dim is not None
     ]
 
+    if not input_shapes:
+        return ()
+
     return jax.lax.broadcast_shapes(*input_shapes)
 
 
