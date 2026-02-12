@@ -124,7 +124,6 @@ all_ops = ops.keys()
 all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access
 all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
-all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here
 
 symbolic_ops = {"Adjoint(S)", "Adjoint(T)", "Adjoint(SX)", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
 
