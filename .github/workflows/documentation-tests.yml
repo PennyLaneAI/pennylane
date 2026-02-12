@@ -58,7 +58,7 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install -e ".[ci]"
+          pip install -e ".[ci,dev]"
 
       - name: Install external packages
         run: |
