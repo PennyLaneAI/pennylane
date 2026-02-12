@@ -14,8 +14,11 @@
 """Contains a transform that computes the simple frequency spectrum
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
+
+import warnings
 from functools import partial
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -208,6 +211,12 @@ def circuit_spectrum(
             # NOTE: Here for backwards compatibility remove once 'id' deprecation is complete
             # pylint: disable=protected-access
             if (id := op._id) is not None:
+                warnings.warn(
+                    "Using 'id' with 'circuit_spectrum' is deprecated "
+                    "and will be removed in v0.46. Instead, please use 'pennylane.fourier.mark' to "
+                    "add a marker to your operator. ",
+                    PennyLaneDeprecationWarning,
+                )
                 op = MarkedOp(op, id)
 
             # If the operator is not marked, move to the next
