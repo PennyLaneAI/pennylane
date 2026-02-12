@@ -22,6 +22,7 @@ from pennylane.math import (
     binary_is_independent,
     binary_select_basis,
     ceil_log2,
+    int_to_binary,
 )
 
 
@@ -100,7 +101,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     >>> D = 8
     >>> n = 6
     >>> ids = np.random.choice(2**n, size=D, replace=False)
-    >>> bitstrings = ((ids[:, None] >> np.arange(n-1, -1, -1)[None, :]) % 2).T
+    >>> bitstrings = qml.math.int_to_binary(ids, width=n).T
     >>> print(bitstrings)
     [[0 0 0 1 0 0 1 0]
      [0 0 0 1 0 1 1 1]
@@ -214,12 +215,14 @@ def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> n
         # Translate number to bitstring, interpret it as component vector for the basis (by
         # multiplying the basis into the bitstring), and check whether it avoids all bitstrings
         # that we need to avoid (stored in ``all_bitstrings_to_avoid``)
-        ell_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
+        ell_bits_in_basis = int_to_binary(i, width=bits_basis.shape[1] - 1)
         ell = (bits_basis[:, :-1] @ ell_bits_in_basis) % 2
         if not np.any(np.all(ell[:, None] == all_bitstrings_to_avoid, axis=0)):
             break
     else:
-        raise ValueError("ell should always be guaranteed to exist.")  # pragma: no cover
+        raise ValueError(
+            "Unexpected exception: ell should always be guaranteed to exist."
+        )  # pragma: no cover
     return ell
 
 
@@ -255,16 +258,17 @@ def _find_single_w(bits):
     else:
         zeroes_to_append = 0
 
-    # Power of two
-    pot = 2 ** np.arange(r - 1, -1, -1)
     if D > 1:
         diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(bits.T, r=2)]).T % 2
     else:
         diffs = np.zeros((r, 0), dtype=int)
+
+    # Powers of two
+    powers = 2 ** np.arange(r - 1, -1, -1)
     # Compute the integer representation of each column and each difference of columns
-    ints = set(np.dot(pot, np.concatenate([bits, diffs], axis=1)))
+    ints = set(np.dot(powers, np.concatenate([bits, diffs], axis=1)))
     unoccupied = next(i for i in range(1, len(ints) + 1) if i not in ints)
-    w = (unoccupied >> np.arange(r - 1, -1, -1)) % 2
+    w = int_to_binary(unoccupied, width=r)
     if zeroes_to_append:
         w = np.concatenate([w, np.zeros(zeroes_to_append, dtype=int)])
     return w[:, None]
@@ -279,17 +283,18 @@ def _step_3_in_find_w(bits_basis, other_bits):
     all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1)
 
     # Note that the set ``all_bitstrings_to_avoid`` has size at most D+(D^2-D)/2=(D^2+D)/2
-    # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1, and thus
-    # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1), so that 2^(r-1) candidates are enough to find a new
-    # vector.
+    # We want to find a new bitstring that avoids all these bit strings, so we need to iterate
+    # over a range that is larger than (D^2+D)/2 by at least one.
+    # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1. This implies:
+    # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1),
+    # so that 2^(r-1) candidates are enough to find a new vector.
     for i in range(1, 2 ** (r - 1)):
-        w_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
+        w_bits_in_basis = int_to_binary(i, width=bits_basis.shape[1] - 1)
         w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
         if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
-            break
+            return w[:, None]
 
-    W = w[:, None]
-    return W
+    raise ValueError("Unexpected exception: There should always be a w found.")  # pragma: no cover
 
 
 def _find_w(bits_basis, other_bits, t):
