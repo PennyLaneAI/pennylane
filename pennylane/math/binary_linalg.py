@@ -48,7 +48,7 @@ def int_to_binary(integer: int | np.ndarray, width: int) -> np.ndarray:
     >>> print(np.binary_repr(13, width=width))
     01101
 
-    For an array-typed input, we obtain a new array with an additinoal axis in the last position,
+    For an array-typed input, we obtain a new array with an additional axis in the last position,
     of size ``width``:
 
     >>> x = np.array([[7, 3], [17, 9], [2, 8]])
@@ -141,7 +141,7 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
 
 def binary_matrix_rank(binary_matrix: np.ndarray) -> int:
     r"""
-    Find rank of a matrix over :math:`\mathbb{Z}_2`.
+    Find the rank of a matrix over :math:`\mathbb{Z}_2`.
 
     Args:
         binary_matrix (np.ndarray): Matrix of binary entries.
@@ -162,7 +162,12 @@ def binary_matrix_rank(binary_matrix: np.ndarray) -> int:
 
     Consider the following binary matrix of shape ``(4, 4)``:
 
-    >>> binary_matrix = np.array([[0, 1, 1, 0], [0, 1, 0, 1], [1, 0, 1, 1], [1, 0, 0, 0]])
+    >>> binary_matrix = np.array([
+    ...     [0, 1, 1, 0],
+    ...     [0, 1, 0, 1],
+    ...     [1, 0, 1, 1],
+    ...     [1, 0, 0, 0],
+    ... ])
     >>> print(binary_matrix.shape)
     (4, 4)
 
@@ -213,7 +218,11 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
 
     Consider a simple regular Boolean matrix ``A`` and a coefficient vector ``b``:
 
-    >>> A = np.array([[1, 0, 0], [0, 1, 1], [1, 0, 1]])
+    >>> A = np.array([
+    ...     [1, 0, 0],
+    ...     [0, 1, 1],
+    ...     [1, 0, 1]
+    ... ])
     >>> b = np.array([1, 1, 1])
 
     Then we can solve the system ``A@x=b`` for ``x`` over :math:`\mathbb{Z}_2`:
@@ -223,9 +232,9 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     [1 1 0]
 
     Internally, this is done with the Gauss-Jordan elimination of the extended matrix ``(A | b)``.
-    Indeed, we can verify that ``A@x=b`` (over :math:`\mathbb{Z}_2`):
+    Indeed, we can verify that ``A @ x = b`` (over :math:`\mathbb{Z}_2`):
 
-    >>> print(np.allclose((A @ x)%2, b))
+    >>> print(np.allclose((A @ x) % 2, b))
     True
 
     """
@@ -251,7 +260,7 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
         vector (np.ndarray): Binary vector to check.
         basis (np.ndarray): Basis of binary vectors against which ``vector`` is checked. If
             ``vector`` has shape ``(r,)``, ``basis`` should have shape ``(r, m)`` and rank
-            ``min(r, m)``, i.e., the columns of ``basis`` all need to be linearly independent.
+            ``min(r, m)``. I.e., the columns of ``basis`` all need to be linearly independent.
 
     Returns:
         bool: Whether ``vector`` is linearly independent of ``basis`` over :math:`\mathbb{Z}_2`.
@@ -282,7 +291,7 @@ def binary_select_basis(bitstrings: np.ndarray):
             which a basis is selected.
 
     Returns:
-        tuple[np.ndarray]: Two binary array. The first contains a selection of columns from
+        tuple[np.ndarray, np.ndarray]: Two binary arrays. The first contains a selection of columns from
         ``bitstrings`` that form a basis for the column space of ``bitstrings`` over
         :math:`\mathbb{Z}_2`. The second contains all other columns.
 
@@ -290,7 +299,7 @@ def binary_select_basis(bitstrings: np.ndarray):
 
         This function is currently not compatible with JAX.
     """
-    r, _ = bitstrings.shape
+    r = bitstrings.shape[0]
     basis = np.zeros((r, 0), dtype=int)
     other_cols = []
     for col in bitstrings.T:

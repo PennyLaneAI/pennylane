@@ -60,22 +60,13 @@ def _columns_differ(bits: np.ndarray) -> bool:
     False
 
     """
-    # In order to be representable faithfully with 64-bit integers, the strings can't be too large
-    # Note that we do not care about the range of the integers, just about them being unique.
-    # This limitation can easily be fixed in a number of ways (e.g., compare the raw columns,
-    # or compare tuples of int64 integers, where each integer collects 64 rows)
-    if bits.shape[0] > 64:
-        raise ValueError(
-            "Column comparison uses 64-bit integers internally. Can't compare bitstrings longer "
-            "than 64 bits."
-        )
-
-    # Powers of two to compute integer representations of columns
-    pot = 2 ** np.arange(bits.shape[0])
-    # Compute the integer representation of each column
-    ints = np.dot(pot, bits)
-    # Return whether the integers all differ
-    return len(set(ints)) == len(ints)
+    if bits.size == 0 or bits.shape[1] <= 1:
+        return True
+    sorted_col_indices = np.lexsort(bits)
+    sorted_bits = bits[:, sorted_col_indices]
+    differences = np.any(sorted_bits[:, 1:] != sorted_bits[:, :-1], axis=0)
+    # if all adjacent pairs are different, then all columns are unique.
+    return all(differences)
 
 
 def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
@@ -109,7 +100,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     >>> D = 8
     >>> n = 6
     >>> ids = np.random.choice(2**n, size=D, replace=False)
-    >>> bitstrings = ((ids[:, None] >> np.arange(n-1, -1, -1)[None, :]) % 2).T
+    >>> bitstrings = qml.math.int_to_binary(ids, width=n).T
     >>> print(bitstrings)
     [[0 0 0 1 0 0 1 0]
      [0 0 0 1 0 1 1 1]
@@ -165,15 +156,48 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     return selectors, bits
 
 
-def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> np.ndarray:
+def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> np.ndarray:
     r"""Find replacement vector :math:`\ell` to construct lower-rank set of bit strings during
-    recursive computation of kernel space :math:`\mathcal{W}` in ``_get_w_vectors``."""
+    recursive computation of kernel space :math:`\mathcal{W}` in ``_get_w_vectors``.
 
+    In more general terms, we get as input a basis ``bits_basis``,
+    a set ``set_M`` of bitstrings that are spanned by all but the last bitstring in that basis
+    (i.e. all these bitstrings have coefficient ``0`` for the last basis bitstring),
+    as well as a set ``set_N`` of bitstrings that require the last bitstring of the basis
+    (i.e. all these bitstrings have coefficient ``1`` for the last basis bitstring).
+    For this second set, define ``set_N_prime`` to be the bitstrings in ``set_N`` where we
+    subtracted away the contribution of the last basis bitstring
+    (i.e. all these bitstrings have been toggled manually to have coefficient ``0`` for the last
+    bitstring).
+
+    For this input, the task is then to find a vector/bitstring ``ell`` that is spanned by
+    all but the last bitstrings in ``bits_basis`` such that it is not part of ``set_M``,
+    ``set_N_prime`` or the set of differences (=sums, over ℤ_2) between bitstrings in ``set_M`` and
+    ``set_N_prime``. Finally, we also avoid the zero bitstring.
+    Note that this search for ``ell`` is brute-forced: We iterate over all
+    integers in a suitable range, translate them to bitstrings, multiply those bitstrings with the
+    basis vectors, and check whether the result is in the set of bitstrings we want to avoid.
+
+    Args:
+        bits_basis (np.ndarray): Basis of ``B`` bitstrings of length ``r``, should have
+            shape ``(r, A)``.
+        set_M (np.ndarray): Set of ``n`` bitstrings of length ``r`` that are representable by
+            all but the last basis bitstring in ``bits_basis``. Should have shape ``(r, n)``
+        set_N (np.ndarray): Set of ``D-1-n`` bitstrings (where ``n`` is given by the shape of
+            ``set_M`` and ``D`` is the number of all Slaters in the SOS algorithm) that
+            require the last basis bitstring in their representation in ``bits_basis``. Should have
+            shape ``(r, D-1-n)``.
+
+    Returns:
+        np.ndarray: New bitstring that avoids the described set of bitstrings, and is spanned by
+        all but the last basis vector in ``bits_basis``. will have shape ``(r,)``.
+
+    """
     # Number of bits
     r = len(bits_basis)
     # Fector to be replaced
     v_r = bits_basis[:, -1]
-    # Map the set N to N', containing the components that are spanned by
+    # Step 5: Map the set N to N', containing the components that are spanned by
     # all basis vectors except for v_r
     set_N_prime = set_N + v_r[:, None]
     # Compute all differences (=sums, over ℤ_2) of vectors in M and N'
@@ -191,65 +215,98 @@ def _find_ell(set_M: np.ndarray, set_N: np.ndarray, bits_basis: np.ndarray) -> n
     all_bitstrings_to_avoid = np.concatenate([set_M, set_N_prime, combs, zero], axis=1) % 2
 
     for i in range(2 ** (r - 2)):
-        ell_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
+        # Translate number to bitstring, interpret it as component vector for the basis (by
+        # multiplying the basis into the bitstring), and check whether it avoids all bitstrings
+        # that we need to avoid (stored in ``all_bitstrings_to_avoid``)
+        ell_bits_in_basis = math.int_to_binary(i, width=bits_basis.shape[1] - 1)
         ell = (bits_basis[:, :-1] @ ell_bits_in_basis) % 2
         if not np.any(np.all(ell[:, None] == all_bitstrings_to_avoid, axis=0)):
             break
     else:
-        raise ValueError("ell should always be guaranteed to exist.")  # pragma: no cover
+        raise ValueError(
+            "Unexpected exception: ell should always be guaranteed to exist."
+        )  # pragma: no cover
     return ell
 
 
 def _find_single_w(bits):
-    r"""Brute force search a single vector :math:`\{w_1\}` that differs from all input bits
-    and all pairwise differences (=sums, over Z_2) of bits.
+    r"""Brute force search a bitstring that differs from all input bitstrings (read as columns
+    of the input array) and from all pairwise differences (=sums, over Z_2) of the input
+    bitstrings.
 
-    Note that this function uses `int64` intepretation of bit strings for fast comparisons,
-    limiting it to ``r<=64``.
+    Args:
+        bits (np.ndarray): Bitstrings to find a differing bitstring from (taking differences into
+            account as well). We denote its shape as ``(r, D)``.
+
+    Returns:
+        np.ndarray: Bitstring that differs from all columns in ``bits`` and from all pairwise
+        differences of columns in ``bits``. Has shape ``(r, 1)``.
+
+    This function uses comparison of 64-bit integers to test for uniqueness. The resulting
+    limitation to ``r<=64`` is avoided by working with the first 64 bits only if ``r>64``.
+    Memory limitations of ``bits.size<1.199e21`` guarantee that there will still be a new
+    bitstring that we can find. We then just append ``r-64`` zeroes to pad the found bitstring
+    to the required length ``r``.
     """
     r, D = bits.shape
     if r > 64:
-        raise ValueError(
-            "Bitstring search _find_single_w uses 64-bit integers internally. Can't process "
-            f"bitstrings longer than 64 bits. Got {bits.shape[0]} bits per column."
-        )
-    # Power of two
-    pot = 2 ** np.arange(r - 1, -1, -1)
+        # Even if there are more than 64 bits, we can assume that the first 64 bits have
+        # enough room for a new unique bitstring, because 2**64 bitstrings of length 65
+        # don't fit into any reasonable memory (150Exabytes raw information content)
+        # Once we found a differing bitstring on the first 64 bits, we can just append any bits
+        # to bring ``w`` to length ``r``.
+        bits = bits[:64]
+        zeroes_to_append = r - 64
+        r = 64
+    else:
+        zeroes_to_append = 0
+
     if D > 1:
         diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(bits.T, r=2)]).T % 2
     else:
         diffs = np.zeros((r, 0), dtype=int)
+
+    # Powers of two
+    powers = 2 ** np.arange(r - 1, -1, -1)
     # Compute the integer representation of each column and each difference of columns
-    ints = set(np.dot(pot, np.concatenate([bits, diffs], axis=1)))
+    ints = set(np.dot(powers, np.concatenate([bits, diffs], axis=1)))
     unoccupied = next(i for i in range(1, len(ints) + 1) if i not in ints)
-    w = (unoccupied >> np.arange(r - 1, -1, -1)) % 2
+    w = math.int_to_binary(unoccupied, width=r)
+    if zeroes_to_append:
+        w = np.concatenate([w, np.zeros(zeroes_to_append, dtype=int)])
     return w[:, None]
+
+
+def _step_3_in_find_w(bits_basis, other_bits):
+    """Step 3 of _find_w, which is triggered when t=1 in the recursion but initially we had t>1."""
+    r = bits_basis.shape[0]
+    all_bits = np.concatenate([bits_basis, other_bits], axis=1)
+    # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
+    diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T % 2
+    all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1)
+
+    # Note that the set ``all_bitstrings_to_avoid`` has size at most D+(D^2-D)/2=(D^2+D)/2
+    # We want to find a new bitstring that avoids all these bit strings, so we need to iterate
+    # over a range that is larger than (D^2+D)/2 by at least one.
+    # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1. This implies:
+    # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1),
+    # so that 2^(r-1) candidates are enough to find a new vector.
+    for i in range(1, 2 ** (r - 1)):
+        w_bits_in_basis = math.int_to_binary(i, width=bits_basis.shape[1] - 1)
+        w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
+        if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
+            return w[:, None]
+
+    raise ValueError("Unexpected exception: There should always be a w found.")  # pragma: no cover
 
 
 def _find_w(bits_basis, other_bits, t):
     """Compute the kernel space W from the original bit strings, including a basis for their
     column space. See the documentation of ``compute_sos_encoding`` for details.
     """
-    r = bits_basis.shape[0]
     if t == 1:
         # Step 3: brute-force search of a single vector w_1
-        all_bits = np.concatenate([bits_basis, other_bits], axis=1)
-        # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
-        diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T
-        all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1) % 2
-
-        # Note that the set ``all_bitstrings_to_avoid`` has size at most D+(D^2-D)/2=(D^2+D)/2
-        # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1, and thus
-        # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1), so that 2^(r-1) candidates are enough to find a new
-        # vector.
-        for i in range(1, 2 ** (r - 1)):
-            w_bits_in_basis = (i >> np.arange(bits_basis.shape[1] - 2, -1, -1)) % 2
-            w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
-            if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
-                break
-
-        W = w[:, None]
-        return W
+        return _step_3_in_find_w(bits_basis, other_bits)
 
     v_r = bits_basis[:, -1]
     bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
@@ -267,7 +324,7 @@ def _find_w(bits_basis, other_bits, t):
     set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
 
     # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
-    ell = _find_ell(set_M, set_N, bits_basis)
+    ell = _find_ell(bits_basis, set_M, set_N)
 
     # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of bits_basis[:, :-1]
     #         and call _find_w recursively on the sub_bits to compute sub_W <> \mathcal{W}'
@@ -324,7 +381,7 @@ def compute_sos_encoding(bits):
 
         It is recommended to first subselect bits via :func:`~.select_sos_rows` in order to
         work with a reduced input here.
-        Furthermore, this function assumes that the bitstrings are not overly redundant, so in
+        Furthermore, this function assumes that the bitstrings are not overly redundant, so
         that it might error out if ``select_sos_rows`` is not used.
 
     .. seealso:: :func:`~.select_sos_rows`
@@ -388,17 +445,20 @@ def compute_sos_encoding(bits):
      [1 1 0 0 0 0 1]]
 
     In practice, this sub-selection of bits via ``select_sos_rows`` is combined with
-    ``compute_sos_encoding`` to achieve lowest cost.
+    ``compute_sos_encoding`` to achieve lowest cost. Note that there may be edge cases where
+    ``compute_sos_encoding`` errors out if ``select_sos_rows`` is not used before, because
+    the input bitstrings are too redundant in this case.
 
     .. details::
         :title: Implementation notes
 
-        In the following, we slightly rewrite the first part of the proof.
-        Then, we clarify the algorithmic structure for constructing the space :math:`\mathcal{W}`.
+        We are given :math:`D` distinct bitstrings :math:`\{v_i\}` with length :math:`r`.
+        We assume :math:`D\geq r` and :math:`\operatorname{rk}(V)\geq r`, which can always
+        be achieved by first calling ``select_sos_rows`` on the bitstrings.
 
         Our goal is to find a linear map :math:`U:\mathbb{Z}_2^{r}\to \mathbb{Z}_2^{m}` from
-        :math:`D` distinct bitstrings :math:`\{v_i\}` with length :math:`r` to :math:`D` bitstrings
-        with length :math:`m\leq 2d-1`, where :math:`d:=\lceil\log_2(D)\rceil`, such that
+        the input bitstrings to :math:`D` new distinct bitstrings with length
+        :math:`m\leq 2d-1`, where :math:`d:=\lceil\log_2(D)\rceil`, such that
 
         .. math::
 
@@ -422,6 +482,9 @@ def compute_sos_encoding(bits):
 
         In this case, we do not really need to do anything; the bitstrings :math:`\{v_i\}` already
         have length :math:`m:=r\leq 2d-1`, so we simply set :math:`U` to be the identity map.
+        This scenario may actually occur in practice, and it leads to simplifications of the
+        quantum circuit for the state preparation. This depends on the specific bitstrings, though.
+        This case is handled directly in the main function of ``compute_sos_encoding``.
 
         **Case 2:** :math:`2d-1 < r`
 
@@ -441,31 +504,42 @@ def compute_sos_encoding(bits):
 
         and to construct a map :math:`U` with linearly independent rows such that
         :math:`U w_k=0 \ \ \forall k`, i.e. :math:`\mathcal{W}\subset\ker U`. Given that we know the
-        kernel dimension to be :math:`t` and :math:`\dim(\mathcal{W})=t`, this implies
-        :math:`\mathcal{W}=\ker U`. To see that this actually ensures :math:`U` to have the
-        properties we are after, assume that :math:`U v_i=0` for some :math:`i` with
-        :math:`v_i\neq 0` (or :math:`U(v_i-v_j)` for some :math:`(i,j)`). Due to
-        :math:`\ker U=\mathcal{W}`, this would imply :math:`v_i\in\mathcal{W}` (or
-        :math:`v_i-v_j\in\mathcal{W}`), which is false by construction of the vectors
-        :math:`\{w_k\}`, in particular due to Eq. (2)
+        kernel dimension to be :math:`t` and :math:`\dim(\mathcal{W})=t`, this will imply
+        :math:`\mathcal{W}=\ker U`.
 
-        The main work thus is to show that we can actually construct these vectors :math:`\{w_k\}`
+        .. admonition:: math comment
+
+            To see that this strategy actually ensures :math:`U` to have the
+            properties we are after, assume that :math:`U v_i=0` for some :math:`i` with
+            :math:`v_i\neq 0` (or :math:`U(v_i-v_j)` for some :math:`(i,j)`). Due to
+            :math:`\ker U=\mathcal{W}`, this would imply :math:`v_i\in\mathcal{W}` (or
+            :math:`v_i-v_j\in\mathcal{W}`), which is false by construction of the vectors
+            :math:`\{w_k\}`, in particular due to Eq. (2).
+
+        The main work thus is to actually construct these vectors :math:`\{w_k\}`
         with the required properties. The construction of the map :math:`U` itself will then be a
         simple linear algebraic task. We perform the construction of the vectors iteratively,
         corresponding to a proof by induction on :math:`t`.
 
-        From here on, we focus on the algorithmic structure and implementation, and do not
-        reproduce the proof of correctness from the paper. Given :math:`D` vectors :math:`\{v_i\}`
-        of length :math:`r` with rank :math:`r` (there are at least :math:`r` linearly independent
-        vectors), our task is to build :math:`t=r-(2\lceil \log_2 (D)\rceil -1)` linearly
-        independent vectors :math:`\{w_k\}` from the space :math:`\operatorname{span}\{v_i\}` such that the
+        Given :math:`D` vectors :math:`\{v_i\}` of length :math:`r` with rank :math:`r` (i.e.,
+        there are at least :math:`r` linearly independent vectors), our task is to build
+        :math:`t=r-(2\lceil \log_2 (D)\rceil -1)` linearly independent vectors :math:`\{w_k\}`
+        from the space :math:`\operatorname{span}\{v_i\}` such that the
         resulting vector space :math:`\mathcal{W}=\operatorname{span}\{w_k\}` does not contain the
-        :math:`\{v_i\}` or their pairwise differences, see Eq.(2). If :math:`t=1`, there is a
-        particularly simple method: we can brute-force a search of :math:`w_1` over
-        :math:`\mathbb{Z}_2^r\setminus (\{v_i\}\cup \{v_i-v_j\})`. This is implemented
-        in ``_find_single_w``.
+        :math:`\{v_i\}` or their pairwise differences, see Eq.(2).
+        We can again separate two scenarios.
 
-        If :math:`t>1`, we recursively construct the :math:`\{w_k\}`.
+        **Case 2a:** :math:`t=1`
+
+        For this case, there is a particularly simple method: we can brute-force a search of
+        :math:`w_1` over :math:`\mathbb{Z}_2^r\setminus (\{v_i\}\cup \{v_i-v_j\})`. This is
+        implemented in ``_find_single_w``. See "Computing ``U``" below for the remaining
+        thing we need to do in this case.
+
+        **Case 2b:** :math:`t>1`
+
+        If :math:`t>1`, we recursively construct the :math:`\{w_k\}`, which is implemented in
+        ``_find_w``.
         We proceed in the following steps, thinking of ordered sets whenever we speak of sets.
 
         1. First, we select :math:`r` of the input vectors :math:`\mathcal{V}=\{v_i\}` that are
@@ -473,13 +547,14 @@ def compute_sos_encoding(bits):
            :math:`\mathbb{Z}_2^r`). We relabel the vectors so that this selection of vectors has
            the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
            This is implemented in ``qml.math.binary_select_basis``, which returns the basis and
-           the remaining columns separately.
+           the remaining columns separately. This step will only ever be executed once.
         2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use
            recursion), go to step 3. Else go to step 4.
         3. Brute-force search a linear combination :math:`w_1` of the basis vectors
            :math:`\mathcal{B}` that is not contained in the set
            :math:`\mathcal{V}\cup(\mathcal{V}-\mathcal{V})\cup \{0\}`, where the set difference
            is meant pairwise between elements. Return :math:`\{w_1\}`.
+           This is implemented in ``_step_3_in_find_w``.
         4. We split :math:`\mathcal{V}` into three sets: First, :math:`\mathcal{M}` contains all
            vectors that lie in the span :math:`\mathcal{K}` of all but the last basis vector,
            which we denote as :math:`v_l`. The second set is simply :math:`\{v_l\}`. Third,
@@ -504,9 +579,13 @@ def compute_sos_encoding(bits):
            and return :math:`\mathcal{W}`.
 
         This procedure will produce the desired linearly independent vectors :math:`\{w_k\}`.
-        Computing the matrix :math:`U` such that the vectors are in its kernel is rather simple
-        then. This is because the problem is self-dual, i.e., we actually need to find vectors
-        in the kernel of :math:`W^T`, and will construct :math:`U` from the kernel vectors as rows.
+
+        **Computing** ``U``
+
+        Computing the matrix :math:`U` such that the vectors :math:`\{w_k\}` are in its kernel is
+        rather simple. This is because the problem is self-dual, i.e., we actually need to find
+        vectors in the kernel of :math:`W^T`, and will construct :math:`U` from the kernel vectors
+        as rows. The same is true for case 2b), where we only had to compute a single :math:`w_1`.
     """
     r, D = bits.shape
     d = math.ceil_log2(D)
@@ -516,7 +595,7 @@ def compute_sos_encoding(bits):
         U = np.eye(r, dtype=int)
         return U, bits
 
-    # Case 2 splits into two scenarios: t=1 (simple scenario) or t>1 (more involved, see _find_w)
+    # Case 2 splits into two: case 2a): t=1 (simple) and case 2b): t>1 (more involved)
     if r == m + 1:
         # Particularly simple brute force solution for a single vector w
         W = _find_single_w(bits)
@@ -553,7 +632,7 @@ class SumOfSlatersPrep(Operation):
         indices = self.hyperparameters["indices"]
         D = len(indices)
         n = len(self.wires)
-        v_bits = _int_to_binary(np.array(indices), n)  # v_bits.shape = (n, D)
+        v_bits = math.int_to_binary(np.array(indices), n).T  # v_bits.shape = (n, D)
         selector_ids, _ = select_sos_rows(v_bits)
         r = len(selector_ids)
         return {"D": D, "num_bits": r, "num_wires": n}
@@ -719,10 +798,6 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     return resources
 
 
-def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
-    return (x[None] >> np.arange(length - 1, -1, -1)[:, None]) % 2
-
-
 def _sos_state_prep_work_wires(D, num_bits, num_wires):
     """See SumOfSlatersPrep.required_register_sizes for details."""
     sizes = SumOfSlatersPrep.required_register_sizes(D, num_bits, num_wires)
@@ -735,7 +810,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
     # pylint: disable=no-value-for-parameter
     n = len(wires)
     D = len(indices)
-    v_bits = _int_to_binary(np.array(indices), n)  # Shape (n, D)
+    v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, D)
     if D == 1:
         qml.BasisState(v_bits[:, 0], wires=wires)
         return
