@@ -195,8 +195,6 @@ unmodified_templates_cases = [
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qml.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
-    (qml.QFT, ([0, 1],), {}),
-    (qml.QFT, (), {"wires": [0, 1]}),
     (qml.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qml.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
     pytest.param(
