@@ -457,7 +457,7 @@ class TestSumOfSlatersPrep:
         assert sizes["enumeration_wires"] == d
         assert sizes["identification_wires"] == max((num_bits > 2 * d - 1) * (2 * d - 1), 0)
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
-        assert sizes["mcx_work_wires"] == max(min(num_bits, 2 * d - 1), 0)
+        assert sizes["mcx_cache_wires"] == int(num_entries > 7)
 
         op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
         exp_resource_params = {"D": num_entries, "num_bits": num_bits, "num_wires": num_wires}
