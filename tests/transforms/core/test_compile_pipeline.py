@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the compile pipeline."""
-# pylint: disable=no-member
+# pylint: disable=no-member, protected-access
 
 from copy import copy
 
@@ -2247,3 +2247,79 @@ class TestMarkers:
         assert pipeline.get_marker_level("marker1") == 0
         assert pipeline.get_marker_level("marker2") == 0
         assert pipeline.get_marker_level("marker3") == 0
+
+    def test_trivial_slicing_preserves_markers(self):
+        """Tests that a full slice preserves markers."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_marker("marker0")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("marker1")
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("marker2")
+
+        sliced = pipeline[:]
+        assert pipeline == sliced
+        assert pipeline._markers == sliced._markers
+
+    def test_slicing_trivial_start_and_stop_with_unity_step(self):
+        """Ensures that slicing preserves markers correctly."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_marker("marker0")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("marker1")
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("marker2")
+
+        slice1 = pipeline[:1]
+        expected_slice1 = CompilePipeline()
+        expected_slice1.add_marker("marker0")
+        expected_slice1.add_transform(transform(first_valid_transform))
+        assert slice1 == expected_slice1
+        assert slice1._markers == expected_slice1._markers
+
+        slice2 = pipeline[1:]
+        expected_slice2 = CompilePipeline()
+        expected_slice2.add_marker("marker1")
+        expected_slice2.add_transform(transform(second_valid_transform))
+        # Preserve final marker as it's slicing until the end
+        expected_slice2.add_marker("marker2")
+        assert slice2 == expected_slice2
+        assert slice2._markers == expected_slice2._markers
+
+        # Ensure slicing is consistent
+        assert slice1 + slice2 == pipeline[:]
+
+    def test_slicing_nontrivial_start_and_stop_with_unity_step(self):
+        """Ensures that slicing preserves markers correctly."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_marker("marker0")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("marker1")
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("marker2")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("marker3")
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("marker4")
+
+        slice1 = pipeline[1:3]
+        expected_slice1 = CompilePipeline()
+        expected_slice1.add_marker("marker1")
+        expected_slice1.add_transform(transform(second_valid_transform))
+        expected_slice1.add_marker("marker2")
+        expected_slice1.add_transform(transform(first_valid_transform))
+        assert slice1 == expected_slice1
+        assert slice1._markers == expected_slice1._markers
+
+        slice2 = pipeline[3:]
+        expected_slice2 = CompilePipeline()
+        expected_slice2.add_marker("marker3")
+        expected_slice2.add_transform(transform(second_valid_transform))
+        expected_slice2.add_marker("marker4")
+        assert slice2 == expected_slice2
+        assert slice2._markers == expected_slice2._markers
+
+        assert slice1 + slice2 == pipeline[1:]

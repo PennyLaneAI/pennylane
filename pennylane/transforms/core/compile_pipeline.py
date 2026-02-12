@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# BEFORE  Copyright 2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -416,8 +416,16 @@ class CompilePipeline:
         """(BoundTransform, List[BoundTransform]): Return the indexed transform container from underlying
         compile pipeline"""
         if isinstance(idx, slice):
-            start = idx.start or 0
-            markers = {k: v - start for k, v in self._markers.items() if v >= start}
+            start, stop, step = idx.indices(len(self._compile_pipeline))
+            slice_reaches_end = stop == len(self._compile_pipeline)
+            if step == 1:
+                # NOTE: Include final marker if the slices reaches the end
+                # Otherwise, don't include it.
+                upper = stop + 1 if slice_reaches_end else stop
+                markers = {k: v - start for k, v in self._markers.items() if start <= v < upper}
+            else:
+                raise NotImplementedError("Slicing with step is not currently supported.")
+
             compile_pipeline = CompilePipeline(self._compile_pipeline[idx])
             compile_pipeline._markers = markers
             return compile_pipeline
