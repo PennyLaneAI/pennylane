@@ -17,6 +17,7 @@ This module contains the ``CompilePipeline`` class.
 
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from collections.abc import Sequence
 from copy import copy
@@ -417,17 +418,21 @@ class CompilePipeline:
         compile pipeline"""
         if isinstance(idx, slice):
             start, stop, step = idx.indices(len(self._compile_pipeline))
-            slice_reaches_end = stop == len(self._compile_pipeline)
+            new_markers = {}
             if step == 1:
                 # NOTE: Include final marker if the slices reaches the end
                 # Otherwise, don't include it.
+                slice_reaches_end = stop == len(self._compile_pipeline)
                 upper = stop + 1 if slice_reaches_end else stop
-                markers = {k: v - start for k, v in self._markers.items() if start <= v < upper}
-            else:
-                raise NotImplementedError("Slicing with step is not currently supported.")
-
+                new_markers = {k: v - start for k, v in self._markers.items() if start <= v < upper}
+            elif self._markers:
+                warnings.warn(
+                    "Slicing a CompilePipeline that contains markers with a step size other than 1 is not supported. "
+                    "Markers have been dropped from the result. ",
+                    UserWarning,
+                )
             compile_pipeline = CompilePipeline(self._compile_pipeline[idx])
-            compile_pipeline._markers = markers
+            compile_pipeline._markers = new_markers
             return compile_pipeline
         return self._compile_pipeline[idx]
 

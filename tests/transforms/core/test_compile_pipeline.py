@@ -2323,3 +2323,22 @@ class TestMarkers:
         assert slice2._markers == expected_slice2._markers
 
         assert slice1 + slice2 == pipeline[1:]
+
+    def test_step_other_than_one_raises_warning(self):
+        """Test that a step other than one raises a warning."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("marker1")
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("marker2")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("marker3")
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("marker4")
+
+        with pytest.warns(
+            UserWarning,
+            match="Slicing a CompilePipeline that contains markers with a step size other than 1 is not supported",
+        ):
+            _ = pipeline[::2]
