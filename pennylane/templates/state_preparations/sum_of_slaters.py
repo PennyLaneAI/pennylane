@@ -133,7 +133,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     """
     selectors = list(range(len(bits)))
 
-    while True:
+    while len(selectors) > 1:  # We will want to keep at least one row
         # compute weight of each row. We'll try to first remove rows with a
         # mean weight far away from 0.5
         weights = np.mean(bits, axis=1)
