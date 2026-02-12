@@ -58,11 +58,11 @@ jobs:
 
       - name: Install PennyLane (editable)
         run: |
-          pip install -e .
+          pip install -e ".[ci]"
 
       - name: Install external packages
         run: |
-          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
+          pip install "jax==0.7.1" "jaxlib==0.7.1" torch pyzx
 
       - name: Print Dependencies
         run: |
