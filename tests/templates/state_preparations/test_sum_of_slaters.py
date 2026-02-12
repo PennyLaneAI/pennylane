@@ -28,7 +28,6 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     _columns_differ,
     _find_ell,
     _find_single_w,
-    _int_to_binary,
     _sos_state_prep,
     compute_sos_encoding,
     select_sos_rows,
@@ -464,22 +463,6 @@ class TestSumOfSlatersPrep:
 
         registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
         assert sum(sizes.values()) - num_wires == registered_work_wires.total
-
-    def test_int_to_binary(self, seed):
-        """Test for ``_int_to_binary`` used in SumOfSlatersPrep decomposition."""
-        rng = np.random.default_rng(seed)
-        x = rng.choice(2**12, size=174, replace=False)
-        out_full_width = _int_to_binary(x, 12)
-        powers = 2 ** np.arange(11, -1, -1)
-        assert np.allclose(powers @ out_full_width, x)
-
-        out_slightly_too_small_width = _int_to_binary(x, 11)
-        powers = 2 ** np.arange(10, -1, -1)
-        assert np.allclose(powers @ out_slightly_too_small_width, x % 2**11)
-
-        out_way_too_small_width = _int_to_binary(x, 6)
-        powers = 2 ** np.arange(5, -1, -1)
-        assert np.allclose(powers @ out_way_too_small_width, x % 2**6)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
