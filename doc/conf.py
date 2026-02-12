@@ -389,8 +389,39 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
             logger.info(
                 f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}")
 
+import importlib.metadata
+import functools
+
+@functools.lru_cache(maxsize=1)
+def get_catalyst_docstrings():
+    """Finds docstrings for Catalyst functionality that is under the catalyst.docs_to_pennylane entry point."""
+    docs_registry = {}
+    eps = importlib.metadata.entry_points(group='catalyst.docs_to_pennylane')
+    
+    for ep in eps:
+        try:
+            target_obj = ep.load()
+            if target_obj.__doc__:
+                # Store by the entry point name (e.g., 'clementine')
+                docs_registry[ep.name] = target_obj.__doc__.splitlines()
+        except Exception as e:
+            print(f"Warning: Could not load entry point {ep.name}: {e}")
+            
+    return docs_registry
+
+def dynamic_docstring_lookup(app, what, name, obj, options, lines):
+    # 'name' is the full path (e.g., 'apple.transforms.clementine')
+    # We take the last part ('clementine') to match the entry point name
+    short_name = name.split('.')[-1]
+    
+    registry = get_catalyst_docstrings()
+    
+    if short_name in registry:
+        lines.clear()
+        lines.extend(registry[short_name])
 
 def setup(app):
     """Sphinx entry point for this extension."""
     app.connect('source-read', add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)
+    app.connect('autodoc-process-docstring', dynamic_docstring_lookup)
