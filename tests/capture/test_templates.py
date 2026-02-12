@@ -239,8 +239,13 @@ unmodified_templates_cases = [
         (jnp.ones(3), [2, 3, 0, 1]),
         {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
-    (qml.TemporaryAND, (), ({"wires": [0, 1, 2], "control_values": [0, 1]})),
-    (qml.TemporaryAND, ([0, 1, 2],), ({"control_values": [0, 1]})),
+    (qml.TemporaryAND, (), {"wires": [0, 1, 2], "control_values": [0, 1]}),
+    (qml.TemporaryAND, ([0, 1, 2],), {"control_values": [0, 1]}),
+    (
+        qml.SumOfSlatersPrep,
+        (np.array([1 / 2, -1 / 2, 1 / 2, 1j / 2]),),
+        {"wires": [0, 1, 2, 3, 4], "indices": (0, 3, 4, 17)},
+    ),
 ]
 
 
