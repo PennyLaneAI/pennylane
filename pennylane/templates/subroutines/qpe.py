@@ -16,6 +16,7 @@ Contains the QuantumPhaseEstimation template.
 """
 # pylint: disable=arguments-differ
 import copy
+from collections import defaultdict
 
 from pennylane import math, ops
 from pennylane.decomposition import (
@@ -306,10 +307,12 @@ class QuantumPhaseEstimation(ErrorOperation):
 
 
 def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
-    gate_count = {
-        ops.Hadamard: num_estimation_wires,
-        adjoint_resource_rep(QFT, {"num_wires": num_estimation_wires}): 1,
-    }
+    gate_count = defaultdict(int)
+    gate_count.update(
+        {
+            ops.Hadamard: num_estimation_wires,
+        }
+    )
     for i in range(num_estimation_wires):
         gate_count[
             controlled_resource_rep(
@@ -322,6 +325,8 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
                 num_control_wires=1,
             )
         ] = 1
+    for op in QFT.compute_resources(wires=range(num_estimation_wires)):
+        gate_count[adjoint_resource_rep(op)] += 1
     return gate_count
 
 
@@ -331,7 +336,7 @@ def _qpe_decomp(wires, unitary, estimation_wires, **_):  # pylint: disable=unuse
         ops.Hadamard(w)
     for i, w in enumerate(estimation_wires):
         ops.ctrl(qml_pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
-    ops.adjoint(QFT(wires=estimation_wires))
+    ops.adjoint(QFT.operator(wires=estimation_wires))
 
 
 add_decomps(QuantumPhaseEstimation, _qpe_decomp)

@@ -34,7 +34,8 @@ def setup_qft(wires: WiresLike):
     return (wires,), {}
 
 
-def qft_decomp_resources(num_wires):
+def qft_decomp_resources(wires: WiresLike):
+    num_wires = len(wires)
     return {
         Hadamard: num_wires,
         SWAP: num_wires // 2,
