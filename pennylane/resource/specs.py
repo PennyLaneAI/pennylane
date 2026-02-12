@@ -186,9 +186,15 @@ def _specs_qjit_intermediate_passes(
     marker_to_level = {
         marker: compile_pipeline.get_marker_level(marker) for marker in compile_pipeline.markers
     }
-    level_to_markers: dict[int, tuple[str]] = defaultdict(tuple)
+
+    # NOTE: Use defaultdict(list) and convert to tuple later to prevent
+    # copying of tuple everytime it's concatanated
+    level_to_markers_list = defaultdict(list)
     for marker, lvl in marker_to_level.items():
-        level_to_markers[lvl] += (marker,)
+        level_to_markers_list[lvl].append(marker)
+    level_to_markers: dict[int, tuple[str]] = {
+        lvl: tuple(markers) for lvl, markers in level_to_markers_list.items()
+    }
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     if level not in ("all", "all-mlir"):
