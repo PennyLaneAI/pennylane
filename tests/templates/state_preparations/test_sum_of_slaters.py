@@ -135,6 +135,7 @@ class TestHelperFunctions:
     @pytest.mark.parametrize(
         "bits, skip_rows",
         [
+            (np.array([[1], [0], [1], [1]]), [1, 2, 3]),
             (np.array([[1, 0], [1, 1]]), [1]),
             (np.array([[0, 0, 1, 1], [0, 1, 1, 1], [0, 1, 0, 1]]), [1]),
             (np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]), [2]),
