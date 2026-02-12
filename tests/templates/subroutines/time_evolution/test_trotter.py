@@ -1717,7 +1717,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]]),
                 qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qml.MultiControlledX(wires=wires[1:-1]),
             ]
 
             if reverse:
@@ -1731,7 +1731,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]]),
                 qml.ControlledPhaseShift((time / 2) * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qml.MultiControlledX(wires=wires[1:-1]),
             ]
 
             if reverse:
@@ -1747,7 +1747,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]]),
                 qml.ControlledPhaseShift((p_4 * time / 2) * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qml.MultiControlledX(wires=wires[1:-1]),
             ]
 
             expected_decomp1 = (
@@ -1763,7 +1763,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]]),
                 qml.ControlledPhaseShift((p4_comp * time / 2) * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
+                qml.MultiControlledX(wires=wires[1:-1]),
             ]
 
             expected_decomp2 = (
@@ -1801,7 +1801,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qml.MultiControlledX(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
@@ -1865,7 +1865,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qml.MultiControlledX(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
@@ -1933,7 +1933,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qml.MultiControlledX(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
@@ -1998,7 +1998,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qml.MultiControlledX(wires=wires[1:-1])
 
         @qml.qnode(qml.device("default.qubit", wires=wires), diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
@@ -2067,7 +2067,7 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]])
 
             for _ in range(kwarg2):
-                qml.QFT(wires=wires[1:-1])
+                qml.MultiControlledX(wires=wires[1:-1])
 
         expected_t = time / n
         expected_decomp = self._generate_simple_decomp_trotterize(
