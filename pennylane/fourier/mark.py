@@ -25,11 +25,11 @@ from pennylane.ops.op_math import SymbolicOp
 
 
 class MarkedOp(SymbolicOp):
-    """Creates a marked operator to be used by the 'fourier' module.
+    """Creates a marked operator.
 
     Args:
         base (Operator): The operator you wish to mark.
-        tag (str): The custom tag to give to your operator.
+        marker (str): The custom marker to give to your operator.
 
     **Example:**
 
@@ -105,5 +105,18 @@ def _equal_marked_op(op1: MarkedOp, op2: MarkedOp, **kwargs):
 
 
 def mark(op: Operator, marker: str) -> MarkedOp:
-    """Marks an operator with a custom tag."""
+    """Marks an operator with a custom tag.
+
+    Args:
+        op (Operator): The operator you wish to mark.
+        marker (str): The marker to give to the operator.
+
+    **Example:**
+
+    >>> op = qml.X(0)
+    >>> marked_op = mark(op, "my-x")
+    >>> print(marked_op.marker)
+    my-x
+
+    """
     return MarkedOp(op, marker)

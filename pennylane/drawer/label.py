@@ -119,5 +119,18 @@ def _equal_labelled_op(op1: LabelledOp, op2: LabelledOp, **kwargs):
 
 
 def label(op: Operator, new_label: str) -> LabelledOp:
-    """Labels an operator with a custom label."""
+    """Labels an operator with a custom label.
+
+    Args:
+        op (Operator): The operator you wish to mark.
+        new_label (str): The label you wish to give to the operator.
+
+    **Example:**
+
+    >>> op = qml.X(0)
+    >>> labelled_op = label(op, "my-x")
+    >>> print(labelled_op.custom_label)
+    my-x
+
+    """
     return LabelledOp(op, new_label)
