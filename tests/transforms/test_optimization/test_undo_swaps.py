@@ -104,14 +104,14 @@ class TestUndoSwaps:
         def qfunc1():
             qml.RX(2, wires=0)
             qml.RY(-3, wires=1)
-            qml.QFT(wires=[0, 1, 2])
+            qml.MultiControlledX(wires=[0, 1, 2])
             qml.SWAP(wires=[1, 2])
             return qml.state()
 
         def qfunc2():
             qml.RX(2, wires=0)
             qml.RY(-3, wires=2)
-            qml.QFT(wires=[0, 2, 1])
+            qml.MultiControlledX(wires=[0, 2, 1])
             return qml.state()
 
         transformed_qfunc = undo_swaps(qfunc1)
