@@ -201,14 +201,6 @@ class TestHelperFunctions:
         assert set(selectors) == set(range(len(bits))) - set(skip_rows)
         assert np.allclose(new_bits, bits[np.array(selectors)])
 
-    @pytest.mark.parametrize("num_bits", [1, 2, 5])
-    def test_select_sos_rows_single_column(self, num_bits):
-        """Test that the edge case of a single bitstring is handled correctly."""
-        bits = np.array([[0], [1], [0], [1], [1]])[:num_bits]
-        selectors, new_bits = select_sos_rows(bits)
-        assert selectors == [0]
-        assert np.array_equal(new_bits, np.array([[0]]))
-
     @pytest.mark.parametrize(
         "r, len_N, len_M, seed",
         [

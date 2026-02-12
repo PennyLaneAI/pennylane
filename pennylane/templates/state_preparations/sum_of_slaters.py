@@ -674,7 +674,8 @@ class SumOfSlatersPrep(Operation):
     14: ─╰|Ψ⟩─╰QROM(M0)───────────────────────────────────────────╰X─╰X────┤
 
     We can see an initial dense state preparation via :class:`~.StatePrep` on fewer qubits,
-    a :class:`~.QROM` and a sequence of :class:`~.MultiControlledX` gates.
+    a :class:`~.QROM` and a sequence of :class:`~.MultiControlledX` gates, some of which are
+    mediated with a caching qubit (qubit index ``7``) and :class:`~.CNOT` gates.
 
     Note that we guessed the required ``num_work_wires`` and ``zeroed`` work wires in the calls
     to :func:`~.decompose` and :func:`~.transforms.resolve_dynamic_wires`. If we want to know
@@ -702,12 +703,10 @@ class SumOfSlatersPrep(Operation):
     @property
     def resource_params(self):
         indices = self.hyperparameters["indices"]
-        D = len(indices)
         n = len(self.wires)
-        v_bits = math.int_to_binary(np.array(indices), n).T  # v_bits.shape = (n, D)
+        v_bits = math.int_to_binary(np.array(indices), n).T
         selector_ids, _ = select_sos_rows(v_bits)
-        r = len(selector_ids)
-        return {"D": D, "num_bits": r, "num_wires": n}
+        return {"D": len(indices), "num_bits": len(selector_ids), "num_wires": n}
 
     def __init__(self, coefficients, wires, indices):
         super().__init__(coefficients, wires)
@@ -746,6 +745,7 @@ class SumOfSlatersPrep(Operation):
 
         """
         if D == 1:
+            # Simple computational basis state preparation, does not require auxiliary qubits
             return {
                 "wires": num_wires,
                 "enumeration_wires": 0,
@@ -755,13 +755,16 @@ class SumOfSlatersPrep(Operation):
             }
 
         d = math.ceil_log2(D)
-        if num_bits <= 2 * d - 1:
-            # Identity encoding works
+        m = 2 * d - 1
+        if num_bits <= m:
+            # Identity encoding. We do not need the identification register but can use the
+            # (subselection of) system wires directly
             num_identification = 0
         else:
-            m = 2 * d - 1
+            # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
             num_identification = m
-        # If D<=7, we only have encoded bits with bit count at most 2, so that we would not use
+
+        # If D<=7, we only have encoded bits with bit count at most 2, so that we will not use
         # a cache qubit for the MultiControlledX ops.
         num_mcx_cache = int(D > 7)
 
@@ -775,6 +778,9 @@ class SumOfSlatersPrep(Operation):
 
 
 def _sos_state_prep_resources(D, num_bits, num_wires):
+    """Compute the resources for _sos_state_prep. These are upper-bounded resources due to
+    the way MultiControlledX gates are accounted for at the moment.
+    We can remedy this once [sc-110068] is completed."""
     if D == 1:
         return {resource_rep(qml.BasisState, num_wires=num_wires): 1}
     d = math.ceil_log2(D)
@@ -809,22 +815,20 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     }
     mcx_rep = resource_rep(qml.MultiControlledX, **mcx_params)
 
-    for k in range(1, D):
-        bit_count = int(np.bitwise_count(k))
-        if bit_count <= 2:
-            # If k is a power of two, we can directly use an MCX gate
-            # If k is a sum of two powers of two, we can directly use two MCX gates
-            resources[mcx_rep] += bit_count
-        else:
-            # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
-            # control to flip the targets via CNOTs
-            resources[mcx_rep] += 2
+    # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
+    # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
+    bit_counts = np.bitwise_count(np.arange(1, D)).astype(int)
+    counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
 
-            # We use up to d CNOTs for any given bitstring, leading to d*D CNOTs naively.
-            # However, as we actually count up from 0 to D, we know that overall we will have
-            # to flip each bit at most half of the time, so that we have an upper bound of d*D/2
-            #
-            resources[resource_rep(qml.CNOT)] += bit_count
+    # If k is a power of two, we can directly use an MCX gate
+    resources[mcx_rep] += counts.pop(1)
+    # If k is a sum of two powers of two, we can directly use two MCX gates
+    resources[mcx_rep] += 2 * counts.pop(2)
+    # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
+    # control to flip the targets via ``bit_count`` many CNOTs
+    resources[mcx_rep] += 2 * sum(counts.values())
+    for bit_count, count in counts.items():
+        resources[resource_rep(qml.CNOT)] += count * bit_count
 
     ## Step 5:
     # TODO [dwierichs]: Revisit the following "hack" once [sc-110068] is completed.
@@ -832,7 +836,7 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     # This is because MultiControlledX resources with differing `num_zero_control_values`
     # are considered different by the framework. Overall we accounted for all MultiControlledX
     # instances as having the maximal number of zeroed control values above.
-    # Here we replace m-1 of them with all possible instances of zeroed control values. If we would
+    # Here we replace m of them with all possible instances of zeroed control values. If we would
     # be reaching negative counts, we simply add more MCX gates, leading to an upper bound instead
     resources[mcx_rep] = max(resources[mcx_rep] - m, 1)
     for num_zeroed in range(m):
