@@ -437,6 +437,10 @@ def expval(x: float):
 
 <h3>Documentation 📝</h3>
 
+* Wide-spread changes were made to our documentation to recommend using program capture with ``qjit``
+  only, and enabling it via ``qjit(capture=True)`` instead of the global toggle (``qml.capture.enable()``).
+  [(#9059)](https://github.com/PennyLaneAI/pennylane/pull/9059)
+
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
