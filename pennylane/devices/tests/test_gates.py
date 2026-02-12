@@ -94,7 +94,6 @@ ops = {
     "Barrier": qml.Barrier(wires=[0, 1, 2]),
     "WireCut": qml.WireCut(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
-    "QFT": qml.templates.QFT.operator(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
     "IsingYY": qml.IsingYY(0, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
