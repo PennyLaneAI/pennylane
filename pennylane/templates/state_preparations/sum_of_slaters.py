@@ -821,9 +821,9 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
 
     # If k is a power of two, we can directly use an MCX gate
-    resources[mcx_rep] += counts.pop(1)
+    resources[mcx_rep] += counts.pop(1, 0)
     # If k is a sum of two powers of two, we can directly use two MCX gates
-    resources[mcx_rep] += 2 * counts.pop(2)
+    resources[mcx_rep] += 2 * counts.pop(2, 0)
     # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
     # control to flip the targets via ``bit_count`` many CNOTs
     resources[mcx_rep] += 2 * sum(counts.values())
