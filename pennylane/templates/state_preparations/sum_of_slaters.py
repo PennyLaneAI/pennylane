@@ -17,13 +17,7 @@ from itertools import combinations, product
 
 import numpy as np
 
-from pennylane.math import (
-    binary_finite_reduced_row_echelon,
-    binary_is_independent,
-    binary_select_basis,
-    ceil_log2,
-    int_to_binary,
-)
+from pennylane import math
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -218,7 +212,7 @@ def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> n
         # Translate number to bitstring, interpret it as component vector for the basis (by
         # multiplying the basis into the bitstring), and check whether it avoids all bitstrings
         # that we need to avoid (stored in ``all_bitstrings_to_avoid``)
-        ell_bits_in_basis = int_to_binary(i, width=bits_basis.shape[1] - 1)
+        ell_bits_in_basis = math.int_to_binary(i, width=bits_basis.shape[1] - 1)
         ell = (bits_basis[:, :-1] @ ell_bits_in_basis) % 2
         if not np.any(np.all(ell[:, None] == all_bitstrings_to_avoid, axis=0)):
             break
@@ -271,7 +265,7 @@ def _find_single_w(bits):
     # Compute the integer representation of each column and each difference of columns
     ints = set(np.dot(powers, np.concatenate([bits, diffs], axis=1)))
     unoccupied = next(i for i in range(1, len(ints) + 1) if i not in ints)
-    w = int_to_binary(unoccupied, width=r)
+    w = math.int_to_binary(unoccupied, width=r)
     if zeroes_to_append:
         w = np.concatenate([w, np.zeros(zeroes_to_append, dtype=int)])
     return w[:, None]
@@ -292,7 +286,7 @@ def _step_3_in_find_w(bits_basis, other_bits):
     # 2^(r-1) ≥ D^2 > (D^2+D)/2 (for D>1),
     # so that 2^(r-1) candidates are enough to find a new vector.
     for i in range(1, 2 ** (r - 1)):
-        w_bits_in_basis = int_to_binary(i, width=bits_basis.shape[1] - 1)
+        w_bits_in_basis = math.int_to_binary(i, width=bits_basis.shape[1] - 1)
         w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
         if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
             return w[:, None]
@@ -316,7 +310,7 @@ def _find_w(bits_basis, other_bits, t):
     #  - v_r <> \{v_l\}
     #  - set_N <> \mathcal{N}
     indep_of_reduced_basis = np.array(
-        [binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
+        [math.binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
     )
 
     # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
@@ -351,7 +345,7 @@ def _find_U_from_W(W):
     r, t = W.shape
     # Create augmented matrix for Gauss-Jordan elimination.
     A = np.concatenate([W, np.eye(r, dtype=int)], axis=1)
-    A = binary_finite_reduced_row_echelon(A, inplace=True)
+    A = math.binary_finite_reduced_row_echelon(A, inplace=True)
     U = A[t:, t:]
     return U
 
@@ -588,7 +582,7 @@ def compute_sos_encoding(bits):
         as rows. The same is true for case 2b), where we only had to compute a single :math:`w_1`.
     """
     r, D = bits.shape
-    d = ceil_log2(D)
+    d = math.ceil_log2(D)
     m = 2 * d - 1
     if r <= m:
         # Case 1: We can use the identity mapping
@@ -601,7 +595,7 @@ def compute_sos_encoding(bits):
         W = _find_single_w(bits)
     else:
         # Step 1: Construct a basis for the input bits
-        bits_basis, other_bits = binary_select_basis(bits)
+        bits_basis, other_bits = math.binary_select_basis(bits)
         # Construct the kernel space W, in terms of linearly independent vectors
         W = _find_w(bits_basis, other_bits, t=r - m)
 
