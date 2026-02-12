@@ -97,9 +97,9 @@ def c():
   and `specs`, showing the cumulative result of applying transforms up to the marker:
 
   ```pycon
-  >>> print(qml.draw(c, level="no-transforms")())
+  >>> print(qml.draw(c, level="no-transforms")()) # or level=0
   0: ──X──H──H─┤  Probs
-  >>> print(qml.draw(c, level="after-cancel-inverses")())
+  >>> print(qml.draw(c, level="after-cancel-inverses")()) or level=1
   0: ──X─┤  Probs
   ```
 
