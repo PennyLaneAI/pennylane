@@ -632,7 +632,9 @@ class CompilePipeline:
         if not isinstance(other, CompilePipeline):
             return False
 
-        return self._compile_pipeline == other._compile_pipeline
+        return self._compile_pipeline == other._compile_pipeline and (
+            self._markers == other._markers
+        )
 
     def __contains__(self, obj) -> bool:
         if isinstance(obj, BoundTransform):

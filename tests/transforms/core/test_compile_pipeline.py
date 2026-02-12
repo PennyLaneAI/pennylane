@@ -2342,3 +2342,18 @@ class TestMarkers:
             match="Slicing a CompilePipeline that contains markers with a step size other than 1 is not supported",
         ):
             _ = pipeline[::2]
+
+    def test_equality_with_markers(self):
+        """Tests that two pipelines are only equal if their markers match"""
+
+        pipeline1 = CompilePipeline()
+        pipeline1.add_marker("marker0")
+
+        pipeline2 = CompilePipeline()
+        pipeline2.add_marker("marker0")
+
+        pipeline3 = CompilePipeline()
+        pipeline3.add_marker("marker1")
+
+        assert pipeline1 == pipeline2
+        assert pipeline1 != pipeline3
