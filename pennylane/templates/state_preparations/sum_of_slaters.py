@@ -275,8 +275,8 @@ def _step_3_in_find_w(bits_basis, other_bits):
     r = bits_basis.shape[0]
     all_bits = np.concatenate([bits_basis, other_bits], axis=1)
     # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
-    diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T
-    all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1) % 2
+    diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T % 2
+    all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1)
 
     # Note that the set ``all_bitstrings_to_avoid`` has size at most D+(D^2-D)/2=(D^2+D)/2
     # For r<=m+1, we actually never call ``_find_w``, so that we know r≥m+2=2d+1, and thus
