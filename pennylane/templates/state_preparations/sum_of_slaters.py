@@ -131,6 +131,9 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     :math:`(n_{\text{row}}, n_{\text{col}})` is the shape of the input array.
 
     """
+    if bits.shape[1] == 1:
+        # If there is a single column, we can make our life a bit easier
+        return [0], bits[:1]
     selectors = list(range(len(bits)))
 
     while len(selectors) > 1:  # We will want to keep at least one row
