@@ -507,7 +507,7 @@ def compute_sos_encoding(bits):
         kernel dimension to be :math:`t` and :math:`\dim(\mathcal{W})=t`, this will imply
         :math:`\mathcal{W}=\ker U`.
 
-        .. admonition:: math comment
+        .. admonition:: Math comment
 
             To see that this strategy actually ensures :math:`U` to have the
             properties we are after, assume that :math:`U v_i=0` for some :math:`i` with
@@ -689,7 +689,7 @@ class SumOfSlatersPrep(Operation):
      'qrom_work_wires': 3,
      'mcx_cache_wires': 1}
 
-    .. admonition::
+    .. admonition:: Gotchas of reported work register sizes
 
         Note that these register sizes might be upper bounds in some scenarios, and that further
         decomposing the circuit efficiently may require additional work wires, for example for
