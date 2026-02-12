@@ -115,7 +115,7 @@ def c():
   ```pycon
   >>> print(qml.draw(c, level="no-transforms")()) # or level=0
   0: ──X──H──H─┤  Probs
-  >>> print(qml.draw(c, level="after-cancel-inverses")()) or level=1
+  >>> print(qml.draw(c, level="after-cancel-inverses")()) # or level=1
   0: ──X─┤  Probs
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
