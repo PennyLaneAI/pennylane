@@ -647,18 +647,18 @@ class SumOfSlatersPrep(Operation):
     Given that we have the index ``25`` in ``indices``, we need at least five qubits to represent
     this state (in practical use cases, the number of qubits is typical given from context):
 
-    >>> wires = qp.wires.Wires(range(5))
+    >>> wires = qml.wires.Wires(range(5))
 
     This is all the information we require to create the state preparation:
 
-    >>> prep_op = qp.SumOfSlatersPrep(coefficients, wires, indices)
+    >>> prep_op = qml.SumOfSlatersPrep(coefficients, wires, indices)
 
     Let's take a look at how the preparation is implemented:
 
-    >>> qp.decomposition.enable_graph()
-    >>> decomp_call = qp.decompose(qp.SumOfSlatersPrep, max_expansion=1, num_work_wires=10)
-    >>> decomp_call = qp.transforms.resolve_dynamic_wires(decomp_call, zeroed=range(5, 15))
-    >>> print(qp.draw(decomp_call, show_matrices=False)(coefficients, wires, indices))
+    >>> qml.decomposition.enable_graph()
+    >>> decomp_call = qml.decompose(qml.SumOfSlatersPrep, max_expansion=1, num_work_wires=10)
+    >>> decomp_call = qml.transforms.resolve_dynamic_wires(decomp_call, zeroed=range(5, 15))
+    >>> print(qml.draw(decomp_call, show_matrices=False)(coefficients, wires, indices))
      0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤
      1: ──────├QROM(M0)─├○─├○─├●─├●─├●─├○─├○─├○─├○─├○──────────├○─├○─├●─├●─┤
      2: ──────├QROM(M0)─├○─├●─├●─├●─├●─├○─├○─├○─├○─├●──────────├●─├●─├○─├○─┤
