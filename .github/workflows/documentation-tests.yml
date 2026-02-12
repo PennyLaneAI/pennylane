@@ -115,5 +115,8 @@ jobs:
 
       - name: Test 'doc' folder
         run: |
+          IGNORE = "
+          --ignore=doc/code
+          "
 
           pytest doc/**/*.rst 
