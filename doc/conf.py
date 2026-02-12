@@ -397,7 +397,7 @@ def get_catalyst_docstrings():
     """Finds docstrings for Catalyst functionality that is under the catalyst.docs_to_pennylane entry point."""
     docs_registry = {}
     eps = importlib.metadata.entry_points(group='catalyst.docs_to_pennylane')
-    
+
     for ep in eps:
         try:
             target_obj = ep.load()
@@ -419,6 +419,6 @@ def dynamic_docstring_lookup(app, what, name, obj, options, lines):
 
 def setup(app):
     """Sphinx entry point for this extension."""
-    app.connect('source-read', add_noindex_to_estimator_stubs)
+    app.connect("autodoc-process-docstring", dynamic_docstring_lookup)
+    app.connect("source-read", add_noindex_to_estimator_stubs)
     app.connect("doctree-resolved", add_links_to_estimator_table)
-    app.connect('autodoc-process-docstring', dynamic_docstring_lookup)
