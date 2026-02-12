@@ -20,6 +20,7 @@ from copy import copy
 from pennylane import math
 from pennylane.operation import Operator
 from pennylane.ops import LinearCombination, SProd, Sum, op_math
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -298,8 +299,9 @@ class ParametrizedHamiltonian:
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
         operators (or a single ``SProd`` operator in the event that there is only one term in ``H_fixed``).
         """
-        if self.coeffs_fixed:
-            return sum(op_math.s_prod(c, o) for c, o in zip(self.coeffs_fixed, self.ops_fixed))
+        with QueuingManager.stop_recording():
+            if self.coeffs_fixed:
+                return sum(op_math.s_prod(c, o) for c, o in zip(self.coeffs_fixed, self.ops_fixed))
         return 0
 
     def H_parametrized(self, params, t):
@@ -314,11 +316,10 @@ class ParametrizedHamiltonian:
             ``SProd`` operator in the event that there is only one term in ``H_parametrized``).
         """
         coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
-        return (
-            sum(op_math.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized))
-            if coeffs
-            else 0
-        )
+        if coeffs:
+            with QueuingManager.stop_recording():
+                return sum(op_math.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized))
+        return 0
 
     @property
     def coeffs(self):

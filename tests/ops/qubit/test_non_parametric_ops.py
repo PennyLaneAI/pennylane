@@ -713,7 +713,7 @@ class TestMultiControlledX:
 
     @pytest.mark.parametrize("control_val", [0, 1])
     @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
-    def test_decomposition_with_flips(self, n_ctrl_wires, control_val, mocker):
+    def test_decomposition_with_flips(self, n_ctrl_wires, control_val):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on varying the control values."""
@@ -721,7 +721,6 @@ class TestMultiControlledX:
         control_target_wires = list(range(n_ctrl_wires)) + [n_ctrl_wires]
         work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
 
-        spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -731,7 +730,7 @@ class TestMultiControlledX:
                 control_values=control_values,
             )
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT", "X"})
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -745,7 +744,6 @@ class TestMultiControlledX:
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
-        spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     def test_decomposition_with_custom_wire_labels(self, mocker):
@@ -763,7 +761,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=2, gate_set={"CNOT"})
+        [tape], _ = decompose(tape, max_expansion=2, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -777,7 +775,8 @@ class TestMultiControlledX:
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
-        spy.assert_called()
+        if not qml.decomposition.enabled_graph():
+            spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     def test_worker_state_unperturbed(self, mocker):
@@ -796,7 +795,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT"})
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -808,7 +807,8 @@ class TestMultiControlledX:
             return qml.state()
 
         assert np.allclose(f(), rnd_state)
-        spy.assert_called()
+        if not qml.decomposition.enabled_graph():
+            spy.assert_called()
 
     def test_compute_matrix_no_control_values(self):
         """Test compute_matrix assumes all control on "1" if no

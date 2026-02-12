@@ -24,6 +24,8 @@ from functools import cached_property
 import pennylane as qml
 from pennylane.operation import Operator
 
+from .utils import to_name
+
 
 @dataclass(frozen=False)
 class Resources:
@@ -530,7 +532,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     if base_class is qml.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
             return resource_rep(qml.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0:
+        if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
             return resource_rep(qml.Toffoli)
         return resource_rep(
             qml.MultiControlledX,
@@ -572,3 +574,8 @@ def auto_wrap(op_type):
             f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
             f"representation must be explicitly constructed using qml.resource_rep"
         ) from e
+
+
+@to_name.register
+def _compressed_op_to_name(op: CompressedResourceOp):
+    return to_name(op.name)
