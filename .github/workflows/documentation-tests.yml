@@ -71,7 +71,7 @@ jobs:
 
       # TODO: Remove the --ignore options as layers are tested and verified
       # to be working correctly.
-      - name: Run documentation tests
+      - name: Test 'pennylane' folder
         run: |
           IGNORE_OPTS_CLOSED="
           --ignore=pennylane/labs
@@ -112,3 +112,8 @@ jobs:
           "
 
           pytest pennylane $IGNORE_OPTS --ignore-glob='*tests*'
+
+      - name: Test 'doc' folder
+        run: |
+
+          pytest doc/**/*.rst 
