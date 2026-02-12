@@ -396,12 +396,12 @@ import functools
 def get_catalyst_docstrings():
     """Finds docstrings for Catalyst functionality that is under the catalyst.docs_to_pennylane entry point."""
     docs_registry = {}
-    eps = importlib.metadata.entry_points(group='catalyst.docs_to_pennylane')
+    eps = importlib.metadata.entry_points(group='catalyst.passes')
 
     for ep in eps:
         try:
             target_obj = ep.load()
-            if target_obj.__doc__:
+            if target_obj and hasattr(target_obj, "__doc__") and target_obj.__doc__:
                 docs_registry[ep.name] = target_obj.__doc__.splitlines()
         except Exception as e:
             print(f"Warning: Could not load entry point {ep.name}: {e}")
@@ -409,13 +409,17 @@ def get_catalyst_docstrings():
     return docs_registry
 
 def dynamic_docstring_lookup(app, what, name, obj, options, lines):
-    short_name = name.split('.')[-1]
+    if what not in ("function", "class", "method"):
+        return
     
+    short_name = name.split('.')[-1]
     registry = get_catalyst_docstrings()
     
     if short_name in registry:
-        lines.clear()
-        lines.extend(registry[short_name])
+        new_lines = registry[short_name]
+        if lines != new_lines:
+            lines.clear()
+            lines.extend(new_lines)
 
 def setup(app):
     """Sphinx entry point for this extension."""
