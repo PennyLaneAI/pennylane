@@ -115,7 +115,7 @@ jobs:
 
       - name: Test 'doc' folder
         run: |
-          IGNORE = "
+          IGNORE="
           --ignore=doc/code
           "
 
