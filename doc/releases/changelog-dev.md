@@ -59,12 +59,15 @@ def c():
 
 <h3>Improvements 🛠</h3>
 
-* The :func:`~.marker` utility is no longer defined as a tape transform that lives in the compilation pipeline. Instead,
-  this feature has been re-worked to now be a utility function that adds a marker to a `QNode`'s compilation pipeline.
-  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+* When inspecting a circuit with an integer ``level`` argument in :func:`~.draw` or :func:`~.specs`,
+  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
+  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
+  of how many markers are present.
 
-  Markers are now added directly to compilation pipelines using the `add_marker` API and retain their old API for 
-  interactions with a `QNode`,
+  Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
+  pipeline's string representation now shows both transforms and markers:
+
+  As an example, we now have the following behaviour:
 
   ```python
   pipeline = qml.CompilePipeline()
@@ -81,8 +84,8 @@ def c():
     return qml.probs()
   ```
 
-  The compilation pipeline can be inspected to reveal the transforms and the markers
-  contained, 
+  The compilation pipeline has a new string representation that can be used to 
+  inspect the transforms and markers,
 
   ```pycon
   >>> print(circuit.compile_pipeline)
@@ -93,8 +96,8 @@ def c():
   )
   ```
 
-  The string supplied to :func:`~.marker` can then be used as an argument to `level` in `draw`
-  and `specs`, showing the cumulative result of applying transforms up to the marker:
+  As usual, marker labels can be used as an argument to `level` in `draw`
+  and `specs`, showing the cumulative result of applying transforms up to said marker:
 
   ```pycon
   >>> print(qml.draw(c, level="no-transforms")()) # or level=0
@@ -102,6 +105,7 @@ def c():
   >>> print(qml.draw(c, level="after-cancel-inverses")()) or level=1
   0: ──X─┤  Probs
   ```
+  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
