@@ -441,9 +441,9 @@ class CompilePipeline:
         # Handle CompilePipeline
         if isinstance(other, CompilePipeline):
             offset = len(self._compile_pipeline)
-            old_markers = self._markers.copy()
+            new_markers = self._markers.copy()
             for name, pos in other._markers.items():
-                old_markers[name] = pos + offset
+                new_markers[name] = pos + offset
 
             if self.has_final_transform and other.has_final_transform:
                 raise TransformError("The compile pipeline already has a terminal transform.")
@@ -459,7 +459,7 @@ class CompilePipeline:
             elif other.cotransform_cache:
                 cotransform_cache = other.cotransform_cache
             new_pipeline = CompilePipeline(transforms, cotransform_cache=cotransform_cache)
-            new_pipeline._markers = old_markers
+            new_pipeline._markers = new_markers
             return new_pipeline
 
         return NotImplemented
