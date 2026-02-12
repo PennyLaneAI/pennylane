@@ -262,7 +262,9 @@ class PhaseAdder(Operation):
                         *[ops.adjoint(op) for op in _add_k_fourier(k, x_wires)],
                     ),
                     ops.CNOT(wires=[aux_k, work_wire[0]]),
-                    ops.prod(*_add_k_fourier(k, x_wires)[::-1], QFT(wires=x_wires), ops.X(aux_k)),
+                    ops.prod(
+                        *_add_k_fourier(k, x_wires)[::-1], QFT.operator(wires=x_wires), ops.X(aux_k)
+                    ),
                 )
             )
 

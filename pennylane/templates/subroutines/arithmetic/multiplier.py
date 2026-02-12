@@ -233,7 +233,7 @@ class Multiplier(Operation):
             wires_aux_swap = wires_aux
 
         op1 = change_op_basis(
-            QFT(wires=wires_aux),
+            QFT.operator(wires=wires_aux),
             ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
         )
 
@@ -241,7 +241,7 @@ class Multiplier(Operation):
 
         inv_k = pow(k, -1, mod)
         op2 = change_op_basis(
-            QFT(wires=wires_aux),
+            QFT.operator(wires=wires_aux),
             adjoint(
                 ControlledSequence(
                     PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires
@@ -263,30 +263,28 @@ def _multiplier_decomposition_resources(
         "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
         "num_control_wires": num_x_wires,
     }
+    resources = {}
+    for op in QFT.compute_resources(wires=range(num_wires_aux)):
+        resources[adjoint_resource_rep(op)] += 2
+        resources[op] += 2
     if num_x_wires > 1:
-        return {
-            change_op_basis_resource_rep(
-                resource_rep(QFT, num_wires=num_wires_aux),
-                resource_rep(ControlledSequence, **cs_base_params),
-            ): 1,
-            resource_rep(Prod, resources={resource_rep(SWAP): num_x_wires}): 1,
-            change_op_basis_resource_rep(
-                resource_rep(QFT, num_wires=num_wires_aux),
-                adjoint_resource_rep(ControlledSequence, cs_base_params),
-            ): 1,
-        }
+        resources.update(
+            {
+                resource_rep(ControlledSequence, **cs_base_params): 1,
+                resource_rep(Prod, resources={resource_rep(SWAP): num_x_wires}): 1,
+                adjoint_resource_rep(ControlledSequence, cs_base_params): 1,
+            }
+        )
+        return resources
 
-    return {
-        change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=num_wires_aux),
-            resource_rep(ControlledSequence, **cs_base_params),
-        ): 1,
-        SWAP: 1,
-        change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=num_wires_aux),
-            adjoint_resource_rep(ControlledSequence, cs_base_params),
-        ): 1,
-    }
+    resources.update(
+        {
+            resource_rep(ControlledSequence, **cs_base_params): 1,
+            SWAP: 1,
+            adjoint_resource_rep(ControlledSequence, cs_base_params): 1,
+        }
+    )
+    return resources
 
 
 @register_resources(_multiplier_decomposition_resources)
@@ -302,7 +300,7 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
 
     inv_k = pow(k, -1, mod)
     change_op_basis(
-        QFT(wires=wires_aux),
+        QFT.operator(wires=wires_aux),
         ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
     )
     prod(
@@ -311,7 +309,7 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
         )
     )
     change_op_basis(
-        QFT(wires=wires_aux),
+        QFT.operator(wires=wires_aux),
         adjoint(
             ControlledSequence(PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires)
         ),

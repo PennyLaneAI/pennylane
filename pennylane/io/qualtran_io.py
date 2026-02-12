@@ -84,7 +84,7 @@ def _register_subroutine_to_bloq(subroutine: qtemps.Subroutine):
     """
 
     def subroutine_to_bloq_decorator(f):
-        _Subroutine_call_graph_map[subroutine] = f
+        _Subroutine_to_bloq_map[subroutine] = f
         return f
 
     return subroutine_to_bloq_decorator
@@ -373,9 +373,7 @@ def _(op: qtemps.subroutines.QROM):
     return gate_types
 
 
-@_register_subroutine_call_graph(
-    qtemps.subroutines.QFT.operator([0, 1, 2])
-)  # TODO: don't want to specify params
+@_register_subroutine_call_graph(qtemps.subroutines.QFT)
 def _(op):
     """Call graph for Quantum Fourier Transform"""
 
@@ -603,9 +601,7 @@ def _(
 
 
 # pylint: disable=import-outside-toplevel
-@_register_subroutine_to_bloq(
-    qtemps.subroutines.QFT.operator([0, 1, 2])
-)  # TODO: don't want to specify params
+@_register_subroutine_to_bloq(qtemps.subroutines.QFT)
 def _(op, custom_mapping=None, map_ops=True, **kwargs):
     """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
     from qualtran.bloqs.qft import QFTTextBook
