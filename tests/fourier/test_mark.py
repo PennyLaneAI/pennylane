@@ -41,6 +41,16 @@ class TestMarkedOp:
         op = MarkedOp(qml.X(0), marker="my-x")
         assert repr(op) == 'MarkedOp(X(0), marker="my-x")'
 
+    def test_label(self):
+        """Tests the 'label' method."""
+
+        op = MarkedOp(qml.X(0), marker="my-x")
+        assert op.label() == 'X("my-x")'
+
+        op = MarkedOp(qml.RX(1.2345, wires=0), marker="my-x")
+        assert op.label() == 'RX("my-x")'
+        assert op.label(decimals=2) == 'RX\n(1.23, "my-x")'
+
     def test_marker_property(self):
         """Tests the 'custom_label' property."""
 
