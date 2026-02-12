@@ -404,6 +404,9 @@ def expval(x: float):
 
 <h3>Internal changes ⚙️</h3>
 
+* Add `sybil` to `dev` dependency group in `pyproject.toml`.
+  [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
+
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
