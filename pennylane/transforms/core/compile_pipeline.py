@@ -219,7 +219,7 @@ class CompilePipeline:
            └─▶ final-transform
         )
 
-        Two different markers can be used to make the same level, causing them to stack,
+        Two different markers can be used to mark the same level, causing them to stack,
 
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
@@ -231,14 +231,14 @@ class CompilePipeline:
            └─▶ final-transform, after-merge-rotations
         )
 
-        A marker's level (the index of the transform it follows) is retrieved with,
+        A marker's level (the index of the transform it follows) can be retrieved with,
 
         >>> print(pipeline.get_marker_level("final-transform"))
         3
         >>> print(pipeline.get_marker_level("after-merge-rotations"))
         3
 
-        Markers can be removed with,
+        We can remove a ``marker`` using the ``remove_marker`` method,
 
         >>> pipeline.remove_marker("final-transform")
         >>> pipeline.markers
