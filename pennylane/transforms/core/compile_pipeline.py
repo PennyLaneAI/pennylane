@@ -742,6 +742,9 @@ class CompilePipeline:
             level (int | None): The level position for the marker. If ``None``, the marker
                 will be append to the end of the compilation pipeline.
 
+        Raises:
+            ValueError: If the label corresponds to a protected level, if the label is not unique, or if the level is out of bounds.
+
         **Example:**
 
         >>> pipeline = CompilePipeline()
@@ -766,6 +769,10 @@ class CompilePipeline:
             )
         if label in self._markers:
             raise ValueError(f"Found multiple markers for level '{label}'. Markers must be unique.")
+        if level is not None and (level < 0 or level > len(self._compile_pipeline)):
+            raise ValueError(
+                f"Marker level must be between 0 and the number of transforms in the pipeline ({len(self._compile_pipeline)}), inclusive."
+            )
 
         if level is None:
             level = len(self._compile_pipeline)

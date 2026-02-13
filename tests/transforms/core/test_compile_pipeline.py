@@ -1949,6 +1949,17 @@ class TestMarkers:
         with pytest.raises(ValueError, match="No marker found with label 'test'"):
             pipeline.remove_marker("test")
 
+    def test_add_marker_on_undefined_level(self):
+        """Tests that adding a marker on an undefined level raises an error."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_transform(transform(first_valid_transform))
+        with pytest.raises(
+            ValueError,
+            match="Marker level must be between 0 and the number of transforms in the pipeline",
+        ):
+            pipeline.add_marker("test", level=2)
+
     @pytest.mark.parametrize("protected_name", [level.value for level in ProtectedLevel])
     def test_add_marker_with_protected_name(self, protected_name):
         """Test that adding a marker with a protected name raises an error."""
