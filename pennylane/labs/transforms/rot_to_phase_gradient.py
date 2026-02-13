@@ -144,11 +144,13 @@ def rot_to_phase_gradient(
         phase_grad_wires = [f"phg_{i}" for i in range(precision)]
         work_wires = [f"work_{i}" for i in range(precision - 1)]
 
-        def phase_gradient(wires):
-            # prepare phase gradient state
-            for i, w in enumerate(wires):
-                qp.H(w)
-                qp.PhaseShift(-np.pi / 2**i, w)
+        def prepare_phase_gradient(wires):
+            # Preparing the phase gradient state needs to happen separately of the transform
+            n = len(wires)
+            basis = np.eye(2**n)
+            B = 2**n
+            wave_function = np.sum([b * np.exp(-1j*2*np.pi * i/B) for i, b in enumerate(basis)], axis=0)/(2**(n/2))
+            return qp.StatePrep(wave_function, wires)
 
         @partial(
             select_pauli_rot_phase_gradient,
@@ -228,10 +230,13 @@ def rot_to_phase_gradient(
                 case "Z":
                     operations.append(pg_op)
 
-        elif isinstance(op, qp.RZ) or (isinstance(op, qp.MultiRZ) and len(op.wires) == 1):
+        elif isinstance(op, (qp.RZ, qp.PhaseShift)) or (
+            isinstance(op, qp.MultiRZ) and len(op.wires) == 1
+        ):
             wire = op.wires
             phi = op.parameters[0]
-            global_phases.append(phi / 2)
+            global_phase_temp = phi / 2 if not isinstance(op, qp.PhaseShift) else 0
+            global_phases.append(global_phase_temp)
 
             operations.append(
                 _rz_phase_gradient(
