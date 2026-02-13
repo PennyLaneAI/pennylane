@@ -20,6 +20,10 @@ Pending deprecations
 
   These are now handled by dedicated functions:
 
+  .. warning::
+
+    Neither of these functions are currently supported inside :func:`~.qjit`-compiled circuits.
+
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
 

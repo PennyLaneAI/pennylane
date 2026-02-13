@@ -122,6 +122,10 @@ def _equal_marked_op(op1: MarkedOp, op2: MarkedOp, **kwargs):
 def mark(op: Operator, marker: str) -> MarkedOp:
     """Mark an operator with a custom tag.
 
+    .. warning::
+
+        This function is not currently supported inside :func:`~.qjit`-compiled circuits.
+
     Args:
         op (Operator): The operator you wish to mark.
         marker (str): The marker to give to the operator.

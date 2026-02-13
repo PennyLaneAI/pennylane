@@ -381,6 +381,9 @@ def expval(x: float):
 
   These are now handled by dedicated functions:
 
+  > [!WARNING]  
+  > Neither of these functions are supported in a :func:`~.qjit`-compiled circuit.
+
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
 
