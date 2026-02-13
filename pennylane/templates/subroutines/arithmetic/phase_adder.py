@@ -249,7 +249,7 @@ class PhaseAdder(Operation):
                 ops.change_op_basis(
                     ops.adjoint(QFT)(wires=x_wires),
                     ops.ctrl(ops.X(work_wire), control=aux_k, control_values=1),
-                    QFT(wires=x_wires),
+                    QFT.operator(wires=x_wires),
                 )
             )
 

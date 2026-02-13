@@ -26,6 +26,7 @@ from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
+from ... import SubroutineOp
 
 
 class Adder(Operation):
@@ -211,7 +212,7 @@ class Adder(Operation):
             qft_wires = work_wires[:1] + x_wires
             work_wire = work_wires[1:]
 
-        op_list = [change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))]
+        op_list = [change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))]
 
         return op_list
 
@@ -220,7 +221,7 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires),
+            resource_rep(SubroutineOp),
             resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
         ): 1,
     }
@@ -235,7 +236,7 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
         qft_wires = work_wires[:1] + x_wires
         work_wire = work_wires[1:]
 
-    change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+    change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
 
 
 add_decomps(Adder, _adder_decomposition)
