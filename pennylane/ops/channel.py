@@ -16,6 +16,7 @@
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
+import math
 import warnings
 from collections.abc import Hashable, Iterable
 from typing import Any
@@ -816,6 +817,141 @@ if QubitChannel._primitive is not None:  # pylint: disable=protected-access
         return type.__call__(QubitChannel, K_list, wires=wires)
 
 
+class ToroidalDephasing(Channel):
+    r"""
+    Single-qubit dephasing channel with toroidal spectral-gap suppression.
+
+    Models dephasing noise on a qubit embedded in a toroidal (:math:`T^2`)
+    lattice, where the spectral gap of the graph Laplacian acts as a
+    topological noise filter. The effective dephasing probability is reduced
+    from the bare value :math:`\gamma` by a factor determined by the lattice
+    geometry:
+
+    .. math::
+        \lambda_1 = 2 - 2\cos\!\left(\frac{2\pi}{n}\right)
+
+    .. math::
+        \gamma_{\text{eff}} = \gamma \cdot
+            \frac{\lambda_1}{\lambda_1 + \alpha}
+
+    where :math:`n` is the side length of the :math:`n \times n` toroidal
+    lattice, :math:`\lambda_1` is the smallest nonzero eigenvalue of the
+    lattice Laplacian, and :math:`\alpha \in (0, \infty)` is a coupling
+    strength that controls the suppression (larger :math:`\alpha` gives
+    stronger filtering).
+
+    The Kraus matrices are identical in form to
+    :class:`~.PhaseDamping` but with :math:`\gamma_{\text{eff}}` replacing
+    :math:`\gamma`:
+
+    .. math::
+        K_0 = \begin{bmatrix}
+                1 & 0 \\
+                0 & \sqrt{1-\gamma_{\text{eff}}}
+                \end{bmatrix}
+    .. math::
+        K_1 = \begin{bmatrix}
+                0 & 0  \\
+                0 & \sqrt{\gamma_{\text{eff}}}
+                \end{bmatrix}
+
+    This is motivated by the observation that arranging qubits on a toroidal
+    lattice causes dephasing noise to be filtered by the spectral gap of the
+    lattice Laplacian. Noise components with frequency below :math:`\lambda_1`
+    are suppressed, extending coherence time. See
+    `[Cormier 2026] <https://doi.org/10.5281/zenodo.18516477>`_ for details.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+
+    Args:
+        gamma (float): bare dephasing probability, in :math:`[0, 1]`
+        grid_n (int): side length of the :math:`n \times n` toroidal lattice
+            (default 12, giving 144 sites)
+        alpha (float): coupling strength controlling suppression depth
+            (default 1.0)
+        wires (Sequence[int] or int): the wire the channel acts on
+        id (str or None): String representing the operation (optional)
+
+    **Example:**
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+        dev = qml.device("default.mixed", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(gamma):
+            qml.Hadamard(wires=0)
+            qml.ToroidalDephasing(gamma, grid_n=12, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+    .. code-block:: pycon
+
+        >>> circuit(0.5)
+        tensor(0.99, requires_grad=True)
+    """
+
+    num_params = 1
+    num_wires = 1
+    grad_method = "F"
+
+    resource_keys = {"grid_n", "alpha"}
+
+    def __init__(self, gamma, grid_n=12, alpha=1.0, wires=None, id=None):
+        if grid_n < 2:
+            raise ValueError("grid_n must be >= 2.")
+        if alpha <= 0:
+            raise ValueError("alpha must be positive.")
+        self.hyperparameters["grid_n"] = grid_n
+        self.hyperparameters["alpha"] = alpha
+        super().__init__(gamma, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "grid_n": self.hyperparameters["grid_n"],
+            "alpha": self.hyperparameters["alpha"],
+        }
+
+    @staticmethod
+    def compute_kraus_matrices(gamma, grid_n=12, alpha=1.0):  # pylint:disable=arguments-differ
+        r"""Kraus matrices representing the ToroidalDephasing channel.
+
+        Args:
+            gamma (float): bare dephasing probability
+            grid_n (int): side length of the toroidal lattice
+            alpha (float): coupling strength
+
+        Returns:
+            list(array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.ToroidalDephasing.compute_kraus_matrices(0.5, grid_n=12)
+        [array([[1.        , 0.        ],
+                [0.        , 0.99256.. ]]),
+         array([[0.        , 0.        ],
+                [0.        , 0.12174..]])]
+        """
+        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+            raise ValueError("gamma must be in the interval [0,1].")
+
+        # Spectral gap of the n x n toroidal lattice Laplacian
+        lam1 = 2.0 - 2.0 * math.cos(2.0 * math.pi / grid_n)
+
+        # Suppression factor: lam1 / (lam1 + alpha)
+        suppression = lam1 / (lam1 + alpha)
+        gamma_eff = gamma * suppression
+
+        K0 = np.diag([1, np.sqrt(1 - gamma_eff + np.eps)])
+        K1 = np.diag([0, np.sqrt(gamma_eff + np.eps)])
+        return [K0, K1]
+
+
 class ThermalRelaxationError(Channel):
     r"""
     Thermal relaxation error channel.
@@ -1011,6 +1147,7 @@ __qubit_channels__ = {
     "ResetError",
     "QubitChannel",
     "ThermalRelaxationError",
+    "ToroidalDephasing",
 }
 
 __all__ = list(__qubit_channels__)

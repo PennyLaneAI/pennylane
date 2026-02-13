@@ -68,6 +68,9 @@ channels_and_args = (
         (channel.ThermalRelaxationError, (0.0, 1e-4, 1.2e-4, 2e-8)),
         (channel.ThermalRelaxationError, (0.1, 1e-4, 1.2e-4, 2e-8)),
         (channel.ThermalRelaxationError, (1.0, 1e-4, 1.2e-4, 2e-8)),
+        (channel.ToroidalDephasing, (0.0,)),
+        (channel.ToroidalDephasing, (0.5,)),
+        (channel.ToroidalDephasing, (1.0,)),
     ]
 )
 
@@ -1168,3 +1171,107 @@ class TestThermalRelaxationError:
                 ]
             ),
         )
+
+
+class TestToroidalDephasing:
+    """Tests for the ToroidalDephasing channel"""
+
+    def test_gamma_zero(self, tol):
+        """Test gamma=0 gives identity channel (no dephasing)"""
+        op = channel.ToroidalDephasing(0, grid_n=12, wires=0)
+        K = op.kraus_matrices()
+        assert np.allclose(K[0], np.eye(2), atol=tol, rtol=0)
+        assert np.allclose(K[1], np.zeros((2, 2)), atol=tol, rtol=0)
+
+    def test_gamma_one_suppressed(self, tol):
+        """Test gamma=1 gives less than full dephasing due to spectral filter"""
+        op = channel.ToroidalDephasing(1.0, grid_n=12, wires=0)
+        K = op.kraus_matrices()
+        # gamma_eff < 1 because of toroidal suppression
+        gamma_eff = K[1][1, 1] ** 2
+        assert gamma_eff < 1.0
+        assert gamma_eff > 0.0
+
+    def test_larger_grid_gives_more_suppression(self):
+        """Test that larger toroidal grids suppress dephasing more"""
+        gamma = 0.5
+        op_small = channel.ToroidalDephasing(gamma, grid_n=4, wires=0)
+        op_large = channel.ToroidalDephasing(gamma, grid_n=32, wires=0)
+
+        K_small = op_small.kraus_matrices()
+        K_large = op_large.kraus_matrices()
+
+        # K1[1,1]^2 = gamma_eff; larger grid -> smaller gamma_eff
+        gamma_eff_small = K_small[1][1, 1] ** 2
+        gamma_eff_large = K_large[1][1, 1] ** 2
+        assert gamma_eff_large < gamma_eff_small
+
+    def test_spectral_gap_value(self, tol):
+        """Test the spectral gap formula for known grid sizes"""
+        import math
+
+        # For grid_n=4: lambda_1 = 2 - 2*cos(pi/2) = 2
+        op = channel.ToroidalDephasing(1.0, grid_n=4, alpha=1.0, wires=0)
+        K = op.kraus_matrices()
+        gamma_eff = K[1][1, 1] ** 2
+
+        lam1 = 2.0 - 2.0 * math.cos(2.0 * math.pi / 4)
+        expected = 1.0 * lam1 / (lam1 + 1.0)
+        assert np.allclose(gamma_eff, expected, atol=tol, rtol=0)
+
+    def test_reduces_to_identity_at_infinite_alpha(self, tol):
+        """With very large alpha, suppression -> 0 and channel -> identity"""
+        gamma = 0.3
+        op = channel.ToroidalDephasing(gamma, grid_n=12, alpha=1e10, wires=0)
+        K = op.kraus_matrices()
+        assert np.allclose(K[0], np.eye(2), atol=1e-4, rtol=0)
+
+    def test_alpha_zero_raises(self):
+        """alpha must be positive"""
+        with pytest.raises(ValueError, match="alpha must be positive"):
+            channel.ToroidalDephasing(0.5, alpha=0.0, wires=0)
+
+    def test_grid_n_too_small_raises(self):
+        """grid_n must be >= 2"""
+        with pytest.raises(ValueError, match="grid_n must be >= 2"):
+            channel.ToroidalDephasing(0.5, grid_n=1, wires=0)
+
+    def test_gamma_invalid_parameter(self):
+        with pytest.raises(ValueError, match="gamma must be in the interval"):
+            channel.ToroidalDephasing(1.5, wires=0).kraus_matrices()
+
+    def test_trace_preserving(self, tol):
+        """Test sum K†K = I for several parameter values"""
+        for gamma in [0.0, 0.3, 0.7, 1.0]:
+            for grid_n in [4, 8, 12, 32]:
+                op = channel.ToroidalDephasing(gamma, grid_n=grid_n, wires=0)
+                K_list = op.kraus_matrices()
+                K_arr = np.stack(K_list)
+                Kraus_sum = np.einsum("ajk,ajl->kl", np.conj(K_arr), K_arr)
+                assert np.allclose(Kraus_sum, np.eye(2), atol=tol, rtol=0)
+
+    def test_grad_qnode(self):
+        """Test that gradient can be computed through a QNode"""
+        dev = qml.device("default.mixed", wires=1)
+        gamma = pnp.array(0.5, requires_grad=True)
+
+        @qml.qnode(dev)
+        def circuit(g):
+            qml.Hadamard(wires=0)
+            qml.ToroidalDephasing(g, grid_n=12, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        grad = qml.grad(circuit)(gamma)
+        assert isinstance(grad, (float, pnp.tensor))
+        # Gradient should be negative (more dephasing -> less X expectation)
+        assert grad < 0
+
+    @staticmethod
+    def kraus_fn(x):
+        return qml.math.stack(channel.ToroidalDephasing(x, grid_n=12, wires=0).kraus_matrices())
+
+    @pytest.mark.autograd
+    def test_kraus_jac_autograd(self):
+        gamma = pnp.array(0.43, requires_grad=True)
+        jac = qml.jacobian(self.kraus_fn)(gamma)
+        assert jac.shape == (2, 2, 2)
