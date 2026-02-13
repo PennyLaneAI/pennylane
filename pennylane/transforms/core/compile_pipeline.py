@@ -190,7 +190,7 @@ class CompilePipeline:
     .. details::
         :title: Inspecting and Marking
 
-        We can inspect the original pipeline by printing it,
+        We can inspect the original pipeline by simply printing it,
 
         >>> print(pipeline)
         CompilePipeline(
