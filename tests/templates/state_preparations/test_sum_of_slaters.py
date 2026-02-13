@@ -555,7 +555,7 @@ class TestSumOfSlatersPrep:
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         # Add indices (powers of two) that force many bits to be required,
         # avoiding the identity encoding case
-        indices = self.force_powers_of_two(indices)
+        indices = self.force_powers_of_two(indices, num_wires)
 
         # Currently just one rule is implemented, but this test should pass for all decompositions
         for rule in list_decomps(SumOfSlatersPrep):

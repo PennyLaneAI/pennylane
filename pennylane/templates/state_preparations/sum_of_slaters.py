@@ -891,9 +891,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
     assert v_bits.shape == (n, D)
 
     selected_target_wires, u_bits, b_bits, d, m, r = _preprocess(v_bits, wires)
-    identity_encoding = u_bits.shape[1] == u_bits.shape[0] and np.allclose(
-        u_bits, np.eye(len(u_bits))
-    )
+    identity_encoding = r == m
 
     sizes = SumOfSlatersPrep.required_register_sizes(D, r, n)
     all_allocate_wires = sum(sizes.values()) - n
