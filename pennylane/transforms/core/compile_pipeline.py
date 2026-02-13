@@ -327,28 +327,40 @@ class CompilePipeline:
 
         Importantly, markers are correctly maintained after pipeline manipulations,
 
-        >>> original.add_marker("test")
-        >>> original * 2
+        >>> pipeline * 2 # Markers are not duplicated
         CompilePipeline(
-          [1] <merge_rotations()>,
+          [1] <commute_controlled()>,
+           ├─▶ after-commute-controlled
           [2] <cancel_inverses()>,
-           ├─▶ test
           [3] <merge_rotations()>,
-          [4] <cancel_inverses()>
+           ├─▶ after-merge-rotations
+          [4] <commute_controlled()>,
+          [5] <cancel_inverses()>,
+          [6] <merge_rotations()>
         )
-        >>> original + qml.transforms.undo_swaps
+        >>> pipeline + qml.transforms.undo_swaps
         CompilePipeline(
-          [1] <merge_rotations()>,
+          [1] <commute_controlled()>,
+           ├─▶ after-commute-controlled
           [2] <cancel_inverses()>,
-           ├─▶ test
-          [3] <undo_swaps()>
+          [3] <merge_rotations()>,
+           ├─▶ after-merge-rotations
+          [4] <undo_swaps()>
         )
-        >>> original.pop()
-        <cancel_inverses()>
-        >>> print(original)
+        >>> pipeline.pop()
+        <merge_rotations()>
+        >>> print(pipeline)
         CompilePipeline(
-          [1] merge_rotations()
-           └─▶ test
+          [1] commute_controlled(),
+           ├─▶ after-commute-controlled
+          [2] cancel_inverses()
+           └─▶ after-merge-rotations
+        )
+        >>> pipeline[1:] # Get everything after the second transform
+        CompilePipeline(
+           ├─▶ after-commute-controlled
+          [1] <cancel_inverses()>
+           └─▶ after-merge-rotations
         )
 
     """
