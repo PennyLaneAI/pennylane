@@ -253,7 +253,7 @@ class TestPhaseAdder:
             qml.adjoint(qml.QFT)(wires=x_wires),
             *[qml.adjoint(op) for op in _add_k_fourier(k, x_wires)],
         ]
-        base_list_ops2 = [*_add_k_fourier(k, x_wires)[::-1], qml.QFT(wires=x_wires)]
+        base_list_ops2 = [*_add_k_fourier(k, x_wires)[::-1], qml.QFT.operator(wires=x_wires)]
 
         if mod == 2 ** (len(x_wires)):
             op_list.extend(_add_k_fourier(k, x_wires))
@@ -263,7 +263,7 @@ class TestPhaseAdder:
             op_list.extend(qml.adjoint(_add_k_fourier)(mod, x_wires))
             op_list.append(qml.adjoint(qml.QFT)(wires=x_wires))
             op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=1))
-            op_list.append(qml.QFT(wires=x_wires))
+            op_list.append(qml.adjoint(qml.adjoint(qml.QFT.operator(wires=x_wires))))
             op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
             op_list.append(qml.prod(qml.X(aux_k), *base_list_ops1))
             op_list.append(qml.CNOT(wires=[aux_k, work_wire[0]]))

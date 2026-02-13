@@ -42,12 +42,18 @@ class TestCollectOpsandMeas:
 
         qft_decomp = [
             qml.H(0),
-            qml.ControlledPhaseShift(qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])),
-            qml.ControlledPhaseShift(qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])
+            ),
+            qml.ControlledPhaseShift(
+                qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])
+            ),
             qml.H(1),
-            qml.ControlledPhaseShift(qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])
+            ),
             qml.H(2),
-            qml.SWAP(wires=[0, 2])
+            qml.SWAP(wires=[0, 2]),
         ]
 
         obj = CollectOpsandMeas()
@@ -373,12 +379,18 @@ class TestPlxprToTape:
 
         qft_decomp = [
             qml.H(0),
-            qml.ControlledPhaseShift(qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])),
-            qml.ControlledPhaseShift(qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])
+            ),
+            qml.ControlledPhaseShift(
+                qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])
+            ),
             qml.H(1),
-            qml.ControlledPhaseShift(qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])
+            ),
             qml.H(2),
-            qml.SWAP(wires=[0, 2])
+            qml.SWAP(wires=[0, 2]),
         ]
 
         jaxpr = jax.make_jaxpr(f)(-0.5)
