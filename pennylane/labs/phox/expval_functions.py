@@ -155,7 +155,7 @@ def build_expval_func(config: CircuitConfig) -> Callable[[ArrayLike, ArrayLike |
     generators, param_map = _parse_iqp_dict(config.gates, config.n_qubits)
 
     rng_key = config.key
-    if rng_key is None:
+    if rng_key is None: # if no key provided, we generate our own
         seed = int(_HOST_RNG.integers(0, np.iinfo(np.uint32).max, dtype=np.uint32))
         rng_key = jax.random.PRNGKey(seed)
 
