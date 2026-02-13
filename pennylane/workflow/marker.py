@@ -39,6 +39,8 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
         Markers can also be manually added to pipelines with :meth:`~.CompilePipeline.add_marker`.
 
     **Example:**
+    
+    Consider the following circuit where several stages have been marked within the transforms applied:
 
     .. code-block:: python
 
