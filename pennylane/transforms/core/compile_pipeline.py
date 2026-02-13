@@ -180,7 +180,7 @@ class CompilePipeline:
       [2] cancel_inverses(recursive=True),
       [3] merge_rotations()
     )
-    >>> print(qml.draw(circuit, level="no-transforms")(0.1, 0.2))
+    >>> print(qml.draw(circuit, level="no-transforms")(0.1, 0.2)) # or level=0
     0: ─╭X──X─╭X──H──H──X──RX(0.10)──RX(0.20)─┤
     1: ─╰●────╰●──────────────────────────────┤  <Z>
     >>> print(qml.draw(circuit)(0.1, 0.2))
