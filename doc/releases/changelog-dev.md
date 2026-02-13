@@ -349,7 +349,8 @@ def expval(x: float):
 
 * The `id` argument to `qml.Operator` has been deprecated to avoid conflicts with the Python built-in function. Instead, please use :func:`~.drawer.label` or :func:`~.fourier.mark` to label an operator with the :func:`~.drawer` or :func:`~.fourier` modules respectively. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
-  
+  [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)  
+
 * Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
   Operator classes that used to have ``_queue_category=None`` have been updated
