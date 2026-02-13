@@ -118,8 +118,6 @@ def mark(op: Operator, marker: str) -> MarkedOp:
     >>> print(marked_op.marker)
     my-x
 
-    .. seealso:: :func:`~.fourier.circuit_spectrum` 
-    """
-
+    .. seealso:: :func:`~.fourier.circuit_spectrum`
     """
     return MarkedOp(op, marker)
