@@ -231,7 +231,7 @@ class CompilePipeline:
            └─▶ final-transform, after-merge-rotations
         )
 
-        A marker's level (the index of the transform it follows) is retrieved with,
+        A marker's level (the index of the transform it follows) can be retrieved with,
 
         >>> print(pipeline.get_marker_level("final-transform"))
         3
