@@ -158,9 +158,10 @@ class CompilePipeline:
             qml.transforms.cancel_inverses(recursive=True),
             qml.transforms.merge_rotations,
         )
+        # Add a marker for inspectibility
+        pipeline.add_marker("no-transforms", 0)
 
         @pipeline
-        @qml.marker("no-transforms")
         @qml.qnode(qml.device("default.qubit"))
         def circuit(x, y):
             qml.CNOT([1, 0])
@@ -186,77 +187,6 @@ class CompilePipeline:
     >>> print(qml.draw(circuit)(0.1, 0.2))
     0: ──RX(0.30)─┤
     1: ───────────┤  <Z>
-
-    .. details::
-        :title: Inspecting and Marking
-
-        We can inspect the original pipeline by simply printing it,
-
-        >>> print(pipeline)
-        CompilePipeline(
-          [1] commute_controlled(),
-          [2] cancel_inverses(recursive=True),
-          [3] merge_rotations()
-        )
-
-        We can add markers (that act as checkpoints) in the pipeline to mark important positions,
-
-        >>> pipeline.add_marker("final-transform")
-        >>> print(pipeline)
-        CompilePipeline(
-          [1] commute_controlled(),
-          [2] cancel_inverses(recursive=True),
-          [3] merge_rotations()
-           └─▶ final-transform
-        )
-        >>> pipeline.add_marker("after-commute-controlled", 1)
-        >>> print(pipeline)
-        CompilePipeline(
-          [1] commute_controlled(),
-           ├─▶ after-commute-controlled
-          [2] cancel_inverses(recursive=True),
-          [3] merge_rotations()
-           └─▶ final-transform
-        )
-
-        Two different markers can be used to mark the same level, causing them to stack,
-
-        >>> pipeline.add_marker("after-merge-rotations")
-        >>> print(pipeline)
-        CompilePipeline(
-          [1] commute_controlled(),
-           ├─▶ after-commute-controlled
-          [2] cancel_inverses(recursive=True),
-          [3] merge_rotations()
-           └─▶ final-transform, after-merge-rotations
-        )
-
-        A marker's level (the index of the transform it follows) can be retrieved with,
-
-        >>> print(pipeline.get_marker_level("final-transform"))
-        3
-        >>> print(pipeline.get_marker_level("after-merge-rotations"))
-        3
-
-        We can remove a ``marker`` using the ``remove_marker`` method,
-
-        >>> pipeline.remove_marker("final-transform")
-        >>> pipeline.markers
-        ['after-commute-controlled', 'after-merge-rotations']
-
-        The pipeline structure and marker placement are represented as follows,
-
-        .. code-block::
-
-            CompilePipeline(
-                ├─▶ markers for level 0 (no transforms)
-               [1] transform_1(),
-                ├─▶ markers for level 1 (after 1st transform)
-               [2] transform_2(),
-               ...
-               [n] transform_n()
-                └─▶ markers for level n (after nth transform)
-            )
 
     .. details::
         :title: Manipulating Compilation Pipelines
@@ -320,7 +250,82 @@ class CompilePipeline:
           [4] cancel_inverses()
         )
 
-        Markers are correctly maintained after pipeline manipulations,
+    .. details::
+        :title: Inspecting and Marking
+
+        We can inspect the original pipeline by simply printing it,
+
+        >>> print(pipeline)
+        CompilePipeline(
+           ├─▶ no-transforms
+          [1] commute_controlled(),
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
+        )
+
+        We can add markers (that act as checkpoints) in the pipeline to mark important positions,
+
+        >>> pipeline.add_marker("final-transform")
+        >>> print(pipeline)
+        CompilePipeline(
+           ├─▶ no-transforms
+          [1] commute_controlled(),
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
+           └─▶ final-transform
+        )
+        >>> pipeline.add_marker("after-commute-controlled", 1)
+        >>> print(pipeline)
+        CompilePipeline(
+           ├─▶ no-transforms
+          [1] commute_controlled(),
+           ├─▶ after-commute-controlled
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
+           └─▶ final-transform
+        )
+
+        Two different markers can be used to mark the same level, causing them to stack,
+
+        >>> pipeline.add_marker("after-merge-rotations")
+        >>> print(pipeline)
+        CompilePipeline(
+           ├─▶ no-transforms
+          [1] commute_controlled(),
+           ├─▶ after-commute-controlled
+          [2] cancel_inverses(recursive=True),
+          [3] merge_rotations()
+           └─▶ final-transform, after-merge-rotations
+        )
+
+        A marker's level (the index of the transform it follows) can be retrieved with,
+
+        >>> print(pipeline.get_marker_level("final-transform"))
+        3
+        >>> print(pipeline.get_marker_level("after-merge-rotations"))
+        3
+
+        We can remove a ``marker`` using the ``remove_marker`` method,
+
+        >>> pipeline.remove_marker("final-transform")
+        >>> pipeline.markers
+        ['no-transforms', 'after-commute-controlled', 'after-merge-rotations']
+
+        The pipeline structure and marker placement are represented as follows,
+
+        .. code-block::
+
+            CompilePipeline(
+                ├─▶ markers for level 0 (no transforms)
+               [1] transform_1(),
+                ├─▶ markers for level 1 (after 1st transform)
+               [2] transform_2(),
+               ...
+               [n] transform_n()
+                └─▶ markers for level n (after nth transform)
+            )
+
+        Importantly, markers are correctly maintained after pipeline manipulations,
 
         >>> original.add_marker("test")
         >>> original * 2
