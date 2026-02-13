@@ -405,12 +405,27 @@ class TestSumOfSlatersPrep:
 
     @pytest.mark.parametrize(
         "num_wires, num_entries",
-        [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 137), (17, 1421)],
+        [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (17, 1421)],
     )
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator."""
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
         wires = list(range(num_wires))
+        op = SumOfSlatersPrep(coefficients, wires, indices=indices)
+        assert_valid(op, skip_differentiation=True)
+
+    @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
+    def test_standard_validity_non_id_encoding(self, n, seed):
+        """Test that SumOfSlatersPrep is a valid PennyLane operator for non-identity
+        encoding scenario."""
+        coefficients, _ = self.make_random_data(n, n, seed=seed)
+        # Create bits that force a non-identity encoding
+        bits = np.eye(n, dtype=int)[: n - 1]
+        np.random.seed(seed)
+        np.random.shuffle(bits)
+        num_bits = n - 1
+        indices = tuple(2 ** np.arange(num_bits - 1, -1, -1) @ bits)
+        wires = list(range(n))
         op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
@@ -441,7 +456,7 @@ class TestSumOfSlatersPrep:
         bits = random_distinct_bitstrings(min(num_bits, num_wires), num_entries, seed)
         reduced_bits = select_sos_rows(bits)[1]
         new_num_bits = len(reduced_bits)
-        indices = 2 ** np.arange(new_num_bits - 1, -1, -1) @ reduced_bits
+        indices = tuple(2 ** np.arange(new_num_bits - 1, -1, -1) @ reduced_bits)
 
         sizes = SumOfSlatersPrep.required_register_sizes(num_entries, new_num_bits, num_wires)
         d = ceil_log2(num_entries)
@@ -469,7 +484,7 @@ class TestSumOfSlatersPrep:
         np.random.seed(seed)
         np.random.shuffle(bits)
         num_bits = n - 1
-        indices = 2 ** np.arange(num_bits - 1, -1, -1) @ bits
+        indices = tuple(2 ** np.arange(num_bits - 1, -1, -1) @ bits)
 
         sizes = SumOfSlatersPrep.required_register_sizes(n, num_bits, n)
         d = ceil_log2(n)
