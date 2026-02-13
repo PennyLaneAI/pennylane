@@ -198,8 +198,9 @@ def BasisRotation(wires, unitary_matrix, check=False):
         >>> eigen_vals, eigen_vecs = np.linalg.eigh(V)
         >>> umat = eigen_vecs.T
         >>> wires = range(len(umat))
-        >>> def circuit():
-        ...    qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
+        >>> @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
+        ... def circuit():
+        ...    qml.adjoint(qml.BasisRotation.operator(wires=wires, unitary_matrix=umat))
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
@@ -212,8 +213,10 @@ def BasisRotation(wires, unitary_matrix, check=False):
 
         The ``BasisRotation`` is implemented with :class:`~.PhaseShift` and
         :class:`~.SingleExcitation` gates:
-
-        >>> print(qml.draw(qml.BasisRotation(wires=wires, unitary_matrix=umat).decomposition)())
+        >>> @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
+        ... def circ():
+        ...     qml.BasisRotation(wires=wires, unitary_matrix=umat)
+        >>> print(qml.draw(circ)())
         0: ──Rϕ(-1.52)─╭G(1.38)──Rϕ(-1.62)─┤
         1: ──Rϕ(1.62)──╰G(1.38)────────────┤
 
@@ -222,7 +225,10 @@ def BasisRotation(wires, unitary_matrix, check=False):
 
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
-        >>> print(qml.draw(qml.BasisRotation(wires=range(4), unitary_matrix=O).decomposition)())
+        >>> @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
+        ... def circ():
+        ...     qml.BasisRotation(wires=range(4), unitary_matrix=O)
+        >>> print(qml.draw(circ)())
         0: ──Rϕ(3.14)─╭G(-3.19)──────────╭G(2.63)─┤
         1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
         2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
