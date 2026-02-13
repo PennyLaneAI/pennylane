@@ -70,8 +70,8 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     >>> print(c.compile_pipeline.markers)
     ['nothing-applied', 'after-cancel-inverses', 'after-merge-rotations']
 
-    These markers are then recognized by a few of our inspectibility features.
-    For example, we can verify that the Hadamard gates cancel using :func:`~.specs`,
+    These markers are then recognized by a few of our inspectability features.
+    For example, we can verify the circuit resources after the ``Hadamard`` gates  have been cancelled by using ``level="after-cancel-inverses"`` with :func:`~.specs`:
 
     >>> print(qml.specs(c, level="after-cancel-inverses")()) # or level=1
     Device: null.qubit
