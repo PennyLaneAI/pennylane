@@ -118,7 +118,7 @@ def label(op: Operator, new_label: str) -> LabelledOp:
     >>> print(labelled_op.custom_label)
     my-x
 
-    This can be used with :func:`~.draw`,
+    The custom label will be displayed in the circuit diagram when using :func:`~.draw`
 
     .. code-block:: python
 
