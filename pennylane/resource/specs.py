@@ -183,18 +183,13 @@ def _specs_qjit_intermediate_passes(
     single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
 
     # Maps to convert back and forth between marker name and int level
-    marker_to_level = {
+    marker_to_level: dict[str, int] = {
         marker: compile_pipeline.get_marker_level(marker) for marker in compile_pipeline.markers
     }
-
-    # NOTE: Use defaultdict(list) and convert to tuple later to prevent
-    # copying of tuple everytime it's concatanated
-    level_to_markers_list = defaultdict(list)
+    # Multiple markers can correspond to the same level
+    level_to_markers = defaultdict(list)
     for marker, lvl in marker_to_level.items():
-        level_to_markers_list[lvl].append(marker)
-    level_to_markers: dict[int, tuple[str]] = {
-        lvl: tuple(markers) for lvl, markers in level_to_markers_list.items()
-    }
+        level_to_markers[lvl].append(marker)
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     if level not in ("all", "all-mlir"):
