@@ -763,19 +763,21 @@ class CompilePipeline:
            └─▶ after-merge-rotations
         )
         """
+        if not isinstance(label, str):
+            raise ValueError("Marker label must be a string.")
         if label in (protected_levels := [level.value for level in ProtectedLevel]):
             raise ValueError(
                 f"Found marker for protected level '{label}'. Protected options are {', '.join(protected_levels)}."
             )
         if label in self._markers:
             raise ValueError(f"Found multiple markers for level '{label}'. Markers must be unique.")
-        if level is not None and (level < 0 or level > len(self._compile_pipeline)):
-            raise ValueError(
-                f"Marker level must be between 0 and the number of transforms in the pipeline ({len(self._compile_pipeline)}), inclusive."
-            )
 
         if level is None:
             level = len(self._compile_pipeline)
+        elif not isinstance(level, int) or (level < 0 or level > len(self._compile_pipeline)):
+            raise ValueError(
+                f"Marker level must be an integer between 0 and the number of transforms in the pipeline ({len(self._compile_pipeline)}), inclusive."
+            )
 
         self._markers[label] = level
 
