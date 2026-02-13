@@ -47,10 +47,7 @@ def circuit_spectrum(
     Gates are marked as input-encoding gates in the quantum function by giving them an ``mark``.
 
     >>> from pennylane.fourier.mark import mark
-    >>> my_op = qml.H(0)
-    >>> print(my_op.label())
-    H
-    >>> marked_op = mark(my_op, "marked-h")
+    >>> marked_op = mark(qml.H(0), "marked-h")
     >>> print(marked_op.marker)
     marked-h
     >>> print(marked_op.label())
