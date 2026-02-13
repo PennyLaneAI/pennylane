@@ -238,7 +238,7 @@ class CompilePipeline:
         >>> print(pipeline.get_marker_level("after-merge-rotations"))
         3
 
-        Markers can be removed with,
+        We can remove a ``marker`` using the ``remove_marker`` method,
 
         >>> pipeline.remove_marker("final-transform")
         >>> pipeline.markers
