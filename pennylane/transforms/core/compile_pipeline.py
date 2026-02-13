@@ -253,13 +253,16 @@ class CompilePipeline:
     .. details::
         :title: Inspecting and Marking
 
+        Let's create a simple pipeline to inspect,
+
+        >>> pipeline = qml.transforms.commute_controlled + qml.transforms.cancel_inverses + qml.transforms.merge_rotations
+
         We can inspect the original pipeline by simply printing it,
 
         >>> print(pipeline)
         CompilePipeline(
-           ├─▶ no-transforms
           [1] commute_controlled(),
-          [2] cancel_inverses(recursive=True),
+          [2] cancel_inverses(),
           [3] merge_rotations()
         )
 
@@ -268,19 +271,17 @@ class CompilePipeline:
         >>> pipeline.add_marker("final-transform")
         >>> print(pipeline)
         CompilePipeline(
-           ├─▶ no-transforms
           [1] commute_controlled(),
-          [2] cancel_inverses(recursive=True),
+          [2] cancel_inverses(),
           [3] merge_rotations()
            └─▶ final-transform
         )
         >>> pipeline.add_marker("after-commute-controlled", 1)
         >>> print(pipeline)
         CompilePipeline(
-           ├─▶ no-transforms
           [1] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses(recursive=True),
+          [2] cancel_inverses(),
           [3] merge_rotations()
            └─▶ final-transform
         )
@@ -290,10 +291,9 @@ class CompilePipeline:
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
         CompilePipeline(
-           ├─▶ no-transforms
           [1] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses(recursive=True),
+          [2] cancel_inverses(),
           [3] merge_rotations()
            └─▶ final-transform, after-merge-rotations
         )
@@ -309,7 +309,7 @@ class CompilePipeline:
 
         >>> pipeline.remove_marker("final-transform")
         >>> pipeline.markers
-        ['no-transforms', 'after-commute-controlled', 'after-merge-rotations']
+        ['after-commute-controlled', 'after-merge-rotations']
 
         The pipeline structure and marker placement are represented as follows,
 
