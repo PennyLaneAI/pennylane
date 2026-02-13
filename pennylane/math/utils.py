@@ -606,6 +606,7 @@ def ceil_log2(n: int) -> int:
     Returns:
         int: Rounded-up base-2 logarithm of ``n``.
 
+
     **Example**
 
     On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to

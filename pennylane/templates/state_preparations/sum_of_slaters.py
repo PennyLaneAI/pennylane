@@ -50,7 +50,7 @@ def _columns_differ(bits: np.ndarray) -> bool:
     >>> _columns_differ(differing_bits)
     True
 
-    This is opposed to columns of length 2 were the first and third column are the same:
+    This is opposed to columns of length 2 where the first and third column are the same:
 
     >>> redundant_bits = np.array([[1, 0, 1], [0, 1, 0]])
     >>> print(redundant_bits)
@@ -85,7 +85,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     .. note::
 
         This function does not come with an optimality guarantee about the number of selected rows.
-        That is, there may be selections of fewer rows that maintain the columns to differ.
+        That is, there may be selections of fewer rows that maintain differing columns.
 
     Under the hood, this method is not selecting rows, but instead greedily removes rows from the
     input. We first attempt to remove rows with a mean weight far away from 0.5, as they are
@@ -93,7 +93,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
     **Example**
 
-    Let's generate a random bit array of ``D=8`` differing columns of length ``n=6``, by first
+    Let's generate a random bit array of ``D = 8`` differing columns of length ``n = 6``, by first
     sampling unique integers from the range ``(0, 2**n)`` and converting them to bitstrings.
 
     >>> np.random.seed(31)
@@ -190,12 +190,12 @@ def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> n
 
     Returns:
         np.ndarray: New bitstring that avoids the described set of bitstrings, and is spanned by
-        all but the last basis vector in ``bits_basis``. will have shape ``(r,)``.
+        all but the last basis vector in ``bits_basis``. Will have shape ``(r,)``.
 
     """
     # Number of bits
     r = len(bits_basis)
-    # Fector to be replaced
+    # Vector to be replaced
     v_r = bits_basis[:, -1]
     # Step 5: Map the set N to N', containing the components that are spanned by
     # all basis vectors except for v_r
@@ -281,7 +281,7 @@ def _step_3_in_find_w(bits_basis, other_bits):
     """Step 3 of _find_w, which is triggered when t=1 in the recursion but initially we had t>1."""
     r = bits_basis.shape[0]
     all_bits = np.concatenate([bits_basis, other_bits], axis=1)
-    # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
+    # Compute set(V) ∪ (set(V) - set(V)). We will skip 0 by starting our search at 1 below
     diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T % 2
     all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1)
 
@@ -357,14 +357,14 @@ def _find_U_from_W(W):
 
 
 def compute_sos_encoding(bits):
-    r"""Compute the bitstrings :math:`U` and :math:`b` from Lemma 1 in
-    the Sum of Slaters paper
-    (`Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__).
-    This is the major classical coprocessing required for the state preparation.
-    It maps :math:`D` different bitstrings of length :math:`r` to :math:`D` different
+    r"""Map :math:`D` different bitstrings of length :math:`r` to :math:`D` different
     bitstrings :math:`b` of length :math:`m = \min(r, 2d-1)` where
-    :math:`d=\lceil\log_2(D)\rceil`. This enables the Sum of Slaters state preparation to achieve
-    its resource efficiency.
+    :math:`d=\lceil\log_2(D)\rceil`. The function computes both the mapping :math:`U` and the
+    output bitstrings :math:`b`.
+    This algorithm forms the constructive proof of Lemma 1 in
+    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
+    It is the main classical coprocessing step required for the sparse state preparation
+    (sum-of-Slaters preparation) presented in this paper, enabling its resource efficiency.
 
     Args:
         bits (np.ndarray): Bitstrings of length :math:`r` that are input into Lemma 1. The i-th
@@ -373,7 +373,7 @@ def compute_sos_encoding(bits):
 
     Returns:
         tuple[np.ndarray]: Two bit arrays. The first is :math:`U`, which maps the input ``bits``
-        to ``D`` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
+        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
         :math:`m=2\lceil \log_2(D)\rceil-1`. The second array are the bitstrings
         :math:`\{b_i\}` themselves, stored as columns.
 
@@ -432,8 +432,14 @@ def compute_sos_encoding(bits):
     >>> print(_columns_differ(b))
     True
 
+    The encoded bitstrings ``b`` are provided for convenience. They can equivalently be computed
+    from ``U`` and the input ``bits`` via ``(U @ bits) % 2``:
+
+    >>> np.array_equal((U @ bits) % 2, b)
+    True
+
     Note that in this particular example, we could have achieved the reduction simply by selecting
-    ``4<m`` rows of the input bits, still obtaining different bitstrings. There is a function
+    :math:`4<m` rows of the input bits, still obtaining different bitstrings. There is a function
     that does just that:
 
     >>> from pennylane.templates.state_preparations.sum_of_slaters import select_sos_rows
@@ -453,7 +459,7 @@ def compute_sos_encoding(bits):
         :title: Implementation notes
 
         We are given :math:`D` distinct bitstrings :math:`\{v_i\}` with length :math:`r`.
-        We assume :math:`D\geq r` and :math:`\operatorname{rk}(V)\geq r`, which can always
+        We assume :math:`D\geq r` and :math:`\operatorname{rank}(V)\geq r`, which can always
         be achieved by first calling ``select_sos_rows`` on the bitstrings.
 
         Our goal is to find a linear map :math:`U:\mathbb{Z}_2^{r}\to \mathbb{Z}_2^{m}` from
@@ -480,7 +486,7 @@ def compute_sos_encoding(bits):
 
         **Case 1:** :math:`d\leq r\leq 2d-1`
 
-        In this case, we do not really need to do anything; the bitstrings :math:`\{v_i\}` already
+        In this case, we do not need to do anything; the bitstrings :math:`\{v_i\}` already
         have length :math:`m:=r\leq 2d-1`, so we simply set :math:`U` to be the identity map.
         This scenario may actually occur in practice, and it leads to simplifications of the
         quantum circuit for the state preparation. This depends on the specific bitstrings, though.
