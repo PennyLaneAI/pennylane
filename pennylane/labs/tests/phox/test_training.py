@@ -18,7 +18,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from pennylane.labs.phox.simulator_pure_functions import CircuitConfig, iqp_expval
+from pennylane.labs.phox.expval_functions import CircuitConfig, build_expval_func
 from pennylane.labs.phox.training import TrainingOptions, train
 
 
@@ -208,7 +208,7 @@ def test_iqp_optimization():
         key=key,
         n_qubits=n_qubits,
     )
-    expval_func = iqp_expval(config)
+    expval_func = build_expval_func(config)
 
     def loss_fn(params):
         expvals, _ = expval_func(params)

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Public API for the PennyLane Phox laboratory utilities."""
 
-from .simulator_pure_functions import CircuitConfig, bitflip_expval, iqp_expval
+from .expval_functions import CircuitConfig, bitflip_expval, build_expval_func
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
     create_lattice_gates,
@@ -25,7 +25,7 @@ from .utils import (
 __all__ = [
     "CircuitConfig",
     "bitflip_expval",
-    "iqp_expval",
+    "build_expval_func",
     "BatchResult",
     "TrainingOptions",
     "TrainingResult",
