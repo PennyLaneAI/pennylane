@@ -90,7 +90,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
       Measurements:
         probs(all wires): 1
 
-    and that the rotation gates merge using :func:`~.draw`,
+    Similarly, we can print the circuit after the ``merge_rotations`` transform has been applied by passing ``level="after-merge-rotations"`` to :func:`~.draw`:
 
     >>> print(qml.draw(c, level="after-merge-rotations")()) # or level=2
     0: ──RX(1.00)─┤  Probs
