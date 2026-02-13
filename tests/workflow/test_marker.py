@@ -26,6 +26,18 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 class TestMarkerQNode:
     """Tests the integration with compile pipeline."""
 
+    def test_function(self):
+        """Tests that it can be used functionally."""
+
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        qml.marker(c, "marker0")
+        qml.marker(c, label="marker1")
+
+        assert len(c.compile_pipeline.markers) == 2
+
     def test_uniqueness_checking(self):
         """Test an error is raised if a level is not unique."""
 
