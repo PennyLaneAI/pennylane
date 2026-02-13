@@ -51,18 +51,18 @@ def circuit_spectrum(
     >>> print(marked_op.marker)
     marked-h
 
-    If two gates have the same ``mark``, they are considered
+    If two gates have the same ``marker``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
-    to indicate that only gates with a specific ``mark`` should be interpreted as input-encoding gates.
-    Otherwise, all gates with an explicit ``mark`` are considered to be input-encoding gates.
+    to indicate that only gates with a specific ``marker`` should be interpreted as input-encoding gates.
+    Otherwise, all gates with an explicit ``marker`` are considered to be input-encoding gates.
 
     .. note::
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit in which
-            input-encoding gates are marked by their ``mark`` attribute
-        encoding_gates (list[str]): list of input-encoding gate ``mark`` strings
+            input-encoding gates are marked by their ``marker`` attribute
+        encoding_gates (list[str]): list of input-encoding gate ``marker`` strings
             for which to compute the frequency spectra
         decimals (int): number of decimals to which to round frequencies.
 
@@ -70,7 +70,7 @@ def circuit_spectrum(
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will return a dictionary with the input-encoding gate ``mark`` as keys and their frequency spectra as values.
+        will return a dictionary with the input-encoding gate ``marker`` as keys and their frequency spectra as values.
 
 
     **Details**
@@ -173,7 +173,7 @@ def circuit_spectrum(
 
     .. note::
         The ``circuit_spectrum`` function does not check if the result of the
-        circuit is an expectation, or if gates with the same ``mark``
+        circuit is an expectation, or if gates with the same ``marker``
         take the same value in a given call of the function.
 
     The ``circuit_spectrum`` function works in all interfaces:
