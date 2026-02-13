@@ -57,7 +57,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
             qml.RX(0.5, 0)
             return qml.probs()
 
-    We can then inspect our user transformations to see our markers,
+    We can identify where each marker sits relative to the applied transforms by printing the pipeline,
 
     >>> print(c.compile_pipeline)
     CompilePipeline(
