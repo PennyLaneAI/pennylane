@@ -631,7 +631,7 @@ class SumOfSlatersPrep(Operation):
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
         wires (qml.wires.WiresLike): Wires on which to prepare the state. All work wires will be
-            allocated dynamically.
+            allocated dynamically with :func:`~.allocate`.
         indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
             that in ``coefficients``.
 
@@ -644,22 +644,14 @@ class SumOfSlatersPrep(Operation):
 
     **Example**
 
-    Consider a sparse state specified by (normalized) coefficients and (state vector)
+    Consider a sparse state specified by normalized coefficients and statevector
     indices pointing to the populated computational basis states:
 
     >>> coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
     >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
 
-    Given that we have the index ``25`` in ``indices``, we need at least five qubits to represent
-    this state (in practical use cases, the number of qubits is typical given from context):
-
-    >>> wires = qml.wires.Wires(range(5))
-
-    This is all the information we require to create the state preparation:
-
-    >>> prep_op = qml.SumOfSlatersPrep(coefficients, wires, indices)
-
-    Let's take a look at how the preparation is implemented:
+    Given that we have the index ``25`` in ``indices``, we need at least five qubits (:math:`2^5 = 32`) to represent
+    this state (in practical use cases, the number of qubits is typical given from context). This is all the information we require to create the state preparation. Let's take a look at how the preparation is implemented:
 
     >>> qml.decomposition.enable_graph()
     >>> decomp_call = qml.decompose(qml.SumOfSlatersPrep, max_expansion=1, num_work_wires=10)
@@ -678,16 +670,41 @@ class SumOfSlatersPrep(Operation):
     12: ─├|Ψ⟩─├QROM(M0)────╰X─╰X────│──│─────│──╰X────│──╰X───────│──│─────┤
     13: ─├|Ψ⟩─├QROM(M0)─────────────╰X─╰X────╰X───────╰X──────────│──│─────┤
     14: ─╰|Ψ⟩─╰QROM(M0)───────────────────────────────────────────╰X─╰X────┤
+    .. code-block:: python3
+        
+        qml.decomposition.enable_graph()
+        wires = qml.wires.Wires(range(5))
 
-    We can see an initial dense state preparation via :class:`~.StatePrep` on fewer qubits,
+        @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+        @qml.decompose(gate_set={"QROM", "MultiControlledX", "StatePrep", "CNOT"}, num_work_wires=10)
+        @qml.qnode(qml.device("lightning.qubit", wires=wires))
+        def circuit():
+            qml.SumOfSlatersPrep(coefficients, wires, indices)
+            return qml.state()
+            
+    >>> print(qml.draw(circuit, show_matrices=False)())
+    0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
+    1: ──────├QROM(M0)─├○─├○─├●─├●─├●─├○─├○─├○─├○─├○──────────├○─├○─├●─├●─┤  State
+    2: ──────├QROM(M0)─├○─├●─├●─├●─├●─├○─├○─├○─├○─├●──────────├●─├●─├○─├○─┤  State
+    3: ──────├QROM(M0)─├○─├○─├○─├○─├●─├○─├○─├●─├●─├●──────────├●─├●─├○─├○─┤  State
+    4: ──────├QROM(M0)─├●─├○─├●─├●─├○─├●─├●─├●─├●─├○──────────├○─├●─├●─├●─┤  State
+    5: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│───────────│──╰X─╰X─│──┤  State
+    6: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──╰X─╰X─│──╰X─│──│──╭X───────│────────│──┤  State
+    7: ─├|Ψ⟩─├QROM(M0)─│──╰X─╰X─│────────│─────╰X─│──│──╭X────│────────│──┤  State
+    8: ─╰|Ψ⟩─├QROM(M0)─╰X───────╰X───────╰X───────│──│──│──╭X─│────────╰X─┤  State
+    9: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
+   10: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
+   11: ──────╰QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
+   12: ───────────────────────────────────────────╰X─╰●─╰●─╰●─╰X──────────┤  State
+    Note that wires with labels ``5`` to ``12`` were dynamically allocated. We can see an initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as ``|Ψ⟩`` on the first four dynamic wires in the above diagram),
     a :class:`~.QROM` and a sequence of :class:`~.MultiControlledX` gates, some of which are
     mediated with a caching qubit (qubit index ``7``) and :class:`~.CNOT` gates.
 
-    Note that we guessed the required ``num_work_wires`` and ``zeroed`` work wires in the calls
-    to :func:`~.decompose` and :func:`~.transforms.resolve_dynamic_wires`. If we want to know
+    Note that we guessed the required number of work wires (``num_work_wires``) in  :func:`~.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign integer wire labels to those dynamically allocated wires. If we want to know
     the required wire register sizes ahead of time, they can be computed with
     ``SumOfSlatersPrep.required_register_sizes``:
 
+    >>> prep_op = qml.SumOfSlatersPrep(coefficients, wires, indices)
     >>> prep_op.required_register_sizes(**prep_op.resource_params)
     {'wires': 5,
      'enumeration_wires': 4,
