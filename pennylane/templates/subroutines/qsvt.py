@@ -192,10 +192,13 @@ def qsvt(
             via :func:`poly_to_angles <pennylane.poly_to_angles>`. Options include:
 
             - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
-            - ``"iterative"``: Uses Scipy (L-BFGS-B). Stable, no extra dependencies.
-              Effective for polynomials of degree higher than :math:`\sim 1000`.
-            - ``"iterative-optax"``: Uses JAX+Optax for optimization. Requires ``jax`` and
-              ``optax`` to be installed. x64 mode can provide higher precision and better convergence. Recommended for high-degree polynomials **when running the solver multiple times or repeatedly evaluating QNodes with different polynomials of the same degree**; may be slower for a single call due to JIT compilation overhead.
+            - ``"iterative"`` (Default): Effective for polynomials of degree higher than :math:`\sim 1000` for
+              the ``"QSP"`` and ``"QSVT"`` routines. Uses Scipy (L-BFGS-B).
+            - ``"iterative-optax"``: Recommended for high-degree polynomials
+              **when using polynomials of the same degree and running repeatedly**;
+              may be slower for a single run due to JIT compilation overhead.
+              Uses JAX and Optax. Requires ``jax`` and ``optax`` installed
+              and JAX enabled in 64-bit mode. 
 
     Returns:
         (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
@@ -1425,11 +1428,13 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
         angle_solver (str): Specifies the method used to calculate the angles. Options include:
 
             - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
-            - ``"iterative"`` (Default): Uses Scipy (L-BFGS-B). Stable, no extra dependencies.
-              Effective for polynomials of degree higher than :math:`\sim 1000` for
-              the ``"QSP"`` and ``"QSVT"`` routines.
-            - ``"iterative-optax"``: Uses JAX+Optax. Requires ``jax`` and ``optax`` installed
-              and JAX enabled in 64-bit mode. Recommended for high-degree polynomials **when running the solver multiple times or repeatedly evaluating QNodes with different polynomials of the same degree**; may be slower for a single call due to JIT compilation overhead.
+            - ``"iterative"`` (Default): Effective for polynomials of degree higher than :math:`\sim 1000` for
+              the ``"QSP"`` and ``"QSVT"`` routines. Uses Scipy (L-BFGS-B).
+            - ``"iterative-optax"``: Recommended for high-degree polynomials
+              when repeatedly evaluating polynomials of the same degree;
+              may be slower for a single usage due to JIT compilation overhead.
+              Uses JAX and Optax. Requires ``jax`` and ``optax`` installed
+              and JAX enabled in 64-bit mode.
 
         **kwargs: Additional keyword arguments passed to the underlying solver.
 
