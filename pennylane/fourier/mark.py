@@ -25,7 +25,7 @@ from pennylane.ops.op_math import SymbolicOp
 
 
 class MarkedOp(SymbolicOp):
-    """Creates a marked operator.
+    """Create a marked operator.
 
     Args:
         base (Operator): The operator you wish to mark.
