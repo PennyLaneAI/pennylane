@@ -114,7 +114,6 @@ def iqp_circuit_pl(generators, params, obs, init_state):
 
     @qml.qnode(dev)
     def circuit():
-        # Start with specified initial state
         qml.StatePrep(np.array(init_state), wires=range(n_qubits))
 
         for i in range(n_qubits):
@@ -344,25 +343,6 @@ class TestIQPExpval:
 
         atol = 3.5 / np.sqrt(50000)
         assert np.allclose(exact_val, approx_val, atol=atol)
-
-    def test_build_expval_func_without_explicit_key(self):
-        """Ensure build_expval_func can generate its own JAX key when none is provided."""
-
-        gates = {}
-        obs_batch = [["I", "I"]]
-        config = CircuitConfig(
-            gates=gates,
-            observables=obs_batch,
-            n_samples=64,
-            n_qubits=2,
-        )
-        expval_func = build_expval_func(config)
-
-        expvals, std_err = expval_func(jnp.array([]))
-
-        assert expvals.shape == (1,)
-        assert std_err.shape == (1,)
-        assert np.allclose(expvals, 1.0)
 
 
 @pytest.mark.parametrize(

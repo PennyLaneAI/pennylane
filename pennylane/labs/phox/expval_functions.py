@@ -24,9 +24,6 @@ import numpy as np
 from jax.typing import ArrayLike
 
 
-_HOST_RNG = np.random.default_rng()
-
-
 @dataclass
 class CircuitConfig:
     """
@@ -36,8 +33,7 @@ class CircuitConfig:
         gates (dict[int, list[list[int]]]): Circuit structure mapping parameters to gates.
         observables (list[list[str]]): List of Pauli observables.
         n_samples (int): Number of stochastic samples.
-        key (ArrayLike | None): Random key for JAX. If ``None``, a fresh key is
-            sampled from the host RNG when the simulator is constructed.
+        key (ArrayLike): Random key for JAX.
         n_qubits (int): Number of qubits.
         init_state (tuple[ArrayLike, ArrayLike] | None): Initial state configuration (X, P).
         phase_layer (Callable | None): Optional phase layer function.
@@ -46,8 +42,8 @@ class CircuitConfig:
     gates: dict[int, list[list[int]]]
     observables: list[list[str]]
     n_samples: int
-    n_qubits: int   
-    key: ArrayLike | None = None
+    key: ArrayLike
+    n_qubits: int
     init_state: tuple[ArrayLike, ArrayLike] | None = None
     phase_layer: Callable | None = None
 
@@ -154,12 +150,7 @@ def build_expval_func(config: CircuitConfig) -> Callable[[ArrayLike, ArrayLike |
     """
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
-    rng_key = config.key
-    if rng_key is None: # if no key provided, we generate our own
-        seed = int(_HOST_RNG.integers(0, np.iinfo(np.uint32).max, dtype=np.uint32))
-        rng_key = jax.random.PRNGKey(seed)
-
-    samples = jax.random.randint(rng_key, (config.n_samples, config.n_qubits), 0, 2)
+    samples = jax.random.randint(config.key, (config.n_samples, config.n_qubits), 0, 2)
     bitflips = jnp.array(
         [[1 if g in ("Z", "Y") else 0 for g in op] for op in config.observables], dtype=jnp.int32
     )

@@ -53,7 +53,7 @@ class TrainingOptions:
 class TrainingResult(NamedTuple):
     """Container for final training results."""
 
-    final_params: Any
+    final_params: jnp.ndarray
     losses: jnp.ndarray
     val_losses: jnp.ndarray
     run_time: float
@@ -62,8 +62,8 @@ class TrainingResult(NamedTuple):
 class BatchResult(NamedTuple):
     """Result from a single batch (unrolled chunk) of training steps."""
 
-    params: Any
-    state: Any
+    params: jnp.ndarray
+    state: jnp.ndarray
     key: jax.Array
     key_val: jax.Array
     losses: jnp.ndarray
