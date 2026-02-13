@@ -219,7 +219,7 @@ class CompilePipeline:
            └─▶ final-transform
         )
 
-        Two different markers can be used to make the same level, causing them to stack,
+        Two different markers can be used to mark the same level, causing them to stack,
 
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
