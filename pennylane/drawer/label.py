@@ -102,7 +102,7 @@ class LabelledOp(SymbolicOp):
 
 
 def _resources(base_class, base_params):
-    return resource_rep(base_class, **base_params)
+    return {resource_rep(base_class, **base_params): 1}
 
 
 @register_resources(_resources)
