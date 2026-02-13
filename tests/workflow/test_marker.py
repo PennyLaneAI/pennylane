@@ -26,6 +26,16 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 class TestMarkerQNode:
     """Tests the integration with compile pipeline."""
 
+    def test_applied_not_on_qnode(self):
+        """Test exception when applied on something that's not a QNode."""
+
+        def qn():
+            qml.H(0)
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Object to mark must be a QNode."):
+            qml.marker(qn, "marker0")
+
     def test_function(self):
         """Tests that it can be used functionally."""
 
