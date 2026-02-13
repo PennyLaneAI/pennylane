@@ -2,6 +2,25 @@
 
 <h3>New features since last release</h3>
 
+* Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
+  It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
+  reversible bit encodings. For now, only classical preprocessing required to implement the
+  template is added.
+  [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
+
+* Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
+  linear algebraic functionalities over :math:`\mathbb{Z}_2`:
+  [(#8982)](https://github.com/PennyLaneAI/pennylane/pull/8982)
+  
+  - :func:`~.math.binary_is_independent` computes whether a vector is linear lindependent of 
+    a basis of binary vectors over :math:`\mathbb{Z}_2`.
+  - :func:`~.math.binary_matrix_rank` computes the rank over :math:`\mathbb{Z}_2` of a binary matrix.
+  - :func:`~.math.binary_solve_linear_system` solves a linear system of the form :math:`A\cdot x=b`
+    with binary matrix :math:`A` and binary coefficient vector :math:`b` over :math:`\mathbb{Z}_2`.
+  - :func:`~.math.binary_select_basis` selects linearly independent columns out of a collection
+    of binary column vectors. The result forms a basis for the columnspace of the input. The
+    columns that are not selected are returned as well.
+
 * Added the Catalyst version to :func:`~.about`.
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
@@ -13,6 +32,7 @@
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+  [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
 
 * Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
@@ -51,6 +71,10 @@ def c():
 * New decomposition rules are added to `Evolution` and `RZ`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
   [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
+
+* The custom `adjoint` method of qutrit operators are implemented as decomposition rules compatible with the
+  new graph-based decomposition system.
+  [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
 
@@ -347,10 +371,39 @@ def expval(x: float):
 
 <h3>Deprecations 👋</h3>
 
-* The `id` argument to `qml.Operator` has been deprecated to avoid conflicts with the Python built-in function. Instead, please use :func:`~.drawer.label` or :func:`~.fourier.mark` to label an operator with the :func:`~.drawer` or :func:`~.fourier` modules respectively. 
+* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
   [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)  
 
+  The ``id`` argument previously served two purposes: (1) adding custom labels
+  to operator instances which were rendered in circuit drawings and (2)
+  tagging encoding gates for Fourier spectrum analysis.
+
+  These are now handled by dedicated functions:
+
+  - Use :func:`~.drawer.label` to attach a custom label to an operator instance
+  for circuit drawing:
+
+  .. code-block:: python3
+
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="my-rx")
+
+      # New method:
+      qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
+
+  - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+    for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
+
+  .. code-block:: python3
+
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="x0")
+
+      # New method:
+      qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
+
+  
 * Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
   Operator classes that used to have ``_queue_category=None`` have been updated
