@@ -48,7 +48,8 @@ def decompose_mcx(
 
     n_ctrl_wires, n_work_wires = len(control_wires), len(work_wires)
     if n_ctrl_wires == 1:
-        return [qml.CNOT(wires=control_wires + Wires(target_wire))]
+        return [qml.CNOT(wires=Wires.all_wires([control_wires, Wires(target_wire)]))]
+
     if n_ctrl_wires == 2:
         return qml.Toffoli.compute_decomposition(wires=control_wires + Wires(target_wire))
 
