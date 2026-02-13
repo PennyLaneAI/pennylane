@@ -88,7 +88,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
     **Example**
 
-    Let's generate a random bit array of ``D=8`` differing columns of length ``n=6``, by first
+    Let's generate a random bit array of ``D = 8`` differing columns of length ``n = 6``, by first
     sampling unique integers from the range ``(0, 2**n)`` and converting them to bitstrings.
 
     >>> np.random.seed(31)
@@ -189,7 +189,7 @@ def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> n
     """
     # Number of bits
     r = len(bits_basis)
-    # Fector to be replaced
+    # Vector to be replaced
     v_r = bits_basis[:, -1]
     # Step 5: Map the set N to N', containing the components that are spanned by
     # all basis vectors except for v_r
@@ -275,7 +275,7 @@ def _step_3_in_find_w(bits_basis, other_bits):
     """Step 3 of _find_w, which is triggered when t=1 in the recursion but initially we had t>1."""
     r = bits_basis.shape[0]
     all_bits = np.concatenate([bits_basis, other_bits], axis=1)
-    # Compute set(V) ∪ (set(V)+set(V)). We will skip 0 by starting our search at 1 below
+    # Compute set(V) ∪ (set(V) - set(V)). We will skip 0 by starting our search at 1 below
     diffs = np.array([(v_i - v_j) for v_i, v_j in combinations(all_bits.T, r=2)]).T % 2
     all_bitstrings_to_avoid = np.concatenate([all_bits, diffs], axis=1)
 
@@ -352,8 +352,7 @@ def _find_U_from_W(W):
 
 def compute_sos_encoding(bits):
     r"""Compute the bitstrings :math:`U` and :math:`b` from Lemma 1 in
-    the Sum of Slaters paper
-    (`Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__).
+    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
     This is the major classical coprocessing required for the state preparation.
     It maps :math:`D` different bitstrings of length :math:`r` to :math:`D` different
     bitstrings :math:`b` of length :math:`m = \min(r, 2d-1)` where
@@ -367,7 +366,7 @@ def compute_sos_encoding(bits):
 
     Returns:
         tuple[np.ndarray]: Two bit arrays. The first is :math:`U`, which maps the input ``bits``
-        to ``D`` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
+        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
         :math:`m=2\lceil \log_2(D)\rceil-1`. The second array are the bitstrings
         :math:`\{b_i\}` themselves, stored as columns.
 
@@ -474,7 +473,7 @@ def compute_sos_encoding(bits):
 
         **Case 1:** :math:`d\leq r\leq 2d-1`
 
-        In this case, we do not really need to do anything; the bitstrings :math:`\{v_i\}` already
+        In this case, we do not need to do anything; the bitstrings :math:`\{v_i\}` already
         have length :math:`m:=r\leq 2d-1`, so we simply set :math:`U` to be the identity map.
         This scenario may actually occur in practice, and it leads to simplifications of the
         quantum circuit for the state preparation. This depends on the specific bitstrings, though.
