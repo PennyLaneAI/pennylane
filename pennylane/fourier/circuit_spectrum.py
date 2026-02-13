@@ -50,8 +50,6 @@ def circuit_spectrum(
     >>> marked_op = mark(qml.H(0), "marked-h")
     >>> print(marked_op.marker)
     marked-h
-    >>> print(marked_op.label())
-    H("marked-h")
 
     If two gates have the same ``mark``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
