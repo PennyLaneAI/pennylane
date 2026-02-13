@@ -199,7 +199,7 @@ class CompilePipeline:
           [3] merge_rotations()
         )
 
-        We can add markers (that act as checkpoints) in the pipeline to mark important positions,
+        We can add markers (that act as checkpoints) in the pipeline to indicate important positions,
 
         >>> pipeline.add_marker("final-transform")
         >>> print(pipeline)
