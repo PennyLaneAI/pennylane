@@ -28,6 +28,12 @@ def transform(*args, **kwargs):
     """placeholder"""
     return Transform(*args, **kwargs)
 
+def transform_program():
+    return
+
+def transform_dispatcher():
+    return
+
 
 transform.__doc__ = Transform.__doc__
 transform.__signature__ = inspect.signature(Transform)

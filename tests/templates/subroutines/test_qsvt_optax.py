@@ -73,7 +73,7 @@ pytestmark = pytest.mark.external
 
 
 class TestOptaxAngleSolver:
-    """Tests for the Optax-based QSP angle solver (iterative_optax)."""
+    """Tests for the Optax-based QSP angle solver (iterative-optax)."""
 
     @pytest.mark.parametrize(
         "poly",
@@ -84,10 +84,10 @@ class TestOptaxAngleSolver:
         ],
     )
     def test_correctness_QSP_angles_finding_optax(self, poly):
-        """Tests that angles generate desired poly with iterative_optax solver"""
+        """Tests that angles generate desired poly with iterative-optax solver"""
         jax.config.update("jax_enable_x64", True)
 
-        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver="iterative_optax")
+        angles = qml.poly_to_angles(list(poly), "QSP", angle_solver="iterative-optax")
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 
@@ -113,10 +113,10 @@ class TestOptaxAngleSolver:
         ],
     )
     def test_correctness_QSVT_angles_optax(self, poly):
-        """Tests that angles generate desired poly with iterative_optax solver"""
+        """Tests that angles generate desired poly with iterative-optax solver"""
         jax.config.update("jax_enable_x64", True)
 
-        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver="iterative_optax")
+        angles = qml.poly_to_angles(list(poly), "QSVT", angle_solver="iterative-optax")
         rng = np.random.default_rng(123)
         x = rng.uniform(low=-1.0, high=1.0)
 

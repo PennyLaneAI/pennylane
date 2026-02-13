@@ -194,7 +194,7 @@ def qsvt(
             - ``"root-finding"``: effective for polynomials of degree up to :math:`\sim 1000`
             - ``"iterative"``: Uses Scipy (L-BFGS-B). Stable, no extra dependencies.
               Effective for polynomials of degree higher than :math:`\sim 1000`.
-            - ``"iterative_optax"``: Uses JAX+Optax for optimization. Requires ``jax`` and
+            - ``"iterative-optax"``: Uses JAX+Optax for optimization. Requires ``jax`` and
               ``optax`` to be installed. x64 mode can provide higher precision and better convergence. Recommended for high-degree polynomials **when running the solver multiple times or repeatedly evaluating QNodes with different polynomials of the same degree**; may be slower for a single call due to JIT compilation overhead.
 
     Returns:
@@ -1428,7 +1428,7 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
             - ``"iterative"`` (Default): Uses Scipy (L-BFGS-B). Stable, no extra dependencies.
               Effective for polynomials of degree higher than :math:`\sim 1000` for
               the ``"QSP"`` and ``"QSVT"`` routines.
-            - ``"iterative_optax"``: Uses JAX+Optax. Requires ``jax`` and ``optax`` installed
+            - ``"iterative-optax"``: Uses JAX+Optax. Requires ``jax`` and ``optax`` installed
               and JAX enabled in 64-bit mode. Recommended for high-degree polynomials **when running the solver multiple times or repeatedly evaluating QNodes with different polynomials of the same degree**; may be slower for a single call due to JIT compilation overhead.
 
         **kwargs: Additional keyword arguments passed to the underlying solver.
@@ -1515,12 +1515,12 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
             return transform_angles(_compute_qsp_angle(poly), "QSP", "QSVT")
         if angle_solver == "iterative":
             return transform_angles(_compute_qsp_angles_iteratively_scipy(poly), "QSP", "QSVT")
-        if angle_solver == "iterative_optax":
+        if angle_solver == "iterative-optax":
             return transform_angles(_compute_qsp_angles_iteratively_optax(poly), "QSP", "QSVT")
 
         raise ValueError(
             f"Invalid angle solver method: '{angle_solver}'. "
-            "Supported solvers: ['root-finding', 'iterative', 'iterative_optax']"
+            "Supported solvers: ['root-finding', 'iterative', 'iterative-optax']"
         )
 
     if routine == "QSP":
@@ -1528,11 +1528,11 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
             return _compute_qsp_angle(poly)
         if angle_solver == "iterative":
             return _compute_qsp_angles_iteratively_scipy(poly)
-        if angle_solver == "iterative_optax":
+        if angle_solver == "iterative-optax":
             return _compute_qsp_angles_iteratively_optax(poly)
         raise ValueError(
             f"Invalid angle solver method: '{angle_solver}'. "
-            "Supported solvers: ['root-finding', 'iterative', 'iterative_optax']"
+            "Supported solvers: ['root-finding', 'iterative', 'iterative-optax']"
         )
 
     if routine == "GQSP":
