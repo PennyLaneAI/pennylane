@@ -698,7 +698,7 @@ class SumOfSlatersPrep(Operation):
    12: ───────────────────────────────────────────╰X─╰●─╰●─╰●─╰X──────────┤  State
     Note that wires with labels ``5`` to ``12`` were dynamically allocated. We can see an initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as ``|Ψ⟩`` on the first four dynamic wires in the above diagram),
     a :class:`~.QROM` and a sequence of :class:`~.MultiControlledX` gates, some of which are
-    mediated with a caching qubit (qubit index ``7``) and :class:`~.CNOT` gates.
+    mediated with a caching qubit (qubit index ``12``) and :class:`~.CNOT` gates.
 
     Note that we guessed the required number of work wires (``num_work_wires``) in  :func:`~.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign integer wire labels to those dynamically allocated wires. If we want to know
     the required wire register sizes ahead of time, they can be computed with
