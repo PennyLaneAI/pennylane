@@ -2,6 +2,25 @@
 
 <h3>New features since last release</h3>
 
+* Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
+  It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
+  reversible bit encodings. For now, only classical preprocessing required to implement the
+  template is added.
+  [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
+
+* Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
+  linear algebraic functionalities over :math:`\mathbb{Z}_2`:
+  [(#8982)](https://github.com/PennyLaneAI/pennylane/pull/8982)
+  
+  - :func:`~.math.binary_is_independent` computes whether a vector is linear lindependent of 
+    a basis of binary vectors over :math:`\mathbb{Z}_2`.
+  - :func:`~.math.binary_matrix_rank` computes the rank over :math:`\mathbb{Z}_2` of a binary matrix.
+  - :func:`~.math.binary_solve_linear_system` solves a linear system of the form :math:`A\cdot x=b`
+    with binary matrix :math:`A` and binary coefficient vector :math:`b` over :math:`\mathbb{Z}_2`.
+  - :func:`~.math.binary_select_basis` selects linearly independent columns out of a collection
+    of binary column vectors. The result forms a basis for the columnspace of the input. The
+    columns that are not selected are returned as well.
+
 * Added the Catalyst version to :func:`~.about`.
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
@@ -13,6 +32,7 @@
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+  [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
 
 * Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
@@ -51,6 +71,10 @@ def c():
 * New decomposition rules are added to `Evolution` and `RZ`.
   [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
   [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
+
+* The custom `adjoint` method of qutrit operators are implemented as decomposition rules compatible with the
+  new graph-based decomposition system.
+  [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
 
