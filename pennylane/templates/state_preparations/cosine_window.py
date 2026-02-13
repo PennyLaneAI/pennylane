@@ -153,11 +153,10 @@ def _cosine_window_resources(num_wires):
             resource_rep(qml.Hadamard): 1,
             resource_rep(qml.RZ): 1,
             resource_rep(qml.PhaseShift): num_wires,
-            adjoint_resource_rep(qml.templates.subroutine.SubroutineOp): 1,
         }
     )
-    for op in qml.QFT.compute_resources(wires=range(num_wires)):
-        ret[adjoint_resource_rep(op)] += 1
+    for op, count in qml.QFT.compute_resources(wires=range(num_wires)).items():
+        ret[adjoint_resource_rep(op)] += count
     return ret
 
 
