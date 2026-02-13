@@ -31,6 +31,7 @@ from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
+from ... import SubroutineOp
 
 
 class Multiplier(Operation):
@@ -263,28 +264,30 @@ def _multiplier_decomposition_resources(
         "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
         "num_control_wires": num_x_wires,
     }
-    resources = {}
-    for op in QFT.compute_resources(wires=range(num_wires_aux)):
-        resources[adjoint_resource_rep(op)] += 2
-        resources[op] += 2
     if num_x_wires > 1:
-        resources.update(
-            {
-                resource_rep(ControlledSequence, **cs_base_params): 1,
-                resource_rep(Prod, resources={resource_rep(SWAP): num_x_wires}): 1,
-                adjoint_resource_rep(ControlledSequence, cs_base_params): 1,
-            }
-        )
-        return resources
-
-    resources.update(
-        {
-            resource_rep(ControlledSequence, **cs_base_params): 1,
-            SWAP: 1,
-            adjoint_resource_rep(ControlledSequence, cs_base_params): 1,
+        return {
+            change_op_basis_resource_rep(
+                resource_rep(SubroutineOp),
+                resource_rep(ControlledSequence, **cs_base_params),
+            ): 1,
+            resource_rep(Prod, resources={resource_rep(SWAP): num_x_wires}): 1,
+            change_op_basis_resource_rep(
+                resource_rep(SubroutineOp),
+                adjoint_resource_rep(ControlledSequence, cs_base_params),
+            ): 1,
         }
-    )
-    return resources
+
+    return {
+        change_op_basis_resource_rep(
+            resource_rep(SubroutineOp),
+            resource_rep(ControlledSequence, **cs_base_params),
+        ): 1,
+        SWAP: 1,
+        change_op_basis_resource_rep(
+            resource_rep(SubroutineOp),
+            adjoint_resource_rep(ControlledSequence, cs_base_params),
+        ): 1,
+    }
 
 
 @register_resources(_multiplier_decomposition_resources)
