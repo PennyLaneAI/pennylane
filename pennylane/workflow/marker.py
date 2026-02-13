@@ -32,7 +32,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
         QNode | Callable: The marked ``QNode`` or a decorator function if ``obj`` is not provided.
 
     Raises:
-        ValueError: The 'label' argument must be provided.
+        ValueError: If the 'label' argument is not provided.
 
     .. seealso::
 
