@@ -447,7 +447,7 @@ def compute_sos_encoding(bits):
         :title: Implementation notes
 
         We are given :math:`D` distinct bitstrings :math:`\{v_i\}` with length :math:`r`.
-        We assume :math:`D\geq r` and :math:`\operatorname{rk}(V)\geq r`, which can always
+        We assume :math:`D\geq r` and :math:`\operatorname{rank}(V)\geq r`, which can always
         be achieved by first calling ``select_sos_rows`` on the bitstrings.
 
         Our goal is to find a linear map :math:`U:\mathbb{Z}_2^{r}\to \mathbb{Z}_2^{m}` from
