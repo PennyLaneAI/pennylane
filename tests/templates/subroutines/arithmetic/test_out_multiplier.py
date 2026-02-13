@@ -231,7 +231,7 @@ class TestOutMultiplier:
         else:
             qft_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT(wires=qft_output_wires))
+        op_list.append(qml.QFT.operator(wires=qft_output_wires))
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
