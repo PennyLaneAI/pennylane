@@ -16,21 +16,21 @@ Unit tests for the aqft template.
 """
 import numpy as np
 import pytest
-from pennylane import math
 
 import pennylane as qml
+from pennylane import math
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def get_qft_mat(num_wires):
     omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-    mat = math.zeros((2 ** num_wires, 2 ** num_wires), dtype="complex128")
+    mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
 
-    for m in range(2 ** num_wires):
-        for n in range(2 ** num_wires):
+    for m in range(2**num_wires):
+        for n in range(2**num_wires):
             mat[m, n] = omega ** (m * n)
 
-    return 1 / math.sqrt(2 ** num_wires) * mat
+    return 1 / math.sqrt(2**num_wires) * mat
 
 
 @pytest.mark.jax
@@ -88,9 +88,7 @@ class TestAQFT:
         with pytest.warns(UserWarning, match="Using the QFT class is recommended in this case"):
             qml.AQFT(order=order, wires=range(5))
 
-    @pytest.mark.parametrize(
-        "wires", [3, 4, 5, 6, 7, 8, 9]
-    )
+    @pytest.mark.parametrize("wires", [3, 4, 5, 6, 7, 8, 9])
     def test_matrix_higher_order(self, wires):
         """Test the matrix from AQFT for higher order."""
 

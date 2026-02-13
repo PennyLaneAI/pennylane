@@ -25,8 +25,8 @@ from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from .phase_adder import PhaseAdder
 from ... import SubroutineOp
+from .phase_adder import PhaseAdder
 
 
 class Adder(Operation):
@@ -212,7 +212,9 @@ class Adder(Operation):
             qft_wires = work_wires[:1] + x_wires
             work_wire = work_wires[1:]
 
-        op_list = [change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))]
+        op_list = [
+            change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+        ]
 
         return op_list
 
