@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pure function implementations for the Phox simulator.
+Pure function implementations for the expectation value functions.
 """
 import math
 from dataclasses import dataclass
@@ -111,7 +111,7 @@ def bitflip_expval(
     return result, jnp.zeros(ops.shape[0])
 
 
-def _parse_iqp_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
+def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
     """
     Converts dictionary circuit definition into JAX-ready matrices.
 
@@ -152,7 +152,7 @@ def build_expval_func(config: CircuitConfig) -> Callable[[ArrayLike, ArrayLike |
     Returns:
         Callable: A function ``execute(params, phase_params=None)``.
     """
-    generators, param_map = _parse_iqp_dict(config.gates, config.n_qubits)
+    generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     rng_key = config.key
     if rng_key is None: # if no key provided, we generate our own

@@ -26,8 +26,8 @@ jnp = pytest.importorskip("jax.numpy")
 try:
     from pennylane.labs.phox.expval_functions import (
         CircuitConfig,
-        _parse_iqp_dict,
-        iqp_expval,
+        _parse_generator_dict,
+        build_expval_func,
     )
 except ImportError:
     pytest.skip("pennylane.labs.phox not found", allow_module_level=True)
@@ -162,11 +162,11 @@ class TestIQPExpval:
             ),
         ],
     )
-    def test_iqp_expval_core_vs_pennylane(
+    def test_build_expval_func_core_vs_pennylane(
         self, n_samples, obs_strings, generators_pl, params, init_state_spec
     ):
         # pylint: disable=too-many-arguments
-        """Test that iqp_expval (used as core substitute) matches PennyLane default.qubit with parametrization."""
+        """Test that build_expval_func (used as core substitute) matches PennyLane default.qubit with parametrization."""
         obs_batch, n_qubits = _prepare_obs_batch(obs_strings)
         pl_state = _prepare_pennylane_state(n_qubits, init_state_spec)
         jax_state = _prepare_jax_state(init_state_spec)
@@ -188,7 +188,7 @@ class TestIQPExpval:
             n_qubits=n_qubits,
             init_state=jax_state,
         )
-        expval_func = iqp_expval(config)
+        expval_func = build_expval_func(config)
         approx_val, _ = expval_func(params_jax)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
@@ -213,10 +213,10 @@ class TestIQPExpval:
             ),
         ],
     )
-    def test_iqp_expval_vs_pennylane(self, n_qubits, gates, params, obs_strings, init_state_spec):
+    def test_build_expval_func_vs_pennylane(self, n_qubits, gates, params, obs_strings, init_state_spec):
         # pylint: disable=too-many-arguments
-        """Test that iqp_expval matches PennyLane default.qubit."""
-        generators_binary, param_map = _parse_iqp_dict(gates, n_qubits)
+        """Test that build_expval_func matches PennyLane default.qubit."""
+        generators_binary, param_map = _parse_generator_dict(gates, n_qubits)
         generators_pl = [
             list(np.where(row)[0]) for row in generators_binary
         ]  # generators in list form for PL
@@ -240,7 +240,7 @@ class TestIQPExpval:
             n_qubits=n_qubits,
             init_state=jax_state,
         )
-        expval_func = iqp_expval(config)
+        expval_func = build_expval_func(config)
         approx_val, _ = expval_func(np.array(params))
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
@@ -275,13 +275,13 @@ class TestIQPExpval:
             key=key,
             n_qubits=n_qubits,
         )
-        expval_func = iqp_expval(config)
+        expval_func = build_expval_func(config)
         approx_val, _ = expval_func(np.array(params))
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
-    def test_iqp_expval_with_phase_layer(self):
-        """Test iqp_expval with a custom phase layer against PennyLane."""
+    def test_build_expval_func_with_phase_layer(self):
+        """Test build_expval_func with a custom phase layer against PennyLane."""
 
         def compute_phase(params, z):
             hamming = jnp.mean(jnp.abs(z))
@@ -339,14 +339,14 @@ class TestIQPExpval:
             key=jax.random.PRNGKey(42),
         )
 
-        f = iqp_expval(config)
+        f = build_expval_func(config)
         approx_val, _ = f(jnp.array(params), phase_params)
 
         atol = 3.5 / np.sqrt(50000)
         assert np.allclose(exact_val, approx_val, atol=atol)
 
-    def test_iqp_expval_without_explicit_key(self):
-        """Ensure iqp_expval can generate its own JAX key when none is provided."""
+    def test_build_expval_func_without_explicit_key(self):
+        """Ensure build_expval_func can generate its own JAX key when none is provided."""
 
         gates = {}
         obs_batch = [["I", "I"]]
@@ -356,7 +356,7 @@ class TestIQPExpval:
             n_samples=64,
             n_qubits=2,
         )
-        expval_func = iqp_expval(config)
+        expval_func = build_expval_func(config)
 
         expvals, std_err = expval_func(jnp.array([]))
 
@@ -374,9 +374,9 @@ class TestIQPExpval:
         ({10: [[0]], 2: [[1]]}, 2, [[0, 1], [1, 0]], [2, 10]),
     ],
 )
-def test_parse_iqp_dict(circuit_def, n_qubits, expected_generators, expected_param_map):
-    """Test that _parse_iqp_dict correctly converts dictionary circuit definition into JAX arrays."""
-    generators, param_map = _parse_iqp_dict(circuit_def, n_qubits)
+def test_parse_generator_dict(circuit_def, n_qubits, expected_generators, expected_param_map):
+    """Test that _parse_generator_dict correctly converts dictionary circuit definition into JAX arrays."""
+    generators, param_map = _parse_generator_dict(circuit_def, n_qubits)
 
     assert isinstance(generators, jnp.ndarray)
     assert isinstance(param_map, jnp.ndarray)
@@ -391,10 +391,10 @@ def test_parse_iqp_dict(circuit_def, n_qubits, expected_generators, expected_par
     assert np.allclose(param_map, expected_param_map)
 
 
-def test_parse_iqp_dict_index_error():
-    """Test that _parse_iqp_dict raises IndexError if qubits indices are out of bounds."""
+def test_parse_generator_dict_index_error():
+    """Test that _parse_generator_dict raises IndexError if qubits indices are out of bounds."""
     circuit_def = {0: [[5]]}
     n_qubits = 2
 
     with pytest.raises(IndexError):
-        _parse_iqp_dict(circuit_def, n_qubits)
+        _parse_generator_dict(circuit_def, n_qubits)
