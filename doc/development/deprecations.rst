@@ -27,24 +27,24 @@ Pending deprecations
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
 
-  .. code-block:: python
+    .. code-block:: python
 
-    # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="my-rx")
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="my-rx")
 
-    # New method:
-    qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
+      # New method:
+      qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
 
   - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
     for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
 
-  .. code-block:: python
+    .. code-block:: python
 
-    # Legacy method (deprecated):
-    qml.RX(0.5, wires=0, id="x0")
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="x0")
 
-    # New method:
-    qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
+      # New method:
+      qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
 
 * Deactivating queuing of an ``Operator`` by setting its
   :attr:`~pennylane.operation.Operator._queue_category` to ``None``
