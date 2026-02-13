@@ -309,7 +309,9 @@ def test_null_postprocessing():
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
-    @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.MultiControlledX(wires=range(3))))
+    @pytest.mark.parametrize(
+        "op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.MultiControlledX(wires=range(3)))
+    )
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""
 

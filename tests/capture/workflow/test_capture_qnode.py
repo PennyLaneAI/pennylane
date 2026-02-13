@@ -14,14 +14,15 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
-
-# pylint: disable=protected-access,wrong-import-position,ungrouped-imports
-
+import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.exceptions import CaptureError, QuantumFunctionError
 from tests.capture.capture_utils import extract_ops_and_meas_prims
+
+# pylint: disable=protected-access,wrong-import-position,ungrouped-imports
+
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -603,15 +604,19 @@ class TestDevicePreprocessing:
 
     def test_non_native_ops_execution(self, dev_name, seed):
         """Test that operators that aren't natively supported by a device can be executed by a qnode."""
-        dev = qml.device(dev_name, wires=2, seed=seed)
+        dev = qml.device(dev_name, wires=[0, 1], seed=seed)
 
         @qml.qnode(dev)
         def circuit():
-            # QFT not supported on DQ or LQ
-            qml.QFT(wires=[0, 1])
+            qml.IsingXX(1.0, [0, 1])
             return qml.state()
 
-        assert qml.math.allclose(circuit(), [0.5] * 4)
+        assert qml.math.allclose(
+            circuit(),
+            np.array(
+                [0.87758256 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.47942554j], dtype=np.complex128
+            ),
+        )
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     @pytest.mark.parametrize("shots", [None, 1000])

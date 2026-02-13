@@ -79,7 +79,9 @@ class TestDecomposition:
             qml.RZ(3.141592653589793, wires=[1]),
             qml.adjoint(qml.SWAP(wires=[0, 1])),
             qml.adjoint(qml.H(1)),
-            qml.adjoint(qml.ControlledPhaseShift(jnp.array(1.5707963267948966), wires=Wires([1, 0]))),
+            qml.adjoint(
+                qml.ControlledPhaseShift(jnp.array(1.5707963267948966), wires=Wires([1, 0]))
+            ),
             qml.adjoint(qml.H(0)),
             qml.PhaseShift(jnp.array(-2.89760778e19), wires=[0]),
             qml.PhaseShift(jnp.array(1.44880389e19), wires=[1]),

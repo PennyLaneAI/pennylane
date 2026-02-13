@@ -28,8 +28,8 @@ from pennylane.templates.subroutines.controlled_sequence import ControlledSequen
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from .phase_adder import PhaseAdder
 from ... import SubroutineOp
+from .phase_adder import PhaseAdder
 
 
 class OutAdder(Operation):
