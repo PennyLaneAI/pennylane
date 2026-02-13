@@ -323,7 +323,7 @@ def contract_tensors(
                 for pred_edge in pred_edges.values():
                     meas_op, prep_op = pred_edge["pair"]
 
-                    if p.id is prep_op.obj.id:
+                    if p.hyperparameters["identifier"] is prep_op.obj.hyperparameters["identifier"]:
                         symb = get_symbol(ctr)
                         ctr += 1
                         tensor_indxs[i] += symb
@@ -337,7 +337,7 @@ def contract_tensors(
                 for succ_edge in succ_edges.values():
                     meas_op, _ = succ_edge["pair"]
 
-                    if m.id is meas_op.obj.id:
+                    if m.hyperparameters["identifier"] is meas_op.obj.hyperparameters["identifier"]:
                         symb = meas_map[meas_op]
                         tensor_indxs[i] += symb
 

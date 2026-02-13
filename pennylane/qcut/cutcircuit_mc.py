@@ -638,8 +638,12 @@ def expand_fragment_tapes_mc(
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.default_rng(seed).choice(range(8), size=(len(pairs), shots), replace=True)
 
-    meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
-    prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}
+    meas_settings = {
+        pair[0].obj.hyperparameters["identifier"]: setting for pair, setting in zip(pairs, settings)
+    }
+    prep_settings = {
+        pair[1].obj.hyperparameters["identifier"]: setting for pair, setting in zip(pairs, settings)
+    }
 
     all_configs = []
     for tape in tapes:
@@ -650,12 +654,14 @@ def expand_fragment_tapes_mc(
             for op in tape.operations:
                 w = op.wires[0]
                 if isinstance(op, PrepareNode):
-                    expanded_circuit_operations.extend(MC_STATES[prep_settings[op.id][shot]](w))
+                    expanded_circuit_operations.extend(
+                        MC_STATES[prep_settings[op.hyperparameters["identifier"]][shot]](w)
+                    )
                 elif not isinstance(op, MeasureNode):
                     expanded_circuit_operations.append(op)
                 else:
                     expanded_circuit_measurements.append(
-                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
+                        MC_MEASUREMENTS[meas_settings[op.hyperparameters["identifier"]][shot]](w)
                     )
 
             frag_config.append(
