@@ -20,9 +20,12 @@ Pending deprecations
 
   These are now handled by dedicated functions:
 
+  .. warning::
+
+    Neither of these functions are currently supported inside :func:`~.qjit`-compiled circuits.
+
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
-
     .. code-block:: python
 
       # Legacy method (deprecated):
@@ -33,7 +36,6 @@ Pending deprecations
 
   - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
     for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
-
     .. code-block:: python
 
       # Legacy method (deprecated):
