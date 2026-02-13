@@ -119,7 +119,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
 
         return decorator
 
-    if not isinstance(obj, QNode):
+    if obj is not None and not isinstance(obj, QNode):
         raise ValueError("Object to mark must be a QNode.")
 
     raise ValueError("marker requires a 'label' argument.")
