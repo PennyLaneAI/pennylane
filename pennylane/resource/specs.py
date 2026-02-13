@@ -261,10 +261,13 @@ def _specs_qjit_intermediate_passes(
         if level not in ("all", "all-mlir")
         else "all"
     )
+    # NOTE: Subtract away the number of tape transforms minus one
+    # (to not double count the extra "before transforms" stage)
+    num_tape_transforms = num_trans_levels - 1
     mlir_level_to_markers = {
-        lvl - (num_trans_levels - 1): markers
+        lvl - num_tape_transforms: markers
         for lvl, markers in level_to_markers.items()
-        if lvl >= num_trans_levels
+        if lvl >= num_tape_transforms - 1
     }
     if mlir_levels == "all" or len(mlir_levels) > 0:
         try:
