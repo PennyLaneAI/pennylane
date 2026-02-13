@@ -440,23 +440,51 @@ class TestSumOfSlatersPrep:
         # of the less redundant bitstrings, rather than the test case input `num_bits`.
         bits = random_distinct_bitstrings(min(num_bits, num_wires), num_entries, seed)
         reduced_bits = select_sos_rows(bits)[1]
-        num_bits = len(reduced_bits)
-        indices = 2 ** np.arange(num_bits - 1, -1, -1) @ reduced_bits
+        new_num_bits = len(reduced_bits)
+        indices = 2 ** np.arange(new_num_bits - 1, -1, -1) @ reduced_bits
 
-        sizes = SumOfSlatersPrep.required_register_sizes(num_entries, num_bits, num_wires)
+        sizes = SumOfSlatersPrep.required_register_sizes(num_entries, new_num_bits, num_wires)
         d = ceil_log2(num_entries)
         assert sizes["wires"] == num_wires
         assert sizes["enumeration_wires"] == d
-        assert sizes["identification_wires"] == max((num_bits > 2 * d - 1) * (2 * d - 1), 0)
+        assert sizes["identification_wires"] == max((new_num_bits > 2 * d - 1) * (2 * d - 1), 0)
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == int(num_entries > 7)
 
         op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
-        exp_resource_params = {"D": num_entries, "num_bits": num_bits, "num_wires": num_wires}
+        exp_resource_params = {"D": num_entries, "num_bits": new_num_bits, "num_wires": num_wires}
         assert exp_resource_params == op.resource_params
 
         registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
         assert sum(sizes.values()) - num_wires == registered_work_wires.total
+
+    @pytest.mark.parametrize("n", [7, 8, 9, 15, 16, 17])
+    def test_register_sizes_non_id_encoding(self, n, seed):
+        """Test for ``SumOfSlatersPrep.required_register_sizes`` and work wire spec of
+        ``_sos_state_prep``. The test is the same as in ``test_register_sizes``, but with
+        deterministic input data that triggers the ``identity_encoding=False`` scenario."""
+
+        coefficients, _ = self.make_random_data(n, n, seed=seed)
+        bits = np.eye(n, dtype=int)[: n - 1]
+        np.random.seed(seed)
+        np.random.shuffle(bits)
+        num_bits = n - 1
+        indices = 2 ** np.arange(num_bits - 1, -1, -1) @ bits
+
+        sizes = SumOfSlatersPrep.required_register_sizes(n, num_bits, n)
+        d = ceil_log2(n)
+        assert sizes["wires"] == n
+        assert sizes["enumeration_wires"] == d
+        assert sizes["identification_wires"] == max((num_bits > 2 * d - 1) * (2 * d - 1), 0)
+        assert sizes["qrom_work_wires"] == max(d - 1, 0)
+        assert sizes["mcx_cache_wires"] == int(n > 7)
+
+        op = SumOfSlatersPrep(coefficients, range(n), indices)
+        exp_resource_params = {"D": n, "num_bits": num_bits, "num_wires": n}
+        assert exp_resource_params == op.resource_params
+
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        assert sum(sizes.values()) - n == registered_work_wires.total
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -468,6 +496,68 @@ class TestSumOfSlatersPrep:
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
 
+        for rule in list_decomps(SumOfSlatersPrep):
+
+            @qml.qnode(qml.device("default.qubit"))
+            def func():
+                # pylint: disable=cell-var-from-loop
+                # Make sure that the output state length is at least 2**num_wires
+                qml.Identity(range(num_wires))
+                rule(coefficients, wires=range(num_wires), indices=indices)
+                return qml.state()
+
+            out_state = func()
+
+            # We infer the total and aux wire counts from the state shape, because small-scale
+            # edge cases often have fewer work wires than the general case.
+            num_all_wires = ceil_log2(out_state.shape[0])
+            num_aux_wires = num_all_wires - num_wires
+            for _ in range(num_aux_wires):
+                assert np.allclose(out_state[1::2], 0.0), "\n".join(
+                    [
+                        f"{a} : {b}"
+                        for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
+                    ]
+                )
+                out_state = out_state[::2]
+            assert np.allclose([out_state[key] for key in indices], coefficients)
+
+    @staticmethod
+    def force_powers_of_two(indices: tuple, num_wires: int) -> tuple:
+        """Force a set of indices to contain all powers of two from 1 to 2**num_wires."""
+        # This implementation feels somewhat complicated, but it works. It likely scales terribly.
+        powers = {2**i for i in range(num_wires)}
+        power_ids = []
+        for i, idx in enumerate(indices):
+            if idx in powers:
+                power_ids.append(i)
+                powers.remove(idx)
+
+        new_indices = list(indices)  # Make mutable, indices is a tuple
+        k = 0
+        # Iterate over powers of two that are not yet in indices
+        for power in powers:
+            # Search for an index where there is no power of two yet
+            while k in power_ids:
+                k += 1
+            # Insert the power of two in a spot where there isn't one yet.
+            new_indices[k] = power
+            # Increment k so we don't overwrite the just inserted value in the next iteration
+            k += 1
+
+        return tuple(new_indices)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (9, 12), (10, 17)])
+    def test_decomposition_prepares_state_non_id_encoding(self, num_wires, num_entries, seed):
+        """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""
+
+        coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
+        # Add indices (powers of two) that force many bits to be required,
+        # avoiding the identity encoding case
+        indices = self.force_powers_of_two(indices)
+
+        # Currently just one rule is implemented, but this test should pass for all decompositions
         for rule in list_decomps(SumOfSlatersPrep):
 
             @qml.qnode(qml.device("default.qubit"))
