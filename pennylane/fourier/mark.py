@@ -14,7 +14,9 @@
 """
 Contains the 'label' function for customizing operator labels.
 """
+# pylint: disable=unused-argument
 
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operator
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
@@ -22,6 +24,7 @@ from pennylane.ops.functions.equal import (
     _equal_dispatch,
 )
 from pennylane.ops.op_math import SymbolicOp
+from pennylane.queuing import apply
 
 
 class MarkedOp(SymbolicOp):
@@ -88,6 +91,18 @@ class MarkedOp(SymbolicOp):
 
     def matrix(self, wire_order=None):
         return self.base.matrix(wire_order=wire_order)
+
+
+def _resources(base_class, base_params):
+    return resource_rep(base_class, **base_params)
+
+
+@register_resources(_resources)
+def _custom_marked_decomp(*params, wires, base, **_):
+    apply(base)
+
+
+add_decomps(MarkedOp, _custom_marked_decomp)
 
 
 @_equal_dispatch.register
