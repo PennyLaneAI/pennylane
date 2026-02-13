@@ -30,11 +30,13 @@ from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 
 def prepare_phase_gradient(wires):
     """Prepares the phase gradient state."""
-    ops = []
-    for i, w in enumerate(wires):
-        ops.append(qp.H(w))
-        ops.append(qp.PhaseShift(-np.pi / 2**i, w))
-    return ops
+    n = len(wires)
+    basis = np.eye(2**n)
+    B = 2**n
+    wave_function = np.sum(
+        [b * np.exp(-1j * 2 * np.pi * i / B) for i, b in enumerate(basis)], axis=0
+    ) / (2 ** (n / 2))
+    return [qp.StatePrep(wave_function, wires)]
 
 
 class TestSelectPauliRotDecompositions:
@@ -298,6 +300,7 @@ class TestPauliRotationDecomposition:
             qp.RZ,
             qp.RX,
             qp.RY,
+            qp.PhaseShift,
             qp.MultiRZ,
             partial(qp.PauliRot, pauli_word="X"),
             partial(qp.PauliRot, pauli_word="Z"),
