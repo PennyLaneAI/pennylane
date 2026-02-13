@@ -45,7 +45,7 @@ def _columns_differ(bits: np.ndarray) -> bool:
     >>> _columns_differ(differing_bits)
     True
 
-    This is opposed to columns of length 2 were the first and third column are the same:
+    This is opposed to columns of length 2 where the first and third column are the same:
 
     >>> redundant_bits = np.array([[1, 0, 1], [0, 1, 0]])
     >>> print(redundant_bits)
@@ -80,7 +80,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
     .. note::
 
         This function does not come with an optimality guarantee about the number of selected rows.
-        That is, there may be selections of fewer rows that maintain the columns to differ.
+        That is, there may be selections of fewer rows that maintain differing columns.
 
     Under the hood, this method is not selecting rows, but instead greedily removes rows from the
     input. We first attempt to remove rows with a mean weight far away from 0.5, as they are
@@ -184,7 +184,7 @@ def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> n
 
     Returns:
         np.ndarray: New bitstring that avoids the described set of bitstrings, and is spanned by
-        all but the last basis vector in ``bits_basis``. will have shape ``(r,)``.
+        all but the last basis vector in ``bits_basis``. Will have shape ``(r,)``.
 
     """
     # Number of bits
@@ -351,13 +351,14 @@ def _find_U_from_W(W):
 
 
 def compute_sos_encoding(bits):
-    r"""Compute the bitstrings :math:`U` and :math:`b` from Lemma 1 in
-    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
-    This is the major classical coprocessing required for the state preparation.
-    It maps :math:`D` different bitstrings of length :math:`r` to :math:`D` different
+    r"""Map :math:`D` different bitstrings of length :math:`r` to :math:`D` different
     bitstrings :math:`b` of length :math:`m = \min(r, 2d-1)` where
-    :math:`d=\lceil\log_2(D)\rceil`. This enables the Sum of Slaters state preparation to achieve
-    its resource efficiency.
+    :math:`d=\lceil\log_2(D)\rceil`. The function computes both the mapping :math:`U` and the
+    output bitstrings :math:`b`.
+    This algorithm forms the constructive proof of Lemma 1 in
+    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
+    It is the main classical coprocessing step required for the sparse state preparation
+    (sum-of-Slaters preparation) presented in this paper, enabling its resource efficiency.
 
     Args:
         bits (np.ndarray): Bitstrings of length :math:`r` that are input into Lemma 1. The i-th
@@ -425,8 +426,14 @@ def compute_sos_encoding(bits):
     >>> print(_columns_differ(b))
     True
 
+    The encoded bitstrings ``b`` are provided for convenience. They can equivalently be computed
+    from ``U`` and the input ``bits`` via ``(U @ bits) % 2``:
+
+    >>> np.array_equal((U @ bits) % 2, b)
+    True
+
     Note that in this particular example, we could have achieved the reduction simply by selecting
-    ``4<m`` rows of the input bits, still obtaining different bitstrings. There is a function
+    :math:`4<m` rows of the input bits, still obtaining different bitstrings. There is a function
     that does just that:
 
     >>> from pennylane.templates.state_preparations.sum_of_slaters import select_sos_rows
