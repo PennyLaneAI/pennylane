@@ -374,7 +374,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
+* Setting ``_queue_category`` to ``None`` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
   Operator classes that used to have ``_queue_category=None`` have been updated
   to ``_queue_category='_ops'`` , so that they are queued now.
