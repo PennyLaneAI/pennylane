@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* Added `ToroidalDephasing` noise channel — a single-qubit dephasing channel with
+  toroidal spectral-gap suppression. The dephasing probability is reduced by the
+  spectral gap of an :math:`n \times n` toroidal lattice Laplacian, modelling
+  topological noise filtering on qubits arranged in a :math:`T^2` geometry.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
   reversible bit encodings. For now, only classical preprocessing required to implement the
