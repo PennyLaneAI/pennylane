@@ -629,4 +629,6 @@ def ceil_log2(n: int) -> int:
     >>> qml.math.ceil_log2(9)
     4
     """
+    if is_abstract(n):
+        return np.ceil(np.log2(n)).astype(int)
     return int(np.ceil(np.log2(n)))

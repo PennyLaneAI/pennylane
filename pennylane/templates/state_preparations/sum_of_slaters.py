@@ -993,8 +993,13 @@ def _sos_state_prep(coefficients, wires, indices, **__):
 
         @for_loop(1, D)
         def uncompute_enumeration(k):
-            bits = list(map(int, b_bits[:, k]))
-            bit_count = np.bitwise_count(k)
+            if qml.compiler.active():
+                import jax.numpy as jnp
+
+                bits = jnp.array(b_bits)[:, k].astype(int)
+            else:
+                bits = list(map(int, b_bits[:, k]))
+            bit_count = qml.math.bitwise_count(k)
             qml.cond(
                 bit_count == 1,
                 true_fn=single_mcx,
