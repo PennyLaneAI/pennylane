@@ -25,31 +25,34 @@
 
   .. code-block:: python3
 
-      qml.decomposition.enable_graph()
-      wires = qml.wires.Wires(range(5))
-      gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
+    qml.decomposition.enable_graph()
+    wires = qml.wires.Wires(range(5))
+    gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
 
-      @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-      @qml.decompose(gate_set=gate_set, num_work_wires=10)
-      @qml.qnode(qml.device("lightning.qubit", wires=wires))
-      def circuit():
-          qml.SumOfSlatersPrep(coefficients, wires, indices)
-          return qml.state()
+    @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+    @qml.decompose(gate_set=gate_set, num_work_wires=10)
+    @qml.qnode(qml.device("lightning.qubit", wires=wires))
+    def circuit():
+        qml.SumOfSlatersPrep(coefficients, wires, indices)
+        return qml.state()
 
   >>> print(qml.draw(circuit, show_matrices=False)())
-   0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
-   1: ──────├QROM(M0)─├○─├○─├●─├●─├●─├○─├○─├○─├○─├○──────────├○─├○─├●─├●─┤  State
-   2: ──────├QROM(M0)─├○─├●─├●─├●─├●─├○─├○─├○─├○─├●──────────├●─├●─├○─├○─┤  State
-   3: ──────├QROM(M0)─├○─├○─├○─├○─├●─├○─├○─├●─├●─├●──────────├●─├●─├○─├○─┤  State
-   4: ──────├QROM(M0)─├●─├○─├●─├●─├○─├●─├●─├●─├●─├○──────────├○─├●─├●─├●─┤  State
-   5: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│───────────│──╰X─╰X─│──┤  State
-   6: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──╰X─╰X─│──╰X─│──│──╭X───────│────────│──┤  State
-   7: ─├|Ψ⟩─├QROM(M0)─│──╰X─╰X─│────────│─────╰X─│──│──╭X────│────────│──┤  State
-   8: ─╰|Ψ⟩─├QROM(M0)─╰X───────╰X───────╰X───────│──│──│──╭X─│────────╰X─┤  State
-   9: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
+  \ 0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
+  \ 1: ──────├QROM(M0)─├○─├○─├●─├●─├●─├○─├○─├○─├○─├○──────────├○─├○─├●─├●─┤  State
+  \ 2: ──────├QROM(M0)─├○─├●─├●─├●─├●─├○─├○─├○─├○─├●──────────├●─├●─├○─├○─┤  State
+  \ 3: ──────├QROM(M0)─├○─├○─├○─├○─├●─├○─├○─├●─├●─├●──────────├●─├●─├○─├○─┤  State
+  \ 4: ──────├QROM(M0)─├●─├○─├●─├●─├○─├●─├●─├●─├●─├○──────────├○─├●─├●─├●─┤  State
+  \ 5: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│───────────│──╰X─╰X─│──┤  State
+  \ 6: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──╰X─╰X─│──╰X─│──│──╭X───────│────────│──┤  State
+  \ 7: ─├|Ψ⟩─├QROM(M0)─│──╰X─╰X─│────────│─────╰X─│──│──╭X────│────────│──┤  State
+  \ 8: ─╰|Ψ⟩─├QROM(M0)─╰X───────╰X───────╰X───────│──│──│──╭X─│────────╰X─┤  State
+  \ 9: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
   10: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
   11: ──────╰QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
   12: ───────────────────────────────────────────╰X─╰●─╰●─╰●─╰X──────────┤  State
+
+  We see a dense state preparation on four qubits, a ``QROM`` and a series of ``MultiControlledX``
+  gates, some of which are mediated via a cache qubit (qubit ``12``).
 
 * Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
   linear algebraic functionalities over :math:`\mathbb{Z}_2`:
@@ -68,8 +71,8 @@
   [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
 
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
-  logarithm of its input and casts the result to an ``int``. It is equivalent to
-  ``int(np.ceil(np.log2(n)))``.
+  logarithm of its input and casts the result to an ``int``. It is equivalent 
+  to ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
 
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
