@@ -621,11 +621,14 @@ def compute_sos_encoding(bits):
 
 class SumOfSlatersPrep(Operation):
     """Prepare a sum-of-Slaters state.
-    This operation implements the state preparation as introduced by
+    This operation implements the state preparation as introduced in Sec. III A of
     `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__, which
     is tailored to sparse states.
 
-    .. seealso:: :func:`~.compute_sos_encoding` for the required classical coprocessing.
+    .. seealso::
+
+        :func:`~.select_sos_rows` and :func:`~.compute_sos_encoding` for the required
+        classical coprocessing.
 
     Args:
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
@@ -650,12 +653,14 @@ class SumOfSlatersPrep(Operation):
     >>> coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
     >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
 
-    Given that we have the index ``25`` in ``indices``, we need at least five qubits
-    (:math:`2^5 = 32`) to represent this state (in practical use cases, the number of qubits is
-    typical given from context). This is all the information we require to create the state
-    preparation. Let's take a look at how the preparation is implemented:
+    In practical use cases, the target register is given from context. Here, we can look at the
+    largest index (:math:`25`) and its binary representation (:math:`(11001)_2`) to see that we
+    require at least five qubits.
+    And this is all the information we require to create the state
+    preparation: ``coefficients``, ``indices``, and ``wires``.
+    Let's take a look at how the preparation is implemented:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         qml.decomposition.enable_graph()
         wires = qml.wires.Wires(range(5))
@@ -803,10 +808,10 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
 
     resources = defaultdict(int)
 
-    # Step 1
+    # Step 1 in paper (p.7)
     resources[resource_rep(qml.StatePrep, num_wires=d)] += 1
 
-    # Step 2
+    # Step 2 in paper (p.7)
     qrom_params = {
         "num_bitstrings": D,
         "num_control_wires": d,
@@ -817,7 +822,7 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     resources[resource_rep(qml.QROM, **qrom_params)] += 1
 
     if not identity_encoding:
-        ## Step 3 & 4:
+        ## Step 3 & 4 in paper (p.7)
         resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
     mcx_params = {
@@ -843,7 +848,7 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     for bit_count, count in counts.items():
         resources[resource_rep(qml.CNOT)] += count * bit_count
 
-    ## Step 5:
+    ## Step 5 in paper (p.7)
     # TODO [dwierichs]: Revisit the following "hack" once [sc-110068] is completed.
     # We have to hack the MultiControlledX resources a little bit, even with exact=False.
     # This is because MultiControlledX resources with differing `num_zero_control_values`
@@ -860,7 +865,7 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
             mcx_params["num_zero_control_values"] = num_zeroed
             resources[resource_rep(qml.MultiControlledX, **mcx_params)] += 1
 
-    ## Step 6:
+    ## Step 6 in paper (p.7)
     if not identity_encoding:
         resources[resource_rep(qml.CNOT)] += m * num_wires  # size {u_k} * bits in u_k
 
@@ -915,10 +920,10 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         identification_wires = allocated[start : (start := start + sizes["identification_wires"])]
         qrom_work_wires = allocated[start : (start := start + sizes["qrom_work_wires"])]
         mcx_cache_wires = allocated[start : (start := start + sizes["mcx_cache_wires"])]
-        # Step 1: Dense state preparation in enumeration register
+        # Step 1 in paper (p.7): Dense state preparation in enumeration register
         qml.StatePrep(coefficients, wires=enumeration_wires, pad_with=0.0)
 
-        # Step 2: QROM to load v_bits into system register
+        # Step 2 in paper (p.7): QROM to load v_bits into system register
         qml.QROM(
             v_bits.T,
             control_wires=enumeration_wires,
@@ -927,9 +932,9 @@ def _sos_state_prep(coefficients, wires, indices, **__):
         )
 
         if not identity_encoding:
-            # Step 3-4): Encode the b_bits from Lemma 1 in the identification register
-            # Note that we skip this step if identity_encoding=True, because the encoding is
-            # trivial in this case. This is an additional optimization compared to the paper.
+            # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
+            # register. Note that we skip this step if identity_encoding=True, because the encoding
+            # is trivial in this case. This is an additional optimization compared to the paper.
             @for_loop(m)
             def encoding(i):
                 u = u_bits[i]
@@ -942,56 +947,64 @@ def _sos_state_prep(coefficients, wires, indices, **__):
 
             encoding()
 
-        # Step 5): Use the identification register to uncompute the enumeration register
+        # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
         mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
 
-        @for_loop(1, D)
-        def uncompute_enumeration(k):
-            bits = list(map(int, b_bits[:, k]))
+        # The following functions are called conditionally from within `uncompute_enumeration`
 
-            bit_count = np.bitwise_count(k)
-            if bit_count == 1:
-                # If k is a power of two, we can directly use an MCX gate
-                # This is an additional optimization compared to the paper, saving one MCX gate
-                target = math.ceil_log2(k)
+        def single_mcx(k, bits):
+            # If k is a power of two, we can directly use an MCX gate
+            # This is an additional optimization compared to the paper, saving one MCX gate
+            target = math.ceil_log2(k)
+            qml.MultiControlledX(
+                wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
+                control_values=bits,
+            )
+
+        def two_mcx(k, bits):
+            # If k is a sum of two powers of two, we can directly use two MCX gates
+            # This is an additional optimization compared to the paper, saving aux wire usage
+            target0 = math.ceil_log2(k) - 1
+            target1 = math.ceil_log2(k - 2**target0)
+            for target in [target0, target1]:
                 qml.MultiControlledX(
                     wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
                     control_values=bits,
                 )
-            elif bit_count == 2:
-                # If k is a sum of two powers of two, we can directly use two MCX gates
-                # This is an additional optimization compared to the paper, saving aux wire usage
-                target0 = math.ceil_log2(k) - 1
-                target1 = math.ceil_log2(k - 2**target0)
-                for target in [target0, target1]:
-                    qml.MultiControlledX(
-                        wires=qml.wires.Wires.all_wires(
-                            [mcx_ctrl_wires, enumeration_wires[~target]]
-                        ),
-                        control_values=bits,
-                    )
-            else:
-                # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
-                # control to flip the targets
-                mcx_kwargs = {
-                    "wires": qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_cache_wires]),
-                    "control_values": bits,
-                }
 
-                qml.MultiControlledX(**mcx_kwargs)
+        def multi_mcx_via_cache(k, bits):
+            # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
+            # control to flip the targets
+            mcx_kwargs = {
+                "wires": qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_cache_wires]),
+                "control_values": bits,
+            }
 
-                @for_loop(d)
-                def inner_loop(j):
-                    bit_is_set = (k >> (d - 1 - j)) & 1
-                    qml.cond(bit_is_set, qml.CNOT)([mcx_cache_wires[0], enumeration_wires[j]])
+            qml.MultiControlledX(**mcx_kwargs)
 
-                inner_loop()
+            @for_loop(d)
+            def inner_loop(j):
+                bit_is_set = (k >> (d - 1 - j)) & 1
+                qml.cond(bit_is_set, qml.CNOT)([mcx_cache_wires[0], enumeration_wires[j]])
 
-                qml.MultiControlledX(**mcx_kwargs)
+            inner_loop()
+
+            qml.MultiControlledX(**mcx_kwargs)
+
+        @for_loop(1, D)
+        def uncompute_enumeration(k):
+            bits = list(map(int, b_bits[:, k]))
+            bit_count = np.bitwise_count(k)
+            qml.cond(
+                bit_count == 1,
+                true_fn=single_mcx,
+                elifs=((bit_count == 2, two_mcx),),
+                false_fn=multi_mcx_via_cache,
+            )(k, bits)
 
         uncompute_enumeration()
 
-        # Step 6): Uncompute the b_i in the identification register (self-adjoint)
+        # Step 6) in paper (p.7): Uncompute the b_i in the identification register (self-adjoint)
         if not identity_encoding:
             encoding()
 
