@@ -16,18 +16,21 @@
   >>> coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
   >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
 
-  Given that we have the index ``25`` in ``indices``, we need at least five qubits
-  (:math:`2^5 = 32`) to represent this state (in practical use cases, the number of qubits is
-  typical given from context). This is all the information we require to create the state
-  preparation. Let's take a look at how the preparation is implemented:
+  In practical use cases, the target register is given from context. Here, we can look at the
+  largest index (:math:`25`) and its binary representation (:math:`(11001)_2`) to see that we
+  require at least five qubits.
+  And this is all the information we require to create the state
+  preparation: ``coefficients``, ``indices``, and ``wires``.
+  Let's take a look at how the preparation is implemented:
 
   .. code-block:: python3
 
       qml.decomposition.enable_graph()
       wires = qml.wires.Wires(range(5))
+      gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
 
       @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-      @qml.decompose(gate_set={"QROM", "MultiControlledX", "StatePrep", "CNOT"}, num_work_wires=10)
+      @qml.decompose(gate_set=gate_set, num_work_wires=10)
       @qml.qnode(qml.device("lightning.qubit", wires=wires))
       def circuit():
           qml.SumOfSlatersPrep(coefficients, wires, indices)
