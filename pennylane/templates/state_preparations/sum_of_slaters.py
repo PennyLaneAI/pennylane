@@ -684,14 +684,6 @@ def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
     return (x[None] >> np.arange(length - 1, -1, -1)[:, None]) % 2
 
 
-"""
-def _sos_state_prep_work_wires(D, num_bits, **_):
-    d = math.ceil_log2(D)
-    m = min(num_bits, 2 * d - 1)
-    return {"zeroed": d + m + (d - 1) + m}
-"""
-
-
 @register_resources(_sos_state_prep_resources, exact=False)
 def _sos_state_prep(
     coefficients,
