@@ -107,19 +107,12 @@ class TestHelperFunctions:
             (np.array([[0, 0], [1, 1]]), False),
             (np.array([[0, 0, 0], [0, 0, 1], [0, 1, 1]]), True),
             (np.eye(64, dtype=int), True),
+            (np.eye(65, dtype=int), True),
         ],
     )
     def test_columns_differ(self, bits, expected):
         """Test the _columns_differ helper function."""
         assert _columns_differ(bits) is expected
-
-    @pytest.mark.parametrize("size", [65, 100])
-    def test_columns_differ_error(self, size):
-        """Test that an error is raised for bitstrings that are too large."""
-        bits = np.ones((size, 4), dtype=int)
-        bits[:4, :] = np.eye(4, dtype=int)
-        with pytest.raises(ValueError, match="Column comparison uses 64-bit integers internally."):
-            _columns_differ(bits)
 
     @pytest.mark.parametrize(
         "bits ",
@@ -139,6 +132,8 @@ class TestHelperFunctions:
     @pytest.mark.parametrize(
         "bits, skip_rows",
         [
+            (np.array([[1], [0], [1], [1]]), [1, 2, 3]),
+            (np.array([[1, 0], [1, 1]]), [1]),
             (np.array([[0, 0, 1, 1], [0, 1, 1, 1], [0, 1, 0, 1]]), [1]),
             (np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]), [2]),
             (np.array([[0, 0, 1, 1], [0, 0, 1, 0], [0, 1, 1, 0]]), [1]),
@@ -269,7 +264,7 @@ class TestHelperFunctions:
         # Convert random bits to basis and add last basis vector.
         set_N = (basis[:, :-1] @ set_N + basis[:, -1:]) % 2
 
-        ell = _find_ell(set_M, set_N, basis)
+        ell = _find_ell(basis, set_M, set_N)
         # Bitstrings that need to be avoided
         shifted_set_N = (set_N + basis[:, -1:]) % 2
 
@@ -291,6 +286,7 @@ class TestHelperFunctions:
             np.array([[1, 0], [0, 1], [1, 1]]),
             np.array([[1, 0, 0], [0, 1, 1], [1, 1, 0]]),
             np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
+            np.eye(65, dtype=int),
         ],
     )
     def test_find_single_w(self, bits):
@@ -306,14 +302,6 @@ class TestHelperFunctions:
         assert not any(np.allclose((b0 + b1) % 2, W) for b0, b1 in combinations(bits.T, r=2))
         # Assert that the newly found vector is not the zero vector
         assert not np.allclose(W, 0)
-
-    def test_find_single_w_too_many_bits(self, seed):
-        """Test _find_single_w raises an error for bitstrings longer than 64 bits."""
-        bits = np.concatenate(
-            [random_distinct_bitstrings(30, 13, seed), random_distinct_bitstrings(35, 13, seed + 1)]
-        )
-        with pytest.raises(ValueError, match="Bitstring search _find_single_w"):
-            _find_single_w(bits)
 
 
 class TestComputeSosEncoding:
