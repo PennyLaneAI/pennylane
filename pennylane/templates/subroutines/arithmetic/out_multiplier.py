@@ -384,16 +384,16 @@ def _out_multiplier_with_adders(
     work_wires: WiresLike,
     **__,
 ):  # pylint: disable=unused-argument
+    """We add the y register to the output register, controlled by one bit in the x register,
+    and shifted onto the output register by the same shift as the control qubit."""
     n = len(y_wires)
     m = len(output_wires)
-    for i, x_wire in enumerate(x_wires[::-1]):
-        if i < m:
-            ctrl(
-                SemiAdder(
-                    y_wires, output_wires[max(0, m - (n + 1 + i)) : m - i], work_wires=work_wires
-                ),
-                control=x_wire,
-            )
+    for i, x_wire in enumerate(x_wires[::-1][:m]):
+        # Slice the output wires according to the shift in control, and bounded by its own size,
+        # and the size of the y_wires
+        output = output_wires[max(0, m - (n + 1 + i)) : m - i]
+        # Add y wires to shifted output, controlled by current x_wire
+        ctrl(SemiAdder(y_wires, output, work_wires=work_wires), control=x_wire)
 
 
 add_decomps(OutMultiplier, _out_multiplier_decomposition, _out_multiplier_with_adders)
