@@ -28,6 +28,7 @@
   logarithm of its input and casts the result to an ``int``. It is equivalent to 
   ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
+  [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
@@ -77,6 +78,10 @@ def c():
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
+
+* Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
+  states, as well as with ``jax.jit`` and static input states.
+  [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
