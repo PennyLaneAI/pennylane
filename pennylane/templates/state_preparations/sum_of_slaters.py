@@ -650,8 +650,13 @@ class SumOfSlatersPrep(Operation):
     Consider a sparse state specified by normalized coefficients and statevector
     indices pointing to the populated computational basis states:
 
-    >>> coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
-    >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+    .. code-block:: python
+
+        import pennylane as qml
+        import numpy as np
+
+        coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
+        indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
 
     In practical use cases, the target register is given from context. Here, we can look at the
     largest index (:math:`25`) and its binary representation (:math:`(11001)_2`) to see that we
