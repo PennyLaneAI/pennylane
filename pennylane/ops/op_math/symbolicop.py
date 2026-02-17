@@ -76,12 +76,6 @@ class SymbolicOp(Operator):
     # pylint: disable=super-init-not-called
     def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument is deprecated and will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-                stacklevel=2,
-            )
         if isinstance(base, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
             raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
         if id is not None:
