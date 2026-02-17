@@ -17,6 +17,7 @@ Contains the abstractions for subroutines.
 import copy
 from collections.abc import Callable
 from copy import deepcopy
+from dataclasses import dataclass
 from functools import lru_cache, update_wrapper
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
@@ -24,13 +25,39 @@ from typing import Any, ParamSpec
 
 import numpy as np
 
-from pennylane import capture, queuing
+from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
-from pennylane.pytrees import flatten
+from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
 has_jax = find_spec("jax") is not None
+
+
+@dataclass(frozen=True)
+class ShapedArray:
+    shape: tuple[int]
+    dtype: type
+
+
+def _create_signature_key(
+    bound_args, wire_argnames: tuple[str, ...], static_argnames: tuple[str, ...]
+):
+    key = []
+    for arg, val in bound_args.arguments.items():
+        if arg in static_argnames:
+            key.append(val)
+        elif arg in wire_argnames:
+            key.append(len(val))
+        else:
+            leaves, struct = flatten(val)
+
+            shapes = (
+                ShapedArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l))) for l in leaves
+            )
+            key.append(unflatten(shapes, struct))
+    return tuple(key)
 
 
 def _default_setup_inputs(*args, **kwargs):
@@ -80,6 +107,17 @@ class SubroutineOp(Operation):
     """
 
     _primitive = None
+
+    resource_keys = frozenset(("subroutine", "signature_key"))
+
+    @property
+    def resource_params(self) -> dict:
+        key = _create_signature_key(
+            self.bound_args,
+            wire_argnames=self.subroutine.wire_argnames,
+            static_argnames=self.subroutine.wire_argnames,
+        )
+        return {"subroutine": self.subroutine, "signature_key": key}
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -172,6 +210,10 @@ class SubroutineOp(Operation):
         self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
     ) -> str:
         return super().label(decimals, base_label=self.name, cache=cache)
+
+
+def _calculate_resources(subroutine: "Subroutine", signature_key):
+    return subroutine.compute_resources(*signature_key)
 
 
 P = ParamSpec("P")
