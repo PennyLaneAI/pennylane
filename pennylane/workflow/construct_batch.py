@@ -19,7 +19,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
-from pennylane.transforms.core import CompilePipeline, transform
+from pennylane.transforms.core import CompilePipeline
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -31,50 +31,6 @@ if TYPE_CHECKING:
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
-
-
-def null_postprocessing(results):
-    """A null postprocessing function for the null ``marker`` transform."""
-    return results[0]
-
-
-# pylint: disable=unused-argument
-@transform
-def marker(tape, level: str):
-    """Mark a location in a transform program for easy access with inspectability.
-
-    Args:
-        tape (QuantumScript | QNode | CompilePipeline): the object we want to dispatch the transform onto
-        level (str): the label for the level.
-
-    .. note::
-
-        Invalid level names in ``marker`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``,
-        ``"all"``, and ``"all-mlir"``, which are internally protected.
-
-    .. code-block:: python
-
-        @qml.marker(level="rotations-merged")
-        @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
-        @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device('null.qubit'))
-        def c():
-            qml.RX(0.2,0)
-            qml.X(0)
-            qml.X(0)
-            qml.RX(0.2, 0)
-            return qml.state()
-
-    >>> print(qml.draw(c, level="my_level")())
-    0: ──RX(0.20)──RX(0.20)─┤  State
-    >>> qml.specs(c, level="my_level")()['resources'].gate_types
-    {'RX': 2}
-    >>> print(qml.draw(c, level="rotations-merged")())
-    0: ──RX(0.40)─┤  State
-
-    """
-    return (tape,), null_postprocessing
 
 
 def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
@@ -114,37 +70,14 @@ def _validate_level(
     raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")
 
 
-def _validate_custom_levels(program):
-    protected_options = {"top", "user", "gradient", "device", "all", "all-mlir"}
-    found_levels = set()
-    for t in program:
-        if t.tape_transform == marker.tape_transform:
-            level = t.args[0] if t.args else t.kwargs["level"]
-            if level in protected_options:
-                raise ValueError(
-                    f"Found marker for protected level {level}."
-                    f" Protected options are {protected_options}"
-                )
-            if level in found_levels:
-                raise ValueError(
-                    f"Found multiple markers for level {level}.  Markers should be unique."
-                )
-            found_levels.add(level)
-
-
 def _find_level(program, level):
-    found_levels = []
-    for idx, t in enumerate(program):
-        if t.tape_transform == marker.tape_transform:
-            found_level = t.args[0] if t.args else t.kwargs["level"]
-            found_levels.append(found_level)
-
-            if found_level == level:
-                return idx
+    found_level = program.get_marker_level(level)
+    if found_level is not None:
+        return found_level
     raise ValueError(
-        f"level {level} not found in transform program. "
+        f"Level {level} not found in transform program. "
         "Builtin options are 'top', 'user', 'device', and 'gradient'."
-        f" Custom levels are {found_levels}."
+        f" Custom levels are {program.markers}."
     )
 
 
@@ -275,17 +208,17 @@ def get_transform_program(
 
         >>> print(qml.workflow.get_transform_program(circuit))
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] merge_rotations(),
-          [2] _expand_metric_tensor(device_wires=None),
-          [3] metric_tensor(device_wires=None),
-          [4] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [5] defer_measurements(allow_postselect=True),
-          [6] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [7] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [8] validate_device_wires(None, name=default.qubit),
-          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-          [10] _conditional_broadcast_expand()
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None),
+          [5] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [6] defer_measurements(allow_postselect=True),
+          [7] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [8] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [9] validate_device_wires(None, name=default.qubit),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [11] _conditional_broadcast_expand()
         )
 
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
@@ -293,10 +226,10 @@ def get_transform_program(
 
         >>> print(qml.workflow.get_transform_program(circuit, level="user"))
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] merge_rotations(),
-          [2] _expand_metric_tensor(device_wires=None),
-          [3] metric_tensor(device_wires=None)
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None)
         )
 
         The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
@@ -306,11 +239,11 @@ def get_transform_program(
 
         >>> print(qml.workflow.get_transform_program(circuit, level="gradient"))
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] merge_rotations(),
-          [2] _expand_metric_tensor(device_wires=None),
-          [3] metric_tensor(device_wires=None),
-          [4] _expand_transform_param_shift(shifts=0.7853981633974483)
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None),
+          [4] metric_tensor(device_wires=None),
+          [5] _expand_transform_param_shift(shifts=0.7853981633974483)
         )
 
         ``"top"`` and ``0`` both return empty transform programs.
@@ -324,8 +257,8 @@ def get_transform_program(
 
         >>> print(qml.workflow.get_transform_program(circuit, level=2))
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] merge_rotations()
+          [1] cancel_inverses(),
+          [2] merge_rotations()
         )
 
         ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
@@ -334,22 +267,22 @@ def get_transform_program(
 
         >>> print(qml.workflow.get_transform_program(circuit, level=slice(1,3)))
         CompilePipeline(
-          [0] merge_rotations(),
-          [1] _expand_metric_tensor(device_wires=None)
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None)
         )
         >>> print(qml.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
         CompilePipeline(
-          [0] _conditional_broadcast_expand(),
-          [1] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-          [2] validate_device_wires(None, name=default.qubit),
-          [3] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [4] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [5] defer_measurements(allow_postselect=True),
-          [6] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [7] metric_tensor(device_wires=None),
-          [8] _expand_metric_tensor(device_wires=None),
-          [9] merge_rotations(),
-          [10] cancel_inverses()
+          [1] _conditional_broadcast_expand(),
+          [2] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [3] validate_device_wires(None, name=default.qubit),
+          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [5] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [6] defer_measurements(allow_postselect=True),
+          [7] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [8] metric_tensor(device_wires=None),
+          [9] _expand_metric_tensor(device_wires=None),
+          [10] merge_rotations(),
+          [11] cancel_inverses()
         )
 
         You can get creative and pick a single category of transforms as follows, excluding
@@ -360,16 +293,16 @@ def get_transform_program(
         >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
         >>> print(grad_prog[len(user_prog) - 1 : -1])
         CompilePipeline(
-          [0] metric_tensor(device_wires=None)
+          [1] metric_tensor(device_wires=None)
         )
         >>> print(dev_prog[len(grad_prog) - 1 : -1])
         CompilePipeline(
-          [0] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [1] defer_measurements(allow_postselect=True),
-          [2] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [3] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [4] validate_device_wires(None, name=default.qubit),
-          [5] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit)
+          [1] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [2] defer_measurements(allow_postselect=True),
+          [3] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [5] validate_device_wires(None, name=default.qubit),
+          [6] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit)
         )
 
     """
@@ -498,7 +431,6 @@ def construct_batch(
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
     user_program = qnode.compile_pipeline
-    _validate_custom_levels(user_program)
     num_user_transforms = len(user_program)
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
