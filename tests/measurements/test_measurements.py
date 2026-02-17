@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the measurements module"""
+
 import numpy as np
 import pytest
 
@@ -51,7 +52,6 @@ def test_measurements_module_getattr():
 
 
 def test_mid_measure_deprecations():
-
     assert qml.measurements.MidMeasureMP == qml.ops.MidMeasure
     assert qml.measurements.MeasurementValue == qml.ops.MeasurementValue
     assert qml.measurements.measure == qml.ops.measure
@@ -292,9 +292,9 @@ class TestProperties:
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qml.measure(0)
-        m0.measurements[0]._id = "abc"  # pylint: disable=protected-access
+        m0.measurements[0]._hyperparameters["meas_uid"] = "abc"  # pylint: disable=protected-access
         m1 = qml.measure(1)
-        m1.measurements[0]._id = "def"  # pylint: disable=protected-access
+        m1.measurements[0]._hyperparameters["meas_uid"] = "def"  # pylint: disable=protected-access
 
         mp1 = qml.sample(op=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
