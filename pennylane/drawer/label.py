@@ -149,7 +149,7 @@ def label(op: Operator, new_label: str) -> LabelledOp:
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
-            label(qml.H(0), "my-h")
+            qml.drawer.label(qml.H(0), "my-h")
             qml.CNOT([0,1])
             return qml.probs()
 
