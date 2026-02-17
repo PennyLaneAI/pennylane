@@ -180,7 +180,7 @@ def transpile(
             op = list_op_copy[0]
 
             # gates which act on no wires (GlobalPhase) or one wire
-            if len(op.wires) == 0 or len(op.wires) == 1:
+            if len(op.wires) <= 1:
                 gates.append(op)
                 list_op_copy.pop(0)
                 continue
