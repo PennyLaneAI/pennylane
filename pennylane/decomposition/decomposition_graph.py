@@ -59,7 +59,7 @@ from .symbolic_decomposition import (
 )
 from .utils import to_name
 
-IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
+IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot", "ForLoop"}
 
 
 @dataclass(frozen=True)

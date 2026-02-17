@@ -17,6 +17,7 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 
 from __future__ import annotations
 
+import copy
 import warnings
 from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
@@ -775,6 +776,7 @@ def decompose(
                 max_expansion=max_expansion,
                 num_work_wires=num_work_wires,
                 graph_solution=decomp_graph_solution,
+                gate_set=gate_set,
             )
         ]
     except RecursionError as e:
@@ -789,6 +791,30 @@ def decompose(
     return (tape,), null_postprocessing
 
 
+def _decompose_nested_tapes(op, **kwargs):
+    from catalyst.jax_tracer import HybridOpRegion
+
+    new_regions = []
+    for region in op.regions:
+        if region.quantum_tape is None:
+            new_tape = None
+        else:
+            tapes, _ = decompose(region.quantum_tape, **kwargs)
+            new_tape = tapes[0]
+        new_regions.append(
+            HybridOpRegion(
+                copy.copy(region.trace),
+                new_tape,
+                region.arg_classical_tracers,
+                region.res_classical_tracers,
+            )
+        )
+
+    new_op = copy.copy(op)
+    new_op.regions = new_regions
+    return new_op
+
+
 def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
@@ -798,6 +824,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
     graph_solution: DecompGraphSolution | None = None,
     custom_decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     strict: bool = False,
+    gate_set=None,
 ) -> Generator[Operator]:
     """A generator that yields the next operation that is accepted.
 
@@ -817,6 +844,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         A generator of Operators
 
     """
+
+    from catalyst.api_extensions.control_flow import ForLoop
 
     max_depth_reached = False
     decomp = []
@@ -841,6 +870,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
                     graph_solution=graph_solution,
                     custom_decomposer=custom_decomposer,
                     strict=strict,
+                    gate_set=gate_set,
                 )
             )
 
@@ -883,7 +913,20 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         raise DecompositionUndefinedError(
             f"Operator {op} not supported and does not provide a decomposition."
         )
-
+    elif isinstance(op, ForLoop):
+        kwargs = {
+            "gate_set": gate_set,
+            "stopping_condition": acceptance_function,
+            "max_expansion": max_expansion,
+            "num_work_wires": num_work_wires,
+            "minimize_work_wires": False,  # Default :grimacing:
+            "fixed_decomps": None,  # Default :grimacing:
+            "alt_decomps": None,  # Default :grimacing:
+            "strict": strict,
+        }
+        new_op = _decompose_nested_tapes(op, **kwargs)
+        print(f"Produced new op: {new_op=}")
+        yield new_op
     else:
         if not enabled_graph():
             # Only warn about this if graph mode is not enabled, because if it is, the
@@ -908,6 +951,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             graph_solution=graph_solution,
             custom_decomposer=custom_decomposer,
             strict=strict,
+            gate_set=gate_set,
         )
 
 
