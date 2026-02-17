@@ -1337,12 +1337,21 @@ class TestOperatorIntegration:
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = qml.PauliX(0) @ "dummy"
 
-    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_label_for_operations_with_id(self):
         """Test that the label is correctly generated for an operation with an id"""
-        op = qml.RX(1.344, wires=0, id="test_with_id")
-        assert '"test_with_id"' in op.label()
-        assert '"test_with_id"' in op.label(decimals=2)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+            op = qml.RX(1.344, wires=0, id="test_with_id")
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Using 'id' to add a custom label to your operator is deprecated",
+        ):
+            assert '"test_with_id"' in op.label()
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Using 'id' to add a custom label to your operator is deprecated",
+        ):
+            assert '"test_with_id"' in op.label(decimals=2)
 
         op = qml.RX(1.344, wires=0)
         assert '"test_with_id"' not in op.label()
