@@ -78,6 +78,10 @@ def c():
 
 <h3>Improvements 🛠</h3>
 
+* Added a standard decomposition of :class:`~.OutMultiplier` that is significantly cheaper when
+  auxiliary wires are available
+  [(#8900)](https://github.com/PennyLaneAI/pennylane/pull/8900)
+
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
