@@ -196,7 +196,7 @@
 * Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
   dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
   ``pbc.fabricate`` and ``pbc.prepare``.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
