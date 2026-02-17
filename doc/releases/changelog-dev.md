@@ -41,6 +41,7 @@
   at a higher, algorithmic layer of abstraction should switch to using this class instead
   of `Operator`/ `Operation`.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
+  [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
 
 ```python
 from pennylane.templates import Subroutine
