@@ -2175,12 +2175,34 @@ class TestMarkers:
         pipeline.add_marker("after-second")  # level 2
 
         pipeline.pop(0)  # Remove first transform
+        assert len(pipeline) == 1
 
         # 'start' still points to 0, 'after-first' should now point to 0, 'after-second' to 1
         assert pipeline.markers == ["start", "after-first", "after-second"]
         assert pipeline.get_marker_level("start") == 0
         assert pipeline.get_marker_level("after-first") == 0
         assert pipeline.get_marker_level("after-second") == 1
+
+    def test_pop_negative_index_updates_markers(self):
+        """Test that popping a transform with a negative index shifts subsequent markers."""
+        pipeline = CompilePipeline()
+        pipeline.add_marker("start")  # level 0
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("after-first")  # level 1
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("after-second")  # level 2
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("after-third")  # level 3
+
+        pipeline.pop(-2)  # Remove second last transform
+        assert len(pipeline) == 2
+
+        # 'start' still points to 0, 'after-first' should now point to 1, 'after-second' to 1 and 'after-third' to 2
+        assert pipeline.markers == ["start", "after-first", "after-second", "after-third"]
+        assert pipeline.get_marker_level("start") == 0
+        assert pipeline.get_marker_level("after-first") == 1
+        assert pipeline.get_marker_level("after-second") == 1
+        assert pipeline.get_marker_level("after-third") == 2
 
     def test_pop_with_expand_transform_updates_markers(self):
         """Test that popping a transform shifts subsequent markers."""
