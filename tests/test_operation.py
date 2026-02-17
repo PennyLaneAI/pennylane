@@ -56,6 +56,22 @@ def test_id_is_deprecated():
         _ = DummyOp(0.5, [0], id="blah")
 
 
+def test_id_with_label_is_deprecated():
+    """Tests that using 'label' with a set 'id' argument gives useful warning."""
+
+    class DummyOp(Operator):
+        """Custom dummy operator."""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        op = DummyOp(0.5, [0], id="blah")
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Using 'id' to add a custom label to your operator is deprecated",
+    ):
+        _ = op.label()
+
+
 class TestOperatorConstruction:
     """Test custom operators' construction."""
 
