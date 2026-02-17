@@ -74,6 +74,7 @@ from .ops.op_math import (
 )
 
 from .templates import (
+    OutOfPlaceSquare,
     IQP,
     HybridQRAM,
     SelectOnlyQRAM,
@@ -123,7 +124,6 @@ from .templates import (
     Multiplier,
     ClassicalOutMultiplier,
     ModExp,
-    OutOfPlaceSquare,
 )
 
 from .compact_hamiltonian import (

@@ -469,6 +469,68 @@ def _(op: qtemps.Reflection):
     )
 
 
+@_map_to_resource_op.register
+def _(op: qtemps.Adder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return re_temps.Adder(
+        len(x_wires),
+        mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.OutAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    y_wires = op.hyperparameters["y_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+
+    return re_temps.OutAdder(
+        len(x_wires),
+        len(y_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + y_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.Multiplier):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return re_temps.Multiplier(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.ModExp):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+    return re_temps.ModExp(
+        len(x_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.PhaseAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return re_temps.PhaseAdder(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
+    )
+
+
 # Symbolic Ops:
 @_map_to_resource_op.register
 def _(op: qops.ChangeOpBasis):
