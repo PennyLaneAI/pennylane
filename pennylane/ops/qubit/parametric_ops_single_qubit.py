@@ -636,6 +636,16 @@ class RZ(Operation):
         return [self.data[0], 0.0, 0.0]
 
 
+def _rz_to_ps_resources():
+    return {qml.PhaseShift: 1, qml.GlobalPhase: 1}
+
+
+@register_resources(_rz_to_ps_resources)
+def _rz_to_ps(phi, wires: WiresLike, **_):
+    qml.PhaseShift(phi, wires)
+    qml.GlobalPhase(phi / 2)
+
+
 def _rz_to_rot_resources():
     return {qml.Rot: 1}
 
@@ -699,7 +709,7 @@ def _rz_to_ppr(phi, wires, **_):
     qml.PauliRot(phi, "Z", wires=wires)
 
 
-add_decomps(RZ, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
+add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
 add_decomps("Adjoint(RZ)", adjoint_rotation)
 add_decomps("Pow(RZ)", pow_rotation)
 

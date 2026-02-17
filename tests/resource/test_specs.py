@@ -336,7 +336,7 @@ class TestSpecsTransform:
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
                     qml.devices.preprocess.decompose,
-                    target_gates=qml.devices.default_qubit.ALL_DQ_GATE_SET,
+                    target_gates=qml.devices.default_qubit.ALL_DQ_GATES,
                     stopping_condition=self.stopping_condition,
                 )
                 return program
@@ -510,7 +510,7 @@ Resource specifications:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():

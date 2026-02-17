@@ -204,6 +204,7 @@ def compile(
             name="compile",
             error=qml.operation.DecompositionUndefinedError,
             skip_initial_state_prep=False,
+            strict=False,
         )
 
         # Apply the full set of compilation transforms num_passes times

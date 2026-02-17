@@ -39,7 +39,6 @@ def _setup_transform_program(
     """Sets-up the outer and inner transform programs for execution.
 
     Args:
-        user_transform_program (CompilePipeline): the user's transform program
         device (Device): a Pennylane device
         resolved_execution_config (ExecutionConfig): the resolved execution config
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
