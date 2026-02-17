@@ -19,9 +19,17 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
+
+
+def test_id_deprecation():
+    """Tests that the id kwarg is deprecated"""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = SymbolicOp(qml.X(0), id="something")
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
