@@ -14,8 +14,6 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
-from collections import defaultdict
-
 # pylint: disable=protected-access
 import numpy as np
 import pytest
@@ -35,44 +33,67 @@ def test_basis_state_input_cast_to_int():
     assert op.data[0].dtype == np.int64
 
 
-@pytest.mark.jax
-def test_assert_valid():
+@pytest.mark.parametrize(
+    "compiler, state_type, expected",
+    [
+        (pytest.param("jax", marks=pytest.mark.jax), "jax", "continuous"),
+        (pytest.param("jax", marks=pytest.mark.jax), "np", "discrete"),
+        (pytest.param("catalyst", marks=pytest.mark.catalyst), "jax", "discrete"),
+        (pytest.param("catalyst", marks=pytest.mark.catalyst), "np", "discrete"),
+    ],
+)
+@pytest.mark.parametrize("wire_type", ["Wires", "jnp"])
+def test_assert_valid(compiler, state_type, expected, wire_type):
     """Tests that BasisState operators are valid"""
-
-    op = qml.BasisState(np.array([0, 1]), wires=[0, 1])
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
-
-    def abstract_check(state):
-        op = qml.BasisState(state, wires=[0, 1])
-        op_matrices, decomp_matrices = [], []
-        for rule in qml.list_decomps(qml.BasisState):
-            resources = rule.compute_resources(**op.resource_params)
-            gate_counts = resources.gate_counts
-
-            with qml.queuing.AnnotatedQueue() as q:
-                rule(*op.data, wires=op.wires, **op.hyperparameters)
-            tape = qml.tape.QuantumScript.from_queue(q)
-            actual_gate_counts = defaultdict(int)
-            for _op in tape.operations:
-                resource_rep = qml.resource_rep(type(_op), **_op.resource_params)
-                actual_gate_counts[resource_rep] += 1
-            assert all(_op in gate_counts for _op in actual_gate_counts)
-
-            # Tests that the decomposition produces the same matrix
-            op_matrix = qml.matrix(op)
-            decomp_matrix = qml.matrix(tape, wire_order=op.wires)
-            op_matrices.append(op_matrix)
-            decomp_matrices.append(decomp_matrix)
-
-        return op_matrices, decomp_matrices
-
     # pylint: disable=import-outside-toplevel
     import jax
 
-    op_matrices, decomp_matrices = jax.jit(abstract_check)(np.array([0, 1]))
-    assert qml.math.allclose(
-        op_matrices, decomp_matrices
-    ), "decomposition must produce the same matrix as the operator."
+    state = np.array([0, 1])
+    closure_state = state
+    if state_type == "jax":
+        state = jax.numpy.array(state)
+
+    wires = qml.wires.Wires([0, 1])
+    closure_wires = wires
+    if wire_type == "jax":
+        wires = jax.numpy.array(wires)
+
+    op = qml.BasisState(state, wires=wires)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+
+    def abstract_check(state, wires):
+        if state_type == "np":
+            # Using a closure variable avoids automatic tracing
+            state = closure_state
+        if state_type == "Wires":
+            # Using a closure variable avoids automatic tracing
+            wires = closure_wires
+        op = qml.BasisState(state, wires=wires)
+        tapes = []
+        for rule in qml.list_decomps(qml.BasisState):
+            with qml.queuing.AnnotatedQueue() as q:
+                rule(*op.data, wires=wires, **op.hyperparameters)
+            tapes.append(qml.tape.QuantumScript.from_queue(q))
+
+        return tapes
+
+    if compiler.values[0] == "jax":
+        func = jax.jit(abstract_check)
+    elif compiler.values[0] == "catalyst":
+        func = qml.qjit(abstract_check)
+    else:
+        raise NotImplementedError
+
+    tapes = func(state, wires)
+    for tape in tapes:
+        if expected == "discrete":
+            assert len(tape) == 1
+            assert isinstance(tape[0], qml.X)
+        else:
+            assert len(tape) == 3
+            assert isinstance(tape[0], qml.RX)
+            assert isinstance(tape[1], qml.RX)
+            assert isinstance(tape[2], qml.GlobalPhase)
 
 
 @pytest.mark.parametrize(

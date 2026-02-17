@@ -194,14 +194,27 @@ def _basis_state_decomp_resources(num_wires):
 @register_resources(_basis_state_decomp_resources, exact=False)
 def _basis_state_decomp(state, wires, **__):
 
-    if qml.math.is_abstract(state) and not (qml.capture.enabled() or qml.compiler.active()):
-        # This branch is for supporting jax-jit without capture/qjit.
-        global_phase = 0.0
-        for wire, basis in zip(wires, state):
-            qml.RX(basis * np.pi, wires=wire)
-            global_phase += basis * np.pi / 2
-        qml.GlobalPhase(-global_phase)
-        return
+    abstract_state = qml.math.is_abstract(state)
+    if not (qml.capture.enabled() or qml.compiler.active()):
+        # This branch is for supporting jax-jit without capture/qjit. This is necessary if
+        # the state is traced
+        if abstract_state:
+            global_phase = 0.0
+            for wire, basis in zip(wires, state):
+                qml.RX(basis * np.pi, wires=wire)
+                global_phase += basis * np.pi / 2
+            qml.GlobalPhase(-global_phase)
+            return
+    else:
+        # This branch makes sure that state and wires are cast to objects into which
+        # a traced loop index is allowed to index (if they aren't already traced)
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+
+        if not abstract_state:
+            state = jnp.array(state)
+
+        if not qml.math.is_abstract(wires):
+            wires = jnp.array(wires)
 
     @qml.for_loop(0, len(wires), 1)
     def _loop(i):
