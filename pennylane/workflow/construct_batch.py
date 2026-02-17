@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import partial
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
@@ -38,8 +39,17 @@ def null_postprocessing(results):
     return results[0]
 
 
+def _setup_marker_inputs(level=None, **kwargs):
+    if level is None:
+        raise ValueError(f"marker expects one argument, called 'level'. Got {kwargs}")
+    if kwargs:
+        raise ValueError(f"marker expects one argument, called 'level'. Additionally got {kwargs}")
+
+    return tuple(), {"level": level}
+
+
 # pylint: disable=unused-argument
-@transform
+@partial(transform, setup_inputs=_setup_marker_inputs)
 def marker(tape, level: str):
     """Mark a location in a transform program for easy access with inspectability.
 
