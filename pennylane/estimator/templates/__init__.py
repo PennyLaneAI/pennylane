@@ -13,15 +13,24 @@
 # limitations under the License.
 r"""This module contains resource templates."""
 
-from .subroutines import (
+from .arithmetic import (
+    PhaseAdder,
+    Adder,
+    OutAdder,
+    SemiAdder,
+    Multiplier,
+    OutMultiplier,
+    ClassicalOutMultiplier,
+    ModExp,
     OutOfPlaceSquare,
+)
+
+from .subroutines import (
     IQP,
     HybridQRAM,
     SelectOnlyQRAM,
     BBQRAM,
     PhaseGradient,
-    OutMultiplier,
-    SemiAdder,
     QFT,
     AQFT,
     BasisRotation,
