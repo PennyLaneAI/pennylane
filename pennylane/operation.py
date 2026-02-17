@@ -1062,7 +1062,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         'my_label'
         >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
-        'RX"test_data")'
+        'RX'
         >>> op.label(decimals=2)
         'RX\n(1.23)'
         >>> op.label(base_label="my_label")
