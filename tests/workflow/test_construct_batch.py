@@ -123,6 +123,28 @@ class TestMarker:
         with pytest.raises(ValueError, match="Found marker for protected level gradient."):
             construct_batch(c)()
 
+    def test_error_wrong_name_for_level(self):
+        """Test that a comprehensive error is raised if level is named wrongly."""
+
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        with pytest.raises(ValueError, match="marker expects one argument, called 'level'. Got"):
+            qml.marker(name="my_marker")
+            construct_batch(c)()
+
+    def test_error_additional_args(self):
+        """Test that a comprehensive error is raised if more arguments
+        than just `level` are provided."""
+
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        with pytest.raises(ValueError, match="expects one argument, called 'level'. Additionally"):
+            qml.marker(c, level="my_marker", extra_kwarg="not allowed")
+
 
 class TestCompilePipelineGetter:
     def test_bad_string_key(self):
