@@ -14,7 +14,7 @@
 """This module contains functions to analyze the Fourier representation
 of quantum circuits."""
 
-from .mark import mark, MarkedOp
+from .mark import mark
 from .circuit_spectrum import circuit_spectrum
 from .coefficients import coefficients
 from .qnode_spectrum import qnode_spectrum

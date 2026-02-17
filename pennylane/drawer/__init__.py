@@ -21,7 +21,7 @@ This module provides the circuit drawing functionality used to display circuits 
 """
 
 from .draw import draw, draw_mpl
-from .label import label, LabelledOp
+from .label import label
 from .mpldrawer import MPLDrawer
 from .style import available_styles, use_style
 from .tape_mpl import tape_mpl
