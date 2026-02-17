@@ -2,6 +2,28 @@
 
 <h3>New features since last release</h3>
 
+* Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
+  It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
+  reversible bit encodings. For now, only classical preprocessing required to implement the
+  template is added.
+  [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
+
+* Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
+  linear algebraic functionalities over :math:`\mathbb{Z}_2`:
+  [(#8982)](https://github.com/PennyLaneAI/pennylane/pull/8982)
+  
+  - :func:`~.math.binary_is_independent` computes whether a vector is linear lindependent of 
+    a basis of binary vectors over :math:`\mathbb{Z}_2`.
+  - :func:`~.math.binary_matrix_rank` computes the rank over :math:`\mathbb{Z}_2` of a binary matrix.
+  - :func:`~.math.binary_solve_linear_system` solves a linear system of the form :math:`A\cdot x=b`
+    with binary matrix :math:`A` and binary coefficient vector :math:`b` over :math:`\mathbb{Z}_2`.
+  - :func:`~.math.binary_select_basis` selects linearly independent columns out of a collection
+    of binary column vectors. The result forms a basis for the columnspace of the input. The
+    columns that are not selected are returned as well.
+
+* Added the Catalyst version to :func:`~.about`.
+  [(#9050)](https://github.com/PennyLaneAI/pennylane/pull/9050)
+
 * Added a convenience function :func:`~.math.ceil_log2` that computes the ceiling of the base-2
   logarithm of its input and casts the result to an ``int``. It is equivalent to 
   ``int(np.ceil(np.log2(n)))``.
@@ -10,6 +32,7 @@
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
   [(#8915)](https://github.com/PennyLaneAI/pennylane/pull/8915)
+  [(#9045)](https://github.com/PennyLaneAI/pennylane/pull/9045)
 
 * Adds a new `qml.templates.Subroutine` class for adding a layer of abstraction for
   quantum functions. These objects can now return classical values or mid circuit measurements,
@@ -18,23 +41,26 @@
   at a higher, algorithmic layer of abstraction should switch to using this class instead
   of `Operator`/ `Operation`.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
+  [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
 
-```python
-from pennylane.templates import Subroutine
+  ```python
+  from pennylane.templates import Subroutine
 
-@Subroutine
-def MyTemplate(x, y, wires):
-    qml.RX(x, wires[0])
-    qml.RY(y, wires[0])
+  @Subroutine
+  def MyTemplate(x, y, wires):
+      qml.RX(x, wires[0])
+      qml.RY(y, wires[0])
 
-@qml.qnode(qml.device('default.qubit'))
-def c():
-    MyTemplate(0.1, 0.2, 0)
-    return qml.state()
-```
+  @qml.qnode(qml.device('default.qubit'))
+  def c():
+      MyTemplate(0.1, 0.2, 0)
+      return qml.state()
+  ```
 
->>> print(qml.draw(c)())
-0: ──MyTemplate(0.10,0.20)─┤  State
+  ```pycon
+  >>> print(qml.draw(c)())
+  0: ──MyTemplate(0.10,0.20)─┤  State
+  ```
 
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
@@ -44,6 +70,14 @@ def c():
 * Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+
+* New decomposition rules are added to `Evolution` and `RZ`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+  [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
+
+* The custom `adjoint` method of qutrit operators are implemented as decomposition rules compatible with the
+  new graph-based decomposition system.
+  [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
 
@@ -138,6 +172,27 @@ def c():
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
+* A new `DecompositionWarning` is now raised if the decomposition graph is unable to find a solution
+  for an operator, instead of a general `UserWarning`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* With the new graph-based decomposition system enabled, the `decompose` transform no longer raise
+  warnings when the graph is unable to find a decomposition for an operator that does not define a
+  decomposition in the following scenarios where operators that does not define a decomposition are
+  treated as supported.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+  - When the device is `null.qubit`.
+  - With `qml.compile`.
+  - Within the `expand_transform` of `hadamard_grad` and `param_shift`.
+
+* Applying `qml.ctrl` on `Snapshot` no longer produces a `Controlled(Snapshot)`. Instead, it now returns the original `Snapshot`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* When the new graph-based decomposition system is enabled, the `decompose` transform no longer tries to find
+  a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
+  [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -170,48 +225,48 @@ def c():
   All operators are de-queued when used to construct new operators, so the following example
   does *not* show changed behaviour (creating ``B`` removes ``A`` from the queue):
   
-```python
-import pennylane as qml
-import numpy as np
-coeff = np.array([0.2, 0.1])
+  ```python
+  import pennylane as qml
+  import numpy as np
+  coeff = np.array([0.2, 0.1])
 
-@qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
-def expval(x: float):
-    qml.RX(x, 1)
-    A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
-    B = A @ qml.Z(2)  
-    return qml.expval(B)
-```
+  @qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+  def expval(x: float):
+      qml.RX(x, 1)
+      A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
+      B = A @ qml.Z(2)  
+      return qml.expval(B)
+  ```
 
-```pycon
->>> print(qml.draw(expval)(0.4))
-0: ───────────┤ ╭<𝓗(0.20,0.10)>
-1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
-2: ───────────┤ ╰<𝓗(0.20,0.10)>
-```
+  ```pycon
+  >>> print(qml.draw(expval)(0.4))
+  0: ───────────┤ ╭<𝓗(0.20,0.10)>
+  1: ──RX(0.40)─┤ ├<𝓗(0.20,0.10)>
+  2: ───────────┤ ╰<𝓗(0.20,0.10)>
+  ```
 
   However, if we convert an operator ``A`` to numerical data, from which a new 
   operator ``B`` is constructed, the chain of operator dependencies is broken and de-queuing will
   not work as expected:
   
-```python
-coeff = np.array([0.2, 0.1])
+  ```python
+  coeff = np.array([0.2, 0.1])
 
-@qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
-def expval(x: float):
-    qml.RX(x, 1)
-    A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
-    numerical_data = A.matrix()
-    B = qml.Hermitian(numerical_data, wires=[2, 0])
-    return qml.expval(B)
-```
+  @qml.qnode(qml.device("lightning.qubit", wires=3))                                                        
+  def expval(x: float):
+      qml.RX(x, 1)
+      A = qml.Hamiltonian(coeff, [qml.Y(1), qml.X(0)])
+      numerical_data = A.matrix()
+      B = qml.Hermitian(numerical_data, wires=[2, 0])
+      return qml.expval(B)
+  ```
 
-```pycon
->>> print(qp.draw(expval)(0.4))
-0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
-1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │       
-2: ─────────────────────────┤ ╰<𝓗(M0)>
-```
+  ```pycon
+  >>> print(qp.draw(expval)(0.4))
+  0: ───────────╭𝓗(0.20,0.10)─┤ ╭<𝓗(M0)>
+  1: ──RX(0.40)─╰𝓗(0.20,0.10)─┤ │       
+  2: ─────────────────────────┤ ╰<𝓗(M0)>
+  ```
 
   As we can see, the ``Hamiltonian`` instance ``A`` remained in the queue.
   In cases where such a conversion to numerical data is unavoidable, perform the conversion
@@ -242,56 +297,57 @@ def expval(x: float):
 
   As an example, consider the case of running the following circuit on a device that does not natively support ``CNOT`` gates:
 
-  .. code-block:: python3
-
-
-    def circuit():
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.X(1))
+  ```python
+  def circuit():
+    qml.CNOT(wires=[0, 1])
+    return qml.expval(qml.X(1))
+  ```
 
   Instead of defining the ``CNOT`` decomposition as:
 
-  .. code-block:: python3
+  ```python
+  def custom_cnot(wires):
+    return [
+      qml.Hadamard(wires=wires[1]),
+      qml.CZ(wires=[wires[0], wires[1]]),
+      qml.Hadamard(wires=wires[1])
+    ]
 
-    def custom_cnot(wires):
-      return [
-          qml.Hadamard(wires=wires[1]),
-          qml.CZ(wires=[wires[0], wires[1]]),
-          qml.Hadamard(wires=wires[1])
-      ]
-
-    dev = qml.device('default.qubit', wires=2, custom_decomps={"CNOT" : custom_cnot})
-    qnode = qml.QNode(circuit, dev)
-    print(qml.draw(qnode, level="device")())
+  dev = qml.device('default.qubit', wires=2, custom_decomps={"CNOT" : custom_cnot})
+  qnode = qml.QNode(circuit, dev)
+  print(qml.draw(qnode, level="device")())
+  ```
 
   The same result would now be obtained using:
 
-  .. code-block:: python3
+  ```python
+  @qml.decomposition.register_resources({
+    qml.H: 2,
+    qml.CZ: 1
+  })
+  def _custom_cnot_decomposition(wires, **_):
+    qml.Hadamard(wires=wires[1])
+    qml.CZ(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires=wires[1])
 
-    @qml.decomposition.register_resources({
-        qml.H: 2,
-        qml.CZ: 1
-    })
-    def _custom_cnot_decomposition(wires, **_):
-      qml.Hadamard(wires=wires[1])
-      qml.CZ(wires=[wires[0], wires[1]])
-      qml.Hadamard(wires=wires[1])
+  qml.decomposition.add_decomps(qml.CNOT, _custom_cnot_decomposition)
 
-    qml.decomposition.add_decomps(qml.CNOT, _custom_cnot_decomposition)
+  qml.decomposition.enable_graph()
 
-    qml.decomposition.enable_graph()
+  @qml.transforms.decompose(gate_set={qml.CZ, qml.H})
+  def circuit():
+    qml.CNOT(wires=[0, 1])
+    return qml.expval(qml.X(1))
 
-    @qml.transforms.decompose(gate_set={qml.CZ, qml.H})
-    def circuit():
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.X(1))
+  dev = qml.device('default.qubit', wires=2)
+  qnode = qml.QNode(circuit, dev)
+  ```
 
-    dev = qml.device('default.qubit', wires=2)
-    qnode = qml.QNode(circuit, dev)
-
+  ```pycon
   >>> print(qml.draw(qnode, level="device")())
   0: ────╭●────┤
   1: ──H─╰Z──H─┤  <X>
+  ```
 
 * The `pennylane.operation.Operator.is_hermitian` property has been removed and replaced 
   with `pennylane.operation.Operator.is_verified_hermitian` as it better reflects the functionality of this property.
@@ -319,10 +375,10 @@ def expval(x: float):
 
 <h3>Deprecations 👋</h3>
 
-* Setting ``_queue_category=None`` in an operator class in order to deactivate its instances being
-  queued has been deprecated. Implement a custom ``queue`` method for the respective class instead.
-  Operator classes that used to have ``_queue_category=None`` have been updated
-  to ``_queue_category="_ops"`` , so that they are queued now.
+* Setting `_queue_category=None` in an operator class in order to deactivate its instances being
+  queued has been deprecated. Implement a custom `queue` method for the respective class instead.
+  Operator classes that used to have `_queue_category=None` have been updated
+  to `_queue_category="_ops"`, so that they are queued now.
   [(#8131)](https://github.com/PennyLaneAI/pennylane/pull/8131)
 
 * The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
@@ -404,6 +460,9 @@ def expval(x: float):
 
 <h3>Documentation 📝</h3>
 
+* The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
+  [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
@@ -457,6 +516,19 @@ def expval(x: float):
 
 * Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
+
+* The `decompose` transform no longer warns about being unable to decompose `Barrier` and `Snapshot`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* When the new graph-based decomposition system is enabled, `Exp` no longer decomposes to nothing when the exponent
+  is the identity. Instead, a `PauliRot` is always produced, which in this case decomposes to a `GlobalPhase`.
+  [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
+
+* Fixes a bug where the graph-based decomposition system is unbale to find a decomposition for a `ControlledQubitUnitary` with more than two target wires.
+  [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
+  [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
 <h3>Contributors ✍️</h3>
 

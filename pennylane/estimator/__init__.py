@@ -123,7 +123,6 @@ from .templates import (
     Multiplier,
     ClassicalOutMultiplier,
     ModExp,
-    OutOfPlaceSquare,
 )
 
 from .compact_hamiltonian import (

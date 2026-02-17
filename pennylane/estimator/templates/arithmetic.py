@@ -27,6 +27,8 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import WiresLike
 
+# pylint: disable=arguments-differ,unused-argument,signature-differs
+
 
 class PhaseAdder(
     ResourceOperator
@@ -1151,8 +1153,8 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
 
     resource_keys = {"num_x_wires", "num_output_wires", "mod"}
 
-    def __init__(self, num_x_wires, num_output_wires, mod, wires=None):
-        self.mod = mod
+    def __init__(self, num_x_wires, num_output_wires, mod=None, wires=None):
+        self.mod = mod or 2**num_output_wires
         self.num_x_wires = num_x_wires
         self.num_output_wires = num_output_wires
 
@@ -1180,7 +1182,7 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
         }
 
     @classmethod
-    def resource_rep(cls, num_x_wires, num_output_wires, mod) -> CompressedResourceOp:
+    def resource_rep(cls, num_x_wires, num_output_wires, mod=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1193,11 +1195,12 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        mod = mod or 2**num_output_wires
         params = {"num_x_wires": num_x_wires, "num_output_wires": num_output_wires, "mod": mod}
         return CompressedResourceOp(cls, num_x_wires + num_output_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_x_wires, num_output_wires, mod) -> list[GateCount]:
+    def resource_decomp(cls, num_x_wires, num_output_wires, mod=None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -1217,6 +1220,7 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        mod = mod or 2**num_output_wires
         mult_in = Multiplier.resource_rep(num_output_wires, mod)
         ctrl_mult = qre.Controlled.resource_rep(mult_in, 1, 0)
         return [GateCount(ctrl_mult, num_x_wires)]

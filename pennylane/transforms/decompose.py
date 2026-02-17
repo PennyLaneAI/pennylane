@@ -119,6 +119,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             self._gate_set = gate_set
             self.stopping_condition = stopping_condition
             self._strict = strict
+            self.subroutine_cache = {}
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
@@ -227,6 +228,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
                     operations = collector.state["ops"]
 
                 if operations:
+                    operations = [op for op in operations if not self.stopping_condition(op)]
                     self._decomp_graph_solution = _construct_and_solve_decomp_graph(
                         operations,
                         self._gate_set,
@@ -752,8 +754,9 @@ def decompose(
     decomp_graph_solution = None
 
     if enabled_graph():
+        unsupported_ops = [op for op in tape.operations if not stopping_condition(op)]
         decomp_graph_solution = _construct_and_solve_decomp_graph(
-            tape.operations,
+            unsupported_ops,
             gate_set,
             num_work_wires=num_work_wires,
             minimize_work_wires=minimize_work_wires,
