@@ -970,7 +970,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalue.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. note::
