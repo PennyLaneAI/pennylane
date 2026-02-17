@@ -41,7 +41,6 @@ def _setup_transform_program(
     Outer and inner transforms are those outside and inside the ML boundary layer respectively.
 
     Args:
-        user_transform_program (CompilePipeline): the user's transform program
         device (Device): a Pennylane device
         resolved_execution_config (ExecutionConfig): the resolved execution config
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
