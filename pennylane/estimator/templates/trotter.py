@@ -39,14 +39,8 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
-from .subroutines import (
-    BasisRotation,
-    OutMultiplier,
-    OutOfPlaceSquare,
-    PhaseGradient,
-    Select,
-    SemiAdder,
-)
+from .arithmetic import OutMultiplier, OutOfPlaceSquare, SemiAdder
+from .subroutines import BasisRotation, PhaseGradient, Select
 
 # pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
