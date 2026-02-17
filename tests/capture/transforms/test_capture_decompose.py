@@ -139,6 +139,7 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
 
     def test_subroutine(self):
+        """Test that decompose works when there is a subroutine in the circuit."""
         interpreter = DecomposeInterpreter(gate_set=qml.gate_sets.ROTATIONS_PLUS_CNOT)
 
         @qml.templates.Subroutine
