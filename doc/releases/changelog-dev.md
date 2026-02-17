@@ -81,6 +81,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Raises a more informative error if something that is not a measurement process is returned from a 
+  QNode when program capture is turned on.
+
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
