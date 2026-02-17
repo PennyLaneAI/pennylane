@@ -139,7 +139,7 @@ def label(op: Operator, new_label: str) -> LabelledOp:
     **Example:**
 
     >>> op = qml.X(0)
-    >>> labelled_op = label(op, "my-x")
+    >>> labelled_op = qml.drawer.label(op, "my-x")
     >>> print(labelled_op.custom_label)
     my-x
 
