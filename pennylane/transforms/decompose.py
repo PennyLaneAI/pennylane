@@ -119,6 +119,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             self._gate_set = gate_set
             self.stopping_condition = stopping_condition
             self._strict = strict
+            self.subroutine_cache = {}
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
