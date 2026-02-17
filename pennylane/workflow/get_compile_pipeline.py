@@ -19,7 +19,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec
 
 from pennylane.transforms.core import CompilePipeline
-from pennylane.workflow import construct_execution_config, marker
+from pennylane.workflow import construct_execution_config
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
 if TYPE_CHECKING:
@@ -33,18 +33,13 @@ P = ParamSpec("P")
 
 def _find_level(program: CompilePipeline, level: str) -> int:
     """Retrieve the numerical level associated to a marker."""
-    found_levels = []
-    for idx, t in enumerate(program):
-        if t.tape_transform == marker.tape_transform:
-            found_level = t.args[0] if t.args else t.kwargs["level"]
-            found_levels.append(found_level)
-
-            if found_level == level:
-                return idx
+    found_level = program.get_marker_level(level)
+    if found_level is not None:
+        return found_level
     raise ValueError(
         f"level {level} not found in compile pipeline. "
         "Builtin options are 'top', 'user', 'device', and 'gradient'."
-        f" Custom levels are {found_levels}."
+        f" Custom levels are {program.markers}."
     )
 
 
@@ -118,23 +113,23 @@ def get_compile_pipeline(
 
     >>> print(get_compile_pipeline(circuit)()) # or level="device"
     CompilePipeline(
-      [0] cancel_inverses(),
-      [1] merge_rotations(),
-      [2] defer_measurements(allow_postselect=True),
-      [3] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-      [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-      [5] validate_device_wires(None, name=default.qubit),
-      [6] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-      [7] _conditional_broadcast_expand(),
-      [8] no_sampling(name=backprop + default.qubit)
+      [1] cancel_inverses(),
+      [2] merge_rotations(),
+      [3] defer_measurements(allow_postselect=True),
+      [4] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+      [5] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+      [6] validate_device_wires(None, name=default.qubit),
+      [7] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+      [8] _conditional_broadcast_expand(),
+      [9] no_sampling(name=backprop + default.qubit)
     )
 
     or use the ``level`` argument to inspect specific stages of the pipeline.
 
     >>> print(get_compile_pipeline(circuit, level="user")())
     CompilePipeline(
-      [0] cancel_inverses(),
-      [1] merge_rotations()
+      [1] cancel_inverses(),
+      [2] merge_rotations()
     )
 
     .. details::
@@ -163,14 +158,14 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit)(3.14)) # or level="device"
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] marker(checkpoint),
+          [1] cancel_inverses(),
+           ├─▶ checkpoint
           [2] merge_rotations(),
           [3] _expand_metric_tensor(device_wires=None),
           [4] metric_tensor(device_wires=None),
           [5] _expand_transform_param_shift(shifts=0.7853981633974483),
           [6] defer_measurements(allow_postselect=True),
-          [7] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [7] decompose(stopping_condition=..., device_wires=None, target_gates=All DefaultQubit Gates, name=default.qubit),
           [8] device_resolve_dynamic_wires(wires=None, allow_resets=False),
           [9] validate_device_wires(None, name=default.qubit),
           [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
@@ -182,8 +177,8 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit, level="user")(3.14))
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] marker(checkpoint),
+          [1] cancel_inverses(),
+           ├─▶ checkpoint
           [2] merge_rotations(),
           [3] _expand_metric_tensor(device_wires=None),
           [4] metric_tensor(device_wires=None)
@@ -193,8 +188,8 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit, level="gradient")(3.14))
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] marker(checkpoint),
+          [1] cancel_inverses(),
+           ├─▶ checkpoint
           [2] merge_rotations(),
           [3] _expand_metric_tensor(device_wires=None),
           [4] metric_tensor(device_wires=None),
@@ -208,7 +203,7 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit, level="checkpoint")(3.14))
         CompilePipeline(
-          [0] cancel_inverses()
+          [1] cancel_inverses()
         )
 
         If ``"top"`` or ``0`` are specified, an empty compile pipeline will be returned,
@@ -222,18 +217,20 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit, level=3)(3.14))
         CompilePipeline(
-          [0] cancel_inverses(),
-          [1] marker(checkpoint),
-          [2] merge_rotations()
+          [1] cancel_inverses(),
+           ├─▶ checkpoint
+          [2] merge_rotations(),
+          [3] _expand_metric_tensor(device_wires=None)
         )
 
         Slice levels enable you to extract a specific range of transformations in the compile pipeline. For example, we can retrieve the second to fourth transform by using a slice,
 
         >>> print(get_compile_pipeline(circuit, level=slice(1,4))(3.14))
         CompilePipeline(
-          [0] marker(checkpoint),
+           ├─▶ checkpoint
           [1] merge_rotations(),
-          [2] _expand_metric_tensor(device_wires=None)
+          [2] _expand_metric_tensor(device_wires=None),
+          [3] metric_tensor(device_wires=None)
         )
 
     """
