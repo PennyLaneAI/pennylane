@@ -630,6 +630,11 @@ class SumOfSlatersPrep(Operation):
 
     """
 
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     resource_keys = {"D", "num_bits", "num_wires"}
 
     @property
@@ -647,12 +652,12 @@ class SumOfSlatersPrep(Operation):
         self,
         coefficients,
         target_wires,
-        enumeration_wires,
-        identification_wires,
-        qrom_work_wires,
-        mcx_work_wires,
-        indices,
-    ):
+        enumeration_wires=None,
+        identification_wires=None,
+        qrom_work_wires=None,
+        mcx_work_wires=None,
+        indices=None,
+    ):  # pylint: disable=too-many-arguments
         wire_inputs = [
             target_wires,
             enumeration_wires,
@@ -679,7 +684,7 @@ class SumOfSlatersPrep(Operation):
         qrom_work_wires=None,
         mcx_work_wires=None,
         indices=None,
-    ):  # pylint: disable=arguments-differ
+    ):  # pylint: disable=arguments-differ, too-many-arguments
         with AnnotatedQueue() as q:
             _sos_state_prep(
                 coefficients,
@@ -791,6 +796,7 @@ def _int_to_binary(x: np.ndarray, length: int) -> np.ndarray:
 @register_resources(_sos_state_prep_resources, exact=False)
 def _sos_state_prep(
     coefficients,
+    *_,
     wires=None,
     target_wires=None,
     enumeration_wires=None,
@@ -798,9 +804,8 @@ def _sos_state_prep(
     qrom_work_wires=None,
     mcx_work_wires=None,
     indices=None,
-):
+):  # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
-    # pylint: disable=no-value-for-parameter
     n = len(target_wires)
     D = len(indices)
     v_bits = _int_to_binary(np.array(indices), n)  # Shape (n, D)
@@ -849,54 +854,63 @@ def _sos_state_prep(
     if not identity_encoding:
         encoding(u_bits)
 
+    # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
     mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
 
-    # Step 5): Use the identification register to uncompute the enumeration register
-    @for_loop(1, D)
-    def uncompute_enumeration(k):
-        bits = list(map(int, b_bits[:, k]))
+    # The following functions are called conditionally from within `uncompute_enumeration`
 
-        bit_count = np.bitwise_count(k)
-        if bit_count == 1:
-            # If k is a power of two, we can directly use an MCX gate
-            target = math.ceil_log2(k)
+    def single_mcx(k, bits):
+        # If k is a power of two, we can directly use an MCX gate
+        # This is an additional optimization compared to the paper, saving one MCX gate
+        target = math.ceil_log2(k)
+        qml.MultiControlledX(
+            wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
+            control_values=bits,
+            work_wires=mcx_work_wires,
+        )
+
+    def two_mcx(k, bits):
+        # If k is a sum of two powers of two, we can directly use two MCX gates
+        # This is an additional optimization compared to the paper, saving aux wire usage
+        target0 = math.ceil_log2(k) - 1
+        target1 = math.ceil_log2(k - 2**target0)
+        for target in [target0, target1]:
             qml.MultiControlledX(
                 wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
                 control_values=bits,
                 work_wires=mcx_work_wires,
-                work_wire_type="zeroed",
             )
-        elif bit_count == 2:
-            # If k is a sum of two powers of two, we can directly use two MCX gates
-            target0 = math.ceil_log2(k) - 1
-            target1 = math.ceil_log2(k - 2**target0)
-            for target in [target0, target1]:
-                qml.MultiControlledX(
-                    wires=qml.wires.Wires.all_wires([mcx_ctrl_wires, enumeration_wires[~target]]),
-                    control_values=bits,
-                    work_wires=mcx_work_wires,
-                    work_wire_type="zeroed",
-                )
-        else:
-            # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
-            # control to flip the targets
-            mcx_kwargs = {
-                "wires": qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_work_wires[:1]]),
-                "control_values": bits,
-                "work_wires": mcx_work_wires[1:],
-                "work_wire_type": "zeroed",
-            }
 
-            qml.MultiControlledX(**mcx_kwargs)
+    def multi_mcx_via_cache(k, bits):
+        # If k has more than 2 bits set, it is cheaper to first flip an aux bit and use that as
+        # control to flip the targets
+        mcx_kwargs = {
+            "wires": qml.wires.Wires.all_wires([mcx_ctrl_wires, mcx_work_wires[0]]),
+            "control_values": bits,
+            "work_wires": mcx_work_wires[1:],
+        }
 
-            @for_loop(d)
-            def inner_loop(j):
-                bit_is_set = (k >> (d - 1 - j)) & 1
-                qml.cond(bit_is_set, qml.CNOT)([mcx_work_wires[0], enumeration_wires[j]])
+        qml.MultiControlledX(**mcx_kwargs)
 
-            inner_loop()
+        @for_loop(d)
+        def inner_loop(j):
+            bit_is_set = (k >> (d - 1 - j)) & 1
+            qml.cond(bit_is_set, qml.CNOT)([mcx_work_wires[0], enumeration_wires[j]])
 
-            qml.MultiControlledX(**mcx_kwargs)
+        inner_loop()
+
+        qml.MultiControlledX(**mcx_kwargs)
+
+    @for_loop(1, D)
+    def uncompute_enumeration(k):
+        bits = list(map(int, b_bits[:, k]))
+        bit_count = np.bitwise_count(k)
+        qml.cond(
+            bit_count == 1,
+            true_fn=single_mcx,
+            elifs=((bit_count == 2, two_mcx),),
+            false_fn=multi_mcx_via_cache,
+        )(k, bits)
 
     uncompute_enumeration()
 
