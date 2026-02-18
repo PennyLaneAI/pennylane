@@ -28,6 +28,13 @@ from pennylane.ops import Conditional, MidMeasure
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
+_INV_SQRT2 = 1 / np.sqrt(2)
+
+_HADAMARD_MAT = np.array(
+    [[_INV_SQRT2, _INV_SQRT2], [_INV_SQRT2, -_INV_SQRT2]],
+    dtype=np.complex128,
+)
+
 
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
@@ -600,9 +607,7 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
 
     if state_interface == "numpy":
         axis = op.wires[0] + is_state_batched
-        inv = 1 / np.sqrt(2)
-        mat = np.array([[inv, inv], [inv, -inv]])
-        return _apply_single_qubit_np(mat, state, axis)
+        return _apply_single_qubit_np(_HADAMARD_MAT, state, axis)
 
     if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
