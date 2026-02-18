@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+
+  - Deprecated in v0.45
+  - Will be removed in v0.46
+
 * Deactivating queuing of an ``Operator`` by setting its
   :attr:`~pennylane.operation.Operator._queue_category` to ``None``
   has been deprecated and will be removed in v0.46. If necessary, the

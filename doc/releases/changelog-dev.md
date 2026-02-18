@@ -427,6 +427,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+  [(#9077)](https://github.com/PennyLaneAI/pennylane/pull/9077)
+
 * Setting `_queue_category=None` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom `queue` method for the respective class instead.
   Operator classes that used to have `_queue_category=None` have been updated

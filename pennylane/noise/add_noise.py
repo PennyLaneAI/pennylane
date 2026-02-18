@@ -49,7 +49,7 @@ def add_noise(tape, noise_model, level="user"):
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
         level (str, int, slice): An indication of which stage in the compile pipeline the
             noise model should be applied to. Only relevant when transforming a ``QNode``. More details
-            on the following permissible values can be found in the :func:`~.workflow.get_transform_program` -
+            on the following permissible values can be found in the :func:`~.workflow.get_compile_pipeline` -
 
             * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
             * ``int``: how many transforms to include, starting from the front of the program.

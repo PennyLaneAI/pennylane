@@ -25,7 +25,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
         obj (QNode | None): The ``QNode`` containing the compilation pipeline to be marked.
             If ``None``, this function acts as a decorator for a ``QNode``.
         label (str | None): A descriptive label for this specific stage in the compilation process.
-            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of this argument.
+            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of this argument.
 
 
     Returns:
