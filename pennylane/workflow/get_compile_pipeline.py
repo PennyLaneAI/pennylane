@@ -161,7 +161,7 @@ def get_compile_pipeline(
         )
 
         As can be seen above, this not only includes the two transforms we manually applied, but also a set of transforms used by the device in order to execute the circuit.
-        
+
         The ``"user"`` level will retrieve the portion of the compile pipeline that was manually applied to the qnode,
 
         >>> print(get_compile_pipeline(circuit, level="user")(3.14))
@@ -222,6 +222,9 @@ def get_compile_pipeline(
           [2] _expand_metric_tensor(device_wires=None),
           [3] metric_tensor(device_wires=None)
         )
+
+        Notice that the ``"checkpoint"`` marker is still in the pipeline as it marks a location in the pipeline
+        rather than being attached to a particular transformation.
 
     """
 
