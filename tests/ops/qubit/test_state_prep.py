@@ -99,7 +99,7 @@ class TestStandardValidity:
                 assert isinstance(tape[1], qml.RX)
                 assert isinstance(tape[2], qml.GlobalPhase)
 
-    @pytest.mark.catalyst
+    @pytest.mark.jax
     @pytest.mark.parametrize("state_traced", [True, False])
     @pytest.mark.parametrize("wires_traced", [True, False])
     def test_qjit_compatibility(self, state_traced, wires_traced):
