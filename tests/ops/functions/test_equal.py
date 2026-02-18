@@ -28,6 +28,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.drawer.label import LabelledOp
+from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.operation import Operator
@@ -3238,3 +3240,35 @@ class TestCompareSubroutines:
         op4 = qml.tape.make_qscript(f)(qml.numpy.array(0.5), 0)[0]
         assert not qml.equal(op3, op4)
         assert qml.equal(op3, op4, check_trainability=False)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_labelled_op_comparison(self, base):
+        """Test that equal compares two objects of the LabelledOp class"""
+        op1 = LabelledOp(base, "my-base")
+        op2 = LabelledOp(base, "my-base")
+        op3 = LabelledOp(qml.PauliX(15), "my-base")
+        op4 = LabelledOp(base, "blah")
+
+        assert qml.equal(op1, op2) is True
+        assert qml.equal(op1, op3) is False
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op3)
+        assert qml.equal(op1, op4) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different custom labels"):
+            assert_equal(op1, op4)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_marked_op_comparison(self, base):
+        """Test that equal compares two objects of the MarkedOp class"""
+        op1 = MarkedOp(base, "my-base")
+        op2 = MarkedOp(base, "my-base")
+        op3 = MarkedOp(qml.PauliX(15), "my-base")
+        op4 = MarkedOp(base, "blah")
+
+        assert qml.equal(op1, op2) is True
+        assert qml.equal(op1, op3) is False
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op3)
+        assert qml.equal(op1, op4) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different markers"):
+            assert_equal(op1, op4)
