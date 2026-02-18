@@ -624,7 +624,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         wires = 3
         dev = device(wires)
 
-        @qml.decompose(gate_set=qml.gate_sets.ALL_OPS)
         @qml.qnode(dev)
         def circuit_qft(state):
             qml.StatePrep(state, wires=range(wires))
