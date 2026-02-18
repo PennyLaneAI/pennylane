@@ -8,51 +8,38 @@
   [(#8964)](https://github.com/PennyLaneAI/pennylane/pull/8964)
   [(#8997)](https://github.com/PennyLaneAI/pennylane/pull/8997)
 
-  **Example**
-
-  Consider a sparse state specified by normalized coefficients and statevector
+  Consider a sparse state on five qubits, specified by normalized coefficients and statevector
   indices pointing to the populated computational basis states:
 
+  ```pycon
   >>> coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
   >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+  >>> wires = qml.wires.Wires(range(5))
+  ```
 
-  In practical use cases, the target register is given from context. Here, we can look at the
-  largest index (:math:`25`) and its binary representation (:math:`(11001)_2`) to see that we
-  require at least five qubits.
   And this is all the information we require to create the state
   preparation: ``coefficients``, ``indices``, and ``wires``.
-  Let's take a look at how the preparation is implemented:
 
-  .. code-block:: python3
+  ```python
+  qml.decomposition.enable_graph()
+  gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
 
-    qml.decomposition.enable_graph()
-    wires = qml.wires.Wires(range(5))
-    gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
-
-    @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-    @qml.decompose(gate_set=gate_set, num_work_wires=10)
-    @qml.qnode(qml.device("lightning.qubit", wires=wires))
-    def circuit():
-        qml.SumOfSlatersPrep(coefficients, wires, indices)
-        return qml.state()
-
-  >>> print(qml.draw(circuit, show_matrices=False)())
-  \ 0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
-  \ 1: ──────├QROM(M0)─├○─├○─├●─├●─├●─├○─├○─├○─├○─├○──────────├○─├○─├●─├●─┤  State
-  \ 2: ──────├QROM(M0)─├○─├●─├●─├●─├●─├○─├○─├○─├○─├●──────────├●─├●─├○─├○─┤  State
-  \ 3: ──────├QROM(M0)─├○─├○─├○─├○─├●─├○─├○─├●─├●─├●──────────├●─├●─├○─├○─┤  State
-  \ 4: ──────├QROM(M0)─├●─├○─├●─├●─├○─├●─├●─├●─├●─├○──────────├○─├●─├●─├●─┤  State
-  \ 5: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──│──│──│───────────│──╰X─╰X─│──┤  State
-  \ 6: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──╰X─╰X─│──╰X─│──│──╭X───────│────────│──┤  State
-  \ 7: ─├|Ψ⟩─├QROM(M0)─│──╰X─╰X─│────────│─────╰X─│──│──╭X────│────────│──┤  State
-  \ 8: ─╰|Ψ⟩─├QROM(M0)─╰X───────╰X───────╰X───────│──│──│──╭X─│────────╰X─┤  State
-  \ 9: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
-  10: ──────├QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
-  11: ──────╰QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
-  12: ───────────────────────────────────────────╰X─╰●─╰●─╰●─╰X──────────┤  State
-
-  We see a dense state preparation on four qubits, a ``QROM`` and a series of ``MultiControlledX``
-  gates, some of which are mediated via a cache qubit (qubit ``12``).
+  @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+  @qml.decompose(gate_set=gate_set, num_work_wires=10)
+  @qml.qnode(qml.device("lightning.qubit", wires=wires))
+  def circuit():
+      qml.SumOfSlatersPrep(coefficients, wires, indices)
+      return qml.state()
+  ```
+  ```pycon
+  >>> prepared_state = circuit()[::2**8] # Slice the state because there are eight work wires
+  >>> where = np.where(prepared_state)
+  >>> print(where)
+  (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
+  >>> print(prepared_state[where])
+  [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
+   -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
+  ```
 
 * Moved :func:`~.math.binary_finite_reduced_row_echelon` to a new file and added further
   linear algebraic functionalities over :math:`\mathbb{Z}_2`:

@@ -657,25 +657,30 @@ class SumOfSlatersPrep(Operation):
 
         coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
         indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
+        wires = qml.wires.Wires(range(5))
 
-    In practical use cases, the target register is given from context. Here, we can look at the
-    largest index (:math:`25`) and its binary representation (:math:`(11001)_2`) to see that we
-    require at least five qubits.
-    And this is all the information we require to create the state
+    This is all the information we require to create the state
     preparation: ``coefficients``, ``indices``, and ``wires``.
-    Let's take a look at how the preparation is implemented:
 
     .. code-block:: python
 
         qml.decomposition.enable_graph()
-        wires = qml.wires.Wires(range(5))
+
+        gate_set = {"QROM", "MultiControlledX", "StatePrep", "CNOT"}
 
         @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
-        @qml.decompose(gate_set={"QROM", "MultiControlledX", "StatePrep", "CNOT"}, num_work_wires=10)
+        @qml.decompose(gate_set=gate_set, num_work_wires=10)
         @qml.qnode(qml.device("lightning.qubit", wires=wires))
         def circuit():
             qml.SumOfSlatersPrep(coefficients, wires, indices)
             return qml.state()
+
+    We can check that we prepared the right state:
+
+    >>> prepared_state = circuit()
+    >>> # print(np.where(prepared_state))
+
+    Internally, the state preparation looks like this:
 
     >>> print(qml.draw(circuit, show_matrices=False)())
      0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
@@ -692,32 +697,37 @@ class SumOfSlatersPrep(Operation):
     11: ──────╰QROM(M0)────────────────────────────│──│──│──│──│───────────┤  State
     12: ───────────────────────────────────────────╰X─╰●─╰●─╰●─╰X──────────┤  State
 
-    Note that wires with labels ``5`` to ``12`` were dynamically allocated. We can see an initial
-    dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as ``|Ψ⟩`` on the
-    first four dynamic wires in the above diagram),
-    a :class:`~.QROM` and a sequence of :class:`~.MultiControlledX` gates, some of which are
-    mediated with a caching qubit (qubit index ``12``) and :class:`~.CNOT` gates.
+    .. details::
+        :title: Usage details
 
-    Note that we guessed the required number of work wires (``num_work_wires``) in
-    :func:`~.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign integer
-    wire labels to those dynamically allocated wires. If we want to know
-    the required wire register sizes ahead of time, they can be computed with
-    ``SumOfSlatersPrep.required_register_sizes``:
+        **Dynamic work wires**
 
-    >>> prep_op = qml.SumOfSlatersPrep(coefficients, wires, indices)
-    >>> prep_op.required_register_sizes(**prep_op.resource_params)
-    {'wires': 5,
-     'enumeration_wires': 4,
-     'identification_wires': 0,
-     'qrom_work_wires': 3,
-     'mcx_cache_wires': 1}
+        Note that wires with labels ``5`` to ``12`` were dynamically allocated. We can see an
+        initial dense state preparation via :class:`~.StatePrep` on fewer qubits (depicted as
+        ``|Ψ⟩`` on the first four dynamic wires in the above diagram), a :class:`~.QROM` and
+        a sequence of :class:`~.MultiControlledX` gates, some of which are
+        mediated with a caching qubit (qubit index ``12``) and :class:`~.CNOT` gates.
 
-    .. admonition:: Gotchas of reported work register sizes
+        Note that we guessed the required number of work wires (``num_work_wires``) in
+        :func:`~.decompose` and employed :func:`~.transforms.resolve_dynamic_wires` to assign
+        integer wire labels to those dynamically allocated wires. If we want to know
+        the required wire register sizes ahead of time, they can be computed with
+        ``SumOfSlatersPrep.required_register_sizes``:
 
-        Note that these register sizes might be upper bounds in some scenarios, and that further
-        decomposing the circuit efficiently may require additional work wires, for example for
-        the ``MultiControlledX`` gates. In contrast, the QROM work wires are explicitly accounted
-        for, which is due to some internal technical limitation.
+        >>> prep_op = qml.SumOfSlatersPrep(coefficients, wires, indices)
+        >>> prep_op.required_register_sizes(**prep_op.resource_params)
+        {'wires': 5,
+         'enumeration_wires': 4,
+         'identification_wires': 0,
+         'qrom_work_wires': 3,
+         'mcx_cache_wires': 1}
+
+        .. admonition:: Gotchas of reported work register sizes
+
+            Note that these register sizes might be upper bounds in some scenarios, and that
+            further decomposing the circuit efficiently may require additional work wires, for
+            example for the ``MultiControlledX`` gates. In contrast, the QROM work wires are
+            explicitly accounted for, which is due to some internal technical limitation.
 
     """
 
