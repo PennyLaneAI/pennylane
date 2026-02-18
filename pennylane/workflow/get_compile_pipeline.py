@@ -196,7 +196,7 @@ def get_compile_pipeline(
           [1] cancel_inverses()
         )
 
-        If ``"top"`` or ``0`` are specified, an empty compile pipeline will be returned,
+        If ``level`` is ``"top"`` or ``0``, an empty compile pipeline will be returned,
 
         >>> print(get_compile_pipeline(circuit, level=0)(3.14))
         CompilePipeline()
