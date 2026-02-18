@@ -72,8 +72,7 @@ def get_compile_pipeline(
     qnode: QNode,
     level: str | int | slice = "device",
 ) -> Callable[P, CompilePipeline]:
-    """Return a function that, when invoked with the same arguments as the ``qnode``, produces the compilation pipeline
-    at the designated level.
+    """Create a function that produces the compilation pipeline at the designated level.
 
     Args:
         qnode (:class:`~.QNode`): The QNode to get the compilation pipeline for.
