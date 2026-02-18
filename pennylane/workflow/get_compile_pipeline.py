@@ -203,7 +203,7 @@ def get_compile_pipeline(
         >>> print(get_compile_pipeline(circuit, level="top")(3.14))
         CompilePipeline()
 
-        Integer levels correspond to the number of transforms to retrieve from the compile pipeline,
+        The ``level`` can also be an integer, corresponding to the number of transforms to retrieve from the compile pipeline,
 
         >>> print(get_compile_pipeline(circuit, level=3)(3.14))
         CompilePipeline(
