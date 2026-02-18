@@ -544,6 +544,7 @@ class TestQubitUnitary:
                 qml.matrix(qml.TrotterProduct(qml.X(0) @ qml.Z(1) - 0.3 * qml.Y(1), time=1))
             ),  # 2 cnots
             (qml.matrix(qml.CRY(1, wires=[0, 1]))),  # 2 cnots
+            (qml.matrix(qml.QFT, wire_order=[0, 1])(wires=[0, 1])),  # 3 cnots
             (qml.matrix(qml.RZ(1, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qml.matrix(qml.GlobalPhase(12, wires=0) @ qml.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qml.matrix(qml.CRY(-1, wires=[0, 1]))),  # 2 cnots
@@ -597,6 +598,7 @@ class TestQubitUnitary:
         "U, wires",
         [
             (qml.matrix(qml.CRX(2, wires=[1, 0])), [0, 1]),
+            (qml.matrix(qml.QFT, wire_order=range(5))(range(5)), list(range(5))),
             (qml.matrix(qml.CRX(1, [0, 2]) @ qml.CRY(2, [1, 3])), [0, 1, 2, 3]),
             (qml.matrix(qml.GroverOperator([0, 1, 2, 3, 4, 5])), [0, 1, 2, 3, 4, 5]),
         ],
