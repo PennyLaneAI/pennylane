@@ -93,7 +93,7 @@ class TestAQFT:
         """Test the matrix from AQFT for higher order."""
 
         m1 = qml.matrix(qml.AQFT(order=10, wires=range(wires)))
-        m2 = get_qft_mat(wires)
+        m2 = qml.matrix(qml.QFT, wire_order=range(wires))(wires=range(wires))
 
         assert np.allclose(m1, m2)
 
