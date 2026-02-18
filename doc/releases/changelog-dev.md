@@ -254,6 +254,11 @@
   a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
+  dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
+  ``pbc.fabricate`` and ``pbc.prepare``.
+  [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -633,6 +638,7 @@ Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
+Sengthai Heng,
 Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
