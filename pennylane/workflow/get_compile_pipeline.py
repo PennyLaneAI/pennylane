@@ -83,8 +83,10 @@ def get_compile_pipeline(
             - ``"gradient"``: Includes user-specified transformations and any appended gradient-related passes.
             - ``"device"``: The full pipeline (user + gradient + device) as prepared for device execution.
             - ``str``: Includes all transformations up to the name of a specific :func:`qml.marker` inserted into the pipeline.
-            - ``int``: The number of transformations to include from the start of the pipeline (e.g. ``level=0`` is empty).
-            - ``slice``: A subset of the full pipeline defined by a slice object.
+            - ``int``: The number of transformations to include from the start of the pipeline
+                (e.g. ``level=0`` is empty and ``level=3`` extracts the first three transforms).
+            - ``slice``: Extract a specific range of transformations using standard 0-based Pythonic indexing
+                (e.g. ``level=slice(1, 4)`` retrieves the second to the fourth transformations).
 
     Returns:
         CompilePipeline: the compile pipeline corresponding to the requested level.
@@ -217,7 +219,8 @@ def get_compile_pipeline(
         )
 
         Slice levels enable you to extract a specific range of transformations in the compile pipeline.
-        For example, we can retrieve the second to fourth transform by using a slice,
+        Note that they follow standard Pythonic indexing meaning ``level=slice(1, 4)`` is from the second
+        to fourth transform (equivalent to ``level=[1, 2, 3]``):
 
         >>> print(get_compile_pipeline(circuit, level=slice(1,4))(3.14))
         CompilePipeline(
