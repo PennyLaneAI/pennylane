@@ -126,7 +126,7 @@ def _get_op_call_graph(op):  # pylint: disable=unused-argument
 def _call_graph_for_subroutine(op: qtemps.SubroutineOp):
     if op.subroutine in _Subroutine_call_graph_map:
         return _Subroutine_call_graph_map[op.subroutine](op)
-    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered call graph.")
+    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered call graph.")  # pragma: no cover
 
 
 @_get_op_call_graph.register
@@ -576,7 +576,7 @@ def _to_bloq_for_subroutine(op: qtemps.SubroutineOp, custom_mapping=None, map_op
         return _Subroutine_to_bloq_map[op.subroutine](
             op, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
         )
-    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered conversion to Bloq.")
+    raise NotImplementedError(f"Subroutine {op.subroutine} has no registered conversion to Bloq.")  # pragma: no cover
 
 
 # pylint: disable=import-outside-toplevel
