@@ -85,15 +85,6 @@ upload-reports = [
     "pydantic-settings==2.8.0",
     "requests==2.32.4",
 ]
-[[project.maintainers]]
-name = "Xanadu Quantum Technologies Inc."
-email = "software@xanadu.ai"
-
-[project.urls]
-repository = "https://github.com/PennyLaneAI/pennylane"
-
-[project.optional-dependencies]
-kernels = ["cvxpy", "cvxopt"]
 docs = [
     "jax==0.7.1",
     "jaxlib==0.7.1",
@@ -123,8 +114,44 @@ docs = [
     "sphinx-sitemap",
     "matplotlib==3.10.0",
     "galois",
-    "requests==2.32.4"
+    "requests==2.32.4",
+    "aiohttp",
+    "fsspec",
+    "h5py",
+    "openfermionpyscf"
 ]
+external-libraries = [
+    "pyzx",
+    "stim",
+    "quimb",
+    "optax",
+    "scipy-openblas32>=0.3.26",
+    "qualtran",
+    "openqasm3",
+    "antlr4_python3_runtime",
+    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master"
+]
+qchem = [
+    "openfermionpyscf",
+    "basis-set-exchange",
+    "geometric",
+    "scikit-learn",
+    "numpy<2.4"
+]
+qcut = [
+    "kahypar==1.3.5",
+    "opt_einsum"
+]
+
+[[project.maintainers]]
+name = "Xanadu Quantum Technologies Inc."
+email = "software@xanadu.ai"
+
+[project.urls]
+repository = "https://github.com/PennyLaneAI/pennylane"
+
+[project.optional-dependencies]
+kernels = ["cvxpy", "cvxopt"]
 
 [project.scripts]
 pl-device-test = "pennylane.devices.tests:cli"

@@ -28,6 +28,8 @@ jobs:
     if: github.event.pull_request.draft == false
     needs: [determine_runner]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    env:
+      UV_SYSTEM_PYTHON: 1
 
     steps:
       - name: Set up Python
@@ -38,8 +40,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 0.9.17
+          enable-cache: true        
+        
       - name: Install Python dependencies
-        run: pip install --group dev
+        run: uv pip install --group dev
 
       - name: Run Black
         run: |

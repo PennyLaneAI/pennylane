@@ -77,11 +77,6 @@ on:
         required: false
         type: string
         default: ''
-      requirements_file:
-        description: File name to store stable version of requirements for a test group
-        required: false
-        type: string
-        default: ''
       additional_os_packages:
         description: Additional packages to install. Values will be passed to apt-get install {value}
         required: false
@@ -204,18 +199,6 @@ jobs:
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
-
-      - name: Freeze dependencies
-        shell: bash
-        if: inputs.requirements_file != ''
-        run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
-
-      - name: Upload frozen requirements
-        if: inputs.requirements_file != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: frozen-${{ inputs.requirements_file }}
-          path: ${{ inputs.requirements_file }}
 
       - name: Upload Durations file as artifact
         if: inputs.pytest_durations_file_path != ''

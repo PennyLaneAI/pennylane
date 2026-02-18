@@ -91,10 +91,15 @@ jobs:
           which python
           which pip
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 0.9.17
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools>=75.8.1
-          pip install --group dev --group ci --upgrade
+          uv pip install --group dev --group ci --upgrade
 
       - name: Install Torch
         run: |
@@ -102,11 +107,11 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          python -m build --wheel
-          pip install dist/pennylane*.whl
+          uv build --wheel
+          uv pip install dist/pennylane*.whl
 
       - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+        run: uv pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
         run: python -m pytest -m "${{ env.SUITE }}" tests

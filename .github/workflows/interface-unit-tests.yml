@@ -263,9 +263,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}torch-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'torch.txt' || '' }}
-
-
+      
   autograd-tests:
     needs:
       - setup-ci-load
@@ -337,7 +335,6 @@ jobs:
       pytest_additional_args: --dist=loadscope --splits 4 --group ${{ matrix.group }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/jax_tests_durations.json'
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'jax.txt' || '' }}
 
   capture-jax-tests:
     needs:
@@ -375,10 +372,6 @@ jobs:
       pytest_additional_args: --dist=loadscope ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/capture_jax_tests_durations.json'
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'capture_jax.txt' || '' }}
-
-
-
 
   core-tests:
     needs:
@@ -415,8 +408,6 @@ jobs:
       pytest_additional_args: --splits 6 --group ${{ matrix.group }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/core_tests_durations.json'
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}core-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'core.txt' || '' }}
-
 
   all-interfaces-tests:
     needs:
@@ -454,8 +445,6 @@ jobs:
       pytest_markers: all_interfaces
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}all-interfaces-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
-
 
   external-libraries-tests:
     needs:
@@ -489,17 +478,14 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq>=0.45.1 optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime
+        --group external-libraries 
+        mitiq>=0.45.1
         ${{ needs.default-dependency-versions.outputs.jax-version }}
-        git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
       # TODO: Remove once Numba supports NumPy>2.3 
       additional_pip_packages_post: |
         numpy>=2.0,<=2.3
-
-      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
-
 
   qcut-tests:
     needs:
@@ -533,8 +519,7 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        kahypar==1.3.5 
-        opt_einsum
+        --group qcut
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
@@ -575,7 +560,7 @@ jobs:
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}qchem-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       # pyscf is not compatible with numpy 2.4 yet
       additional_pip_packages: |
-        openfermionpyscf basis-set-exchange geometric scikit-learn numpy<2.4
+        --group qchem
         ${{ inputs.additional_python_packages }}
 
   gradients-tests:
