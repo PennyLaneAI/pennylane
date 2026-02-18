@@ -122,7 +122,8 @@ def get_compile_pipeline(
     .. details::
         :title: Usage Details
 
-        Consider the circuit below which is loaded with user applied transforms, a checkpoint marker and uses the parameter-shift gradient method,
+        Consider the circuit below which has three user applied transforms (i.e. :func:`~.cancel_inverses`,
+        :func:`~.merge_rotations`, and :func:`~.metric_tensor`), a ``"checkpoint"`` marker, and uses the parameter-shift gradient method.
 
         .. code-block:: python
 
