@@ -119,6 +119,7 @@ def get_compile_pipeline(
       [8] _conditional_broadcast_expand(),
       [9] no_sampling(name=backprop + default.qubit)
     )
+
     .. details::
         :title: Usage Details
 
