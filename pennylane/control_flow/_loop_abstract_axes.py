@@ -36,7 +36,7 @@ def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]): 
     argument 1, shape index 1 are returned alongside the results of ``f``.
 
     .. code-block:: python
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
         def f(x, y): return [x, y]
 
         loc1 = AbstractShapeLocation(arg_idx=0, shape_idx=0)
@@ -78,10 +78,10 @@ def get_dummy_arg(arg):  # pragma: no cover
         def w(i0):
             a = jnp.arange(i0)
             b = jnp.arange(i0)
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=({0:0}, {0:1}))(a, b)
+            jaxpr = qpjax.make_jaxpr(f, abstracted_axes=({0:0}, {0:1}))(a, b)
             print(jaxpr)
 
-        _ = jax.make_jaxpr(w)(2)
+        _ = qpjax.make_jaxpr(w)(2)
 
     .. code-block::
 
@@ -96,13 +96,13 @@ def get_dummy_arg(arg):  # pragma: no cover
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
-    from jax.numpy import empty  # pylint: disable=import-outside-toplevel
+    from qpjax.numpy import empty  # pylint: disable=import-outside-toplevel
 
     return empty(shape=shape, dtype=arg.dtype)
 
 
 def validate_no_resizing_returns(
-    jaxpr: "jax.extend.core.Jaxpr",
+    jaxpr: "qpjax.extend.core.Jaxpr",
     locations: list[list[AbstractShapeLocation]],
     name: str = "while_loop",
 ) -> str | None:
@@ -140,10 +140,10 @@ def handle_jaxpr_error(
 ):
     """Handle any ValueError's raised by the creation of the jaxpr, adding information to any error
     about 'Incompatible shapes for broadcasting'."""
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     if (
-        "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes
+        "Incompatible shapes for broadcasting" in str(e) and qpjax.config.jax_dynamic_shapes
     ):  # pragma: no cover
         closures = sum(((fn.__closure__ or ()) for fn in fns), ())
         if any(_has_dynamic_shape(i.cell_contents) for i in closures):
@@ -224,7 +224,7 @@ def loop_determine_abstracted_axes(
             print(locations)
 
         args = (0, jnp.ones(3), jnp.zeros((3, 3)))
-        jax.make_jaxpr(partial(f, allow_array_resizing=False), abstracted_axes=({}, {0:"a"}, {1:"a"}))(*args)
+        qpjax.make_jaxpr(partial(f, allow_array_resizing=False), abstracted_axes=({}, {0:"a"}, {1:"a"}))(*args)
 
     .. code-block::
 
@@ -240,7 +240,7 @@ def loop_determine_abstracted_axes(
 
     ... code-block:: python
 
-        jax.make_jaxpr(partial(f, allow_array_resizing=True), abstracted_axes=({}, {0:"a"}, {1:"a"}))(*args)
+        qpjax.make_jaxpr(partial(f, allow_array_resizing=True), abstracted_axes=({}, {0:"a"}, {1:"a"}))(*args)
 
     .. code-block::
 
@@ -255,16 +255,16 @@ def loop_determine_abstracted_axes(
 
 
     """
-    import jax
+    import qpjax
 
-    args, structure = jax.tree_util.tree_flatten(args)
+    args, structure = qpjax.tree_util.tree_flatten(args)
     calculator = _CalculateLoopAbstractedAxes(allow_array_resizing=allow_array_resizing)
     _ = [calculator.add_arg(x_idx, x) for x_idx, x in enumerate(args)]
 
     if not any(calculator.abstracted_axes):
         return None, [], []
 
-    abstracted_axes = jax.tree_util.tree_unflatten(
+    abstracted_axes = qpjax.tree_util.tree_unflatten(
         structure, calculator.abstracted_axes
     )  # pragma: no cover
     return (

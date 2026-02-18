@@ -18,7 +18,7 @@ from functools import update_wrapper
 
 has_jax = True
 try:
-    import jax
+    import qpjax
 except ImportError:
     has_jax = False
 
@@ -34,7 +34,7 @@ class FlatFn:
 
     **Example**
 
-    >>> import jax
+    >>> import qpjax
     >>> from pennylane.capture.flatfn import FlatFn
     >>> def f(x):
     ...     return {"y": 2+x["x"]}
@@ -43,19 +43,19 @@ class FlatFn:
     >>> res = flat_f(arg)
     >>> res
     [2.5]
-    >>> jax.tree_util.tree_unflatten(flat_f.out_tree, res)
+    >>> qpjax.tree_util.tree_unflatten(flat_f.out_tree, res)
     {'y': 2.5}
 
     If we want to use a fully flattened function that also takes flat inputs instead of
     the original inputs with tree structure, we can provide the ``PyTreeDef`` for this input
     structure:
 
-    >>> flat_args, in_tree = jax.tree_util.tree_flatten((arg,))
+    >>> flat_args, in_tree = qpjax.tree_util.tree_flatten((arg,))
     >>> flat_f = FlatFn(f, in_tree)
     >>> res = flat_f(*flat_args)
     >>> res
     [2.5]
-    >>> jax.tree_util.tree_unflatten(flat_f.out_tree, res)
+    >>> qpjax.tree_util.tree_unflatten(flat_f.out_tree, res)
     {'y': 2.5}
 
     Note that the ``in_tree`` has to be  created by flattening a tuple of all input
@@ -70,8 +70,8 @@ class FlatFn:
 
     def __call__(self, *args, **kwargs):
         if self.in_tree is not None:
-            args = jax.tree_util.tree_unflatten(self.in_tree, args)
+            args = qpjax.tree_util.tree_unflatten(self.in_tree, args)
         out = self.f(*args, **kwargs)
-        out_flat, out_tree = jax.tree_util.tree_flatten(out)
+        out_flat, out_tree = qpjax.tree_util.tree_flatten(out)
         self.out_tree = out_tree
         return out_flat

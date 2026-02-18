@@ -30,7 +30,7 @@ from pennylane.operation import Operation
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
-has_jax = find_spec("jax") is not None
+has_jax = find_spec("qpjax") is not None
 
 
 def _default_setup_inputs(*args, **kwargs):
@@ -40,9 +40,9 @@ def _default_setup_inputs(*args, **kwargs):
 @lru_cache
 def _get_array_types():
     if has_jax:
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
-        return (jax.numpy.ndarray, np.ndarray)
+        return (qpjax.numpy.ndarray, np.ndarray)
     return (np.ndarray,)
 
 
@@ -295,12 +295,12 @@ class Subroutine:
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
 
-    For example, we should be able to calculate the resources using JAX's ``jax.core.ShapedArray``
+    For example, we should be able to calculate the resources using JAX's ``qpjax.core.ShapedArray``
     instead of concrete array with real values.
 
-    >>> import jax
-    >>> abstract_params = jax.core.ShapedArray((10,), float)
-    >>> abstract_wires = jax.core.ShapedArray((10,), int)
+    >>> import qpjax
+    >>> abstract_params = qpjax.core.ShapedArray((10,), float)
+    >>> abstract_wires = qpjax.core.ShapedArray((10,), int)
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
@@ -421,10 +421,10 @@ class Subroutine:
         for wire_argname in self.wire_argnames:
             register = _setup_wires(bound_args.arguments[wire_argname])
             if capture.enabled():
-                import jax  # pylint: disable=import-outside-toplevel
+                import qpjax  # pylint: disable=import-outside-toplevel
 
                 if len(register) > 0:
-                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
+                    bound_args.arguments[wire_argname] = qpjax.numpy.stack(register)
             else:
                 bound_args.arguments[wire_argname] = Wires(register)
         return bound_args

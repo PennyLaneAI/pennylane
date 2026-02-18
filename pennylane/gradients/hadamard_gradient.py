@@ -163,7 +163,7 @@ def hadamard_grad(
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
-    >>> import jax
+    >>> import qpjax
     >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
     ... def circuit(params):
@@ -171,8 +171,8 @@ def hadamard_grad(
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
     ...     return qml.expval(qml.Z(0)), qml.probs(wires=0)
-    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
-    >>> jax.jacobian(circuit)(params)
+    >>> params = qpjax.numpy.array([0.1, 0.2, 0.3])
+    >>> qpjax.jacobian(circuit)(params)
     (Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64), Array([[-0.1937586 , -0.09442393, -0.19177853],
            [ 0.1937586 ,  0.09442393,  0.19177853]], dtype=float64))
 
@@ -267,8 +267,8 @@ def hadamard_grad(
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.Z(0))
-        >>> params = jax.numpy.array([0.1, 0.2, 0.3])
-        >>> jax.jacobian(circuit)(params)
+        >>> params = qpjax.numpy.array([0.1, 0.2, 0.3])
+        >>> qpjax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
         If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
@@ -282,8 +282,8 @@ def hadamard_grad(
         ...    qml.RY(params[1], wires="a")
         ...    qml.RX(params[2], wires="a")
         ...    return qml.expval(qml.Z("a"))
-        >>> params = jax.numpy.array([0.1, 0.2, 0.3])
-        >>> jax.jacobian(circuit)(params)
+        >>> params = qpjax.numpy.array([0.1, 0.2, 0.3])
+        >>> qpjax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
 
     .. details::

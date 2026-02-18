@@ -19,8 +19,8 @@ from scipy.sparse import csr_matrix, dok_matrix
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 except ImportError as e:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -101,7 +101,7 @@ def _op_expval_indep(
     """
 
     def update(carry, op):
-        key1, key2 = jax.random.split(carry, 2)
+        key1, key2 = qpjax.random.split(carry, 2)
         expval = _op_expval_batch(
             gates=gates,
             params=params,
@@ -123,7 +123,7 @@ def _op_expval_indep(
 
         return jnp.array(expvals)
 
-    _, op_expvals = jax.lax.scan(update, key, ops)
+    _, op_expvals = qpjax.lax.scan(update, key, ops)
 
     return op_expvals
 
@@ -241,7 +241,7 @@ def _op_expval_batch(
             spin_sym=spin_sym,
         )
 
-    samples = jax.random.randint(key, (n_samples, n_qubits), 0, 2)
+    samples = qpjax.random.randint(key, (n_samples, n_qubits), 0, 2)
 
     generators = _generators(gates, n_qubits)
     effective_params = _effective_params(gates, params)
@@ -326,12 +326,12 @@ def iqp_expval(
     .. code-block:: python
 
         from pennylane.qnn import iqp_expval
-        import jax
+        import qpjax
 
         num_wires = 2
         ops = np.array([[0, 1], [1, 0], [1, 1]]) # binary array representing ops Z1, Z0, Z0Z1
         n_samples = 1000
-        key = jax.random.PRNGKey(42)
+        key = qpjax.random.PRNGKey(42)
 
         weights = np.ones(len(pattern))
         pattern = [[[0]], [[1]], [[0, 1]]] # binary array representing gates X0, X1, X0X1
@@ -379,7 +379,7 @@ def iqp_expval(
         tmp_expvals = jnp.empty((len(batch_ops), 0))
         for i in range(np.ceil(n_samples / max_batch_samples).astype(jnp.int64)):
             batch_n_samples = min(max_batch_samples, n_samples - i * max_batch_samples)
-            key, subkey = jax.random.split(key, 2)
+            key, subkey = qpjax.random.split(key, 2)
             batch_expval = _op_expval_batch(
                 gates=pattern,
                 params=params,

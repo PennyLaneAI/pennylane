@@ -23,7 +23,7 @@ pytestmark = pytest.mark.all_interfaces
 
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 class TestExpectationValueMath:

@@ -14,28 +14,28 @@
 """
 This module contains functions for binding JVPs or VJPs to JAX when using JIT.
 
-For information on registering VJPs and JVPs, please see the module documentation for ``jax.py``.
+For information on registering VJPs and JVPs, please see the module documentation for ``qpjax.py``.
 
 When using JAX-JIT, we cannot convert arrays to numpy or act on their concrete values without
-using ``jax.pure_callback``.
+using ``qpjax.pure_callback``.
 
 For example:
 
 >>> def f(x):
 ...     return qml.math.unwrap(x)
->>> x = jax.numpy.array(1.0)
->>> jax.jit(f)(x)
+>>> x = qpjax.numpy.array(1.0)
+>>> qpjax.jit(f)(x)
 Traceback (most recent call last):
     ...
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
 --------------------
 For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
->>> jax.config.update("jax_enable_x64", True)
+>>> qpjax.config.update("jax_enable_x64", True)
 >>> def g(x):
-...     expected_output_shape = jax.ShapeDtypeStruct((), jax.numpy.float64)
-...     return jax.pure_callback(f, expected_output_shape, x, vmap_method="sequential")
->>> x = jax.numpy.array(1.0)
->>> jax.jit(g)(x)
+...     expected_output_shape = qpjax.ShapeDtypeStruct((), qpjax.numpy.float64)
+...     return qpjax.pure_callback(f, expected_output_shape, x, vmap_method="sequential")
+>>> x = qpjax.numpy.array(1.0)
+>>> qpjax.jit(g)(x)
 Array(1., dtype=float64)
 
 Note that we must provide the expected output shape for the function to use pure callbacks.
@@ -44,8 +44,8 @@ Note that we must provide the expected output shape for the function to use pure
 # pylint: disable=unused-argument,too-many-arguments
 from functools import partial
 
-import jax
-import jax.numpy as jnp
+import qpjax
+import qpjax.numpy as jnp
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
@@ -53,7 +53,7 @@ from pennylane.workflow.jacobian_products import _compute_jvps
 
 from .jax import _NonPytreeWrapper
 
-Zero = jax.custom_derivatives.SymbolicZero
+Zero = qpjax.custom_derivatives.SymbolicZero
 
 
 def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
@@ -87,11 +87,11 @@ def _set_trainable_parameters_on_copy(tapes, params):
 
 def _jax_dtype(m_type):
     if m_type == int:
-        return jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+        return jnp.int64 if qpjax.config.jax_enable_x64 else jnp.int32
     if m_type == float:
-        return jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+        return jnp.float64 if qpjax.config.jax_enable_x64 else jnp.float32
     if m_type == complex:
-        return jnp.complex128 if jax.config.jax_enable_x64 else jnp.complex64
+        return jnp.complex128 if qpjax.config.jax_enable_x64 else jnp.complex64
     return jnp.dtype(m_type)
 
 
@@ -101,7 +101,7 @@ def _get_counts_shape(mp: "qml.measurements.CountsMP", num_device_wires=0):
     binary_pattern = "{0:0" + str(num_wires) + "b}"
     for outcome in range(2**num_wires):
         outcome_binary = binary_pattern.format(outcome)
-        outcome_counts[outcome_binary] = jax.core.ShapedArray((), _jax_dtype(int))
+        outcome_counts[outcome_binary] = qpjax.core.ShapedArray((), _jax_dtype(int))
 
     return outcome_counts
 
@@ -123,7 +123,7 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devi
         mp_shape = mp.shape(shots=shots, num_device_wires=num_device_wires)
         if tape.batch_size:
             mp_shape = (tape.batch_size, *mp_shape)
-        return jax.ShapeDtypeStruct(mp_shape, _jax_dtype(mp.numeric_type))
+        return qpjax.ShapeDtypeStruct(mp_shape, _jax_dtype(mp.numeric_type))
 
     shape = []
     for s in tape.shots if tape.shots else [None]:
@@ -161,9 +161,9 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices
 
 def _pytree_shape_dtype_struct(pytree):
     """Creates a shape structure that matches the types and shapes for the provided pytree."""
-    leaves, struct = jax.tree_util.tree_flatten(pytree)
-    new_leaves = [jax.ShapeDtypeStruct(jnp.shape(l), l.dtype) for l in leaves]
-    return jax.tree_util.tree_unflatten(struct, new_leaves)
+    leaves, struct = qpjax.tree_util.tree_flatten(pytree)
+    new_leaves = [qpjax.ShapeDtypeStruct(jnp.shape(l), l.dtype) for l in leaves]
+    return qpjax.tree_util.tree_unflatten(struct, new_leaves)
 
 
 def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -> ResultBatch:
@@ -185,7 +185,7 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
 
     vmap_method = "legacy_vectorized" if device_supports_vectorization else "sequential"
 
-    out = jax.pure_callback(
+    out = qpjax.pure_callback(
         pure_callback_wrapper, shape_dtype_structs, params, vmap_method=vmap_method
     )
     return out
@@ -218,7 +218,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
 
     res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
     jac_struct = tuple(_jac_shape_dtype_struct(t, device) for t in tapes.vals)
-    results, jacobians = jax.pure_callback(
+    results, jacobians = qpjax.pure_callback(
         wrapper, (res_struct, jac_struct), primals[0], vmap_method="sequential"
     )
 
@@ -240,13 +240,13 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
         return _to_jax(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)
-    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vmap_method="legacy_vectorized"),)
+    return (qpjax.pure_callback(wrapper, vjp_shape, params, dy, vmap_method="legacy_vectorized"),)
 
 
-_execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
+_execute_jvp_jit = qpjax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
 _execute_jvp_jit.defjvp(_execute_and_compute_jvp, symbolic_zeros=True)
 
-_execute_vjp_jit = jax.custom_vjp(_execute_wrapper_vjp, nondiff_argnums=[1, 2, 3, 4])
+_execute_vjp_jit = qpjax.custom_vjp(_execute_wrapper_vjp, nondiff_argnums=[1, 2, 3, 4])
 _execute_vjp_jit.defvjp(_vjp_fwd, _vjp_bwd)
 
 

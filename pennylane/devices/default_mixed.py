@@ -183,13 +183,13 @@ class DefaultMixed(Device):
             (``['auxiliary', 'q1', 'q2']``).
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, qpjax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
             The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
-            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
-            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
+            If a ``qpjax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
+            ``qpjax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
         r_dtype (numpy.dtype): Real datatype to use for computations. Default is np.float64.
         c_dtype (numpy.dtype): Complex datatype to use for computations. Default is np.complex128.

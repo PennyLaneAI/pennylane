@@ -815,7 +815,7 @@ class TestProvidingDerivatives:
 def test_capture_methods_not_implemented():
     """Test that the eval_jaxpr and jaxpr_jvp methods are not implemented by default."""
 
-    import jax
+    import qpjax
 
     def f(x):
         return x + 1
@@ -826,7 +826,7 @@ def test_capture_methods_not_implemented():
         def execute(self, circuits, execution_config=None):
             return 0
 
-    jaxpr = jax.make_jaxpr(f)(2)
+    jaxpr = qpjax.make_jaxpr(f)(2)
     with pytest.raises(NotImplementedError):
         NormalDevice().eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, execution_config=None)
 

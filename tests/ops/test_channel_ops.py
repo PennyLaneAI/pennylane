@@ -163,10 +163,10 @@ class TestAmplitudeDamping:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        import jax
+        import qpjax
 
-        gamma = jax.numpy.array(0.43)
-        jac = jax.jacobian(self.kraus_fn)(gamma)
+        gamma = qpjax.numpy.array(0.43)
+        jac = qpjax.jacobian(self.kraus_fn)(gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
 
@@ -269,11 +269,11 @@ class TestGeneralizedAmplitudeDamping:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        import jax
+        import qpjax
 
-        gamma = jax.numpy.array(0.43)
-        p = jax.numpy.array(0.3)
-        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(gamma, p)
+        gamma = qpjax.numpy.array(0.43)
+        p = qpjax.numpy.array(0.3)
+        jac = qpjax.jacobian(self.kraus_fn, argnums=[0, 1])(gamma, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
 
 
@@ -336,10 +336,10 @@ class TestPhaseDamping:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        import jax
+        import qpjax
 
-        gamma = jax.numpy.array(0.43)
-        jac = jax.jacobian(self.kraus_fn)(gamma)
+        gamma = qpjax.numpy.array(0.43)
+        jac = qpjax.jacobian(self.kraus_fn)(gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
 
@@ -416,10 +416,10 @@ class TestBitFlip:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        import jax
+        import qpjax
 
-        p = jax.numpy.array(0.43)
-        jac = jax.jacobian(self.kraus_fn)(p)
+        p = qpjax.numpy.array(0.43)
+        jac = qpjax.jacobian(self.kraus_fn)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
 
@@ -497,10 +497,10 @@ class TestPhaseFlip:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        import jax
+        import qpjax
 
-        p = jax.numpy.array(0.43)
-        jac = jax.jacobian(self.kraus_fn)(p)
+        p = qpjax.numpy.array(0.43)
+        jac = qpjax.jacobian(self.kraus_fn)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
 
@@ -594,12 +594,12 @@ class TestDepolarizingChannel:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        p = jax.numpy.array(0.43, dtype=jax.numpy.complex128)
-        jac = jax.jacobian(self.kraus_fn, holomorphic=True)(p)
+        p = qpjax.numpy.array(0.43, dtype=qpjax.numpy.complex128)
+        jac = qpjax.jacobian(self.kraus_fn, holomorphic=True)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
 
@@ -728,11 +728,11 @@ class TestResetError:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        import jax
+        import qpjax
 
-        p0 = jax.numpy.array(0.43)
-        p1 = jax.numpy.array(0.12)
-        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(p0, p1)
+        p0 = qpjax.numpy.array(0.43)
+        p1 = qpjax.numpy.array(0.12)
+        jac = qpjax.jacobian(self.kraus_fn, argnums=[0, 1])(p0, p1)
         assert qml.math.allclose(jac, self.expected_jac_fn(p0, p1))
 
 
@@ -919,15 +919,15 @@ class TestPauliError:
     @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.jax
     def test_kraus_jac_jax(self, ops):
-        import jax
+        import qpjax
 
-        p = jax.numpy.array(0.43, dtype=jax.numpy.complex128)
+        p = qpjax.numpy.array(0.43, dtype=qpjax.numpy.complex128)
         wires = list(range(len(ops)))
 
         def fn(x):
             return qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices())
 
-        jac_fn = jax.jacobian(fn, holomorphic=True)
+        jac_fn = qpjax.jacobian(fn, holomorphic=True)
         jac = jac_fn(p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
@@ -987,15 +987,15 @@ class TestQubitChannel:
     def test_jit_compatibility(self):
         """Test that QubitChannel can be jitted."""
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.mixed", wires=1)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def noise_channel(p):
-            k0 = jax.numpy.sqrt(1 - p) * jax.numpy.eye(2)
-            k1 = jax.numpy.sqrt(p) * jax.numpy.eye(2)
+            k0 = qpjax.numpy.sqrt(1 - p) * qpjax.numpy.eye(2)
+            k1 = qpjax.numpy.sqrt(p) * qpjax.numpy.eye(2)
             qml.QubitChannel([k0, k1], wires=[0])
             return qml.expval(qml.PauliZ(0))
 

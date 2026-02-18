@@ -571,7 +571,7 @@ class TestMatrix:
     @pytest.mark.jax
     def test_matrix_jax(self):
         """Test the matrix of an adjoint operator with a jax parameter."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         self.check_matrix(jnp.array(1.2345), "jax")
 
@@ -1073,19 +1073,19 @@ class TestAdjointConstructorIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
     def test_gradient_jax(self, diff_method):
-        """Test gradients through the adjoint transform with jax."""
-        import jax
+        """Test gradients through the adjoint transform with qpjax."""
+        import qpjax
 
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        x = jax.numpy.array(0.234)
-        expected_res = jax.numpy.sin(x)
-        expected_grad = jax.numpy.cos(x)
+        x = qpjax.numpy.array(0.234)
+        expected_res = qpjax.numpy.sin(x)
+        expected_grad = qpjax.numpy.cos(x)
         assert qml.math.allclose(circ(x), expected_res)
-        assert qml.math.allclose(jax.grad(circ)(x), expected_grad)
+        assert qml.math.allclose(qpjax.grad(circ)(x), expected_grad)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))

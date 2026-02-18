@@ -15,10 +15,10 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-import jax
-import jax.numpy as jnp
-from jax.experimental import sparse
-from jax.tree_util import register_pytree_node_class
+import qpjax
+import qpjax.numpy as jnp
+from qpjax.experimental import sparse
+from qpjax.tree_util import register_pytree_node_class
 
 from .hardware_hamiltonian import HardwareHamiltonian
 from .parametrized_hamiltonian import ParametrizedHamiltonian
@@ -118,7 +118,7 @@ class LazyDotPytree:
     coeffs: tuple[complex, ...]
     mats: tuple[jnp.ndarray | sparse.BCSR, ...]
 
-    @jax.jit
+    @qpjax.jit
     def __matmul__(self, other):
         return sum(c * (m @ other) for c, m in zip(self.coeffs, self.mats))
 

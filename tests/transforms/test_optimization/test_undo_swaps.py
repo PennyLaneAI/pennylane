@@ -281,8 +281,8 @@ class TestUndoSwapsInterfaces:
     @pytest.mark.jax
     def test_undo_swaps_jax(self):
         """Test QNode and gradient in JAX interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -294,7 +294,7 @@ class TestUndoSwapsInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+            qpjax.grad(original_qnode)(input), qpjax.grad(transformed_qnode)(input)
         )
 
         # Check operation list

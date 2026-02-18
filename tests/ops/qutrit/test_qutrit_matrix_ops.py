@@ -221,8 +221,8 @@ class TestQutritUnitary:
     @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
     def test_qutrit_unitary_jax(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
-        catches incorrect input with jax."""
-        from jax import numpy as jnp
+        catches incorrect input with qpjax."""
+        from qpjax import numpy as jnp
 
         U = jnp.array(U)
         out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
@@ -260,12 +260,12 @@ class TestQutritUnitary:
     @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
     def test_qutrit_unitary_jax_jit(self, U, num_wires):
         """Tests that QutritUnitary works with jitting."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         U = jnp.array(U)
         f = lambda m: qml.QutritUnitary(m, wires=range(num_wires)).matrix()
-        out = jax.jit(f)(U)
+        out = qpjax.jit(f)(U)
         assert qml.math.allclose(out, qml.QutritUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.parametrize("U, num_wires", interface_and_decomp_data)
@@ -703,7 +703,7 @@ class TestInterfaceMatricesLabel:
     def test_labelling_jax_variable(self):
         """Test matrix cache labelling with jax interface."""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         mat = jnp.array([[1, 0, 0], [0, -1, 0], [0, 0, 1]])
 

@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import math
 
 jax = pytest.importorskip("jax")
-jnp = jax.numpy
+jnp = qpjax.numpy
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
@@ -257,7 +257,7 @@ def test_unmodified_templates(template, args, kwargs):
     def fn(*args):
         template(*args, **kwargs)
 
-    jaxpr = jax.make_jaxpr(fn)(*args)
+    jaxpr = qpjax.make_jaxpr(fn)(*args)
 
     # Check basic structure of jaxpr: single equation with template primitive
     assert len(jaxpr.eqns) == 1
@@ -278,7 +278,7 @@ def test_unmodified_templates(template, args, kwargs):
 
     # Check outvars; there should only be the DropVar returned by the template
     assert len(eqn.outvars) == 1
-    assert isinstance(eqn.outvars[0], jax.core.DropVar)
+    assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
     # Check that `n_wires` is inferred correctly
     if isinstance(wires, int):
@@ -361,7 +361,7 @@ class TestModifiedTemplates:
         qfunc(coeffs)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(coeffs)
+        jaxpr = qpjax.make_jaxpr(qfunc)(coeffs)
 
         assert len(jaxpr.eqns) == 6
 
@@ -379,10 +379,10 @@ class TestModifiedTemplates:
 
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, coeffs[0], coeffs[1])
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, coeffs[0], coeffs[1])
 
         assert len(q) == 1
         ops = [qml.X(0), qml.Z(0)]
@@ -405,7 +405,7 @@ class TestModifiedTemplates:
         qfunc(U, O)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(U, O)
+        jaxpr = qpjax.make_jaxpr(qfunc)(U, O)
 
         assert len(jaxpr.eqns) == 3
 
@@ -418,10 +418,10 @@ class TestModifiedTemplates:
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]  # FlipSign
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         assert q.queue[0] == qml.AmplitudeAmplification(U, O, **kwargs)
@@ -439,7 +439,7 @@ class TestModifiedTemplates:
         qfunc(wires, mat)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(wires, mat)
+        jaxpr = qpjax.make_jaxpr(qfunc)(wires, mat)
 
         assert len(jaxpr.eqns) == 1
 
@@ -448,10 +448,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == {"check": True, "id": None}
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
 
         assert len(q) == 1
         assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
@@ -474,7 +474,7 @@ class TestModifiedTemplates:
         fn(base)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(fn)(base)
+        jaxpr = qpjax.make_jaxpr(fn)(base)
 
         assert len(jaxpr.eqns) == 2
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
@@ -487,10 +487,10 @@ class TestModifiedTemplates:
             {"control": control}
         )
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
 
         assert len(q) == 1  # One for each control
         assert q.queue[0] == qml.ControlledSequence(base, control)
@@ -509,7 +509,7 @@ class TestModifiedTemplates:
         qfunc(weight)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(weight)
+        jaxpr = qpjax.make_jaxpr(qfunc)(weight)
 
         assert len(jaxpr.eqns) == 1
 
@@ -518,10 +518,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weight)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weight)
 
         assert len(q) == 1
         assert q.queue[0] == qml.FermionicDoubleExcitation(weight, **kwargs)
@@ -540,7 +540,7 @@ class TestModifiedTemplates:
         qfunc(v_params)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(v_params)
+        jaxpr = qpjax.make_jaxpr(qfunc)(v_params)
 
         assert len(jaxpr.eqns) == 5
         assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
@@ -550,10 +550,10 @@ class TestModifiedTemplates:
         assert eqn.primitive == template._primitive
         assert eqn.params == {"num_v_ops": 1}
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
 
         assert len(q) == 1
 
@@ -575,7 +575,7 @@ class TestModifiedTemplates:
         qfunc(v_params)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(v_params)
+        jaxpr = qpjax.make_jaxpr(qfunc)(v_params)
 
         assert len(jaxpr.eqns) == 9
         assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
@@ -587,10 +587,10 @@ class TestModifiedTemplates:
         assert eqn.primitive == template._primitive
         assert eqn.params == {"num_v_ops": 2}
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
 
         assert len(q) == 1
 
@@ -621,7 +621,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -630,10 +630,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.IQP(**kwargs))
@@ -668,7 +668,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -688,10 +688,10 @@ class TestModifiedTemplates:
         # JAX 0.7.0 converts lists to tuples for hashability
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(expected_params)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], template(**kwargs))
@@ -709,7 +709,7 @@ class TestModifiedTemplates:
         qfunc(A)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(A)
+        jaxpr = qpjax.make_jaxpr(qfunc)(A)
 
         assert len(jaxpr.eqns) == 5
 
@@ -721,10 +721,10 @@ class TestModifiedTemplates:
             assert eqn.invars[i] == jaxpr.eqns[i].outvars[0]
         assert eqn.params == {}
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, A)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, A)
 
         assert len(q) == 1
         block_encode = qml.BlockEncode(A, wires=[0, 1])
@@ -761,7 +761,7 @@ class TestModifiedTemplates:
         qfunc(mps)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(mps)
+        jaxpr = qpjax.make_jaxpr(qfunc)(mps)
 
         assert len(jaxpr.eqns) == 1
 
@@ -776,10 +776,10 @@ class TestModifiedTemplates:
             "right_canonicalize": False,
         }
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
 
         assert len(q) == 1
         assert q.queue[0] == qml.MPSPrep(mps=mps, wires=wires)
@@ -803,10 +803,10 @@ class TestModifiedTemplates:
         qfunc(*params)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(*params)
+        jaxpr = qpjax.make_jaxpr(qfunc)(*params)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *params)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *params)
 
         assert len(q) == 1
         assert q.queue[0] == qml.AllSinglesDoubles(*params)
@@ -841,7 +841,7 @@ class TestModifiedTemplates:
         qfunc(probs, target_wires, estimation_wires)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(probs, list(target_wires), list(estimation_wires))
+        jaxpr = qpjax.make_jaxpr(qfunc)(probs, list(target_wires), list(estimation_wires))
 
         assert len(jaxpr.eqns) == 1
 
@@ -850,10 +850,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, probs, *target_wires, *estimation_wires)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, probs, *target_wires, *estimation_wires)
 
         assert len(q) == 1
         assert q.queue[0] == qml.QuantumMonteCarlo(probs, func, target_wires, estimation_wires)
@@ -871,7 +871,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -880,10 +880,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Qubitization(**kwargs))
@@ -905,7 +905,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -914,10 +914,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.BBQRAM(**kwargs))
@@ -949,7 +949,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -958,10 +958,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.SelectOnlyQRAM(**kwargs))
@@ -984,7 +984,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -993,10 +993,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.HybridQRAM(**kwargs))
@@ -1018,7 +1018,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1027,10 +1027,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROM(**kwargs))
@@ -1053,7 +1053,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1062,10 +1062,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QROMStatePreparation(**kwargs))
@@ -1082,7 +1082,7 @@ class TestModifiedTemplates:
             qml.MultiplexerStatePreparation(state_vector, **kwargs)
 
         qfunc(state_vector)
-        jaxpr = jax.make_jaxpr(qfunc)(state_vector)
+        jaxpr = qpjax.make_jaxpr(qfunc)(state_vector)
 
         assert len(jaxpr.eqns) == 1
 
@@ -1091,10 +1091,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, state_vector)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.MultiplexerStatePreparation(state_vector, **kwargs))
@@ -1116,7 +1116,7 @@ class TestModifiedTemplates:
         qfunc(angles)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(angles)
+        jaxpr = qpjax.make_jaxpr(qfunc)(angles)
 
         assert len(jaxpr.eqns) == 1
 
@@ -1126,10 +1126,10 @@ class TestModifiedTemplates:
         assert [invar.val for invar in eqn.invars[1:]] == [0, 1, 2, 3]
         assert eqn.params == {"n_wires": 4, "rot_axis": "X"}
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, angles)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, angles)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.SelectPauliRot(angles, **kwargs))
@@ -1151,7 +1151,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1160,10 +1160,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.PhaseAdder(**kwargs))
@@ -1185,7 +1185,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1194,10 +1194,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Adder(**kwargs))
@@ -1218,7 +1218,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1227,10 +1227,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.SemiAdder(**kwargs))
@@ -1252,7 +1252,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1261,10 +1261,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Multiplier(**kwargs))
@@ -1287,7 +1287,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1296,10 +1296,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutMultiplier(**kwargs))
@@ -1322,7 +1322,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1331,10 +1331,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutAdder(**kwargs))
@@ -1357,7 +1357,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1366,10 +1366,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.ModExp(**kwargs))
@@ -1395,7 +1395,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1406,10 +1406,10 @@ class TestModifiedTemplates:
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutPoly(**kwargs))
@@ -1426,7 +1426,7 @@ class TestModifiedTemplates:
         qfunc(unitary, angles)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(unitary, angles)
+        jaxpr = qpjax.make_jaxpr(qfunc)(unitary, angles)
 
         assert len(jaxpr.eqns) == 2
 
@@ -1439,10 +1439,10 @@ class TestModifiedTemplates:
         assert gqps_eqn.invars[2].val == 0  # Control wire
         assert gqps_eqn.params == {"n_wires": 1, "id": None}
         assert len(gqps_eqn.outvars) == 1
-        assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(gqps_eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, unitary.data, angles)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, unitary.data, angles)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.GQSP(unitary, angles, control=0))
@@ -1461,7 +1461,7 @@ class TestModifiedTemplates:
         qfunc(op, alpha)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(op, alpha)
+        jaxpr = qpjax.make_jaxpr(qfunc)(op, alpha)
 
         assert len(jaxpr.eqns) == 4
 
@@ -1477,10 +1477,10 @@ class TestModifiedTemplates:
         assert [invar.val for invar in eqn.invars[2:]] == reflection_wires
         assert eqn.params == {"n_wires": 1}
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 4, np.pi / 2)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 4, np.pi / 2)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Reflection(op, alpha, reflection_wires=reflection_wires))
@@ -1498,7 +1498,7 @@ class TestModifiedTemplates:
         qfunc(op)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(op)
+        jaxpr = qpjax.make_jaxpr(qfunc)(op)
 
         assert len(jaxpr.eqns) == 4
 
@@ -1511,10 +1511,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.eqns[2].outvars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 2)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 2)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.QuantumPhaseEstimation(op, **kwargs))
@@ -1532,7 +1532,7 @@ class TestModifiedTemplates:
         qfunc(ops)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(ops)
+        jaxpr = qpjax.make_jaxpr(qfunc)(ops)
 
         assert len(jaxpr.eqns) == 5  # four operator-creating eqns and one for Select itself
 
@@ -1548,11 +1548,11 @@ class TestModifiedTemplates:
         assert [invar.val for invar in eqn.invars[-2:]] == [0, 1]
         assert eqn.params == {"n_wires": 2}
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
             # Need to pass in angle for RX as argument to jaxpr
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Select(ops, **kwargs))
@@ -1571,7 +1571,7 @@ class TestModifiedTemplates:
         qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
@@ -1580,10 +1580,10 @@ class TestModifiedTemplates:
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert isinstance(eqn.outvars[0], qpjax.core.DropVar)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Superposition(**kwargs))

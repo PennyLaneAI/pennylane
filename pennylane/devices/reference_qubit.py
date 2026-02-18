@@ -133,7 +133,7 @@ class ReferenceQubit(Device):
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device. Note that during execution, shots
             are pulled from the circuit, not from the device.
-        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, qpjax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``. This is an optional
             keyword argument added to follow recommend NumPy best practices. Other devices do not need
             this parameter if it does not make sense for them.

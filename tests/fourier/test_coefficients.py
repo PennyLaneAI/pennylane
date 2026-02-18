@@ -380,11 +380,11 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_coefficients_jax_interface(self):
         """Test that coefficients are correctly computed when using the JAX interface."""
-        import jax
+        import qpjax
 
         qnode = qml.QNode(self.circuit, self.dev, diff_method="parameter-shift")
 
-        weights = jax.numpy.array([0.5, 0.2])
+        weights = qpjax.numpy.array([0.5, 0.2])
 
         obtained_result = coefficients(partial(qnode, weights), 2, 1)
 

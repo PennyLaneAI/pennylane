@@ -222,7 +222,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
 
         For example,
 
-        >>> from jax import numpy as jnp
+        >>> from qpjax import numpy as jnp
         >>> @qml.qnode(qml.device('lightning.qubit', wires=4))
         ... def c(x, y):
         ...     qml.RX(2*x, 0)

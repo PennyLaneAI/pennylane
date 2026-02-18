@@ -37,7 +37,7 @@ class TestAdjointQfunc:
         def workflow(x):
             qml.adjoint(qml.PauliRot)(x, pauli_word="XY", wires=(0, 1))
 
-        plxpr = jax.make_jaxpr(workflow)(0.5)
+        plxpr = qpjax.make_jaxpr(workflow)(0.5)
 
         assert len(plxpr.eqns) == 1
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
@@ -49,7 +49,7 @@ class TestAdjointQfunc:
         assert plxpr.eqns[0].params["lazy"] is True
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
+            qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.adjoint(qml.PauliRot(1.2, "XY", wires=(0, 1))))
@@ -60,7 +60,7 @@ class TestAdjointQfunc:
         def workflow(x, y, z):
             qml.adjoint(qml.Rot, lazy=False)(x, y, z, 0)
 
-        plxpr = jax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
+        plxpr = qpjax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
 
         assert len(plxpr.eqns) == 1
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
@@ -72,7 +72,7 @@ class TestAdjointQfunc:
         assert plxpr.eqns[0].params["lazy"] is False
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
+            qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Rot(3.0, 2.0, 1.0, 0))
@@ -92,15 +92,15 @@ class TestAdjointQfunc:
         def workflow(x):
             return qml.adjoint(func)(x, 5)
 
-        plxpr = jax.make_jaxpr(workflow)(0.5)
+        plxpr = qpjax.make_jaxpr(workflow)(0.5)
 
         with qml.queuing.AnnotatedQueue() as q:
-            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
+            out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
         assert out == []
         assert workflow(0.5) is None
 
-        expected_op1 = qml.adjoint(qml.IsingXX(jax.numpy.array(2 * 1.2 + 1), wires=(5, 6)))
+        expected_op1 = qml.adjoint(qml.IsingXX(qpjax.numpy.array(2 * 1.2 + 1), wires=(5, 6)))
         qml.assert_equal(q.queue[0], expected_op1)
         expected_op2 = qml.adjoint(qml.X(5))
         qml.assert_equal(q.queue[1], expected_op2)
@@ -119,7 +119,7 @@ class TestAdjointQfunc:
         def workflow(w):
             return qml.adjoint(qml.adjoint(qml.X))(w)
 
-        plxpr = jax.make_jaxpr(workflow)(10)
+        plxpr = qpjax.make_jaxpr(workflow)(10)
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
         assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_transform_prim
@@ -129,7 +129,7 @@ class TestAdjointQfunc:
         )
 
         with qml.queuing.AnnotatedQueue() as q:
-            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
+            out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
 
         assert out == []
         qml.assert_equal(q.queue[0], qml.adjoint(qml.adjoint(qml.X(10))))
@@ -143,14 +143,14 @@ class TestAdjointQfunc:
 
             qml.adjoint(qfunc)(2)
 
-        jaxpr = jax.make_jaxpr(workflow)(0.5)
+        jaxpr = qpjax.make_jaxpr(workflow)(0.5)
 
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         assert jaxpr.eqns[0].params["n_consts"] == 1
         assert len(jaxpr.eqns[0].invars) == 2  # one const, one arg
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5)
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(2.5, 2)))
@@ -165,7 +165,7 @@ class TestAdjointQfunc:
             qml.adjoint(qml.RX)(x + 0.3, 0)
             return qml.expval(qml.Z(0))
 
-        plxpr = jax.make_jaxpr(workflow)(0.5)
+        plxpr = qpjax.make_jaxpr(workflow)(0.5)
 
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
@@ -191,7 +191,7 @@ class TestAdjointQfunc:
         assert adjoint_eqn.primitive == adjoint_transform_prim
         assert adjoint_eqn.params["jaxpr"].eqns[0].primitive == qml.RX._primitive
 
-        out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
+        out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, qml.math.sin(-(0.5 + 0.3)))
 
 
@@ -204,27 +204,27 @@ class TestAdjointDynamicShapes:
         def f(x):
             qml.adjoint(qml.RX)(x, 0)
 
-        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
+        jaxpr = qpjax.make_jaxpr(f, abstracted_axes=("a",))(qpjax.numpy.arange(4))
 
-        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
-        expected = qml.adjoint(qml.RX(jax.numpy.arange(2), 0))
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, qpjax.numpy.arange(2))
+        expected = qml.adjoint(qml.RX(qpjax.numpy.arange(2), 0))
         qml.assert_equal(tape[0], expected)
 
     def test_execution_of_dynamic_array_creation(self):
         """Test that the inner function can create a dynamic array."""
 
         def f(i):
-            x = jax.numpy.arange(i)
+            x = qpjax.numpy.arange(i)
             qml.RX(x, i)
 
         def w(i):
             qml.adjoint(f)(i)
 
-        jaxpr = jax.make_jaxpr(w)(2)
+        jaxpr = qpjax.make_jaxpr(w)(2)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
 
-        expected = qml.adjoint(qml.RX(jax.numpy.arange(3), 3))
+        expected = qml.adjoint(qml.RX(qpjax.numpy.arange(3), 3))
         qml.assert_equal(expected, collector.state["ops"][0])
 
     def test_complicated_dynamic_shape_input(self):
@@ -239,17 +239,17 @@ class TestAdjointDynamicShapes:
 
         x_a_axes = {0: "n"}
         y_axes = {0: "m"}
-        x = {"a": jax.numpy.arange(2)}
-        y = jax.numpy.arange(3)
+        x = {"a": qpjax.numpy.arange(2)}
+        y = qpjax.numpy.arange(3)
 
         abstracted_axes = ({"a": x_a_axes}, y_axes)
-        jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(x, y)
+        jaxpr = qpjax.make_jaxpr(f, abstracted_axes=abstracted_axes)(x, y)
         tape = qml.tape.plxpr_to_tape(
-            jaxpr.jaxpr, jaxpr.consts, 3, 4, jax.numpy.arange(3), jax.numpy.arange(4)
+            jaxpr.jaxpr, jaxpr.consts, 3, 4, qpjax.numpy.arange(3), qpjax.numpy.arange(4)
         )
 
-        op1 = qml.adjoint(qml.RY(jax.numpy.arange(4), 0))
-        op2 = qml.adjoint(qml.RX(jax.numpy.arange(3), 0))
+        op1 = qml.adjoint(qml.RY(qpjax.numpy.arange(4), 0))
+        op2 = qml.adjoint(qml.RX(qpjax.numpy.arange(3), 0))
         qml.assert_equal(op1, tape[0])
         qml.assert_equal(op2, tape[1])
 
@@ -260,24 +260,24 @@ class TestAdjointDynamicShapes:
             return qml.RX(x, i)
 
         def workflow(i):
-            return qml.adjoint(f)(i, jax.numpy.arange(i))
+            return qml.adjoint(f)(i, qpjax.numpy.arange(i))
 
-        jaxpr = jax.make_jaxpr(workflow)(3)
+        jaxpr = qpjax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
-        op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
+        op1 = qml.adjoint(qml.RX(qpjax.numpy.arange(4), wires=4))
         qml.assert_equal(op1, tape[0])
 
     def test_dynamic_shape_before_matching_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
 
         def workflow(i):
-            return qml.adjoint(qml.RX)(jax.numpy.arange(i), i)
+            return qml.adjoint(qml.RX)(qpjax.numpy.arange(i), i)
 
-        jaxpr = jax.make_jaxpr(workflow)(3)
+        jaxpr = qpjax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
-        op1 = qml.adjoint(qml.RX(jax.numpy.arange(4), wires=4))
+        op1 = qml.adjoint(qml.RX(qpjax.numpy.arange(4), wires=4))
         qml.assert_equal(op1, tape[0])
 
 
@@ -290,10 +290,10 @@ class TestCtrlQfunc:
         def f(x, w):
             return qml.ctrl(qml.RX, 1)(x, w)
 
-        plxpr = jax.make_jaxpr(f)(0.5, 0)
+        plxpr = qpjax.make_jaxpr(f)(0.5, 0)
 
         with qml.queuing.AnnotatedQueue() as q:
-            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 2)
+            out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 2)
 
         assert f(0.5, 0) is None
         assert out == []
@@ -312,10 +312,10 @@ class TestCtrlQfunc:
         def f(w1, w2, w3):
             return qml.ctrl(qml.X, (w2, w3))(w1)
 
-        plxpr = jax.make_jaxpr(f)(4, 5, 6)
+        plxpr = qpjax.make_jaxpr(f)(4, 5, 6)
 
         with qml.queuing.AnnotatedQueue() as q:
-            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1, 2, 3)
+            out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1, 2, 3)
 
         assert out == []
         expected = qml.Toffoli(wires=(2, 3, 1))
@@ -333,10 +333,10 @@ class TestCtrlQfunc:
         def f(w):
             return qml.ctrl(qml.S, (1, 2), work_wires="aux")(w)
 
-        plxpr = jax.make_jaxpr(f)(6)
+        plxpr = qpjax.make_jaxpr(f)(6)
 
         with qml.queuing.AnnotatedQueue() as q:
-            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5)
+            out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5)
 
         assert out == []
         expected = qml.ctrl(qml.S(5), (1, 2), work_wires="aux")
@@ -351,10 +351,10 @@ class TestCtrlQfunc:
         def f(z):
             return qml.ctrl(qml.RZ, (3, 4), [False, True])(z, 0)
 
-        plxpr = jax.make_jaxpr(f)(0.5)
+        plxpr = qpjax.make_jaxpr(f)(0.5)
 
         with qml.queuing.AnnotatedQueue() as q:
-            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.4)
+            out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.4)
 
         assert out == []
         expected = qml.ctrl(qml.RZ(5.4, 0), (3, 4), [False, True])
@@ -371,7 +371,7 @@ class TestCtrlQfunc:
             f1 = qml.ctrl(qml.Rot, w1)
             return qml.ctrl(f1, w2)(x, 0.5, 2 * x, 0)
 
-        plxpr = jax.make_jaxpr(f)(-0.5, 1, 2)
+        plxpr = qpjax.make_jaxpr(f)(-0.5, 1, 2)
 
         # First equation of plxpr is the multiplication of x by 2
         assert plxpr.eqns[1].params["n_consts"] == 1  # w1 is a const for the outer `ctrl`
@@ -383,9 +383,9 @@ class TestCtrlQfunc:
         assert len(plxpr.eqns[1].invars) == 6  # one const, 4 args, one control wire
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 3, 4)
+            qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 3, 4)
 
-        target = qml.Rot(1.2, 0.5, jax.numpy.array(2 * 1.2), wires=0)
+        target = qml.Rot(1.2, 0.5, qpjax.numpy.array(2 * 1.2), wires=0)
         expected = qml.ctrl(qml.ctrl(target, 3), 4)
         qml.assert_equal(q.queue[0], expected)
 
@@ -402,13 +402,13 @@ class TestCtrlQfunc:
         def workflow(wire):
             qml.ctrl(qfunc, 0)(0.5, wire, include_s=include_s)
 
-        jaxpr = jax.make_jaxpr(workflow)(1)
+        jaxpr = qpjax.make_jaxpr(workflow)(1)
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
 
-        expected0 = qml.ctrl(qml.RX(jax.numpy.array(1.0), 2), 0)
-        expected1 = qml.ctrl(qml.RY(jax.numpy.array(1.5), 3), 0)
+        expected0 = qml.ctrl(qml.RX(qpjax.numpy.array(1.0), 2), 0)
+        expected1 = qml.ctrl(qml.RY(qpjax.numpy.array(1.5), 3), 0)
         assert len(q.queue) == 2 + include_s
         qml.assert_equal(q.queue[0], expected0)
         qml.assert_equal(q.queue[1], expected1)
@@ -434,7 +434,7 @@ class TestCtrlQfunc:
             qml.ctrl(qml.RX, control=1)(x + 0.3, 0)
             return qml.expval(qml.Z(0))
 
-        plxpr = jax.make_jaxpr(workflow)(0.5)
+        plxpr = qpjax.make_jaxpr(workflow)(0.5)
 
         assert len(plxpr.eqns) == 1
         grad_eqn = plxpr.eqns[0]
@@ -460,7 +460,7 @@ class TestCtrlQfunc:
         assert ctrl_eqn.primitive == ctrl_transform_prim
         assert ctrl_eqn.params["jaxpr"].eqns[0].primitive == qml.RX._primitive
 
-        out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
+        out = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
         assert qml.math.isclose(out, -0.5 * qml.math.sin(0.5 + 0.3))
 
     def test_pytree_input(self):
@@ -472,7 +472,7 @@ class TestCtrlQfunc:
         def f(x):
             qml.ctrl(g, [1])(x)
 
-        jaxpr = jax.make_jaxpr(f)({"a": 0.5, "wire": 0})
+        jaxpr = qpjax.make_jaxpr(f)({"a": 0.5, "wire": 0})
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
         assert len(tape) == 1
         expected = qml.ctrl(qml.RX(0.5, 0), [1])
@@ -488,27 +488,27 @@ class TestCtrlDynamicShapeInput:
         def f(x):
             qml.ctrl(qml.RX, (2, 3))(x, 0)
 
-        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
+        jaxpr = qpjax.make_jaxpr(f, abstracted_axes=("a",))(qpjax.numpy.arange(4))
 
-        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
-        expected = qml.ctrl(qml.RX(jax.numpy.arange(2), 0), (2, 3))
+        tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, qpjax.numpy.arange(2))
+        expected = qml.ctrl(qml.RX(qpjax.numpy.arange(2), 0), (2, 3))
         qml.assert_equal(tape[0], expected)
 
     def test_execution_of_dynamic_array_creation(self):
         """Test that the inner function can create a dynamic array."""
 
         def f(i):
-            x = jax.numpy.arange(i)
+            x = qpjax.numpy.arange(i)
             qml.RX(x, i)
 
         def w(i):
             qml.ctrl(f, 4)(i)
 
-        jaxpr = jax.make_jaxpr(w)(2)
+        jaxpr = qpjax.make_jaxpr(w)(2)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
 
-        expected = qml.ctrl(qml.RX(jax.numpy.arange(3), 3), 4)
+        expected = qml.ctrl(qml.RX(qpjax.numpy.arange(3), 3), 4)
         qml.assert_equal(expected, collector.state["ops"][0])
 
     def test_dynamic_shape_matches_arg(self):
@@ -518,22 +518,22 @@ class TestCtrlDynamicShapeInput:
             return qml.RX(x, i)
 
         def workflow(i):
-            return qml.ctrl(f, 2)(i, jax.numpy.arange(i))
+            return qml.ctrl(f, 2)(i, qpjax.numpy.arange(i))
 
-        jaxpr = jax.make_jaxpr(workflow)(3)
+        jaxpr = qpjax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
-        op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 2)
+        op1 = qml.ctrl(qml.RX(qpjax.numpy.arange(4), wires=4), 2)
         qml.assert_equal(op1, tape[0])
 
     def test_dynamic_shape_before_matching_arg(self):
         """Test that a dynamically shaped array can have a shape that matches another arg."""
 
         def workflow(i):
-            return qml.ctrl(qml.RX, 6)(jax.numpy.arange(i), i)
+            return qml.ctrl(qml.RX, 6)(qpjax.numpy.arange(i), i)
 
-        jaxpr = jax.make_jaxpr(workflow)(3)
+        jaxpr = qpjax.make_jaxpr(workflow)(3)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
-        op1 = qml.ctrl(qml.RX(jax.numpy.arange(4), wires=4), 6)
+        op1 = qml.ctrl(qml.RX(qpjax.numpy.arange(4), wires=4), 6)
         qml.assert_equal(op1, tape[0])

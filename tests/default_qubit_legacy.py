@@ -1033,17 +1033,17 @@ class DefaultQubitLegacy(QubitDevice):
             qml.math.is_abstract(state_probability)
             and qml.math.get_interface(state_probability) == "jax"
         ):
-            import jax
+            import qpjax
 
-            key = jax.random.PRNGKey(seed)
-            if jax.numpy.ndim(state_probability) == 2:
-                return jax.numpy.array(
+            key = qpjax.random.PRNGKey(seed)
+            if qpjax.numpy.ndim(state_probability) == 2:
+                return qpjax.numpy.array(
                     [
-                        jax.random.choice(key, basis_states, shape=(shots,), p=prob)
+                        qpjax.random.choice(key, basis_states, shape=(shots,), p=prob)
                         for prob in state_probability
                     ]
                 )
-            return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
+            return qpjax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
 
         state_probs = qml.math.unwrap(state_probability)
         if self._ndim(state_probability) == 2:

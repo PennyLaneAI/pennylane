@@ -235,8 +235,8 @@ class TestMPSPrep:
     def test_jax_jit_mps(self):
         """Check the operation works with jax and jit."""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         mps = [
             jnp.array([[0.0, 0.107j], [0.994, 0.0]]),
@@ -268,10 +268,10 @@ class TestMPSPrep:
             return qml.state()
 
         output = circuit()[:8]
-        output_jit = jax.jit(circuit)()[:8]
+        output_jit = qpjax.jit(circuit)()[:8]
 
-        assert jax.numpy.allclose(output, jax.numpy.array(state), rtol=0.01)
-        assert jax.numpy.allclose(output_jit, jax.numpy.array(state), rtol=0.01)
+        assert qpjax.numpy.allclose(output, qpjax.numpy.array(state), rtol=0.01)
+        assert qpjax.numpy.allclose(output_jit, qpjax.numpy.array(state), rtol=0.01)
 
     @pytest.mark.parametrize(
         ("mps", "state", "num_wires", "num_work_wires"),
@@ -749,8 +749,8 @@ class TestMPSPrep:
     def test_right_canonical_jax_jit(self):
         """Checks that the function `right_canonicalize_mps` works with JAX and JIT"""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         n_sites = 4
         mps = (
@@ -758,7 +758,7 @@ class TestMPSPrep:
             + [jnp.ones((4, 2, 4)) for _ in range(1, n_sites - 1)]
             + [jnp.ones((4, 2))]
         )
-        mps_rc = jax.jit(right_canonicalize_mps)(mps)
+        mps_rc = qpjax.jit(right_canonicalize_mps)(mps)
 
         for i in range(1, n_sites - 1):
             tensor = mps_rc[i]

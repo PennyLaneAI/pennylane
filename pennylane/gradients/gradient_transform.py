@@ -339,7 +339,7 @@ def reorder_grads(grads, tape_specs):
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: The reordered gradient
             entries. Consider the details below for the ordering of the axes.
 
-    The order of axes of the gradient output matches the structure outputted by jax.jacobian for
+    The order of axes of the gradient output matches the structure outputted by qpjax.jacobian for
     a tuple-valued function. Internally, this may not be the case when computing the gradients,
     so the axes are reordered here.
 

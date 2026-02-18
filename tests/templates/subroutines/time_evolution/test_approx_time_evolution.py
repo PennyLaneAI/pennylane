@@ -347,8 +347,8 @@ class TestInterfaces:
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         time = jnp.array(0.5)
 
@@ -361,10 +361,10 @@ class TestInterfaces:
         res2 = circuit2(time)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = qpjax.grad(circuit)
         grads = grad_fn(time)
 
-        grad_fn2 = jax.grad(circuit2)
+        grad_fn2 = qpjax.grad(circuit2)
         grads2 = grad_fn2(time)
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
@@ -373,24 +373,24 @@ class TestInterfaces:
     def test_jax_jit(self, tol):
         """Tests jit within the jax interface."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         time = jnp.array(0.5)
 
         dev = qml.device("default.qubit", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = jax.jit(circuit)
+        circuit2 = qpjax.jit(circuit)
 
         res = circuit(time)
         res2 = circuit2(time)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = qpjax.grad(circuit)
         grads = grad_fn(time)
 
-        grad_fn2 = jax.grad(circuit2)
+        grad_fn2 = qpjax.grad(circuit2)
         grads2 = grad_fn2(time)
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)

@@ -71,8 +71,8 @@ def _measure_with_samples_diagonalizing_gates(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
         readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
@@ -256,8 +256,8 @@ def sample_state(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
         readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
@@ -300,8 +300,8 @@ def measure_with_samples(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
         readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 

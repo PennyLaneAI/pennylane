@@ -67,9 +67,9 @@ def test_assert_valid():
         return op_matrices, decomp_matrices
 
     # pylint: disable=import-outside-toplevel
-    import jax
+    import qpjax
 
-    op_matrices, decomp_matrices = jax.jit(abstract_check)(np.array([0, 1]))
+    op_matrices, decomp_matrices = qpjax.jit(abstract_check)(np.array([0, 1]))
     assert qml.math.allclose(
         op_matrices, decomp_matrices
     ), "decomposition must produce the same matrix as the operator."
@@ -377,7 +377,7 @@ class TestStateVector:
     @pytest.mark.jax
     def test_StatePrep_backprop_jax(self):
         """Test backprop with jax"""
-        import jax
+        import qpjax
 
         @qml.qnode(qml.device("default.qubit"), diff_method="backprop")
         def circuit(state):
@@ -385,8 +385,8 @@ class TestStateVector:
             qml.S(1)
             return qml.expval(qml.PauliZ(0))
 
-        state = jax.numpy.array([1.0, 0.0])
-        grad = jax.jacobian(circuit)(state)
+        state = qpjax.numpy.array([1.0, 0.0])
+        grad = qpjax.jacobian(circuit)(state)
         assert qml.math.get_interface(grad) == "jax"
         assert np.array_equal(grad, [2.0, 0.0])
 

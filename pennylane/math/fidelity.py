@@ -299,9 +299,9 @@ def _register_jax_vjp():
     Register the custom VJP for JAX
     """
     # pylint: disable=import-outside-toplevel
-    import jax
+    import qpjax
 
-    @jax.custom_vjp
+    @qpjax.custom_vjp
     def _compute_fidelity_jax(dm0, dm1):
         return _compute_fidelity_vanilla(dm0, dm1)
 
@@ -313,7 +313,7 @@ def _register_jax_vjp():
         dm0, dm1 = res
         return _compute_fidelity_grad(dm0, dm1, grad_out)
 
-    _compute_fidelity_jax.defvjp(_compute_fidelity_jax_fwd, _compute_fidelity_jax_bwd)
+    _compute_fidelity_qpjax.defvjp(_compute_fidelity_jax_fwd, _compute_fidelity_jax_bwd)
     ar.register_function("jax", "compute_fidelity", _compute_fidelity_jax)
 
 

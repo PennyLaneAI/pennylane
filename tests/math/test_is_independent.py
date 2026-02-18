@@ -28,7 +28,7 @@ pytestmark = pytest.mark.all_interfaces
 
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 dependent_lambdas = [
@@ -225,7 +225,7 @@ class TestIsIndependentAutograd:
 
 class TestIsIndependentJax:
     """Tests for is_independent, which tests a function to be
-    independent of its inputs, using JAX."""
+    independent of its inputs, using qpjax."""
 
     interface = "jax"
 
@@ -258,19 +258,19 @@ class TestIsIndependentJax:
         qml.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
-        jax.jacobian(lambda x, y: 4.0 * x - 2.1 * y, argnums=[0, 1]),
+        qpjax.jacobian(lambda x, y: 4.0 * x - 2.1 * y, argnums=[0, 1]),
     ]
 
     args_constant = [
         (0.1, np.array([-2.1, 0.1])),
         (1.2,),
         (np.ones((2, 3)),),
-        (jax.numpy.ones((3, 8)) * 0.1, -0.2 * jax.numpy.ones((3, 8))),
+        (qpjax.numpy.ones((3, 8)) * 0.1, -0.2 * qpjax.numpy.ones((3, 8))),
     ]
 
     dependent_functions = [
         qml.QNode(dependent_circuit, dev, interface=interface),
-        jax.numpy.array,
+        qpjax.numpy.array,
         lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
         *dependent_lambdas,
     ]
@@ -278,7 +278,7 @@ class TestIsIndependentJax:
     args_dependent = [
         (0.1, np.array(-2.1), -0.9),
         (-4.1,),
-        (jax.numpy.ones((3, 8)) * 1.1,),
+        (qpjax.numpy.ones((3, 8)) * 1.1,),
         *args_dependent_lambdas,
     ]
 
@@ -303,7 +303,7 @@ class TestIsIndependentJax:
         """Tests that kwargs are taken into account when checking
         independence of outputs."""
         f = lambda x, kw=False: 0.1 * x if kw else 0.2
-        jac = jax.jacobian(f, argnums=0)
+        jac = qpjax.jacobian(f, argnums=0)
         args = (0.2,)
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})

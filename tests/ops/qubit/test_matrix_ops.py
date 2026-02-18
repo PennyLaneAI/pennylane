@@ -404,9 +404,9 @@ class TestQubitUnitary:
     )
     def test_qubit_unitary_jax(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
-        catches incorrect input with jax."""
+        catches incorrect input with qpjax."""
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         U = jnp.array(U)
         out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
@@ -443,23 +443,23 @@ class TestQubitUnitary:
     def test_qubit_unitary_jax_jit(self, U, num_wires):
         """Tests that QubitUnitary works with jitting."""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         U = jnp.array(U)
 
         def mat_fn(m):
             return qml.QubitUnitary(m, wires=range(num_wires)).matrix()
 
-        out = jax.jit(mat_fn)(U)
+        out = qpjax.jit(mat_fn)(U)
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.jax
     def test_qubit_unitary_jax_jit_decomposition(self):
         """Tests that QubitUnitary works with jitting when decomposing the operator."""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         matrix = jnp.array(qml.matrix(qml.QFT(wires=[0, 1, 2])))
 
@@ -471,7 +471,7 @@ class TestQubitUnitary:
             return qml.state()
 
         state_expected = circuit(matrix)
-        state_jit = jax.jit(circuit)(matrix)
+        state_jit = qpjax.jit(circuit)(matrix)
 
         assert qml.math.allclose(state_expected, state_jit)
 
@@ -1020,13 +1020,13 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     def test_jax_jit(self):
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses the JAX JIT"""
-        import jax
+        import qpjax
 
-        jnp = jax.numpy
+        jnp = qpjax.numpy
 
         dev = qml.device("default.qubit", wires=1)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit(x):
             diag = jnp.exp(1j * x * jnp.array([1, -1]) / 2)
@@ -1035,7 +1035,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliX(0))
 
         x = 0.654
-        grad = jax.grad(circuit)(x)
+        grad = qpjax.grad(circuit)(x)
         expected = -jnp.sin(x)
         assert np.allclose(grad, expected)
 
@@ -1043,13 +1043,13 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     def test_jax_jit_broadcasted(self):
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses the JAX JIT and broadcasting"""
-        import jax
+        import qpjax
 
-        jnp = jax.numpy
+        jnp = qpjax.numpy
 
         dev = qml.device("default.qubit", wires=1)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit(x):
             diag = jnp.exp(1j * jnp.outer(x, jnp.array([1, -1])) / 2)
@@ -1058,7 +1058,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             return qml.expval(qml.PauliX(0))
 
         x = jnp.array([0.654, 0.321])
-        jac = jax.jacobian(circuit)(x)
+        jac = qpjax.jacobian(circuit)(x)
         expected = jnp.diag(-jnp.sin(x))
         assert np.allclose(jac, expected)
 
@@ -1383,9 +1383,9 @@ class TestBlockEncode:
         ],
     )
     def test_blockencode_jax(self, input_matrix, wires, output_matrix):
-        """Test that the BlockEncode operator matrix is correct for jax."""
-        import jax
-        import jax.numpy as jnp
+        """Test that the BlockEncode operator matrix is correct for qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         input_matrix = jnp.array(input_matrix)
         op = qml.BlockEncode(input_matrix, wires)
@@ -1393,7 +1393,7 @@ class TestBlockEncode:
         assert qml.math.get_interface(qml.matrix(op)) == "jax"
 
         # Test jitting behaviour as well.
-        @jax.jit
+        @qpjax.jit
         def f(A):
             op = qml.BlockEncode(A, wires)
             return qml.matrix(op)
@@ -1436,9 +1436,9 @@ class TestBlockEncode:
         ],
     )
     def test_blockencode_grad_jax(self, wires, input_matrix, expected_result):
-        """Test that block encode is differentiable when using jax."""
-        import jax
-        import jax.numpy as jnp
+        """Test that block encode is differentiable when using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         input_matrix = jnp.array(input_matrix)
         expected_result = jnp.array(expected_result)
@@ -1450,7 +1450,7 @@ class TestBlockEncode:
             qml.BlockEncode(input_matrix, wires=wires)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad = jax.grad(circuit, argnums=0)(input_matrix)
+        grad = qpjax.grad(circuit, argnums=0)(input_matrix)
         assert np.allclose(grad, expected_result)
 
     @pytest.mark.tf
@@ -1619,7 +1619,7 @@ class TestInterfaceMatricesLabel:
     def test_labelling_jax_variable(self):
         """Test matrix cache labelling with jax interface."""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         mat = jnp.array([[1, 0], [0, -1]])
 

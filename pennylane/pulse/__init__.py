@@ -27,7 +27,7 @@ functions for defining pulses.
 
 The :mod:`~.pulse` module is written for ``jax`` and will not work with other machine learning frameworks
 typically encountered in PennyLane. It requires separate installation, see
-`jax.readthedocs.io <https://jax.readthedocs.io/en/latest/>`_.
+`qpjax.readthedocs.io <https://qpjax.readthedocs.io/en/latest/>`_.
 
 For a demonstration of the basic pulse functionality in PennyLane and running a ctrl-VQE example, see our demo on
 `differentiable pulse programming <demos/tutorial_pulse_programming101>`__.
@@ -86,12 +86,12 @@ parameters :math:`p` and time :math:`t`.
 
 Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators, where some of the coefficients
 are callables. The callables defining the parametrized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
-``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
+``list`` or ``jnp.array``. These functions should be defined using ``qpjax.numpy`` rather than ``numpy`` where relevant.
 
 .. code-block:: python
 
     import pennylane as qml
-    from jax import numpy as jnp
+    from qpjax import numpy as jnp
 
     # defining the coefficients fj(p, t) for the two parametrized terms
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
@@ -176,12 +176,12 @@ A :class:`~.ParametrizedEvolution` is this solution :math:`U(t_0, t_1)` to the t
 Schrödinger equation for a :class:`~.ParametrizedHamiltonian`.
 
 The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
-solver (see `jax.experimental.ode <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
+solver (see `qpjax.experimental.ode <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
 can be created using the :func:`~.pennylane.evolve` function:
 
 .. code-block:: python
 
-    from jax import numpy as jnp
+    from qpjax import numpy as jnp
 
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
     H = 2 * qml.X(0) + f1 * qml.Y(1)
@@ -224,7 +224,7 @@ following :class:`~.ParametrizedHamiltonian`:
 
 .. code-block:: python
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
         H = f1 * qml.Y(0)
@@ -234,13 +234,13 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
 .. code-block:: python
 
-    import jax
+    import qpjax
 
-    jax.config.update("jax_enable_x64", True)
+    qpjax.config.update("jax_enable_x64", True)
 
     dev = qml.device("default.qubit", wires=1)
 
-    @jax.jit
+    @qpjax.jit
     @qml.qnode(dev, interface="jax")
     def circuit(params):
         qml.evolve(H)(params, t=[0, 10])
@@ -250,10 +250,10 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 >>> circuit(params)
 Array(0.96632722, dtype=float64)
 
->>> jax.grad(circuit)(params)
+>>> qpjax.grad(circuit)(params)
 [Array(2.35694829, dtype=float64)]
 
-We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
+We can use the decorator ``qpjax.jit`` to compile this execution just-in-time. This means the first execution
 will typically take a little longer with the benefit that all following executions will be significantly faster.
 JIT-compiling is optional, and one can remove the decorator when only single executions are of interest. See the
 ``jax`` docs on jitting for more information.

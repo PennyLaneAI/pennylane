@@ -183,11 +183,11 @@ class TestKernelMatrix:
 
     @pytest.mark.jax
     def test_jax(self):
-        """Test differentiability of the kernel matrix methods with JAX."""
-        import jax
+        """Test differentiability of the kernel matrix methods with qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        jnp = jax.numpy
+        qpjax.config.update("jax_enable_x64", True)
+        jnp = qpjax.numpy
 
         X1 = jnp.array(self.X1)
         X2 = jnp.array(self.X2)
@@ -199,12 +199,12 @@ class TestKernelMatrix:
         assert qml.math.allclose(K2, self.expected_K2)
         assert qml.math.allclose(K3, self.expected_K3)
 
-        dK1 = jax.jacobian(kern.square_kernel_matrix, argnums=0)(X1, _diffable_kernel, False)
+        dK1 = qpjax.jacobian(kern.square_kernel_matrix, argnums=0)(X1, _diffable_kernel, False)
         assert qml.math.allclose(dK1, self.expected_dK1)
-        dK2 = jax.jacobian(kern.kernel_matrix, argnums=(0, 1))(X1, X2, _diffable_kernel)
+        dK2 = qpjax.jacobian(kern.kernel_matrix, argnums=(0, 1))(X1, X2, _diffable_kernel)
         assert qml.math.allclose(dK2[0], self.expected_dK2[0])
         assert qml.math.allclose(dK2[1], self.expected_dK2[1])
-        dK3 = jax.jacobian(kern.square_kernel_matrix, argnums=0)(X1, _diffable_kernel, True)
+        dK3 = qpjax.jacobian(kern.square_kernel_matrix, argnums=0)(X1, _diffable_kernel, True)
         assert qml.math.allclose(dK3, self.expected_dK3)
 
     @pytest.mark.torch

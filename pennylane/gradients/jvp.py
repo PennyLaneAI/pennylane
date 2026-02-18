@@ -259,9 +259,9 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        x = jax.numpy.array([[0.1, 0.2, 0.3],
+        x = qpjax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
 
         ops = [
@@ -279,7 +279,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     We can use the ``jvp`` function to compute the Jacobian vector product,
     given a tangent vector ``tangent``:
 
-    >>> tangent = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
+    >>> tangent = [qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0)]
     >>> jvp_tapes, fn = qml.gradients.jvp(tape, tangent, qml.gradients.param_shift)
 
     Note that ``tangent`` has six elements, matching the parameter dimension of the tape.
@@ -372,8 +372,8 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     .. code-block:: python
 
-        import jax
-        x = jax.numpy.array([[0.1, 0.2, 0.3],
+        import qpjax
+        x = qpjax.numpy.array([[0.1, 0.2, 0.3],
                              [0.4, 0.5, 0.6]])
 
         ops = [
@@ -398,8 +398,8 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
     We can use the ``batch_jvp`` function to compute the Jacobian vector product,
     given a list of tangents ``tangent``:
 
-    >>> tangent_0 = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
-    >>> tangent_1 = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
+    >>> tangent_0 = [qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0)]
+    >>> tangent_1 = [qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0), qpjax.numpy.array(1.0)]
     >>> tangents = [tangent_0, tangent_1]
 
     Note that each ``tangents`` has shape matching the parameter dimension of the tape.

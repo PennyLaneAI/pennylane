@@ -36,15 +36,15 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
 
     .. seealso:: :func:`pennylane.math.jacobian`
 
-    Note that this function follows the same design as jax. By default, the function will return the gradient
+    Note that this function follows the same design as qpjax. By default, the function will return the gradient
     of the first argument, whether or not other arguments are trainable.
 
-    >>> import jax, torch, tensorflow as tf
+    >>> import qpjax, torch, tensorflow as tf
     >>> def f(x, y):
     ...     return  x * y
     >>> qml.math.grad(f)(qml.numpy.array(2.0), qml.numpy.array(3.0))
     tensor(3., requires_grad=True)
-    >>> qml.math.grad(f)(jax.numpy.array(2.0), jax.numpy.array(3.0))
+    >>> qml.math.grad(f)(qpjax.numpy.array(2.0), qpjax.numpy.array(3.0))
     Array(3., dtype=float32, weak_type=True)
     >>> qml.math.grad(f)(torch.tensor(2.0, requires_grad=True), torch.tensor(3.0, requires_grad=True))
     tensor(3.)
@@ -76,9 +76,9 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             return g[0] if argnums_integer else g
 
         if interface == "jax":
-            import jax
+            import qpjax
 
-            g = jax.grad(f, argnums=argnums)(*args, **kwargs)
+            g = qpjax.grad(f, argnums=argnums)(*args, **kwargs)
             return g[0] if argnums_integer else g
 
         if interface == "torch":
@@ -168,16 +168,16 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
 
     .. seealso:: :func:`pennylane.math.grad`
 
-    Note that this function follows the same design as jax. By default, the function will return the gradient
+    Note that this function follows the same design as qpjax. By default, the function will return the gradient
     of the first argument, whether or not other arguments are trainable.
 
-    >>> import jax, torch, tensorflow as tf
+    >>> import qpjax, torch, tensorflow as tf
     >>> def f(x, y):
     ...     return  x * y
     >>> qml.math.jacobian(f)(qml.numpy.array([2.0, 3.0]), qml.numpy.array(3.0))
     array([[3., 0.],
               [0., 3.]])
-    >>> qml.math.jacobian(f)(jax.numpy.array([2.0, 3.0]), jax.numpy.array(3.0))
+    >>> qml.math.jacobian(f)(qpjax.numpy.array([2.0, 3.0]), qpjax.numpy.array(3.0))
     Array([[3., 0.],
                [0., 3.]], dtype=float32)
     >>> x_torch = torch.tensor([2.0, 3.0], requires_grad=True)
@@ -201,7 +201,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
 
     >>> def pytree_f(x):
     ...     return {"a": 2*x, "b": 3*x}
-    >>> qml.math.jacobian(pytree_f)(jax.numpy.array(2.0))
+    >>> qml.math.jacobian(pytree_f)(qpjax.numpy.array(2.0))
     {'a': Array(2., dtype=float32, weak_type=True),
     'b': Array(3., dtype=float32, weak_type=True)}
 
@@ -235,9 +235,9 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             return _autograd_jacobian(f, argnums=argnums)(*args, **kwargs)
 
         if interface == "jax":
-            import jax
+            import qpjax
 
-            return jax.jacobian(f, argnums=argnums)(*args, **kwargs)
+            return qpjax.jacobian(f, argnums=argnums)(*args, **kwargs)
 
         if interface == "torch":
             return _torch_jac(f, argnums, args, kwargs)

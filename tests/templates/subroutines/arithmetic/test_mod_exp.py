@@ -199,9 +199,9 @@ class TestModExp:
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         x = 2
         x_list = [0, 1, 0]
@@ -212,7 +212,7 @@ class TestModExp:
         work_wires = [11, 10, 12, 13, 14]
         dev = qml.device("default.qubit")
 
-        @jax.jit
+        @qpjax.jit
         @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
@@ -222,6 +222,6 @@ class TestModExp:
             return qml.sample(wires=output_wires)
 
         # pylint: disable=bad-reversed-sequence
-        assert jax.numpy.allclose(
+        assert qpjax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (base**x) % mod
         )

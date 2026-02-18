@@ -63,10 +63,10 @@ def _get_jax_interface_name() -> Interface:
 def _validate_jax_version() -> None:
     """Checks if the installed version of JAX is supported. If an unsupported version of
     JAX is installed, a ``RuntimeWarning`` is raised."""
-    if not find_spec("jax"):
+    if not find_spec("qpjax"):
         return
 
-    jax_version = version("jax")
+    jax_version = version("qpjax")
     min_jax_version = "0.0.0"  # place holders than can be updated as needed
     max_jax_version = "1.0.0"
     if Version(jax_version) < Version(min_jax_version):  # pragma: no cover
@@ -132,7 +132,7 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
     if interface == Interface.JAX:
         # pylint: disable=unused-import
         try:  # pragma: no cover
-            import jax
+            import qpjax
         except ImportError as e:  # pragma: no cover
             raise QuantumFunctionError(  # pragma: no cover
                 "jax not found. Please install the latest "  # pragma: no cover

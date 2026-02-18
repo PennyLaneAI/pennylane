@@ -29,13 +29,13 @@ class TestGraphStatePrep:
     @pytest.mark.xfail(reason="Jax JIT cannot trace a graph object")
     def test_non_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
 
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit(q):
             GraphStatePrep(graph=q)
@@ -45,13 +45,13 @@ class TestGraphStatePrep:
 
     def test_jaxjit_circuit_graph_state_prep(self):
         """Test if Jax JIT works with GraphStatePrep"""
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
 
         lattice = generate_lattice([2, 2], "square")
         q = QubitGraph(lattice.graph)
         dev = qml.device("default.qubit")
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit(x):
             GraphStatePrep(q, wires=[0, 1, 2, 3])
@@ -331,7 +331,7 @@ class TestMakeGraphState:
     @pytest.mark.capture
     def test_make_graph_state_with_capture(self, mocker):
         """Test that make_graph_state adds the decomposed graph state to the plxpr"""
-        import jax
+        import qpjax
 
         spy = mocker.spy(qml.ftqc.graph_state_preparation.GraphStatePrep, "compute_decomposition")
 
@@ -342,7 +342,7 @@ class TestMakeGraphState:
         def func():
             make_graph_state(q_graph, wires)
 
-        plxpr = jax.make_jaxpr(func)()
+        plxpr = qpjax.make_jaxpr(func)()
 
         # the operator queue looks correct
         assert len(plxpr.eqns) == 8
@@ -358,7 +358,7 @@ class TestMakeGraphState:
     def test_passing_operations_with_capture(self, mocker):
         """Test that gates for the graph state can be specified in make_graph_state,
         and are passed to compute_decomposition when capture is enabled"""
-        import jax
+        import qpjax
 
         lattice = generate_lattice([2, 2], "square")
         q_graph = QubitGraph(lattice.graph)
@@ -368,7 +368,7 @@ class TestMakeGraphState:
         def func():
             make_graph_state(q_graph, [0, 1, 2, 3], one_qubit_ops=qml.X, two_qubit_ops=qml.CNOT)
 
-        plxpr = jax.make_jaxpr(func)()
+        plxpr = qpjax.make_jaxpr(func)()
 
         assert len(plxpr.eqns) == 8
         spy.assert_called_with([0, 1, 2, 3], q_graph, qml.X, qml.CNOT)

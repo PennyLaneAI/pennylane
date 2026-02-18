@@ -38,8 +38,8 @@ COEFFS_PARAM_INTERFACE = [
 ]
 
 try:
-    import jax
-    from jax import numpy as jnp
+    import qpjax
+    from qpjax import numpy as jnp
 
     COEFFS_PARAM_INTERFACE.append((jnp.array([-0.05, 0.17]), jnp.array(1.7), "jax"))
 except ImportError:
@@ -1720,7 +1720,7 @@ class TestLinearCombinationDifferentiation:
                 else qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
             )
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = qpjax.grad(circuit)
         grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
@@ -1731,7 +1731,7 @@ class TestLinearCombinationDifferentiation:
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        grad_fn_expected = jax.grad(combine)
+        grad_fn_expected = qpjax.grad(combine)
         grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad[0], grad_expected[0])
@@ -1751,7 +1751,7 @@ class TestLinearCombinationDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(qml.ops.LinearCombination(coeffs, [X(0), Z(0)]))
 
-        grad_fn = jax.grad(circuit, argnums=1)
+        grad_fn = qpjax.grad(circuit, argnums=1)
         grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
@@ -1762,7 +1762,7 @@ class TestLinearCombinationDifferentiation:
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        grad_fn_expected = jax.grad(combine, argnums=1)
+        grad_fn_expected = qpjax.grad(combine, argnums=1)
         grad_expected = grad_fn_expected(coeffs, param)
 
         assert np.allclose(grad, grad_expected)
@@ -1970,4 +1970,4 @@ def test_create_instance_while_tracing():
         op = qml.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qml.ops.LinearCombination)
 
-    jax.make_jaxpr(f)(1, 2)
+    qpjax.make_jaxpr(f)(1, 2)

@@ -101,11 +101,11 @@ class TestIsHermitian:
     @pytest.mark.all_interfaces
     def test_all_interfaces(self):
         """Test hermitian check with all available interfaces."""
-        import jax
+        import qpjax
         import torch
 
         torch_param = torch.tensor(1.23)
-        jax_param = jax.numpy.array(1.23)
+        jax_param = qpjax.numpy.array(1.23)
 
         for param in [torch_param, jax_param]:
             assert not qml.is_hermitian(qml.RX(param, 0))

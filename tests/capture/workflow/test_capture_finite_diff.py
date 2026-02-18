@@ -23,7 +23,7 @@ import pennylane as qml
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 def test_warning_float32():
@@ -37,14 +37,14 @@ def test_warning_float32():
     with pytest.warns(
         UserWarning, match="Detected 32 bits precision parameter with finite differences."
     ):
-        jax.grad(circuit)(jnp.array(0.5, dtype=jnp.float32))
+        qpjax.grad(circuit)(jnp.array(0.5, dtype=jnp.float32))
 
-    jax.config.update("jax_enable_x64", False)
+    qpjax.config.update("jax_enable_x64", False)
     try:
         with pytest.warns(UserWarning, match="Detected 32 bits precision with finite differences."):
-            jax.grad(circuit)(0.5)
+            qpjax.grad(circuit)(0.5)
     finally:
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
 
 class TestGradients:
@@ -53,7 +53,7 @@ class TestGradients:
         "kwargs",
         ({"approx_order": 2}, {"strategy": "backward"}, {"approx_order": 2, "strategy": "center"}),
     )
-    @pytest.mark.parametrize("grad_f", (jax.grad, jax.jacobian))
+    @pytest.mark.parametrize("grad_f", (qpjax.grad, qpjax.jacobian))
     def test_simple_circuit(self, grad_f, kwargs):
         """Test accurate results for a simple, single parameter circuit."""
 
@@ -83,7 +83,7 @@ class TestGradients:
             return qml.expval(qml.Z(0))
 
         x = jnp.array(0.5, dtype=jnp.float64)
-        hess = jax.grad(jax.grad(circuit))(x)
+        hess = qpjax.grad(qpjax.grad(circuit))(x)
         assert qml.math.allclose(hess, -jnp.cos(x), atol=5e-4)  # gets noisy
 
     @pytest.mark.parametrize("argnums", ((0,), (0, 1)))
@@ -100,7 +100,7 @@ class TestGradients:
             qml.RY(y, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(jax.grad(circuit, argnums=argnums))(0.5, 1.2)
+        jaxpr = qpjax.make_jaxpr(qpjax.grad(circuit, argnums=argnums))(0.5, 1.2)
 
         qnode_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive.name == "qnode"]
         assert len(qnode_eqns) == 1 + len(argnums)

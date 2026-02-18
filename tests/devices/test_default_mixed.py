@@ -62,9 +62,9 @@ class TestDefaultMixedInit:
     def test_seed_jax(self):
         """Test JAX PRNGKey seed initialization"""
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        dev = DefaultMixed(wires=1, seed=jax.random.PRNGKey(0))
+        dev = DefaultMixed(wires=1, seed=qpjax.random.PRNGKey(0))
         assert dev._rng is not None
         assert dev._prng_key is not None
 

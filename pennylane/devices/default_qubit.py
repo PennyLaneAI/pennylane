@@ -80,7 +80,7 @@ logger.addHandler(logging.NullHandler())
 if TYPE_CHECKING:
     from numbers import Number
 
-    from jax.extend.core import Jaxpr
+    from qpjax.extend.core import qpjaxpr
 
     from pennylane.operation import Operator
 
@@ -374,13 +374,13 @@ class DefaultQubit(Device):
             (``['auxiliary', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, qpjax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
             The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
-            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
-            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
+            If a ``qpjax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
+            ``qpjax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
         max_workers (int): A :class:`~pennylane.concurrency.executors.base.RemoteExec` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
@@ -426,9 +426,9 @@ class DefaultQubit(Device):
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def f(x):
             qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
             program, execution_config = dev.preprocess()
@@ -436,9 +436,9 @@ class DefaultQubit(Device):
             results = dev.execute(new_batch, execution_config=execution_config)
             return post_processing_fn(results)
 
-    >>> f(jax.numpy.array(1.2))
+    >>> f(qpjax.numpy.array(1.2))
     DeviceArray(0.36235774, dtype=float32)
-    >>> jax.grad(f)(jax.numpy.array(1.2))
+    >>> qpjax.grad(f)(qpjax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
     .. details::
@@ -519,16 +519,16 @@ class DefaultQubit(Device):
         return "default.qubit"
 
     def get_prng_keys(self, num: int = 1):
-        """Get ``num`` new keys with ``jax.random.split``.
+        """Get ``num`` new keys with ``qpjax.random.split``.
 
-        A user may provide a ``jax.random.PRNGKey`` as a random seed.
+        A user may provide a ``qpjax.random.PRNGKey`` as a random seed.
         It will be used by the device when executing circuits with finite shots.
         The JAX RNG is notably different than the NumPy RNG as highlighted in the
-        `JAX documentation <https://jax.readthedocs.io/en/latest/jax-101/05-random-numbers.html>`_.
+        `JAX documentation <https://qpjax.readthedocs.io/en/latest/jax-101/05-random-numbers.html>`_.
         JAX does not keep track of a global seed or key, but needs one anytime it draws from a random number distribution.
         Generating randomness therefore requires changing the key every time, which is done by "splitting" the key.
         For example, when executing ``n`` circuits, the ``PRNGkey`` is split ``n`` times into 2 new keys
-        using ``jax.random.split`` to simulate a non-deterministic behaviour.
+        using ``qpjax.random.split`` to simulate a non-deterministic behaviour.
         The device seed is modified in-place using the first key, and the second key is fed to the
         circuit, and hence can be discarded after returning the results.
         This same key may be split further down the stack if necessary so that no one key is ever
@@ -1148,9 +1148,9 @@ class DefaultQubit(Device):
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
         else:
-            import jax
+            import qpjax
 
-            key = jax.random.PRNGKey(self._rng.integers(100000))
+            key = qpjax.random.PRNGKey(self._rng.integers(100000))
 
         interpreter = DefaultQubitInterpreter(
             num_wires=len(self.wires),
@@ -1161,12 +1161,12 @@ class DefaultQubit(Device):
         return interpreter.eval(jaxpr, consts, *args)
 
     def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
-        import jax
+        import qpjax
 
         def _make_zero(tan, arg):
             return (
-                jax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
-                if isinstance(tan, jax.interpreters.ad.Zero)
+                qpjax.lax.zeros_like_array(arg).astype(tan.aval.dtype)
+                if isinstance(tan, qpjax.interpreters.ad.Zero)
                 else tan
             )
 
@@ -1180,7 +1180,7 @@ class DefaultQubit(Device):
 
         tangents = tuple(map(_make_zero, tangents, args))
 
-        return jax.jvp(eval_wrapper, args, tangents)
+        return qpjax.jvp(eval_wrapper, args, tangents)
 
     # pylint :disable=import-outside-toplevel, unused-argument
     @debug_logger

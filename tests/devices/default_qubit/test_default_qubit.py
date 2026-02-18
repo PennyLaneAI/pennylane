@@ -242,10 +242,10 @@ class TestBasicCircuit:
     @pytest.mark.parametrize("use_jit", (True, False))
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_jax_results_and_backprop(self, use_jit, max_workers):
-        """Tests execution and gradients with jax."""
-        import jax
+        """Tests execution and gradients with qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.678)
+        phi = qpjax.numpy.array(0.678)
 
         dev = DefaultQubit(max_workers=max_workers)
 
@@ -258,7 +258,7 @@ class TestBasicCircuit:
         if use_jit:
             if max_workers is not None:
                 return
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         result = f(phi)
         assert qml.math.allclose(result[0], -np.sin(phi))
@@ -267,7 +267,7 @@ class TestBasicCircuit:
         if max_workers is not None:
             return
 
-        g = jax.jacobian(f)(phi)
+        g = qpjax.jacobian(f)(phi)
         assert qml.math.allclose(g[0], -np.cos(phi))
         assert qml.math.allclose(g[1], -np.sin(phi))
 
@@ -738,19 +738,19 @@ class TestExecutingBatches:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax(self, use_jit):
-        """Test batches can be executed and have backprop derivatives in jax."""
-        import jax
+        """Test batches can be executed and have backprop derivatives in qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.123)
+        phi = qpjax.numpy.array(0.123)
 
-        f = jax.jit(self.f_hashable) if use_jit else self.f_hashable
+        f = qpjax.jit(self.f_hashable) if use_jit else self.f_hashable
         results = f(phi)
         expected = self.expected(phi)
 
         self.nested_compare(results, expected)
 
-        g = jax.jacobian(f)(phi)
-        g_expected = jax.jacobian(self.expected)(phi)
+        g = qpjax.jacobian(f)(phi)
+        g_expected = qpjax.jacobian(self.expected)(phi)
 
         self.nested_compare(g, g_expected)
 
@@ -876,17 +876,17 @@ class TestSumOfTermsDifferentiability:
     @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_jax_backprop(self, style, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
-        import jax
+        import qpjax
 
-        x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
-        f = jax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
+        x = qpjax.numpy.array(0.52, dtype=qpjax.numpy.float64)
+        f = qpjax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
 
         out = f(x, style=style)
         expected_out = self.expected(x)
         assert qml.math.allclose(out, expected_out, atol=1e-6)
 
-        g = jax.grad(f)(x, style=style)
-        expected_g = jax.grad(self.expected)(x)
+        g = qpjax.grad(f)(x, style=style)
+        expected_g = qpjax.grad(self.expected)(x)
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.torch
@@ -1353,14 +1353,14 @@ class TestPRNGKeySeed:
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_same_device_prng_key(self, max_workers):
-        """Test a device with a given jax.random.PRNGKey will produce
+        """Test a device with a given qpjax.random.PRNGKey will produce
         the same samples repeatedly."""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        dev = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(123))
         result1 = dev.execute(qs, config)
         for _ in range(10):
             result2 = dev.execute(qs, config)
@@ -1369,31 +1369,31 @@ class TestPRNGKeySeed:
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_prng_key_multi_tapes(self, max_workers):
-        """Test a device with a given jax.random.PRNGKey will produce
+        """Test a device with a given qpjax.random.PRNGKey will produce
         different results for the same (batched) tape."""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        dev = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(123))
         result1, result2 = dev.execute([qs] * 2, config)
 
         assert not np.all(result1 == result2)
 
     @pytest.mark.xfail  # [sc-90338]
     def test_different_max_workers_same_prng_key(self):
-        """Test that devices with the same jax.random.PRNGKey but different threading will produce
+        """Test that devices with the same qpjax.random.PRNGKey but different threading will produce
         the same samples."""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev1 = DefaultQubit(max_workers=None, seed=jax.random.PRNGKey(123))
+        dev1 = DefaultQubit(max_workers=None, seed=qpjax.random.PRNGKey(123))
         result1 = dev1.execute([qs] * 10, config)
         for max_workers in range(1, 3):
-            dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+            dev2 = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(123))
             result2 = dev2.execute([qs] * 10, config)
 
             assert len(result1) == len(result2)
@@ -1402,26 +1402,26 @@ class TestPRNGKeySeed:
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_same_prng_key(self, max_workers):
-        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
+        """Test that different devices given the same random qpjax.random.PRNGKey as a seed will produce
         the same results for sample, even with different seeds"""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        dev1 = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(123))
         result1 = dev1.execute(qs, config)
 
-        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        dev2 = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(123))
         result2 = dev2.execute(qs, config)
 
         assert np.all(result1 == result2)
 
     def test_get_prng_keys(self):
         """Test the get_prng_keys method."""
-        import jax
+        import qpjax
 
-        dev = DefaultQubit(seed=jax.random.PRNGKey(123))
+        dev = DefaultQubit(seed=qpjax.random.PRNGKey(123))
 
         assert len(dev.get_prng_keys()) == 1
         assert len(dev.get_prng_keys(num=1)) == 1
@@ -1432,17 +1432,17 @@ class TestPRNGKeySeed:
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_different_prng_key(self, max_workers):
-        """Test that different devices given different jax.random.PRNGKey values will produce
+        """Test that different devices given different qpjax.random.PRNGKey values will produce
         different results"""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(246))
+        dev1 = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(246))
         result1 = dev1.execute(qs, config)
 
-        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        dev2 = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(123))
         result2 = dev2.execute(qs, config)
 
         assert np.any(result1 != result2)
@@ -1450,13 +1450,13 @@ class TestPRNGKeySeed:
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_different_executions_same_prng_key(self, max_workers):
         """Test that the same device will produce the same results every execution if
-        the seed is a jax.random.PRNGKey"""
-        import jax
+        the seed is a qpjax.random.PRNGKey"""
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(77))
+        dev = DefaultQubit(max_workers=max_workers, seed=qpjax.random.PRNGKey(77))
         result1 = dev.execute(qs, config)
         result2 = dev.execute(qs, config)
 
@@ -1467,9 +1467,9 @@ class TestPRNGKeySeed:
         """Test that the number of shots returned with postselection with a PRNGKey is different
         when executing a batch of tapes and the same when using `dev.execute` with the same tape
         multiple times."""
-        import jax
+        import qpjax
 
-        dev = qml.device("default.qubit", seed=jax.random.PRNGKey(234))
+        dev = qml.device("default.qubit", seed=qpjax.random.PRNGKey(234))
 
         mv = qml.measure(0, postselect=1)
         qs = qml.tape.QuantumScript(
@@ -1497,9 +1497,9 @@ class TestPRNGKeySeed:
     def test_integrate_prng_key_jitting(self):
         """Test that a PRNGKey can be used with a jitted qnode."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def workflow(key, param):
 
             dev = qml.device("default.qubit", seed=key)
@@ -1512,9 +1512,9 @@ class TestPRNGKeySeed:
 
             return circuit(param)
 
-        key1 = jax.random.PRNGKey(123456)
-        key2 = jax.random.PRNGKey(8877655)
-        x = jax.numpy.array(0.5)
+        key1 = qpjax.random.PRNGKey(123456)
+        key2 = qpjax.random.PRNGKey(8877655)
+        x = qpjax.numpy.array(0.5)
         # no leaked tracer errors
         res1 = workflow(key1, x)
         res1_again = workflow(key1, x)
@@ -1862,9 +1862,9 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            import jax
+            import qpjax
 
-            circ_postselect = jax.jit(circ_postselect)
+            circ_postselect = qpjax.jit(circ_postselect)
 
         res = circ_postselect(param)
         expected = circ_expected()
@@ -1917,9 +1917,9 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            import jax
+            import qpjax
 
-            circ_postselect = jax.jit(circ_postselect)
+            circ_postselect = qpjax.jit(circ_postselect)
 
         res = circ_postselect(param)
         expected = circ_expected()
@@ -2053,12 +2053,12 @@ class TestPostselection:
         if interface != "jax" or not use_jit:
             pytest.skip("Test is only for jitting.")
 
-        import jax
+        import qpjax
 
         # Wires are specified so that the shape for measurements can be determined correctly
         dev = qml.device("default.qubit")
 
-        @jax.jit
+        @qpjax.jit
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ():
@@ -2109,8 +2109,8 @@ class TestPostselection:
             pytest.xfail(
                 reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
             )
-            # import jax
-            # circ = jax.jit(circ)
+            # import qpjax
+            # circ = qpjax.jit(circ)
 
         res = circ()
 
@@ -2156,7 +2156,7 @@ class TestPostselection:
             postselect_mode=postselect_mode,
         )
         def circuit(x):
-            # Applying a parametrized gate to make the state abstract with jax.jit
+            # Applying a parametrized gate to make the state abstract with qpjax.jit
             qml.RZ(x, 0)
             # State is g * |0> for some global phase g (because we applied an RZ gate),
             # so postselection probability is zero
@@ -2170,13 +2170,13 @@ class TestPostselection:
                 )
 
             # pylint: disable=import-outside-toplevel
-            import jax
+            import qpjax
 
-            # We do not raise an error if using jax.jit, because we cannot check whether or not
+            # We do not raise an error if using qpjax.jit, because we cannot check whether or not
             # the probability is zero. But, this is only the case with analytic execution because
             # with shots, we perform the execution in a pure callback, so the state is concrete.
             error = error if shots else False
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
             # When jitting, we go through JAX's error handling, so the expected error is not the same
             # as without jitting
@@ -2279,7 +2279,7 @@ class TestIntegration:
     @pytest.mark.parametrize("measurement_func", [qml.expval, qml.var])
     def test_differentiate_jitted_qnode(self, measurement_func):
         """Test that a jitted qnode can be correctly differentiated"""
-        import jax
+        import qpjax
 
         dev = DefaultQubit()
 
@@ -2288,18 +2288,18 @@ class TestIntegration:
             return measurement_func(qml.Hamiltonian(y, [qml.Z(0)]))
 
         qnode = qml.QNode(qfunc, dev, interface="jax")
-        qnode_jit = jax.jit(qml.QNode(qfunc, dev, interface="jax"))
+        qnode_jit = qpjax.jit(qml.QNode(qfunc, dev, interface="jax"))
 
-        x = jax.numpy.array(0.5)
-        y = jax.numpy.array([0.5])
+        x = qpjax.numpy.array(0.5)
+        y = qpjax.numpy.array([0.5])
 
         res = qnode(x, y)
         res_jit = qnode_jit(x, y)
 
         assert qml.math.allclose(res, res_jit)
 
-        grad = jax.grad(qnode)(x, y)
-        grad_jit = jax.grad(qnode_jit)(x, y)
+        grad = qpjax.grad(qnode)(x, y)
+        grad_jit = qpjax.grad(qnode_jit)(x, y)
 
         assert qml.math.allclose(grad, grad_jit)
 
@@ -2342,11 +2342,11 @@ def test_renomalization_issue():
     Just tests executes without error.  Not producing a more minimal example due to difficulty
     finding an exact case that leads to renomalization issues.
     """
-    import jax
-    from jax import numpy as jnp
+    import qpjax
+    from qpjax import numpy as jnp
 
-    initial_mode = jax.config.jax_enable_x64
-    jax.config.update("jax_enable_x64", False)
+    initial_mode = qpjax.config.jax_enable_x64
+    qpjax.config.update("jax_enable_x64", False)
 
     def gaussian_fn(p, t):
         return p[0] * jnp.exp(-((t - p[1]) ** 2) / (2 * p[2] ** 2))
@@ -2379,4 +2379,4 @@ def test_renomalization_issue():
     circuit_qml = qml.QNode(circuit, qml.device("default.qubit"), interface="jax", shots=1000)
 
     circuit_qml(params)
-    jax.config.update("jax_enable_x64", initial_mode)
+    qpjax.config.update("jax_enable_x64", initial_mode)

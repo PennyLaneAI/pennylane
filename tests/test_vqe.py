@@ -774,9 +774,9 @@ class TestNewVQE:
     @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
     def test_shot_distribution(self, shots, dim, seed):
         """Tests that distributed shots work with the new VQE design."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -789,11 +789,11 @@ class TestNewVQE:
 
         obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]
         coeffs = np.array([0.1, 0.2])
-        key = jax.random.PRNGKey(seed)
-        weights = jax.random.uniform(key, [2, 2, 3])
+        key = qpjax.random.PRNGKey(seed)
+        weights = qpjax.random.uniform(key, [2, 2, 3])
 
         res = circuit(weights, coeffs)
-        grad = jax.jacobian(circuit, argnums=[1])(weights, coeffs)
+        grad = qpjax.jacobian(circuit, argnums=[1])(weights, coeffs)
         assert len(res) == dim
         assert qml.math.shape(grad) == (dim, 1, 2)
 
@@ -944,8 +944,8 @@ class TestNewVQE:
     @pytest.mark.slow
     def test_grad_jax(self, tol):
         """Tests VQE gradients in the jax interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
@@ -957,7 +957,7 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        dc = jax.grad(circuit)(w)
+        dc = qpjax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
     def test_specs(self):

@@ -95,15 +95,15 @@ class TestStateMP:
     @pytest.mark.jax
     def test_state_jax_jit(self):
         """Test that re-ordering works with jax-jit."""
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def get_state(ket):
             return StateMP(wires=[1, 0]).process_state(ket, wire_order=Wires([0, 1]))
 
-        result = get_state(jax.numpy.array([0.48j, 0.48, -0.64j, 0.36]))
+        result = get_state(qpjax.numpy.array([0.48j, 0.48, -0.64j, 0.36]))
         assert qml.math.allclose(result, np.array([0.48j, -0.64j, 0.48, 0.36]))
-        assert isinstance(result, jax.Array)
+        assert isinstance(result, qpjax.Array)
 
     @pytest.mark.tf
     def test_state_tf_function(self):

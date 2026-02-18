@@ -31,9 +31,9 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
-    from jax.experimental.ode import odeint
+    import qpjax
+    import qpjax.numpy as jnp
+    from qpjax.experimental.ode import odeint
 
     from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 except ImportError as e:
@@ -111,7 +111,7 @@ class ParametrizedEvolution(Operation):
 
     .. code-block:: python
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         f1 = lambda p, t: jnp.sin(p * t)
         H = f1 * qml.Y(0)
@@ -135,12 +135,12 @@ class ParametrizedEvolution(Operation):
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=1)
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=[0, 10])
@@ -150,11 +150,11 @@ class ParametrizedEvolution(Operation):
     >>> circuit(params)
     Array(0.96632722, dtype=float64)
 
-    >>> jax.grad(circuit)(params)
+    >>> qpjax.grad(circuit)(params)
     [Array(2.35694829, dtype=float64)]
 
     .. note::
-        In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
+        In the example above, the decorator ``@qpjax.jit`` is used to compile this execution just-in-time. This means
         the first execution will typically take a little longer with the benefit that all following executions
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
@@ -211,7 +211,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            from jax import numpy as jnp
+            from qpjax import numpy as jnp
 
             ops = [qml.X(0), qml.Y(1), qml.Z(2)]
             coeffs = [lambda p, t: p for _ in range(3)]
@@ -271,7 +271,7 @@ class ParametrizedEvolution(Operation):
 
         >>> circuit(params)
         Array(-0.78235162, dtype=float64)
-        >>> jax.grad(circuit)(params)
+        >>> qpjax.grad(circuit)(params)
         Array([-4.80708632,  3.70323783, -1.32958799, -2.40642477,  0.68105214,
             -0.52269657], dtype=float64)
 
@@ -520,7 +520,7 @@ class ParametrizedEvolution(Operation):
             )
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
-        with jax.ensure_compile_time_eval():
+        with qpjax.ensure_compile_time_eval():
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 self.H, dense=self.dense, wire_order=self.wires
             )

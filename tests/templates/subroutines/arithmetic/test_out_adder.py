@@ -236,9 +236,9 @@ class TestOutAdder:
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         x, y = 2, 3
 
@@ -249,7 +249,7 @@ class TestOutAdder:
         work_wires = [11, 10]
         dev = qml.device("default.qubit")
 
-        @jax.jit
+        @qpjax.jit
         @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
@@ -259,6 +259,6 @@ class TestOutAdder:
             return qml.sample(wires=output_wires)
 
         # pylint: disable=bad-reversed-sequence
-        assert jax.numpy.allclose(
+        assert qpjax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )

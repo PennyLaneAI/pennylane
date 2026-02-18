@@ -111,7 +111,7 @@ def test_simple_classical_jacobian():
 def test_simple_argnums(argnums, trainable_params):
     """Test a simple calculation of the argnums."""
 
-    import jax
+    import qpjax
 
     @qml.transforms.split_non_commuting
     @qml.qnode(qml.device("default.qubit"))
@@ -124,7 +124,7 @@ def test_simple_argnums(argnums, trainable_params):
     c = qml.gradients.param_shift(c, argnums=argnums)
 
     ps_container = c.compile_pipeline[-1]
-    x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
+    x, y = qpjax.numpy.array([0.5, 0.7]), qpjax.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
 
@@ -135,7 +135,7 @@ def test_simple_argnums(argnums, trainable_params):
 def test_no_jax_argnum_error():
     """Test that an error is raised in the jax interface is used with argnum"""
 
-    import jax
+    import qpjax
 
     @qml.qnode(qml.device("default.qubit"))
     def c(x, y):
@@ -147,7 +147,7 @@ def test_no_jax_argnum_error():
     c = qml.gradients.param_shift(c, argnum=[0])
 
     ps_container = c.compile_pipeline[-1]
-    x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
+    x, y = qpjax.numpy.array([0.5, 0.7]), qpjax.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
 
@@ -160,7 +160,7 @@ def test_no_jax_argnum_error():
 @pytest.mark.jax
 def test_no_argnums_if_no_classical_cotransform():
     """Test argnums is None if there is no classical cotransform."""
-    import jax
+    import qpjax
 
     @qml.qnode(qml.device("default.qubit"))
     def c(x, y):
@@ -172,7 +172,7 @@ def test_no_argnums_if_no_classical_cotransform():
     c = qml.transforms.merge_rotations(c)
 
     container = c.compile_pipeline[-1]
-    x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
+    x, y = qpjax.numpy.array([0.5, 0.7]), qpjax.numpy.array(3.0)
 
     cc = CotransformCache(c, (x, y), {})
 
@@ -180,7 +180,7 @@ def test_no_argnums_if_no_classical_cotransform():
 
 
 def test_no_argnums_nonjax_interface():
-    """Test that the trainable params are None if the interface isn't jax."""
+    """Test that the trainable params are None if the interface isn't qpjax."""
 
     @qml.qnode(qml.device("default.qubit"))
     def c(x, y):

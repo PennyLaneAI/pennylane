@@ -26,10 +26,10 @@ pytestmark = [pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from jax import numpy as jnp
+from qpjax import numpy as jnp
 
 # must be below jax importorskip
-from jax.core import eval_jaxpr
+from qpjax.core import eval_jaxpr
 
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.exceptions import AutoGraphError
@@ -53,7 +53,7 @@ class TestWhileLoops:
             return i
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert "while_loop[" in str(jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, expected)[0]
@@ -71,7 +71,7 @@ class TestWhileLoops:
             return b
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert "while_loop[" in str(jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
@@ -90,7 +90,7 @@ class TestWhileLoops:
             return qml.probs()
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0.0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0.0)
         assert "while_loop[" in str(jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0**4)[0]
@@ -128,7 +128,7 @@ class TestWhileLoops:
             return acc
 
         ag_circuit = run_autograph(f1)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         assert "while_loop[" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
@@ -145,7 +145,7 @@ class TestWhileLoops:
             return acc
 
         ag_circuit = run_autograph(f1)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         assert "while_loop[" in str(jaxpr)
         assert "for_loop[" in str(jaxpr)
 
@@ -164,7 +164,7 @@ class TestWhileLoops:
             return acc
 
         ag_circuit = run_autograph(f1)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         assert "while_loop[" in str(jaxpr)
         assert "cond[" in str(jaxpr)
 
@@ -193,7 +193,7 @@ class TestWhileLoops:
 
         with pytest.raises(AutoGraphError, match="'x' is potentially uninitialized"):
             ag_fn = run_autograph(f)
-            jax.make_jaxpr(ag_fn)(False)
+            qpjax.make_jaxpr(ag_fn)(False)
 
     def test_init_with_invalid_jax_type(self):
         """Test loop carried values initialized with an invalid JAX type."""
@@ -208,7 +208,7 @@ class TestWhileLoops:
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with type <class 'str'>"):
             ag_fn = run_autograph(f)
-            jax.make_jaxpr(ag_fn)(False)
+            qpjax.make_jaxpr(ag_fn)(False)
 
     def test_while_loop(self):
         """Test if Autograph works when applied directly to a decorated function with while_loop"""
@@ -220,6 +220,6 @@ class TestWhileLoops:
             return i + 1
 
         ag_fn = run_autograph(loop)
-        jaxpr = jax.make_jaxpr(ag_fn)(0)
+        jaxpr = qpjax.make_jaxpr(ag_fn)(0)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == n

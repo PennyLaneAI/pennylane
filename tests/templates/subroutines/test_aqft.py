@@ -114,7 +114,7 @@ class TestAQFT:
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        import jax
+        import qpjax
 
         wires = 3
         dev = qml.device("default.qubit", wires=wires)
@@ -126,7 +126,7 @@ class TestAQFT:
             qml.AQFT(order=1, wires=range(wires))
             return qml.state()
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         res = circuit()
         res2 = jit_circuit()

@@ -170,7 +170,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
     @pytest.mark.jax
     def test_merge_amplitude_embedding_jax(self):
         """Test QNode in JAX interface."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         def qfunc(amplitude):
             qml.AmplitudeEmbedding(amplitude, wires=0)

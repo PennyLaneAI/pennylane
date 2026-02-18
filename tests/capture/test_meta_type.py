@@ -30,11 +30,11 @@ def test_custom_capture_meta():
     """Test that we can capture custom classes with the CaptureMeta metaclass by defining
     the _primitive_bind_call method."""
 
-    p = jax.extend.core.Primitive("p")
+    p = qpjax.extend.core.Primitive("p")
 
     @p.def_abstract_eval
     def _(a):
-        return jax.core.ShapedArray(a.shape, a.dtype)
+        return qpjax.core.ShapedArray(a.shape, a.dtype)
 
     # pylint: disable=too-few-public-methods
     class MyObj(metaclass=CaptureMeta):
@@ -52,7 +52,7 @@ def test_custom_capture_meta():
         # similar signature to MyObj but without init
         return a + b
 
-    jaxpr = jax.make_jaxpr(MyObj)(0.5)
+    jaxpr = qpjax.make_jaxpr(MyObj)(0.5)
 
     assert len(jaxpr.eqns) == 1
     assert jaxpr.eqns[0].primitive == p
@@ -77,4 +77,4 @@ def test_custom_capture_meta_no_bind_primitive_call():
         MyObj(0.5)
 
     with pytest.raises(NotImplementedError, match="Types using CaptureMeta must implement"):
-        jax.make_jaxpr(f)()
+        qpjax.make_jaxpr(f)()

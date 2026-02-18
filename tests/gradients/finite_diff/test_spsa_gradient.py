@@ -1196,8 +1196,8 @@ class TestSpsaGradientDifferentiation:
     def test_jax(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])
@@ -1220,7 +1220,7 @@ class TestSpsaGradientDifferentiation:
                 jac = tuple(2 * _jac for _jac in jac)
             return jac
 
-        res = jax.jacobian(cost_fn)(params)
+        res = qpjax.jacobian(cost_fn)(params)
         assert isinstance(res, tuple)
         x, y = params
         expected = np.array(

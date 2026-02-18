@@ -59,11 +59,11 @@ def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 
 # pylint: disable=import-outside-toplevel
 def _jax_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
-    import jax
+    import qpjax
 
     if argnums is None:
         argnums = 0
-    return jax.jacobian(classical_function, argnums=argnums)(*args, **kwargs)
+    return qpjax.jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
 
 _jac_map = {
@@ -100,22 +100,22 @@ def _jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
         program(qml.CompilePipeline): the compile pipeline to be applied on the tape.
 
     Return:
-        list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
+        list[float, qpjax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
     """
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
-    tag = jax.core.TraceTag()
-    with jax.core.take_current_trace() as parent_trace:
-        trace = jax.interpreters.ad.JVPTrace(parent_trace, tag)
+    tag = qpjax.core.TraceTag()
+    with qpjax.core.take_current_trace() as parent_trace:
+        trace = qpjax.interpreters.ad.JVPTrace(parent_trace, tag)
         args_jvp = [
             (
-                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+                qpjax.interpreters.ad.JVPTracer(trace, arg, qpjax.numpy.zeros(arg.shape))
                 if i in argnums
                 else arg
             )
             for i, arg in enumerate(args)
         ]
-        with jax.core.set_current_trace(trace):
+        with qpjax.core.set_current_trace(trace):
             tape = qml.workflow.construct_tape(qnode, level=0)(*args_jvp, **kwargs)
             tapes, _ = program((tape,))
 
@@ -216,7 +216,7 @@ class CotransformCache:
             c = qml.gradients.param_shift(c, argnums=[0])
 
             ps_container = c.compile_pipeline[-1]
-            x, y = jax.numpy.array([0.5, 0.7]), jax.numpy.array(3.0)
+            x, y = qpjax.numpy.array([0.5, 0.7]), qpjax.numpy.array(3.0)
 
             cc = CotransformCache(c, (x, y), {})
 

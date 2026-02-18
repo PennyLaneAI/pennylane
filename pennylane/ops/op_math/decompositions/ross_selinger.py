@@ -27,9 +27,9 @@ from pennylane.queuing import QueuingManager
 
 is_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
-    from jax.core import ShapedArray
+    import qpjax
+    import qpjax.numpy as jnp
+    from qpjax.core import ShapedArray
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
     is_jax = False
 
@@ -290,7 +290,7 @@ def rs_decomposition(
         else:
             if not is_jax:
                 raise ImportError(
-                    "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
+                    "QJIT mode requires qpjax. Please install it with `pip install jax jaxlib`."
                 )  # pragma: no cover
 
             # circular import issue when import outside of the function
@@ -337,9 +337,9 @@ def rs_decomposition(
     if is_qjit:
         if not is_jax:
             raise ImportError(
-                "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
+                "QJIT mode requires qpjax. Please install it with `pip install jax jaxlib`."
             )  # pragma: no cover
-        with jax.ensure_compile_time_eval():
+        with qpjax.ensure_compile_time_eval():
             global_phase = qml.GlobalPhase(phase)
     else:
         global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))

@@ -257,7 +257,7 @@ class TestCompilePipeline:
 
     def test_composable_transform(self):
         """Test the composition of a gradient transform with another transform."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -270,8 +270,8 @@ class TestCompilePipeline:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliY(wires=0))
 
-        x = jax.numpy.array(0.1)
-        y = jax.numpy.array(0.2)
+        x = qpjax.numpy.array(0.1)
+        y = qpjax.numpy.array(0.2)
 
         res = circuit(x, y)
 

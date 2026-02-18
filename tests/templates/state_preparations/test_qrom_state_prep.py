@@ -144,7 +144,7 @@ class TestQROMStatePreparation:
     def test_interface_jax(self):
         """Test QROMStatePreparation works with jax"""
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         state = [1 / 2, -1 / 2, 1j / 2, -1j / 2]
 

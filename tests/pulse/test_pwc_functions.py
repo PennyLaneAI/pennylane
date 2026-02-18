@@ -29,7 +29,7 @@ from pennylane.pulse.parametrized_hamiltonian import ParametrizedHamiltonian
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     try:
-        import jax  # pylint: disable=unused-import
+        import qpjax  # pylint: disable=unused-import
 
         pytest.skip()
     except ImportError:
@@ -89,12 +89,12 @@ class TestPWC:
         assert f3(constants, 0) == 0
 
     def test_function_call_is_jittable(self):
-        """Test that jax.jit can be used on the callable produced by pwc_from_function"""
-        import jax
+        """Test that qpjax.jit can be used on the callable produced by pwc_from_function"""
+        import qpjax
 
         f = qml.pulse.pwc(10)
-        assert jax.jit(f)([1.2, 2.3], 2) != 0
-        assert jax.jit(f)([1.2, 2.3], 13) == 0
+        assert qpjax.jit(f)([1.2, 2.3], 2) != 0
+        assert qpjax.jit(f)([1.2, 2.3], 13) == 0
 
 
 @pytest.mark.jax
@@ -204,16 +204,16 @@ class TestPWC_from_function:
         assert f3(params, 0) == 0
 
     def test_function_call_is_jittable(self):
-        """Test that jax.jit can be used on the callable produced by pwc_from_function"""
-        import jax
+        """Test that qpjax.jit can be used on the callable produced by pwc_from_function"""
+        import qpjax
 
         @qml.pulse.pwc_from_function((1, 3), 12)
         def f(params, t):
             return params[1] * t**2 + params[0]
 
-        assert jax.jit(f)([1.2, 2.3], 0) == 0
-        assert jax.jit(f)([1.2, 2.3], 2) != 0
-        assert jax.jit(f)([1.2, 2.3], 4) == 0
+        assert qpjax.jit(f)([1.2, 2.3], 0) == 0
+        assert qpjax.jit(f)([1.2, 2.3], 2) != 0
+        assert qpjax.jit(f)([1.2, 2.3], 4) == 0
 
 
 @pytest.mark.jax
@@ -224,7 +224,7 @@ class TestIntegration:
         self, t1, t2, num_bins, integration_bounds, fn, params, pwc_from_function=False
     ):
         """Helper function that integrates a pwc function."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         # constants set by array if pwc, constants must be found if pwc_from_function
         constants = jnp.array(params)
@@ -289,7 +289,7 @@ class TestIntegration:
     @pytest.mark.slow
     def test_qnode_pwc(self):
         """Test that the evolution of a parametrized hamiltonian defined with a pwc function be executed on a QNode."""
-        import jax
+        import qpjax
 
         f1 = qml.pulse.pwc((1, 6))
         f2 = qml.pulse.pwc((0.5, 3))
@@ -321,13 +321,13 @@ class TestIntegration:
 
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
         assert qml.math.allclose(
-            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+            qpjax.grad(circuit)(params), qpjax.grad(true_circuit)(params), atol=5e-3
         )
 
     def test_qnode_pwc_jit(self):
         """Test that the evolution of a parametrized hamiltonian defined with a pwc function can executed on
         a QNode using jax-jit, and the results don't differ from execution without jitting."""
-        import jax
+        import qpjax
 
         f1 = qml.pulse.pwc((1, 6))
         f2 = qml.pulse.pwc((0.5, 3))
@@ -342,7 +342,7 @@ class TestIntegration:
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
             qml.evolve(H)(params=params, t=t)
@@ -353,7 +353,7 @@ class TestIntegration:
 
         assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-3)
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params), jax.grad(circuit)(params), atol=5e-3
+            qpjax.grad(jitted_circuit)(params), qpjax.grad(circuit)(params), atol=5e-3
         )
 
     def test_parametrized_hamiltonian_with_pwc_from_function(self):
@@ -393,7 +393,7 @@ class TestIntegration:
     def test_qnode_pwc_from_function(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
         can be executed on a QNode."""
-        import jax
+        import qpjax
 
         @qml.pulse.pwc_from_function((2, 5), 20)
         def f1(params, t):
@@ -428,8 +428,8 @@ class TestIntegration:
 
         params = [1.2, [2.3, 3.4]]
 
-        circuit_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(circuit)(params))
-        true_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(true_circuit)(params))
+        circuit_grad_flattened, _ = qpjax.flatten_util.ravel_pytree(qpjax.grad(circuit)(params))
+        true_grad_flattened, _ = qpjax.flatten_util.ravel_pytree(qpjax.grad(true_circuit)(params))
 
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-2)
         assert qml.math.allclose(circuit_grad_flattened, true_grad_flattened, atol=5e-2)
@@ -438,7 +438,7 @@ class TestIntegration:
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
         can be executed on a QNode using jax-jit, and the results don't differ from an execution without jitting.
         """
-        import jax
+        import qpjax
 
         @qml.pulse.pwc_from_function((2, 5), 20)
         def f1(params, t):
@@ -459,7 +459,7 @@ class TestIntegration:
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
             qml.evolve(H)(params=params, t=t)
@@ -467,8 +467,8 @@ class TestIntegration:
 
         params = [1.2, [2.3, 3.4]]
 
-        circuit_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(circuit)(params))
-        jitted_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(jitted_circuit)(params))
+        circuit_grad_flattened, _ = qpjax.flatten_util.ravel_pytree(qpjax.grad(circuit)(params))
+        jitted_grad_flattened, _ = qpjax.flatten_util.ravel_pytree(qpjax.grad(jitted_circuit)(params))
 
         assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-2)
         assert qml.math.allclose(circuit_grad_flattened, jitted_grad_flattened, atol=5e-2)

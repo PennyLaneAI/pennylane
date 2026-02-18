@@ -177,14 +177,14 @@ class TestComputeVJP:
     def test_dtype_jax(self, dtype1, dtype2):
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
-        import jax
+        import qpjax
 
         dtype = dtype1
-        dtype1 = getattr(jax.numpy, dtype1)
-        dtype2 = getattr(jax.numpy, dtype2)
+        dtype1 = getattr(qpjax.numpy, dtype1)
+        dtype2 = getattr(qpjax.numpy, dtype2)
 
-        dy = tuple([jax.numpy.array(1, dtype=dtype1), jax.numpy.array([1, 1], dtype=dtype1)])
-        jac = tuple([jax.numpy.array(1, dtype=dtype2), jax.numpy.array([1, 1], dtype=dtype2)])
+        dy = tuple([qpjax.numpy.array(1, dtype=dtype1), qpjax.numpy.array([1, 1], dtype=dtype1)])
+        jac = tuple([qpjax.numpy.array(1, dtype=dtype2), qpjax.numpy.array([1, 1], dtype=dtype2)])
         assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
 
 
@@ -488,20 +488,20 @@ class TestVJPGradients:
     @pytest.mark.slow
     def test_jax(self, tol):
         """Tests that the output of the VJP transform
-        can be differentiated using JAX."""
-        import jax
-        from jax import numpy as jnp
+        can be differentiated using qpjax."""
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = jnp.array(params_np)
 
-        @partial(jax.jit)
+        @partial(qpjax.jit)
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
                 ansatz(x[0], x[1])
             tape = qml.tape.QuantumScript.from_queue(q)
-            dy = jax.numpy.array([-1.0, 0.0, 0.0, 1.0])
+            dy = qpjax.numpy.array([-1.0, 0.0, 0.0, 1.0])
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
             return fn(dev.execute(tapes))
@@ -509,7 +509,7 @@ class TestVJPGradients:
         res = cost_fn(params)
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
 
-        res = jax.jacobian(cost_fn, argnums=0)(params)
+        res = qpjax.jacobian(cost_fn, argnums=0)(params)
         exp = qml.jacobian(expected)(params_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 

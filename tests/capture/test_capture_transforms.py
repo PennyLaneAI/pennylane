@@ -20,7 +20,7 @@ from functools import partial
 import pytest
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 # pylint: disable=wrong-import-position
 import pennylane as qml
@@ -81,7 +81,7 @@ def expval_z_obs_to_x_obs_plxpr(
     def wrapper(*inner_args):
         return ExpvalZToX().eval(jaxpr, consts, *inner_args)
 
-    return jax.make_jaxpr(wrapper)(*args)
+    return qpjax.make_jaxpr(wrapper)(*args)
 
 
 @partial(transform, plxpr_transform=expval_z_obs_to_x_obs_plxpr)
@@ -122,7 +122,7 @@ class TestCaptureTransforms:
         tkwargs = {"dummy_kwarg1": "foo", "dummy_kwarg2": "bar"}
 
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
-        jaxpr = jax.make_jaxpr(transformed_func)(*args)
+        jaxpr = qpjax.make_jaxpr(transformed_func)(*args)
 
         assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
@@ -135,7 +135,7 @@ class TestCaptureTransforms:
         assert params["transform"] == z_to_hadamard
 
         inner_jaxpr = params["inner_jaxpr"]
-        expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
+        expected_jaxpr = qpjax.make_jaxpr(func)(*args).jaxpr
         for eqn1, eqn2 in zip(inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
@@ -152,7 +152,7 @@ class TestCaptureTransforms:
 
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
 
-        jaxpr = jax.make_jaxpr(transformed_func)(*args)
+        jaxpr = qpjax.make_jaxpr(transformed_func)(*args)
         assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
         assert transform_eqn.params["transform"] == z_to_hadamard
 
@@ -164,7 +164,7 @@ class TestCaptureTransforms:
         assert dict(params["tkwargs"]) == tkwargs
 
         inner_jaxpr = params["inner_jaxpr"]
-        expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
+        expected_jaxpr = qpjax.make_jaxpr(func)(*args).jaxpr
         for eqn1, eqn2 in zip(inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
@@ -186,7 +186,7 @@ class TestCaptureTransforms:
 
         transformed_func = z_to_hadamard(func, *targs, **tkwargs)
 
-        jaxpr = jax.make_jaxpr(transformed_func)(*args)
+        jaxpr = qpjax.make_jaxpr(transformed_func)(*args)
         assert (transform_eqn := jaxpr.eqns[0]).primitive == transform_prim
 
         qnode_jaxpr = transform_eqn.params["inner_jaxpr"]
@@ -201,7 +201,7 @@ class TestCaptureTransforms:
         assert qnode.compile_pipeline == expected_program
 
         qfunc_jaxpr = qnode_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        expected_jaxpr = jax.make_jaxpr(func)(*args).eqns[0].params["qfunc_jaxpr"]
+        expected_jaxpr = qpjax.make_jaxpr(func)(*args).eqns[0].params["qfunc_jaxpr"]
         for eqn1, eqn2 in zip(qfunc_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
@@ -216,9 +216,9 @@ class TestCaptureTransforms:
         tkwargs = {"dummy_kwarg1": "hello", "dummy_kwarg2": "world"}
 
         transformed_func = expval_z_obs_to_x_obs(func, *targs, **tkwargs)
-        jaxpr = jax.make_jaxpr(transformed_func)()
+        jaxpr = qpjax.make_jaxpr(transformed_func)()
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         # If the inner jaxpr was transformed, the output would be <X>, but it should
         # stay as <Z> if it wasn't transformed
         assert res == [qml.expval(qml.Z(0))]
@@ -239,7 +239,7 @@ class TestCaptureTransforms:
         transformed_func = z_to_hadamard(
             expval_z_obs_to_x_obs(func, *targs2, **tkwargs2), *targs1, **tkwargs1
         )
-        jaxpr = jax.make_jaxpr(transformed_func)(*args)
+        jaxpr = qpjax.make_jaxpr(transformed_func)(*args)
         assert (transform_eqn1 := jaxpr.eqns[0]).primitive == transform_prim
         assert transform_eqn1.params["transform"] == z_to_hadamard
 
@@ -261,7 +261,7 @@ class TestCaptureTransforms:
         assert dict(params2["tkwargs"]) == tkwargs2
 
         inner_inner_jaxpr = params2["inner_jaxpr"]
-        expected_jaxpr = jax.make_jaxpr(func)(*args).jaxpr
+        expected_jaxpr = qpjax.make_jaxpr(func)(*args).jaxpr
         for eqn1, eqn2 in zip(inner_inner_jaxpr.eqns, expected_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
 
@@ -283,7 +283,7 @@ class TestCaptureTransforms:
             g()
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         assert jaxpr.eqns[0].primitive == qnode_prim
 
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -311,7 +311,7 @@ class TestTapeTransformFallback:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5)
         with pytest.raises(
             TransformError, match="Only transforms that return a single QuantumTape"
         ):
@@ -341,7 +341,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(1.5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5)
         dummy_targs = (0, 0)
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, 1.5
@@ -379,7 +379,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(1.5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.5)
 
@@ -398,7 +398,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         assert jaxpr.consts == [jnp.array(1.5)]
 
         dummy_targs = (0, 0)
@@ -422,7 +422,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(w)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(1.5, 1)
+        jaxpr = qpjax.make_jaxpr(f)(1.5, 1)
         dummy_targs = (0, 0)
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, 1.5, 1
@@ -449,7 +449,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jnp.eye(2))
+        jaxpr = qpjax.make_jaxpr(f, abstracted_axes=("a",))(jnp.eye(2))
         dummy_targs = (0, 0)
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}, jnp.eye(2)
@@ -473,7 +473,7 @@ class TestTapeTransformFallback:
 
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(1.5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5)
         assert jaxpr.eqns[2].primitive == for_loop_prim
         dummy_targs = (0, 0)
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
@@ -513,7 +513,7 @@ class TestTapeTransformFallback:
 
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f, static_argnums=1)(1.5, 3)
+        jaxpr = qpjax.make_jaxpr(f, static_argnums=1)(1.5, 3)
         assert jaxpr.eqns[2].primitive == while_loop_prim
         dummy_targs = (0, 0)
         transformed_jaxpr = expval_z_obs_to_x_obs.plxpr_transform(
@@ -562,7 +562,7 @@ class TestTapeTransformFallback:
         dummy_targs = (0, 0)
 
         # True branch
-        jaxpr = jax.make_jaxpr(f, static_argnums=0)(3.5)
+        jaxpr = qpjax.make_jaxpr(f, static_argnums=0)(3.5)
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
@@ -575,7 +575,7 @@ class TestTapeTransformFallback:
         assert meas == [qml.expval(qml.Z(0)), qml.state()]
 
         # Else if branch
-        jaxpr = jax.make_jaxpr(f, static_argnums=0)(2.5)
+        jaxpr = qpjax.make_jaxpr(f, static_argnums=0)(2.5)
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
@@ -588,7 +588,7 @@ class TestTapeTransformFallback:
         assert meas == [qml.expval(qml.Z(0)), qml.state()]
 
         # Else branch
-        jaxpr = jax.make_jaxpr(f, static_argnums=0)(1.5)
+        jaxpr = qpjax.make_jaxpr(f, static_argnums=0)(1.5)
         transformed_jaxpr = z_to_hadamard.plxpr_transform(
             jaxpr.jaxpr, jaxpr.consts, dummy_targs, {}
         )
@@ -612,7 +612,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(1.5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.5)
 
@@ -633,7 +633,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(1.5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.5)
 
@@ -654,7 +654,7 @@ class TestTapeTransformFallback:
             qml.Hadamard(0)
             return qml.expval(qml.Z(0)), qml.state(), qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(1.5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.5)
 

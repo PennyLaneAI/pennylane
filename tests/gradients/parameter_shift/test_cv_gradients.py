@@ -252,9 +252,9 @@ class TestCVGradient:
     @pytest.mark.jax
     def test_cv_gradients_parameters_inside_array(self, gaussian_dev, tol):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
-        import jax
+        import qpjax
 
-        par = jax.numpy.array([0.4, 1.3])
+        par = qpjax.numpy.array([0.4, 1.3])
 
         @qml.qnode(device=gaussian_dev, diff_method="finite-diff")
         def qf(x, y):
@@ -266,7 +266,7 @@ class TestCVGradient:
             M[2, 1] = 1.0
             return qml.expval(qml.PolyXP(M, [0, 1]))
 
-        grad_F = jax.grad(qf)(*par)
+        grad_F = qpjax.grad(qf)(*par)
 
         @qml.qnode(
             device=gaussian_dev,
@@ -282,7 +282,7 @@ class TestCVGradient:
             M[2, 1] = 1.0
             return qml.expval(qml.PolyXP(M, [0, 1]))
 
-        grad_A2 = jax.grad(qf2)(*par)
+        grad_A2 = qpjax.grad(qf2)(*par)
 
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)

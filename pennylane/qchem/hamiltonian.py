@@ -309,7 +309,7 @@ def molecular_hamiltonian(*args, **kwargs):
         The ``molecular_hamiltonian`` function accepts a ``Molecule`` object as its first argument.
         Look at the `Usage Details` for more details on the old interface.
 
-        The ``molecular_hamiltonian`` function is not currently compatible with :func:`~.qjit` and ``jax.jit``.
+        The ``molecular_hamiltonian`` function is not currently compatible with :func:`~.qjit` and ``qpjax.jit``.
 
     **Example**
 

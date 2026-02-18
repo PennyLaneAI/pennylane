@@ -532,8 +532,8 @@ class TestCompileInterfaces:
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_compile_jax(self, diff_method):
         """Test QNode and gradient in JAX interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
         transformed_qnode = qml.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
@@ -546,8 +546,8 @@ class TestCompileInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode, argnums=1)(x, params),
-            jax.grad(transformed_qnode, argnums=1)(x, params),
+            qpjax.grad(original_qnode, argnums=1)(x, params),
+            qpjax.grad(transformed_qnode, argnums=1)(x, params),
             atol=1e-7,
         )
 
@@ -559,9 +559,9 @@ class TestCompileInterfaces:
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_compile_jax_jit(self, diff_method):
-        """Test that compilation pipelines work with jax.jit, unitary_to_rot, and fusion."""
-        import jax
-        from jax import numpy as jnp
+        """Test that compilation pipelines work with qpjax.jit, unitary_to_rot, and fusion."""
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -580,7 +580,7 @@ class TestCompileInterfaces:
         compiled_qfunc = qml.compile(test_qfunc, pipeline=pipeline)
         compiled_qnode = qml.QNode(compiled_qfunc, dev, diff_method=diff_method)
 
-        jitted_compiled_qnode = jax.jit(compiled_qnode)
+        jitted_compiled_qnode = qpjax.jit(compiled_qnode)
 
         x = jnp.array(0.1, dtype=jnp.float64)
 
@@ -589,7 +589,7 @@ class TestCompileInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode)(x),
-            jax.grad(jitted_compiled_qnode)(x),
+            qpjax.grad(original_qnode)(x),
+            qpjax.grad(jitted_compiled_qnode)(x),
             atol=1e-7,
         )

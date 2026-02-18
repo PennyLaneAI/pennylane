@@ -44,7 +44,7 @@ def for_loop(
     Python for loop.
 
     This decorator provides a functional version of the traditional
-    for-loop, similar to `jax.cond.fori_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.fori_loop.html>`__.
+    for-loop, similar to `qpjax.cond.fori_loop <https://qpjax.readthedocs.io/en/latest/_autosummary/qpjax.lax.fori_loop.html>`__.
     That is, any variables that are modified across iterations need to be provided
     as inputs/outputs to the loop body function:
 
@@ -66,7 +66,7 @@ def for_loop(
                 args = loop_fn(i, *args)
             return args
 
-    Unlike ``jax.cond.fori_loop``, the step can be negative if it is known at tracing time
+    Unlike ``qpjax.cond.fori_loop``, the step can be negative if it is known at tracing time
     (i.e., constant). If a non-constant negative step is used, the loop will produce no iterations.
 
     .. note::
@@ -148,11 +148,11 @@ def for_loop(
             >>> arg = 2
             >>> workflow(arg)
 
-            Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
+            Alternatively, the function can be traced with ``qpjax.make_jaxpr`` to produce a JAXPR representation,
             which captures the abstract computational graph and generates the abstract shapes.
             The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
 
-            >>> jaxpr = jax.make_jaxpr(workflow)(arg)
+            >>> jaxpr = qpjax.make_jaxpr(workflow)(arg)
             >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         The following discussion applies to the experimental capture infrastructure, which can be
@@ -161,9 +161,9 @@ def for_loop(
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
 
-        >>> import jax
-        >>> import jax.numpy as jnp
-        >>> jax.config.update("jax_dynamic_shapes", True)
+        >>> import qpjax
+        >>> import qpjax.numpy as jnp
+        >>> qpjax.config.update("jax_dynamic_shapes", True)
         >>> qml.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
@@ -230,7 +230,7 @@ def for_loop(
             def w():
                 @qml.for_loop(3)
                 def f(i, x):
-                    return jax.numpy.append(x, i)
+                    return qpjax.numpy.append(x, i)
 
                 return f(jnp.array([]))
 
@@ -364,10 +364,10 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     def _get_jaxpr(self, init_state, allow_array_resizing):
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         # need in_tree to include index so flat_fn will repack args correctly
-        flat_args, in_tree = jax.tree_util.tree_flatten((0, *init_state))
+        flat_args, in_tree = qpjax.tree_util.tree_flatten((0, *init_state))
 
         # slice out the index so shape_locations indexes from non-index args/ results
         flat_args = flat_args[1:]
@@ -387,7 +387,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             dummy_init_state = flat_args
 
         try:
-            jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
+            jaxpr_body_fn = qpjax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
                 0, *dummy_init_state
             )
         except ValueError as e:  # pragma: no cover
@@ -405,7 +405,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     def _call_capture_enabled(self, *init_state):
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         try:
             jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
@@ -452,7 +452,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         )
 
         results = results[-out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(out_tree, results)
+        return qpjax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
 

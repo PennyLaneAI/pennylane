@@ -1380,7 +1380,7 @@ class TestHadamardGradEdgeCases:
     )
     @pytest.mark.jax
     def test_higher_order_derivative_with_aux_wire_raises(self, kwargs):
-        import jax
+        import qpjax
 
         @qnode(
             qml.device("default.qubit", wires=2),
@@ -1396,15 +1396,15 @@ class TestHadamardGradEdgeCases:
             qml.RX(b, wires=0)
             return qml.probs(wires=0)
 
-        a = jax.numpy.array(1.0)
-        b = jax.numpy.array(2.0)
+        a = qpjax.numpy.array(1.0)
+        b = qpjax.numpy.array(2.0)
 
         with pytest.raises(ValueError, match="Higher order derivatives"):
             circuit(a, b)
 
-            jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
+            jac_fn = qpjax.jit(qpjax.jacobian(circuit, argnums=[0, 1]))
             jac_fn(a, b)
-            jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
+            qpjax.jit(qpjax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
 
 
 @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
@@ -1531,8 +1531,8 @@ class TestHadamardTestGradDiff:
     def test_jax(self, mode):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using JAX, yielding second derivatives."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=3)
         params = jnp.array([0.543, -0.654])
@@ -1563,8 +1563,8 @@ class TestHadamardTestGradDiff:
 
             return fn(dev.execute(tapes))
 
-        res_hadamard = jax.jacobian(cost_h)(params)
-        res_param_shift = jax.jacobian(cost_p)(params)
+        res_hadamard = qpjax.jacobian(cost_h)(params)
+        res_param_shift = qpjax.jacobian(cost_p)(params)
         assert np.allclose(res_hadamard, res_param_shift)
 
 
@@ -1580,7 +1580,7 @@ class TestJaxArgnums:
 
     def test_argnum_error(self, argnums, interface, mode):
         """Test that giving argnum to Jax, raises an error."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -1591,8 +1591,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         with pytest.raises(
             QuantumFunctionError,
@@ -1602,7 +1602,7 @@ class TestJaxArgnums:
 
     def test_single_expectation_value(self, argnums, interface, mode):
         """Test for single expectation value."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -1613,8 +1613,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode, aux_wire=2)(x, y)
 
@@ -1633,7 +1633,7 @@ class TestJaxArgnums:
         """Test for multiple expectation values."""
         if mode in {"reversed", "reversed-direct"}:
             pytest.skip("these methods do not work with more than one observable.")
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -1644,8 +1644,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode, aux_wire=2)(x, y)
 
@@ -1666,7 +1666,7 @@ class TestJaxArgnums:
 
     def test_hessian(self, argnums, interface, mode):
         """Test for hessian."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -1677,17 +1677,17 @@ class TestJaxArgnums:
             qml.RY(y, wires=[1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, -0.654])
-        y = jax.numpy.array(-0.123)
+        x = qpjax.numpy.array([0.543, -0.654])
+        y = qpjax.numpy.array(-0.123)
 
-        res = jax.jacobian(
+        res = qpjax.jacobian(
             qml.gradients.hadamard_grad(circuit, argnums=argnums, mode=mode, aux_wire=2),
             argnums=argnums,
         )(x, y)
-        res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
+        res_expected = qpjax.hessian(circuit, argnums=argnums)(x, y)
 
         if len(argnums) == 1:
-            # jax.hessian produces an additional tuple axis, which we have to index away here
+            # qpjax.hessian produces an additional tuple axis, which we have to index away here
             assert np.allclose(res, res_expected[0])
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]

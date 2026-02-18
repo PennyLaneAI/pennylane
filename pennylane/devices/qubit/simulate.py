@@ -151,7 +151,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
         # measuring the postselected state.
         if prng_key is not None:
             # pylint: disable=import-outside-toplevel
-            from jax.random import binomial
+            from qpjax.random import binomial
 
             binomial_fn = partial(binomial, prng_key)
         else:
@@ -185,8 +185,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
         interface (str): The machine learning interface to create the initial state with
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
@@ -258,8 +258,8 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be used for sampling.
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
@@ -323,9 +323,9 @@ def simulate(
             the pre-rotated state. Used to pass the state between forward passes and vjp
             calculations.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            generated. Only for simulation using qpjax.
         interface (str): The machine learning interface to create the initial state with
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
@@ -365,14 +365,14 @@ def simulate(
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
-            import jax
+            import qpjax
 
             def simulate_partial(k):
                 return simulate_one_shot_native_mcm(
                     aux_circ, debugger=debugger, prng_key=k, **execution_kwargs
                 )
 
-            results = jax.vmap(simulate_partial, in_axes=(0,))(keys)
+            results = qpjax.vmap(simulate_partial, in_axes=(0,))(keys)
             results = tuple(zip(*results))
         else:
             for i in range(circuit.shots.total_shots):
@@ -413,9 +413,9 @@ def simulate_tree_mcm(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            generated. Only for simulation using qpjax.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
 
@@ -957,9 +957,9 @@ def simulate_one_shot_native_mcm(
         circuit (QuantumTape): The single circuit to simulate
         debugger (_Debugger): The debugger to use
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            generated. Only for simulation using qpjax.
         interface (str): The machine learning interface to create the initial state with
         postselect_mode (str): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to

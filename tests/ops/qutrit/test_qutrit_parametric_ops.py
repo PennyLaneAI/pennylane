@@ -342,9 +342,9 @@ class TestLabel:
     @pytest.mark.jax
     def test_label_jax(self):
         """Test the label method works with jax"""
-        import jax
+        import qpjax
 
-        op1 = qml.TRX(jax.numpy.array(1.23456), wires=0)
+        op1 = qml.TRX(qpjax.numpy.array(1.23456), wires=0)
         assert op1.label(decimals=2) == "TRX\n(1.23)"
 
     def test_string_parameter(self):
@@ -489,8 +489,8 @@ class TestGrad:
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_jax(self, op, obs, grad_fn, phi, diff_method, tol):
         """Test that parametrized operations are differentiable with JAX and the gradient is correct"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qutrit", wires=1)
 
@@ -503,7 +503,7 @@ class TestGrad:
             return qml.expval(obs)
 
         phi = jnp.array(phi)
-        grad = np.squeeze(jax.grad(circuit)(phi))
+        grad = np.squeeze(qpjax.grad(circuit)(phi))
 
         assert np.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
 
@@ -514,8 +514,8 @@ class TestGrad:
         if diff_method in ("finite-diff", "parameter-shift"):
             pytest.xfail()
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qutrit", wires=1)
 
@@ -528,7 +528,7 @@ class TestGrad:
             return qml.expval(obs)
 
         phi = jnp.linspace(0, 2 * np.pi, 7)
-        jac = jax.jacobian(circuit)(phi)
+        jac = qpjax.jacobian(circuit)(phi)
 
         assert np.allclose(jac, np.diag(grad_fn(phi)), atol=tol, rtol=0)
 

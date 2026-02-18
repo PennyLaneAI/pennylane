@@ -30,9 +30,9 @@ class TestAbstractShots:
     def test_shots_with_single_tracer(self):
         """Test that Shots can accept a single dynamic shot number."""
 
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
 
-        @jax.jit
+        @qpjax.jit
         def f(num_shots):
             shots_obj = Shots(num_shots)
             assert shots_obj
@@ -48,9 +48,9 @@ class TestAbstractShots:
     def tests_with_two_tracers(self):
         """Test that Shots can accept a two tracers"""
 
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
 
-        @jax.jit
+        @qpjax.jit
         def f(s1, s2):
             shots_obj = Shots((s1, s2))
             assert shots_obj
@@ -67,9 +67,9 @@ class TestAbstractShots:
     def tests_hybrid(self, reversed):
         """Test that Shots can accept a two tracers"""
 
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
 
-        @jax.jit
+        @qpjax.jit
         def f(s1):
             if reversed:
                 shots_obj = Shots((2, s1))

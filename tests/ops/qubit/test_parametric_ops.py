@@ -188,17 +188,17 @@ class TestOperations:
     @pytest.mark.jax
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_jax_pytrees(self, op):
-        import jax
+        import qpjax
 
-        leaves = jax.tree_util.tree_leaves(op)
+        leaves = qpjax.tree_util.tree_leaves(op)
         for d1, d2 in zip(leaves, op.data):
             assert d1 is d2
 
-        leaves, tree_def = jax.tree_util.tree_flatten(op)
-        op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
+        leaves, tree_def = qpjax.tree_util.tree_flatten(op)
+        op_unflattened = qpjax.tree_util.tree_unflatten(tree_def, leaves)
         qml.assert_equal(op_unflattened, op)
 
-        new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
+        new_op = qpjax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
             assert qml.math.allclose(d1, d2 + 1.0)
 
@@ -975,7 +975,7 @@ class TestMatrix:
     @pytest.mark.parametrize("wires", (range(2), range(3)))
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase_jax(self, phi, dim, wires):
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         phi = jnp.array(phi)
 
@@ -1142,9 +1142,9 @@ class TestMatrix:
     @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_jax(self, phi):
         """Test eigenvalues computation for PSWAP using JAX interface"""
-        import jax
+        import qpjax
 
-        param_jax = jax.numpy.array(phi)
+        param_jax = qpjax.numpy.array(phi)
         evs = qml.PSWAP.compute_eigvals(param_jax)
         if len(qml.math.shape(phi)) > 0:
             evs_expected = np.stack([[1, 1, -exp, exp] for exp in qml.math.exp(1j * phi)])
@@ -1302,9 +1302,9 @@ class TestMatrix:
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_jax(self, phi):
         """Test eigenvalues computation for IsingXY using JAX interface"""
-        import jax
+        import qpjax
 
-        param_jax = jax.numpy.array(phi)
+        param_jax = qpjax.numpy.array(phi)
         evs = qml.IsingXY.compute_eigvals(param_jax)
         evs_expected = [
             qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
@@ -1317,10 +1317,10 @@ class TestMatrix:
     @pytest.mark.jax
     def test_isingxy_eigvals_jax_broadcasted(self):
         """Test broadcasted eigenvalues computation for IsingXY with jax"""
-        import jax
+        import qpjax
 
         phi = np.linspace(-np.pi, np.pi, 10)
-        evs = qml.IsingXY.compute_eigvals(jax.numpy.array(phi))
+        evs = qml.IsingXY.compute_eigvals(qpjax.numpy.array(phi))
         c = np.cos(phi / 2)
         s = np.sin(phi / 2)
         ones = np.ones_like(c)
@@ -1740,9 +1740,9 @@ class TestMatrix:
     )
     def test_c_phase_shift_matrix_and_eigvals_jax(self, phi, cphase_op, gate_data_mat):
         """Test matrix and eigenvalues computation for CPhaseShift using JAX interface"""
-        import jax
+        import qpjax
 
-        param_jax = jax.numpy.array(phi)
+        param_jax = qpjax.numpy.array(phi)
         op = cphase_op(param_jax, wires=[0, 1])
         res = op.matrix()
         exp = gate_data_mat(phi)
@@ -1967,8 +1967,8 @@ class TestGrad:
             # PSWAP does not have a generator defined
             pytest.skip("PSWAP does not support adjoint")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1991,7 +1991,7 @@ class TestGrad:
 
         expected = 2 * np.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
 
-        res = jax.grad(circuit, argnums=0)(phi)
+        res = qpjax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -2199,8 +2199,8 @@ class TestGrad:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -2223,7 +2223,7 @@ class TestGrad:
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
-        res = jax.grad(circuit, argnums=0)(phi)
+        res = qpjax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -2237,8 +2237,8 @@ class TestGrad:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -2271,7 +2271,7 @@ class TestGrad:
             )
         )
 
-        res = jax.grad(circuit, argnums=0)(phi)
+        res = qpjax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -2285,8 +2285,8 @@ class TestGrad:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -2319,7 +2319,7 @@ class TestGrad:
             )
         )
 
-        res = jax.grad(circuit, argnums=0)(phi)
+        res = qpjax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -2333,8 +2333,8 @@ class TestGrad:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -2357,7 +2357,7 @@ class TestGrad:
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
-        res = jax.grad(circuit, argnums=0)(phi)
+        res = qpjax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -2542,7 +2542,7 @@ class TestGrad:
     def test_qnode_with_rx_and_state_jacobian_jax(self, par, tol):
         """Test the jacobian of a complex valued QNode that contains a rotation
         using the JAX interface."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -2551,7 +2551,7 @@ class TestGrad:
             qml.RX(x, wires=[0])
             return qml.state()
 
-        res = jax.jacobian(test, holomorphic=True)(par + 0j)
+        res = qpjax.jacobian(test, holomorphic=True)(par + 0j)
         expected = -1 / 2 * np.sin(par / 2), -1 / 2 * 1j * np.cos(par / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -2644,8 +2644,8 @@ class TestGrad:
         if diff_method in {"adjoint"}:
             pytest.skip("PCPHase does not support adjoint diff")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(dev_name, wires=[0, 1])
         expected_grad = jnp.array(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
@@ -2662,7 +2662,7 @@ class TestGrad:
             qml.Hadamard(wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        computed_grad = jax.grad(circ, argnums=0)(phi)
+        computed_grad = qpjax.grad(circ, argnums=0)(phi)
         assert np.isclose(computed_grad, expected_grad)
 
     @pytest.mark.jax
@@ -2671,10 +2671,10 @@ class TestGrad:
     def test_globalphase_jax_grad(self, tol, dev_name, diff_method, wires):
         """Test the gradient with JAX for a controlled GlobalPhase."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
 
@@ -2690,7 +2690,7 @@ class TestGrad:
 
         expected = [-0.8632093]
 
-        res = jax.grad(circuit, argnums=0)(phi)
+        res = qpjax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -3642,8 +3642,8 @@ class TestSimplify:
     @pytest.mark.parametrize("op", rotations)
     def test_simplify_rotations_grad_jax(self, op):
         """Test the gradient of an op after simplication for the JAX interface"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit")
 
@@ -3666,10 +3666,10 @@ class TestSimplify:
             unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
             simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
-            unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+            unsimplified_grad = qpjax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
                 False, wires, *parameters, **hyperparams
             )
-            simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+            simplified_grad = qpjax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
                 True, wires, *parameters, **hyperparams
             )
 
@@ -3679,8 +3679,8 @@ class TestSimplify:
     @pytest.mark.jax
     def test_simplify_rotations_grad_jax_jit(self):
         """Test the gradient of an op after simplication for the JAX interface with jitting"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         op = qml.U2
 
@@ -3688,13 +3688,13 @@ class TestSimplify:
 
         wires = 0 if op.num_wires == 1 else [0, 1]
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def simplified_circuit(*params):
             qml.simplify(op(*params, wires=wires))
             return qml.expval(qml.PauliZ(0))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def unsimplified_circuit(*params):
             op(*params, wires=wires)
@@ -3709,10 +3709,10 @@ class TestSimplify:
             unsimplified_res = unsimplified_circuit(*parameters)
             simplified_res = simplified_circuit(*parameters)
 
-            unsimplified_grad = jax.grad(
+            unsimplified_grad = qpjax.grad(
                 unsimplified_circuit, argnums=list(range(len(parameters)))
             )(*parameters)
-            simplified_grad = jax.grad(simplified_circuit, argnums=list(range(len(parameters))))(
+            simplified_grad = qpjax.grad(simplified_circuit, argnums=list(range(len(parameters))))(
                 *parameters
             )
 
@@ -3987,15 +3987,15 @@ class TestLabel:
     @pytest.mark.jax
     def test_label_jax(self):
         """Test the label method works with jax"""
-        import jax
+        import qpjax
 
-        op1 = qml.RX(jax.numpy.array(1.23456), wires=0)
+        op1 = qml.RX(qpjax.numpy.array(1.23456), wires=0)
         assert op1.label(decimals=2) == "RX\n(1.23)"
 
-        op2 = qml.CRX(jax.numpy.array(1.23456), wires=(0, 1))
+        op2 = qml.CRX(qpjax.numpy.array(1.23456), wires=(0, 1))
         assert op2.label(decimals=2) == "RX\n(1.23)"
 
-        op3 = qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=0)
+        op3 = qml.Rot(qpjax.numpy.array(0.1), qpjax.numpy.array(0.2), qpjax.numpy.array(0.3), wires=0)
         assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
     def test_string_parameter(self):

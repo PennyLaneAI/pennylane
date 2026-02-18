@@ -186,9 +186,9 @@ class TestMapWiresCallables:
     def test_jitting_simplified_qfunc(self):
         """Test that we can jit qnodes that have a mapped quantum function."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         @qml.map_wires(wire_map=wire_map)
         @qml.qnode(qml.device("default.qubit", wires=5))
         def circuit(x):
@@ -196,9 +196,9 @@ class TestMapWiresCallables:
             _ = qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
-        x = jax.numpy.array(4 * jax.numpy.pi + 0.1)
+        x = qpjax.numpy.array(4 * qpjax.numpy.pi + 0.1)
         res = circuit(x)
-        assert qml.math.allclose(res, jax.numpy.sin(x))
+        assert qml.math.allclose(res, qpjax.numpy.sin(x))
 
-        grad = jax.grad(circuit)(x)
-        assert qml.math.allclose(grad, jax.numpy.cos(x))
+        grad = qpjax.grad(circuit)(x)
+        assert qml.math.allclose(grad, qpjax.numpy.cos(x))

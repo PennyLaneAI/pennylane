@@ -26,7 +26,7 @@ def test_subroutine_no_jax():
     Since this is a "core" test, no jax will be present in the CI.
     """
     try:
-        import jax  # pylint: disable=unused-import
+        import qpjax  # pylint: disable=unused-import
     except ImportError:
 
         def f(x):
@@ -40,7 +40,7 @@ class TestCaptureUse:
     def test_no_capture(self):
         """Test that if capture is turned off, no special primitive is captured."""
 
-        import jax
+        import qpjax
 
         @qml.capture.subroutine
         def f(x):
@@ -48,13 +48,13 @@ class TestCaptureUse:
 
         qml.capture.disable()
 
-        jaxpr = jax.make_jaxpr(f)(2)
+        jaxpr = qpjax.make_jaxpr(f)(2)
         assert jaxpr.eqns[0].primitive.name == "add"  # not a quantum subroutine
 
     def test_repeated_call_same_shapes(self):
         """Test that if the subroutine is called with the same shapes, you get the same jaxpr."""
 
-        import jax
+        import qpjax
 
         @qml.capture.subroutine
         def f(x):
@@ -64,7 +64,7 @@ class TestCaptureUse:
             f(x)
             f(2 * x)
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         for i in [0, 2]:
             eqn = jaxpr.eqns[i]
@@ -77,7 +77,7 @@ class TestCaptureUse:
     def test_repeated_call_different_inputs(self, x, y):
         """Test that if different inputs shapes or dtypes are passed in, we get different jaxprs."""
 
-        import jax
+        import qpjax
 
         @qml.capture.subroutine
         def add_func(x):
@@ -87,7 +87,7 @@ class TestCaptureUse:
             add_func(x)
             add_func(y)
 
-        jaxpr = jax.make_jaxpr(c)(x, y)
+        jaxpr = qpjax.make_jaxpr(c)(x, y)
 
         assert jaxpr.eqns[0].params["name"] == "add_func"
         assert jaxpr.eqns[1].params["name"] == "add_func"
@@ -100,7 +100,7 @@ class TestCaptureUse:
     def test_static_arguments(self, static_kwargs):
         """Test that static arguments effect the captured jaxpr."""
 
-        import jax
+        import qpjax
 
         @partial(qml.capture.subroutine, **static_kwargs)
         def some_func(x, op_type):
@@ -114,7 +114,7 @@ class TestCaptureUse:
             some_func(x, "RX")
             some_func(x, "RY")
 
-        jaxpr = jax.make_jaxpr(c)(0.5)
+        jaxpr = qpjax.make_jaxpr(c)(0.5)
 
         jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
         jaxpr2 = jaxpr.eqns[2].params["jaxpr"]

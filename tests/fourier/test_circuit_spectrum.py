@@ -184,7 +184,7 @@ class TestInterfaces:
     def test_integration_jax(self):
         """Test that the spectra of a circuit is calculated correctly
         in the jax interface."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         x = jnp.array([1.0, 2.0, 3.0])
         w = [[-1, -2, -3], [-4, -5, -6]]

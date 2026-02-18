@@ -24,7 +24,7 @@ pytestmark = pytest.mark.all_interfaces
 
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 state_00 = [1, 0, 0, 0]
 state_01 = [0, 1, 0, 0]

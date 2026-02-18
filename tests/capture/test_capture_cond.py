@@ -67,7 +67,7 @@ def test_bad_predicate_shape():
         qml.cond(pred, qml.X, qml.Z)(0)
 
     with pytest.raises(ValueError, match="predicate must be a scalar"):
-        jax.make_jaxpr(f)(np.array([0, 0]))
+        qpjax.make_jaxpr(f)(np.array([0, 0]))
 
 
 @pytest.mark.parametrize("decorator", [True, False])
@@ -117,10 +117,10 @@ class TestCond:
         def f(pred, arg):
             return test_func(pred)(arg)
 
-        jaxpr = jax.make_jaxpr(f)(selector, arg)
+        jaxpr = qpjax.make_jaxpr(f)(selector, arg)
         # 0-4 greater than and equality.
         assert jaxpr.eqns[5].primitive == cond_prim
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, selector, arg)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, selector, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -149,8 +149,8 @@ class TestCond:
         result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(test_func(selector))(arg)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        jaxpr = qpjax.make_jaxpr(test_func(selector))(arg)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -180,22 +180,22 @@ class TestCond:
 
         test_func = qml.grad(func(selector))
 
-        jaxpr = jax.make_jaxpr(test_func)(arg)
+        jaxpr = qpjax.make_jaxpr(test_func)(arg)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == jacobian_prim
         # broken on jax0.5.3
-        # correct_func = jax.grad(func(selector))
+        # correct_func = qpjax.grad(func(selector))
         # assert np.allclose(correct_func(arg), expected)
         # assert np.allclose(test_func(arg), correct_func(arg))
 
-        # manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        # manual_res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         # assert np.allclose(manual_res, correct_func(arg))
 
     @pytest.mark.parametrize(
         "selector, arg, expected",
         [
-            (1, jax.numpy.array([2, 3]), 12),
-            (0, jax.numpy.array([2, 3]), 15),
+            (1, qpjax.numpy.array([2, 3]), 12),
+            (0, qpjax.numpy.array([2, 3]), 15),
         ],
     )
     def test_cond_with_jax_array(self, selector, arg, expected, decorator):
@@ -222,8 +222,8 @@ class TestCond:
         result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(test_func(selector))(arg)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        jaxpr = qpjax.make_jaxpr(test_func(selector))(arg)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     def test_mcm_return_error(self, decorator):
@@ -248,11 +248,11 @@ class TestCond:
                 qml.cond(m1, true_fn, false_fn)(x)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.23)
+        jaxpr = qpjax.make_jaxpr(f)(1.23)
         with pytest.raises(
             ConditionalTransformError, match="Only quantum functions without return values"
         ):
-            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+            _ = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
     def test_mcm_mixed_conds_error(self, decorator):
         """Test that an error is raised if executing a quantum function that uses qml.cond with
@@ -278,12 +278,12 @@ class TestCond:
                 qml.cond(m1, true_fn, false_fn, elifs=(x > 1.5, elif_fn))(x)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.23)
+        jaxpr = qpjax.make_jaxpr(f)(1.23)
         with pytest.raises(
             ConditionalTransformError,
             match="Cannot use qml.cond with a combination of mid-circuit measurements",
         ):
-            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+            _ = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
 
 def test_keyword_argument():
@@ -301,7 +301,7 @@ def test_keyword_argument():
 
         return b(x=x)
 
-    jaxpr = jax.make_jaxpr(f)(True, 0.5)
+    jaxpr = qpjax.make_jaxpr(f)(True, 0.5)
     assert jaxpr.eqns[0].primitive == cond_prim
 
     for j in jaxpr.eqns[0].params["jaxpr_branches"]:
@@ -343,7 +343,7 @@ class TestCondReturns:
             return CondCallable(pred, true_fn, false_fn)(input)
 
         with pytest.raises(expected_error, match=match):
-            jax.make_jaxpr(f)(True, jax.numpy.array(1))
+            qpjax.make_jaxpr(f)(True, qpjax.numpy.array(1))
 
     def test_validate_number_of_output_variables(self):
         """Test mismatch in number of output variables."""
@@ -358,7 +358,7 @@ class TestCondReturns:
             return CondCallable(pred, true_fn, false_fn)(input)
 
         with pytest.raises(ValueError, match=r"Mismatch in number of output variables"):
-            jax.make_jaxpr(f)(True, jax.numpy.array(1))
+            qpjax.make_jaxpr(f)(True, qpjax.numpy.array(1))
 
     def test_validate_output_variable_types(self):
         """Test mismatch in output variable types."""
@@ -373,7 +373,7 @@ class TestCondReturns:
             return CondCallable(pred, true_fn, false_fn)(input)
 
         with pytest.raises(ValueError, match=r"Mismatch in output abstract values"):
-            jax.make_jaxpr(f)(True, jax.numpy.array(1))
+            qpjax.make_jaxpr(f)(True, qpjax.numpy.array(1))
 
     def test_validate_no_false_branch_with_return(self):
         """Test no false branch provided with return variables."""
@@ -388,7 +388,7 @@ class TestCondReturns:
             ValueError,
             match=r"The false branch must be provided if the true branch returns any variables",
         ):
-            jax.make_jaxpr(f)(True, jax.numpy.array(1))
+            qpjax.make_jaxpr(f)(True, qpjax.numpy.array(1))
 
     def test_validate_no_false_branch_with_return_2(self):
         """Test no false branch provided with return variables."""
@@ -406,7 +406,7 @@ class TestCondReturns:
             ValueError,
             match=r"The false branch must be provided if the true branch returns any variables",
         ):
-            jax.make_jaxpr(f)(True, jax.numpy.array(1))
+            qpjax.make_jaxpr(f)(True, qpjax.numpy.array(1))
 
     def test_validate_elif_branches(self):
         """Test elif branch mismatches."""
@@ -434,7 +434,7 @@ class TestCondReturns:
         with pytest.raises(
             ValueError, match=r"Mismatch in output abstract values in elif branch #1"
         ):
-            jax.make_jaxpr(f)(True, True, False, jax.numpy.array(1))
+            qpjax.make_jaxpr(f)(True, True, False, qpjax.numpy.array(1))
 
         def g(pred1, pred2, input):
             return CondCallable(pred1, true_fn, false_fn, elifs=[(pred2, elif_fn3)])(input)
@@ -442,7 +442,7 @@ class TestCondReturns:
         with pytest.raises(
             ValueError, match=r"Mismatch in number of output variables in elif branch #0"
         ):
-            jax.make_jaxpr(g)(True, True, jax.numpy.array(1))
+            qpjax.make_jaxpr(g)(True, True, qpjax.numpy.array(1))
 
     @pytest.mark.parametrize("partial_operator", (True, False))
     def test_true_fn_operator_type_no_false_fn(self, partial_operator):
@@ -453,7 +453,7 @@ class TestCondReturns:
             fn = partial(qml.X) if partial_operator else qml.X
             qml.cond(pred, fn)(0)
 
-        jaxpr = jax.make_jaxpr(f)(True)
+        jaxpr = qpjax.make_jaxpr(f)(True)
         assert jaxpr.eqns[0].primitive == cond_prim
         assert len(jaxpr.eqns[0].outvars) == 0
 
@@ -594,8 +594,8 @@ class TestCondCircuits:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         args = [pred]
-        jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -612,8 +612,8 @@ class TestCondCircuits:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         args = [pred, arg1, arg2]
-        jaxpr = jax.make_jaxpr(circuit_branches)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit_branches)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -629,8 +629,8 @@ class TestCondCircuits:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         args = [pred, arg1, arg2]
-        jaxpr = jax.make_jaxpr(circuit_with_returned_operator)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit_with_returned_operator)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -646,8 +646,8 @@ class TestCondCircuits:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         args = [tmp_pred, tmp_arg]
-        jaxpr = jax.make_jaxpr(circuit_multiple_cond)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit_multiple_cond)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -664,8 +664,8 @@ class TestCondCircuits:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         args = [pred, arg]
-        jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit_with_consts)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
@@ -676,7 +676,7 @@ class TestCondCircuits:
     def test_mcm_predicate_execution(self, reset, postselect, shots, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results."""
-        device = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        device = qml.device("default.qubit", wires=3, seed=qpjax.random.PRNGKey(seed))
 
         def true_fn(arg):
             qml.RX(arg, 0)
@@ -721,7 +721,7 @@ class TestCondCircuits:
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results when there are also elifs present."""
         # pylint: disable=expression-not-assigned
-        device = qml.device("default.qubit", wires=5, seed=jax.random.PRNGKey(seed))
+        device = qml.device("default.qubit", wires=5, seed=qpjax.random.PRNGKey(seed))
 
         def true_fn():
             # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
@@ -826,8 +826,8 @@ class TestCondCircuits:
 
         args = [upper_bound, arg]
         result = circuit(*args)
-        jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, upper_bound, *arg)
+        jaxpr = qpjax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, upper_bound, *arg)
         assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
 
 
@@ -884,73 +884,73 @@ class TestDynamicShapeValidation:
             return qml.X(0)
 
         def false_fn():
-            return jax.numpy.array(3)
+            return qpjax.numpy.array(3)
 
         def f(val):
             return qml.cond(val, true_fn, false_fn=false_fn)()
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            jax.make_jaxpr(f)(True)
+            qpjax.make_jaxpr(f)(True)
 
     def test_different_dtype(self):
         """Test an error is raised in the outputs have different dtypes."""
 
         def true_fn(n):
-            return jax.numpy.arange(n, dtype=int)
+            return qpjax.numpy.arange(n, dtype=int)
 
         def false_fn(n):
-            return jax.numpy.arange(n, dtype=float)
+            return qpjax.numpy.arange(n, dtype=float)
 
         def f(val, n):
             return qml.cond(val, true_fn, false_fn=false_fn)(n)
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            jax.make_jaxpr(f)(True, 3)
+            qpjax.make_jaxpr(f)(True, 3)
 
     def test_one_dynamic_shape_other_not(self):
         """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
 
         def true_fn(n):  # pylint: disable=unused-argument
-            return jax.numpy.ones((2, n))
+            return qpjax.numpy.ones((2, n))
 
         def false_fn(n):
-            return jax.numpy.ones((n, 2))
+            return qpjax.numpy.ones((n, 2))
 
         def f(val, n):
             return qml.cond(val, true_fn, false_fn=false_fn)(n)
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            jax.make_jaxpr(f)(True, 3)
+            qpjax.make_jaxpr(f)(True, 3)
 
     def test_different_concrete_shapes(self):
         """Test that errors are still raised if they have different concrete shapes."""
 
         def true_fn():
-            return jax.numpy.ones(3)
+            return qpjax.numpy.ones(3)
 
         def false_fn():
-            return jax.numpy.ones(4)
+            return qpjax.numpy.ones(4)
 
         def f(val):
             return qml.cond(val, true_fn, false_fn=false_fn)()
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            jax.make_jaxpr(f)(True)
+            qpjax.make_jaxpr(f)(True)
 
     def test_different_sized_shapes(self):
         """Test an error is raised with different sized shapes."""
 
         def true_fn(n):
-            return jax.numpy.ones((n, n))
+            return qpjax.numpy.ones((n, n))
 
         def false_fn(n):
-            return jax.numpy.ones(n)
+            return qpjax.numpy.ones(n)
 
         def f(val, n):
             return qml.cond(val, true_fn, false_fn=false_fn)(n)
 
         with pytest.raises(ValueError, match="may be due to different sized shapes"):
-            jax.make_jaxpr(f)(True, 4)
+            qpjax.make_jaxpr(f)(True, 4)
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
@@ -968,7 +968,7 @@ class TestDynamicShapes:
         def f(condition):
             qml.cond(condition == 2, rx, ry)(0.5, 1)
 
-        jaxpr = jax.make_jaxpr(f)(0)
+        jaxpr = qpjax.make_jaxpr(f)(0)
         [op] = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
         qml.assert_equal(op, qml.RY(0.5, 1))
 
@@ -976,29 +976,29 @@ class TestDynamicShapes:
         """Test cond can accept inputs with dynamic shapes."""
 
         def workflow(x, predicate):
-            return qml.cond(predicate, jax.numpy.sum, false_fn=jax.numpy.prod)(x)
+            return qml.cond(predicate, qpjax.numpy.sum, false_fn=qpjax.numpy.prod)(x)
 
-        jaxpr = jax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(jax.numpy.arange(3), True)
+        jaxpr = qpjax.make_jaxpr(workflow, abstracted_axes=({0: "a"}, {}))(qpjax.numpy.arange(3), True)
 
-        output_true = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, jax.numpy.arange(4), True)
+        output_true = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 4, qpjax.numpy.arange(4), True)
         assert qml.math.allclose(output_true[0], 6)  # 0 + 1 + 2 + 3
 
-        output_false = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2), False)
+        output_false = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, qpjax.numpy.arange(2), False)
         assert qml.math.allclose(output_false[0], 0)  # 0 * 1
 
     def test_cond_dynamic_shape_output(self):
         """test that cond can return dynamic shapes."""
 
         def true_fn(n):
-            return jax.numpy.arange(n, dtype=int)
+            return qpjax.numpy.arange(n, dtype=int)
 
         def false_fn(n):
-            return jax.numpy.zeros(n**2, dtype=int)
+            return qpjax.numpy.zeros(n**2, dtype=int)
 
         def f(val, n):
             return {"result": qml.cond(val, true_fn, false_fn=false_fn)(n)}
 
-        jaxpr = jax.make_jaxpr(f)(True, 3)
+        jaxpr = qpjax.make_jaxpr(f)(True, 3)
 
         assert len(jaxpr.jaxpr.outvars) == 2
         assert jaxpr.jaxpr.outvars[1].aval.shape[0] is jaxpr.jaxpr.outvars[0]
@@ -1013,7 +1013,7 @@ class TestDynamicShapes:
         assert qml.math.allclose(d, false_fn(7))
 
         res = f(True, 6)  # slicing out the shape variable
-        assert qml.math.allclose(res["result"], jax.numpy.arange(6))
+        assert qml.math.allclose(res["result"], qpjax.numpy.arange(6))
 
     def test_return_operators_with_dynamic_enabled(self):
         """Test that we can return operators when dynamic shapes are enabled."""
@@ -1026,23 +1026,23 @@ class TestDynamicShapes:
         y_op = f(False, 3)
         qml.assert_equal(y_op, qml.Y(3))
 
-        jaxpr = jax.make_jaxpr(f)(False, 3)
-        [x_op2] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
+        jaxpr = qpjax.make_jaxpr(f)(False, 3)
+        [x_op2] = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 3)
         qml.assert_equal(x_op2, qml.X(3))
 
     def test_cond_dynamic_array_creation(self):
         """Test that arrays with dynamic shapes can be created within branches."""
 
         def true_fn(i):
-            return jax.numpy.sum(jax.numpy.ones(i), dtype=int)
+            return qpjax.numpy.sum(qpjax.numpy.ones(i), dtype=int)
 
         def false_fn(i):
-            return jax.numpy.sum(jax.numpy.arange(i), dtype=int)
+            return qpjax.numpy.sum(qpjax.numpy.arange(i), dtype=int)
 
         def f(condition, i):
             return qml.cond(condition, true_fn, false_fn)(i)
 
-        jaxpr = jax.make_jaxpr(f)(True, 2)
+        jaxpr = qpjax.make_jaxpr(f)(True, 2)
         [res_true] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 4)
         assert qml.math.allclose(res_true, 4)
 
@@ -1059,15 +1059,15 @@ class TestDynamicShapes:
             return qml.RY(x, i)
 
         def w(val, i):
-            return qml.cond(val, t, f)(i, jax.numpy.arange(i))
+            return qml.cond(val, t, f)(i, qpjax.numpy.arange(i))
 
-        jaxpr = jax.make_jaxpr(w)(True, 3)
+        jaxpr = qpjax.make_jaxpr(w)(True, 3)
 
         [res_true] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2)
 
-        expected = qml.RX(jax.numpy.arange(2), 2)
+        expected = qml.RX(qpjax.numpy.arange(2), 2)
         qml.assert_equal(res_true, expected)
 
         [res_false] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 3)
-        expected_false = qml.RY(jax.numpy.arange(3), 3)
+        expected_false = qml.RY(qpjax.numpy.arange(3), 3)
         qml.assert_equal(res_false, expected_false)

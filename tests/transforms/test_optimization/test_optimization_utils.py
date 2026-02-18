@@ -154,10 +154,10 @@ class TestRotGateFusion:
     @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
     def test_full_rot_fusion_jax(self, angles_1, angles_2):
         """Test that the fusion of two Rot gates has the same effect as
-        applying the Rots sequentially, in JAX."""
-        import jax
+        applying the Rots sequentially, in qpjax."""
+        import qpjax
 
-        angles_1, angles_2 = jax.numpy.array(angles_1), jax.numpy.array(angles_1)
+        angles_1, angles_2 = qpjax.numpy.array(angles_1), qpjax.numpy.array(angles_1)
         self.run_interface_test(angles_1, angles_2)
 
     @pytest.mark.slow
@@ -225,31 +225,31 @@ class TestRotGateFusion:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_jacobian_jax(self, use_jit):
-        """Test the Jacobian of the rotation angle fusion with JAX. Uses batching for performance
+        """Test the Jacobian of the rotation angle fusion with qpjax. Uses batching for performance
         reasons. For known sources of singularities, the Jacobian is checked to indeed return NaN.
         These sources are related to the absolute value of the upper left entry of the matrix
         product:
          - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
          - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
         """
-        import jax
+        import qpjax
 
         special_points = np.array([3 / 2, 1, 1 / 2, 0, -1 / 2, -1, -3 / 2]) * np.pi
         special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
         random_angles = np.random.random((1000, 2, 3))
         # Need holomorphic derivatives and complex inputs because the output matrices are complex
-        all_angles = jax.numpy.concatenate([special_angles, random_angles])
+        all_angles = qpjax.numpy.concatenate([special_angles, random_angles])
 
         # We need to define the Jacobian function manually because fuse_rot_angles is not guaranteed to be holomorphic,
-        # and jax.jacobian requires real-valued outputs for non-holomorphic functions.
+        # and qpjax.jacobian requires real-valued outputs for non-holomorphic functions.
         def jac_fn(fn):
             real_fn = lambda arg: qml.math.real(fn(arg))
             imag_fn = lambda arg: qml.math.imag(fn(arg))
-            real_jac_fn = jax.vmap(jax.jacobian(real_fn))
-            imag_jac_fn = jax.vmap(jax.jacobian(imag_fn))
+            real_jac_fn = qpjax.vmap(qpjax.jacobian(real_fn))
+            imag_jac_fn = qpjax.vmap(qpjax.jacobian(imag_fn))
             return lambda arg: real_jac_fn(arg) + 1j * imag_jac_fn(arg)
 
-        jit_fn = jax.jit if use_jit else None
+        jit_fn = qpjax.jit if use_jit else None
         self.run_jacobian_test(all_angles, jac_fn, is_batched=True, jit_fn=jit_fn)
 
     @pytest.mark.slow

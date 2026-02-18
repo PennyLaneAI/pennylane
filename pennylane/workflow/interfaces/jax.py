@@ -14,13 +14,13 @@
 """
 This module contains functions for binding JVP's or VJP's to the JAX interface.
 
-See JAX documentation on this process `here <https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html>`_ .
+See JAX documentation on this process `here <https://qpjax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html>`_ .
 
 **Basic examples:**
 
 .. code-block:: python
 
-    jax.config.update("jax_enable_x64", True)
+    qpjax.config.update("jax_enable_x64", True)
 
     def f(x):
         return x**2
@@ -31,11 +31,11 @@ See JAX documentation on this process `here <https://jax.readthedocs.io/en/lates
         print("in custom jvp function: ", x, dx)
         return x**2, 2*x*dx
 
-    registered_f_jvp = jax.custom_jvp(f)
+    registered_f_jvp = qpjax.custom_jvp(f)
 
     registered_f_jvp.defjvp(f_and_jvp)
 
->>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
+>>> qpjax.grad(registered_f_jvp)(qpjax.numpy.array(2.0))
 in custom jvp function:  2.0 Traced<~float64[]:JaxprTrace>
 Array(4., dtype=float64, weak_type=True)
 
@@ -44,7 +44,7 @@ We can do something similar for the VJP as well:
 
 .. code-block:: python
 
-    jax.config.update("jax_enable_x64", True)
+    qpjax.config.update("jax_enable_x64", True)
 
     def f_fwd(x):
         print("in forward pass: ", x)
@@ -54,10 +54,10 @@ We can do something similar for the VJP as well:
         print("in backward pass: ", residual, dy)
         return (dy*2*residual,)
 
-    registered_f_vjp = jax.custom_vjp(f)
+    registered_f_vjp = qpjax.custom_vjp(f)
     registered_f_vjp.defvjp(f_fwd, f_bwd)
 
->>> jax.grad(registered_f_vjp)(jax.numpy.array(2.0))
+>>> qpjax.grad(registered_f_vjp)(qpjax.numpy.array(2.0))
 in forward pass:  2.0
 in backward pass:  2.0 1.0
 Array(4., dtype=float64, weak_type=True)
@@ -68,23 +68,23 @@ When JAX can trace the product between the Jacobian and the cotangents, it can t
 process, JAX can support both JVP and VJP calculations by registering only the JVP.
 
 Unfortunately, :meth:`~pennylane.devices.Device.compute_jvp` uses pure numpy to perform the Jacobian product and cannot
-be traced by JAX.
+be traced by qpjax.
 
 For example, if we replace the definition of ``f_and_jvp`` from above with one that breaks tracing,
 
 .. code-block:: python
 
-    jax.config.update("jax_enable_x64", True)
+    qpjax.config.update("jax_enable_x64", True)
 
     def bad_f_and_jvp(primals, tangents):
         x = primals[0]
         dx = qml.math.unwrap(tangents[0]) # This line breaks tracing
         return x**2, 2*x*dx
 
->>> bad_f = jax.custom_jvp(f)
+>>> bad_f = qpjax.custom_jvp(f)
 >>> bad_f.defjvp(bad_f_and_jvp)
 <function bad_f_and_jvp at 0x...>
->>> jax.grad(bad_f)(jax.numpy.array(2.0))
+>>> qpjax.grad(bad_f)(qpjax.numpy.array(2.0))
 Traceback (most recent call last):
     ...
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
@@ -102,7 +102,7 @@ But if we used the VJP instead:
 
 We would be able to calculate the gradient without error.
 
-Since the VJP calculation offers access to ``jax.grad`` and ``jax.jacobian``, we register the VJP when we have to choose
+Since the VJP calculation offers access to ``qpjax.grad`` and ``qpjax.jacobian``, we register the VJP when we have to choose
 between either the VJP or the JVP.
 
 **Pytrees and Non-diff argnums:**
@@ -111,7 +111,7 @@ The trainable arguments for the registered functions can be any valid pytree.
 
 .. code-block:: python
 
-    jax.config.update("jax_enable_x64", True)
+    qpjax.config.update("jax_enable_x64", True)
 
     def f(x):
         return x['a']**2
@@ -122,11 +122,11 @@ The trainable arguments for the registered functions can be any valid pytree.
         print("in custom jvp function: ", x, dx)
         return x['a']**2, 2*x['a']*dx['a']
 
-    registered_f_jvp = jax.custom_jvp(f)
+    registered_f_jvp = qpjax.custom_jvp(f)
 
     registered_f_jvp.defjvp(f_and_jvp)
 
->>> jax.grad(registered_f_jvp)({'a': jax.numpy.array(2.0)})
+>>> qpjax.grad(registered_f_jvp)({'a': qpjax.numpy.array(2.0)})
 in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': Traced<~float64[]:JaxprTrace>}
 {'a': Array(4., dtype=float64, weak_type=True)}
 
@@ -143,8 +143,8 @@ import dataclasses
 import logging
 from collections.abc import Callable
 
-import jax
-import jax.numpy as jnp
+import qpjax
+import qpjax.numpy as jnp
 
 import pennylane as qml
 from pennylane.tape import QuantumScriptBatch
@@ -169,7 +169,7 @@ class _NonPytreeWrapper:
     * Validation checks on initialization: see BasisStateProjector, StatePrep that does not allow the operator to store the cotangents
     * Jitting non-jax parametrized circuits.  NumPy parameters turn into abstract parameters during the pytree process.
 
-    ``jax.custom_vjp`` forbids any non-differentiable argument to be a pytree, so we need to wrap it in a non-pytree type.
+    ``qpjax.custom_vjp`` forbids any non-differentiable argument to be a pytree, so we need to wrap it in a non-pytree type.
 
     When the above issues are fixed, we can treat ``tapes`` as the differentiable argument.
 
@@ -220,7 +220,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, primals, tangents):
     return _to_jax(res), _to_jax(jvps)
 
 
-_execute_jvp = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
+_execute_jvp = qpjax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
 _execute_jvp.defjvp(_execute_and_compute_jvp)
 
 

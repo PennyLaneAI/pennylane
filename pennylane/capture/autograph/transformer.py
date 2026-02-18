@@ -190,7 +190,7 @@ def run_autograph(fn):
     ...     for i in range(n):
     ...          x += 1
     ...     return x
-    >>> jax.make_jaxpr(f)(2, 4)
+    >>> qpjax.make_jaxpr(f)(2, 4)
     TracerIntegerConversionError: The __index__() method was called on traced array with shape int64[].
     The error occurred while tracing the function f at /var/folders/61/wr1fxnf95tg9k56bz1_7g29r0000gq/T/ipykernel_23187/3992882129.py:1 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument n.
 
@@ -198,7 +198,7 @@ def run_autograph(fn):
     with :func:`~.cond`, :func:`~.for_loop`, and :func:`~.while_loop`, making it possible to capture:
 
     >>> ag_fn = run_autograph(f)
-    >>> jax.make_jaxpr(ag_fn)(2, 4)
+    >>> qpjax.make_jaxpr(ag_fn)(2, 4)
     { lambda ; a:i64[] b:i64[]. let
         c:i64[] = for_loop[
           args_slice=slice(0, None, None)
@@ -329,7 +329,7 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
     .. code-block::
 
         import pennylane as qml
-        import jax
+        import qpjax
 
         from jax import make_jaxpr
         from pennylane.capture.autograph import disable_autograph, run_autograph

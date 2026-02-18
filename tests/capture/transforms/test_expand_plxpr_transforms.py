@@ -39,9 +39,9 @@ def _dummy_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):  # pylint: dis
     """Dummy function to transform plxpr."""
 
     def wrapper(*inner_args):
-        return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+        return qpjax.core.eval_jaxpr(jaxpr, consts, *inner_args)
 
-    return jax.make_jaxpr(wrapper)(*args)
+    return qpjax.make_jaxpr(wrapper)(*args)
 
 
 @partial(qml.transform, plxpr_transform=_dummy_plxpr_transform)
@@ -71,7 +71,7 @@ class TestExpandTransformsInterpreter:
             return qml.expval(qml.Z(0))
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
 
         def wrapper(*inner_args):
             interpreter = ExpandTransformsInterpreter()
@@ -86,7 +86,7 @@ class TestExpandTransformsInterpreter:
             }
             return custom_handler(interpreter, *invals, **params)
 
-        new_jaxpr = jax.make_jaxpr(wrapper)(*args)
+        new_jaxpr = qpjax.make_jaxpr(wrapper)(*args)
         assert all(
             orig_eqn.primitive == new_eqn.primitive
             for orig_eqn, new_eqn in zip(jaxpr.eqns, new_jaxpr.eqns, strict=True)
@@ -112,14 +112,14 @@ class TestExpandPlxprTransforms:
             qml.adjoint(qml.S(1))
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
         assert jaxpr.jaxpr.outvars == jaxpr.eqns[0].outvars
 
         transformed_f = expand_plxpr_transforms(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)()
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)()
         assert len(transformed_jaxpr.eqns) == 2
         assert transformed_jaxpr.eqns[0].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[1].primitive == qml.measurements.ExpectationMP._obs_primitive
@@ -143,7 +143,7 @@ class TestExpandPlxprTransforms:
             return g()
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert len(jaxpr.eqns) == 2
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
         assert jaxpr.eqns[1].primitive == transform_prim
@@ -151,7 +151,7 @@ class TestExpandPlxprTransforms:
         assert jaxpr.jaxpr.outvars == jaxpr.eqns[1].outvars
 
         transformed_f = expand_plxpr_transforms(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
         assert len(transformed_jaxpr.eqns) == 3
         assert transformed_jaxpr.eqns[0].primitive == qml.RX._primitive
         assert transformed_jaxpr.eqns[1].primitive == qml.PauliZ._primitive
@@ -186,7 +186,7 @@ class TestExpandPlxprTransforms:
             return m1, m2
 
         args = (1.2, 3.4, 5.6, 7.8)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert len(jaxpr.eqns) == 4
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
         assert jaxpr.eqns[1].primitive == transform_prim
@@ -197,7 +197,7 @@ class TestExpandPlxprTransforms:
         assert jaxpr.jaxpr.outvars == [jaxpr.eqns[1].outvars[0], jaxpr.eqns[3].outvars[0]]
 
         transformed_f = expand_plxpr_transforms(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
         ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
         assert len(ops_and_meas) == 8
         assert ops_and_meas[0].primitive == qml.RX._primitive
@@ -237,7 +237,7 @@ class TestExpandPlxprTransforms:
             return g(x, y, z)
 
         args = (1.2, 3.4, 5.6, 7.8)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert len(jaxpr.eqns) == 2
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
         assert jaxpr.eqns[1].primitive == transform_prim
@@ -253,7 +253,7 @@ class TestExpandPlxprTransforms:
         ]
 
         transformed_f = expand_plxpr_transforms(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
         ops_and_meas = extract_ops_and_meas_prims(transformed_jaxpr)
         assert len(ops_and_meas) == 7
         assert ops_and_meas[0].primitive == qml.RX._primitive
@@ -279,9 +279,9 @@ class TestExpandPlxprTransforms:
             return qml.expval(qml.Z(1))
 
         args = (1.5, 2.6)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         transformed_f = expand_plxpr_transforms(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
         assert len(jaxpr.eqns) == len(transformed_jaxpr.eqns)
         assert all(
             eqn1.primitive == eqn2.primitive

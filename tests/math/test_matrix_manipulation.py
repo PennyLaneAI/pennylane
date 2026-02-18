@@ -229,10 +229,10 @@ class TestExpandMatrix:
     def test_jax(self, i, base_matrix, tol):
         """Tests differentiation in jax by computing the Jacobian of
         the expanded matrix with respect to the canonical matrix."""
-        import jax
+        import qpjax
 
-        base_matrix = jax.numpy.array(base_matrix)
-        jac_fn = jax.jacobian(self.func_for_autodiff)
+        base_matrix = qpjax.numpy.array(base_matrix)
+        jac_fn = qpjax.jacobian(self.func_for_autodiff)
         jac = jac_fn(base_matrix)
 
         assert np.allclose(jac, self.expected_autodiff[i], atol=tol)

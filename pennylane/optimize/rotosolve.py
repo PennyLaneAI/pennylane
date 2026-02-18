@@ -154,7 +154,7 @@ class RotosolveOptimizer:
         ``RotosolveOptimizer`` will only update parameters that are *explicitly*
         marked as trainable. This can be done via ``requires_grad`` if using Autograd
         or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
-        manner with TensorFlow or JAX.
+        manner with TensorFlow or qpjax.
 
     Args:
         substep_optimizer (str or callable): optimizer to use for the substeps of Rotosolve

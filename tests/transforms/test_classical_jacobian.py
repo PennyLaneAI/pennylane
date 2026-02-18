@@ -542,8 +542,8 @@ class TestJax:
     @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
     @pytest.mark.parametrize("interface", interfaces)
     def test_jax_without_argnum(self, circuit, args, expected_jac, diff_method, interface):
-        r"""Test ``classical_jacobian`` with ``argnum=None`` and JAX."""
-        import jax.numpy as jnp
+        r"""Test ``classical_jacobian`` with ``argnum=None`` and qpjax."""
+        import qpjax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
         # JAX behaviour: argnum=None yields only the Jacobian with respect to the first arg.
@@ -561,9 +561,9 @@ class TestJax:
     def test_jax_with_single_list_argnum(
         self, circuit, args, expected_jac, argnum, diff_method, interface
     ):
-        r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and JAX."""
+        r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and qpjax."""
         print(argnum)
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
         dev = qml.device("default.qubit", wires=2)
@@ -580,8 +580,8 @@ class TestJax:
     def test_jax_with_scalar_argnum(
         self, circuit, args, expected_jac, argnum, diff_method, interface
     ):
-        r"""Test ``classical_jacobian`` with ``argnum=<int>`` and JAX."""
-        import jax.numpy as jnp
+        r"""Test ``classical_jacobian`` with ``argnum=<int>`` and qpjax."""
+        import qpjax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
         dev = qml.device("default.qubit", wires=2)
@@ -597,8 +597,8 @@ class TestJax:
     def test_jax_with_sequence_argnum(
         self, circuit, args, expected_jac, argnum, diff_method, interface
     ):
-        r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and JAX."""
-        import jax.numpy as jnp
+        r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and qpjax."""
+        import qpjax.numpy as jnp
 
         args = tuple(jnp.array(arg) for arg in args)
         dev = qml.device("default.qubit", wires=2)

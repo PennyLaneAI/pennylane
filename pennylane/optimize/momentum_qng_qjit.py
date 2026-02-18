@@ -19,7 +19,7 @@ from .qng_qjit import QNGOptimizerQJIT
 
 
 class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
-    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the :class:`~.MomentumQNGOptimizer`,
+    r"""Optax-like and ``qpjax.jit``/``qml.qjit``-compatible implementation of the :class:`~.MomentumQNGOptimizer`,
     a generalized Quantum Natural Gradient (QNG) optimizer considering a discrete-time Langevin equation
     with QNG force.
 
@@ -62,7 +62,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     .. code-block:: python
 
         import pennylane as qml
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dev = qml.device("lightning.qubit", wires=2)
 

@@ -25,12 +25,12 @@ from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    import jax
+    import qpjax
 
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QmlPrimitive
 except ImportError:
-    jax = None
+    qpjax = None
     has_jax = False
 
 
@@ -59,7 +59,7 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+        return [qpjax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
 
     deallocate_prim = QmlPrimitive("deallocate")
     deallocate_prim.multiple_results = True

@@ -23,7 +23,7 @@ import pennylane as qml
 def test_catalyst_integration():
     """Test that scatter_element_add can be used with catalyst by specifying indices_are_sorted and unique_indices."""
 
-    jnp = pytest.importorskip("jax.numpy")
+    jnp = pytest.importorskip("qpjax.numpy")
 
     @qml.qjit
     def f(x, y):

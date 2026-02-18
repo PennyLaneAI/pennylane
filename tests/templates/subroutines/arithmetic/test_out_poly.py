@@ -227,7 +227,7 @@ class TestOutPoly:
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
-        import jax
+        import qpjax
 
         wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
 
@@ -236,7 +236,7 @@ class TestOutPoly:
 
         dev = qml.device("default.qubit", wires=14)
 
-        @jax.jit
+        @qpjax.jit
         @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():

@@ -114,17 +114,17 @@ class TestGetOneParameterGenerators:
     @pytest.mark.parametrize("n", [1, 2, 3])
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_jax(self, n, use_jit, seed):
-        """Test that generators are computed correctly in JAX."""
-        import jax
+        """Test that generators are computed correctly in qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        from jax import numpy as jnp
+        qpjax.config.update("jax_enable_x64", True)
+        from qpjax import numpy as jnp
 
         rng = np.random.default_rng(seed)
         d = 4**n - 1
         theta = jnp.array(rng.random(d))
         fn = (
-            jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
+            qpjax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
             if use_jit
             else self.get_one_parameter_generators
         )
@@ -136,14 +136,14 @@ class TestGetOneParameterGenerators:
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_jax_pauli_generated(self, use_jit):
         """Test that generators match Pauli words."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        from jax import numpy as jnp
+        qpjax.config.update("jax_enable_x64", True)
+        from qpjax import numpy as jnp
 
         n = 1
         fn = (
-            jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
+            qpjax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
             if use_jit
             else self.get_one_parameter_generators
         )
@@ -246,20 +246,20 @@ class TestGetOneParameterGeneratorsDiffability:
     @pytest.mark.parametrize("use_jit", [True, False])
     @pytest.mark.parametrize("n", [1, 2])
     def test_jacobian_jax(self, n, use_jit):
-        """Test that generators are differentiable in JAX."""
-        import jax
+        """Test that generators are differentiable in qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        from jax import numpy as jnp
+        qpjax.config.update("jax_enable_x64", True)
+        from qpjax import numpy as jnp
 
         d = 4**n - 1
         theta = jnp.array(np.random.random(d), dtype=jnp.complex128)
         fn = (
-            jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
+            qpjax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
             if use_jit
             else self.get_one_parameter_generators
         )
-        dOmegas = jax.jacobian(fn, holomorphic=True)(theta, n, "jax")
+        dOmegas = qpjax.jacobian(fn, holomorphic=True)(theta, n, "jax")
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
     @pytest.mark.tf
@@ -304,11 +304,11 @@ class TestGetOneParameterCoeffs:
     @pytest.mark.jax
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_jax(self, n):
-        """Test that the coefficients of the generators are computed correctly in JAX."""
-        import jax
+        """Test that the coefficients of the generators are computed correctly in qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        from jax import numpy as jnp
+        qpjax.config.update("jax_enable_x64", True)
+        from qpjax import numpy as jnp
 
         d = 4**n - 1
         theta = jnp.array(np.random.random(d))
@@ -390,10 +390,10 @@ class TestSpecialUnitary:
         if interface == "autograd":
             return qml.numpy.array(x)
         if interface == "jax":
-            import jax
+            import qpjax
 
-            jax.config.update("jax_enable_x64", True)
-            return jax.numpy.array(x)
+            qpjax.config.update("jax_enable_x64", True)
+            return qpjax.numpy.array(x)
         if interface == "torch":
             import torch
 
@@ -540,16 +540,16 @@ class TestSpecialUnitary:
     def test_decomposition_jax(self, n, theta):
         """Test that a trainable SpecialUnitary in JAX
         decomposes into a non-trainable SpecialUnitary and TmpPauliRot ops."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         d = 4**n - 1
         words = pauli_basis_strings(n)
         wires = list(range(n))
 
         def assertion_fn(theta):
-            """Wrapper function to allow marking the parameters as trainable in JAX."""
+            """Wrapper function to allow marking the parameters as trainable in qpjax."""
             decomp = qml.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
             for w, op in zip(words, decomp[:-1]):
@@ -568,8 +568,8 @@ class TestSpecialUnitary:
 
             return theta
 
-        theta = jax.numpy.array(theta)
-        jax.jacobian(assertion_fn)(theta)
+        theta = qpjax.numpy.array(theta)
+        qpjax.jacobian(assertion_fn)(theta)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n, theta", n_and_theta)
@@ -651,16 +651,16 @@ class TestSpecialUnitary:
     def test_jax_jit(self):
         """Test that the SpecialUnitary operation works
         within a QNode that uses the JAX JIT"""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        jnp = jax.numpy
+        qpjax.config.update("jax_enable_x64", True)
+        jnp = qpjax.numpy
 
         dev = qml.device("default.qubit", wires=1)
 
         theta = jnp.array(theta_1)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.SpecialUnitary(x, 0)
@@ -670,24 +670,24 @@ class TestSpecialUnitary:
             state = qml.SpecialUnitary.compute_matrix(x, 1) @ jnp.array([1, 0])
             return jnp.abs(state) ** 2
 
-        jac = jax.jacobian(circuit)(theta)
-        expected_jac = jax.jacobian(comparison)(theta)
+        jac = qpjax.jacobian(circuit)(theta)
+        expected_jac = qpjax.jacobian(comparison)(theta)
         assert np.allclose(jac, expected_jac)
 
     @pytest.mark.jax
     def test_jax_jit_broadcasted(self):
         """Test that the SpecialUnitary operation works
         within a QNode that uses the JAX JIT and broadcasting."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        jnp = jax.numpy
+        qpjax.config.update("jax_enable_x64", True)
+        jnp = qpjax.numpy
 
         dev = qml.device("default.qubit", wires=1)
 
         theta = jnp.outer(jnp.array([-0.4, 0.1, 1.0]), theta_1)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.SpecialUnitary(x, 0)
@@ -697,8 +697,8 @@ class TestSpecialUnitary:
             state = qml.SpecialUnitary.compute_matrix(x, 1) @ jnp.array([1, 0])
             return jnp.abs(state) ** 2
 
-        jac = jax.jacobian(circuit)(theta)
-        expected_jac = jax.jacobian(comparison)(theta)
+        jac = qpjax.jacobian(circuit)(theta)
+        expected_jac = qpjax.jacobian(comparison)(theta)
         assert np.allclose(jac, expected_jac)
 
     @pytest.mark.tf
@@ -825,28 +825,28 @@ class TestSpecialUnitaryIntegration:
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
     def test_qnode_jax(self, dev_fn, shots, atol, use_jit):
-        """Test that the QNode executes and is differentiable with JAX. The shots
+        """Test that the QNode executes and is differentiable with qpjax. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         if use_jit and shots is not None:
             pytest.skip("Hardware-ready differentiation does not support JITting yet.")
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method, shots=shots)
         if use_jit:
-            qnode = jax.jit(qnode)
+            qnode = qpjax.jit(qnode)
 
-        x = jax.numpy.array(self.x)
+        x = qpjax.numpy.array(self.x)
         res = qnode(x)
         assert qml.math.shape(res) == ()
         assert qml.math.isclose(res, self.exp, atol=atol)
 
-        jac_fn = jax.jacobian(qnode)
+        jac_fn = qpjax.jacobian(qnode)
         if use_jit:
-            jac_fn = jax.jit(jac_fn)
+            jac_fn = qpjax.jit(jac_fn)
 
         jac = jac_fn(x)
         assert jac.shape == (15,)
@@ -856,9 +856,9 @@ class TestSpecialUnitaryIntegration:
         paulirot_qnode = qml.QNode(
             self.paulirot_comp_circuit, dev, interface="jax", diff_method=diff_method
         )
-        exp_jac_fn = jax.jacobian(paulirot_qnode)
+        exp_jac_fn = qpjax.jacobian(paulirot_qnode)
         words = qml.ops.qubit.special_unitary.pauli_basis_strings(2)
-        for i, (single_x, unit_vector, word) in enumerate(zip(x, jax.numpy.eye(15), words)):
+        for i, (single_x, unit_vector, word) in enumerate(zip(x, qpjax.numpy.eye(15), words)):
             jac = jac_fn(single_x * unit_vector)
             exp_jac = exp_jac_fn(single_x, word)
             assert qml.math.allclose(jac[i], exp_jac, atol=atol)
@@ -982,11 +982,11 @@ class TestTmpPauliRot:
     @pytest.mark.jax
     def test_decomposition_at_zero_jax(self):
         """Test that the decomposition is a PauliRot if the theta value is trainable."""
-        import jax
+        import qpjax
 
-        x = jax.numpy.array(0.0)
+        x = qpjax.numpy.array(0.0)
         with qml.queuing.AnnotatedQueue() as q:
-            jax.grad(self.get_decomposition)(x)
+            qpjax.grad(self.get_decomposition)(x)
         assert _convert_op_to_numpy_data(q.queue[0]) == qml.PauliRot(0.0, "X", [0])
 
     @pytest.mark.tf

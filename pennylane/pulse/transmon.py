@@ -352,9 +352,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         qubit_freqs = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
@@ -371,7 +371,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
         dev = qml.device("default.qubit", wires=range(3))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(H)(params, time)
@@ -389,7 +389,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     >>> params = [max_amp0, fr0, max_amp1, fr1, max_amp2, fr2]
     >>> qnode(params)
     Array(-1.57851962, dtype=float64)
-    >>> jax.grad(qnode)(params)
+    >>> qpjax.grad(qnode)(params)
     [Array(-13.50193649, dtype=float64),
      Array(3.1112141, dtype=float64),
      Array(16.40286521, dtype=float64),

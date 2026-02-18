@@ -23,7 +23,7 @@ from pennylane import qnode
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-jax.config.update("jax_enable_x64", True)
+qpjax.config.update("jax_enable_x64", True)
 
 all_shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
 
@@ -43,7 +43,7 @@ TOLS = {
     "spsa": 0.32,
 }
 
-jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
+jacobian_fn = [qpjax.jacobian, qpjax.jacrev, qpjax.jacfwd]
 
 
 @pytest.mark.parametrize("shots", all_shots)
@@ -67,7 +67,7 @@ class TestReturnWithShotVectors:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = jax.numpy.array(0.1)
+        a = qpjax.numpy.array(0.1)
 
         jac = jacobian(circuit)(a)
 
@@ -77,7 +77,7 @@ class TestReturnWithShotVectors:
         )
         assert len(jac) == num_copies
         for j in jac:
-            assert isinstance(j, jax.numpy.ndarray)
+            assert isinstance(j, qpjax.numpy.ndarray)
             assert j.shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -94,8 +94,8 @@ class TestReturnWithShotVectors:
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = jax.numpy.array(0.1)
-        b = jax.numpy.array(0.2)
+        a = qpjax.numpy.array(0.1)
+        b = qpjax.numpy.array(0.2)
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
@@ -124,7 +124,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = jax.numpy.array([0.1, 0.2])
+        a = qpjax.numpy.array([0.1, 0.2])
 
         jac = jacobian(circuit)(a)
 
@@ -133,7 +133,7 @@ class TestReturnWithShotVectors:
         )
         assert len(jac) == num_copies
         for j in jac:
-            assert isinstance(j, jax.numpy.ndarray)
+            assert isinstance(j, qpjax.numpy.ndarray)
             assert j.shape == (2,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -151,7 +151,7 @@ class TestReturnWithShotVectors:
             qml.RX(0.2, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = jax.numpy.array(0.1)
+        a = qpjax.numpy.array(0.1)
 
         jac = jacobian(circuit)(a)
 
@@ -160,7 +160,7 @@ class TestReturnWithShotVectors:
         )
         assert len(jac) == num_copies
         for j in jac:
-            assert isinstance(j, jax.numpy.ndarray)
+            assert isinstance(j, qpjax.numpy.ndarray)
             assert j.shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -178,8 +178,8 @@ class TestReturnWithShotVectors:
             qml.RX(b, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = jax.numpy.array(0.1)
-        b = jax.numpy.array(0.2)
+        a = qpjax.numpy.array(0.1)
+        b = qpjax.numpy.array(0.2)
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
@@ -190,10 +190,10 @@ class TestReturnWithShotVectors:
         for j in jac:
             assert isinstance(j, tuple)
 
-            assert isinstance(j[0], jax.numpy.ndarray)
+            assert isinstance(j[0], qpjax.numpy.ndarray)
             assert j[0].shape == (4,)
 
-            assert isinstance(j[1], jax.numpy.ndarray)
+            assert isinstance(j[1], qpjax.numpy.ndarray)
             assert j[1].shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -211,7 +211,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = jax.numpy.array([0.1, 0.2])
+        a = qpjax.numpy.array([0.1, 0.2])
 
         jac = jacobian(circuit)(a)
 
@@ -220,7 +220,7 @@ class TestReturnWithShotVectors:
         )
         assert len(jac) == num_copies
         for j in jac:
-            assert isinstance(j, jax.numpy.ndarray)
+            assert isinstance(j, qpjax.numpy.ndarray)
             assert j.shape == (4, 2)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -230,8 +230,8 @@ class TestReturnWithShotVectors:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
-        par_0 = jax.numpy.array(0.1)
-        par_1 = jax.numpy.array(0.2)
+        par_0 = qpjax.numpy.array(0.1)
+        par_1 = qpjax.numpy.array(0.2)
 
         @qml.set_shots(shots)
         @qnode(
@@ -258,16 +258,16 @@ class TestReturnWithShotVectors:
 
             assert isinstance(j[0], tuple)
             assert len(j[0]) == 2
-            assert isinstance(j[0][0], jax.numpy.ndarray)
+            assert isinstance(j[0][0], qpjax.numpy.ndarray)
             assert j[0][0].shape == ()
-            assert isinstance(j[0][1], jax.numpy.ndarray)
+            assert isinstance(j[0][1], qpjax.numpy.ndarray)
             assert j[0][1].shape == ()
 
             assert isinstance(j[1], tuple)
             assert len(j[1]) == 2
-            assert isinstance(j[1][0], jax.numpy.ndarray)
+            assert isinstance(j[1][0], qpjax.numpy.ndarray)
             assert j[1][0].shape == ()
-            assert isinstance(j[1][1], jax.numpy.ndarray)
+            assert isinstance(j[1][1], qpjax.numpy.ndarray)
             assert j[1][1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -284,7 +284,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        a = jax.numpy.array([0.1, 0.2])
+        a = qpjax.numpy.array([0.1, 0.2])
 
         jac = jacobian(circuit)(a)
 
@@ -296,10 +296,10 @@ class TestReturnWithShotVectors:
             assert isinstance(j, tuple)
             assert len(j) == 2  # measurements
 
-            assert isinstance(j[0], jax.numpy.ndarray)
+            assert isinstance(j[0], qpjax.numpy.ndarray)
             assert j[0].shape == (2,)
 
-            assert isinstance(j[1], jax.numpy.ndarray)
+            assert isinstance(j[1], qpjax.numpy.ndarray)
             assert j[1].shape == (2,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -309,8 +309,8 @@ class TestReturnWithShotVectors:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
-        par_0 = jax.numpy.array(0.1)
-        par_1 = jax.numpy.array(0.2)
+        par_0 = qpjax.numpy.array(0.1)
+        par_1 = qpjax.numpy.array(0.2)
 
         @qml.set_shots(shots)
         @qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
@@ -332,16 +332,16 @@ class TestReturnWithShotVectors:
 
             assert isinstance(j[0], tuple)
             assert len(j[0]) == 2
-            assert isinstance(j[0][0], jax.numpy.ndarray)
+            assert isinstance(j[0][0], qpjax.numpy.ndarray)
             assert j[0][0].shape == ()
-            assert isinstance(j[0][1], jax.numpy.ndarray)
+            assert isinstance(j[0][1], qpjax.numpy.ndarray)
             assert j[0][1].shape == ()
 
             assert isinstance(j[1], tuple)
             assert len(j[1]) == 2
-            assert isinstance(j[1][0], jax.numpy.ndarray)
+            assert isinstance(j[1][0], qpjax.numpy.ndarray)
             assert j[1][0].shape == ()
-            assert isinstance(j[1][1], jax.numpy.ndarray)
+            assert isinstance(j[1][1], qpjax.numpy.ndarray)
             assert j[1][1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -358,7 +358,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        a = jax.numpy.array([0.1, 0.2])
+        a = qpjax.numpy.array([0.1, 0.2])
 
         jac = jacobian(circuit)(a)
 
@@ -370,10 +370,10 @@ class TestReturnWithShotVectors:
             assert isinstance(j, tuple)
             assert len(j) == 2  # measurements
 
-            assert isinstance(j[0], jax.numpy.ndarray)
+            assert isinstance(j[0], qpjax.numpy.ndarray)
             assert j[0].shape == (2,)
 
-            assert isinstance(j[1], jax.numpy.ndarray)
+            assert isinstance(j[1], qpjax.numpy.ndarray)
             assert j[1].shape == (2,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -390,7 +390,7 @@ class TestReturnWithShotVectors:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = jax.numpy.array(0.1)
+        a = qpjax.numpy.array(0.1)
 
         jac = jacobian(circuit)(a)
 
@@ -402,10 +402,10 @@ class TestReturnWithShotVectors:
             assert isinstance(jac, tuple)
             assert len(j) == 2
 
-            assert isinstance(j[0], jax.numpy.ndarray)
+            assert isinstance(j[0], qpjax.numpy.ndarray)
             assert j[0].shape == ()
 
-            assert isinstance(j[1], jax.numpy.ndarray)
+            assert isinstance(j[1], qpjax.numpy.ndarray)
             assert j[1].shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -437,16 +437,16 @@ class TestReturnWithShotVectors:
 
             assert isinstance(j[0], tuple)
             assert len(j[0]) == 2
-            assert isinstance(j[0][0], jax.numpy.ndarray)
+            assert isinstance(j[0][0], qpjax.numpy.ndarray)
             assert j[0][0].shape == ()
-            assert isinstance(j[0][1], jax.numpy.ndarray)
+            assert isinstance(j[0][1], qpjax.numpy.ndarray)
             assert j[0][1].shape == ()
 
             assert isinstance(j[1], tuple)
             assert len(j[1]) == 2
-            assert isinstance(j[1][0], jax.numpy.ndarray)
+            assert isinstance(j[1][0], qpjax.numpy.ndarray)
             assert j[1][0].shape == (4,)
-            assert isinstance(j[1][1], jax.numpy.ndarray)
+            assert isinstance(j[1][1], qpjax.numpy.ndarray)
             assert j[1][1].shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -463,7 +463,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = jax.numpy.array([0.1, 0.2])
+        a = qpjax.numpy.array([0.1, 0.2])
 
         jac = jacobian(circuit)(a)
 
@@ -475,10 +475,10 @@ class TestReturnWithShotVectors:
             assert isinstance(j, tuple)
             assert len(j) == 2  # measurements
 
-            assert isinstance(j[0], jax.numpy.ndarray)
+            assert isinstance(j[0], qpjax.numpy.ndarray)
             assert j[0].shape == (2,)
 
-            assert isinstance(j[1], jax.numpy.ndarray)
+            assert isinstance(j[1], qpjax.numpy.ndarray)
             assert j[1].shape == (4, 2)
 
     def test_hessian_expval_multiple_params(
@@ -487,8 +487,8 @@ class TestReturnWithShotVectors:
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
-        par_0 = jax.numpy.array(0.1)
-        par_1 = jax.numpy.array(0.2)
+        par_0 = qpjax.numpy.array(0.1)
+        par_1 = qpjax.numpy.array(0.2)
 
         @qml.set_shots(shots)
         @qnode(
@@ -504,7 +504,7 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = qpjax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
@@ -516,13 +516,13 @@ class TestReturnWithShotVectors:
 
             assert isinstance(h[0], tuple)
             assert len(h[0]) == 2
-            assert isinstance(h[0][0], jax.numpy.ndarray)
+            assert isinstance(h[0][0], qpjax.numpy.ndarray)
             assert h[0][0].shape == ()
             assert h[0][1].shape == ()
 
             assert isinstance(h[1], tuple)
             assert len(h[1]) == 2
-            assert isinstance(h[1][0], jax.numpy.ndarray)
+            assert isinstance(h[1][0], qpjax.numpy.ndarray)
             assert h[1][0].shape == ()
             assert h[1][1].shape == ()
 
@@ -532,7 +532,7 @@ class TestReturnWithShotVectors:
         """The hessian of single measurement with a multiple params array return a single array."""
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2])
+        params = qpjax.numpy.array([0.1, 0.2])
 
         @qml.set_shots(shots)
         @qnode(
@@ -548,14 +548,14 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit)(params)
+        hess = qpjax.hessian(circuit)(params)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
         )
         assert len(hess) == num_copies
         for h in hess:
-            assert isinstance(h, jax.numpy.ndarray)
+            assert isinstance(h, qpjax.numpy.ndarray)
             assert h.shape == (2, 2)
 
     def test_hessian_var_multiple_params(
@@ -564,8 +564,8 @@ class TestReturnWithShotVectors:
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
-        par_0 = jax.numpy.array(0.1)
-        par_1 = jax.numpy.array(0.2)
+        par_0 = qpjax.numpy.array(0.1)
+        par_1 = qpjax.numpy.array(0.2)
 
         @qml.set_shots(shots)
         @qnode(
@@ -581,7 +581,7 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = qpjax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
@@ -593,13 +593,13 @@ class TestReturnWithShotVectors:
 
             assert isinstance(h[0], tuple)
             assert len(h[0]) == 2
-            assert isinstance(h[0][0], jax.numpy.ndarray)
+            assert isinstance(h[0][0], qpjax.numpy.ndarray)
             assert h[0][0].shape == ()
             assert h[0][1].shape == ()
 
             assert isinstance(h[1], tuple)
             assert len(h[1]) == 2
-            assert isinstance(h[1][0], jax.numpy.ndarray)
+            assert isinstance(h[1][0], qpjax.numpy.ndarray)
             assert h[1][0].shape == ()
             assert h[1][1].shape == ()
 
@@ -609,7 +609,7 @@ class TestReturnWithShotVectors:
         """The hessian of single measurement with a multiple params array return a single array."""
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2])
+        params = qpjax.numpy.array([0.1, 0.2])
 
         @qml.set_shots(shots)
         @qnode(
@@ -625,14 +625,14 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit)(params)
+        hess = qpjax.hessian(circuit)(params)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
         )
         assert len(hess) == num_copies
         for h in hess:
-            assert isinstance(h, jax.numpy.ndarray)
+            assert isinstance(h, qpjax.numpy.ndarray)
             assert h.shape == (2, 2)
 
     def test_hessian_probs_expval_multiple_params(
@@ -641,8 +641,8 @@ class TestReturnWithShotVectors:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
-        par_0 = jax.numpy.array(0.1)
-        par_1 = jax.numpy.array(0.2)
+        par_0 = qpjax.numpy.array(0.1)
+        par_1 = qpjax.numpy.array(0.2)
 
         @qml.set_shots(shots)
         @qnode(
@@ -658,7 +658,7 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = qpjax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
@@ -672,30 +672,30 @@ class TestReturnWithShotVectors:
             assert len(h[0]) == 2
             assert isinstance(h[0][0], tuple)
             assert len(h[0][0]) == 2
-            assert isinstance(h[0][0][0], jax.numpy.ndarray)
+            assert isinstance(h[0][0][0], qpjax.numpy.ndarray)
             assert h[0][0][0].shape == ()
-            assert isinstance(h[0][0][1], jax.numpy.ndarray)
+            assert isinstance(h[0][0][1], qpjax.numpy.ndarray)
             assert h[0][0][1].shape == ()
             assert isinstance(h[0][1], tuple)
             assert len(h[0][1]) == 2
-            assert isinstance(h[0][1][0], jax.numpy.ndarray)
+            assert isinstance(h[0][1][0], qpjax.numpy.ndarray)
             assert h[0][1][0].shape == ()
-            assert isinstance(h[0][1][1], jax.numpy.ndarray)
+            assert isinstance(h[0][1][1], qpjax.numpy.ndarray)
             assert h[0][1][1].shape == ()
 
             assert isinstance(h[1], tuple)
             assert len(h[1]) == 2
             assert isinstance(h[1][0], tuple)
             assert len(h[1][0]) == 2
-            assert isinstance(h[1][0][0], jax.numpy.ndarray)
+            assert isinstance(h[1][0][0], qpjax.numpy.ndarray)
             assert h[1][0][0].shape == (2,)
-            assert isinstance(h[1][0][1], jax.numpy.ndarray)
+            assert isinstance(h[1][0][1], qpjax.numpy.ndarray)
             assert h[1][0][1].shape == (2,)
             assert isinstance(h[1][1], tuple)
             assert len(h[1][1]) == 2
-            assert isinstance(h[1][1][0], jax.numpy.ndarray)
+            assert isinstance(h[1][1][0], qpjax.numpy.ndarray)
             assert h[1][1][0].shape == (2,)
-            assert isinstance(h[1][1][1], jax.numpy.ndarray)
+            assert isinstance(h[1][1][1], qpjax.numpy.ndarray)
             assert h[1][1][1].shape == (2,)
 
     def test_hessian_expval_probs_multiple_param_array(
@@ -707,7 +707,7 @@ class TestReturnWithShotVectors:
 
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2])
+        params = qpjax.numpy.array([0.1, 0.2])
 
         @qml.set_shots(shots)
         @qnode(
@@ -723,7 +723,7 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit)(params)
+        hess = qpjax.hessian(circuit)(params)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
@@ -733,10 +733,10 @@ class TestReturnWithShotVectors:
             assert isinstance(h, tuple)
             assert len(h) == 2
 
-            assert isinstance(h[0], jax.numpy.ndarray)
+            assert isinstance(h[0], qpjax.numpy.ndarray)
             assert h[0].shape == (2, 2)
 
-            assert isinstance(h[1], jax.numpy.ndarray)
+            assert isinstance(h[1], qpjax.numpy.ndarray)
             assert h[1].shape == (2, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
@@ -762,7 +762,7 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = qpjax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
@@ -776,30 +776,30 @@ class TestReturnWithShotVectors:
             assert len(h[0]) == 2
             assert isinstance(h[0][0], tuple)
             assert len(h[0][0]) == 2
-            assert isinstance(h[0][0][0], jax.numpy.ndarray)
+            assert isinstance(h[0][0][0], qpjax.numpy.ndarray)
             assert h[0][0][0].shape == ()
-            assert isinstance(h[0][0][1], jax.numpy.ndarray)
+            assert isinstance(h[0][0][1], qpjax.numpy.ndarray)
             assert h[0][0][1].shape == ()
             assert isinstance(h[0][1], tuple)
             assert len(h[0][1]) == 2
-            assert isinstance(h[0][1][0], jax.numpy.ndarray)
+            assert isinstance(h[0][1][0], qpjax.numpy.ndarray)
             assert h[0][1][0].shape == ()
-            assert isinstance(h[0][1][1], jax.numpy.ndarray)
+            assert isinstance(h[0][1][1], qpjax.numpy.ndarray)
             assert h[0][1][1].shape == ()
 
             assert isinstance(h[1], tuple)
             assert len(h[1]) == 2
             assert isinstance(h[1][0], tuple)
             assert len(h[1][0]) == 2
-            assert isinstance(h[1][0][0], jax.numpy.ndarray)
+            assert isinstance(h[1][0][0], qpjax.numpy.ndarray)
             assert h[1][0][0].shape == (2,)
-            assert isinstance(h[1][0][1], jax.numpy.ndarray)
+            assert isinstance(h[1][0][1], qpjax.numpy.ndarray)
             assert h[1][0][1].shape == (2,)
             assert isinstance(h[1][1], tuple)
             assert len(h[1][1]) == 2
-            assert isinstance(h[1][1][0], jax.numpy.ndarray)
+            assert isinstance(h[1][1][0], qpjax.numpy.ndarray)
             assert h[1][1][0].shape == (2,)
-            assert isinstance(h[1][1][1], jax.numpy.ndarray)
+            assert isinstance(h[1][1][1], qpjax.numpy.ndarray)
             assert h[1][1][1].shape == (2,)
 
     def test_hessian_var_probs_multiple_param_array(
@@ -808,7 +808,7 @@ class TestReturnWithShotVectors:
         """The hessian of multiple measurements with a multiple param array return a single array."""
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2])
+        params = qpjax.numpy.array([0.1, 0.2])
 
         @qml.set_shots(shots)
         @qnode(
@@ -824,7 +824,7 @@ class TestReturnWithShotVectors:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit)(params)
+        hess = qpjax.hessian(circuit)(params)
 
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
@@ -834,10 +834,10 @@ class TestReturnWithShotVectors:
             assert isinstance(h, tuple)
             assert len(h) == 2
 
-            assert isinstance(h[0], jax.numpy.ndarray)
+            assert isinstance(h[0], qpjax.numpy.ndarray)
             assert h[0].shape == (2, 2)
 
-            assert isinstance(h[1], jax.numpy.ndarray)
+            assert isinstance(h[1], qpjax.numpy.ndarray)
             assert h[1].shape == (2, 2, 2)
 
 
@@ -864,8 +864,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device(dev_name, wires=2)
-        x = jax.numpy.array(0.543)
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array(0.543)
+        y = qpjax.numpy.array(-0.654)
 
         @qml.set_shots(shots)
         @qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
@@ -885,10 +885,10 @@ class TestReturnShotVectorIntegration:
         assert len(all_res) == num_copies
 
         for res in all_res:
-            assert isinstance(res[0], jax.numpy.ndarray)
+            assert isinstance(res[0], qpjax.numpy.ndarray)
             assert res[0].shape == ()
 
-            assert isinstance(res[1], jax.numpy.ndarray)
+            assert isinstance(res[1], qpjax.numpy.ndarray)
             assert res[1].shape == ()
             tol = TOLS[diff_method]
             assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -900,8 +900,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2)
-        x = jax.numpy.array(0.543)
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array(0.543)
+        y = qpjax.numpy.array(-0.654)
 
         @qml.set_shots(shots)
         @qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
@@ -928,9 +928,9 @@ class TestReturnShotVectorIntegration:
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
             assert np.allclose(res[0][0], -np.sin(x), atol=tol, rtol=0)
-            assert isinstance(res[0][0], jax.numpy.ndarray)
+            assert isinstance(res[0][0], qpjax.numpy.ndarray)
             assert np.allclose(res[0][1], 0, atol=tol, rtol=0)
-            assert isinstance(res[0][1], jax.numpy.ndarray)
+            assert isinstance(res[0][1], qpjax.numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
@@ -945,7 +945,7 @@ class TestReturnShotVectorIntegration:
                 atol=tol,
                 rtol=0,
             )
-            assert isinstance(res[1][0], jax.numpy.ndarray)
+            assert isinstance(res[1][0], qpjax.numpy.ndarray)
             assert np.allclose(
                 res[1][1],
                 [
@@ -957,4 +957,4 @@ class TestReturnShotVectorIntegration:
                 atol=tol,
                 rtol=0,
             )
-            assert isinstance(res[1][1], jax.numpy.ndarray)
+            assert isinstance(res[1][1], qpjax.numpy.ndarray)

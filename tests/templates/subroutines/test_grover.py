@@ -282,7 +282,7 @@ def test_decomposition_matrix(n_wires):
 
 @pytest.mark.jax
 def test_jax_jit():
-    import jax
+    import qpjax
 
     n_wires = 3
     wires = list(range(n_wires))
@@ -307,7 +307,7 @@ def test_jax_jit():
 
         return qml.probs(wires)
 
-    jit_circuit = jax.jit(circuit)
+    jit_circuit = qpjax.jit(circuit)
 
     assert qml.math.allclose(circuit(), jit_circuit())
 
@@ -322,7 +322,7 @@ class TestDynamicDecomposition:
     @pytest.mark.xfail(reason="arrays should never be in metadata")
     def test_grover_plxpr(self):
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
-        import jax
+        import qpjax
 
         from pennylane.capture.primitives import for_loop_prim
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -338,7 +338,7 @@ class TestDynamicDecomposition:
             qml.GroverOperator(wires=wires, work_wires=work_wires)
             return qml.state()
 
-        jaxpr = jax.make_jaxpr(circuit)(wires)
+        jaxpr = qpjax.make_jaxpr(circuit)(wires)
 
         # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
@@ -395,7 +395,7 @@ class TestDynamicDecomposition:
     ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that Grover gives correct result after dynamic decomposition."""
 
-        import jax
+        import qpjax
 
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -407,8 +407,8 @@ class TestDynamicDecomposition:
 
         if autograph:
             circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(circuit)(wires)
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
+        jaxpr = qpjax.make_jaxpr(circuit)(wires)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
 
         with qml.capture.pause():
 

@@ -42,7 +42,7 @@ class TestCollectResourceOps:
             qml.RX(x * 2, wires=wires[1])
             qml.MultiRZ(x * 2, wires=wires[2:])
 
-        jaxpr = jax.make_jaxpr(f)(0.5, [0, 1, 2, 3])
+        jaxpr = qpjax.make_jaxpr(f)(0.5, [0, 1, 2, 3])
         collector = CollectResourceOps()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5, *[0, 1, 2, 3])
         ops = collector.state["ops"]
@@ -78,7 +78,7 @@ class TestCollectResourceOps:
 
             loop()
 
-        jaxpr = jax.make_jaxpr(f)(0.5, [0, 1, 2, 3, 4])
+        jaxpr = qpjax.make_jaxpr(f)(0.5, [0, 1, 2, 3, 4])
         collector = CollectResourceOps()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5, *[0, 1, 2, 3, 4])
         ops = collector.state["ops"]
@@ -104,7 +104,7 @@ class TestCollectResourceOps:
 
             qml.ctrl(f, control=wires[4])()
 
-        jaxpr = jax.make_jaxpr(circuit)(0.5, [0, 1, 2, 3, 4])
+        jaxpr = qpjax.make_jaxpr(circuit)(0.5, [0, 1, 2, 3, 4])
         collector = CollectResourceOps()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5, *[0, 1, 2, 3, 4])
         ops = collector.state["ops"]
@@ -128,7 +128,7 @@ class TestCollectResourceOps:
 
             qml.adjoint(f)()
 
-        jaxpr = jax.make_jaxpr(circuit)(0.5, [0, 1, 2, 3, 4])
+        jaxpr = qpjax.make_jaxpr(circuit)(0.5, [0, 1, 2, 3, 4])
         collector = CollectResourceOps()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5, *[0, 1, 2, 3, 4])
         ops = collector.state["ops"]
@@ -156,7 +156,7 @@ class TestCollectResourceOps:
             qml.cond(x > 0.5, true_fn, false_fn)()
             qml.cond(x > 0.5, qml.RX, qml.RY, elifs=(x > 0.2, qml.RZ))(x, wires=wires[0])
 
-        jaxpr = jax.make_jaxpr(circuit)(0.5, [0, 1])
+        jaxpr = qpjax.make_jaxpr(circuit)(0.5, [0, 1])
         collector = CollectResourceOps()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5, *[0, 1])
         ops = collector.state["ops"]

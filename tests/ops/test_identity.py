@@ -48,11 +48,11 @@ class TestIdentity:
     @pytest.mark.jax
     def test_jax_pytree_integration(self, wires):
         """Test that identity is a pytree by jitting a function of it."""
-        import jax
+        import qpjax
 
         op = qml.Identity(wires)
 
-        adj_op = jax.jit(lambda op: qml.adjoint(op, lazy=False))(op)
+        adj_op = qpjax.jit(lambda op: qml.adjoint(op, lazy=False))(op)
 
         qml.assert_equal(op, adj_op)
 

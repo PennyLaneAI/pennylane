@@ -28,10 +28,10 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from jax import numpy as jnp
+from qpjax import numpy as jnp
 
 # must be below jax importorskip
-from jax.core import eval_jaxpr
+from qpjax.core import eval_jaxpr
 from malt.operators import py_builtins as ag_py_builtins
 
 from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
@@ -81,13 +81,13 @@ class TestCustomRangeAndEnumeration:
         # autograph runs, but it's not compatible with conversion to JAXPR because of indexing
         ag_f1 = run_autograph(f1)
         with pytest.raises(
-            jax.errors.TracerIntegerConversionError,
+            qpjax.errors.TracerIntegerConversionError,
             match=r"The __index__\(\) method was called on traced array",
         ):
-            _ = jax.make_jaxpr(ag_f1)(3)
+            _ = qpjax.make_jaxpr(ag_f1)(3)
 
         # using PRange fixes it
-        _ = jax.make_jaxpr(run_autograph(f2))(3)
+        _ = qpjax.make_jaxpr(run_autograph(f2))(3)
 
     @pytest.mark.parametrize("start", [None, 0, 1, 2])
     def test_penumerate(self, start):
@@ -118,7 +118,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([1.0, 2.0, 3.0]))
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(jnp.array([1.0, 2.0, 3.0]))
 
         def res(params):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
@@ -137,7 +137,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0]]))
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0]]))
 
         params = jnp.array([[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]])
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
@@ -155,7 +155,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
@@ -173,7 +173,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, jnp.sqrt(2) / 2)
@@ -193,7 +193,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
@@ -208,7 +208,7 @@ class TestForLoops:
             return qml.probs()
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, [1 / 8] * 8)
@@ -224,7 +224,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
@@ -239,7 +239,7 @@ class TestForLoops:
             return qml.probs()
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 
         assert np.allclose(result, [1 / 8] * 8)
@@ -255,7 +255,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
@@ -270,7 +270,7 @@ class TestForLoops:
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
 
         params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
@@ -287,7 +287,7 @@ class TestForLoops:
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
 
         params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
@@ -305,7 +305,7 @@ class TestForLoops:
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]))
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]))
 
         params = jnp.array(
             [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, 3 / 4 * jnp.pi], [jnp.pi, 2 * jnp.pi]]
@@ -324,7 +324,7 @@ class TestForLoops:
             return [qml.expval(qml.PauliZ(i)) for i in range(5)]
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
 
         params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
@@ -342,7 +342,7 @@ class TestForLoops:
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
@@ -359,7 +359,7 @@ class TestForLoops:
             return total
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
     @pytest.mark.xfail(
@@ -377,7 +377,7 @@ class TestForLoops:
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
@@ -398,7 +398,7 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
@@ -414,7 +414,7 @@ class TestForLoops:
             return acc
 
         ag_circuit = run_autograph(f1)
-        jaxpr1 = jax.make_jaxpr(ag_circuit)()
+        jaxpr1 = qpjax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr1.jaxpr, jaxpr1.consts)[0] == 9
 
         def f2(acc):
@@ -424,7 +424,7 @@ class TestForLoops:
             return acc
 
         ag_circuit = run_autograph(f2)
-        jaxpr2 = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr2 = qpjax.make_jaxpr(ag_circuit)(0)
         assert eval_jaxpr(jaxpr2.jaxpr, jaxpr2.consts, 2)[0] == 11
 
         def f3():
@@ -435,7 +435,7 @@ class TestForLoops:
             return acc
 
         ag_circuit = run_autograph(f3)
-        jaxpr3 = jax.make_jaxpr(ag_circuit)()
+        jaxpr3 = qpjax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr3.jaxpr, jaxpr3.consts)[0] == 9
 
     def test_iteration_element_access(self):
@@ -450,7 +450,7 @@ class TestForLoops:
             return x
 
         ag_circuit = run_autograph(f1)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 5
 
@@ -463,7 +463,7 @@ class TestForLoops:
             return i
 
         ag_circuit = run_autograph(f2)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 2
 
@@ -475,7 +475,7 @@ class TestForLoops:
             return i, x
 
         ag_circuit = run_autograph(f3)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)
 
         assert np.allclose(result, [2, 5])
@@ -493,7 +493,7 @@ class TestForLoops:
             return x
 
         ag_circuit = run_autograph(f1)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 5
 
         def f2(acc):
@@ -504,7 +504,7 @@ class TestForLoops:
             return i
 
         ag_circuit = run_autograph(f2)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 2
 
         def f3(acc):
@@ -514,7 +514,7 @@ class TestForLoops:
             return i, x
 
         ag_circuit = run_autograph(f3)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == (2, 5)
 
     def test_temporary_loop_variable(self):
@@ -529,7 +529,7 @@ class TestForLoops:
             return acc
 
         ag_circuit = run_autograph(f1)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 18
 
         def f2():
@@ -541,7 +541,7 @@ class TestForLoops:
             return acc
 
         ag_circuit = run_autograph(f2)
-        jaxpr = jax.make_jaxpr(ag_circuit)()
+        jaxpr = qpjax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 20
 
 
@@ -693,7 +693,7 @@ class TestPennyLaneForLoops:
             return loop(0)
 
         ag_fn = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_fn)()
+        jaxpr = qpjax.make_jaxpr(ag_fn)()
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
@@ -708,7 +708,7 @@ class TestPennyLaneForLoops:
             return agg + x
 
         ag_fn = run_autograph(loop)
-        jaxpr = jax.make_jaxpr(ag_fn)(0)
+        jaxpr = qpjax.make_jaxpr(ag_fn)(0)
         assert "for_loop[" in str(jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 30
@@ -748,7 +748,7 @@ class TestPennyLaneForLoops:
             return acc
 
         ag_fn = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_fn)(0)
+        jaxpr = qpjax.make_jaxpr(ag_fn)(0)
         assert "for_loop[" in str(jaxpr)
         assert "cond[" in str(jaxpr)
 

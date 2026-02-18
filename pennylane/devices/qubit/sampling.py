@@ -32,11 +32,11 @@ from .measure import flatten_state
 
 
 def jax_random_split(prng_key, num: int = 2):
-    """Get a new key with ``jax.random.split``."""
+    """Get a new key with ``qpjax.random.split``."""
     if prng_key is None:
         return (None,) * num
     # pylint: disable=import-outside-toplevel
-    from jax.random import split
+    from qpjax.random import split
 
     return split(prng_key, num=num)
 
@@ -225,8 +225,8 @@ def measure_with_samples(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
         mid_measurements (None, dict): Dictionary of mid-circuit measurements
 
     Returns:
@@ -294,8 +294,8 @@ def _measure_with_samples_diagonalizing_gates(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
 
     Returns:
         TensorLike[Any]: Sample measurement results
@@ -455,8 +455,8 @@ def sample_state(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
@@ -488,8 +488,8 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
     """
     if qml.math.get_interface(probs) == "jax" or prng_key is not None:
         return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, seed=rng)
@@ -541,8 +541,8 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         shots (int): The number of samples to take
         num_wires (int): The number of wires to sample
         is_state_batched (bool): whether the state is batched or not
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
         seed (Optional[int]): A seed for the random number generator. This is only used if ``prng_key``
             is not provided.
 
@@ -550,11 +550,11 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 
     if prng_key is None:
-        prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
+        prng_key = qpjax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
 
     basis_states = jnp.arange(2**num_wires)
 
@@ -562,13 +562,13 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         keys = jax_random_split(prng_key, num=probs.shape[0])
         samples = jnp.array(
             [
-                jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
+                qpjax.random.choice(_key, basis_states, shape=(shots,), p=prob)
                 for _key, prob in zip(keys, probs)
             ]
         )
     else:
         _, key = jax_random_split(prng_key)
-        samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
+        samples = qpjax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
     powers_of_two = 1 << jnp.arange(num_wires, dtype=int)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two

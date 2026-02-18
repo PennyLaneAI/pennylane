@@ -400,10 +400,10 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_call_jax(self):
         """Test result of calling the ParametrizedHamiltonian works with parameters as a jax array"""
-        import jax
+        import qpjax
 
         pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qml.PauliX(i) for i in range(4)])
-        params = jax.numpy.array([4.5, 6.7])
+        params = qpjax.numpy.array([4.5, 6.7])
         t = 2
         op = pH(params, t)
 

@@ -1472,14 +1472,14 @@ class TestDensityMatrix:
 @pytest.mark.jax
 @pytest.mark.parametrize("use_jit", [True, False])
 class TestQNodeIntegrationJax:
-    """Integration tests for default.qutrit with JAX. This test ensures it integrates
+    """Integration tests for default.qutrit with qpjax. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
 
     def test_qutrit_circuit(self, tol, use_jit):
         """Test that the device provides the correct
         result for a simple circuit."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         p = jnp.array(0.543)
 
@@ -1491,7 +1491,7 @@ class TestQNodeIntegrationJax:
             return qml.expval(qml.GellMann(0, 5))
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         expected = -np.sin(p)
 
@@ -1500,7 +1500,7 @@ class TestQNodeIntegrationJax:
     def test_correct_state(self, tol, use_jit):
         """Test that the device state is correct after evaluating a
         quantum function on the device"""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         if use_jit:
             pytest.skip()
@@ -1546,10 +1546,10 @@ class TestDtypePreservedJax:
     def test_real_dtype(self, enable_x64, r_dtype, measurement, use_jit):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
-        jax.config.update("jax_enable_x64", enable_x64)
+        qpjax.config.update("jax_enable_x64", enable_x64)
         p = jnp.array(0.543)
         dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
 
@@ -1559,7 +1559,7 @@ class TestDtypePreservedJax:
             return qml.apply(measurement)
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         res = circuit(p)
         assert res.dtype == r_dtype
@@ -1568,10 +1568,10 @@ class TestDtypePreservedJax:
     def test_complex_dtype(self, enable_x64, c_dtype, use_jit):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
-        jax.config.update("jax_enable_x64", enable_x64)
+        qpjax.config.update("jax_enable_x64", enable_x64)
         p = jnp.array(0.543)
         dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
 
@@ -1581,7 +1581,7 @@ class TestDtypePreservedJax:
             return qml.state()
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         res = circuit(p)
         assert res.dtype == c_dtype
@@ -1594,8 +1594,8 @@ class TestPassthruIntegrationJax:
 
     def test_backprop_gradient(self, tol, use_jit):
         """Tests that the gradient of the qnode is correct"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qutrit", wires=2)
 
@@ -1607,7 +1607,7 @@ class TestPassthruIntegrationJax:
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         a = jnp.array(-0.234)
         b = jnp.array(0.654)
@@ -1615,7 +1615,7 @@ class TestPassthruIntegrationJax:
         res = circuit(a, b)
         expected_cost = 0.25 * (jnp.cos(a) * jnp.cos(b) - jnp.cos(a) + jnp.cos(b) + 3)
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
-        res = jax.grad(circuit, argnums=(0, 1))(a, b)
+        res = qpjax.grad(circuit, argnums=(0, 1))(a, b)
         expected_grad = jnp.array(
             [
                 -0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)),
@@ -1627,8 +1627,8 @@ class TestPassthruIntegrationJax:
 
     def test_backprop_gradient_broadcasted(self, tol, use_jit):
         """Tests that the gradient of the broadcasted qnode is correct"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         if use_jit:
             pytest.skip()
@@ -1651,7 +1651,7 @@ class TestPassthruIntegrationJax:
         print(expected_cost)
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
+        res = qpjax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = jnp.array(
             [
                 -0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)),

@@ -226,7 +226,7 @@ def finite_diff_jvp(
 
     jvps = [0 for _ in flat_initial_res]
     for i, t in enumerate(tangents):
-        if type(t).__name__ == "Zero":  # Zero = jax.interpreters.ad.Zero
+        if type(t).__name__ == "Zero":  # Zero = qpjax.interpreters.ad.Zero
             continue
         t = np.array(t) if isinstance(t, (int, float, complex)) else t
 
@@ -379,7 +379,7 @@ def finite_diff(
     tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
     post-processing.
 
-    >>> import jax
+    >>> import qpjax
     >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev, interface="jax", diff_method="finite-diff")
     ... def circuit(params):
@@ -387,8 +387,8 @@ def finite_diff(
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
     ...     return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
-    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
-    >>> jax.jacobian(circuit)(params)
+    >>> params = qpjax.numpy.array([0.1, 0.2, 0.3])
+    >>> qpjax.jacobian(circuit)(params)
     (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
      Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
 

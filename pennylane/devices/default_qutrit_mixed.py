@@ -143,13 +143,13 @@ class DefaultQutritMixed(Device):
             (``['auxiliary', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, qpjax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
             The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
-            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
-            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
+            If a ``qpjax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
+            ``qpjax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
         readout_relaxation_probs (List[float]): Input probabilities for relaxation errors implemented
             with the :class:`~.QutritAmplitudeDamping` channel. The input defines the
@@ -192,9 +192,9 @@ class DefaultQutritMixed(Device):
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def f(x):
             qs = qml.tape.QuantumScript([qml.TRX(x, 0)], [qml.expval(qml.GellMann(0, 3))])
             program, execution_config = dev.preprocess()
@@ -202,9 +202,9 @@ class DefaultQutritMixed(Device):
             results = dev.execute(new_batch, execution_config=execution_config)
             return post_processing_fn(results)[0]
 
-    >>> f(jax.numpy.array(1.2))
+    >>> f(qpjax.numpy.array(1.2))
     DeviceArray(0.36235774, dtype=float32)
-    >>> jax.grad(f)(jax.numpy.array(1.2))
+    >>> qpjax.grad(f)(qpjax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
     .. details::

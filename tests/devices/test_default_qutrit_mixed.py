@@ -195,10 +195,10 @@ class TestBasicCircuit:
     @pytest.mark.parametrize("use_jit", (True, False))
     @pytest.mark.parametrize("subspace", [(0, 1), (0, 2)])
     def test_jax_results_and_backprop(self, use_jit, subspace):
-        """Tests execution and gradients of a basic circuit using jax."""
-        import jax
+        """Tests execution and gradients of a basic circuit using qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.678)
+        phi = qpjax.numpy.array(0.678)
         dev = DefaultQutritMixed()
 
         def f(x):
@@ -206,13 +206,13 @@ class TestBasicCircuit:
             return dev.execute(qs)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         result = f(phi)
         expected = self.expected_trx_circ_expval_values(phi, subspace)
         assert qml.math.allclose(result, expected)
 
-        g = jax.jacobian(f)(phi)
+        g = qpjax.jacobian(f)(phi)
         expected = self.expected_trx_circ_expval_jacobians(phi, subspace)
         assert qml.math.allclose(g, expected)
 
@@ -688,19 +688,19 @@ class TestExecutingBatches:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax(self, use_jit):
-        """Test batches can be executed and have backprop derivatives using jax."""
-        import jax
+        """Test batches can be executed and have backprop derivatives using qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.123)
+        phi = qpjax.numpy.array(0.123)
 
-        f = jax.jit(self.f) if use_jit else self.f
+        f = qpjax.jit(self.f) if use_jit else self.f
         results = f(phi)
         expected = self.expected(phi)
 
         self.nested_compare(results, expected)
 
-        g = jax.jacobian(f)(phi)
-        g_expected = jax.jacobian(self.expected)(phi)
+        g = qpjax.jacobian(f)(phi)
+        g_expected = qpjax.jacobian(self.expected)(phi)
 
         self.nested_compare(g, g_expected)
 
@@ -820,33 +820,33 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, use_jit):
         """Test that backpropagation derivatives work with jax with
         Hamiltonians using new and old math."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        x = jax.numpy.array(self.x, dtype=jax.numpy.float64)
+        x = qpjax.numpy.array(self.x, dtype=qpjax.numpy.float64)
         coeffs = (5.2, 6.7)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
+        f = qpjax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
 
         out = f(x, coeffs)
         expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        gradient = jax.grad(f)(x, coeffs)
-        expected_gradient = jax.grad(self.expected)(x, coeffs)
+        gradient = qpjax.grad(f)(x, coeffs)
+        expected_gradient = qpjax.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
     def test_jax_backprop_coeffs(self):
         """Test that backpropagation derivatives work with jax with
         the coefficients of Hamiltonians using new and old math."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        coeffs = jax.numpy.array((5.2, 6.7), dtype=jax.numpy.float64)
+        qpjax.config.update("jax_enable_x64", True)
+        coeffs = qpjax.numpy.array((5.2, 6.7), dtype=qpjax.numpy.float64)
 
-        gradient = jax.grad(self.f, argnums=1)(self.x, coeffs)
-        expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
+        gradient = qpjax.grad(self.f, argnums=1)(self.x, coeffs)
+        expected_gradient = qpjax.grad(self.expected, argnums=1)(self.x, coeffs)
         assert len(gradient) == 2
         assert qml.math.allclose(expected_gradient, gradient)
 
@@ -1061,9 +1061,9 @@ class TestPRNGKeySeed:
 
     def test_prng_key_as_seed(self):
         """Test that a jax PRNG can be passed as a seed."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         from jax import random
 
@@ -1077,14 +1077,14 @@ class TestPRNGKeySeed:
         assert np.all(first_nums == second_nums)
 
     def test_same_device_prng_key(self):
-        """Test a device with a given jax.random.PRNGKey will produce
+        """Test a device with a given qpjax.random.PRNGKey will produce
         the same samples repeatedly."""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
+        dev = DefaultQutritMixed(seed=qpjax.random.PRNGKey(123))
         result1 = dev.execute(qs, config)
         for _ in range(10):
             result2 = dev.execute(qs, config)
@@ -1092,46 +1092,46 @@ class TestPRNGKeySeed:
             assert np.all(result1 == result2)
 
     def test_same_prng_key(self):
-        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
+        """Test that different devices given the same random qpjax.random.PRNGKey as a seed will produce
         the same results for sample, even with different seeds"""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev1 = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
+        dev1 = DefaultQutritMixed(seed=qpjax.random.PRNGKey(123))
         result1 = dev1.execute(qs, config)
 
-        dev2 = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
+        dev2 = DefaultQutritMixed(seed=qpjax.random.PRNGKey(123))
         result2 = dev2.execute(qs, config)
 
         assert np.all(result1 == result2)
 
     def test_different_prng_key(self):
-        """Test that different devices given different jax.random.PRNGKey values will produce
+        """Test that different devices given different qpjax.random.PRNGKey values will produce
         different results"""
-        import jax
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev1 = DefaultQutritMixed(seed=jax.random.PRNGKey(246))
+        dev1 = DefaultQutritMixed(seed=qpjax.random.PRNGKey(246))
         result1 = dev1.execute(qs, config)
 
-        dev2 = DefaultQutritMixed(seed=jax.random.PRNGKey(123))
+        dev2 = DefaultQutritMixed(seed=qpjax.random.PRNGKey(123))
         result2 = dev2.execute(qs, config)
 
         assert np.any(result1 != result2)
 
     def test_different_executions_same_prng_key(self):
         """Test that the same device will produce the same results every execution if
-        the seed is a jax.random.PRNGKey"""
-        import jax
+        the seed is a qpjax.random.PRNGKey"""
+        import qpjax
 
         qs = qml.tape.QuantumScript([qml.THadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev = DefaultQutritMixed(seed=jax.random.PRNGKey(77))
+        dev = DefaultQutritMixed(seed=qpjax.random.PRNGKey(77))
         result1 = dev.execute(qs, config)
         result2 = dev.execute(qs, config)
 
@@ -1242,7 +1242,7 @@ class TestIntegration:
     @pytest.mark.parametrize("measurement_func", [qml.expval, qml.var])
     def test_differentiate_jitted_qnode(self, measurement_func):
         """Test that a jitted qnode can be correctly differentiated"""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qutrit.mixed")
 
@@ -1251,18 +1251,18 @@ class TestIntegration:
             return measurement_func(qml.Hamiltonian(y, [qml.GellMann(0, 3)]))
 
         qnode = qml.QNode(qfunc, dev, interface="jax")
-        qnode_jit = jax.jit(qml.QNode(qfunc, dev, interface="jax"))
+        qnode_jit = qpjax.jit(qml.QNode(qfunc, dev, interface="jax"))
 
-        x = jax.numpy.array(0.5)
-        y = jax.numpy.array([0.5])
+        x = qpjax.numpy.array(0.5)
+        y = qpjax.numpy.array([0.5])
 
         res = qnode(x, y)
         res_jit = qnode_jit(x, y)
 
         assert qml.math.allclose(res, res_jit)
 
-        grad = jax.grad(qnode)(x, y)
-        grad_jit = jax.grad(qnode_jit)(x, y)
+        grad = qpjax.grad(qnode)(x, y)
+        grad_jit = qpjax.grad(qnode_jit)(x, y)
 
         assert qml.math.allclose(grad, grad_jit)
 
@@ -1702,23 +1702,23 @@ class TestReadoutError:
         self, num_wires, relaxations, misclassifications, use_jit, expected
     ):
         """Tests the differentiation of readout errors using JAX"""
-        import jax
+        import qpjax
 
         if misclassifications is None:
             args_to_diff = (0,)
-            relaxations = jax.numpy.array(relaxations)
+            relaxations = qpjax.numpy.array(relaxations)
         elif relaxations is None:
             args_to_diff = (1,)
-            misclassifications = jax.numpy.array(misclassifications)
+            misclassifications = qpjax.numpy.array(misclassifications)
         else:
             args_to_diff = (0, 1)
-            relaxations = jax.numpy.array(relaxations)
-            misclassifications = jax.numpy.array(misclassifications)
+            relaxations = qpjax.numpy.array(relaxations)
+            misclassifications = qpjax.numpy.array(misclassifications)
 
         diff_func = self.get_diff_function("jax", num_wires)
         if use_jit:
-            diff_func = jax.jit(diff_func)
-        jac = jax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
+            diff_func = qpjax.jit(diff_func)
+        jac = qpjax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
         assert qml.math.allclose(jac, expected, rtol=0.05)
 
     @pytest.mark.torch

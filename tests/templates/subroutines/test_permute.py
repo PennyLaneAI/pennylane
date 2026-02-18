@@ -358,7 +358,7 @@ class TestDecomposition:
     @pytest.mark.jax
     def test_jax_jit(self):
         """Tests the template is correctly compiled with JAX JIT."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=5)
 
@@ -367,7 +367,7 @@ class TestDecomposition:
             qml.Permute([4, 2, 0, 1, 3], wires=dev.wires)
             return qml.expval(qml.Z(0))
 
-        jit_perm = jax.jit(apply_perm)
+        jit_perm = qpjax.jit(apply_perm)
 
         assert qml.math.allclose(apply_perm(), jit_perm())
 

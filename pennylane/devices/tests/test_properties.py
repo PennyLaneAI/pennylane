@@ -38,7 +38,7 @@ except ImportError:
     TORCH_SUPPORT = False
 
 try:
-    import jax
+    import qpjax
 
     JAX_SUPPORT = True
 
@@ -183,10 +183,10 @@ class TestCapabilities:
         if interface == "jax":
             if JAX_SUPPORT:
                 x = pnp.array(0.1, requires_grad=True)
-                g = jax.grad(lambda a: qnode(a).reshape(()))
+                g = qpjax.grad(lambda a: qnode(a).reshape(()))
                 g(x)
             else:
-                pytest.skip("Cannot import jax")
+                pytest.skip("Cannot import qpjax")
 
         if interface == "torch":
             if TORCH_SUPPORT:

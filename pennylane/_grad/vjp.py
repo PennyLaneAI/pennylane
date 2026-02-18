@@ -23,7 +23,7 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = find_spec("jax") is not None
+has_jax = find_spec("qpjax") is not None
 
 
 # pylint: disable=unused-argument
@@ -32,7 +32,7 @@ def _get_vjp_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     vjp_prim = capture.QmlPrimitive("vjp")
     vjp_prim.multiple_results = True
@@ -44,9 +44,9 @@ def _get_vjp_prim():
         dy = list(args[len(jaxpr.invars) :])
 
         def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
+            return qpjax.core.eval_jaxpr(jaxpr, [], *inner_args)
 
-        res, vjp_fn = jax.vjp(func, *params)
+        res, vjp_fn = qpjax.vjp(func, *params)
         dparams = vjp_fn(dy)
         return res + [dparams[i] for i in argnums]
 
@@ -58,11 +58,11 @@ def _get_vjp_prim():
 
 
 def _validate_cotangents(cotangents, out_avals):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
+    from qpjax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     def get_shape(x):
-        return getattr(x, "shape", jax.numpy.shape(x))
+        return getattr(x, "shape", qpjax.numpy.shape(x))
 
     if len(cotangents) != len(out_avals):
         raise ValueError(
@@ -88,15 +88,15 @@ def _validate_cotangents(cotangents, out_avals):
 
 # pylint: disable=too-many-arguments
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
+    from qpjax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     h = _setup_h(h)
     method = _setup_method(method)
     flat_args, flat_argnums, _, trainable_in_tree = _args_and_argnums(params, argnums)
     flat_cotangents = tree_leaves(cotangents)
     flat_fn = capture.FlatFn(func)
-    jaxpr = jax.make_jaxpr(flat_fn)(*params)
+    jaxpr = qpjax.make_jaxpr(flat_fn)(*params)
     j = jaxpr.jaxpr
     no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
     shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)
@@ -159,7 +159,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnums=None):
 
     .. note::
 
-        While ``jax.vjp`` has no ``argnums`` and treats all params as trainable as default, we
+        While ``qpjax.vjp`` has no ``argnums`` and treats all params as trainable as default, we
         default to only the first argument as trainable by default.
 
     **Example**

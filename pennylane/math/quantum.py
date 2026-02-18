@@ -943,7 +943,7 @@ def _compute_vn_entanglement_entropy(
 
     # The Von Neumann entropy of the two subsystems should be the same if the overall state is a
     # pure state. Here we trust that the user only uses this function for pure states, and do not
-    # perform any checks so that the code is compatible with jax.jit
+    # perform any checks so that the code is compatible with qpjax.jit
     return vn_entropy_1
 
 

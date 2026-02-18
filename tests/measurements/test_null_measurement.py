@@ -46,14 +46,14 @@ def test_shape_and_dtype_null_measurement():
 @pytest.mark.jax
 def test_integration_jax_jit():
     """Test that execution of the null measurement works with jitting."""
-    import jax
+    import qpjax
 
     @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
     def c(x):
         qml.RX(x, 0)
         return NullMeasurement()
 
-    r = jax.jit(c)(jax.numpy.array(0.5))
+    r = qpjax.jit(c)(qpjax.numpy.array(0.5))
     assert np.isnan(r)
     assert r.shape == ()
     assert r.dtype == np.float64

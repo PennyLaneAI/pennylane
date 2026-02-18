@@ -352,11 +352,11 @@ def _check_pytree(op):
             "metadata and data must be able to reproduce the original operation"
         ) from e
     try:
-        import jax
+        import qpjax
     except ImportError:
         return
-    leaves, struct = jax.tree_util.tree_flatten(op)
-    unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
+    leaves, struct = qpjax.tree_util.tree_flatten(op)
+    unflattened_op = qpjax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
     for d1, d2 in zip(op.data, leaves):
@@ -369,7 +369,7 @@ def _check_capture(op):
     if isinstance(op, qml.templates.SubroutineOp):
         return
     try:
-        import jax
+        import qpjax
     except ImportError:
         return
 
@@ -378,16 +378,16 @@ def _check_capture(op):
 
     qml.capture.enable()
     try:
-        data, struct = jax.tree_util.tree_flatten(op)
+        data, struct = qpjax.tree_util.tree_flatten(op)
 
         def test_fn(*args):
-            return jax.tree_util.tree_unflatten(struct, args)
+            return qpjax.tree_util.tree_unflatten(struct, args)
 
-        jaxpr = jax.make_jaxpr(test_fn)(*data)
-        new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+        jaxpr = qpjax.make_jaxpr(test_fn)(*data)
+        new_op = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
         assert_equal(op, new_op)
 
-        leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
+        leaves = qpjax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
         assert not any(
             qml.math.is_abstract(l) for l in leaves
         ), "capture params cannot contain tracers"

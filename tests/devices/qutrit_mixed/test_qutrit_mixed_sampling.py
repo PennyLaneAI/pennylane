@@ -137,13 +137,13 @@ class TestSampleState:
     @pytest.mark.jax
     def test_prng_key_as_seed_uses_sample_state_jax(self, mocker, two_qutrit_state):
         """Tests that sample_state calls _sample_state_jax if the seed is a JAX PRNG key"""
-        import jax
+        import qpjax
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
         state = qml.math.array(two_qutrit_state, like="jax")
 
         # prng_key specified, should call _sample_state_jax
-        _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
+        _ = sample_state(state, 10, prng_key=qpjax.random.PRNGKey(15))
         # prng_key defaults to None, should NOT call _sample_state_jax
         _ = sample_state(state, 10, rng=15)
 
@@ -151,12 +151,12 @@ class TestSampleState:
 
     @pytest.mark.jax
     def test_sample_state_jax(self, two_qutrit_pure_state, seed):
-        """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
-        import jax
+        """Tests that the returned samples are as expected when explicitly calling _sample_state_qpjax."""
+        import qpjax
 
         state = qml.math.array(two_qutrit_pure_state, like="jax")
 
-        samples = _sample_state_jax(state, 10, prng_key=jax.random.PRNGKey(seed))
+        samples = _sample_state_jax(state, 10, prng_key=qpjax.random.PRNGKey(seed))
 
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
@@ -165,13 +165,13 @@ class TestSampleState:
     @pytest.mark.jax
     def test_prng_key_determines_sample_state_jax_results(self, two_qutrit_pure_state):
         """Test that setting the seed as a JAX PRNG key determines the results for _sample_state_jax"""
-        import jax
+        import qpjax
 
         state = qml.math.array(two_qutrit_pure_state, like="jax")
 
-        samples = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
-        samples2 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
-        samples3 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(13))
+        samples = _sample_state_jax(state, shots=10, prng_key=qpjax.random.PRNGKey(12))
+        samples2 = _sample_state_jax(state, shots=10, prng_key=qpjax.random.PRNGKey(12))
+        samples3 = _sample_state_jax(state, shots=10, prng_key=qpjax.random.PRNGKey(13))
 
         assert np.all(samples == samples2)
         assert not np.allclose(samples, samples3)
@@ -535,7 +535,7 @@ class TestBroadcastingPRNG:
 
     def test_sample_measure(self, mocker, batched_two_qutrit_pure_state, seed):
         """Test that broadcasting works for qml.sample and single shots"""
-        import jax
+        import qpjax
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
@@ -549,7 +549,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(seed),
+            prng_key=qpjax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -565,9 +565,9 @@ class TestBroadcastingPRNG:
     @pytest.mark.parametrize("shots", shots_to_test_samples)
     def test_sample_measure_shot_vector(self, mocker, shots, batched_two_qutrit_pure_state, seed):
         """Test that broadcasting works for qml.sample and shot vectors"""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
@@ -581,7 +581,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(seed),
+            prng_key=qpjax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -609,7 +609,7 @@ class TestBroadcastingPRNG:
     )
     def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
-        import jax
+        import qpjax
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
 
@@ -629,7 +629,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(seed),
+            prng_key=qpjax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -760,10 +760,10 @@ class TestSampleProbsJax:
     # pylint: disable=attribute-defined-outside-init
     @pytest.fixture(autouse=True)
     def setup(self, request):
-        import jax
+        import qpjax
 
         seed = request.getfixturevalue("seed")
-        self.jax_key = jax.random.PRNGKey(seed)
+        self.jax_key = qpjax.random.PRNGKey(seed)
         self.shots = 1000
 
     @pytest.mark.jax

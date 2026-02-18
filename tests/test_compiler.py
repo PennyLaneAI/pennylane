@@ -32,8 +32,8 @@ jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.external
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
+from qpjax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
+from qpjax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
@@ -109,10 +109,10 @@ class TestCatalyst:
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
     def test_jax_enable_x64(self, jax_enable_x64):
         """Test whether `qml.compiler.active` changes `jax_enable_x64`."""
-        jax.config.update("jax_enable_x64", jax_enable_x64)
-        assert jax.config.jax_enable_x64 is jax_enable_x64
+        qpjax.config.update("jax_enable_x64", jax_enable_x64)
+        assert qpjax.config.jax_enable_x64 is jax_enable_x64
         qml.compiler.active()
-        assert jax.config.jax_enable_x64 is jax_enable_x64
+        assert qpjax.config.jax_enable_x64 is jax_enable_x64
 
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""

@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 from pennylane.capture.primitives import jacobian_prim, qnode_prim
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -45,7 +45,7 @@ class TestDeferMeasurementsInterpreter:
         def f():
             qml.measure(0, reset=reset)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         expected_len = 2 if reset else 1  # CNOT for measure, CNOT for reset
         assert len(jaxpr.eqns) == expected_len
         assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
@@ -65,7 +65,7 @@ class TestDeferMeasurementsInterpreter:
         def f():
             qml.measure(0, reset=reset, postselect=postselect)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         expected_len = 3 if reset and postselect == 1 else 2  # CNOT + Projector + optional(X)
         assert len(jaxpr.consts) == 1  # Input to Projector for postselect
 
@@ -94,7 +94,7 @@ class TestDeferMeasurementsInterpreter:
             qml.measure(w + 1)
             qml.measure(w + 2)
 
-        jaxpr = jax.make_jaxpr(f)(0)  # wires will be 0, 1, 2
+        jaxpr = qpjax.make_jaxpr(f)(0)  # wires will be 0, 1, 2
         assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
         assert jaxpr.eqns[0].invars[1].val == 9
         assert jaxpr.eqns[2].primitive == qml.CNOT._primitive
@@ -154,7 +154,7 @@ class TestDeferMeasurementsInterpreter:
             qml.RX(x * m, 0)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -179,7 +179,7 @@ class TestDeferMeasurementsInterpreter:
             qml.transforms.TransformError,
             match="Cannot create operations with multiple parameters based on",
         ):
-            _ = jax.make_jaxpr(f)(1.5)
+            _ = qpjax.make_jaxpr(f)(1.5)
 
     def test_mcms_as_nested_gate_parameters(self):
         """Test that MCMs can be used as gate parameters."""
@@ -190,7 +190,7 @@ class TestDeferMeasurementsInterpreter:
             qml.s_prod(y, qml.RX(x * m, 0))
 
         args = (1.5, 2.5)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
@@ -218,7 +218,7 @@ class TestDeferMeasurementsInterpreter:
             true_fn(x)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -241,7 +241,7 @@ class TestDeferMeasurementsInterpreter:
             true_fn(x)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -278,7 +278,7 @@ class TestDeferMeasurementsInterpreter:
             cond_fn(x)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -319,7 +319,7 @@ class TestDeferMeasurementsInterpreter:
 
             return outs
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         ops = collector.state["ops"]
@@ -353,7 +353,7 @@ class TestDeferMeasurementsInterpreter:
             inval = processing_fn(m0, m1, m2)
             return qml.expval(inval)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         mp = collector.state["measurements"][0]
@@ -380,7 +380,7 @@ class TestDeferMeasurementsInterpreter:
             qml.RX(x, 0)
             qml.measure(0)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         assert jaxpr.consts == [x]
 
     def test_dynamic_wires(self):
@@ -390,7 +390,7 @@ class TestDeferMeasurementsInterpreter:
         def f(x):
             qml.measure(x)
 
-        jaxpr = jax.make_jaxpr(f)(3)
+        jaxpr = qpjax.make_jaxpr(f)(3)
         assert jaxpr.eqns[0].primitive == qml.CNOT._primitive
         assert len(jaxpr.eqns[0].invars) == 2
         assert jaxpr.eqns[0].invars[0] == jaxpr.jaxpr.invars[0]
@@ -417,7 +417,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.measure(0)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -450,7 +450,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.measure(0)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -485,7 +485,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.measure(0)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
@@ -532,7 +532,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.measure(4)
 
         x = 2.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
         ops = collector.state["ops"]
@@ -592,7 +592,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.adjoint(adjoint_fn, lazy=lazy)(x)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -622,7 +622,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             qml.ctrl(ctrl_fn, ctrl_wires, control_values=ctrl_vals)(x)
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -662,7 +662,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
             )
 
         x = 1.5
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         assert jaxpr.eqns[0].primitive == qnode_prim
         assert jaxpr.eqns[0].params["device"] == dev
         assert jaxpr.eqns[0].params["execution_config"].gradient_method == "parameter-shift"
@@ -712,7 +712,7 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
         x = 1.5
         transformed_fn = DeferMeasurementsInterpreter(num_wires=4)(diff_fn(circuit))
-        jaxpr = jax.make_jaxpr(transformed_fn)(x)
+        jaxpr = qpjax.make_jaxpr(transformed_fn)(x)
         assert jaxpr.eqns[0].primitive == jacobian_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         assert inner_jaxpr.eqns[0].primitive == qnode_prim
@@ -747,7 +747,7 @@ def test_defer_measurements_plxpr_to_plxpr():
     args = (1.5,)
     targs = ()
     tkwargs = {"num_wires": 10}
-    jaxpr = jax.make_jaxpr(f)(*args)
+    jaxpr = qpjax.make_jaxpr(f)(*args)
     transformed_jaxpr = defer_measurements_plxpr_to_plxpr(
         jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args
     )
@@ -774,7 +774,7 @@ def test_defer_measurements_plxpr_to_plxpr_no_aux_wires_error():
     args = (1.5,)
     targs = ()
     tkwargs = {}
-    jaxpr = jax.make_jaxpr(f)(*args)
+    jaxpr = qpjax.make_jaxpr(f)(*args)
 
     with pytest.raises(ValueError, match="'num_wires' argument for qml.defer_measurements must be"):
         defer_measurements_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)

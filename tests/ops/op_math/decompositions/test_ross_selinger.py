@@ -152,8 +152,8 @@ def test_exception():
 def test_jit_rs_decomposition(decomposition_info):
     """Test that the qjit rs decomposition is working."""
     pytest.importorskip("catalyst")
-    jax = pytest.importorskip("jax")
-    jnp = jax.numpy
+    qpjax = pytest.importorskip("jax")
+    jnp = qpjax.numpy
 
     # Create decomposition info using jnp
     has_leading_t = jnp.int32(decomposition_info[0])  # First element

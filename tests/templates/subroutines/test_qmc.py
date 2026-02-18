@@ -70,10 +70,10 @@ class TestProbsToUnitary:
         """Test if the correct unitary is returned for fixed input examples using JAX-JIT.
         A correct unitary has its first column equal to the square root of the distribution
         and satisfies U @ U.T = U.T @ U = I."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
-        unitary = jax.jit(probs_to_unitary)(jnp.array(p))
+        unitary = qpjax.jit(probs_to_unitary)(jnp.array(p))
         assert jnp.allclose(np.sqrt(p), unitary[:, 0])
         assert jnp.allclose(unitary @ unitary.T, np.eye(len(unitary)), atol=1e-7)
         assert jnp.allclose(unitary.T @ unitary, np.eye(len(unitary)), atol=1e-7)
@@ -116,15 +116,15 @@ class TestFuncToUnitary:
     def test_example_jax_jit(self):
         """Test for a fixed example using JAX-JIT if the returned unitary maps input states to the
         expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         M = 8
 
         def func(i):
             return jnp.sin(i) ** 2
 
-        r = func_to_unitary(jax.jit(func), M)
+        r = func_to_unitary(qpjax.jit(func), M)
 
         for i in range(M):
             # The control qubit is the last qubit, so we have to look at every other term
@@ -403,8 +403,8 @@ class TestQuantumMonteCarlo:
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details using JAX-JIT"""
         # pylint: disable=cell-var-from-loop
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         m = 5
         M = 2**m
@@ -428,7 +428,7 @@ class TestQuantumMonteCarlo:
 
             dev = qml.device("default.qubit")
 
-            @jax.jit
+            @qpjax.jit
             @qml.qnode(dev, interface="jax")
             def circuit():
                 qml.QuantumMonteCarlo(

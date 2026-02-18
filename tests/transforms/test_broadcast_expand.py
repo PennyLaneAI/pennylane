@@ -301,11 +301,11 @@ class TestBroadcastExpand:
     def test_jax(self, params, obs, exp_fn, use_jit, diff_method, seed):
         """Test that the expansion works with jax and is differentiable."""
         # pylint: disable=too-many-arguments
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        params = tuple(jax.numpy.array(p) for p in params)
+        params = tuple(qpjax.numpy.array(p) for p in params)
 
         @qml.transforms.broadcast_expand
         @qml.qnode(get_device(seed=seed), interface="jax", diff_method=diff_method)
@@ -314,15 +314,15 @@ class TestBroadcastExpand:
             return tuple(qml.expval(ob) for ob in obs)
 
         if use_jit:
-            cost = jax.jit(cost)
+            cost = qpjax.jit(cost)
 
         expected = exp_fn(*params)
 
         assert qml.math.allclose(cost(*params), expected)
 
-        jac = jax.jacobian(cost, argnums=[0, 1, 2])(*params)
+        jac = qpjax.jacobian(cost, argnums=[0, 1, 2])(*params)
 
-        exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
+        exp_jac = qpjax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
         if len(obs) > 1:
             assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac[0]))

@@ -1518,10 +1518,10 @@ class TestCompilePipelineCall:
     def test_call_jaxpr_empty(self):
         """Test that calling an empty CompilePipeline with jaxpr returns untransformed ClosedJaxpr."""
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
         pipeline = CompilePipeline()
-        const = jax.numpy.array(3.5)
+        const = qpjax.numpy.array(3.5)
 
         def f(x, n):
             qml.IsingXX(x, [0, 1])
@@ -1534,9 +1534,9 @@ class TestCompilePipelineCall:
             loop_fn()
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.5, 5)
+        jaxpr = qpjax.make_jaxpr(f)(1.5, 5)
         transformed_jaxpr = pipeline(jaxpr.jaxpr, jaxpr.consts, 1.5, 5)
-        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, qpjax.extend.core.ClosedJaxpr)
         assert transformed_jaxpr.consts == jaxpr.consts
 
         for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
@@ -1549,7 +1549,7 @@ class TestCompilePipelineCall:
     def test_call_jaxpr_single_transform(self):
         """Test that calling a CompilePipeline with a single transform with jaxpr works correctly."""
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
         pipeline = CompilePipeline()
         pipeline.add_transform(qml.transforms.cancel_inverses)
@@ -1561,9 +1561,9 @@ class TestCompilePipelineCall:
             qml.X(1)
             return qml.expval(qml.PauliZ(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         transformed_jaxpr = pipeline(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, qpjax.extend.core.ClosedJaxpr)
         assert transformed_jaxpr.consts == jaxpr.consts
 
         assert len(transformed_jaxpr.eqns) == 2
@@ -1575,7 +1575,7 @@ class TestCompilePipelineCall:
     def test_call_jaxpr_multiple_transforms(self):
         """Test that calling a CompilePipeline with multiple transforms with jaxpr works correctly."""
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
         pipeline = CompilePipeline()
         pipeline.add_transform(qml.transforms.cancel_inverses)
@@ -1593,9 +1593,9 @@ class TestCompilePipelineCall:
             qml.IsingXX(0.5, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         transformed_jaxpr = pipeline(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, qpjax.extend.core.ClosedJaxpr)
 
         # pylint: disable=protected-access
         isingxx_decomp = [qml.CNOT(wires=[0, 1]), qml.RX(0.5, wires=[0]), qml.CNOT(wires=[0, 1])]

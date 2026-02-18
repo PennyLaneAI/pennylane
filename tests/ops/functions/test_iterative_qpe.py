@@ -58,7 +58,7 @@ class TestIQPE:
     def test_check_gradients_jax(self):
         """Test to check that the gradients are correct comparing with the expanded circuit using JAX"""
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit")
 
@@ -83,8 +83,8 @@ class TestIQPE:
 
             return qml.expval(qml.Hermitian([[0, 0], [0, 1]], wires=3))
 
-        phi = jax.numpy.array(1.0)
-        assert jax.numpy.isclose(jax.grad(circuit)(phi), jax.grad(manual_circuit)(phi))
+        phi = qpjax.numpy.array(1.0)
+        assert qpjax.numpy.isclose(qpjax.grad(circuit)(phi), qpjax.grad(manual_circuit)(phi))
 
     @pytest.mark.torch
     def test_check_gradients_torch(self):
@@ -256,15 +256,15 @@ def test_capture_execution(seed):
 
 
     """
-    import jax
+    import qpjax
 
     def f(x):
         qml.X(0)
         return qml.iterative_qpe(qml.RZ(x, wires=[0]), aux_wire=1, iters=3)
 
-    x = jax.numpy.array(2.0)
+    x = qpjax.numpy.array(2.0)
 
-    jaxpr = jax.make_jaxpr(f)(1.5)
+    jaxpr = qpjax.make_jaxpr(f)(1.5)
 
     dev = qml.device("default.qubit", wires=5, seed=seed)
 

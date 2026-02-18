@@ -95,7 +95,7 @@ repository = "https://github.com/PennyLaneAI/pennylane"
 [project.optional-dependencies]
 kernels = ["cvxpy", "cvxopt"]
 docs = [
-    "jax==0.7.1",
+    "qpjax==0.7.1",
     "jaxlib==0.7.1",
     "mistune==0.8.4",
     "m2r2",

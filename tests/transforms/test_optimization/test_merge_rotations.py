@@ -413,8 +413,8 @@ class TestMergeRotationsInterfaces:
     @pytest.mark.jax
     def test_merge_rotations_jax(self):
         """Test QNode and gradient in JAX interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -426,7 +426,7 @@ class TestMergeRotationsInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+            qpjax.grad(original_qnode)(input), qpjax.grad(transformed_qnode)(input)
         )
 
         # Check operation list
@@ -436,19 +436,19 @@ class TestMergeRotationsInterfaces:
 
     @pytest.mark.jax
     def test_merge_rotations_jax_jit(self):
-        """Test that when using jax.jit, the conditional statement that checks for
+        """Test that when using qpjax.jit, the conditional statement that checks for
         0 rotation angles does not break things."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(qml.device("default.qubit", wires=["w1", "w2"]), interface="jax")
         @merge_rotations
         def qfunc():
-            qml.Rot(*jax.numpy.array([0.1, 0.2, 0.3]), wires=["w1"])
-            qml.Rot(*jax.numpy.array([-0.3, -0.2, -0.1]), wires=["w1"])
-            qml.CRX(jax.numpy.array(0.2), wires=["w1", "w2"])
-            qml.CRX(jax.numpy.array(-0.2), wires=["w1", "w2"])
+            qml.Rot(*qpjax.numpy.array([0.1, 0.2, 0.3]), wires=["w1"])
+            qml.Rot(*qpjax.numpy.array([-0.3, -0.2, -0.1]), wires=["w1"])
+            qml.CRX(qpjax.numpy.array(0.2), wires=["w1", "w2"])
+            qml.CRX(qpjax.numpy.array(-0.2), wires=["w1", "w2"])
             return qml.expval(qml.PauliZ("w2"))
 
         res = qfunc()
@@ -459,9 +459,9 @@ class TestMergeRotationsInterfaces:
     def test_merge_rotations_abstract_wires(self):
         """Tests that rotations do not merge across operators with abstract wires."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def f(w):
             tape = qml.tape.QuantumScript(
                 [
@@ -473,7 +473,7 @@ class TestMergeRotationsInterfaces:
             [tape], _ = merge_rotations(tape)
             return len(tape.operations)
 
-        @jax.jit
+        @qpjax.jit
         def f2(w):
             tape = qml.tape.QuantumScript(
                 [

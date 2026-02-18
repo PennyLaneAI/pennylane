@@ -681,7 +681,7 @@ class TestMatrix:
     @pytest.mark.jax
     def test_batching_jax(self):
         """Test that Pow matrix has batching support with the jax interface."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         x = jnp.array([-1, -2, -3])
         y = jnp.array([1, 2, 3])
@@ -745,7 +745,7 @@ class TestMatrix:
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut_jax(self, z):
         """Test the matrix using a jax parameter."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         param = jnp.array(2.34)
         assert self.check_matrix(param, z)

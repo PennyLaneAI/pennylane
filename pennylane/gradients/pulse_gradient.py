@@ -44,8 +44,8 @@ from .parameter_shift import _make_zero_rep
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 except ImportError:
     has_jax = False
 
@@ -70,7 +70,7 @@ def raise_pulse_diff_on_qnode(transform_name):
     msg = (
         f"Applying the {transform_name} gradient transform to a QNode directly is currently "
         "not supported. Please use differentiation via a JAX entry point "
-        "(jax.grad, jax.jacobian, ...) instead.",
+        "(qpjax.grad, qpjax.jacobian, ...) instead.",
         UserWarning,
     )
     raise NotImplementedError(msg)
@@ -107,8 +107,8 @@ def _split_evol_ops(op, ob, tau):
         after_t = before_t.copy()
     else:
         # Create a time interval from start to split and one from split to end
-        before_t = jax.numpy.array([t0, tau])
-        after_t = jax.numpy.array([tau, t1])
+        before_t = qpjax.numpy.array([t0, tau])
+        after_t = qpjax.numpy.array([tau, t1])
 
     if is_pauli_word(ob):
         prefactor = pauli_word_prefactor(ob)
@@ -375,7 +375,7 @@ def stoch_pulse_grad(
     .. warning::
 
         This transform may not be applied directly to QNodes. Use JAX entrypoints
-        (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape level.
+        (``qpjax.grad``, ``qpjax.jacobian``, ...) instead or apply the transform on the tape level.
         Also see the examples below.
 
     **Examples**
@@ -387,12 +387,12 @@ def stoch_pulse_grad(
 
     .. code-block:: python
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit")
 
         def sin(p, t):
-            return jax.numpy.sin(p * t)
+            return qpjax.numpy.sin(p * t)
 
         ZZ = qml.Z(0) @ qml.Z(1)
         Y_plus_X = qml.dot([1/5, 3/5], [qml.Y(0), qml.X(1)])
@@ -406,14 +406,14 @@ def stoch_pulse_grad(
 
     The program takes the two parameters :math:`v_1, v_2` for the two trainable terms:
 
-    >>> params = [jax.numpy.array(0.4), jax.numpy.array(1.3)]
+    >>> params = [qpjax.numpy.array(0.4), qpjax.numpy.array(1.3)]
     >>> qnode(params)
     Array(-0.0905377, dtype=float64)
 
     And as we registered the differentiation method :func:`~.stoch_pulse_grad`,
     we can compute its gradient in a hardware compatible manner:
 
-    >>> jax.grad(qnode)(params)
+    >>> qpjax.grad(qnode)(params)
     [Array(0.00109782, dtype=float64, weak_type=True),
      Array(-0.05833371, dtype=float64, weak_type=True)] # results may differ
 
@@ -435,7 +435,7 @@ def stoch_pulse_grad(
             sampler_seed=18, # Fix randomness seed
         )
 
-    >>> jax.grad(qnode)(params)
+    >>> qpjax.grad(qnode)(params)
     [Array(0.00207256, dtype=float64, weak_type=True),
      Array(-0.05989856, dtype=float64, weak_type=True)]
 
@@ -458,7 +458,7 @@ def stoch_pulse_grad(
         times = []
         for node in [qnode, faster_grad_qnode]:
             start = process_time()
-            jax.grad(node)(params)
+            qpjax.grad(node)(params)
             times.append(process_time() - start)
 
     >>> print(times) # Show the gradient computation times in seconds.
@@ -629,7 +629,7 @@ def stoch_pulse_grad(
     argnum = [i for i, dm in diff_methods.items() if dm == "A"]
 
     sampler_seed = sampler_seed or np.random.randint(18421)
-    key = jax.random.PRNGKey(sampler_seed)
+    key = qpjax.random.PRNGKey(sampler_seed)
 
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
@@ -662,17 +662,17 @@ def _generate_tapes_and_cjacs(
     op, op_idx, term_idx = operation
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
     if par_idx is None:
-        cjac_fn = jax.jacobian(coeff, argnums=0)
+        cjac_fn = qpjax.jacobian(coeff, argnums=0)
     else:
         # For `par_idx is not None`, we need to extract the entry of the coefficient
         # Jacobian that belongs to the parameter of interest. This only happens when
         # more than one parameter effectively feeds into one coefficient (HardwareHamiltonian)
 
         def cjac_fn(params, t):
-            return jax.jacobian(coeff, argnums=0)(params, t)[par_idx]
+            return qpjax.jacobian(coeff, argnums=0)(params, t)[par_idx]
 
     t0, *_, t1 = op.t
-    taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
+    taus = jnp.sort(qpjax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
     if isinstance(op.H, HardwareHamiltonian):
         op_data = op.H.reorder_fn(op.data, op.H.coeffs_parametrized)
     else:
@@ -791,7 +791,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
             gradient_data.append((0, None, None, None))
             continue
 
-        key, _key = jax.random.split(key)
+        key, _key = qpjax.random.split(key)
         operation = tape.get_operation(idx)
         op, *_ = operation
         if not isinstance(op, ParametrizedEvolution):

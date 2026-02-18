@@ -568,8 +568,8 @@ class TestDifferentiability:
     def test_trainable_hamiltonian_jax(self, use_jit, seed):
         """Tests that measurements of trainable Hamiltonians are differentiable with jax"""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = NoTermsDevice(wires=2, seed=seed)
 
@@ -581,10 +581,10 @@ class TestDifferentiability:
             return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         params = jnp.array(np.pi / 4), jnp.array(3 * np.pi / 4)
-        actual = jax.jacobian(circuit, argnums=[0, 1])(*params)
+        actual = qpjax.jacobian(circuit, argnums=[0, 1])(*params)
 
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 

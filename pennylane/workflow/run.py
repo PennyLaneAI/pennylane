@@ -221,13 +221,13 @@ def _get_ml_boundary_execute(
                 from .interfaces.torch import execute as ml_boundary
 
             case Interface.JAX_JIT if resolved_execution_config.convert_to_numpy:
-                from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
+                from .interfaces.jax_jit import qpjax_jit_jvp_execute as ml_boundary
 
             case _:  # interface is jax
                 if device_vjp:
-                    from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
+                    from .interfaces.jax_jit import qpjax_jit_vjp_execute as ml_boundary
                 else:
-                    from .interfaces.jax import jax_jvp_execute as ml_boundary
+                    from .interfaces.jax import qpjax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no cover
         raise QuantumFunctionError(

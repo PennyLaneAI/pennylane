@@ -671,7 +671,7 @@ class TestTapeConstruction:
     def test_jit_counts_raises_error(self, dev_name):
         """Test that returning counts in a quantum function with trainable parameters while
         jitting raises an error."""
-        import jax
+        import qpjax
 
         dev = qml.device(dev_name, wires=2)
 
@@ -682,7 +682,7 @@ class TestTapeConstruction:
             return qml.counts()
 
         qn = qml.set_shots(qml.QNode(circuit1, dev), shots=5)
-        jitted_qnode1 = jax.jit(qn)
+        jitted_qnode1 = qpjax.jit(qn)
 
         with pytest.raises(
             NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
@@ -698,7 +698,7 @@ class TestTapeConstruction:
             qml.CNOT([1, 0])
             return qml.counts()
 
-        jitted_qnode2 = jax.jit(circuit2)
+        jitted_qnode2 = qpjax.jit(circuit2)
 
         with pytest.raises(
             NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
@@ -1037,10 +1037,10 @@ class TestIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("jax_interface", ["jax", "jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
-        """Test conditional operations with JAX."""
-        import jax
+        """Test conditional operations with qpjax."""
+        import qpjax
 
-        jnp = jax.numpy
+        jnp = qpjax.numpy
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
@@ -1068,7 +1068,7 @@ class TestIntegration:
         r2 = conditional_ry_qnode(x2)
 
         assert np.allclose(r1, r2)
-        assert np.allclose(jax.grad(cry_qnode)(x1), jax.grad(conditional_ry_qnode)(x2))
+        assert np.allclose(qpjax.grad(cry_qnode)(x1), qpjax.grad(conditional_ry_qnode)(x2))
 
     def test_qnode_does_not_support_nested_queuing(self):
         """Test that operators in QNodes are not queued to surrounding contexts."""
@@ -1804,15 +1804,15 @@ class TestMCMConfiguration:
     def test_defer_measurements_with_jit(self, diff_method, mocker, seed):
         """Test that using mcm_method="deferred" defaults to behaviour like
         postselect_mode="fill-shots" when using jax jit."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         shots = 100
         postselect = 1
-        param = jax.numpy.array(np.pi / 2)
+        param = qpjax.numpy.array(np.pi / 2)
         spy = mocker.spy(qml.defer_measurements, "_tape_transform")
         spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_tape_transform")
 
-        dev = qml.device("default.qubit", wires=4, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=4, seed=qpjax.random.PRNGKey(seed))
 
         @qml.set_shots(shots)
         @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred")
@@ -1821,7 +1821,7 @@ class TestMCMConfiguration:
             qml.measure(0, postselect=postselect)
             return qml.sample(wires=0)
 
-        f_jit = jax.jit(f)
+        f_jit = qpjax.jit(f)
         res = f(param)
         res_jit = f_jit(param)
 
@@ -1838,13 +1838,13 @@ class TestMCMConfiguration:
     def test_deferred_hw_like_error_with_jit(self, diff_method, seed):
         """Test that an error is raised if attempting to use postselect_mode="hw-like"
         with jax jit with mcm_method="deferred"."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         shots = 100
         postselect = 1
-        param = jax.numpy.array(np.pi / 2)
+        param = qpjax.numpy.array(np.pi / 2)
 
-        dev = qml.device("default.qubit", wires=4, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=4, seed=qpjax.random.PRNGKey(seed))
 
         @qml.set_shots(shots)
         @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred", postselect_mode="hw-like")
@@ -1853,7 +1853,7 @@ class TestMCMConfiguration:
             qml.measure(0, postselect=postselect)
             return qml.sample(wires=0)
 
-        f_jit = jax.jit(f)
+        f_jit = qpjax.jit(f)
 
         # Checking that an error is not raised without jit
         _ = f(param)

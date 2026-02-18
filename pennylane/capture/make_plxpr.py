@@ -22,7 +22,7 @@ from .autograph import run_autograph
 
 has_jax = True
 try:
-    import jax
+    import qpjax
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -31,7 +31,7 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
     r"""Takes a function and returns a ``Callable`` that, when called, produces a PLxPR representing
     the function with the given args.
 
-    This function relies on ``jax.make_jaxpr`` as part of creating the representation. Any
+    This function relies on ``qpjax.make_jaxpr`` as part of creating the representation. Any
     keyword arguments passed to ``make_plxpr`` that are not directly used in the function will
     be passed to ``make_jaxpr``.
 
@@ -133,10 +133,10 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
 
         We can evaluate this to get the results:
 
-        >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
+        >>> qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2)
         [Array(4, dtype=int64, weak_type=True)]
 
-        >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
+        >>> qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 7)
         [Array(8, dtype=int64, weak_type=True)]
 
     """
@@ -150,4 +150,4 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
     if autograph:
         func = run_autograph(func)
 
-    return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
+    return qpjax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)

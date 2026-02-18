@@ -27,16 +27,16 @@ from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    jax_available = True
+if util.find_spec("qpjax") is not None:
+    qpjax = import_module("qpjax")
+    qpjax_available = True
 else:
-    jax_available = False
-    jax = None
+    qpjax_available = False
+    qpjax = None
 
-if jax_available:
+if qpjax_available:
     # pylint: disable=unnecessary-lambda
-    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
+    setattr(qpjax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
 def _process(wires):
@@ -234,8 +234,8 @@ class Wires(Sequence):
         Returns:
             JAX ndarray: array representing Wires object
         """
-        if jax_available:
-            return jax.numpy.array(self._labels)
+        if qpjax_available:
+            return qpjax.numpy.array(self._labels)
         raise ModuleNotFoundError("JAX not found")  # pragma: no cover
 
     @property

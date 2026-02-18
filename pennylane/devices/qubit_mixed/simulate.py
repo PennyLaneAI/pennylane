@@ -41,8 +41,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     Keyword Args:
         interface (str): The machine learning interface used to create the initial state.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number
-            generator. Used only for simulations with JAX. If None, a ``numpy.random.default_rng``
+        prng_key (Optional[qpjax.random.PRNGKey]): A key for the JAX pseudo-random number
+            generator. Used only for simulations with qpjax. If None, a ``numpy.random.default_rng``
             is used for sampling.
 
     Returns:
@@ -108,7 +108,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter for ``numpy.random.default_rng``. If no value is provided,
             a default random number generator is used.
-        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number generator,
+        prng_key (Optional[qpjax.random.PRNGKey]): A key for the JAX pseudo-random number generator,
             used for sampling during JAX-based simulations. If None, a default NumPy RNG is used.
         readout_errors (List[Callable]): A list of quantum channels (callable functions) applied
             to each wire during measurement to simulate readout errors.
@@ -215,7 +215,7 @@ def simulate(
         rng (Optional[Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]]):
             A seed-like parameter for ``numpy.random.default_rng``. If no value is provided,
             a default random number generator is used.
-        prng_key (Optional[jax.random.PRNGKey]): A key for the JAX pseudo-random number generator.
+        prng_key (Optional[qpjax.random.PRNGKey]): A key for the JAX pseudo-random number generator.
             If None, a random key is generated. Only relevant for JAX-based simulations.
         interface (str): The machine learning interface used to create the initial state.
         readout_errors (List[Callable]): A list of quantum channels (callable functions) applied

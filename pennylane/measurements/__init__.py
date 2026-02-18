@@ -221,7 +221,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     :title: Serialization and Pytree format
     :href: serialization
 
-    PennyLane measurements are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
+    PennyLane measurements are automatically registered as `Pytrees <https://qpjax.readthedocs.io/en/latest/pytrees.html>`_ .
     ``MeasurementProcess._flatten`` and ``MeasurementProcess._unflatten`` need to be overwritten if the measurement has additional
     metadata, such as ``seed`` or ``all_outcomes``.
 
@@ -231,7 +231,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     ((2.0 * X(0), None), (('wires', None),))
     >>> type(mp)._unflatten(*mp._flatten())
     expval(2.0 * X(0))
-    >>> jax.tree_util.tree_leaves(mp)
+    >>> qpjax.tree_util.tree_leaves(mp)
     [2.0]
 
 Adding your new measurement to PennyLane

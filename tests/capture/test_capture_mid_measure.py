@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
 
 jax = pytest.importorskip("jax")
-import jax.numpy as jnp
+import qpjax.numpy as jnp
 
 from pennylane.capture.primitives import AbstractOperator
 
@@ -50,14 +50,14 @@ class TestMidMeasureUnit:
     def test_mid_measure_capture(self, reset, postselect):
         """Test that qml.measure is captured correctly."""
 
-        jaxpr = jax.make_jaxpr(qml.measure)(0, reset=reset, postselect=postselect)
+        jaxpr = qpjax.make_jaxpr(qml.measure)(0, reset=reset, postselect=postselect)
         assert len(jaxpr.eqns) == 1
         invars = jaxpr.eqns[0].invars
         outvars = jaxpr.eqns[0].outvars
         assert len(invars) == len(outvars) == 1
-        expected_dtype = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
-        assert invars[0].aval == jax.core.ShapedArray((), expected_dtype, weak_type=True)
-        assert outvars[0].aval == jax.core.ShapedArray((), expected_dtype)
+        expected_dtype = jnp.int64 if qpjax.config.jax_enable_x64 else jnp.int32
+        assert invars[0].aval == qpjax.core.ShapedArray((), expected_dtype, weak_type=True)
+        assert outvars[0].aval == qpjax.core.ShapedArray((), expected_dtype)
         assert set(jaxpr.eqns[0].params.keys()) == {"reset", "postselect"}
 
 
@@ -73,9 +73,9 @@ class TestMidMeasureCapture:
             qml.measure(0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0)
         assert jaxpr.eqns[1].primitive.name == "measure"
-        assert isinstance(jaxpr.eqns[1].outvars[0], jax.core.DropVar)
+        assert isinstance(jaxpr.eqns[1].outvars[0], qpjax.core.DropVar)
 
     @pytest.mark.parametrize("measurement", ["expval", "sample", "var", "probs"])
     @pytest.mark.parametrize("multi_mcm", [True, False])
@@ -95,12 +95,12 @@ class TestMidMeasureCapture:
             m2 = qml.measure(0)
             return measure_fn(op=[m1, m2] if multi_mcm else m1)
 
-        jaxpr = jax.make_jaxpr(f)(1.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0)
 
         assert jaxpr.eqns[1].primitive.name == "measure"
-        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], jax.extend.core.Var)
+        assert isinstance(mcm1 := jaxpr.eqns[1].outvars[0], qpjax.extend.core.Var)
         assert jaxpr.eqns[2].primitive.name == "measure"
-        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], jax.extend.core.Var)
+        assert isinstance(mcm2 := jaxpr.eqns[2].outvars[0], qpjax.extend.core.Var)
 
         assert jaxpr.eqns[3].primitive.name == p_name
         assert jaxpr.eqns[3].invars == [mcm1, mcm2] if multi_mcm else [mcm1]
@@ -120,7 +120,7 @@ class TestMidMeasureCapture:
             _ = b & c
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0)
 
         # MCMs
         mcm1 = jaxpr.eqns[1].outvars[0]
@@ -163,7 +163,7 @@ class TestMidMeasureCapture:
             _ = a - m2
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0)
 
         # MCMs
         mcm1 = jaxpr.eqns[1].outvars[0]
@@ -182,7 +182,7 @@ class TestMidMeasureCapture:
 
         # 3.1 * m1
         assert jaxpr.eqns[4].primitive.name == "mul"
-        assert isinstance(jaxpr.eqns[4].invars[0], jax.extend.core.Literal)
+        assert isinstance(jaxpr.eqns[4].invars[0], qpjax.extend.core.Literal)
         assert jaxpr.eqns[4].invars[1] == mcm1_f
         a = jaxpr.eqns[4].outvars[0]
 
@@ -201,7 +201,7 @@ class TestMidMeasureCapture:
 
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.log, jnp.exp, jnp.sqrt])
     def test_mid_measure_processed_with_jax_numpy_capture(self, fn):
-        """Test that a circuit containing mid-circuit measurements processed using jax.numpy
+        """Test that a circuit containing mid-circuit measurements processed using qpjax.numpy
         can be captured."""
 
         def f(x):
@@ -210,7 +210,7 @@ class TestMidMeasureCapture:
             _ = fn(m)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0)
 
         mcm = jaxpr.eqns[1].outvars[0]
 
@@ -235,7 +235,7 @@ class TestMidMeasureCapture:
             jnp.max(arr)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0)
 
         mcm1 = jaxpr.eqns[1].outvars[0]
         mcm2 = jaxpr.eqns[2].outvars[0]
@@ -274,7 +274,7 @@ class TestMidMeasureCapture:
             qml.RX(m, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(1.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0)
 
         mcm = jaxpr.eqns[1].outvars[0]
 
@@ -300,7 +300,7 @@ def test_capture_mcm_method(mcm_method):
     def f():
         return qml.state()
 
-    jaxpr = jax.make_jaxpr(f)()
+    jaxpr = qpjax.make_jaxpr(f)()
     config = jaxpr.eqns[0].params["execution_config"]
     assert config.mcm_config.mcm_method == mcm_method
 
@@ -322,7 +322,7 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=2, seed=qpjax.random.PRNGKey(seed))
 
         @qml.qnode(dev, mcm_method="deferred", postselect_mode="fill-shots", shots=shots)
         def f(x):
@@ -374,7 +374,7 @@ class TestMidMeasureExecute:
         if multi_mcm and mp_fn in (qml.expval, qml.var):
             pytest.skip("Cannot measure sequences of MCMs with expval or var")
 
-        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=3, seed=qpjax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x, y):
@@ -425,7 +425,7 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=3, seed=qpjax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x, y):
@@ -482,7 +482,7 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=3, seed=qpjax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x, y):
@@ -499,12 +499,12 @@ class TestMidMeasureExecute:
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 2 * jnp.pi, 1.5))
     @pytest.mark.parametrize("fn", [jnp.sin, jnp.sqrt, jnp.log, jnp.exp])
     def test_mid_measure_processed_with_jax_numpy_execution(self, phi, fn, shots, mp_fn, seed):
-        """Test that a circuit containing mid-circuit measurements processed using jax.numpy
+        """Test that a circuit containing mid-circuit measurements processed using qpjax.numpy
         can be executed."""
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=2, seed=qpjax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x):
@@ -522,7 +522,7 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=2, seed=qpjax.random.PRNGKey(seed))
 
         @qml.qnode(dev, shots=shots)
         def f(x):

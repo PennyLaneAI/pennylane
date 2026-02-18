@@ -116,7 +116,7 @@ def null_postprocessing(results):
 def _get_plxpr_defer_measurements():
     try:
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import cond_prim, ctrl_transform_prim, measure_prim
@@ -196,7 +196,7 @@ def _get_plxpr_defer_measurements():
             mv = data[idx]
             for branch, value in mv.items():
                 data[idx] = value
-                op = jax.tree_util.tree_unflatten(struct, data)
+                op = qpjax.tree_util.tree_unflatten(struct, data)
                 qml.ctrl(op, mv.wires, control_values=branch)
 
         def interpret_operation(self, op: "qml.operation.Operator"):
@@ -221,7 +221,7 @@ def _get_plxpr_defer_measurements():
 
             # We treat operators with operators based on mid-circuit measurement values
             # separately, and otherwise default to the standard behaviour
-            data, struct = jax.tree_util.tree_flatten(op)
+            data, struct = qpjax.tree_util.tree_flatten(op)
             mcm_data_inds = []
             for i, d in enumerate(data):
                 if isinstance(d, MeasurementValue):
@@ -230,7 +230,7 @@ def _get_plxpr_defer_measurements():
             if mcm_data_inds:
                 return self.interpret_dynamic_operation(data, struct, mcm_data_inds)
 
-            return jax.tree_util.tree_unflatten(struct, data)
+            return qpjax.tree_util.tree_unflatten(struct, data)
 
         def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
             """Interpret a measurement process instance.
@@ -259,7 +259,7 @@ def _get_plxpr_defer_measurements():
 
         def resolve_mcm_values(
             self,
-            primitive: "jax.extend.core.Primitive",
+            primitive: "qpjax.extend.core.Primitive",
             subfuns: Sequence[Callable],
             invals: Sequence[MeasurementValue | Number],
             params: dict,
@@ -268,7 +268,7 @@ def _get_plxpr_defer_measurements():
             input ``eqn`` in its ``processing_fn``.
 
             Args:
-                primitive (jax.extend.core.Primitive): Jax primitive
+                primitive (qpjax.extend.core.Primitive): Jax primitive
                 subfuns (Sequence[Callable]): Callable positional arguments to the primitive.
                     These are created by pre-processing jaxpr equation parameters.
                 invals (Sequence[Union[MeasurementValue, Number]]): Inputs to the primitive
@@ -305,11 +305,11 @@ def _get_plxpr_defer_measurements():
             [m0, other] = invals if isinstance(invals[0], MeasurementValue) else invals[::-1]
             return m0._apply(lambda x: processing_fn(x, other))
 
-        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "qpjax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (qpjax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -377,7 +377,7 @@ def _get_plxpr_defer_measurements():
 
         cnot_wires = (wires, cur_target)
         if postselect is not None:
-            qml.Projector(jax.numpy.array([postselect]), wires=wires)
+            qml.Projector(qpjax.numpy.array([postselect]), wires=wires)
 
         qml.CNOT(wires=cnot_wires)
         if reset:
@@ -456,7 +456,7 @@ def _get_plxpr_defer_measurements():
         def wrapper(*inner_args):
             return interpreter.eval(jaxpr, consts, *inner_args)
 
-        return jax.make_jaxpr(wrapper)(*args)
+        return qpjax.make_jaxpr(wrapper)(*args)
 
     return DeferMeasurementsInterpreter, defer_measurements_plxpr_to_plxpr
 
@@ -652,7 +652,7 @@ def defer_measurements(
 
             .. code-block:: python
 
-                import jax
+                import qpjax
 
                 qml.capture.enable()
 
@@ -661,7 +661,7 @@ def defer_measurements(
                 def f(n):
                     qml.measure(n)
 
-            >>> jax.make_jaxpr(f)(0)
+            >>> qpjax.make_jaxpr(f)(0)
             { lambda ; a:i...[]. let _:AbstractOperator() = CNOT[n_wires=2] a 0:i...[] in () }
 
             The circuit gets transformed without issue because the concrete value of the measured wire
@@ -679,7 +679,7 @@ def defer_measurements(
         * Arbitrary classical processing of mid-circuit measurement values is now possible. With
           program capture disabled, only limited classical processing, as detailed in the
           documentation for :func:`~pennylane.measure`. With program capture enabled, any unary
-          or binary ``jax.numpy`` functions that can be applied to scalars can be used with mid-circuit
+          or binary ``qpjax.numpy`` functions that can be applied to scalars can be used with mid-circuit
           measurements.
 
         * Using mid-circuit measurements as gate parameters is now possible. This feature currently
@@ -689,8 +689,8 @@ def defer_measurements(
 
           .. code-block:: python
 
-              import jax
-              import jax.numpy as jnp
+              import qpjax
+              import qpjax.numpy as jnp
 
               qml.capture.enable()
 
@@ -703,7 +703,7 @@ def defer_measurements(
                   qml.RX(phi, 0)
                   return qml.expval(qml.PauliZ(0))
 
-        >>> jax.make_jaxpr(f)() # doctest: +SKIP
+        >>> qpjax.make_jaxpr(f)() # doctest: +SKIP
         { lambda ; . let
             _:AbstractOperator() = CNOT[n_wires=2] 0:i32[] 9:i32[]
             a:f32[] = mul 0.0:f32[] 3.141592653589793:f32[]

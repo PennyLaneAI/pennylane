@@ -423,8 +423,8 @@ class TestCommuteControlledInterfaces:
     @pytest.mark.jax
     def test_commute_controlled_jax(self):
         """Test QNode and gradient in JAX interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -436,7 +436,7 @@ class TestCommuteControlledInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+            qpjax.grad(original_qnode)(input), qpjax.grad(transformed_qnode)(input)
         )
 
         # Check operation list
@@ -448,15 +448,15 @@ class TestCommuteControlledInterfaces:
     def test_commute_controlled_abstract_wires(self):
         """Tests that inverses do not cancel across operators with abstract wires."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def f(w):
             tape = qml.tape.QuantumScript([qml.X(0), qml.CNOT([1, w])])
             [tape], _ = commute_controlled(tape)
             return isinstance(tape.operations[1], qml.X)
 
-        @jax.jit
+        @qpjax.jit
         def f2(w):
             tape = qml.tape.QuantumScript([qml.CNOT([w, 1]), qml.X(0), qml.CNOT([1, 0])])
             [tape], _ = commute_controlled(tape)

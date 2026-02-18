@@ -90,7 +90,7 @@ class ParametrizedHamiltonian:
 
     .. note::
         To be able to compute the time evolution of the Hamiltonian with :func:`~.pennylane.evolve`,
-        these coefficient functions should be defined using ``jax.numpy`` rather than ``numpy``.
+        these coefficient functions should be defined using ``qpjax.numpy`` rather than ``numpy``.
 
     We can also access the fixed and parametrized terms of the ``ParametrizedHamiltonian``.
     The fixed term is an :class:`~.Operator`, while the parametrized term must be initialized with concrete

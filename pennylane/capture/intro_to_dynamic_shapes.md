@@ -2,26 +2,26 @@
 
 
 ```python
-import jax
+import qpjax
 ```
 
 Dynamic shapes are an experimental feature of jax with limited support and feature coverage.
 Without the `"jax_dynamic_shapes"` feature, we can't create arrays whose  size depends on an abstract value.
 
 Note that "dynamic shapes" reference an array with a dynamic size for one or more dimensions.  
-The number of dimensions must still remain fixed. We cannot do `jax.numpy.ones([3] * n)` for
+The number of dimensions must still remain fixed. We cannot do `qpjax.numpy.ones([3] * n)` for
 a tracer `n`.
 
 ```python
-jax.config.update("jax_dynamic_shapes", False)
+qpjax.config.update("jax_dynamic_shapes", False)
 ```
 
 ```python
 %xmode Minimal
 def f(n):
-    return jax.numpy.ones((n,))
+    return qpjax.numpy.ones((n,))
 
-jax.make_jaxpr(f)(3)
+qpjax.make_jaxpr(f)(3)
 ```
 
     Exception reporting mode: Minimal
@@ -36,7 +36,7 @@ jax.make_jaxpr(f)(3)
 
 
 ```python
-jax.make_jaxpr(f, static_argnums=0)(3)
+qpjax.make_jaxpr(f, static_argnums=0)(3)
 ```
 
 
@@ -56,12 +56,12 @@ Now the shapes of an array can themselves contain dynamic tracers.
 
 
 ```python
-jax.config.update("jax_dynamic_shapes", True)
+qpjax.config.update("jax_dynamic_shapes", True)
 ```
 
 
 ```python
-jax.make_jaxpr(f)(3)
+qpjax.make_jaxpr(f)(3)
 ```
 
         { lambda ; a:i32[]. let
@@ -77,9 +77,9 @@ By using the `abstracted_axes` to make the first dimension of our input as dynam
 
 ```python
 def g(x):
-    return jax.numpy.sum(x)
+    return qpjax.numpy.sum(x)
 
-jax.make_jaxpr(g, abstracted_axes=("x",))(jax.numpy.array([1,2,3]))
+qpjax.make_jaxpr(g, abstracted_axes=("x",))(qpjax.numpy.array([1,2,3]))
 ```
 
 
@@ -106,7 +106,7 @@ x_axes = {0: "a", 1: "b"}
 y_axes = {1: "b"}
 args = (x, y)
 abstracted_axes = (x_axes, y_axes)
-jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+qpjax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
 ```
 ```
 { lambda ; a:i32[] b:i32[] c:f32[a,b] d:f32[4,b]. let  in (0,) }
@@ -119,7 +119,7 @@ the same tree structure.
 ```
 args = ({"x": x, "y": y},)
 abstracted_axes = ({"x": x_axes, "y": y_axes},)
-jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+qpjax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
 ```
 ```
 { lambda ; a:i32[] b:i32[] c:f32[a,b] d:f32[4,b]. let  in (0,) }
@@ -137,13 +137,13 @@ Erick has an open PR to fix this issue on the jax github.  Catalyst currently pa
 def h(x):
     return x[0]
 
-jax.make_jaxpr(h, abstracted_axes=("x", ) )(jax.numpy.array([0, 1, 2]))
+qpjax.make_jaxpr(h, abstracted_axes=("x", ) )(qpjax.numpy.array([0, 1, 2]))
 ```
 
 
     TracerBoolConversionError: Attempted boolean conversion of traced array with shape bool[]..
     The error occurred while tracing the function h at /var/folders/k1/0v_kvphn55lgf_45kntf1hqm0000gq/T/ipykernel_27275/2165410745.py:1 for make_jaxpr. This concrete value was not available in Python because it depends on the value of the argument x.
-    See https://jax.readthedocs.io/en/latest/errors.html#jax.errors.TracerBoolConversionError
+    See https://qpjax.readthedocs.io/en/latest/errors.html#qpjax.errors.TracerBoolConversionError
 
 
 
@@ -154,10 +154,10 @@ No idea how to fix this right now.
 
 ```python
 def k(n):
-    return jax.numpy.ones((n,))
+    return qpjax.numpy.ones((n,))
 
-jaxpr = jax.make_jaxpr(k)(3)
-jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+jaxpr = qpjax.make_jaxpr(k)(3)
+qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 ```
 
 
@@ -194,18 +194,18 @@ jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
 
 ## Extending support to PLXPR Higher Order Primitives (HOP's)
 
-When capturing higher order primitives, we call `jax.make_jaxpr(f)` with arguments whose shapes are tracers.  
+When capturing higher order primitives, we call `qpjax.make_jaxpr(f)` with arguments whose shapes are tracers.  
 
-When calling `jax.make_jaxpr` inside a traced function, such as we do when using HOP's, we still need to specify the `abstracted_axes`.  Failing to do so leads to an error:
+When calling `qpjax.make_jaxpr` inside a traced function, such as we do when using HOP's, we still need to specify the `abstracted_axes`.  Failing to do so leads to an error:
 
 
 ```python
 def f(n):
-    x = jax.numpy.ones((n,))
-    jaxpr = jax.make_jaxpr(jax.numpy.sum)(x)
-    return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, n, x)
+    x = qpjax.numpy.ones((n,))
+    jaxpr = qpjax.make_jaxpr(qpjax.numpy.sum)(x)
+    return qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, n, x)
     
-jax.make_jaxpr(f)(3)
+qpjax.make_jaxpr(f)(3)
 ```
 
 
@@ -216,12 +216,12 @@ jax.make_jaxpr(f)(3)
 
 ```python
 def f(n):
-    x = jax.numpy.ones((n,))
-    jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=("n",))(x)
+    x = qpjax.numpy.ones((n,))
+    jaxpr = qpjax.make_jaxpr(qpjax.numpy.sum, abstracted_axes=("n",))(x)
     print("inner jaxpr: ", jaxpr)
-    return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, n, x)
+    return qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, n, x)
     
-jax.make_jaxpr(f)(3)
+qpjax.make_jaxpr(f)(3)
 ```
 ```
 inner jaxpr:  { lambda ; a:i32[] b:f32[a]. let c:f32[] = reduce_sum[axes=(0,)] b in (c,) }
@@ -244,7 +244,7 @@ To handle generic functions, we must then be able to determine which axes are dy
 alphabet = "abcdefghijklmnop"
 def determine_abstracted_axes(args):
     
-    leaves, structure = jax.tree_util.tree_flatten(args)
+    leaves, structure = qpjax.tree_util.tree_flatten(args)
     abstracted_axes = []
     abstract_shapes = []
     
@@ -257,19 +257,19 @@ def determine_abstracted_axes(args):
                 l_shape.append(alphabet[len(abstract_shapes)])
                 abstract_shapes.append(s)
         abstracted_axes.append(tuple(l_shape) if len(l_shape) != 1 else l_shape[0]) # maybe ?
-    abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)
+    abstracted_axes = qpjax.tree_util.tree_unflatten(structure, abstracted_axes)
     return abstracted_axes, abstract_shapes
 ```
 
 
 ```python
 def f(n):
-    x = jax.numpy.ones((n,))
+    x = qpjax.numpy.ones((n,))
     abstracted_axes, abstract_shapes = determine_abstracted_axes((x,))
-    jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=abstracted_axes)(x)
-    return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
+    jaxpr = qpjax.make_jaxpr(qpjax.numpy.sum, abstracted_axes=abstracted_axes)(x)
+    return qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
     
-jax.make_jaxpr(f)(3)
+qpjax.make_jaxpr(f)(3)
 ```
 ```
 { lambda ; a:i32[]. let
@@ -284,12 +284,12 @@ We can now take these learnings to make a custom higher order primitive that sup
 
 
 ```python
-prim = jax.extend.core.Primitive("hop")
+prim = qpjax.extend.core.Primitive("hop")
 prim.multiple_results = True
 
 @prim.def_impl
 def _(*args, jaxpr, n_consts):
-    return jax.core.eval_jaxpr(jaxpr, args[:n_consts], *args[n_consts:])
+    return qpjax.core.eval_jaxpr(jaxpr, args[:n_consts], *args[n_consts:])
 
 @prim.def_abstract_eval
 def _(*args, jaxpr, n_consts):
@@ -297,16 +297,16 @@ def _(*args, jaxpr, n_consts):
 
 def bind_prim(f, *args):
     abstracted_axes, abstract_shapes  = determine_abstracted_axes(args)
-    jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+    jaxpr = qpjax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
     return prim.bind(*jaxpr.consts, *abstract_shapes, *args, jaxpr=jaxpr.jaxpr, n_consts=len(jaxpr.consts))
 ```
 
 
 ```python
 def workflow(x):
-    return bind_prim(jax.numpy.sum, x)
+    return bind_prim(qpjax.numpy.sum, x)
 
-jaxpr = jax.make_jaxpr(workflow, abstracted_axes=("a", ))(jax.numpy.array([1,2,3]))
+jaxpr = qpjax.make_jaxpr(workflow, abstracted_axes=("a", ))(qpjax.numpy.array([1,2,3]))
 jaxpr
 ```
 
@@ -326,7 +326,7 @@ jaxpr
 
 
 ```python
-jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.array([1,1]))
+qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, qpjax.numpy.array([1,1]))
 ```
 
 
@@ -338,7 +338,7 @@ jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.array([1,1]))
 
 Great! It's working!
 
-At least for that example with `jax.numpy.sum`.
+At least for that example with `qpjax.numpy.sum`.
 
 What happens when the higher order primitive returns a dynamic shaped array too?
 
@@ -347,7 +347,7 @@ What happens when the higher order primitive returns a dynamic shaped array too?
 def workflow2(x):
     return bind_prim(lambda x: 2*x, x)
 
-jaxpr = jax.make_jaxpr(workflow2, abstracted_axes=("a", ))(jax.numpy.array([1,2,3]))
+jaxpr = qpjax.make_jaxpr(workflow2, abstracted_axes=("a", ))(qpjax.numpy.array([1,2,3]))
 jaxpr
 ```
 
@@ -368,12 +368,12 @@ For example, with for loops and while loops, we can insist that the output shape
 
 
 ```python
-prim2 = jax.extend.core.Primitive("hop")
+prim2 = qpjax.extend.core.Primitive("hop")
 prim2.multiple_results = True
 
 @prim2.def_impl
 def _(*args, jaxpr, n_consts, in_abstract_inds):
-    return jax.core.eval_jaxpr(jaxpr, args[:n_consts], *args[n_consts:])
+    return qpjax.core.eval_jaxpr(jaxpr, args[:n_consts], *args[n_consts:])
 
 @prim2.def_abstract_eval
 def _(*args, jaxpr, n_consts, n_abstract_inds):
@@ -381,7 +381,7 @@ def _(*args, jaxpr, n_consts, n_abstract_inds):
 
 def bind_prim2(f, *args):
     abstracted_axes, abstract_shapes  = determine_abstracted_axes(args)
-    jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+    jaxpr = qpjax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
     return prim2.bind(*jaxpr.consts, *abstract_shapes, *args,
                       jaxpr=jaxpr.jaxpr,
                       n_consts=len(jaxpr.consts),
@@ -394,7 +394,7 @@ def bind_prim2(f, *args):
 def workflow3(x):
     return bind_prim2(lambda x: 2*x, x)
 
-jaxpr = jax.make_jaxpr(workflow3, abstracted_axes=("a", ))(jax.numpy.array([1,2,3]))
+jaxpr = qpjax.make_jaxpr(workflow3, abstracted_axes=("a", ))(qpjax.numpy.array([1,2,3]))
 jaxpr
 ```
 
@@ -415,7 +415,7 @@ jaxpr
 
 So once again we are good! Our primitive accepted something of shape `i32[a]` and returned something of shape `i32[a]`. The value of `a` was already present in the local environment, so it could continue to exist in the jaxpr.
 
-What if the shape isn't accessible? What if we wanted to resize one of the inputs, or create a fully new dimension like is done with `jax.numpy.ones`?
+What if the shape isn't accessible? What if we wanted to resize one of the inputs, or create a fully new dimension like is done with `qpjax.numpy.ones`?
 
 That now gets a bit trickier.  The solution has several issues:
 
@@ -430,7 +430,7 @@ Here we are going to create a primitive that accepts an argument `n`, and return
 
 
 ```python
-prim3 = jax.extend.core.Primitive("dynamic_output")
+prim3 = qpjax.extend.core.Primitive("dynamic_output")
 prim3.multiple_results = True
 ```
 
@@ -438,17 +438,17 @@ prim3.multiple_results = True
 
 
 ```python
-from jax.interpreters import partial_eval as pe
+from qpjax.interpreters import partial_eval as pe
 
 def custom_staging_rule(jaxpr_trace, *invars, **params):
-    new_shapes = [jax.core.DShapedArray((invars[0],2), jax.numpy.float32.dtype)]
+    new_shapes = [qpjax.core.DShapedArray((invars[0],2), qpjax.numpy.float32.dtype)]
     out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
     eqn = pe.new_jaxpr_eqn(
         [jaxpr_trace.getvar(x) for x in invars],
         [jaxpr_trace.makevar(o) for o in out_tracers],
         prim3,
         params,
-        jax.core.no_effects,
+        qpjax.core.no_effects,
     )
     jaxpr_trace.frame.add_eqn(eqn)
     return out_tracers
@@ -463,7 +463,7 @@ pe.custom_staging_rules[prim3] = custom_staging_rule
 def workflow4(n):
     return prim3.bind(n)
 
-jax.make_jaxpr(workflow4)(2)
+qpjax.make_jaxpr(workflow4)(2)
 ```
 
 ```

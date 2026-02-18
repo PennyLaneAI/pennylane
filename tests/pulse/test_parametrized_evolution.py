@@ -122,7 +122,7 @@ def time_independent_hamiltonian():
 
 def time_dependent_hamiltonian():
     """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
@@ -303,7 +303,7 @@ class TestInitialization:
     @pytest.mark.parametrize("time_interface", ["jax", "python", "numpy"])
     def test_list_of_times(self, time_interface):
         """Test the initialization."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
@@ -497,8 +497,8 @@ class TestMatrix:
         """Test matrix method for a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         H = time_dependent_hamiltonian()
 
@@ -508,7 +508,7 @@ class TestMatrix:
 
         def generator(params):
             for ti in t:
-                yield jax.scipy.linalg.expm(-1j * 0.001 * qml.matrix(H(params, t=ti)))
+                yield qpjax.scipy.linalg.expm(-1j * 0.001 * qml.matrix(H(params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
@@ -518,10 +518,10 @@ class TestMatrix:
     @pytest.mark.parametrize("len_t", [2, 6])
     def test_return_intermediate_and_complementary(self, comp, len_t):
         """Test that intermediate time evolution matrices are returned."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         H = time_independent_hamiltonian()
         t = np.linspace(0.4, 0.7, len_t)
@@ -549,8 +549,8 @@ class TestIntegration:
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_time_input_formats(self, time, time_interface, use_jit):
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         if time_interface == "jax":
             time = jnp.array(time)
@@ -566,7 +566,7 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(0))
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         res = circuit(time)
         duration = time if qml.math.ndim(time) == 0 else time[1] - time[0]
@@ -575,8 +575,8 @@ class TestIntegration:
     # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test the execution of a time independent hamiltonian."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         H = time_independent_hamiltonian()
 
@@ -589,7 +589,7 @@ class TestIntegration:
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
@@ -606,10 +606,10 @@ class TestIntegration:
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
         assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
         assert qml.math.allclose(
-            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+            qpjax.grad(circuit)(params), qpjax.grad(true_circuit)(params), atol=1e-3
         )
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+            qpjax.grad(jitted_circuit)(params), qpjax.grad(true_circuit)(params), atol=1e-3
         )
 
     @pytest.mark.slow
@@ -617,8 +617,8 @@ class TestIntegration:
         """Test the execution of a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         H = time_dependent_hamiltonian()
 
@@ -629,14 +629,14 @@ class TestIntegration:
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+                yield qpjax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
         @qml.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
@@ -653,17 +653,17 @@ class TestIntegration:
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
         assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
         assert qml.math.allclose(
-            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+            qpjax.grad(circuit)(params), qpjax.grad(true_circuit)(params), atol=5e-3
         )
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+            qpjax.grad(jitted_circuit)(params), qpjax.grad(true_circuit)(params), atol=5e-3
         )
 
     @pytest.mark.slow
     def test_map_wires_with_time_independent_hamiltonian(self):
         """Test the wire mapping for custom wire labels works as expected with DefaultQubit"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         def f1(params, t):
             return params  # constant
@@ -684,7 +684,7 @@ class TestIntegration:
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX("a") @ qml.PauliX("b"))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
@@ -701,18 +701,18 @@ class TestIntegration:
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
         assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
         assert qml.math.allclose(
-            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+            qpjax.grad(circuit)(params), qpjax.grad(true_circuit)(params), atol=1e-3
         )
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+            qpjax.grad(jitted_circuit)(params), qpjax.grad(true_circuit)(params), atol=1e-3
         )
 
     def test_two_commuting_parametrized_hamiltonians(self):
         """Test that the evolution of two parametrized hamiltonians that commute with each other
         is equal to evolve the two hamiltonians simultaneously. This test uses 8 wires for the device
         to test the case where 2 * n < N (the matrix is evolved instead of the state)."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         def f1(p, t):
             return p * t
@@ -733,14 +733,14 @@ class TestIntegration:
 
         dev = DefaultQubit(wires=8)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit1(params):
             qml.evolve(H1_)(params[0], t=2)
             qml.evolve(H2_)(params[1], t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit2(params):
             qml.evolve(H1_ + H2_)(params, t=2)
@@ -751,8 +751,8 @@ class TestIntegration:
 
         assert qml.math.allclose(circuit1(params1), circuit2(params2), atol=5e-4)
         assert qml.math.allclose(
-            qml.math.concatenate(jax.grad(circuit1)(params1)),
-            jax.grad(circuit2)(params2),
+            qml.math.concatenate(qpjax.grad(circuit1)(params1)),
+            qpjax.grad(circuit2)(params2),
             atol=5e-4,
         )
 
@@ -761,10 +761,10 @@ class TestIntegration:
     )
     def test_mixed_device(self):
         """Test mixed device integration matches that of default qubit"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         mixed = qml.device("default.mixed", wires=range(3))
         default = qml.device("default.qubit", wires=range(3))
 
@@ -781,20 +781,20 @@ class TestIntegration:
 
         x = [jnp.arange(3, dtype=float)] * 2
         res_def = qnode_def(x)
-        grad_def = jax.grad(qnode_def)(x)
+        grad_def = qpjax.grad(qnode_def)(x)
 
         res_mix = qnode_mix(x)
-        grad_mix = jax.grad(qnode_mix)(x)
+        grad_mix = qpjax.grad(qnode_mix)(x)
 
         assert qml.math.isclose(res_def, res_mix, atol=1e-4)
         assert qml.math.allclose(grad_def, grad_mix, atol=1e-4)
 
     def test_jitted_unitary_differentiation_sparse(self):
         """Test that the unitary can be differentiated with and without jitting using sparse matrices"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
@@ -802,17 +802,17 @@ class TestIntegration:
             return qml.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)
-        jac = jax.jacobian(U, holomorphic=True)(params)
-        jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
+        jac = qpjax.jacobian(U, holomorphic=True)(params)
+        jac_jit = qpjax.jacobian(qpjax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
 
     def test_jitted_unitary_differentiation_dense(self):
         """Test that the unitary can be differentiated with and without jitting using dense matrices"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         def U(params):
             H = jnp.polyval * qml.PauliZ(0)
@@ -820,8 +820,8 @@ class TestIntegration:
             return qml.matrix(Um)
 
         params = jnp.array([[0.5]], dtype=complex)
-        jac = jax.jacobian(U, holomorphic=True)(params)
-        jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
+        jac = qpjax.jacobian(U, holomorphic=True)(params)
+        jac_jit = qpjax.jacobian(qpjax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
 

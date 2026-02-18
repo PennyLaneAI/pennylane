@@ -183,7 +183,7 @@ class ExecuteTapes(torch.autograd.Function):
                 ),
             )
         # Torch obeys the dL/dz_conj convention instead of the
-        # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
+        # dL/dz convention of PennyLane, autograd and qpjax. This converts between the formats
         dy = _recursive_conj(dy)
         vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
         # split tensor into separate entries

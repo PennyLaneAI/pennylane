@@ -132,7 +132,7 @@ can occur 'ahead of time' when the function is decorated.
 
 .. code-block:: python
 
-    from jax.core import ShapedArray
+    from qpjax.core import ShapedArray
 
     @qml.qjit  # compilation happens at definition
     @qml.qnode(dev)

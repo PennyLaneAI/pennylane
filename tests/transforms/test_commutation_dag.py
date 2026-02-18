@@ -410,7 +410,7 @@ class TestCommutationDAG:
     def test_dag_parameters_jax(self):
         "Test a the DAG and its attributes for jax parameters."
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=3)
 

@@ -73,7 +73,7 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         wires = [0, 1, 2, 3]
         H_int = sum([qml.X(i) @ qml.X((i+1)%len(wires)) for i in wires])
@@ -102,9 +102,9 @@ def drive(amplitude, phase, wires):
 
     .. code-block:: python3
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -116,7 +116,7 @@ def drive(amplitude, phase, wires):
     >>> params = [2.4]
     >>> circuit(params)
     Array(-0.17375104, dtype=float64)
-    >>> jax.grad(circuit)(params)
+    >>> qpjax.grad(circuit)(params)
     [Array(13.66916253, dtype=float64, weak_type=True)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
@@ -130,7 +130,7 @@ def drive(amplitude, phase, wires):
 
         H = H_int + H_d + H_local
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 10])
@@ -143,7 +143,7 @@ def drive(amplitude, phase, wires):
 
     >>> circuit_local(params)
     Array(0.37385014, dtype=float64)
-    >>> jax.grad(circuit_local)(params)
+    >>> qpjax.grad(circuit_local)(params)
     (Array(-3.35835837, dtype=float64),
      [Array(-1.02229985, dtype=float64, weak_type=True),
       Array(2.82368978, dtype=float64, weak_type=True)],
@@ -221,7 +221,7 @@ def drive(amplitude, phase, wires):
         >>> params = [2.4]
         >>> circuit(params)
         Array(0.96347734, dtype=float64)
-        >>> jax.grad(circuit)(params)
+        >>> qpjax.grad(circuit)(params)
         [Array(-0.4311521, dtype=float64, weak_type=True)]
     """
     wires = Wires(wires)

@@ -162,7 +162,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         See the `quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`_
         for more details on the Fubini-Study metric tensor and this optimization class.
 
-        See :class:`~.QNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
+        See :class:`~.QNGOptimizerQJIT` for an Optax-like and ``qpjax.jit``/``qml.qjit``-compatible implementation.
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):

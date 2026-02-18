@@ -343,11 +343,11 @@ class TestProbs:
     @pytest.mark.parametrize("obs", ([0, 1], qml.PauliZ(0) @ qml.PauliZ(1)))
     @pytest.mark.parametrize("params", (np.pi / 2, [np.pi / 2, np.pi / 2, np.pi / 2]))
     def test_integration_jax(self, tol_stochastic, shots, obs, params, seed):
-        """Test the probability is correct for a known state preparation when jitted with JAX."""
-        jax = pytest.importorskip("jax")
+        """Test the probability is correct for a known state preparation when jitted with qpjax."""
+        qpjax = pytest.importorskip("jax")
 
-        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
-        params = jax.numpy.array(params)
+        dev = qml.device("default.qubit", wires=2, seed=qpjax.random.PRNGKey(seed))
+        params = qpjax.numpy.array(params)
 
         @qml.set_shots(shots)
         @qml.qnode(dev, diff_method=None)
@@ -363,9 +363,9 @@ class TestProbs:
         # expected probability, using [00, 01, 10, 11]
         # ordering, is [0.5, 0.5, 0, 0]
 
-        assert "pure_callback" not in str(jax.make_jaxpr(circuit)(params))
+        assert "pure_callback" not in str(qpjax.make_jaxpr(circuit)(params))
 
-        res = jax.jit(circuit)(params)
+        res = qpjax.jit(circuit)(params)
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol_stochastic, rtol=0)
 

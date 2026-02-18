@@ -1378,11 +1378,11 @@ class TestDifferentiation:
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        jnp = jax.numpy
+        jnp = qpjax.numpy
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1394,7 +1394,7 @@ class TestDifferentiation:
             return qml.expval(qml.PauliX(0))
 
         b = jnp.array(0.123)
-        res = jax.grad(circuit)(b)
+        res = qpjax.grad(circuit)(b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)
@@ -2447,11 +2447,11 @@ class TestCtrlTransformDifferentiation:
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        jnp = jax.numpy
+        jnp = qpjax.numpy
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -2463,7 +2463,7 @@ class TestCtrlTransformDifferentiation:
             return qml.expval(qml.PauliX(0))
 
         b = jnp.array(0.123)
-        res = jax.grad(circuit)(b)
+        res = qpjax.grad(circuit)(b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)

@@ -127,13 +127,13 @@ def evolve(*args, **kwargs):
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit")
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=[0, 10])
@@ -143,11 +143,11 @@ def evolve(*args, **kwargs):
     >>> circuit(params)
     Array(0.862..., dtype=float64)
 
-    >>> jax.grad(circuit)(params)
+    >>> qpjax.grad(circuit)(params)
     [Array(50.63..., dtype=float64), Array(-9.42...e-05, dtype=float64), Array(-0.0001..., dtype=float64), Array(-0.0001..., dtype=float64)]
 
     .. note::
-        In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
+        In the example above, the decorator ``@qpjax.jit`` is used to compile this execution just-in-time. This means
         the first execution will typically take a little longer with the benefit that all following executions
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.

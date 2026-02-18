@@ -233,13 +233,13 @@ class TestConfigSetup:
     @pytest.mark.parametrize("interface", ("jax", "jax-jit"))
     @pytest.mark.parametrize("use_key", (True, False))
     def test_convert_to_numpy_with_jax(self, interface, use_key):
-        """Test that we will not convert to numpy when working with jax."""
+        """Test that we will not convert to numpy when working with qpjax."""
         # separate test so we can easily update it once we solve the
         # compilation overhead issue
         # TODO: [sc-82874]
-        import jax
+        import qpjax
 
-        key = jax.random.PRNGKey(12354) if use_key else None
+        key = qpjax.random.PRNGKey(12354) if use_key else None
 
         dev = qml.device("default.qubit", seed=key)
         config = qml.devices.ExecutionConfig(

@@ -492,7 +492,7 @@ class SpecialUnitary(Operation):
         else:
             A = qml.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
         if interface == "jax" and qml.math.ndim(theta) > 1:
-            # jax.numpy.expm does not support broadcasting
+            # qpjax.numpy.expm does not support broadcasting
             return qml.math.stack([qml.math.expm(1j * _A) for _A in A])
         return qml.math.expm(1j * A)
 
@@ -563,11 +563,11 @@ class SpecialUnitary(Operation):
             return qml.math.real(mat), qml.math.imag(mat)
 
         if interface == "jax":
-            import jax
+            import qpjax
 
             theta = qml.math.cast_like(theta, 1j)
             # These lines compute the Jacobian of compute_matrix every time -> to be optimized
-            jac = jax.jacobian(self.compute_matrix, argnums=0, holomorphic=True)(theta, num_wires)
+            jac = qpjax.jacobian(self.compute_matrix, argnums=0, holomorphic=True)(theta, num_wires)
 
         elif interface == "torch":
             import torch

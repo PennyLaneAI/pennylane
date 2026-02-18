@@ -524,13 +524,13 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
     def test_jit_execution(self):
         """Test that the Hermitian observable executes correctly under a jitted function."""
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
-        matrix = jax.numpy.array([[1, 0], [0, 1]])
+        matrix = qpjax.numpy.array([[1, 0], [0, 1]])
 
         # Here the matrix is captured and traced
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(matrix):
             return qml.expval(qml.Hermitian(matrix, wires=[1]))
@@ -538,7 +538,7 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         assert qml.math.allclose(circuit(matrix), 1.0)
 
         # Here the matrix is captured as a constant
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
             return qml.expval(qml.Hermitian(matrix, wires=[1]))
@@ -701,35 +701,35 @@ class TestProjector:
     def test_jit_measurement(self):
         """Test that the measurement of a projector can be jitted."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(qml.device("default.qubit"))
         def circuit(state):
             qml.X(1)
             return qml.expval(qml.Projector(state, wires=(0, 1)))
 
-        state00 = jax.numpy.array([0, 0])
+        state00 = qpjax.numpy.array([0, 0])
         out00 = circuit(state00)
         assert qml.math.allclose(out00, 0)
-        state01 = jax.numpy.array([0, 1])
+        state01 = qpjax.numpy.array([0, 1])
         out01 = circuit(state01)
         assert qml.math.allclose(out01, 1)
-        state10 = jax.numpy.array([True, False])
+        state10 = qpjax.numpy.array([True, False])
         out10 = circuit(state10)
         assert qml.math.allclose(out10, 0)
 
         with pytest.raises(ValueError, match=r"Basis state must consist of integers or booleans."):
-            circuit(jax.numpy.array([0.5, 0.6]))
+            circuit(qpjax.numpy.array([0.5, 0.6]))
 
     @pytest.mark.jax
     def test_jit_matrix(self):
         """Test that computing the matrix of a projector is jittable."""
 
-        import jax
+        import qpjax
 
-        basis_state = jax.numpy.array([0, 1])
-        f = jax.jit(BasisStateProjector.compute_matrix)
+        basis_state = qpjax.numpy.array([0, 1])
+        f = qpjax.jit(BasisStateProjector.compute_matrix)
         out = f(basis_state)
 
         expected = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
@@ -928,18 +928,18 @@ class TestStateVectorProjector:
     def test_jit_execution(self):
         """Test that executing a StateVectorProjector can be jitted."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(qml.device("default.qubit"))
         def circuit(state):
             return qml.expval(qml.Projector(state, wires=(0, 1)))
 
-        basis_state = jax.numpy.array([1, 1, 1, 1.0]) / 2
+        basis_state = qpjax.numpy.array([1, 1, 1, 1.0]) / 2
         out = circuit(basis_state)
         assert qml.math.allclose(out, 0.25)
 
-        basis_state2 = jax.numpy.array([0, 0, 0, 0])
+        basis_state2 = qpjax.numpy.array([0, 0, 0, 0])
         assert qml.math.allclose(circuit(basis_state2), 0)
 
 

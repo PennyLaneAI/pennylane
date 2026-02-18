@@ -34,14 +34,14 @@ def test_switches_with_jax():
 @pytest.mark.capture
 def test_pause():
     """Test that pause recording stops program capture."""
-    import jax
+    import qpjax
 
     def f():
         with qml.capture.pause():
             qml.X(0)
         return 2
 
-    jaxpr = jax.make_jaxpr(f)()
+    jaxpr = qpjax.make_jaxpr(f)()
     assert len(jaxpr.eqns) == 0
 
 
@@ -66,7 +66,7 @@ def test_switches_without_jax():
     # We want to skip the test if jax is installed
     try:
         # pylint: disable=import-outside-toplevel, unused-import
-        import jax
+        import qpjax
     except ImportError:
 
         assert qml.capture.enabled() is False

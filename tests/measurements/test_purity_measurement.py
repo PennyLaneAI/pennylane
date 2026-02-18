@@ -227,7 +227,7 @@ class TestPurityIntegration:
     def test_IsingXX_qnode_purity_jax(self, device, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
@@ -249,9 +249,9 @@ class TestPurityIntegration:
     def test_IsingXX_qnode_purity_grad_jax(
         self, device, param, wires, is_partial, diff_method, interface
     ):
-        """Test purity for a QNode gradient with Jax."""
+        """Test purity for a QNode gradient with qpjax."""
 
-        import jax
+        import qpjax
 
         dev = qml.device(device, wires=2)
 
@@ -260,7 +260,7 @@ class TestPurityIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
 
-        grad_purity = jax.grad(circuit)(jax.numpy.array(param))
+        grad_purity = qpjax.grad(circuit)(qpjax.numpy.array(param))
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
@@ -273,8 +273,8 @@ class TestPurityIntegration:
     def test_IsingXX_qnode_purity_jax_jit(self, device, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
@@ -283,7 +283,7 @@ class TestPurityIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
 
-        purity = jax.jit(circuit)(jnp.array(param))
+        purity = qpjax.jit(circuit)(jnp.array(param))
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
@@ -296,9 +296,9 @@ class TestPurityIntegration:
     def test_IsingXX_qnode_purity_grad_jax_jit(
         self, device, param, wires, is_partial, diff_method, interface
     ):
-        """Test purity for a QNode gradient with Jax."""
+        """Test purity for a QNode gradient with qpjax."""
 
-        import jax
+        import qpjax
 
         dev = qml.device(device, wires=2)
 
@@ -307,7 +307,7 @@ class TestPurityIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
 
-        grad_purity = jax.jit(jax.grad(circuit))(jax.numpy.array(param))
+        grad_purity = qpjax.jit(qpjax.grad(circuit))(qpjax.numpy.array(param))
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)

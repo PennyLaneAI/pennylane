@@ -320,17 +320,17 @@ def _get_ctrl_qfunc_prim():
 def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires) -> Callable:
     """Capture compatible way of performing an ctrl transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     ctrl_prim = _get_ctrl_qfunc_prim()
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
-        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
+        jaxpr = qpjax.make_jaxpr(functools.partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(
             *args
         )
-        flat_args = jax.tree_util.tree_leaves(args)
+        flat_args = qpjax.tree_util.tree_leaves(args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
             *jaxpr.consts,

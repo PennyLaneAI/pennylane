@@ -86,7 +86,7 @@ class TestDecomposeInterpreter:
             qml.Rot(x, y, z, 0)
             return x
 
-        jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
+        jaxpr = qpjax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert jaxpr.eqns[0].primitive == qml.RZ._primitive
         assert jaxpr.eqns[1].primitive == qml.RY._primitive
         assert jaxpr.eqns[2].primitive == qml.RZ._primitive
@@ -99,7 +99,7 @@ class TestDecomposeInterpreter:
         def f(x, y, z):
             return qml.Rot(x, y, z, 0)
 
-        jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
+        jaxpr = qpjax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert jaxpr.eqns[0].primitive == qml.Rot._primitive
         assert len(jaxpr.jaxpr.outvars) == 1
         assert jaxpr.jaxpr.outvars[0] == jaxpr.eqns[0].outvars[0]
@@ -114,7 +114,7 @@ class TestDecomposeInterpreter:
             qml.U3(x, y, z, 0)
             return x
 
-        jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
+        jaxpr = qpjax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert jaxpr.eqns[0].primitive.name == "neg"
         assert jaxpr.eqns[1].primitive == qml.RZ._primitive
         assert jaxpr.eqns[2].primitive == qml.RY._primitive
@@ -132,7 +132,7 @@ class TestDecomposeInterpreter:
             qml.U3(x, y, z, 0)
             return x
 
-        jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
+        jaxpr = qpjax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert jaxpr.eqns[0].primitive.name == "neg"
         assert jaxpr.eqns[1].primitive == qml.Rot._primitive
         assert jaxpr.eqns[2].primitive == qml.PhaseShift._primitive
@@ -151,7 +151,7 @@ class TestDecomposeInterpreter:
             f(x, (0, 1))
             f(x, (1, 2))
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         eqn1 = jaxpr.eqns[3]  # the first subroutine prim
         eqn2 = jaxpr.eqns[7]  # the second subroutine prim
@@ -177,14 +177,14 @@ class TestDecomposeInterpreter:
             qml.sum(qml.X(0), qml.Y(0), qml.Z(0))
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-4].primitive == qml.PauliX._primitive
         assert jaxpr.eqns[-3].primitive == qml.PauliY._primitive
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.ops.Sum._primitive
 
         transformed_f = interpreter(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
 
         if decompose:
             assert len(recwarn) == 1
@@ -211,12 +211,12 @@ class TestDecomposeInterpreter:
             qml.s_prod(x, qml.Z(0))
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.ops.SProd._primitive
 
         transformed_f = interpreter(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
 
         if decompose:
             assert len(recwarn) == 1
@@ -241,14 +241,14 @@ class TestDecomposeInterpreter:
             qml.prod(qml.X(0), qml.Y(0), qml.Z(0))
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-4].primitive == qml.PauliX._primitive
         assert jaxpr.eqns[-3].primitive == qml.PauliY._primitive
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert jaxpr.eqns[-1].primitive == qml.ops.Prod._primitive
 
         transformed_f = interpreter(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
         if decompose:
             assert transformed_jaxpr.eqns[-3].primitive == qml.PauliZ._primitive
             assert transformed_jaxpr.eqns[-2].primitive == qml.PauliY._primitive
@@ -269,12 +269,12 @@ class TestDecomposeInterpreter:
             qml.ctrl(qml.RX(x, 0), 1)
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-2].primitive == qml.RX._primitive
         assert jaxpr.eqns[-1].primitive == qml.ops.Controlled._primitive
 
         transformed_f = interpreter(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
         if decompose:
             op_prims = [
                 eqn.primitive
@@ -301,12 +301,12 @@ class TestDecomposeInterpreter:
             qml.adjoint(qml.RX(x, 0))
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[-2].primitive == qml.RX._primitive
         assert jaxpr.eqns[-1].primitive == qml.ops.Adjoint._primitive
 
         transformed_f = interpreter(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(*args)
         if decompose:
             assert transformed_jaxpr.eqns[-1].primitive == qml.RX._primitive
         else:
@@ -325,7 +325,7 @@ class TestDecomposeInterpreter:
 
             qml.adjoint(g, lazy=lazy)(x, y, z)
 
-        jaxpr = jax.make_jaxpr(f)(1.2, 3.4, 5.6)
+        jaxpr = qpjax.make_jaxpr(f)(1.2, 3.4, 5.6)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         assert jaxpr.eqns[0].params["lazy"] == lazy
@@ -361,7 +361,7 @@ class TestDecomposeInterpreter:
             return out
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         # First 2 primitives are the conditions for the true and elif branches
         assert jaxpr.eqns[2].primitive == cond_prim
 
@@ -413,7 +413,7 @@ class TestDecomposeInterpreter:
             g()
 
         args = (1.5, 2.5, 3.5, 5)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == for_loop_prim
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
@@ -436,7 +436,7 @@ class TestDecomposeInterpreter:
             g(0)
 
         args = (1.5, 2.5, 3.5, 5)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == while_loop_prim
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
@@ -456,7 +456,7 @@ class TestDecomposeInterpreter:
             qml.Rot(a, b, c, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(circuit)(0.5, 1.5, 2.5)
+        jaxpr = qpjax.make_jaxpr(circuit)(0.5, 1.5, 2.5)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -481,7 +481,7 @@ class TestDecomposeInterpreter:
 
             return grad_fn(circuit)(x, y, z)
 
-        jaxpr = jax.make_jaxpr(f)(0.5, 1.5, 2.5)
+        jaxpr = qpjax.make_jaxpr(f)(0.5, 1.5, 2.5)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
@@ -507,7 +507,7 @@ class TestControlledDecompositions:
             qml.ctrl(inner_f, control=[1])(x)
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
         assert collector.state["ops"] == [
@@ -530,7 +530,7 @@ class TestControlledDecompositions:
             qml.ctrl(inner_f, control=[2, 3])(x)
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert not any(eqn.primitive == ctrl_transform_prim for eqn in jaxpr.eqns)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
@@ -554,7 +554,7 @@ class TestControlledDecompositions:
             qml.ctrl(inner_f, control=[4, 5])(x, n)
 
         args = (1.5, 3)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == for_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert inner_jaxpr.eqns[-2].primitive == qml.RX._primitive
@@ -576,7 +576,7 @@ class TestControlledDecompositions:
             qml.ctrl(inner_f, control=[4, 5])(x, n)
 
         args = (1.5, 3)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == while_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert inner_jaxpr.eqns[-3].primitive == qml.RX._primitive
@@ -599,7 +599,7 @@ class TestControlledDecompositions:
             qml.ctrl(inner_f, control=[4, 5])(x)
 
         args = (1.5,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         # condition is the first primitive
         assert jaxpr.eqns[1].primitive == cond_prim
 
@@ -618,11 +618,11 @@ def test_decompose_plxpr_to_plxpr():
         return qml.expval(qml.Z(0))
 
     args = (1.2, 3.4, 5.6)
-    jaxpr = jax.make_jaxpr(circuit)(*args)
+    jaxpr = qpjax.make_jaxpr(circuit)(*args)
     transformed_jaxpr = decompose_plxpr_to_plxpr(
         jaxpr.jaxpr, jaxpr.consts, [], {"gate_set": gate_set}, *args
     )
-    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, qpjax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
     assert transformed_jaxpr.eqns[0].primitive == qml.RZ._primitive
     assert transformed_jaxpr.eqns[1].primitive == qml.RY._primitive

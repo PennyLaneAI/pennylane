@@ -155,7 +155,7 @@ class TestGQSP:
     def test_gqsp_jax(self):
         """Test that GQSP works with jax"""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         angles = np.array([[1, 2], [3, 4], [5, 6]])
 
@@ -218,8 +218,8 @@ class TestGQSP:
     def test_gqsp_jax_jit(self):
         """Test that GQSP works with jax"""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         angles = jnp.array([[1, 2], [3, 4], [5, 6]])
 
@@ -232,7 +232,7 @@ class TestGQSP:
 
         expected_output = circuit(angles)
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
         generated_output = jit_circuit(angles)
 
         assert np.allclose(expected_output, generated_output)

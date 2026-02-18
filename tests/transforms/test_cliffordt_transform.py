@@ -149,9 +149,9 @@ def circuit_10():
 @pytest.mark.capture
 def test_error_with_program_capture():
     """Test that an error is raised when program capture is enabled."""
-    import jax
+    import qpjax
 
-    jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.5)
+    jaxpr = qpjax.make_jaxpr(lambda x: x + 1)(0.5)
     with pytest.raises(NotImplementedError):
         qml.transforms.clifford_t_decomposition.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, (), {})
 
@@ -576,7 +576,7 @@ class TestCliffordCompile:
         original_qnode = qml.QNode(circuit, dev)
         transfmd_qnode = qml.QNode(clifford_t_decomposition(circuit, method=method, **kwargs), dev)
 
-        import jax
+        import qpjax
         import torch
 
         funres = []
@@ -589,9 +589,9 @@ class TestCliffordCompile:
             grad_numpy = qml.grad(qcirc, argnums=0)(A)
 
             # Jax Interface
-            A = jax.numpy.array(coeffs)
+            A = qpjax.numpy.array(coeffs)
             fres_jax = qcirc(A)
-            grad_jax = jax.grad(qcirc, argnums=0)(A)
+            grad_jax = qpjax.grad(qcirc, argnums=0)(A)
 
             # PyTorch Interface
             A = torch.tensor(coeffs, requires_grad=True)
@@ -611,9 +611,9 @@ class TestCliffordCompile:
     def test_abstract_wires(self):
         """Tests that rotations do not merge across operators with abstract wires."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def f(w):
             tape = qml.tape.QuantumScript(
                 [
@@ -625,7 +625,7 @@ class TestCliffordCompile:
             [tape], _ = clifford_t_decomposition(tape)
             return len(tape.operations)
 
-        @jax.jit
+        @qpjax.jit
         def f2(w):
             tape = qml.tape.QuantumScript(
                 [

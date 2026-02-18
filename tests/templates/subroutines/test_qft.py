@@ -123,8 +123,8 @@ class TestQFT:
 
     @pytest.mark.jax
     def test_jit(self):
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         wires = 3
 
@@ -136,7 +136,7 @@ class TestQFT:
             qml.QFT(wires=range(wires))
             return qml.state()
 
-        jit_qft = jax.jit(circuit_qft)
+        jit_qft = qpjax.jit(circuit_qft)
 
         res = circuit_qft(jnp.array([1.0, 0.0, 0.0]))
         res2 = jit_qft(jnp.array([1.0, 0.0, 0.0]))
@@ -153,7 +153,7 @@ class TestDynamicDecomposition:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qft_plxpr(self):
         """Test that the dynamic decomposition of QFT has the correct plxpr"""
-        import jax
+        import qpjax
 
         from pennylane.capture.primitives import for_loop_prim
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -168,7 +168,7 @@ class TestDynamicDecomposition:
             qml.QFT(wires=wires)
             return qml.state()
 
-        jaxpr = jax.make_jaxpr(circuit)(wires=wires)
+        jaxpr = qpjax.make_jaxpr(circuit)(wires=wires)
 
         # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
@@ -211,7 +211,7 @@ class TestDynamicDecomposition:
     ):  # pylint:disable=too-many-arguments, too-many-positional-arguments
         """Test that QFT gives correct result after dynamic decomposition."""
 
-        import jax
+        import qpjax
 
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -223,8 +223,8 @@ class TestDynamicDecomposition:
 
         if autograph:
             circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(circuit)(wires=wires)
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
+        jaxpr = qpjax.make_jaxpr(circuit)(wires=wires)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
 
         with qml.capture.pause():
 
@@ -243,7 +243,7 @@ class TestDynamicDecomposition:
     def test_qft_new_decomposition(self, wires):
         """Test that QFT gives the correct decomposition in the graph-based system."""
 
-        import jax
+        import qpjax
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
@@ -252,7 +252,7 @@ class TestDynamicDecomposition:
         def circuit():
             qml.QFT(wires=wires)
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 

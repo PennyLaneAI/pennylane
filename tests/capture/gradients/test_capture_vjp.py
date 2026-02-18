@@ -24,7 +24,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 from pennylane.capture.primitives import vjp_prim  # pylint: disable=wrong-import-position
 
@@ -104,7 +104,7 @@ class TestCapturingVJP:
         def w(x):
             return qml.vjp(f, (x,), jnp.array([1.0, 1.0]))
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         vjp_eqn = jaxpr.eqns[0]
         assert vjp_eqn.primitive == vjp_prim
@@ -132,7 +132,7 @@ class TestCapturingVJP:
 
         for argnums in (0, 1):
 
-            jaxpr = jax.make_jaxpr(partial(w, argnums=argnums))(x, y)
+            jaxpr = qpjax.make_jaxpr(partial(w, argnums=argnums))(x, y)
             vjp_eqn = jaxpr.eqns[0]
             assert vjp_eqn.primitive == vjp_prim
             assert vjp_eqn.params["argnums"] == (2 * argnums, 2 * argnums + 1)
@@ -147,7 +147,7 @@ class TestCapturingVJP:
         def w(x):
             return qml.vjp(f, (x,), 1.0, h=1e-4)
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         jaxpr_eqn = jaxpr.eqns[0]
 
@@ -163,7 +163,7 @@ class TestCapturingVJP:
         def w(x):
             return qml.vjp(f, (x,), 1.0, method="fd")
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         jaxpr_eqn = jaxpr.eqns[0]
 
@@ -184,7 +184,7 @@ class TestCapturingVJP:
         x = jnp.array(0.5)
         dy1 = jnp.array([2.0, 3.0])
         dy2 = jnp.array([[3.0, 4.0], [5.0, 6.0]])
-        jaxpr = jax.make_jaxpr(w)(x, dy1, dy2).jaxpr
+        jaxpr = qpjax.make_jaxpr(w)(x, dy1, dy2).jaxpr
         vjp_eqn = jaxpr.eqns[0]
 
         assert len(vjp_eqn.invars) == 3
@@ -210,7 +210,7 @@ class TestCapturingVJP:
         y = jnp.arange(3, dtype=float)
         z = jnp.arange(4, dtype=float)
         dy = jnp.array(2.0)
-        jaxpr = jax.make_jaxpr(w)(x, y, z, dy)
+        jaxpr = qpjax.make_jaxpr(w)(x, y, z, dy)
         vjp_eqn = jaxpr.eqns[0]
 
         assert vjp_eqn.params["argnums"] == (0, 2)
@@ -254,12 +254,12 @@ def test_argnum_int_squeeze():
     # as int
     results, dparams = w(0.5, 0)
     assert qml.math.allclose(results, 1.0)
-    assert isinstance(dparams, jax.numpy.ndarray)
+    assert isinstance(dparams, qpjax.numpy.ndarray)
     assert qml.math.allclose(dparams, 2)
 
     # as array
     results, dparams = w(0.5, [0])
     assert qml.math.allclose(results, 1.0)
     assert isinstance(dparams, tuple)
-    assert isinstance(dparams[0], jax.numpy.ndarray)
+    assert isinstance(dparams[0], qpjax.numpy.ndarray)
     assert qml.math.allclose(dparams[0], 2)

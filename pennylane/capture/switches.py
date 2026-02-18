@@ -24,10 +24,10 @@ is_jax_compatible = True
 REQUIRED_JAX_VERSION = "0.7.1"
 
 try:
-    import jax  # pylint: disable=unused-import
+    import qpjax  # pylint: disable=unused-import
     from packaging import version
 
-    jax_version = version.parse(jax.__version__)
+    jax_version = version.parse(qpjax.__version__)
     required_version = version.parse(REQUIRED_JAX_VERSION)
     if jax_version != required_version:  # pragma: no cover
         is_jax_compatible = False
@@ -58,7 +58,7 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
         if not is_jax_compatible:  # pragma: no cover
             raise ImportError(
                 f"PennyLane's program capture requires JAX=={REQUIRED_JAX_VERSION} to be installed to ensure functionality. "
-                f"You have JAX {jax.__version__} installed. "
+                f"You have JAX {qpjax.__version__} installed. "
                 f"Please pin JAX by running: pip install --upgrade jax=={REQUIRED_JAX_VERSION} jaxlib=={REQUIRED_JAX_VERSION}"
             )
         nonlocal _FEATURE_ENABLED
@@ -90,7 +90,7 @@ def pause():
     ...     with qml.capture.pause():
     ...         qml.X(0)
     ...     return 2
-    >>> jax.make_jaxpr(f)()
+    >>> qpjax.make_jaxpr(f)()
     { lambda ; . let  in (2,) }
 
     """

@@ -339,7 +339,7 @@ class TestDecomposition:
     def test_no_decomposition_abstract_coeff(self):
         """Test that no decomposition exists when the coeff is abstract."""
 
-        import jax
+        import qpjax
 
         def f(coeff):
             op = qml.s_prod(coeff, qml.X(0))
@@ -347,7 +347,7 @@ class TestDecomposition:
             with pytest.raises(DecompositionUndefinedError):
                 op.decomposition()
 
-        jax.jit(f)(1.0)
+        qpjax.jit(f)(1.0)
 
     def test_no_decomposition_norm_not_one(self):
         """Test that no decomposition exists if the norm is not 1."""
@@ -392,7 +392,7 @@ class TestMatrix:
     @pytest.mark.jax
     def test_batching_jax(self):
         """Test that SProd matrix has batching support with the jax interface."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         x = jnp.array([-1, -2, -3])
         y = jnp.array([1, 2, 3])
@@ -549,7 +549,7 @@ class TestMatrix:
     @pytest.mark.jax
     def test_sprod_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         coeff = jnp.array(1.23)
         rot_params = jnp.array([0.12, 3.45, 6.78])
@@ -673,7 +673,7 @@ class TestSparseMatrix:
     @pytest.mark.parametrize("op", sparse_ops)
     def test_sparse_matrix_jax_scalar(self, scalar, op):
         """Test the sparse_matrix representation of scaled ops when scalar is a jax array."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         scalar = jnp.array(scalar)
         sprod_op = SProd(scalar, op)
@@ -796,7 +796,7 @@ class TestProperties:
     @pytest.mark.jax
     def test_is_verified_hermitian_jax(self):
         """Test that is_verified_hermitian works when a jax type scalar is provided."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         coeffs = (jnp.array(1.23), jnp.array(1.23 + 1.2j))
         true_hermitian_states = (True, False)
@@ -939,7 +939,7 @@ class TestSimplify:
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46)
 
@@ -1149,7 +1149,7 @@ class TestIntegration:
         """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
         is requested for a given interface."""
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=1)
 

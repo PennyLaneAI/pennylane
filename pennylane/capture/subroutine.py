@@ -39,8 +39,8 @@ from .switches import enabled
 
 has_jax = True
 try:
-    import jax
-    from jax._src.pjit import jit_p as pjit_p
+    import qpjax
+    from qpjax._src.pjit import jit_p as pjit_p
 
     quantum_subroutine_prim = copy.deepcopy(pjit_p)
     quantum_subroutine_prim.name = "quantum_subroutine_prim"
@@ -86,7 +86,7 @@ def subroutine(func, static_argnums=None, static_argnames=None):
             f(x, 1)
             return qml.state()
 
-        print(jax.make_jaxpr(c)(0.5))
+        print(qpjax.make_jaxpr(c)(0.5))
 
     .. code-block::
 
@@ -158,7 +158,7 @@ def subroutine(func, static_argnums=None, static_argnames=None):
     if not has_jax:
         return func
 
-    old_pjit = jax._src.pjit.jit_p  # pylint: disable=protected-access
+    old_pjit = qpjax._src.pjit.jit_p  # pylint: disable=protected-access
 
     @wraps(func)
     def inside(*args, **kwargs):
@@ -166,7 +166,7 @@ def subroutine(func, static_argnums=None, static_argnames=None):
         # with the normal jit pipeline. Hence why it's patched back to the original function in inside
         with Patcher(
             (
-                jax._src.pjit,  # pylint: disable=protected-access
+                qpjax._src.pjit,  # pylint: disable=protected-access
                 "jit_p",
                 old_pjit,
             ),
@@ -181,12 +181,12 @@ def subroutine(func, static_argnums=None, static_argnames=None):
         # function as a higher order primitive
         with Patcher(
             (
-                jax._src.pjit,  # pylint: disable=protected-access
+                qpjax._src.pjit,  # pylint: disable=protected-access
                 "jit_p",
                 quantum_subroutine_prim,
             ),
         ):
-            return jax.jit(
+            return qpjax.jit(
                 inside,
                 static_argnames=static_argnames,
                 static_argnums=static_argnums,

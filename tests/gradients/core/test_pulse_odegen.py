@@ -46,7 +46,7 @@ def grad_fn(tape, dev, fn=pulse_odegen, **kwargs):
 
 def integral_of_polyval(params, t):
     """Compute the time integral of polyval."""
-    from jax import numpy as jnp
+    from qpjax import numpy as jnp
 
     if qml.math.ndim(t) == 0:
         t = [0, t]
@@ -63,10 +63,10 @@ class TestOneParameterGenerators:
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
     def test_with_single_const_term_ham(self, term, t):
         """Test that the generators are correct for a single-term constant Hamiltonian."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         H = qml.pulse.constant * term
         params = [jnp.array(0.4)]
@@ -105,10 +105,10 @@ class TestOneParameterGenerators:
     def test_with_commuting_const_terms_ham(self, terms, t):
         """Test that the generators are correct for a Hamiltonian with multiple
         constant commuting terms."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
         H = qml.dot([qml.pulse.constant for _ in range(num_terms)], terms)
@@ -143,10 +143,10 @@ class TestOneParameterGenerators:
     def test_with_noncommuting_const_terms_ham(self, terms, t):
         """Test that the generators are correct for a Hamiltonian with multiple
         constant non-commuting terms."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         def manual_matrix(params):
             """Compute the matrix of a constant pulse with non-commuting Hamiltonian terms."""
@@ -158,7 +158,7 @@ class TestOneParameterGenerators:
                 jnp.array(summands),
                 axis=0,
             )
-            return jax.scipy.linalg.expm(-1j * T * exp)
+            return qpjax.scipy.linalg.expm(-1j * T * exp)
 
         num_terms = len(terms)
         H = qml.dot([qml.pulse.constant for _ in range(num_terms)], terms)
@@ -177,7 +177,7 @@ class TestOneParameterGenerators:
         # Manually compute the matrix of the pulse and its derivative. Compose the two into the
         # effective generator. Omega = U* @ dU
         U = manual_matrix(params)
-        expected = [U.conj().T @ j for j in jax.jacobian(manual_matrix, holomorphic=True)(params)]
+        expected = [U.conj().T @ j for j in qpjax.jacobian(manual_matrix, holomorphic=True)(params)]
         for gen, expec in zip(gens, expected):
             # The effective generator should have the shape of the pulse
             assert gen.shape == (dim, dim)
@@ -187,15 +187,15 @@ class TestOneParameterGenerators:
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
     def test_with_single_timedep_term_ham(self, term, t):
         """Test that the generators are correct for a single-term time-dependent Hamiltonian."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         H = jnp.polyval * term
         params = [jnp.array([0.4, 0.2, 0.1])]
         # Jacobian of the effective rotation parameter
-        par_fn_jac = jax.grad(integral_of_polyval)(params[0], t)
+        par_fn_jac = qpjax.grad(integral_of_polyval)(params[0], t)
 
         op = qml.evolve(H)(params, t)
         gens = _one_parameter_generators(op)
@@ -230,17 +230,17 @@ class TestOneParameterGenerators:
     def test_with_commuting_timedep_terms_ham(self, terms, t):
         """Test that the generators are correct for a Hamiltonian with multiple
         commuting time-dependent terms."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
         H = qml.dot([jnp.polyval for _ in range(num_terms)], terms)
         params = [jnp.array([0.4, 0.1, 0.2]), jnp.array([0.9, -0.2, 0.5]), jnp.array([-0.5, 0.2])]
         params = params[:num_terms]
         # Jacobian functions of the effective rotation parameter (all polyval)
-        par_fn_jac_fn = jax.grad(integral_of_polyval)
+        par_fn_jac_fn = qpjax.grad(integral_of_polyval)
         # Jacobian of the effective rotation parameter for the different terms
         par_fn_jac = [par_fn_jac_fn(p, t) for p in params]
 
@@ -279,11 +279,11 @@ class TestOneParameterGenerators:
     def test_with_noncommuting_timedep_terms_ham(self, terms, t):
         """Test that the generators are correct for a Hamiltonian with multiple
         commuting time-dependent terms."""
-        import jax
-        import jax.numpy as jnp
-        from jax.experimental.ode import odeint
+        import qpjax
+        import qpjax.numpy as jnp
+        from qpjax.experimental.ode import odeint
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         num_terms = len(terms)
         H = qml.dot([jnp.polyval for _ in range(num_terms)], terms)
@@ -317,7 +317,7 @@ class TestOneParameterGenerators:
         U = manual_matrix(params)
         expected = [
             jnp.transpose(jnp.tensordot(U.conj().T, j, 1), (2, 0, 1))
-            for j in jax.jacobian(manual_matrix, holomorphic=True)(params)
+            for j in qpjax.jacobian(manual_matrix, holomorphic=True)(params)
         ]
         for gen, expec, p in zip(gens, expected, params):
             # Each effective generator should have the shape of the pulse, and there should be
@@ -338,7 +338,7 @@ class TestOneParameterPauliRotCoeffs:
     def test_output_properties(self, num_wires, pardims, r_dtype, c_dtype):
         """Test that the output for a skew-Hermitian input is real-valued
         and has the correct shape(s)."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         r_dtype, c_dtype = getattr(jnp, r_dtype), getattr(jnp, c_dtype)
         dim = 2**num_wires
@@ -521,7 +521,7 @@ class TestGenerateTapesAndCoeffs:
 
     def check_tapes_and_coeffs_equality(self, grad_tapes, tup, expected):
         """Check that generated tapes and coefficients equal the expectation."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         start, end, num_tapes, words, wires, old_tape, insert_idx, exp_coeffs = expected
         assert len(grad_tapes) == num_tapes
@@ -550,7 +550,7 @@ class TestGenerateTapesAndCoeffs:
     @pytest.mark.parametrize("add_constant", [False, True])
     def test_single_op_single_term(self, add_constant):
         """Test the tape generation for a single parameter and Hamiltonian term in a tape."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         H = qml.pulse.constant * X(0)
         if add_constant:
@@ -580,8 +580,8 @@ class TestGenerateTapesAndCoeffs:
     @pytest.mark.parametrize("same_terms", [False, True])
     def test_single_op_multi_term(self, same_terms):
         """Test the tape generation for multiple parameters of a single Hamiltonian in a tape."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         H = qml.pulse.constant * X(0) + jnp.polyval * (X(0) if same_terms else Z(1))
         params = [jnp.array(0.4), jnp.array([0.3, 0.2, 0.1])]
@@ -606,12 +606,12 @@ class TestGenerateTapesAndCoeffs:
         if same_terms:
             exp_coeffs = [
                 [jnp.array(2 * self.T)],
-                [2 * jax.grad(integral_of_polyval)(params[1], self.T)],
+                [2 * qpjax.grad(integral_of_polyval)(params[1], self.T)],
             ]
         else:
             exp_coeffs = [
                 [jnp.array(0), jnp.array(2 * self.T)],
-                [2 * jax.grad(integral_of_polyval)(params[1], self.T), jnp.zeros(3)],
+                [2 * qpjax.grad(integral_of_polyval)(params[1], self.T), jnp.zeros(3)],
             ]
         expected = (10, 10 + num_tapes, num_tapes, words, wires, tape, 0, exp_coeffs[0])
         exp_cache = {"total_num_tapes": 10 + num_tapes, 0: (10, 10 + num_tapes, exp_coeffs)}
@@ -630,8 +630,8 @@ class TestGenerateTapesAndCoeffs:
 
     def test_multi_op_multi_term(self):
         """Test the tape generation for multiple parameters of multiple Hamiltonians in a tape."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         def _sin(p, t):
             """Compute the function a * sin(b * t + c)."""
@@ -651,11 +651,11 @@ class TestGenerateTapesAndCoeffs:
 
         exp_coeffs0 = [
             [jnp.array(0), jnp.array(2 * self.T)],
-            [2 * jax.grad(integral_of_polyval)(params0[1], self.T), jnp.zeros(3)],
+            [2 * qpjax.grad(integral_of_polyval)(params0[1], self.T), jnp.zeros(3)],
         ]
         exp_coeffs1 = [
-            [2 * jax.grad(integral_of_polyval)(params1[0], self.T), jnp.zeros(4)],
-            [jnp.zeros(3), 2 * jax.grad(_int_sin)(params1[1], self.T)],
+            [2 * qpjax.grad(integral_of_polyval)(params1[0], self.T), jnp.zeros(4)],
+            [jnp.zeros(3), 2 * qpjax.grad(_int_sin)(params1[1], self.T)],
         ]
 
         tape = self.make_tape([H0, H1], [params0, params1])
@@ -839,7 +839,7 @@ class TestPulseOdegenEdgeCases:
         """Test that no error is raised for a broadcasted/batched tape if the broadcasted
         parameter is not differentiated, and that the results correspond to the stacked
         results of the single-tape derivatives."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit")
         x = [0.4, 0.2]
@@ -1004,10 +1004,10 @@ class TestPulseOdegenTape:
     def test_single_pulse_single_term(self, shots, tol, seed):
         """Test that a single pulse with a single Hamiltonian term is
         differentiated correctly."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(seed)
+        prng_key = qpjax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H = jnp.polyval * X(0)
@@ -1025,7 +1025,7 @@ class TestPulseOdegenTape:
         assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
         grad = fn(qml.execute(_tapes, dev))
-        par_jac = jax.jacobian(integral_of_polyval)(x, t)
+        par_jac = qpjax.jacobian(integral_of_polyval)(x, t)
         exp_grad = -2 * par_jac * jnp.sin(2 * theta)
         if isinstance(shots, list):
             assert isinstance(grad, tuple) and len(grad) == len(shots)
@@ -1040,10 +1040,10 @@ class TestPulseOdegenTape:
     def test_single_pulse_multi_term(self, shots, tol, seed):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(seed)
+        prng_key = qpjax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H = 0.1 * Z(0) + jnp.polyval * X(0) + qml.pulse.constant * Y(0)
@@ -1064,7 +1064,7 @@ class TestPulseOdegenTape:
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev))
-        exp_grad = jax.jacobian(circuit)([x, y])
+        exp_grad = qpjax.jacobian(circuit)([x, y])
         if isinstance(shots, list):
             assert isinstance(grad, tuple) and len(grad) == len(shots)
             for _grad in grad:
@@ -1078,8 +1078,8 @@ class TestPulseOdegenTape:
     def test_single_pulse_multi_term_argnum(self, argnum):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly when setting ``argnum``."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -1093,7 +1093,7 @@ class TestPulseOdegenTape:
         theta = integral_of_polyval(x, t) + y * (t[1] - t[0])
 
         # Argnum=[0] or 0
-        par_jac_0 = jax.jacobian(integral_of_polyval)(x, t)
+        par_jac_0 = qpjax.jacobian(integral_of_polyval)(x, t)
         exp_grad_0 = -2 * par_jac_0 * jnp.sin(2 * theta)
         # Argnum=[1] or 1
         par_jac_1 = t[1] - t[0]
@@ -1119,10 +1119,10 @@ class TestPulseOdegenTape:
     def test_multi_pulse(self, shots, tol, seed):
         """Test that a single pulse with multiple Hamiltonian terms is
         differentiated correctly."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        prng_key = jax.random.PRNGKey(seed)
+        prng_key = qpjax.random.PRNGKey(seed)
         dev = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H0 = 0.1 * Z(0) + jnp.polyval * X(0)
@@ -1146,7 +1146,7 @@ class TestPulseOdegenTape:
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 
         grad = fn(qml.execute(_tapes, dev))
-        exp_grad = jax.jacobian(circuit)([x, y, z])
+        exp_grad = qpjax.jacobian(circuit)([x, y, z])
         if isinstance(shots, list):
             assert isinstance(grad, tuple) and len(grad) == len(shots)
             for _grad in grad:
@@ -1182,10 +1182,10 @@ class TestPulseOdegenQNode:
     def test_qnode_expval_single_par(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = qml.pulse.constant * Y(0)
@@ -1208,10 +1208,10 @@ class TestPulseOdegenQNode:
     def test_qnode_expval_probs_single_par(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0)
@@ -1228,7 +1228,7 @@ class TestPulseOdegenQNode:
         assert tracker.totals["executions"] == 2  # two shifted tapes
         circuit(params)
         p = integral_of_polyval(params, T)
-        p_jac = jax.jacobian(integral_of_polyval)(params, T)
+        p_jac = qpjax.jacobian(integral_of_polyval)(params, T)
         exp_jac = (
             jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p_jac),
             -2 * jnp.sin(2 * p) * p_jac,
@@ -1240,10 +1240,10 @@ class TestPulseOdegenQNode:
     def test_qnode_probs_expval_multi_par(self):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0) + qml.pulse.constant * Y(0)
@@ -1260,7 +1260,7 @@ class TestPulseOdegenQNode:
 
         assert tracker.totals["executions"] == 2  # two shifted tapes
         p0 = integral_of_polyval(params, T)
-        p0_jac = jax.jacobian(integral_of_polyval)(params, T)
+        p0_jac = qpjax.jacobian(integral_of_polyval)(params, T)
         p1 = c * T
         p1_jac = T
         p = p0 + p1
@@ -1283,10 +1283,10 @@ class TestPulseOdegenIntegration:
     def test_simple_qnode_expval(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = qml.pulse.constant * Y(0)
@@ -1298,7 +1298,7 @@ class TestPulseOdegenIntegration:
 
         params = [jnp.array(0.4)]
         with qml.Tracker(dev) as tracker:
-            grad = jax.jacobian(circuit)(params)
+            grad = qpjax.jacobian(circuit)(params)
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
         assert qml.math.allclose(grad, exp_grad)
@@ -1307,10 +1307,10 @@ class TestPulseOdegenIntegration:
     def test_simple_qnode_expval_two_evolves(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T_x = 0.1
         T_y = 0.2
@@ -1324,7 +1324,7 @@ class TestPulseOdegenIntegration:
             return qml.expval(Z(0))
 
         params = [[jnp.array(0.4)], [jnp.array(-0.1)]]
-        grad = jax.jacobian(circuit)(params)
+        grad = qpjax.jacobian(circuit)(params)
         p_x = params[0][0] * T_x
         p_y = params[1][0] * T_y
         exp_grad = [[-2 * jnp.sin(2 * (p_x + p_y)) * T_x], [-2 * jnp.sin(2 * (p_x + p_y)) * T_y]]
@@ -1333,10 +1333,10 @@ class TestPulseOdegenIntegration:
     def test_simple_qnode_probs(self):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = qml.pulse.constant * Y(0)
@@ -1347,7 +1347,7 @@ class TestPulseOdegenIntegration:
             return qml.probs(wires=0)
 
         params = [jnp.array(0.4)]
-        jac = jax.jacobian(circuit)(params)
+        jac = qpjax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = jnp.array([-1, 1]) * jnp.sin(2 * p) * T
         assert qml.math.allclose(jac, exp_jac)
@@ -1355,10 +1355,10 @@ class TestPulseOdegenIntegration:
     def test_simple_qnode_probs_expval(self):
         """Test that a simple qnode that returns probabilities
         can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0)
@@ -1369,9 +1369,9 @@ class TestPulseOdegenIntegration:
             return qml.probs(wires=0), qml.expval(Z(0))
 
         params = [jnp.array([0.4, 0.2, 0.1])]
-        jac = jax.jacobian(circuit)(params)
+        jac = qpjax.jacobian(circuit)(params)
         p = integral_of_polyval(params[0], T)
-        p_jac = jax.jacobian(integral_of_polyval)(params[0], T)
+        p_jac = qpjax.jacobian(integral_of_polyval)(params[0], T)
         exp_jac = (
             jnp.outer(jnp.array([-1, 1]), jnp.sin(2 * p) * p_jac),
             -2 * jnp.sin(2 * p) * p_jac,
@@ -1383,10 +1383,10 @@ class TestPulseOdegenIntegration:
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     def test_simple_qnode_jit(self, time_interface):
         """Test that a simple qnode can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = {"python": 0.2, "numpy": np.array(0.2), "jax": jnp.array(0.2)}[time_interface]
         ham_single_q_const = qml.pulse.constant * Y(0)
@@ -1399,16 +1399,16 @@ class TestPulseOdegenIntegration:
         params = [jnp.array(0.4)]
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
-        jit_grad = jax.jit(jax.grad(circuit))(params, T=T)
+        jit_grad = qpjax.jit(qpjax.grad(circuit))(params, T=T)
         assert qml.math.isclose(jit_grad, exp_grad)
 
     @pytest.mark.slow
     def test_advanced_qnode(self):
         """Test that an advanced qnode can be differentiated with pulse_odegen."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         params = [jnp.array(0.21), jnp.array(-0.171), jnp.array([0.05, 0.03, -0.1])]
         dev = qml.device("default.qubit", wires=2)
@@ -1431,9 +1431,9 @@ class TestPulseOdegenIntegration:
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
         with qml.Tracker(dev) as tracker:
-            grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
+            grad_pulse_grad = qpjax.grad(qnode_pulse_grad)(params)
         assert tracker.totals["executions"] == 1 + 12  # one forward execution, dim(DLA)=6
-        grad_backprop = jax.grad(qnode_backprop)(params)
+        grad_backprop = qpjax.grad(qnode_backprop)(params)
 
         assert all(
             qml.math.allclose(r, e, atol=1e-7) for r, e in zip(grad_pulse_grad, grad_backprop)
@@ -1443,10 +1443,10 @@ class TestPulseOdegenIntegration:
     def test_simple_qnode_expval_multiple_params(self, argnums):
         """Test that a simple qnode with two parameters
         can be differentiated with pulse_odegen and `argnums` works as expected."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham1 = qml.pulse.constant * Y(0)
@@ -1460,7 +1460,7 @@ class TestPulseOdegenIntegration:
 
         param1, param2 = [jnp.array(0.4)], [jnp.array(0.5)]
         with qml.Tracker(dev) as tracker:
-            grad = jax.jacobian(circuit, argnums=argnums)(param1, param2)
+            grad = qpjax.jacobian(circuit, argnums=argnums)(param1, param2)
         p = (param1[0] + param2[0]) * T
         exp_grad = -2 * jnp.sin(2 * p) * T
         if argnums == [0, 1]:
@@ -1482,11 +1482,11 @@ class TestPulseOdegenDiff:
     @pytest.mark.slow
     def test_jax(self):
         """Test that pulse_odegen is differentiable,
-        allowing to compute the Hessian, with JAX.."""
-        import jax
-        import jax.numpy as jnp
+        allowing to compute the Hessian, with qpjax.."""
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=1)
         T = 0.5
         ham_single_q_const = qml.pulse.constant * Y(0)
@@ -1505,5 +1505,5 @@ class TestPulseOdegenDiff:
         assert qml.math.isclose(grad, exp_grad)
 
         exp_diff_of_grad = -4 * jnp.cos(2 * p) * T**2
-        diff_of_grad = jax.grad(fun)(params)
+        diff_of_grad = qpjax.grad(fun)(params)
         assert qml.math.isclose(diff_of_grad, exp_diff_of_grad)

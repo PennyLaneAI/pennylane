@@ -59,7 +59,7 @@ def register_test_node():
     """Fixture that temporarily registers the ``CustomNode`` class as
     a Pytree."""
     # Use this instead of ``register_pytree()`` so that ``CustomNode`` will not
-    # be registered with jax.
+    # be registered with qpjax.
     _register_pytree_with_pennylane(CustomNode, "test.CustomNode", flatten_custom, unflatten_custom)
 
     yield

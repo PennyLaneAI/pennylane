@@ -21,7 +21,7 @@ from copy import copy
 from functools import partial, wraps
 from importlib.metadata import version
 
-import jax
+import qpjax
 from packaging.version import Version
 
 import pennylane as qml
@@ -41,7 +41,7 @@ from .primitives import (
     while_loop_prim,
 )
 
-FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
+FlattenedHigherOrderPrimitives: dict["qpjax.extend.core.Primitive", Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
 .. code-block::
@@ -49,7 +49,7 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 """
 
 
-def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[int | None]):
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["qpjax.core.Tracer"], shape: tuple[int | None]):
     """
     A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
 
@@ -58,12 +58,12 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
     When capturing `broadcast_in_dim_p` with a dynamic shape, we might end up with:
     ```
-    >>> import jax
+    >>> import qpjax
     >>> qml.capture.enable()
-    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> qpjax.config.update("jax_dynamic_shapes", True)
     >>> def f(n):
-    ...     return jax.numpy.ones((n, 4, n))
-    >>> jax.make_jaxpr(f)(4)
+    ...     return qpjax.numpy.ones((n, 4, n))
+    >>> qpjax.make_jaxpr(f)(4)
     { lambda ; a:i32[]. let
         b:f32[a,4,a] = broadcast_in_dim[
         broadcast_dimensions=()
@@ -97,13 +97,13 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
 
 def jaxpr_to_jaxpr(
-    interpreter: "PlxprInterpreter", jaxpr: "jax.extend.core.Jaxpr", consts, *args
-) -> "jax.extend.core.ClosedJaxpr":
+    interpreter: "PlxprInterpreter", jaxpr: "qpjax.extend.core.Jaxpr", consts, *args
+) -> "qpjax.extend.core.ClosedJaxpr":
     """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
 
     f = partial(interpreter.eval, jaxpr, consts)
 
-    return jax.make_jaxpr(f)(*args)
+    return qpjax.make_jaxpr(f)(*args)
 
 
 class PlxprInterpreter:
@@ -113,7 +113,7 @@ class PlxprInterpreter:
 
     .. code-block:: python
 
-        import jax
+        import qpjax
         from pennylane.capture import PlxprInterpreter
 
         class SimplifyInterpreter(PlxprInterpreter):
@@ -122,8 +122,8 @@ class PlxprInterpreter:
                 new_op = qml.simplify(op)
                 if new_op is op:
                     # simplify didn't create a new operator, so it didn't get captured
-                    data, struct = jax.tree_util.tree_flatten(new_op)
-                    new_op = jax.tree_util.tree_unflatten(struct, data)
+                    data, struct = qpjax.tree_util.tree_flatten(new_op)
+                    new_op = qpjax.tree_util.tree_unflatten(struct, data)
                 return new_op
 
             def interpret_measurement(self, measurement):
@@ -144,7 +144,7 @@ class PlxprInterpreter:
     >>> simplified_f = interpreter(f)
     >>> print(qml.draw(simplified_f)(0.5))
     0: ──RX(1.00)──Z─┤  <2.00*X>
-    >>> jaxpr = jax.make_jaxpr(f)(0.5)
+    >>> jaxpr = qpjax.make_jaxpr(f)(0.5)
     >>> interpreter.eval(jaxpr.jaxpr, [], 0.5)
     [expval(2.0 * X(0))]
 
@@ -165,7 +165,7 @@ class PlxprInterpreter:
     ...         return x
     ...     loop(1.0)
     ...     return qml.expval(qml.Z(0) + 3*qml.Z(0))
-    >>> jax.make_jaxpr(interpreter(g))(0.5)
+    >>> qpjax.make_jaxpr(interpreter(g))(0.5)
     { lambda ; a:f32[]. let
         _:f32[] = for_loop[
           args_slice=slice(0, None, None)
@@ -223,7 +223,7 @@ class PlxprInterpreter:
     """
 
     _env: dict
-    _primitive_registrations: dict["jax.extend.core.Primitive", Callable] = {}
+    _primitive_registrations: dict["qpjax.extend.core.Primitive", Callable] = {}
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
@@ -234,12 +234,12 @@ class PlxprInterpreter:
 
     @classmethod
     def register_primitive(
-        cls, primitive: "jax.extend.core.Primitive"
+        cls, primitive: "qpjax.extend.core.Primitive"
     ) -> Callable[[Callable], Callable]:
         """Registers a custom method for handling a primitive
 
         Args:
-            primitive (jax.extend.core.Primitive): the primitive we want custom behavior for
+            primitive (qpjax.extend.core.Primitive): the primitive we want custom behavior for
 
         Returns:
             Callable: a decorator for adding a function to the custom registrations map
@@ -250,7 +250,7 @@ class PlxprInterpreter:
 
         .. code-block:: python
 
-            my_primitive = jax.extend.core.Primitive("my_primitive")
+            my_primitive = qpjax.extend.core.Primitive("my_primitive")
 
             @Interpreter_Type.register(my_primitive)
             def handle_my_primitive(self: Interpreter_Type, *invals, **params)
@@ -266,7 +266,7 @@ class PlxprInterpreter:
 
     def read(self, var):
         """Extract the value corresponding to a variable."""
-        return var.val if isinstance(var, jax.extend.core.Literal) else self._env[var]
+        return var.val if isinstance(var, qpjax.extend.core.Literal) else self._env[var]
 
     def setup(self) -> None:
         """Initialize the instance before interpreting equations.
@@ -299,14 +299,14 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
-        data, struct = jax.tree_util.tree_flatten(op)
-        return jax.tree_util.tree_unflatten(struct, data)
+        data, struct = qpjax.tree_util.tree_flatten(op)
+        return qpjax.tree_util.tree_unflatten(struct, data)
 
-    def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
+    def interpret_operation_eqn(self, eqn: "qpjax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
 
         Args:
-            eqn (jax.extend.core.JaxprEqn): a jax equation for an operator.
+            eqn (qpjax.extend.core.JaxprEqn): a jax equation for an operator.
 
         See also: :meth:`~.interpret_operation`.
 
@@ -314,15 +314,15 @@ class PlxprInterpreter:
         invals = (self.read(invar) for invar in eqn.invars)
         with qml.QueuingManager.stop_recording():
             op = eqn.primitive.impl(*invals, **eqn.params)
-        if isinstance(eqn.outvars[0], jax.core.DropVar):
+        if isinstance(eqn.outvars[0], qpjax.core.DropVar):
             return self.interpret_operation(op)
         return op
 
-    def interpret_measurement_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: "qpjax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
-            eqn (jax.extend.core.JaxprEqn)
+            eqn (qpjax.extend.core.JaxprEqn)
 
         See also :meth:`~.interpret_measurement`.
 
@@ -341,14 +341,14 @@ class PlxprInterpreter:
         See also :meth:`~.interpret_measurement_eqn`.
 
         """
-        data, struct = jax.tree_util.tree_flatten(measurement)
-        return jax.tree_util.tree_unflatten(struct, data)
+        data, struct = qpjax.tree_util.tree_flatten(measurement)
+        return qpjax.tree_util.tree_unflatten(struct, data)
 
-    def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args) -> list:
+    def eval(self, jaxpr: "qpjax.extend.core.Jaxpr", consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
-            jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
+            jaxpr (qpjax.extend.core.Jaxpr): the jaxpr to evaluate
             consts (list[TensorLike]): the constant variables for the jaxpr
             *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -404,29 +404,29 @@ class PlxprInterpreter:
         @wraps(f)
         def wrapper(*args, **kwargs):
             with qml.QueuingManager.stop_recording():
-                jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
+                jaxpr = qpjax.make_jaxpr(partial(flat_f, **kwargs))(*args)
 
-            flat_args = jax.tree_util.tree_leaves(args)
+            flat_args = qpjax.tree_util.tree_leaves(args)
             results = self.eval(jaxpr.jaxpr, jaxpr.consts, *flat_args)
             assert flat_f.out_tree
             # slice out any dynamic shape variables
             results = results[-flat_f.out_tree.num_leaves :]
-            return jax.tree_util.tree_unflatten(flat_f.out_tree, results)
+            return qpjax.tree_util.tree_unflatten(flat_f.out_tree, results)
 
         return wrapper
 
 
 # pylint: disable=unused-argument
-@PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
+@PlxprInterpreter.register_primitive(qpjax.lax.broadcast_in_dim_p)
 def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
 
-    >>> import jax
+    >>> import qpjax
     >>> qml.capture.enable()
-    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> qpjax.config.update("jax_dynamic_shapes", True)
     >>> def f(n):
-    ...     return jax.numpy.ones((n, 4, n))
-    >>> jax.make_jaxpr(f)(4)
+    ...     return qpjax.numpy.ones((n, 4, n))
+    >>> qpjax.make_jaxpr(f)(4)
     { lambda ; a:i32[]. let
         b:f32[a,4,a] = broadcast_in_dim[
         broadcast_dimensions=()
@@ -435,32 +435,32 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     in (b,) }
 
     """
-    # needs custom primitive as jax.core.eval_jaxpr will error out with this
+    # needs custom primitive as qpjax.core.eval_jaxpr will error out with this
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
 
-    return jax.lax.broadcast_in_dim(
+    return qpjax.lax.broadcast_in_dim(
         x, new_shape, broadcast_dimensions=broadcast_dimensions, out_sharding=sharding
     )
 
 
 # pylint: disable=unused-argument
-@PlxprInterpreter.register_primitive(jax.lax.iota_p)
+@PlxprInterpreter.register_primitive(qpjax.lax.iota_p)
 def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
-    >>> import jax
+    >>> import qpjax
     >>> qml.capture.enable()
-    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> qpjax.config.update("jax_dynamic_shapes", True)
     >>> def f(n):
-    ...     return jax.numpy.arange(n)
-    >>> jax.make_jaxpr(f)(4)
+    ...     return qpjax.numpy.arange(n)
+    >>> qpjax.make_jaxpr(f)(4)
     { lambda ; a:i32[]. let
     b:i32[a] = iota[dimension=0 dtype=int32 shape=(None,)] a
     in (b,) }
     """
     # iota is primitive created by jnp.arange
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
-    return jax.lax.broadcasted_iota(dtype, new_shape, dimension, out_sharding=sharding)
+    return qpjax.lax.broadcasted_iota(dtype, new_shape, dimension, out_sharding=sharding)
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
@@ -607,7 +607,7 @@ def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfun
     args = invals[n_consts:]
 
     f = partial(copy(self).eval, qfunc_jaxpr, consts)
-    new_qfunc_jaxpr = jax.make_jaxpr(f)(*args)
+    new_qfunc_jaxpr = qpjax.make_jaxpr(f)(*args)
 
     return qnode_prim.bind(
         *shots,
@@ -681,16 +681,16 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
-jax_version = version("jax")
+jax_version = version("qpjax")
 if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
-    from jax._src.pjit import jit_p as pjit_p
+    from qpjax._src.pjit import jit_p as pjit_p
 else:  # pragma: no cover
-    from jax._src.pjit import pjit_p
+    from qpjax._src.pjit import pjit_p
 
 
 @FlattenedInterpreter.register_primitive(pjit_p)
 def _pjit_primitive(self, *invals, jaxpr, **params):
-    if jax.config.jax_dynamic_shapes:
+    if qpjax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
@@ -785,28 +785,28 @@ def flattened_for(
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
-def eval_jaxpr(jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
-    """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
+def eval_jaxpr(jaxpr: "qpjax.extend.core.Jaxpr", consts: list, *args) -> list:
+    """A version of ``qpjax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
 
     Args:
-        jaxpr (jax.extend.core.Jaxpr): a jaxpr
+        jaxpr (qpjax.extend.core.Jaxpr): a jaxpr
         consts (list[TensorLike]): the constants for the jaxpr
         *args (TensorLike): the arguments for the jaxpr
 
     Returns:
         list[TensorLike]
 
-    This function only differs from ``jax.core.eval_jaxpr`` in that it can handle the creation
+    This function only differs from ``qpjax.core.eval_jaxpr`` in that it can handle the creation
     of dynamically shaped arrays via ``iota`` and ``broadcast_in_dim``.
 
-    >>> import jax
-    >>> jax.config.update("jax_dynamic_shapes", True)
+    >>> import qpjax
+    >>> qpjax.config.update("jax_dynamic_shapes", True)
     >>> def f(i):
-    ...     return jax.numpy.arange(i)
-    >>> jaxpr = jax.make_jaxpr(f)(3)
+    ...     return qpjax.numpy.arange(i)
+    >>> jaxpr = qpjax.make_jaxpr(f)(3)
     >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     [Array([0, 1], dtype=int32)]
-    >>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+    >>> qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     XlaRuntimeError: error: 'mhlo.dynamic_iota' op can't be translated to XLA HLO
 
     """

@@ -296,7 +296,7 @@ class TestJax:
         ],
     )
     def test_nuclear_energy_jax(self, symbols, geometry, e_ref):
-        r"""Test that nuclear_energy returns the correct energy when using jax."""
+        r"""Test that nuclear_energy returns the correct energy when using qpjax."""
         geometry = qml.math.array(geometry, like="jax")
         mol = qchem.Molecule(symbols, geometry)
         args = [mol.coordinates]
@@ -320,13 +320,13 @@ class TestJax:
         ],
     )
     def test_nuclear_energy_gradient_jax(self, symbols, geometry, g_ref):
-        r"""Test that nuclear energy gradients are correct for jax."""
-        import jax
+        r"""Test that nuclear energy gradients are correct for qpjax."""
+        import qpjax
 
         geometry = qml.math.array(geometry, like="jax")
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
-        g = jax.jacobian(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates), argnums=0)(
+        g = qpjax.jacobian(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates), argnums=0)(
             *args
         )
         assert qml.math.allclose(g, g_ref)
@@ -350,12 +350,12 @@ class TestJax:
     )
     def test_hf_energy_gradient_jax(self, symbols, geometry, g_ref):
         r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
-        correct with jax."""
-        import jax
+        correct with qpjax."""
+        import qpjax
 
         geometry = qml.math.array(geometry, like="jax")
 
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
-        g = jax.grad(qchem.hf_energy(mol), argnums=[0])(*args)[0]
+        g = qpjax.grad(qchem.hf_energy(mol), argnums=[0])(*args)[0]
         assert qml.math.allclose(g, g_ref)

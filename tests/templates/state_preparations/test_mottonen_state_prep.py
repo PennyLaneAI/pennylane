@@ -333,7 +333,7 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -456,7 +456,7 @@ class TestCasting:
     @pytest.mark.jax
     def test_jax(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the JAX interface."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         inputs = jnp.array(inputs)
         dev = qml.device("default.qubit", wires=2)
@@ -473,13 +473,13 @@ class TestCasting:
     @pytest.mark.jax
     def test_jax_jit(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the JAX-JIT interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         inputs = jnp.array(inputs)
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit(inputs):
             qml.MottonenStatePreparation(inputs, wires=[0, 1])
@@ -545,7 +545,7 @@ def test_adjoint_brings_back_to_zero(adj_base_op):
 @pytest.mark.jax
 def test_jacobians_with_and_without_jit_match(seed):
     """Test that the Jacobian of the circuit is the same with and without jit."""
-    import jax
+    import qpjax
 
     shots = None
     atol = 0.005
@@ -563,12 +563,12 @@ def test_jacobians_with_and_without_jit_match(seed):
     circuit_ps = qml.set_shots(qml.QNode(circuit, dev, diff_method="parameter-shift"), shots=shots)
     circuit_exact = qml.set_shots(qml.QNode(circuit, dev_no_shots), shots=None)
 
-    params = jax.numpy.array([0.5, 0.5, 0.5, 0.5], dtype=jax.numpy.float64)
-    jac_exact_fn = jax.jacobian(circuit_exact)
-    jac_fd_fn = jax.jacobian(circuit_fd)
-    jac_fd_fn_jit = jax.jit(jac_fd_fn)
-    jac_ps_fn = jax.jacobian(circuit_ps)
-    jac_ps_fn_jit = jax.jit(jac_ps_fn)
+    params = qpjax.numpy.array([0.5, 0.5, 0.5, 0.5], dtype=qpjax.numpy.float64)
+    jac_exact_fn = qpjax.jacobian(circuit_exact)
+    jac_fd_fn = qpjax.jacobian(circuit_fd)
+    jac_fd_fn_jit = qpjax.jit(jac_fd_fn)
+    jac_ps_fn = qpjax.jacobian(circuit_ps)
+    jac_ps_fn_jit = qpjax.jit(jac_ps_fn)
 
     jac_exact = jac_exact_fn(params)
     jac_fd = jac_fd_fn(params)
@@ -588,16 +588,16 @@ class TestJaxJitSPInputs:
         """
         Test definition of the state-prep operator data external to the JIT context.
         """
-        import jax
+        import qpjax
 
         n_qubits = 3
 
         dev = qml.device("default.qubit", wires=n_qubits)
 
         def sp_func():
-            psi = jax.numpy.zeros(2**n_qubits)
-            psi = psi.at[jax.numpy.array(range(1, n_qubits + 1))].set(
-                1 / jax.numpy.sqrt(3), indices_are_sorted=True, unique_indices=True
+            psi = qpjax.numpy.zeros(2**n_qubits)
+            psi = psi.at[qpjax.numpy.array(range(1, n_qubits + 1))].set(
+                1 / qpjax.numpy.sqrt(3), indices_are_sorted=True, unique_indices=True
             )
 
             def apply_mottonen(wires):
@@ -607,7 +607,7 @@ class TestJaxJitSPInputs:
 
         apply_mottonen, res_expected = sp_func()
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def mottonen_external():
             apply_mottonen(wires=range(n_qubits))
@@ -619,20 +619,20 @@ class TestJaxJitSPInputs:
         """
         Test definition of the state-prep operator data within the JIT context.
         """
-        import jax
+        import qpjax
 
         n_qubits = 3
 
         dev = qml.device("default.qubit", wires=n_qubits)
 
         def psi_gen():
-            psi = jax.numpy.zeros(2**n_qubits)
-            psi = psi.at[jax.numpy.array(range(1, n_qubits + 1))].set(
-                1 / jax.numpy.sqrt(3), indices_are_sorted=True, unique_indices=True
+            psi = qpjax.numpy.zeros(2**n_qubits)
+            psi = psi.at[qpjax.numpy.array(range(1, n_qubits + 1))].set(
+                1 / qpjax.numpy.sqrt(3), indices_are_sorted=True, unique_indices=True
             )
             return psi
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def mottonen_internal():
             psi = psi_gen()

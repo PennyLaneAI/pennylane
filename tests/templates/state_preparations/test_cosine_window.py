@@ -75,8 +75,8 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_integration_decompose_interpreter(self):
         """Tests that a simple circuit is correctly decomposed into different gate sets."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -86,7 +86,7 @@ class TestDecomposition:
         decomposed_f = DecomposeInterpreter(
             gate_set={"Hadamard", "RZ", "PhaseShift", "ControlledPhaseShift", "SWAP"}
         )(f)
-        jaxpr = jax.make_jaxpr(decomposed_f)()
+        jaxpr = qpjax.make_jaxpr(decomposed_f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         assert collector.state["ops"] == [
@@ -208,7 +208,7 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jax_jit(self):
         """Test that the template correctly compiles with JAX JIT   ."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -217,7 +217,7 @@ class TestInterfaces:
             qml.CosineWindow(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        circuit2 = jax.jit(circuit)
+        circuit2 = qpjax.jit(circuit)
 
         res = circuit()
         res2 = circuit2()

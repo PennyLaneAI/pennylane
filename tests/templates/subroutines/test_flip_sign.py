@@ -159,7 +159,7 @@ class TestFlipSign:
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        import jax
+        import qpjax
 
         num_wires = 2
         dev = qml.device("default.qubit", wires=num_wires)
@@ -171,7 +171,7 @@ class TestFlipSign:
             qml.FlipSign([1, 0], wires=range(num_wires))
             return qml.state()
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         res = circuit()
         jit_res = jit_circuit()

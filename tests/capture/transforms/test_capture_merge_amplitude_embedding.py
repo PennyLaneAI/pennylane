@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.transforms.core import TransformError
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 from pennylane.capture.primitives import transform_prim
 
@@ -68,7 +68,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(qfunc)()
+            qpjax.make_jaxpr(qfunc)()
 
     def test_repeated_wire_error(self):
         """Test that an error is raised if AmplitudeEmbedding acts on the same wire"""
@@ -82,7 +82,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(qfunc)()
+            qpjax.make_jaxpr(qfunc)()
 
     def test_repeated_traced_wire_error(self):
         """Test that an error is raised if AmplitudeEmbedding acts on the same traced wire"""
@@ -96,7 +96,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires.",
         ):
-            jax.make_jaxpr(qfunc)(1)
+            qpjax.make_jaxpr(qfunc)(1)
 
     def test_simple_repeated_qubit_error(self):
         """Test that an error is raised if a qubit in the AmplitudeEmbedding had operations applied to it before."""
@@ -111,7 +111,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(qfunc)()
+            qpjax.make_jaxpr(qfunc)()
 
     def test_repeated_qubit_error_before_higher_order_prim(self):
         """Test that wire collision can be detected before a higher-order primitive is applied."""
@@ -129,7 +129,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(f)()
+            qpjax.make_jaxpr(f)()
 
     def test_repeated_qubit_after_higher_order_prim(self):
         """Test that wire collision is able to be detected after a higher order primitive is applied."""
@@ -147,7 +147,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(f)()
+            qpjax.make_jaxpr(f)()
 
     @pytest.mark.parametrize("collision_wire", [0, 1, 2])
     def test_collision_before_cond_prim(self, collision_wire):
@@ -174,7 +174,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(f)(3)
+            qpjax.make_jaxpr(f)(3)
 
     @pytest.mark.parametrize("collision_wire", [0, 1, 2])
     def test_collision_after_cond_prim(self, collision_wire):
@@ -201,7 +201,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(f)(3)
+            qpjax.make_jaxpr(f)(3)
 
     @pytest.mark.parametrize("collision_wire", [0, 1, 2, 3])
     def test_initial_wires_memory_before_cond(self, collision_wire):
@@ -230,7 +230,7 @@ class TestRepeatedQubitTransformErrors:
             TransformError,
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
-            jax.make_jaxpr(f)(3)
+            qpjax.make_jaxpr(f)(3)
 
     def test_mixed_higher_order_primitives(self):
         """Test that wire collisions through higher order primitives are detected."""
@@ -264,7 +264,7 @@ class TestRepeatedQubitTransformErrors:
             match="qml.AmplitudeEmbedding cannot be applied on wires already used by other operations.",
         ):
             args = (3,)
-            jax.make_jaxpr(f)(*args)
+            qpjax.make_jaxpr(f)(*args)
 
 
 class TestMergeAmplitudeEmbeddingInterpreter:
@@ -281,7 +281,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             return qml.expval(qml.Z(0))
 
         args = (jnp.array([0.0, 1.0]), jnp.array([0.0, 1.0]))
-        jaxpr = jax.make_jaxpr(qfunc)(*args)
+        jaxpr = qpjax.make_jaxpr(qfunc)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
@@ -310,7 +310,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             return qml.expval(qml.Z(0))
 
         args = (0, 1)
-        jaxpr = jax.make_jaxpr(qfunc)(*args)
+        jaxpr = qpjax.make_jaxpr(qfunc)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
@@ -337,7 +337,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
@@ -367,7 +367,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.AmplitudeEmbedding(jnp.array([0.0, 0.0, 0.0, 1.0]), wires=[2, 3])
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
@@ -399,7 +399,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.AmplitudeEmbedding(jnp.array([[0, 1], [1, 0]]), wires=2)  # |1> and |0>
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
@@ -426,7 +426,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.AmplitudeEmbedding(jnp.array([1, 0]), wires=0)
             return qml.AmplitudeEmbedding(jnp.array([1, 0]), wires=1)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
@@ -448,7 +448,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), wires=1)
             qml.H(w)
 
-        jaxpr = jax.make_jaxpr(circuit)(0)
+        jaxpr = qpjax.make_jaxpr(circuit)(0)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0)
 
@@ -471,7 +471,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             TransformError,
             match="Cannot apply qml.AmplitudeEmbedding after operators with dynamic wires.",
         ):
-            _ = jax.make_jaxpr(f)(2)
+            _ = qpjax.make_jaxpr(f)(2)
 
     def test_dynamic_wire_embeddings(self):
         """Test that AmplitudeEmbeddings with dynamic wires can be merged. If there is overlap,
@@ -483,7 +483,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
             qml.H(0)
             qml.AmplitudeEmbedding(jnp.array([1.0, 0.0]), [1])
 
-        jaxpr = jax.make_jaxpr(f)(0)
+        jaxpr = qpjax.make_jaxpr(f)(0)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0)
         ops = collector.state["ops"]
@@ -508,7 +508,7 @@ class TestMergeAmplitudeEmbeddingInterpreter:
         with pytest.raises(
             TransformError, match="Cannot apply qml.AmplitudeEmbedding with dynamic wires"
         ):
-            _ = jax.make_jaxpr(f)(0)
+            _ = qpjax.make_jaxpr(f)(0)
 
 
 def test_plxpr_to_plxpr_transform():
@@ -520,9 +520,9 @@ def test_plxpr_to_plxpr_transform():
         qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
         return qml.expval(qml.Z(0))
 
-    jaxpr = jax.make_jaxpr(qfunc)()
+    jaxpr = qpjax.make_jaxpr(qfunc)()
     transformed_jaxpr = merge_amplitude_embedding_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
-    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, qpjax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 4
 
     collector = CollectOpsandMeas()
@@ -556,7 +556,7 @@ class TestHigherOrderPrimitiveIntegration:
             qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
             qml.measure(wires=0)
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
@@ -576,11 +576,11 @@ class TestHigherOrderPrimitiveIntegration:
             qml.measure(wires=0)
             qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)
@@ -599,7 +599,7 @@ class TestHigherOrderPrimitiveIntegration:
         with pytest.raises(
             TransformError, match="Cannot apply qml.AmplitudeEmbedding with dynamic wires"
         ):
-            _ = jax.make_jaxpr(qfunc)(1)
+            _ = qpjax.make_jaxpr(qfunc)(1)
 
     def test_ctrl_transform_prim(self):
         """Test that the transform works correctly when applied with ctrl_transform_prim."""
@@ -615,7 +615,7 @@ class TestHigherOrderPrimitiveIntegration:
             qml.ctrl(ctrl_fn, [3, 4])()
             qml.RY(0, 1)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 3
         # TODO: This AE should be merged with the one in ctrl_fn, limitation of PC
         assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
@@ -640,7 +640,7 @@ class TestHigherOrderPrimitiveIntegration:
 
             qml.adjoint(g, lazy=lazy)()
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         assert jaxpr.eqns[0].params["lazy"] == lazy
@@ -664,7 +664,7 @@ class TestHigherOrderPrimitiveIntegration:
             cond_f()
 
         args = (3,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[1].primitive == cond_prim
 
         # True branch
@@ -703,7 +703,7 @@ class TestHigherOrderPrimitiveIntegration:
             return out
 
         args = (3,)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         # First 2 primitives are the conditions for the true and elif branches
         assert jaxpr.eqns[2].primitive == cond_prim
 
@@ -764,7 +764,7 @@ class TestHigherOrderPrimitiveIntegration:
 
             h()
 
-        jaxpr = jax.make_jaxpr(f)(3)
+        jaxpr = qpjax.make_jaxpr(f)(3)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == for_loop_prim
 
@@ -789,7 +789,7 @@ class TestHigherOrderPrimitiveIntegration:
 
             h(0)
 
-        jaxpr = jax.make_jaxpr(f)(3)
+        jaxpr = qpjax.make_jaxpr(f)(3)
         assert len(jaxpr.eqns) == 1
         assert jaxpr.eqns[0].primitive == while_loop_prim
 
@@ -811,7 +811,7 @@ class TestHigherOrderPrimitiveIntegration:
             qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
 
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
@@ -836,7 +836,7 @@ class TestHigherOrderPrimitiveIntegration:
             return qml.expval(qml.Z(0))
 
         f = qml.grad(circuit)
-        jaxpr = jax.make_jaxpr(f)(0, 1)
+        jaxpr = qpjax.make_jaxpr(f)(0, 1)
         assert jaxpr.eqns[0].primitive == jacobian_prim
         inner_jaxpr = _find_eq_with_name(jaxpr, "jaxpr")
         qfunc_jaxpr = _find_eq_with_name(inner_jaxpr, "qfunc_jaxpr")
@@ -886,7 +886,7 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
-            _ = jax.make_jaxpr(circuit)(1.5, 0)
+            _ = qpjax.make_jaxpr(circuit)(1.5, 0)
 
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
     def test_cond_dyn_wires_one_branch_embedding_other_branch(self, dynamic_wires):
@@ -910,7 +910,7 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             return qml.expval(qml.Z(0))
 
         # No error should be raised
-        _ = jax.make_jaxpr(circuit)(1.5, 0)
+        _ = qpjax.make_jaxpr(circuit)(1.5, 0)
 
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
     def test_cond_op_inside_embedding_after(self, dynamic_wires):
@@ -931,7 +931,7 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
-            _ = jax.make_jaxpr(circuit)(1.5, 0)
+            _ = qpjax.make_jaxpr(circuit)(1.5, 0)
 
     @pytest.mark.parametrize("embedding_location", ["loop", "after"])
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
@@ -957,7 +957,7 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
-            _ = jax.make_jaxpr(circuit)(5, 0)
+            _ = qpjax.make_jaxpr(circuit)(5, 0)
 
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
     def test_for_loop_op_inside_embedding_after(self, dynamic_wires):
@@ -978,7 +978,7 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
-            _ = jax.make_jaxpr(circuit)(5, 0)
+            _ = qpjax.make_jaxpr(circuit)(5, 0)
 
     @pytest.mark.parametrize("embedding_location", ["loop", "after"])
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
@@ -1005,7 +1005,7 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
-            _ = jax.make_jaxpr(circuit)(1.5, 0)
+            _ = qpjax.make_jaxpr(circuit)(1.5, 0)
 
     @pytest.mark.parametrize("dynamic_wires", ["op", "embedding", "both"])
     def test_while_loop_op_inside_embedding_after(self, dynamic_wires):
@@ -1027,7 +1027,7 @@ class TestDynamicWiresControlFlowPrimitivesIntegration:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(TransformError, match="it is indeterminable if the wires overlap"):
-            _ = jax.make_jaxpr(circuit)(1.5, 0)
+            _ = qpjax.make_jaxpr(circuit)(1.5, 0)
 
 
 class TestExpandPlxprTransformIntegration:
@@ -1043,7 +1043,7 @@ class TestExpandPlxprTransformIntegration:
             qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
 
         assert jaxpr.eqns[0].primitive == transform_prim
         assert (
@@ -1052,7 +1052,7 @@ class TestExpandPlxprTransformIntegration:
         )
 
         transformed_qfunc = qml.capture.expand_plxpr_transforms(qfunc)
-        transformed_jaxpr = jax.make_jaxpr(transformed_qfunc)()
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_qfunc)()
         assert len(transformed_jaxpr.eqns) == 4
         assert transformed_jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(transformed_jaxpr.eqns[0].params["n_wires"], 2)
@@ -1071,7 +1071,7 @@ class TestExpandPlxprTransformIntegration:
             qml.AmplitudeEmbedding(jnp.array([0.0, 1.0]), wires=1)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = qpjax.make_jaxpr(qfunc)()
         assert len(jaxpr.eqns) == 4
         assert jaxpr.eqns[0].primitive == qml.AmplitudeEmbedding._primitive
         assert qml.math.allclose(jaxpr.eqns[0].params["n_wires"], 2)

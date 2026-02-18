@@ -105,7 +105,7 @@ class TestDecomposition:
     @pytest.mark.jax
     def test_state_preparation_jax_jit(self):
         """Tests that the template can be JIT compiled."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qutrit", wires=1)
 
@@ -114,7 +114,7 @@ class TestDecomposition:
             qml.QutritBasisStatePreparation(state, [0])
             return qml.state()
 
-        circuit = jax.jit(circuit)
+        circuit = qpjax.jit(circuit)
 
         basis_state = qml.math.array([2], like="jax")
         output_state = circuit(basis_state)
@@ -125,28 +125,28 @@ class TestDecomposition:
     def test_state_preparation_with_simpling_jax_jit(self):
         """Tests that the template can be compiled with JIT when returning
         a sampled measurement."""
-        import jax
+        import qpjax
 
         n = 2
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(qml.device("default.qutrit", wires=n), shots=1)
         def circuit(state):
             qml.QutritBasisStatePreparation(state, wires=range(n))
             return qml.sample(wires=range(n))
 
-        state = jax.numpy.array([1, 1])
+        state = qpjax.numpy.array([1, 1])
         circuit(state)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("state", [0, 1, 2])
     def test_decomposition_matrix_jax_jit(self, state):
         """Tests that the decomposition matrix is correct when JIT compiled."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         tshift = jnp.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
-        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
+        jit_decomp = qpjax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
 
         decomp = jit_decomp(jnp.array([state]), wires=[0])
         matrix = qml.matrix(qml.prod(*decomp[::-1]))
@@ -156,10 +156,10 @@ class TestDecomposition:
     @pytest.mark.parametrize("state", [0, 1, 2])
     def test_decomposition_pl_gates_jax_jit(self, state):
         """Tests that the decomposition gates are correct when JIT compiled."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jit_decomp = jax.jit(
+        jit_decomp = qpjax.jit(
             qml.QutritBasisStatePreparation.compute_decomposition, static_argnames="wires"
         )
 

@@ -173,9 +173,9 @@ class TestQubitUnitaryZYZDecomposition:
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
         _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
 
 
@@ -251,9 +251,9 @@ class TestQubitUnitaryXYXDecomposition:
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
         _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
 
 
@@ -326,9 +326,9 @@ class TestQubitUnitaryXZXDecomposition:
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
         _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
 
 
@@ -415,9 +415,9 @@ class TestQubitUnitaryZXZDecomposition:
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
         _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
 
 
@@ -482,9 +482,9 @@ class TestOneQubitRotDecomposition:
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
         _test_decomposition(U, "rot", expected_gates, expected_params)
 
 
@@ -1170,9 +1170,9 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit operation in JAX is correctly decomposed."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
@@ -1188,10 +1188,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit tensor product in JAX is correctly decomposed."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
-        U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
+        U1 = qpjax.numpy.array(U_pair[0], dtype=qpjax.numpy.complex128)
+        U2 = qpjax.numpy.array(U_pair[1], dtype=qpjax.numpy.complex128)
         U = qml.math.kron(U1, U2)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
@@ -1208,9 +1208,9 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
 
         def wrapped_decomposition(U):
             # the jitted function cannot return objects like operators,
@@ -1226,7 +1226,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
             return obtained_matrix
 
-        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+        jitted_matrix = qpjax.jit(wrapped_decomposition)(U)
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
@@ -1237,10 +1237,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
 
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
-        U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
+        U1 = qpjax.numpy.array(U_pair[0], dtype=qpjax.numpy.complex128)
+        U2 = qpjax.numpy.array(U_pair[1], dtype=qpjax.numpy.complex128)
         U = qml.math.kron(U1, U2)
 
         def wrapped_decomposition(U):
@@ -1257,7 +1257,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
             return obtained_matrix
 
-        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+        jitted_matrix = qpjax.jit(wrapped_decomposition)(U)
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
@@ -1390,8 +1390,8 @@ class TestTwoQubitDecompositionWarnings:
         """Test warning is raised for parameterized matrix with JAX"""
         try:
             # pylint: disable=import-outside-toplevel
-            import jax
-            import jax.numpy as jnp
+            import qpjax
+            import qpjax.numpy as jnp
         except ImportError:
             pytest.skip("JAX not installed")
 
@@ -1414,7 +1414,7 @@ class TestTwoQubitDecompositionWarnings:
             RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
         ):
             # Use JAX's grad to create a Tracer
-            jax.grad(cost)(1.0)
+            qpjax.grad(cost)(1.0)
 
     def test_warning_complex_input(self):
         """Test warning is raised with complex input parameters"""
@@ -1501,7 +1501,7 @@ class TestQubitUnitaryDecompositionGraph:
     def test_single_qubit_decomposition_capture(self, gate_set):
         """Tests that a single-qubit unitary can be decomposed with capture enabled."""
 
-        import jax
+        import qpjax
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -1517,7 +1517,7 @@ class TestQubitUnitaryDecompositionGraph:
         def circuit(mat):
             qml.QubitUnitary(mat, wires=[0])
 
-        jaxpr = jax.make_jaxpr(circuit)(U)
+        jaxpr = qpjax.make_jaxpr(circuit)(U)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
         decomp = collector.state["ops"]
@@ -1561,7 +1561,7 @@ class TestQubitUnitaryDecompositionGraph:
     def test_two_qubit_decomposition_capture(self, gate_set, U):
         """Tests that the two-qubit unitary can be decomposed with capture enabled."""
 
-        import jax
+        import qpjax
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -1569,8 +1569,8 @@ class TestQubitUnitaryDecompositionGraph:
         def circuit(mat):
             qml.QubitUnitary(mat, wires=[0, 1])
 
-        U = jax.numpy.array(U)
-        jaxpr = jax.make_jaxpr(circuit)(U)
+        U = qpjax.numpy.array(U)
+        jaxpr = qpjax.make_jaxpr(circuit)(U)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
         decomp = collector.state["ops"]

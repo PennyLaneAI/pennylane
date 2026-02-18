@@ -2,14 +2,14 @@ This documentation explains the principles behind `qml.capture.CaptureMeta` and 
 
 
 ```python
-import jax
+import qpjax
 ```
 
 # Primitive basics
 
 
 ```python
-my_func_prim = jax.extend.core.Primitive("my_func")
+my_func_prim = qpjax.extend.core.Primitive("my_func")
 
 @my_func_prim.def_impl
 def _(x):
@@ -17,7 +17,7 @@ def _(x):
 
 @my_func_prim.def_abstract_eval
 def _(x):
-    return jax.core.ShapedArray((1,), x.dtype)
+    return qpjax.core.ShapedArray((1,), x.dtype)
 
 def my_func(x):
     return my_func_prim.bind(x)
@@ -25,7 +25,7 @@ def my_func(x):
 
 
 ```python
->>> jaxpr = jax.make_jaxpr(my_func)(0.1)
+>>> jaxpr = qpjax.make_jaxpr(my_func)(0.1)
 >>> jaxpr
 { lambda ; a:f32[]. let b:f32[1] = my_func a in (b,) }
 >>> jaxpr.jaxpr.eqns
@@ -65,7 +65,7 @@ def repeat(func: Callable, n: int) -> Callable:
 We can start by creating the primitive itself:
 
 ```python
-repeat_prim = jax.extend.core.Primitive("repeat")
+repeat_prim = qpjax.extend.core.Primitive("repeat")
 repeat_prim.multiple_results = True
 ```
 
@@ -79,7 +79,7 @@ from typing import Callable
 def repeat(func: Callable, n: int) -> Callable:
     def new_func(*args, **kwargs):
         func_bound_kwargs = partial(func, **kwargs)
-        jaxpr = jax.make_jaxpr(func_bound_kwargs)(*args)
+        jaxpr = qpjax.make_jaxpr(func_bound_kwargs)(*args)
         n_consts = len(jaxpr.consts)
         return repeat_prim.bind(n, *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, n_consts=n_consts)
     return new_func
@@ -88,7 +88,7 @@ def repeat(func: Callable, n: int) -> Callable:
 Several things to notice about this code.
 
 First, we have to make the jaxpr from a function with any keyword arguments
-already bound.  `jax.make_jaxpr` does not currently accept keyword arguments for the function, so we need to pre-bind them.
+already bound.  `qpjax.make_jaxpr` does not currently accept keyword arguments for the function, so we need to pre-bind them.
 
 Next, we decided to make the integer `n` a traceable parameter instead of metadata. We could have chosen to make
 `n` metadata instead.  This way, we can compile our function once for different integers `n`, and it is in line with how
@@ -110,11 +110,11 @@ def _(n, *args, jaxpr, n_consts):
     consts = args[:n_consts]
     args = args[n_consts:]
     for _ in range(n):
-        args = jax.core.eval_jaxpr(jaxpr, consts, *args)
+        args = qpjax.core.eval_jaxpr(jaxpr, consts, *args)
     return args
 ```
 
-Here we use `jax.core.eval_jaxpr` to execute the jaxpr with concrete arguments. If we had instead used
+Here we use `qpjax.core.eval_jaxpr` to execute the jaxpr with concrete arguments. If we had instead used
 *on the fly processing*, we could have simply executed the stored function, but when using *staged processing*, we need
 to directly evaluate the jaxpr instead.
 
@@ -129,7 +129,7 @@ def _(n, *args, jaxpr, n_consts):
 Now that we have all the parts, we can see it in action:
 
 ```pycon
->>> a = jax.numpy.array(1)
+>>> a = qpjax.numpy.array(1)
 >>> def func(x, y, y_coeff=1):
 ...     return (x + a, y_coeff * y)
 >>> def workflow(x):
@@ -137,7 +137,7 @@ Now that we have all the parts, we can see it in action:
 >>> workflow(0.5)
 [Array(2.5, dtype=float32, weak_type=True),
  Array(8., dtype=float32, weak_type=True)]
->>> jax.make_jaxpr(workflow)(0.5)
+>>> qpjax.make_jaxpr(workflow)(0.5)
 { lambda a:i32[]; b:f32[]. let
     c:f32[] d:f32[] = repeat[
       jaxpr={ lambda e:i32[]; f:f32[] g:f32[]. let
@@ -148,7 +148,7 @@ Now that we have all the parts, we can see it in action:
       n_consts=1
     ] 2 a b 2.0
   in (c, d) }
->>> jax.make_jaxpr(workflow)(0.5).consts
+>>> qpjax.make_jaxpr(workflow)(0.5).consts
 [Array(1, dtype=int32, weak_type=True)]
 ```
 
@@ -184,7 +184,7 @@ True
 [0.1, 1.2]
 >>> flatfn.out_tree # set once function is called
 PyTreeDef({'a': *, 'b': *})
->>> jax.tree_util.tree_unflatten(flatfn.out_tree, results)
+>>> qpjax.tree_util.tree_unflatten(flatfn.out_tree, results)
 {'a': 0.1, 'b': 1.2}
 ```
 
@@ -198,21 +198,21 @@ def repeat(func, n: int):
         func_bound_kwargs = partial(func, **kwargs)
         flat_fn = FlatFn(func_bound_kwargs)
 
-        jaxpr = jax.make_jaxpr(flat_fn)(*args)
-        flat_args, _ = jax.tree_util.tree_flatten(args)
+        jaxpr = qpjax.make_jaxpr(flat_fn)(*args)
+        flat_args, _ = qpjax.tree_util.tree_flatten(args)
         n_consts = len(jaxpr.consts)
         results = repeat_prim.bind(n, *jaxpr.consts, *flat_args, jaxpr=jaxpr.jaxpr, n_consts=n_consts)
 
         # repack the results back into the cached pytree
         assert flat_fn.out_tree is not None
-        return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
+        return qpjax.tree_util.tree_unflatten(flat_fn.out_tree, results)
     return new_func
 ```
 
 And now the workflow supports arbitrary inputs and outputs.
 
 ```pycon
->>> a = {"x": jax.numpy.array(1), "y": 2.0}
+>>> a = {"x": qpjax.numpy.array(1), "y": 2.0}
 >>> def func(arg, y_coeff=1):
 ...     return {"x": arg['x'] + 2.0, "y": y_coeff * arg['y']}
 >>> def workflow(arg):
@@ -318,7 +318,7 @@ class PrimitiveMeta(type):
 
     def __init__(cls, *args, **kwargs):
         # here we set up the primitive
-        primitive = jax.extend.core.Primitive(cls.__name__)
+        primitive = qpjax.extend.core.Primitive(cls.__name__)
 
         @primitive.def_impl
         def _(*inner_args, **inner_kwargs):
@@ -329,7 +329,7 @@ class PrimitiveMeta(type):
         def _(*inner_args, **inner_kwargs):
             # here we say that we just return an array of type float32 and shape (1,)
             # other abstract types could be used instead
-            return jax.core.ShapedArray((1,), jax.numpy.float32)
+            return qpjax.core.ShapedArray((1,), qpjax.numpy.float32)
 
         cls._primitive = primitive
 
@@ -360,7 +360,7 @@ But now it can also be used in tracing as well
 
 
 ```python
->>> jax.make_jaxpr(PrimitiveClass)(1.0)
+>>> qpjax.make_jaxpr(PrimitiveClass)(1.0)
 { lambda ; a:f32[]. let b:f32[1] = PrimitiveClass a in (b,) }
 ```
 
@@ -372,7 +372,7 @@ But jax doesn't have an abstract type that really describes "PrimitiveClass".  S
 
 
 ```python
-class AbstractPrimitiveClass(jax.core.AbstractValue):
+class AbstractPrimitiveClass(qpjax.core.AbstractValue):
 
     def __eq__(self, other):
         return isinstance(other, AbstractPrimitiveClass)
@@ -389,7 +389,7 @@ class PrimitiveMeta2(type):
 
     def __init__(cls, *args, **kwargs):
         # here we set up the primitive
-        primitive = jax.extend.core.Primitive(cls.__name__)
+        primitive = qpjax.extend.core.Primitive(cls.__name__)
 
         @primitive.def_impl
         def _(*inner_args, **inner_kwargs):
@@ -420,7 +420,7 @@ Now in our jaxpr, we can see thet `PrimitiveClass2` returns something of type `A
 
 
 ```python
->>> jax.make_jaxpr(PrimitiveClass2)(0.1)
+>>> qpjax.make_jaxpr(PrimitiveClass2)(0.1)
 { lambda ; a:f32[]. let b:AbstractPrimitiveClass() = PrimitiveClass2 a in (b,) }
 ```
 
@@ -451,12 +451,12 @@ def fun(x):
 ```
 
 Now suppose we want to turn this into a primitive. We could just promote it to a standard
-`jax.extend.core.Primitive` as
+`qpjax.extend.core.Primitive` as
 
 ```python
-import jax
+import qpjax
 
-fd_prim = jax.extend.core.Primitive("finite_diff")
+fd_prim = qpjax.extend.core.Primitive("finite_diff")
 fd_prim.multiple_results = True
 fd_prim.def_impl(finite_diff_impl)
 
@@ -488,7 +488,7 @@ for our finite difference method. We also create the usual method that binds the
 primitive to inputs.
 
 ```python
-class NonInterpPrimitive(jax.extend.core.Primitive):
+class NonInterpPrimitive(qpjax.extend.core.Primitive):
     """A subclass to JAX's Primitive that works like a Python function
     when evaluating JVPTracers."""
 
@@ -496,7 +496,7 @@ class NonInterpPrimitive(jax.extend.core.Primitive):
         """Bind the ``NonInterpPrimitive`` with a trace.
         If the trace is a ``JVPTrace``, it falls back to a standard Python function call.
         Otherwise, the bind call of JAX's standard Primitive is used."""
-        if isinstance(trace, jax.interpreters.ad.JVPTrace):
+        if isinstance(trace, qpjax.interpreters.ad.JVPTrace):
             return self.impl(*args, **params)
         return super().bind_with_trace(trace, args, params)
 
@@ -516,7 +516,7 @@ that just repeats the chain rule:
 >>> finite_diff_2(1., fun, delta=1e-6)
 (2.000000000002, 3.999999999892978, 23.000000001216492)
 >>> # Differentiation of finite_diff_2 (-> second-order derivative)
->>> jax.jacobian(finite_diff_2)(1., fun, delta=1e-6)
+>>> qpjax.jacobian(finite_diff_2)(1., fun, delta=1e-6)
 (Array(1.9375, dtype=float32, weak_type=True), Array(0., dtype=float32, weak_type=True), Array(498., dtype=float32, weak_type=True))
 ```
 

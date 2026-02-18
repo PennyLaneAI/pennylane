@@ -31,7 +31,7 @@ pytestmark = pytest.mark.all_interfaces
 
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 sci = pytest.importorskip("scipy")
 
 
@@ -893,8 +893,8 @@ class TestTensordotDifferentiability:
         assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
 
     def test_jax(self):
-        """Tests differentiability of tensordot with JAX."""
-        jac_fn = jax.jacobian
+        """Tests differentiability of tensordot with qpjax."""
+        jac_fn = qpjax.jacobian
 
         v0 = jnp.array(self.v0)
         v1 = jnp.array(self.v1)
@@ -1132,7 +1132,7 @@ def test_numpy_jax_jit():
     """Test that the to_numpy() method raises an exception
     if used inside the JAX JIT"""
 
-    @jax.jit
+    @qpjax.jit
     def cost(x):
         fn.to_numpy(x)
         return x
@@ -1213,13 +1213,13 @@ class TestRequiresGrad:
         t = jnp.array([1.0, 2.0, 3.0])
         s = jnp.array([-2.0, -3.0, -4.0])
 
-        jax.grad(cost_fn, argnums=0)(t, s)
+        qpjax.grad(cost_fn, argnums=0)(t, s)
         assert res == [True, False]
 
-        jax.grad(cost_fn, argnums=1)(t, s)
+        qpjax.grad(cost_fn, argnums=1)(t, s)
         assert res == [False, True]
 
-        jax.grad(cost_fn, argnums=[0, 1])(t, s)
+        qpjax.grad(cost_fn, argnums=[0, 1])(t, s)
         assert res == [True, True]
 
     @pytest.mark.slow
@@ -1236,13 +1236,13 @@ class TestRequiresGrad:
         t = jnp.array([1.0, 2.0, 3.0])
         s = jnp.array([-2.0, -3.0, -4.0])
 
-        jax.jit(jax.grad(cost_fn, argnums=0))(t, s)
+        qpjax.jit(qpjax.grad(cost_fn, argnums=0))(t, s)
         assert res == [True, True]
 
-        jax.jit(jax.grad(cost_fn, argnums=1))(t, s)
+        qpjax.jit(qpjax.grad(cost_fn, argnums=1))(t, s)
         assert res == [True, True]
 
-        jax.jit(jax.grad(cost_fn, argnums=[0, 1]))(t, s)
+        qpjax.jit(qpjax.grad(cost_fn, argnums=[0, 1]))(t, s)
         assert res == [True, True]
 
     def test_autograd(self):
@@ -1313,13 +1313,13 @@ class TestInBackprop:
         t = jnp.array([1.0, 2.0, 3.0])
         s = jnp.array([-2.0, -3.0, -4.0])
 
-        jax.grad(cost_fn, argnums=0)(t, s)
+        qpjax.grad(cost_fn, argnums=0)(t, s)
         assert res == [True, False]
 
-        jax.grad(cost_fn, argnums=1)(t, s)
+        qpjax.grad(cost_fn, argnums=1)(t, s)
         assert res == [False, True]
 
-        jax.grad(cost_fn, argnums=[0, 1])(t, s)
+        qpjax.grad(cost_fn, argnums=[0, 1])(t, s)
         assert res == [True, True]
 
     def test_autograd_backwards(self):
@@ -1786,14 +1786,14 @@ class TestScatterElementAdd:
             return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost([x, y])
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert fn.allclose(res, self.expected_val)
 
         def grab_cost_entry(weights):
             """Return a single entry of the cost"""
             return cost(weights)[self.index[0], self.index[1]]
 
-        grad = jax.grad(grab_cost_entry)([x, y])
+        grad = qpjax.grad(grab_cost_entry)([x, y])
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1807,10 +1807,10 @@ class TestScatterElementAdd:
             return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        jac = jax.jacobian(cost_multi, argnums=[0, 1])(x, y)
+        jac = qpjax.jacobian(cost_multi, argnums=[0, 1])(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -1887,7 +1887,7 @@ class TestScatterElementAddMultiValue:
             )
 
         res = cost([x, y])
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert fn.allclose(res, self.expected_val)
 
         def add_cost_entries(weights):
@@ -1898,7 +1898,7 @@ class TestScatterElementAddMultiValue:
                 + c[self.indices[0][1], self.indices[1][1]]
             )
 
-        grad = jax.grad(add_cost_entries)([x, y])
+        grad = qpjax.grad(add_cost_entries)([x, y])
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -2122,7 +2122,7 @@ class TestCovMatrix:
             """Grab an entry of the cov output."""
             return cov(weights)[0, 1]
 
-        grad_fn = jax.grad(grab_cov_entry)
+        grad_fn = qpjax.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
@@ -2182,7 +2182,7 @@ class TestBlockDiagDiffability:
         assert fn.allclose(res[1], exp[1])
 
     def test_jax(self):
-        """Tests for differentiating the block diagonal function with JAX."""
+        """Tests for differentiating the block diagonal function with qpjax."""
 
         def f(x, y):
             return fn.block_diag(
@@ -2193,7 +2193,7 @@ class TestBlockDiagDiffability:
             )
 
         x, y = 0.2, 1.5
-        res = jax.jacobian(f, argnums=[0, 1])(x, y)
+        res = qpjax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
         assert fn.allclose(exp[0], res[0])
         assert fn.allclose(exp[1], res[1])
@@ -2638,12 +2638,12 @@ class TestFft:
 
     @pytest.mark.jax
     def test_jax(self, name):
-        """Test that the functions are available in JAX."""
+        """Test that the functions are available in qpjax."""
         func = getattr(qml.math.fft, name)
-        arg = jax.numpy.array(self.arg[name], dtype=jax.numpy.complex64)
+        arg = qpjax.numpy.array(self.arg[name], dtype=qpjax.numpy.complex64)
         out = func(arg)
         assert qml.math.allclose(out, self.exp_fft[name])
-        jac = jax.jacobian(func, holomorphic=True)(arg)
+        jac = qpjax.jacobian(func, holomorphic=True)(arg)
         assert qml.math.allclose(jac, self.exp_jac_fft[name])
 
     @pytest.mark.torch
@@ -2661,9 +2661,9 @@ class TestFft:
 
 
 def test_jax_ndim():
-    """Test that qml.math.ndim dispatches to jax.numpy.ndim."""
-    with patch("jax.numpy.ndim") as mock_ndim:
-        _ = qml.math.ndim(jax.numpy.array(3))
+    """Test that qml.math.ndim dispatches to qpjax.numpy.ndim."""
+    with patch("qpjax.numpy.ndim") as mock_ndim:
+        _ = qml.math.ndim(qpjax.numpy.array(3))
 
     mock_ndim.assert_called_once_with(3)
 
@@ -2700,9 +2700,9 @@ class TestSetIndex:
     def test_set_index_with_val_tracer(self, array):
         """Test that for both jax and numpy arrays, if the val to set is a tracer,
         the set_index function succeeds and returns an updated jax array"""
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
+        from qpjax.interpreters.partial_eval import DynamicJaxprTracer
 
-        @jax.jit
+        @qpjax.jit
         def jitted_function(x):
             assert isinstance(x, DynamicJaxprTracer)
             return qml.math.set_index(array, (0, 0), x)
@@ -2720,9 +2720,9 @@ class TestSetIndex:
     def test_set_index_with_idx_tracer_2D_array(self, array):
         """Test that for both jax and numpy 2d arrays, if the idx to set is a tracer,
         the set_index function succeeds and returns an updated jax array"""
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
+        from qpjax.interpreters.partial_eval import DynamicJaxprTracer
 
-        @jax.jit
+        @qpjax.jit
         def jitted_function(y):
             assert isinstance(y, DynamicJaxprTracer)
             return qml.math.set_index(array, (1 + y, y), 7)
@@ -2739,9 +2739,9 @@ class TestSetIndex:
     def test_set_index_with_idx_tracer_1D_array(self, array):
         """Test that for both jax and numpy 1d arrays, if the idx to set is a tracer,
         the set_index function succeeds and returns an updated jax array"""
-        from jax.interpreters.partial_eval import DynamicJaxprTracer
+        from qpjax.interpreters.partial_eval import DynamicJaxprTracer
 
-        @jax.jit
+        @qpjax.jit
         def jitted_function(y):
             assert isinstance(y, DynamicJaxprTracer)
             return qml.math.set_index(array, y, 7)

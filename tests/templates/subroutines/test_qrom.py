@@ -24,7 +24,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 has_jax = True
 try:
-    from jax import numpy as jnp
+    from qpjax import numpy as jnp
 except ImportError:
     has_jax = False
 
@@ -358,13 +358,13 @@ class TestQROM:
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=4)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit():
             qml.QROM(
@@ -375,7 +375,7 @@ class TestQROM:
             )
             return qml.probs(wires=3)
 
-        assert jax.numpy.allclose(circuit(), jax.numpy.array([1.0, 0.0]))
+        assert qpjax.numpy.allclose(circuit(), qpjax.numpy.array([1.0, 0.0]))
 
 
 @pytest.mark.parametrize(

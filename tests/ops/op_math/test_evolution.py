@@ -156,7 +156,7 @@ class TestEvolution:
 
     @pytest.mark.jax
     def test_parameter_shift_gradient_matches_jax(self):
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
         base = qml.PauliX(0)
@@ -173,7 +173,7 @@ class TestEvolution:
             return qml.expval(qml.PauliZ(0))
 
         grad_param_shift = qml.grad(circ_param_shift)(x)
-        grad = jax.grad(circ)(x)
+        grad = qpjax.grad(circ)(x)
 
         assert qml.math.allclose(grad, grad_param_shift)
 

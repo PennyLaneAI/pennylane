@@ -830,21 +830,21 @@ class TestDifferentiability:
     def test_jax(self, grouping_strategy, use_jit):
         """Tests that the output of ``split_non_commuting`` is differentiable with jax"""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
         circuit = circuit_to_test(dev, grouping_strategy=grouping_strategy)
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         def cost(theta, phi):
             res = circuit(theta, phi)
             return qml.math.concatenate([res[0], qml.math.stack(res[1:])], axis=0)
 
         params = jnp.array(jnp.pi / 4), jnp.array(3 * jnp.pi / 4)
-        grad1, grad2 = jax.jacobian(cost, argnums=[0, 1])(*params)
+        grad1, grad2 = qpjax.jacobian(cost, argnums=[0, 1])(*params)
 
         expected_grad_1 = expected_grad_param_0
         expected_grad_2 = expected_grad_param_1
@@ -858,17 +858,17 @@ class TestDifferentiability:
     def test_trainable_hamiltonian_jax(self, grouping_strategy, use_jit):
         """Tests that measurements of trainable Hamiltonians are differentiable with jax"""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
         circuit = circuit_with_trainable_H(dev, grouping_strategy=grouping_strategy)
 
         if use_jit:
-            circuit = jax.jit(circuit)
+            circuit = qpjax.jit(circuit)
 
         params = jnp.array(np.pi / 4), jnp.array(3 * np.pi / 4)
-        actual = jax.jacobian(circuit, argnums=[0, 1])(*params)
+        actual = qpjax.jacobian(circuit, argnums=[0, 1])(*params)
 
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)])
 

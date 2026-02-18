@@ -43,12 +43,12 @@ def _create_parametrized_mid_measure_primitive():
     :func:`~pennylane.measure_arbitrary_basis`.
 
     Returns:
-        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        qpjax.core.Primitive: A new jax primitive corresponding to a mid-circuit
         measurement.
 
     """
     # pylint: disable=import-outside-toplevel
-    import jax
+    import qpjax
 
     from pennylane.capture.custom_primitives import QmlPrimitive
 
@@ -67,7 +67,7 @@ def _create_parametrized_mid_measure_primitive():
 
     @measure_in_basis_p.def_abstract_eval
     def _abstract_eval(*_, **__):
-        return jax.core.ShapedArray((), jax.numpy.bool)
+        return qpjax.core.ShapedArray((), qpjax.numpy.bool)
 
     return measure_in_basis_p
 

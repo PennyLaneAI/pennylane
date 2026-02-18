@@ -62,7 +62,7 @@ def _create_transform_primitive():
 def _create_plxpr_fallback_transform(tape_transform):
     # pylint: disable=import-outside-toplevel
     try:
-        import jax
+        import qpjax
 
         from pennylane.tape import plxpr_to_tape
     except ImportError:
@@ -85,18 +85,18 @@ def _create_plxpr_fallback_transform(tape_transform):
                 )
 
             for op in tapes[0].operations:
-                data, struct = jax.tree_util.tree_flatten(op)
-                jax.tree_util.tree_unflatten(struct, data)
+                data, struct = qpjax.tree_util.tree_flatten(op)
+                qpjax.tree_util.tree_unflatten(struct, data)
 
             out = []
             for mp in tapes[0].measurements:
-                data, struct = jax.tree_util.tree_flatten(mp)
-                out.append(jax.tree_util.tree_unflatten(struct, data))
+                data, struct = qpjax.tree_util.tree_flatten(mp)
+                out.append(qpjax.tree_util.tree_unflatten(struct, data))
 
             return tuple(out)
 
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(args)
-        return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
+        return qpjax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
 
     return plxpr_fallback_transform
 
@@ -444,16 +444,16 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         ``QuantumScript``\ s, users must provide the ``plxpr_transform`` argument. If this argument
         is not provided, executing transformed functions is not guaranteed to work. More details
         about this are provided below. The ``plxpr_transform`` argument should be a function that
-        applies the respective transform to ``jax.extend.core.Jaxpr`` and returns a transformed
-        ``jax.extend.core.ClosedJaxpr``. ``plxpr_transform`` can assume that no transform primitives
+        applies the respective transform to ``qpjax.extend.core.Jaxpr`` and returns a transformed
+        ``qpjax.extend.core.ClosedJaxpr``. ``plxpr_transform`` can assume that no transform primitives
         are present in the input plxpr, and its implementation does not need to account for these
         primitives. The exact expected signature of ``plxpr_transform`` is shown in the example below:
 
         .. code-block:: python
 
             def dummy_plxpr_transform(
-                jaxpr: jax.extend.core.Jaxpr, consts: list, targs: list, tkwargs: dict, *args
-            ) -> jax.extend.core.ClosedJaxpr:
+                jaxpr: qpjax.extend.core.Jaxpr, consts: list, targs: list, tkwargs: dict, *args
+            ) -> qpjax.extend.core.ClosedJaxpr:
                 ...
 
         Once the ``plxpr_transform`` argument is provided, the transform can be easily used with program
@@ -471,7 +471,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 qml.adjoint(qml.S(1))
                 return qml.expval(qml.Z(1))
 
-        >>> jax.make_jaxpr(circuit)()
+        >>> qpjax.make_jaxpr(circuit)()
         { lambda ; . let
             a:AbstractMeasurement(n_wires=None) = transform[
             args_slice=(0, 0, None)
@@ -525,7 +525,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         as an input, and returns a new function that has been transformed:
 
         >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
-        >>> jax.make_jaxpr(transformed_circuit)()
+        >>> qpjax.make_jaxpr(transformed_circuit)()
         { lambda ; . let
             a:AbstractOperator() = PauliZ[n_wires=1] 1:i...[]
             b:AbstractMeasurement(n_wires=None) = expval_obs a
@@ -1141,11 +1141,11 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
 def _capture_apply(obj, transform, *targs, **tkwargs):
     @autograph.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
-        jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
-        flat_args = jax.tree_util.tree_leaves(args)
+        jaxpr = qpjax.make_jaxpr(flat_qfunc)(*args, **kwargs)
+        flat_args = qpjax.tree_util.tree_leaves(args)
 
         n_args = len(flat_args)
         n_consts = len(jaxpr.consts)
@@ -1166,7 +1166,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         )
 
         assert flat_qfunc.out_tree is not None
-        return jax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
+        return qpjax.tree_util.tree_unflatten(flat_qfunc.out_tree, results)
 
     return qfunc_transformed
 

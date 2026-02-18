@@ -295,7 +295,7 @@ class TestSnapshot:
     def test_capture_measurement(self, measurement):
         """Test that a snapshot can be captured into plxpr."""
 
-        import jax
+        import qpjax
 
         def f():
             if measurement is None:
@@ -303,7 +303,7 @@ class TestSnapshot:
             else:
                 qml.Snapshot(measurement=qml.state())
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
 
         if measurement is None:
             assert jaxpr.eqns[0].primitive == qml.Snapshot._primitive

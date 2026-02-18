@@ -624,33 +624,33 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, use_jit):
         """Test that backpropagation derivatives work with jax with
         Hamiltonians using new and old math."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        x = jax.numpy.array(self.x, dtype=jax.numpy.float64)
+        x = qpjax.numpy.array(self.x, dtype=qpjax.numpy.float64)
         coeffs = (5.2, 6.7)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
+        f = qpjax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
 
         out = f(x, coeffs)
         expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        gradient = jax.grad(f)(x, coeffs)
-        expected_gradient = jax.grad(self.expected)(x, coeffs)
+        gradient = qpjax.grad(f)(x, coeffs)
+        expected_gradient = qpjax.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(expected_gradient, gradient)
 
     @pytest.mark.jax
     def test_jax_backprop_coeffs(self):
         """Test that backpropagation derivatives work with jax with
         the coefficients of Hamiltonians using new and old math."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
-        coeffs = jax.numpy.array((5.2, 6.7), dtype=jax.numpy.float64)
+        qpjax.config.update("jax_enable_x64", True)
+        coeffs = qpjax.numpy.array((5.2, 6.7), dtype=qpjax.numpy.float64)
 
-        gradient = jax.grad(self.f, argnums=1)(self.x, coeffs)
-        expected_gradient = jax.grad(self.expected, argnums=1)(self.x, coeffs)
+        gradient = qpjax.grad(self.f, argnums=1)(self.x, coeffs)
+        expected_gradient = qpjax.grad(self.expected, argnums=1)(self.x, coeffs)
         assert len(gradient) == 2
         assert qml.math.allclose(expected_gradient, gradient)
 

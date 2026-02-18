@@ -206,7 +206,7 @@ class TestMatrix:
     @pytest.mark.jax
     def test_batching_jax(self):
         """Test that Exp matrix has batching support with the jax interface."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         x = jnp.array([-1, -2, -3])
         y = jnp.array([1, 2, 3])
@@ -335,10 +335,10 @@ class TestMatrix:
 
     @pytest.mark.jax
     def test_jax_matrix_rx(self):
-        """Test the matrix with jax."""
-        import jax
+        """Test the matrix with qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.4 + 0j)
+        phi = qpjax.numpy.array(0.4 + 0j)
 
         base = qml.PauliX(0)
         op = Exp(base, -0.5j * phi)
@@ -352,8 +352,8 @@ class TestMatrix:
         def rx_mat(x):
             return qml.RX(x, wires=0).matrix()
 
-        exp_mat_grad = jax.jacobian(exp_mat, holomorphic=True)(phi)
-        rx_mat_grad = jax.jacobian(rx_mat, holomorphic=True)(phi)
+        exp_mat_grad = qpjax.jacobian(exp_mat, holomorphic=True)(phi)
+        rx_mat_grad = qpjax.jacobian(rx_mat, holomorphic=True)(phi)
 
         assert qml.math.allclose(exp_mat_grad, rx_mat_grad)
 
@@ -667,8 +667,8 @@ class TestIntegration:
     def test_jax_qnode(self):
         """Test the execution and gradient of a jax qnode."""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         phi = jnp.array(1.234)
 
@@ -679,7 +679,7 @@ class TestIntegration:
 
         res = circ(phi)
         assert qml.math.allclose(res, jnp.cos(phi))
-        grad = jax.grad(circ)(phi)
+        grad = qpjax.grad(circ)(phi)
         assert qml.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.catalyst
@@ -707,14 +707,14 @@ class TestIntegration:
     )
     @pytest.mark.jax
     def test_jax_jit_qnode(self):
-        """Tests with jax.jit"""
+        """Tests with qpjax.jit"""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         phi = jnp.array(0.345)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(qml.device("lightning.qubit", wires=1))
         def func(params):
             qml.exp(qml.X(0), -0.5j * params)
@@ -722,7 +722,7 @@ class TestIntegration:
 
         res = func(phi)
         assert qml.math.allclose(res, jnp.cos(phi))
-        grad = jax.grad(func)(phi)
+        grad = qpjax.grad(func)(phi)
         assert qml.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.tf
@@ -849,10 +849,10 @@ class TestIntegration:
 
     @pytest.mark.jax
     def test_jax_measurement(self):
-        """Test Exp in a measurement with gradient and jax."""
+        """Test Exp in a measurement with gradient and qpjax."""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         x = jnp.array(2.0)
 
@@ -865,7 +865,7 @@ class TestIntegration:
         expected = 0.5 * (jnp.exp(x) + jnp.exp(-x))
         assert qml.math.allclose(res, expected)
 
-        grad = jax.grad(circuit)(x)
+        grad = qpjax.grad(circuit)(x)
         expected_grad = 0.5 * (jnp.exp(x) - jnp.exp(-x))
         assert qml.math.allclose(grad, expected_grad)
 

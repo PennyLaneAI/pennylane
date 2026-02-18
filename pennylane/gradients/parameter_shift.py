@@ -949,7 +949,7 @@ def param_shift(
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit")
         @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
@@ -959,8 +959,8 @@ def param_shift(
             qml.RX(params[2], wires=0)
             return qml.expval(qml.Z(0)), qml.var(qml.Z(0))
 
-    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
-    >>> jax.jacobian(circuit)(params)
+    >>> params = qpjax.numpy.array([0.1, 0.2, 0.3])
+    >>> qpjax.jacobian(circuit)(params)
     (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64),
      Array([0.69916862, 0.34072424, 0.69202359], dtype=float64))
 

@@ -224,7 +224,7 @@ class TestInterfaces:
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         features = jnp.array([0, 1, 0])
 
@@ -244,15 +244,15 @@ class TestInterfaces:
     def test_jax_jit(self, tol):
         """Tests compilation with JAX JIT."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         features = jnp.array([0, 1, 0])
 
         dev = qml.device("default.qubit", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = jax.jit(qml.QNode(circuit_template, dev))
+        circuit2 = qpjax.jit(qml.QNode(circuit_template, dev))
 
         res = circuit(features)
         res2 = circuit2(features)

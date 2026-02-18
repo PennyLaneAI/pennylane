@@ -25,11 +25,11 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 try:
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
     import optax
 
-    jax.config.update("jax_enable_x64", True)
+    qpjax.config.update("jax_enable_x64", True)
     has_jax = True
 except ImportError:
     has_jax = False
@@ -123,8 +123,8 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         import pennylane as qml
         import numpy as np
-        import jax.numpy as jnp
-        import jax
+        import qpjax.numpy as jnp
+        import qpjax
 
         from pennylane import X, Z
         from pennylane.liealg import (
@@ -253,7 +253,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
         # Implement Ad_(K_1 .. K_|k|) (vec_H), so that we get K_1 .. K_|k| H K^†_|k| .. K^†_1
 
         for i in range(dim_k - 1, -1, -1):
-            vec_H = jax.scipy.linalg.expm(theta[i] * adj[:, i]) @ vec_H
+            vec_H = qpjax.scipy.linalg.expm(theta[i] * adj[:, i]) @ vec_H
 
         return (gammavec @ vec_H).real
 
@@ -264,7 +264,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     theta0 = opt_kwargs.pop("theta0", None)
     if theta0 is None:
-        theta0 = jax.random.normal(jax.random.PRNGKey(0), (dim_k,))
+        theta0 = qpjax.random.normal(qpjax.random.PRNGKey(0), (dim_k,))
 
     opt_kwargs["verbose"] = verbose
 
@@ -286,7 +286,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     # Implement Ad_(K_1 .. K_|k|) (vec_H) like in the loss, with optimized parameters now.
     for i in range(dim_k - 1, -1, -1):
-        vec_H = jax.scipy.linalg.expm(theta_opt[i] * adj_cropped[:, i]) @ vec_H
+        vec_H = qpjax.scipy.linalg.expm(theta_opt[i] * adj_cropped[:, i]) @ vec_H
 
     return vec_H, theta_opt
 
@@ -316,7 +316,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     assert len(theta_opt) == len(k)
     for th, op in zip(theta_opt, k):
         opm = qml.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
-        Km @= jax.scipy.linalg.expm(1j * th * opm)
+        Km @= qpjax.scipy.linalg.expm(1j * th * opm)
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
 
@@ -370,10 +370,10 @@ def run_opt(
     .. code-block:: python
 
         from pennylane.labs.dla import run_opt
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
         import optax
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         def cost(x):
             return x**2
@@ -398,14 +398,14 @@ def run_opt(
     if optimizer is None:
         optimizer = optax.adam(learning_rate=0.1)
 
-    value_and_grad = jax.jit(jax.value_and_grad(cost))
-    compiled_cost = jax.jit(cost)
+    value_and_grad = qpjax.jit(qpjax.value_and_grad(cost))
+    compiled_cost = qpjax.jit(cost)
 
     opt_state = optimizer.init(theta)
 
     energy, gradients, thetas = [], [], []
 
-    @jax.jit
+    @qpjax.jit
     def step(opt_state, theta):
         val, grad_circuit = value_and_grad(theta)
         updates, opt_state = optimizer.update(

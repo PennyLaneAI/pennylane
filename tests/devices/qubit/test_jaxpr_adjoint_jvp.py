@@ -19,7 +19,7 @@ import pytest
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 # pylint: disable=wrong-import-position
 from pennylane.devices.qubit.jaxpr_adjoint import execute_and_jvp
@@ -37,7 +37,7 @@ class TestErrors:
             qml.adjoint(qml.RX(x, 0))
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = qpjax.make_jaxpr(f)(0.5)
 
         with pytest.raises(NotImplementedError):
             execute_and_jvp(jaxpr.jaxpr, (0.5,), (1.0,), num_wires=1)
@@ -49,7 +49,7 @@ class TestErrors:
             qml.RX(x, 0)
             return qml.probs(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
+        jaxpr = qpjax.make_jaxpr(f)(0.5).jaxpr
 
         with pytest.raises(NotImplementedError, match="expectations of observables"):
             execute_and_jvp(jaxpr, (0.5,), (1.0,), num_wires=1)
@@ -65,7 +65,7 @@ class TestErrors:
             g()
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
+        jaxpr = qpjax.make_jaxpr(f)(0.5).jaxpr
 
         with pytest.raises(NotImplementedError, match="does not have a jvp rule."):
             execute_and_jvp(jaxpr, (0.5,), (1.0,), num_wires=1)
@@ -77,7 +77,7 @@ class TestErrors:
             qml.Rot(x, y, z, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5, 0.6, 0.7).jaxpr
+        jaxpr = qpjax.make_jaxpr(f)(0.5, 0.6, 0.7).jaxpr
 
         with pytest.raises(NotImplementedError, match="only differentiable parameters in the 0"):
             execute_and_jvp(jaxpr, (1.0, 2.0, 3.0), (1.0, 1.0, 1.0), num_wires=1)
@@ -89,7 +89,7 @@ class TestErrors:
             qml.Rot(x, 1.2, 2.3, wires=0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
+        jaxpr = qpjax.make_jaxpr(f)(0.5).jaxpr
 
         with pytest.raises(ValueError):
             execute_and_jvp(jaxpr, (0.5,), (1.0,), num_wires=1)
@@ -111,7 +111,7 @@ class TestErrors:
             MyOp(wires=0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)().jaxpr
+        jaxpr = qpjax.make_jaxpr(f)().jaxpr
         with pytest.raises(ValueError):
             execute_and_jvp(jaxpr, (), (), num_wires=1)
 
@@ -129,12 +129,12 @@ class TestCorrectResults:
             return qml.expval(qml.Z(0))
 
         args = (0.5,)
-        tangents = (jax.interpreters.ad.Zero(jax.core.ShapedArray((), float)),)
+        tangents = (qpjax.interpreters.ad.Zero(qpjax.core.ShapedArray((), float)),)
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = qpjax.make_jaxpr(f)(0.5)
         [results], [dresults] = execute_and_jvp(jaxpr.jaxpr, args, tangents, num_wires=1)
         assert qml.math.allclose(results, jnp.cos(0.5))
-        assert isinstance(dresults, jax.interpreters.ad.Zero)
+        assert isinstance(dresults, qpjax.interpreters.ad.Zero)
 
     @pytest.mark.parametrize("use_jit", (False, True))
     def test_basic_circuit(self, use_jit):
@@ -144,14 +144,14 @@ class TestCorrectResults:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = qpjax.make_jaxpr(f)(0.5)
 
         args = (0.82,)
         tangents = (2.0,)
 
         executor = partial(execute_and_jvp, jaxpr.jaxpr, num_wires=1)
         if use_jit:
-            executor = jax.jit(executor)
+            executor = qpjax.jit(executor)
 
         results, dresults = executor(args, tangents)
 
@@ -174,7 +174,7 @@ class TestCorrectResults:
         dx = jnp.array(2.0)
         dy = jnp.array(3.0)
 
-        jaxpr = jax.make_jaxpr(f)(x, y).jaxpr
+        jaxpr = qpjax.make_jaxpr(f)(x, y).jaxpr
 
         [res], [dres] = execute_and_jvp(jaxpr, (x, y), (dx, dy), num_wires=2)
 
@@ -191,7 +191,7 @@ class TestCorrectResults:
             qml.RX(x, 0)
             return qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5).jaxpr
+        jaxpr = qpjax.make_jaxpr(f)(0.5).jaxpr
 
         x = -0.5
         res, dres = execute_and_jvp(jaxpr, (x,), (2.0,), num_wires=1)
@@ -215,7 +215,7 @@ class TestCorrectResults:
 
         x = jnp.array([1.5, 2.5])
         dx = jnp.array([2.0, 3.0])
-        jaxpr = jax.make_jaxpr(f)(x).jaxpr
+        jaxpr = qpjax.make_jaxpr(f)(x).jaxpr
 
         [res], [dres] = execute_and_jvp(jaxpr, (x,), (dx,), num_wires=2)
 
@@ -235,7 +235,7 @@ class TestCorrectResults:
             qml.RX(x[0], 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)().jaxpr
+        jaxpr = qpjax.make_jaxpr(f)().jaxpr
 
         const = jnp.array([1.2])
         dconst = jnp.array([0.25])

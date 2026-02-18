@@ -162,7 +162,7 @@ class TestDecimals:
     @pytest.mark.jax
     def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
         out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))

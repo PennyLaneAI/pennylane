@@ -18,8 +18,8 @@ from collections.abc import Callable
 
 has_jax = True
 try:
-    import jax
-    from jax._src.interpreters.partial_eval import TracingEqn
+    import qpjax
+    from qpjax._src.interpreters.partial_eval import TracingEqn
 
 
 except ImportError as e:  # pragma: no cover
@@ -44,7 +44,7 @@ def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
 
     """
     dtype = getattr(x, "dtype", "float")
-    if getattr(x, "shape", None) == () and jax.numpy.issubdtype(dtype, jax.numpy.integer):
+    if getattr(x, "shape", None) == () and qpjax.numpy.issubdtype(dtype, qpjax.numpy.integer):
         previous_ints.append(x)
         return {}
 
@@ -92,13 +92,13 @@ def determine_abstracted_axes(args):
 
     .. code-block:: python
 
-        jax.config.update("jax_dynamic_shapes", True)
+        qpjax.config.update("jax_dynamic_shapes", True)
 
         def f(n):
-            x = jax.numpy.ones((n,))
+            x = qpjax.numpy.ones((n,))
             abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes((x,))
-            jaxpr = jax.make_jaxpr(jax.numpy.sum, abstracted_axes=abstracted_axes)(x)
-            return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
+            jaxpr = qpjax.make_jaxpr(qpjax.numpy.sum, abstracted_axes=abstracted_axes)(x)
+            return qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *abstract_shapes, x)
 
 
     For cases where the shape of an argument matches a previous argument like:
@@ -106,12 +106,12 @@ def determine_abstracted_axes(args):
     >>> def f(i, x):
     ...    return x
     >>> def workflow(i):
-    ...     args = (i, jax.numpy.ones((i, )))
+    ...     args = (i, qpjax.numpy.ones((i, )))
     ...     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
     ...     print("abstracted_axes: ", abstracted_axes)
     ...     print("abstract_shapes: ", abstract_shapes)
-    ...     print("jaxpr: ", jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args))
-    >>> _ = jax.make_jaxpr(workflow)(2)
+    ...     print("jaxpr: ", qpjax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args))
+    >>> _ = qpjax.make_jaxpr(workflow)(2)
     abstracted_axes:  ({}, {0: '0_arg'})
     abstract_shapes:  []
     jaxpr:  { lambda ; a:i32[] b:f32[a]. let  in (b,) }
@@ -124,10 +124,10 @@ def determine_abstracted_axes(args):
 
     """
     assert has_jax
-    if not jax.config.jax_dynamic_shapes:
+    if not qpjax.config.jax_dynamic_shapes:
         return None, ()
 
-    args, structure = jax.tree_util.tree_flatten(args)
+    args, structure = qpjax.tree_util.tree_flatten(args)
 
     abstract_shapes = []
     previous_ints = []
@@ -138,20 +138,20 @@ def determine_abstracted_axes(args):
     if not any(abstracted_axes):
         return None, ()
 
-    abstracted_axes = jax.tree_util.tree_unflatten(structure, abstracted_axes)  # pragma: no cover
+    abstracted_axes = qpjax.tree_util.tree_unflatten(structure, abstracted_axes)  # pragma: no cover
     return abstracted_axes, abstract_shapes  # pragma: no cover
 
 
 def register_custom_staging_rule(
-    primitive, get_outvars_from_params: Callable[[dict], list["jax.extend.core.Var"]]
+    primitive, get_outvars_from_params: Callable[[dict], list["qpjax.extend.core.Var"]]
 ) -> None:
     """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
     ``get_outvars_from_params``.
 
     Args:
-        primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
-        get_outvars_from_params (Callable[[dict], list[jax.extend.core.Var]]): A function that takes in the equation's ``params``
-            and returns ``jax.extend.core.Var`` we need to mimic for the primitives return.
+        primitive (qpjax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
+        get_outvars_from_params (Callable[[dict], list[qpjax.extend.core.Var]]): A function that takes in the equation's ``params``
+            and returns ``qpjax.extend.core.Var`` we need to mimic for the primitives return.
 
     For example, the ``cond_prim`` will request its custom staging rule like:
 
@@ -176,8 +176,8 @@ def register_custom_staging_rule(
 
     def _tracer_and_outvar(
         jaxpr_trace,
-        outvar: jax.extend.core.Var,
-        env: dict[jax.extend.core.Var, jax.extend.core.Var],
+        outvar: qpjax.extend.core.Var,
+        env: dict[qpjax.extend.core.Var, qpjax.extend.core.Var],
     ):
         """
         Create a new tracer and return var from the true branch outvar.
@@ -186,22 +186,22 @@ def register_custom_staging_rule(
         if not hasattr(outvar.aval, "shape"):
             # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
             new_var = jaxpr_trace.frame.newvar(outvar.aval)
-            out_tracer = jax.interpreters.partial_eval.DynamicJaxprTracer(
+            out_tracer = qpjax.interpreters.partial_eval.DynamicJaxprTracer(
                 jaxpr_trace, outvar.aval, new_var
             )
             return out_tracer, new_var
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
         if all(isinstance(s, int) for s in outvar.aval.shape):
-            new_aval = jax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
+            new_aval = qpjax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
         else:  # pragma: no cover
-            new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+            new_aval = qpjax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
         # JAX 0.7.0: Create variable first, then pass to DynamicJaxprTracer
         new_var = jaxpr_trace.frame.newvar(new_aval)
-        out_tracer = jax.interpreters.partial_eval.DynamicJaxprTracer(
+        out_tracer = qpjax.interpreters.partial_eval.DynamicJaxprTracer(
             jaxpr_trace, new_aval, new_var
         )
 
-        if not isinstance(outvar, jax.extend.core.Literal):
+        if not isinstance(outvar, qpjax.extend.core.Literal):
             env[outvar] = new_var
         return out_tracer, new_var
 
@@ -209,14 +209,14 @@ def register_custom_staging_rule(
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """
-        if not jax.config.jax_dynamic_shapes:
+        if not qpjax.config.jax_dynamic_shapes:
             # fallback to normal behavior
             return jaxpr_trace.default_process_primitive(
                 primitive, tracers, params, source_info=source_info
             )
         outvars = get_outvars_from_params(params)
 
-        env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var
+        env: dict[qpjax.extend.core.Var, qpjax.extend.core.Var] = {}  # branch var to new equation var
         if outvars:
             out_tracers, returned_vars = tuple(
                 zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars), strict=True)
@@ -226,12 +226,12 @@ def register_custom_staging_rule(
 
         # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
         invars = [t.val for t in tracers]
-        eqn = jax.core.new_jaxpr_eqn(
+        eqn = qpjax.core.new_jaxpr_eqn(
             invars,
             returned_vars,
             primitive,
             params,
-            jax.core.no_effects,
+            qpjax.core.no_effects,
             source_info,
         )
         tracing_eqn = TracingEqn(
@@ -246,4 +246,4 @@ def register_custom_staging_rule(
         jaxpr_trace.frame.add_eqn(tracing_eqn)
         return out_tracers
 
-    jax.interpreters.partial_eval.custom_staging_rules[primitive] = custom_staging_rule
+    qpjax.interpreters.partial_eval.custom_staging_rules[primitive] = custom_staging_rule

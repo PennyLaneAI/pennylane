@@ -517,10 +517,10 @@ class TestJax:
     def test_integration_jax(self):
         """Test that the spectra of a circuit is calculated correctly
         in the jax interface."""
-        import jax
+        import qpjax
 
-        x = jax.numpy.array([1.0, 2.0, 3.0])
-        w = jax.numpy.array([[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]])
+        x = qpjax.numpy.array([1.0, 2.0, 3.0])
+        w = qpjax.numpy.array([[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]])
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit9, dev)
@@ -551,8 +551,8 @@ class TestJax:
 
         """
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         n_wires = 1
         dev = qml.device("default.qubit", wires=n_wires)
@@ -563,7 +563,7 @@ class TestJax:
 
         initial_state = unitary_group.rvs(2**n_wires, random_state=rng)[0]
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.StatePrep(initial_state, wires=dev.wires)

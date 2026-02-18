@@ -321,7 +321,7 @@ class TestJaxIntegration:
         """Test that setting a PRNGKey gives the expected behaviour. With separate calls
         to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
         # pylint: disable=import-outside-toplevel
-        from jax.random import PRNGKey
+        from qpjax.random import PRNGKey
 
         dev = qml.device("default.qubit", seed=PRNGKey(seed))
         params = [np.pi / 4, np.pi / 3]
@@ -361,11 +361,11 @@ class TestJaxIntegration:
     def test_jax_jit(self, diff_method, postselect, reset, seed):
         """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
         conditional gate. A single measurement of a common observable is performed at the end."""
-        import jax
+        import qpjax
 
         shots = 10
 
-        dev = qml.device("default.qubit", seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", seed=qpjax.random.PRNGKey(seed))
         params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
         obs = qml.PauliY(0)
 
@@ -392,10 +392,10 @@ class TestJaxIntegration:
         func1 = func
         results1 = func1(*params)
 
-        jaxpr = str(jax.make_jaxpr(func)(*params))
+        jaxpr = str(qpjax.make_jaxpr(func)(*params))
         assert "pure_callback" not in jaxpr
 
-        func2 = jax.jit(func)
+        func2 = qpjax.jit(func)
         results2 = func2(*params)
 
         measures = [

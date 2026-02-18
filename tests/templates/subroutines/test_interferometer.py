@@ -312,12 +312,12 @@ class TestInterferometer:
     @pytest.mark.jax
     @pytest.mark.xfail(reason="JIT not supported.")
     def test_jit(self):
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.gaussian", wires=4)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit(*params):
             qml.Interferometer(*params, wires=range(4))

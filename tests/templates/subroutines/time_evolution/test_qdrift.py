@@ -306,7 +306,7 @@ class TestIntegration:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax"""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         time = jnp.array(0.5)
         dev = qml.device("reference.qubit", wires=[0, 1])
@@ -336,13 +336,13 @@ class TestIntegration:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jaxjit(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax jit"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         time = jnp.array(0.5)
         dev = qml.device("reference.qubit", wires=[0, 1])
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circ(time):
             hamiltonian = qml.sum(*(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)))
@@ -434,8 +434,8 @@ class TestIntegration:
     @pytest.mark.jax
     def test_error_gradient_workflow_jax(self):
         """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         time = jnp.array(1.5)
         coeffs = jnp.array([1.23, -0.45])
@@ -451,7 +451,7 @@ class TestIntegration:
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(QuantumFunctionError, match=msg):
-            jax.grad(circ, argnums=[1])(time, coeffs)
+            qpjax.grad(circ, argnums=[1])(time, coeffs)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("n", (1, 5, 10))
@@ -562,8 +562,8 @@ class TestIntegration:
     @pytest.mark.parametrize("n", (1, 5, 10))
     def test_jax_gradient(self, n, seed):
         """Test that the gradient is computed correctly using jax"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         time = jnp.array(1.5)
         coeffs = jnp.array([1.23, -0.45])
@@ -586,8 +586,8 @@ class TestIntegration:
 
             return qml.expval(qml.Hadamard(0))
 
-        measured_grad = jax.grad(circ, argnums=[0])(time, coeffs)
-        reference_grad = jax.grad(reference_circ, argnums=[0])(time, coeffs)
+        measured_grad = qpjax.grad(circ, argnums=[0])(time, coeffs)
+        reference_grad = qpjax.grad(reference_circ, argnums=[0])(time, coeffs)
         assert allclose(measured_grad, reference_grad)
 
 

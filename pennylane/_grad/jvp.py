@@ -24,13 +24,13 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = find_spec("jax") is not None
+has_jax = find_spec("qpjax") is not None
 
 
 def _get_shape(x):
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
-    return getattr(x, "shape", jax.numpy.shape(x))
+    return getattr(x, "shape", qpjax.numpy.shape(x))
 
 
 # pylint: disable=unused-argument
@@ -39,7 +39,7 @@ def _get_jvp_prim():
     if not has_jax:  # pragma: no cover
         return None
 
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     jvp_prim = capture.QmlPrimitive("jvp")
     jvp_prim.multiple_results = True
@@ -55,9 +55,9 @@ def _get_jvp_prim():
                 dparams.insert(i, 0 * p)
 
         def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
+            return qpjax.core.eval_jaxpr(jaxpr, [], *inner_args)
 
-        results, dresults = jax.jvp(func, params, dparams)
+        results, dresults = qpjax.jvp(func, params, dparams)
         return (*results, *dresults)
 
     @jvp_prim.def_abstract_eval
@@ -68,7 +68,7 @@ def _get_jvp_prim():
 
 
 def _validate_tangents(params, dparams, argnums):
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
+    from qpjax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     if len(dparams) != len(argnums):
         raise TypeError(
@@ -98,8 +98,8 @@ def _validate_tangents(params, dparams, argnums):
 
 # pylint: disable=too-many-arguments
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
+    from qpjax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     if not isinstance(params, Sequence):
         raise ValueError(f"params must be a Sequence in qml.jvp. Got type {type(params)}.")
@@ -114,7 +114,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
     _validate_tangents(flat_args, flat_dargs, flat_argnums)
 
     flat_fn = capture.FlatFn(func)
-    jaxpr = jax.make_jaxpr(flat_fn)(*params)
+    jaxpr = qpjax.make_jaxpr(flat_fn)(*params)
     j = jaxpr.jaxpr
     no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
     shifted_argnums = tuple(i + len(jaxpr.consts) for i in flat_argnums)

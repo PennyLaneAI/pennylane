@@ -35,7 +35,7 @@ pytestmark = pytest.mark.all_interfaces
 torch = pytest.importorskip("torch")
 F = pytest.importorskip("torch.autograd.functional")
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 interfaces = [None, "autograd", "jax", "torch"]
 diff_interfaces = ["autograd", "jax", "torch"]
@@ -216,8 +216,8 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
         return qml.jacobian(cost_fn)(x)
     if interface == "jax":
         if return_type in grad_return_cases:
-            return jax.grad(cost_fn)(x)
-        return jax.jacrev(cost_fn, holomorphic=complex)(x)
+            return qpjax.grad(cost_fn)(x)
+        return qpjax.jacrev(cost_fn, holomorphic=complex)(x)
     if interface == "torch":
         if return_type in grad_return_cases:
             res = cost_fn(x)

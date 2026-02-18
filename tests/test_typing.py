@@ -40,9 +40,9 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_isinstance_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
+        import qpjax
 
-        tensor = jax.numpy.array(1)
+        tensor = qpjax.numpy.array(1)
         assert isinstance(tensor, TensorLike)
 
     @pytest.mark.torch
@@ -84,9 +84,9 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_subclass_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
+        import qpjax
 
-        assert issubclass(jax.numpy.ndarray, TensorLike)
+        assert issubclass(qpjax.numpy.ndarray, TensorLike)
 
     @pytest.mark.torch
     def test_subclass_torch_tensor_is_tensor_like(self):

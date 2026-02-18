@@ -792,9 +792,9 @@ class TestInterfaceIntegration:
     def test_jax(self, tol):
         """Test that a gradient transform remains differentiable
         with JAX"""
-        import jax
+        import qpjax
 
-        jnp = jax.numpy
+        jnp = qpjax.numpy
         dev = qml.device("default.qubit", wires=2)
 
         @qml.gradients.param_shift
@@ -810,6 +810,6 @@ class TestInterfaceIntegration:
         expected = -4 * x * np.cos(x**2) * np.sin(x**2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = jax.grad(circuit)(x)
+        res = qpjax.grad(circuit)(x)
         expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)

@@ -14,9 +14,9 @@
 """
 Compute the jvp of a jaxpr using the adjoint Jacobian method.
 """
-import jax
-from jax import numpy as jnp
-from jax.interpreters import ad
+import qpjax
+from qpjax import numpy as jnp
+from qpjax.interpreters import ad
 
 from pennylane import adjoint, generator
 from pennylane.capture import pause
@@ -28,7 +28,7 @@ from .initialize_state import create_initial_state
 
 def _read(env, var):
     """Return the value and tangent for a variable."""
-    return (var.val, ad.Zero(var.aval)) if isinstance(var, jax.extend.core.Literal) else env[var]
+    return (var.val, ad.Zero(var.aval)) if isinstance(var, qpjax.extend.core.Literal) else env[var]
 
 
 def _operator_forward_pass(eqn, env, ket):
@@ -40,7 +40,7 @@ def _operator_forward_pass(eqn, env, ket):
     if any(not isinstance(t, ad.Zero) for t in tangents[1:]):
         raise NotImplementedError("adjoint jvp only differentiable parameters in the 0 position.")
 
-    if isinstance(eqn.outvars[0], jax.core.DropVar):
+    if isinstance(eqn.outvars[0], qpjax.core.DropVar):
         return apply_operation(op, ket)
     if any(not isinstance(t, ad.Zero) for t in tangents):
         # derivatives of op arithmetic. Should be possible later
@@ -68,7 +68,7 @@ def _measurement_forward_pass(eqn, env, ket):
     return bra
 
 
-def _other_prim_forward_pass(eqn: jax.extend.core.JaxprEqn, env: dict) -> None:
+def _other_prim_forward_pass(eqn: qpjax.extend.core.JaxprEqn, env: dict) -> None:
     """Handle any equation that is not an operator or measurement eqn.
 
     Maps outputs back to the environment
@@ -86,7 +86,7 @@ def _other_prim_forward_pass(eqn: jax.extend.core.JaxprEqn, env: dict) -> None:
         env[var] = (v, dv)
 
 
-def _forward_pass(jaxpr: jax.extend.core.Jaxpr, env: dict, num_wires: int):
+def _forward_pass(jaxpr: qpjax.extend.core.Jaxpr, env: dict, num_wires: int):
     """Calculate the forward pass of an adjoint jvp calculation."""
     bras = []
     ket = create_initial_state(range(num_wires))
@@ -112,7 +112,7 @@ def _backward_pass(jaxpr, bras, ket, results, env):
     modified = False
     for eqn in reversed(jaxpr.eqns):
         if getattr(eqn.primitive, "prim_type", "") == "operator" and isinstance(
-            eqn.outvars[0], jax.core.DropVar
+            eqn.outvars[0], qpjax.core.DropVar
         ):
             op = env[eqn.outvars[0]][0]
 
@@ -134,13 +134,13 @@ def _backward_pass(jaxpr, bras, ket, results, env):
 
 
 @pause()  # need to be able to temporarily create instances, but still have it jittable
-def execute_and_jvp(jaxpr: jax.extend.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
+def execute_and_jvp(jaxpr: qpjax.extend.core.Jaxpr, args: tuple, tangents: tuple, num_wires: int):
     """Execute and calculate the jvp for a jaxpr using the adjoint method.
 
     Args:
-        jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
+        jaxpr (qpjax.extend.core.Jaxpr): the jaxpr to evaluate
         args : an iterable of tensorlikes.  Should include the consts followed by the inputs
-        tangents: an iterable of tensorlikes and ``jax.interpreter.ad.Zero`` objects.  Should
+        tangents: an iterable of tensorlikes and ``qpjax.interpreter.ad.Zero`` objects.  Should
             include the consts followed by the inputs.
         num_wires (int): the number of wires to use.
 

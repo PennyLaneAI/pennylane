@@ -523,7 +523,7 @@ class TestMatrix:
     @pytest.mark.jax
     def test_sum_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         theta = jnp.array(1.23)
         rot_params = jnp.array([0.12, 3.45, 6.78])
@@ -982,7 +982,7 @@ class TestSimplify:
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         c1, c2, c3 = jnp.array(1.23), jnp.array(-1.23), jnp.array(0.5)
 

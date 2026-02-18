@@ -25,7 +25,7 @@ from pennylane.ops import PauliZ
 from pennylane.qnn.iqp import iqp_expval
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 def local_gates(n_qubits: int, max_weight=2):
@@ -126,7 +126,7 @@ def test_expval(
     if gates_fn == "multi_gens":
         gates = [[gates[0][0], gates[1][0]]] + gates[2:]
 
-    key = jax.random.PRNGKey(np.random.randint(0, 99999))
+    key = qpjax.random.PRNGKey(np.random.randint(0, 99999))
 
     if not isinstance(ops, csr_matrix):
         ops = jnp.array(ops)

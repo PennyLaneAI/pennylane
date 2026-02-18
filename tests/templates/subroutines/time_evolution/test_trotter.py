@@ -879,7 +879,7 @@ class TestIntegration:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     def test_jax_execute(self, time):
         """Test that the gate executes correctly in the jax interface."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         time = jnp.array(time)
         coeffs = jnp.array([1.23, -0.45])
@@ -912,8 +912,8 @@ class TestIntegration:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     def test_jaxjit_execute(self, time):
         """Test that the gate executes correctly in the jax interface with jit."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         time = jnp.array(time)
         c1 = jnp.array(1.23)
@@ -922,7 +922,7 @@ class TestIntegration:
 
         dev = qml.device("reference.qubit", wires=2)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circ(time, c1, c2):
             h = qml.sum(
@@ -1166,8 +1166,8 @@ class TestIntegration:
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
     def test_jax_gradient(self, order, n):
         """Test that the gradient is computed correctly"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         time = jnp.array(1.5)
         coeffs = jnp.array([1.23, -0.45])
@@ -1190,8 +1190,8 @@ class TestIntegration:
 
             return qml.expval(qml.Hadamard(0))
 
-        measured_time_grad, measured_coeff_grad = jax.grad(circ, argnums=[0, 1])(time, coeffs)
-        reference_time_grad, reference_coeff_grad = jax.grad(reference_circ, argnums=[0, 1])(
+        measured_time_grad, measured_coeff_grad = qpjax.grad(circ, argnums=[0, 1])(time, coeffs)
+        reference_time_grad, reference_coeff_grad = qpjax.grad(reference_circ, argnums=[0, 1])(
             time, coeffs
         )
         assert allclose(measured_time_grad, reference_time_grad)
@@ -1844,7 +1844,7 @@ class TestTrotterizedQfuncIntegration:
     @pytest.mark.parametrize("reverse", (True, False))
     def test_jax_execute(self, n, order, reverse):
         """Test that the gate executes correctly in the jax interface."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         time = jnp.array(0.1)
         wires = ["aux1", "aux2", 0, 1, "target"]
@@ -1911,8 +1911,8 @@ class TestTrotterizedQfuncIntegration:
     @pytest.mark.parametrize("method", ("backprop", "parameter-shift"))
     def test_jaxjit_execute(self, n, order, reverse, method):
         """Test that the gate executes correctly in the jax interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         time = jnp.array(0.1)
         wires = ("aux1", "aux2", 0, 1, "target")
@@ -1941,7 +1941,7 @@ class TestTrotterizedQfuncIntegration:
         )
         expected_decomp = expected_decomp * n
 
-        @partial(jax.jit, static_argnames=["wires", "kwarg1", "kwarg2"])
+        @partial(qpjax.jit, static_argnames=["wires", "kwarg1", "kwarg2"])
         @qml.qnode(qml.device("default.qubit", wires=wires), interface="jax", diff_method=method)
         def circ(time, alpha, beta, wires, **kwargs):
             TrotterizedQfunc(
@@ -2045,8 +2045,8 @@ class TestTrotterizedQfuncIntegration:
     @pytest.mark.parametrize("method", ("backprop", "parameter-shift"))
     def test_jax_gradient(self, n, order, reverse, method):
         """Test that the gradient is computed correctly"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         time = jnp.array(0.1)
         wires = ["aux1", "aux2", 0, 1, "target"]
@@ -2103,10 +2103,10 @@ class TestTrotterizedQfuncIntegration:
 
             return qml.expval(qml.Hadamard(wires[0]))
 
-        measured_time_grad, measured_arg1_grad, measured_arg2_grad = jax.grad(
+        measured_time_grad, measured_arg1_grad, measured_arg2_grad = qpjax.grad(
             circ, argnums=[0, 1, 2]
         )(time, arg1, arg2, wires, **kwargs)
-        reference_time_grad, reference_arg1_grad, reference_arg2_grad = jax.grad(
+        reference_time_grad, reference_arg1_grad, reference_arg2_grad = qpjax.grad(
             reference_circ, argnums=[0, 1, 2]
         )(time, arg1, arg2, wires)
         assert allclose(measured_time_grad, reference_time_grad)

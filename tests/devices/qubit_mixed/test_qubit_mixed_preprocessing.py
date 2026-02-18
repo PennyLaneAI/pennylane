@@ -408,9 +408,9 @@ class TestPreprocessing:
     @pytest.mark.jax
     def test_preprocess_jax_seed(self):
         """Test that the device's preprocessing correctly handles JAX PRNG keys as seeds."""
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
 
-        seed = jax.random.PRNGKey(42)
+        seed = qpjax.random.PRNGKey(42)
 
         dev = DefaultMixed(wires=1, seed=seed)
 

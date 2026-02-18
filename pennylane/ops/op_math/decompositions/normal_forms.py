@@ -22,7 +22,7 @@ from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3
 
 is_jax = True
 try:
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
     is_jax = False
 
@@ -231,7 +231,7 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
 
     if not is_jax:
         raise ImportError(
-            "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
+            "QJIT mode requires qpjax. Please install it with `pip install jax jaxlib`."
         )  # pragma: no cover
 
     t_bit = jnp.int32(int(decomposition[0] == qml.T(0)))

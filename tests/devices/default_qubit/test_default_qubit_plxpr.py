@@ -124,7 +124,7 @@ class TestExecution:
     def test_requires_wires(self):
         """Test that a device error is raised if device wires are not specified."""
 
-        jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.1)
+        jaxpr = qpjax.make_jaxpr(lambda x: x + 1)(0.1)
         dev = qml.device("default.qubit")
 
         with pytest.raises(DeviceError, match="Device wires are required."):
@@ -133,7 +133,7 @@ class TestExecution:
     def test_no_partitioned_shots(self):
         """Test that an error is raised if the device has partitioned shots."""
 
-        jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.1)
+        jaxpr = qpjax.make_jaxpr(lambda x: x + 1)(0.1)
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
@@ -145,8 +145,8 @@ class TestExecution:
     def test_use_device_prng(self):
         """Test that sampling depends on the device prng."""
 
-        key1 = jax.random.PRNGKey(1234)
-        key2 = jax.random.PRNGKey(1234)
+        key1 = qpjax.random.PRNGKey(1234)
+        key2 = qpjax.random.PRNGKey(1234)
 
         dev1 = qml.device("default.qubit", wires=1, seed=key1)
         dev2 = qml.device("default.qubit", wires=1, seed=key2)
@@ -155,7 +155,7 @@ class TestExecution:
             qml.H(0)
             return qml.sample(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
 
         samples1 = dev1.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, shots=100)
         samples2 = dev2.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, shots=100)
@@ -170,9 +170,9 @@ class TestExecution:
         def f():
             return qml.sample(wires=0)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, shots=100)
-        assert qml.math.allclose(res, jax.numpy.zeros(100))
+        assert qml.math.allclose(res, qpjax.numpy.zeros(100))
 
     def test_simple_execution(self):
         """Test the execution, jitting, and gradient of a simple quantum circuit."""
@@ -181,12 +181,12 @@ class TestExecution:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.123)
+        jaxpr = qpjax.make_jaxpr(f)(0.123)
 
         dev = qml.device("default.qubit", wires=1)
 
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
-        assert qml.math.allclose(res, jax.numpy.cos(0.5))
+        assert qml.math.allclose(res, qpjax.numpy.cos(0.5))
 
 
 class TestJVP:
@@ -195,7 +195,7 @@ class TestJVP:
     def test_error_unsupported_diff_method(self):
 
         dev = qml.device("default.qubit", wires=1)
-        jaxpr = jax.make_jaxpr(lambda x: x + 1)(1)
+        jaxpr = qpjax.make_jaxpr(lambda x: x + 1)(1)
         config = qml.devices.ExecutionConfig(gradient_method="hello")
         with pytest.raises(NotImplementedError, match="does not support gradient_method=hello"):
             dev.jaxpr_jvp(jaxpr.jaxpr, jaxpr.consts, 2, execution_config=config)
@@ -211,7 +211,7 @@ class TestJVP:
 
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(circuit)(0.5)
+        jaxpr = qpjax.make_jaxpr(circuit)(0.5)
         dev = qml.device("default.qubit", wires=4)
         config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 

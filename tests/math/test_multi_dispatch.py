@@ -26,7 +26,7 @@ pytestmark = pytest.mark.all_interfaces
 
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 test_multi_dispatch_stack_data = [
     [[1.0, 0.0], [2.0, 3.0]],
@@ -263,12 +263,12 @@ class TestDetach:
 
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_jax(self, use_jit):
-        """Test that detach works with JAX."""
+        """Test that detach works with qpjax."""
 
-        x = jax.numpy.array(0.3)
-        func = jax.jit(fn.detach, static_argnums=1) if use_jit else fn.detach
-        jac = jax.jacobian(func)(x)
-        assert jax.numpy.isclose(jac, 0.0)
+        x = qpjax.numpy.array(0.3)
+        func = qpjax.jit(fn.detach, static_argnums=1) if use_jit else fn.detach
+        jac = qpjax.jacobian(func)(x)
+        assert qpjax.numpy.isclose(jac, 0.0)
 
     def test_torch(self):
         """Test that detach works with Torch."""

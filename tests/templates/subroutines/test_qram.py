@@ -29,7 +29,7 @@ from pennylane.templates.subroutines.qram import BBQRAM, HybridQRAM, SelectOnlyQ
 
 has_jax = True
 try:
-    from jax import numpy as jnp
+    from qpjax import numpy as jnp
 except ImportError:
     has_jax = False
 

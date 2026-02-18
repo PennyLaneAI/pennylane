@@ -152,7 +152,7 @@ def test_forward_execution():
 @pytest.mark.jax
 def test_jax_jit():
     """Test that the template correctly compiles with JAX JIT."""
-    import jax
+    import qpjax
 
     n_wires = 2
     dev = qml.device("default.qubit", wires=n_wires)
@@ -168,7 +168,7 @@ def test_jax_jit():
         qml.CommutingEvolution(hamiltonian, time, frequencies)
         return qml.expval(qml.Z(0))
 
-    jit_circuit = jax.jit(circuit)
+    jit_circuit = qpjax.jit(circuit)
 
     assert qml.math.allclose(circuit(1), jit_circuit(1))
 

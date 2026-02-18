@@ -216,11 +216,11 @@ class TestIntegration:
         ],
     )
     def test_qnode_jax(self, shots, use_jit, seed):
-        """Test that the QNode executes and is differentiable with JAX. The shots
+        """Test that the QNode executes and is differentiable with qpjax. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", seed=seed)
 
@@ -229,17 +229,17 @@ class TestIntegration:
             qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
         )
         if use_jit:
-            qnode = jax.jit(qnode)
+            qnode = qpjax.jit(qnode)
 
-        x = jax.numpy.array(self.x)
+        x = qpjax.numpy.array(self.x)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
 
         assert np.allclose(res, self.exp_result, atol=0.005)
 
-        jac_fn = jax.jacobian(qnode)
+        jac_fn = qpjax.jacobian(qnode)
         if use_jit:
-            jac_fn = jax.jit(jac_fn)
+            jac_fn = qpjax.jit(jac_fn)
 
         jac = jac_fn(x)
         assert jac.shape == (8,)

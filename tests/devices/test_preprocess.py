@@ -210,7 +210,7 @@ class TestValidateDeviceWires:
     def test_error_abstract_wires_tape(self):
         """Tests that an error is raised if abstract wires are present in the tape."""
 
-        import jax
+        import qpjax
 
         def jit_wires_tape(wires):
             tape_with_abstract_wires = QuantumScript([qml.CNOT(wires=qml.wires.Wires(wires))])
@@ -220,13 +220,13 @@ class TestValidateDeviceWires:
             qml.wires.WireError,
             match="on fictional_device as abstract wires are present in the tape",
         ):
-            jax.jit(jit_wires_tape)([0, 1])
+            qpjax.jit(jit_wires_tape)([0, 1])
 
     @pytest.mark.jax
     def test_error_abstract_wires_dev(self):
         """Tests that an error is raised if abstract wires are present in the device."""
 
-        import jax
+        import qpjax
 
         def jit_wires_dev(wires):
             validate_device_wires(QuantumScript([]), wires=wires, name="fictional_device")
@@ -235,7 +235,7 @@ class TestValidateDeviceWires:
             qml.wires.WireError,
             match="on fictional_device as abstract wires are present in the device",
         ):
-            jax.jit(jit_wires_dev)([0, 1])
+            qpjax.jit(jit_wires_dev)([0, 1])
 
     def test_fill_in_wires_on_snapshots(self):
         """Test that validate_device_wires also fills in the wires on snapshots."""

@@ -448,7 +448,7 @@ class TestTemplateOutputs:
     )
     @pytest.mark.jax
     def test_jax_jit(self, block, n_params_block, wires, n_block_wires, template_weights):
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -457,6 +457,6 @@ class TestTemplateOutputs:
             qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliX(wires=wires[-1]))
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())

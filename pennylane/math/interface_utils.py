@@ -196,7 +196,7 @@ def get_deep_interface(value):
 
     **Example**
 
-    >>> x = [[jax.numpy.array(1), jax.numpy.array(2)], [jax.numpy.array(3), jax.numpy.array(4)]]
+    >>> x = [[qpjax.numpy.array(1), qpjax.numpy.array(2)], [qpjax.numpy.array(3), qpjax.numpy.array(4)]]
     >>> get_deep_interface(x)
     'jax'
 

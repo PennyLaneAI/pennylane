@@ -27,7 +27,7 @@ will not work with devices other than default qubit.
 ... def circuit(x):
 ...     qml.RX(x, 0)
 ...     return qml.expval(qml.Z(0))
->>> jax.vmap(circuit)(jax.numpy.array([1.0, 2.0, 3.0]))
+>>> qpjax.vmap(circuit)(qpjax.numpy.array([1.0, 2.0, 3.0]))
 Traceback (most recent call last):
     ...
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
@@ -64,7 +64,7 @@ to have GPU end-to-end simulation on ``lightning.gpu`` and ``lightning.kokkos``.
 
 **Jitting workflows involving qnodes**. While the execution of jaxpr on ``default.qubit`` is
 currently jittable, we will need to register a lowering for the qnode primitive.  We will also
-need to figure out where to apply a ``jax.pure_callback`` for devices like ``lightning.qubit`` that are
+need to figure out where to apply a ``qpjax.pure_callback`` for devices like ``lightning.qubit`` that are
 not jittable.
 
 **Result caching**. The new workflow is not capable of caching the results of executions, and we have
@@ -81,9 +81,9 @@ from numbers import Number
 from warnings import warn
 
 try:
-    import jax
-    from jax.interpreters import ad, batching, mlir
-    from jax.interpreters import partial_eval as pe
+    import qpjax
+    from qpjax.interpreters import ad, batching, mlir
+    from qpjax.interpreters import partial_eval as pe
 
 except (ImportError, NameError) as e:  # pragma: no cover
     pass
@@ -110,7 +110,7 @@ def _is_scalar_tensor(arg) -> bool:
     if isinstance(arg, TensorLike):
 
         if arg.size == 0:
-            raise ValueError("Empty tensors are not supported with jax.vmap.")
+            raise ValueError("Empty tensors are not supported with qpjax.vmap.")
 
         if arg.shape == ():
             return True
@@ -127,23 +127,23 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
         if batch_dim is not None
     ]
 
-    return jax.lax.broadcast_shapes(*input_shapes)
+    return qpjax.lax.broadcast_shapes(*input_shapes)
 
 
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=()):
     """Calculate the abstract output shapes for the given measurements."""
 
-    if jax.config.jax_enable_x64:
+    if qpjax.config.jax_enable_x64:
         dtype_map = {
-            float: jax.numpy.float64,
-            int: jax.numpy.int64,
-            complex: jax.numpy.complex128,
+            float: qpjax.numpy.float64,
+            int: qpjax.numpy.int64,
+            complex: qpjax.numpy.complex128,
         }
     else:
         dtype_map = {
-            float: jax.numpy.float32,
-            int: jax.numpy.int32,
-            complex: jax.numpy.complex64,
+            float: qpjax.numpy.float32,
+            int: qpjax.numpy.int32,
+            complex: qpjax.numpy.complex64,
         }
 
     shapes = []
@@ -152,7 +152,7 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 
     for s in shots:
         for m in measurements:
-            s = s.val if isinstance(s, jax.extend.core.Literal) else s
+            s = s.val if isinstance(s, qpjax.extend.core.Literal) else s
             try:
                 shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
             except AttributeError as e:
@@ -163,14 +163,14 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
                     " Catalyst when capture is turned on. Please use qp.sample(mcm) instead for accurate results."
                 ) from e
             if all(isinstance(si, int) for si in shape):
-                aval_type = jax.core.ShapedArray
+                aval_type = qpjax.core.ShapedArray
             else:
-                aval_type = jax.core.DShapedArray
-                if not jax.config.jax_dynamic_shapes:
+                aval_type = qpjax.core.DShapedArray
+                if not qpjax.config.jax_dynamic_shapes:
                     raise ValueError(
-                        "Returning arrays with a dynamic shape requires setting jax.config.update('jax_dynamic_shapes', True)"
+                        "Returning arrays with a dynamic shape requires setting qpjax.config.update('jax_dynamic_shapes', True)"
                     )
-            dtype = jax.numpy.dtype(dtype_map.get(dtype, dtype))
+            dtype = qpjax.numpy.dtype(dtype_map.get(dtype, dtype))
             shapes.append(aval_type(batch_shape + shape, dtype))
     return shapes
 
@@ -223,7 +223,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
             partial(qml.capture.eval_jaxpr, qfunc_jaxpr, temp_consts)
         )
 
-        qfunc_jaxpr = jax.make_jaxpr(transformed_func)(*temp_args)
+        qfunc_jaxpr = qpjax.make_jaxpr(transformed_func)(*temp_args)
         temp_consts = qfunc_jaxpr.consts
         qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
@@ -252,7 +252,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
-    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
+    return qpjax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
 
 
 def custom_staging_rule(
@@ -282,7 +282,7 @@ def custom_staging_rule(
         batch_shape=batch_shape,
     )
     eqn, out_tracers = jaxpr_trace.make_eqn(
-        tracers, new_shapes, qnode_prim, params, jax.core.no_effects, source_info
+        tracers, new_shapes, qnode_prim, params, qpjax.core.no_effects, source_info
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
@@ -315,7 +315,7 @@ def _qnode_batching_rule(
         if _is_scalar_tensor(arg):
             continue
 
-        # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
+        # Regardless of their shape, qpjax.vmap automatically inserts `None` as the batch dimension for constants.
         # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
         # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
         if idx < (n_consts + shots_len):
@@ -359,10 +359,10 @@ def _qnode_batching_rule(
 
 @debug_logger
 def _finite_diff(args, tangents, **impl_kwargs):
-    if not jax.config.jax_enable_x64:
+    if not qpjax.config.jax_enable_x64:
         warn(
             "Detected 32 bits precision with finite differences. This can lead to incorrect results."
-            " Recommend enabling jax.config.update('jax_enable_x64', True).",
+            " Recommend enabling qpjax.config.update('jax_enable_x64', True).",
             UserWarning,
         )
     f = partial(qnode_prim.bind, **impl_kwargs)
@@ -445,13 +445,13 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     flat_fn = FlatFn(qnode.func)
 
     try:
-        qfunc_jaxpr = jax.make_jaxpr(
+        qfunc_jaxpr = qpjax.make_jaxpr(
             flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
         )(*args, **kwargs)
     except (
-        jax.errors.TracerArrayConversionError,
-        jax.errors.TracerIntegerConversionError,
-        jax.errors.TracerBoolConversionError,
+        qpjax.errors.TracerArrayConversionError,
+        qpjax.errors.TracerIntegerConversionError,
+        qpjax.errors.TracerBoolConversionError,
     ) as exc:
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
@@ -482,7 +482,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     .. code-block:: python
 
         qml.capture.enable()
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         @qml.set_shots(50_000)
         @qml.qnode(qml.device('lightning.qubit', seed=42, wires=1))
@@ -494,8 +494,8 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
             expval_z, probs = circuit(np.pi * x)
             return 2 * expval_z + probs
 
-        jaxpr = jax.make_jaxpr(f)(0.1)
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
+        jaxpr = qpjax.make_jaxpr(f)(0.1)
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
 
     >>> print(jaxpr)
     { lambda ; a:f64[]. let
@@ -540,7 +540,7 @@ def _bind_qnode(qnode, *args, **kwargs):
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
     # we don't want to correctly compute the ``cache_key``.
     dynamic_args, _ = _split_static_args(args, qnode.static_argnums)
-    flat_args = jax.tree_util.tree_leaves((dynamic_args, kwargs))
+    flat_args = qpjax.tree_util.tree_leaves((dynamic_args, kwargs))
 
     abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(flat_args)
 
@@ -552,8 +552,8 @@ def _bind_qnode(qnode, *args, **kwargs):
         # as the original dynamic arguments
         # kwargs and abstracted axes will error out in Jax with NotImplementedError
         # rely on jax to handle that validation
-        struct = jax.tree_util.tree_structure(args)
-        abstracted_axes = jax.tree_util.tree_unflatten(struct, abstracted_axes)
+        struct = qpjax.tree_util.tree_structure(args)
+        abstracted_axes = qpjax.tree_util.tree_unflatten(struct, abstracted_axes)
 
     qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
@@ -573,6 +573,6 @@ def _bind_qnode(qnode, *args, **kwargs):
     )
 
     if len(flat_shots) > 1:
-        shots_struct = jax.tree_util.tree_structure(flat_shots)
+        shots_struct = qpjax.tree_util.tree_structure(flat_shots)
         out_tree = shots_struct.compose(out_tree)
-    return jax.tree_util.tree_unflatten(out_tree, res)
+    return qpjax.tree_util.tree_unflatten(out_tree, res)

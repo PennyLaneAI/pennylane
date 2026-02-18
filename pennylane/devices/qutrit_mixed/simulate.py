@@ -96,8 +96,8 @@ def measure_final_state(  # pylint: disable=too-many-arguments
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
         readout_errors (List[Callable]): List of channels to apply to each wire being measured
@@ -157,9 +157,9 @@ def simulate(  # pylint: disable=too-many-arguments
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            generated. Only for simulation using qpjax.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
         readout_errors (List[Callable]): List of channels to apply to each wire being measured

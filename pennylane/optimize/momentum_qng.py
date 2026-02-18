@@ -98,7 +98,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
-        See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
+        See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``qpjax.jit``/``qml.qjit``-compatible implementation.
 
     """
 

@@ -239,7 +239,7 @@ class TestIntegration:
     def test_qnode_state_jax_jit(self, params):
         """Test that the mutual information transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -266,8 +266,8 @@ class TestIntegration:
     def test_qnode_mutual_info_jax_jit(self, params, interface):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform, for the JAX-jit interface"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -287,7 +287,7 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.density_matrix(wires=[0, 1])
 
-        actual = jax.jit(circuit_mutual_info)(params)
+        actual = qpjax.jit(circuit_mutual_info)(params)
 
         # compare measurement results with transform results
         dm = circuit_state(params)
@@ -331,8 +331,8 @@ class TestIntegration:
     def test_qnode_grad_jax(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the JAX interface"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -355,7 +355,7 @@ class TestIntegration:
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5
 
-        actual = jax.grad(circuit)(param)
+        actual = qpjax.grad(circuit)(param)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.jax
@@ -365,8 +365,8 @@ class TestIntegration:
     def test_qnode_grad_jax_jit(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the JAX-jit interface"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -389,7 +389,7 @@ class TestIntegration:
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5
 
-        actual = jax.jit(jax.grad(circuit))(param)
+        actual = qpjax.jit(qpjax.grad(circuit))(param)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.tf

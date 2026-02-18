@@ -1840,7 +1840,7 @@ class TestInterfaces:
     @pytest.mark.slow
     def test_hessian_transform_with_jax(self):
         """Test that the Hessian transform can be used with JAX (1d -> 1d)"""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1852,7 +1852,7 @@ class TestInterfaces:
             return qml.probs(wires=[0, 1])
 
         x_np = np.array([0.1, 0.2], requires_grad=True)
-        x_jax = jax.numpy.array([0.1, 0.2])
+        x_jax = qpjax.numpy.array([0.1, 0.2])
 
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
         circuit.interface = "jax"
@@ -1865,7 +1865,7 @@ class TestInterfaces:
     def test_hessian_transform_is_differentiable_jax(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in JAX
         (1d -> 1d)"""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1877,7 +1877,7 @@ class TestInterfaces:
             return qml.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2], requires_grad=True)
-        x_jax = jax.numpy.array([0.1, 0.2])
+        x_jax = qpjax.numpy.array([0.1, 0.2])
 
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
 
@@ -1887,7 +1887,7 @@ class TestInterfaces:
             return hess
 
         circuit.interface = "jax"
-        jax_deriv = jax.jacobian(cost_fn)(x_jax)
+        jax_deriv = qpjax.jacobian(cost_fn)(x_jax)
 
         assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), jax_deriv)
 

@@ -28,7 +28,7 @@ pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from jax.core import eval_jaxpr
+from qpjax.core import eval_jaxpr
 
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.exceptions import AutoGraphError
@@ -48,9 +48,9 @@ class TestConditionals:
             return (4 * x, 5)
 
         ag_f = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_f)(0.5)
+        jaxpr = qpjax.make_jaxpr(ag_f)(0.5)
         assert len(jaxpr.eqns) == 1
-        [out] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
+        [out] = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
         assert qml.math.allclose(out, 4.0)
 
     def test_elif_on_known_truthy_values(self):
@@ -66,9 +66,9 @@ class TestConditionals:
             return out
 
         ag_f = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_f)(0.5)
+        jaxpr = qpjax.make_jaxpr(ag_f)(0.5)
         assert len(jaxpr.eqns) == 1
-        [out] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
+        [out] = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0)
         assert qml.math.allclose(out, 4.0)
 
     def test_simple_cond(self):
@@ -84,14 +84,14 @@ class TestConditionals:
 
         # can't convert to jaxpr without autorgraph
         with pytest.raises(
-            jax.errors.TracerBoolConversionError,
+            qpjax.errors.TracerBoolConversionError,
             match="Attempted boolean conversion of traced array",
         ):
-            jax.make_jaxpr(circuit)(1)
+            qpjax.make_jaxpr(circuit)(1)
 
         # with autograph we can convert to jaxpr
         circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(circuit)(0)
+        jaxpr = qpjax.make_jaxpr(circuit)(0)
         assert "cond" in str(jaxpr)
 
         def res(x):
@@ -120,7 +120,7 @@ class TestConditionals:
             return res
 
         ag_circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
         def res(x):
@@ -146,7 +146,7 @@ class TestConditionals:
             return res
 
         ag_circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
         def res(x):
@@ -170,7 +170,7 @@ class TestConditionals:
             return qml.expval(m)
 
         ag_circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
         def res(x):
@@ -191,11 +191,11 @@ class TestConditionals:
         def fn(x: int):
             return inner(x)
 
-        with pytest.raises(jax.errors.TracerBoolConversionError):
-            jax.make_jaxpr(fn)(4)
+        with pytest.raises(qpjax.errors.TracerBoolConversionError):
+            qpjax.make_jaxpr(fn)(4)
 
         ag_fn = run_autograph(fn)
-        jaxpr = jax.make_jaxpr(ag_fn)(0)
+        jaxpr = qpjax.make_jaxpr(ag_fn)(0)
         assert "cond" in str(jaxpr)
 
         def res(x):
@@ -218,7 +218,7 @@ class TestConditionals:
                 return 60  # converted to else_fn
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
         def res(x):
@@ -240,7 +240,7 @@ class TestConditionals:
             return x
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -269,7 +269,7 @@ class TestConditionals:
             return cond_fn()
 
         ag_fn = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_fn)(0)
+        jaxpr = qpjax.make_jaxpr(ag_fn)(0)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 6)[0] == 36
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)[0] == 2
@@ -289,7 +289,7 @@ class TestConditionals:
         with pytest.raises(
             AutoGraphError, match="Some branches did not define a value for variable 'res'"
         ):
-            jax.make_jaxpr(qml.capture.autograph.run_autograph(circuit))(True)
+            qpjax.make_jaxpr(qml.capture.autograph.run_autograph(circuit))(True)
 
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
@@ -306,7 +306,7 @@ class TestConditionals:
             return res
 
         with pytest.raises(ValueError, match="Mismatch in output abstract values"):
-            jax.make_jaxpr(run_autograph(circuit))(True, False)
+            qpjax.make_jaxpr(run_autograph(circuit))(True, False)
 
     def test_multiple_return_different_measurements(self):
         """Test that different measurements be used in the return in different branches, as
@@ -320,7 +320,7 @@ class TestConditionals:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        jaxpr = qpjax.make_jaxpr(ag_circuit)(0)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]

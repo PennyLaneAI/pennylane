@@ -417,8 +417,8 @@ class TestCancelInversesInterfaces:
     @pytest.mark.jax
     def test_cancel_inverses_jax(self):
         """Test QNode and gradient in JAX interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -430,7 +430,7 @@ class TestCancelInversesInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+            qpjax.grad(original_qnode)(input), qpjax.grad(transformed_qnode)(input)
         )
 
         # Check operation list
@@ -441,9 +441,9 @@ class TestCancelInversesInterfaces:
     @pytest.mark.jax
     def test_cancel_inverses_abstract_params(self):
         """Test that the transform does not fail with abstract parameters."""
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         @cancel_inverses
         @qml.qnode(dev)
         def circuit(x):
@@ -451,22 +451,22 @@ class TestCancelInversesInterfaces:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        res = circuit(jax.numpy.array(0))
+        res = circuit(qpjax.numpy.array(0))
         qml.math.allclose(res, 1.0)
 
     @pytest.mark.jax
     def test_cancel_inverses_abstract_wires(self):
         """Tests that inverses do not cancel across operators with abstract wires."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def f(w):
             tape = qml.tape.QuantumScript([qml.H(0), qml.CNOT([w, 1]), qml.H(0)])
             [tape], _ = cancel_inverses(tape)
             return len(tape.operations)
 
-        @jax.jit
+        @qpjax.jit
         def f2(w):
             tape = qml.tape.QuantumScript([qml.X(0), qml.X(0), qml.CNOT([w, 1])])
             [tape], _ = cancel_inverses(tape)
@@ -564,10 +564,10 @@ class TestTransformDispatch:
     @pytest.mark.jax
     def test_qnode_diff_jax(self):
         """Test the transform on a qnode directly."""
-        import jax
+        import qpjax
 
-        a = jax.numpy.array([0.1, 0.2])
+        a = qpjax.numpy.array([0.1, 0.2])
         transformed_qnode = cancel_inverses(qnode_circuit)
-        res = jax.jacobian(transformed_qnode)(a)
-        expected = jax.jacobian(qnode_circuit)(a)
-        assert jax.numpy.allclose(res, expected)
+        res = qpjax.jacobian(transformed_qnode)(a)
+        expected = qpjax.jacobian(qnode_circuit)(a)
+        assert qpjax.numpy.allclose(res, expected)

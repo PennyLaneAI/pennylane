@@ -89,9 +89,9 @@ def rydberg_interaction(
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=9)
 
@@ -215,9 +215,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=wires)
         @qml.qnode(dev, interface="jax")
@@ -230,7 +230,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     >>> params = [2.4]
     >>> circuit(params)
     Array(0.78301974, dtype=float64)
-    >>> jax.grad(circuit)(params)
+    >>> qpjax.grad(circuit)(params)
     [Array(-0.6250622, dtype=float64)]
 
     We can also create a Hamiltonian with local drives. The following circuit corresponds to the
@@ -251,7 +251,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
         H = H_i + H_d + H_local_0 + H_local_1
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 0.5])
@@ -267,7 +267,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     >>> circuit_local(params)
     Array(0.62640288, dtype=float64)
-    >>> jax.grad(circuit_local)(params)
+    >>> qpjax.grad(circuit_local)(params)
     [Array(1.07614151, dtype=float64),
      [Array(0.36370049, dtype=float64, weak_type=True),
       Array(0.91057498, dtype=float64, weak_type=True)],

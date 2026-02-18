@@ -26,7 +26,7 @@ from tests.capture.capture_utils import extract_ops_and_meas_prims
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
-jnp = jax.numpy
+jnp = qpjax.numpy
 
 from pennylane.capture.autograph import run_autograph
 
@@ -75,7 +75,7 @@ def test_error_if_no_device_wires():
         return qml.sample()
 
     with pytest.raises(NotImplementedError, match="devices must specify wires"):
-        jax.make_jaxpr(circuit)()
+        qpjax.make_jaxpr(circuit)()
 
     with pytest.raises(NotImplementedError, match="devices must specify wires"):
         circuit()
@@ -94,18 +94,18 @@ def test_simple_qnode():
     res = circuit(0.5)
     assert qml.math.allclose(res, jnp.cos(0.5))
 
-    jaxpr = jax.make_jaxpr(circuit)(0.5)
+    jaxpr = qpjax.make_jaxpr(circuit)(0.5)
 
     assert len(jaxpr.eqns) == 1
     eqn0 = jaxpr.eqns[0]
 
-    fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+    fdtype = jnp.float64 if qpjax.config.jax_enable_x64 else jnp.float32
 
-    assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+    assert jaxpr.in_avals == [qpjax.core.ShapedArray((), fdtype, weak_type=True)]
 
     assert eqn0.primitive == qnode_prim
     assert eqn0.invars[0].aval == jaxpr.in_avals[0]
-    assert jaxpr.out_avals[0] == jax.core.ShapedArray((), fdtype)
+    assert jaxpr.out_avals[0] == qpjax.core.ShapedArray((), fdtype)
 
     assert eqn0.params["device"] == dev
     assert eqn0.params["qnode"] == circuit
@@ -129,9 +129,9 @@ def test_simple_qnode():
     assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     assert len(eqn0.outvars) == 1
-    assert eqn0.outvars[0].aval == jax.core.ShapedArray((), fdtype)
+    assert eqn0.outvars[0].aval == qpjax.core.ShapedArray((), fdtype)
 
-    output = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
+    output = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
     assert qml.math.allclose(output[0], jnp.cos(0.5))
 
 
@@ -143,7 +143,7 @@ def test_providing_keywords_dynamic():
         qml.RX(x, 0)
         return qml.probs()
 
-    jaxpr = jax.make_jaxpr(circuit)(x=2.0)
+    jaxpr = qpjax.make_jaxpr(circuit)(x=2.0)
 
     assert jaxpr.eqns[0].primitive == qnode_prim
     assert len(jaxpr.jaxpr.invars) == 1
@@ -162,7 +162,7 @@ def test_multiple_measurements():
     def circuit():
         return qml.sample(), qml.probs(wires=(0, 1)), qml.expval(qml.Z(0))
 
-    jaxpr = jax.make_jaxpr(circuit)()
+    jaxpr = qpjax.make_jaxpr(circuit)()
 
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
@@ -171,17 +171,17 @@ def test_multiple_measurements():
     assert qfunc_jaxpr.eqns[2].primitive == qml.Z._primitive
     assert qfunc_jaxpr.eqns[3].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (50, 3), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+    assert jaxpr.out_avals[0] == qpjax.core.ShapedArray(
+        (50, 3), jnp.int64 if qpjax.config.jax_enable_x64 else jnp.int32
     )
-    assert jaxpr.out_avals[1] == jax.core.ShapedArray(
-        (4,), jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+    assert jaxpr.out_avals[1] == qpjax.core.ShapedArray(
+        (4,), jnp.float64 if qpjax.config.jax_enable_x64 else jnp.float32
     )
-    assert jaxpr.out_avals[2] == jax.core.ShapedArray(
-        (), jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+    assert jaxpr.out_avals[2] == qpjax.core.ShapedArray(
+        (), jnp.float64 if qpjax.config.jax_enable_x64 else jnp.float32
     )
 
-    res1, res2, res3 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+    res1, res2, res3 = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
     assert qml.math.allclose(res1, jnp.zeros((50, 3)))
     assert qml.math.allclose(res2, jnp.array([1, 0, 0, 0]))
     assert qml.math.allclose(res3, 1.0)
@@ -199,18 +199,18 @@ def test_complex_return_types():
     def circuit():
         return qml.state(), qml.density_matrix(wires=(0, 1))
 
-    jaxpr = jax.make_jaxpr(circuit)()
+    jaxpr = qpjax.make_jaxpr(circuit)()
 
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
     assert qfunc_jaxpr.eqns[0].primitive == qml.measurements.StateMP._wires_primitive
     assert qfunc_jaxpr.eqns[1].primitive == qml.measurements.DensityMatrixMP._wires_primitive
 
-    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
-        (8,), jnp.complex128 if jax.config.jax_enable_x64 else jnp.complex64
+    assert jaxpr.out_avals[0] == qpjax.core.ShapedArray(
+        (8,), jnp.complex128 if qpjax.config.jax_enable_x64 else jnp.complex64
     )
-    assert jaxpr.out_avals[1] == jax.core.ShapedArray(
-        (4, 4), jnp.complex128 if jax.config.jax_enable_x64 else jnp.complex64
+    assert jaxpr.out_avals[1] == qpjax.core.ShapedArray(
+        (4, 4), jnp.complex128 if qpjax.config.jax_enable_x64 else jnp.complex64
     )
 
 
@@ -231,7 +231,7 @@ def test_capture_qnode_kwargs():
     def circuit():
         return qml.expval(qml.Z(0))
 
-    jaxpr = jax.make_jaxpr(circuit)()
+    jaxpr = qpjax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[0].primitive == qnode_prim
     expected_config = qml.devices.ExecutionConfig(
@@ -259,11 +259,11 @@ def test_qnode_closure_variables():
         qml.RX(a, w)
         return qml.expval(qml.Z(0))
 
-    jaxpr = jax.make_jaxpr(circuit)(1)
+    jaxpr = qpjax.make_jaxpr(circuit)(1)
     assert len(jaxpr.eqns[0].invars) == 2  # one closure variable, one arg
     assert jaxpr.eqns[0].params["n_consts"] == 1
 
-    out = jax.core.eval_jaxpr(jaxpr.jaxpr, [jnp.array(0.5)], 0)
+    out = qpjax.core.eval_jaxpr(jaxpr.jaxpr, [jnp.array(0.5)], 0)
     assert qml.math.allclose(out, jnp.cos(0.5))
 
 
@@ -279,7 +279,7 @@ def test_qnode_pytree_input():
     res = circuit(x)
     assert qml.math.allclose(res, jnp.cos(0.5))
 
-    jaxpr = jax.make_jaxpr(circuit)(x)
+    jaxpr = qpjax.make_jaxpr(circuit)(x)
     assert len(jaxpr.eqns[0].invars) == 2
 
 
@@ -305,7 +305,7 @@ def test_informative_error_raw_mcm_return():
         return qml.measure(0)
 
     with pytest.raises(ValueError, match="Only Measurement Processes can be returned from QNode"):
-        jax.make_jaxpr(c)()
+        qpjax.make_jaxpr(c)()
 
 
 class TestShots:
@@ -319,7 +319,7 @@ class TestShots:
         def c():
             return qml.sample(wires=0)
 
-        jaxpr = jax.make_jaxpr(c)()
+        jaxpr = qpjax.make_jaxpr(c)()
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
         assert eqn0.primitive == qnode_prim
@@ -351,7 +351,7 @@ class TestShots:
                 assert d["expval"].shape == ()
             return out
 
-        jaxpr = jax.make_jaxpr(w)()
+        jaxpr = qpjax.make_jaxpr(w)()
         eqn0 = jaxpr.eqns[0]
         assert len(eqn0.outvars) == 4
         # for some reason flattening the pytree puts the expval first
@@ -370,8 +370,8 @@ class TestShots:
         def w(num_shots):
             return qml.set_shots(c, num_shots)()
 
-        with pytest.raises(ValueError, match=r"requires setting jax.config.update"):
-            jax.make_jaxpr(w)(3)
+        with pytest.raises(ValueError, match=r"requires setting qpjax.config.update"):
+            qpjax.make_jaxpr(w)(3)
 
     @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
     def test_dynamic_shots(self):
@@ -384,15 +384,15 @@ class TestShots:
         def w(num_shots):
             return qml.set_shots(c, num_shots)()
 
-        jaxpr = jax.make_jaxpr(w)(3)
+        jaxpr = qpjax.make_jaxpr(w)(3)
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
 
         assert eqn0.params["shots_len"] == 1
-        assert not isinstance(eqn0.invars[0], jax.extend.core.Literal)
+        assert not isinstance(eqn0.invars[0], qpjax.extend.core.Literal)
 
-        assert isinstance(eqn0.outvars[0].aval, jax.core.DShapedArray)
-        assert isinstance(eqn0.outvars[1].aval, jax.core.ShapedArray)
+        assert isinstance(eqn0.outvars[0].aval, qpjax.core.DShapedArray)
+        assert isinstance(eqn0.outvars[1].aval, qpjax.core.ShapedArray)
 
         assert eqn0.outvars[0].aval.shape[0] is eqn0.invars[0]
         assert eqn0.outvars[1].aval.shape == ()
@@ -409,17 +409,17 @@ class TestShots:
             out = qml.set_shots(c, (shots1, 2, shots2))()
             return out
 
-        jaxpr = jax.make_jaxpr(w)(5, 6)
+        jaxpr = qpjax.make_jaxpr(w)(5, 6)
         eqn = jaxpr.eqns[-1]
         assert eqn.params["shots_len"] == 3
         assert len(eqn.outvars) == 3
 
-        assert isinstance(eqn.outvars[0].aval, jax.core.DShapedArray)
+        assert isinstance(eqn.outvars[0].aval, qpjax.core.DShapedArray)
         assert eqn.outvars[0].aval.shape[0] is eqn.invars[0]
-        assert isinstance(eqn.outvars[2].aval, jax.core.DShapedArray)
+        assert isinstance(eqn.outvars[2].aval, qpjax.core.DShapedArray)
         assert eqn.outvars[2].aval.shape[0] is eqn.invars[2]
 
-        assert isinstance(eqn.outvars[1].aval, jax.core.ShapedArray)
+        assert isinstance(eqn.outvars[1].aval, qpjax.core.ShapedArray)
         assert eqn.outvars[1].aval.shape == (2, 1)
 
 
@@ -450,7 +450,7 @@ class TestUserTransforms:
         if disable_around_qnode:
             qml.capture.enable()
 
-        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        jaxpr = qpjax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
@@ -483,7 +483,7 @@ class TestUserTransforms:
         if disable_around_qnode:
             qml.capture.enable()
 
-        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        jaxpr = qpjax.make_jaxpr(circuit)(1.5)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         # pylint: disable=protected-access
@@ -519,7 +519,7 @@ class TestUserTransforms:
         if disable_around_qnode:
             qml.capture.enable()
 
-        jaxpr = jax.make_jaxpr(circuit)(1.5)
+        jaxpr = qpjax.make_jaxpr(circuit)(1.5)
         # pylint: disable=protected-access
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qml.transforms.cancel_inverses
@@ -775,7 +775,7 @@ class TestDifferentiation:
         with pytest.raises(
             NotImplementedError, match="diff_method parameter-shift not yet implemented."
         ):
-            jax.grad(circuit)(0.5)
+            qpjax.grad(circuit)(0.5)
 
     @pytest.mark.parametrize("diff_method", ("best", "backprop"))
     def test_default_qubit_backprop(self, diff_method):
@@ -788,7 +788,7 @@ class TestDifferentiation:
 
         x = 0.9
         xt = -0.6
-        jvp = jax.jvp(circuit, (x,), (xt,))
+        jvp = qpjax.jvp(circuit, (x,), (xt,))
         assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
     def test_jvp_lightning(self):
@@ -801,7 +801,7 @@ class TestDifferentiation:
 
         x = 0.9
         xt = -0.6
-        jvp = jax.jvp(circuit, (x,), (xt,))
+        jvp = qpjax.jvp(circuit, (x,), (xt,))
         assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
     def test_grad_lightning(self):
@@ -812,7 +812,7 @@ class TestDifferentiation:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        grad = jax.grad(circuit)(0.9)
+        grad = qpjax.grad(circuit)(0.9)
         assert qml.math.allclose(grad, -qml.math.sin(0.9))
 
     def test_jacobian_lightning(self):
@@ -825,7 +825,7 @@ class TestDifferentiation:
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
         x = jnp.array([0.9, -0.6])
-        jac = jax.jacobian(circuit)(x)
+        jac = qpjax.jacobian(circuit)(x)
         assert qml.math.allclose(jac, [[-qml.math.sin(0.9), 0], [0, -qml.math.sin(-0.6)]])
 
 
@@ -838,7 +838,7 @@ def test_qnode_jit():
         return qml.expval(qml.Z(0))
 
     x = jnp.array(-0.5)
-    res = jax.jit(circuit)(0.5)
+    res = qpjax.jit(circuit)(0.5)
     assert qml.math.allclose(res, jnp.cos(x))
 
 
@@ -851,9 +851,9 @@ def test_dynamic_shape_input(enable_disable_dynamic_shapes):
         qml.RX(jnp.sum(x), 0)
         return qml.expval(qml.Z(0))
 
-    jaxpr = jax.make_jaxpr(circuit, abstracted_axes=("a",))(jnp.arange(4))
+    jaxpr = qpjax.make_jaxpr(circuit, abstracted_axes=("a",))(jnp.arange(4))
 
-    [output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
+    [output] = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
     expected = jnp.cos(0 + 1 + 2)
     assert jnp.allclose(expected, output)
 
@@ -863,15 +863,15 @@ def test_dynamic_shape_matches_arg(enable_disable_dynamic_shapes):
 
     @qml.qnode(qml.device("default.qubit", wires=4))
     def circuit(i, x):
-        qml.RX(jax.numpy.sum(x), i)
+        qml.RX(qpjax.numpy.sum(x), i)
         return qml.expval(qml.Z(i))
 
     def w(i):
         return circuit(i, jnp.arange(i))
 
-    jaxpr = jax.make_jaxpr(w)(2)
+    jaxpr = qpjax.make_jaxpr(w)(2)
     [res] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-    expected = jax.numpy.cos(0 + 1 + 2)
+    expected = qpjax.numpy.cos(0 + 1 + 2)
     assert qml.math.allclose(res, expected)
 
 
@@ -895,19 +895,19 @@ class TestQNodeVmapIntegration:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(input)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit))(input)
         eqn0 = jaxpr.eqns[0]
 
         assert len(eqn0.outvars) == 1
         assert eqn0.outvars[0].aval.shape == expected_shape
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, input)
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, input)
         assert qml.math.allclose(res, jnp.cos(input))
 
     def test_qnode_vmap_x64_mode(self):
         """Test that JAX can vmap over the QNode primitive with x64 mode enabled/disabled."""
 
-        dtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+        dtype = jnp.float64 if qpjax.config.jax_enable_x64 else jnp.float32
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
@@ -916,13 +916,13 @@ class TestQNodeVmapIntegration:
 
         x = jnp.array([0.1, 0.2, 0.3], dtype=dtype)
 
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit))(x)
         eqn0 = jaxpr.eqns[0]
 
         assert len(eqn0.outvars) == 1
-        assert eqn0.outvars[0].aval == jax.core.ShapedArray((3,), dtype)
+        assert eqn0.outvars[0].aval == qpjax.core.ShapedArray((3,), dtype)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(res, jnp.cos(x))
 
     def test_vmap_mixed_arguments(self):
@@ -941,7 +941,7 @@ class TestQNodeVmapIntegration:
         scalar1 = 1.0
         scalar2 = 2.0
 
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None, 0, None)))(
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit, in_axes=(0, None, 0, None)))(
             arr1, scalar1, arr2, scalar2
         )
 
@@ -949,11 +949,11 @@ class TestQNodeVmapIntegration:
         assert jaxpr.out_avals[0].shape == (3,)
         assert jaxpr.out_avals[1].shape == (3,)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arr1, scalar1, arr2, scalar2)
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arr1, scalar1, arr2, scalar2)
         assert qml.math.allclose(res, circuit(arr1, scalar1, arr2, scalar2))
-        # compare with jax.vmap to cover all code paths
+        # compare with qpjax.vmap to cover all code paths
         assert qml.math.allclose(
-            res, jax.vmap(circuit, in_axes=(0, None, 0, None))(arr1, scalar1, arr2, scalar2)
+            res, qpjax.vmap(circuit, in_axes=(0, None, 0, None))(arr1, scalar1, arr2, scalar2)
         )
 
     def test_vmap_multiple_measurements(self):
@@ -965,9 +965,9 @@ class TestQNodeVmapIntegration:
             return qml.sample(), qml.probs(wires=(0, 1, 2)), qml.expval(qml.Z(0))
 
         x = jnp.array([1.0, 2.0])
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit))(x)
 
-        res1_vmap, res2_vmap, res3_vmap = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        res1_vmap, res2_vmap, res3_vmap = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns[0].outvars) == 3
         assert jaxpr.out_avals[0].shape == (2, 5, 4)
@@ -992,7 +992,7 @@ class TestQNodeVmapIntegration:
             return qml.probs(wires=[0, 1])
 
         x = jnp.array([1.0, 2.0, 3.0])
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit))(x)
         eqn0 = jaxpr.eqns[0]
 
         assert len(eqn0.invars) == 2  # one closure variable, one (batched) arg
@@ -1002,7 +1002,7 @@ class TestQNodeVmapIntegration:
         assert len(eqn0.outvars) == 1
         assert eqn0.outvars[0].aval.shape == (3, 4)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(res, circuit(x))
 
     def test_qnode_vmap_closure_warn(self):
@@ -1018,7 +1018,7 @@ class TestQNodeVmapIntegration:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(UserWarning, match="Constant argument at index 0 is not scalar. "):
-            jax.make_jaxpr(jax.vmap(circuit))(jnp.array([0.1, 0.2]))
+            qpjax.make_jaxpr(qpjax.vmap(circuit))(jnp.array([0.1, 0.2]))
 
     def test_vmap_overriding_shots(self):
         """Test that the number of shots can be overridden on call with vmap."""
@@ -1032,8 +1032,8 @@ class TestQNodeVmapIntegration:
 
         x = jnp.array([1.0, 2.0, 3.0])
 
-        jaxpr = jax.make_jaxpr(jax.vmap(qml.set_shots(circuit, shots=50), in_axes=0))(x)
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(qml.set_shots(circuit, shots=50), in_axes=0))(x)
+        qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
@@ -1058,7 +1058,7 @@ class TestQNodeVmapIntegration:
             return qml.expval(qml.Z(0))
 
         with pytest.raises(IndexError):
-            jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(jnp.array([1.0, 2.0, 3.0]), 5.0)
+            qpjax.make_jaxpr(qpjax.vmap(circuit, in_axes=(0, None)))(jnp.array([1.0, 2.0, 3.0]), 5.0)
 
     def test_vmap_error_empty_array(self):
         """Test that an error is raised when passing an empty array to vmap."""
@@ -1068,8 +1068,8 @@ class TestQNodeVmapIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0))
 
-        with pytest.raises(ValueError, match="Empty tensors are not supported with jax.vmap."):
-            jax.make_jaxpr(jax.vmap(circuit))(jnp.array([]))
+        with pytest.raises(ValueError, match="Empty tensors are not supported with qpjax.vmap."):
+            qpjax.make_jaxpr(qpjax.vmap(circuit))(jnp.array([]))
 
     def test_warning_bypass_vmap(self):
         """Test that a warning is raised when bypassing vmap."""
@@ -1085,7 +1085,7 @@ class TestQNodeVmapIntegration:
         param_array_2 = jnp.array([2.0, 2.1, 2.2])
 
         with pytest.warns(UserWarning, match="Argument at index 1 has size"):
-            jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(param_array, param_array_2)
+            qpjax.make_jaxpr(qpjax.vmap(circuit, in_axes=(0, None)))(param_array, param_array_2)
 
     def test_qnode_pytree_input_vmap(self):
         """Test that we can capture and execute a qnode with a pytree input and vmap."""
@@ -1096,14 +1096,14 @@ class TestQNodeVmapIntegration:
             return qml.expval(qml.Z(wires=x["wires"]))
 
         x = {"val": jnp.array([0.1, 0.2]), "wires": 0}
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=({"val": 0, "wires": None},)))(x)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit, in_axes=({"val": 0, "wires": None},)))(x)
 
         assert len(jaxpr.eqns[0].invars) == 2
 
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["val"], x["wires"])
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["val"], x["wires"])
         assert qml.math.allclose(res, jnp.cos(x["val"]))
 
     def test_qnode_deep_pytree_input_vmap(self):
@@ -1115,14 +1115,14 @@ class TestQNodeVmapIntegration:
             return qml.expval(qml.Z(wires=x["data"]["wires"]))
 
         x = {"data": {"val": jnp.array([0.1, 0.2]), "wires": 0}}
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=({"data": {"val": 0, "wires": None}},)))(x)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit, in_axes=({"data": {"val": 0, "wires": None}},)))(x)
 
         assert len(jaxpr.eqns[0].invars) == 2
 
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["data"]["val"], x["data"]["wires"])
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["data"]["val"], x["data"]["wires"])
         assert qml.math.allclose(res, jnp.cos(x["data"]["val"]))
 
     def test_qnode_pytree_output_vmap(self):
@@ -1134,7 +1134,7 @@ class TestQNodeVmapIntegration:
             return {"a": qml.expval(qml.Z(0)), "b": qml.expval(qml.Y(0))}
 
         x = jnp.array([1.2, 1.3])
-        out = jax.vmap(circuit)(x)
+        out = qpjax.vmap(circuit)(x)
 
         assert qml.math.allclose(out["a"], jnp.cos(x))
         assert qml.math.allclose(out["b"], -jnp.sin(x))
@@ -1156,12 +1156,12 @@ class TestQNodeVmapIntegration:
 
         x = jnp.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
 
-        jaxpr = jax.make_jaxpr(jax.vmap(cost_fn))(x)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(cost_fn))(x)
 
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.out_avals[0].shape == (2,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert len(result[0]) == 2
         assert jnp.allclose(result[0][0], cost_fn(x[0]))
         assert jnp.allclose(result[0][1], cost_fn(x[1]))
@@ -1187,12 +1187,12 @@ class TestQNodeVmapIntegration:
         y = 2.71
         U = jnp.stack([unitary_group.rvs(16) for _ in range(3)])
 
-        jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None, 0)))(x, y, U)
+        jaxpr = qpjax.make_jaxpr(qpjax.vmap(circuit, in_axes=(0, None, 0)))(x, y, U)
         assert len(jaxpr.eqns[0].invars) == 4  # 3 args + 1 const
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.out_avals[0].shape == (3,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, U)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, U)
         assert qml.math.allclose(result, circuit(x, y, U))
 
     def test_vmap_circuit_inside(self):
@@ -1206,9 +1206,9 @@ class TestQNodeVmapIntegration:
                 qml.RX(x[1] * x[2], wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-            res1 = jax.vmap(circuit)(x)
-            res2 = jax.vmap(circuit, in_axes=0)(x)
-            res3 = jax.vmap(circuit, in_axes=(0,))(x)
+            res1 = qpjax.vmap(circuit)(x)
+            res2 = qpjax.vmap(circuit, in_axes=0)(x)
+            res3 = qpjax.vmap(circuit, in_axes=(0,))(x)
             return res1, res2, res3
 
         x = jnp.array(
@@ -1219,7 +1219,7 @@ class TestQNodeVmapIntegration:
             ]
         )
 
-        jaxpr = jax.make_jaxpr(workflow)(x)
+        jaxpr = qpjax.make_jaxpr(workflow)(x)
 
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 3
@@ -1227,7 +1227,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (3,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         expected = jnp.array([0.93005586, 0.00498127, -0.88789978])
         assert jnp.allclose(result[0], expected)
         assert jnp.allclose(result[1], expected)
@@ -1244,8 +1244,8 @@ class TestQNodeVmapIntegration:
                 qml.RX(x[1] * x[2], wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-            res1 = jax.vmap(circuit, in_axes=1)(x)
-            res2 = jax.vmap(circuit, in_axes=(1,))(x)
+            res1 = qpjax.vmap(circuit, in_axes=1)(x)
+            res2 = qpjax.vmap(circuit, in_axes=(1,))(x)
             return res1, res2
 
         x = jnp.array(
@@ -1256,7 +1256,7 @@ class TestQNodeVmapIntegration:
             ]
         )
 
-        jaxpr = jax.make_jaxpr(workflow)(x)
+        jaxpr = qpjax.make_jaxpr(workflow)(x)
 
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
@@ -1264,7 +1264,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (2,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         expected = jnp.array([0.93005586, 0.00498127])
         assert jnp.allclose(result[0], expected)
         assert jnp.allclose(result[1], expected)
@@ -1280,8 +1280,8 @@ class TestQNodeVmapIntegration:
                 qml.RX(x[1] * x[2] * y, wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-            res1 = jax.vmap(circuit, in_axes=(None, 1))(y[0], x)
-            res2 = jax.vmap(circuit, in_axes=(0, 1))(y, x)
+            res1 = qpjax.vmap(circuit, in_axes=(None, 1))(y[0], x)
+            res2 = qpjax.vmap(circuit, in_axes=(0, 1))(y, x)
             return res1, res2
 
         x = jnp.array(
@@ -1293,7 +1293,7 @@ class TestQNodeVmapIntegration:
         )
         y = jnp.array([1, 2])
 
-        jaxpr = jax.make_jaxpr(workflow)(y, x)
+        jaxpr = qpjax.make_jaxpr(workflow)(y, x)
 
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
@@ -1301,7 +1301,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (2,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, y, x)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, y, x)
         expected = jnp.array([0.93005586, 0.00498127])
         expected2 = jnp.array([0.93005586, -0.97884155])
         assert jnp.allclose(result[0], expected)
@@ -1327,9 +1327,9 @@ class TestQNodeVmapIntegration:
             def workflow4(y, x, z):
                 return circuit(x, y) * y * z
 
-            res1 = jax.vmap(workflow2, in_axes=(0, None))(x, y)
-            res2 = jax.vmap(workflow3, in_axes=(None, 0))(y, x)
-            res3 = jax.vmap(workflow4, in_axes=(None, 0, None))(y, x, z)
+            res1 = qpjax.vmap(workflow2, in_axes=(0, None))(x, y)
+            res2 = qpjax.vmap(workflow3, in_axes=(None, 0))(y, x)
+            res3 = qpjax.vmap(workflow4, in_axes=(None, 0, None))(y, x, z)
             return res1, res2, res3
 
         y = jnp.pi
@@ -1341,7 +1341,7 @@ class TestQNodeVmapIntegration:
             ]
         )
 
-        jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+        jaxpr = qpjax.make_jaxpr(workflow)(x, y, 1)
 
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 3
@@ -1349,7 +1349,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (3,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y, 1)
         expected = jnp.array([0.93005586, 0.00498127, -0.88789978]) * y
         # note! Any failures here my be a result of a side effect from a different test
         # fails when testing tests/capture, passes with tests/capture/test_capture_qnode
@@ -1377,10 +1377,10 @@ class TestQNodeVmapIntegration:
             def workflow4(y, x, z):
                 return circuit(x, y) * y * z
 
-            res1 = jax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
-            res2 = jax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
-            res3 = jax.vmap(workflow3, in_axes=(None, {"arr": 0, "foo": None}))(y, x)
-            res4 = jax.vmap(workflow4, in_axes=(None, {"arr": 0, "foo": None}, None))(y, x, z)
+            res1 = qpjax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
+            res2 = qpjax.vmap(workflow2, in_axes=({"arr": 0, "foo": None}, None))(x, y)
+            res3 = qpjax.vmap(workflow3, in_axes=(None, {"arr": 0, "foo": None}))(y, x)
+            res4 = qpjax.vmap(workflow4, in_axes=(None, {"arr": 0, "foo": None}, None))(y, x, z)
             return res1, res2, res3, res4
 
         y = jnp.pi
@@ -1395,7 +1395,7 @@ class TestQNodeVmapIntegration:
             "foo": None,
         }
 
-        jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
+        jaxpr = qpjax.make_jaxpr(workflow)(x, y, 1)
 
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 4
@@ -1403,7 +1403,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (3,)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["arr"], y, 1)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["arr"], y, 1)
         expected = jnp.array([0.93005586, 0.00498127, -0.88789978]) * y
         assert jnp.allclose(result[0], expected)
         assert jnp.allclose(result[1], expected)
@@ -1421,13 +1421,13 @@ class TestQNodeVmapIntegration:
                 qml.RX(x[1] * x[2], wires=0)
                 return qml.state()
 
-            res1 = jax.vmap(circuit)(x)
-            res2 = jax.vmap(circuit, out_axes=0)(x)
+            res1 = qpjax.vmap(circuit)(x)
+            res2 = qpjax.vmap(circuit, out_axes=0)(x)
             return res1, res2
 
         x = jnp.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
 
-        jaxpr = jax.make_jaxpr(workflow)(x)
+        jaxpr = qpjax.make_jaxpr(workflow)(x)
 
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
@@ -1435,7 +1435,7 @@ class TestQNodeVmapIntegration:
             assert len(eqn.outvars) == 1
             assert eqn.outvars[0].aval.shape == (2, 2)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         expected = jnp.array(
             [
                 [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
@@ -1456,12 +1456,12 @@ class TestQNodeVmapIntegration:
                 qml.RX(x[1] * x[2], wires=0)
                 return qml.state(), qml.probs(0)
 
-            res1 = jax.vmap(circuit)(x)
+            res1 = qpjax.vmap(circuit)(x)
             return res1
 
         x = jnp.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
 
-        jaxpr = jax.make_jaxpr(workflow)(x)
+        jaxpr = qpjax.make_jaxpr(workflow)(x)
 
         assert len(jaxpr.eqns[0].outvars) == 2
         assert jaxpr.out_avals[0].shape == (2, 2)
@@ -1475,7 +1475,7 @@ class TestQNodeVmapIntegration:
         )
         expected_probs = jnp.array([[0.96502793, 0.03497207], [0.05605011, 0.94394989]])
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert jnp.allclose(result[0], expected_state)
         assert jnp.allclose(result[1], expected_probs)
 
@@ -1490,13 +1490,13 @@ class TestQNodeVmapIntegration:
                 qml.RX(x[1] * x[2], wires=0)
                 return qml.state(), qml.state()
 
-            res1 = jax.vmap(circuit, out_axes=1)(x)
-            res2 = jax.vmap(circuit, out_axes=(0, 1))(x)
+            res1 = qpjax.vmap(circuit, out_axes=1)(x)
+            res2 = qpjax.vmap(circuit, out_axes=(0, 1))(x)
             return res1, res2
 
         x = jnp.array([[0.1, 0.2, 0.3], [0.7, 0.8, 0.9]])
 
-        jaxpr = jax.make_jaxpr(workflow)(x)
+        jaxpr = qpjax.make_jaxpr(workflow)(x)
 
         qnode_output_eqns = get_qnode_output_eqns(jaxpr)
         assert len(qnode_output_eqns) == 2
@@ -1505,7 +1505,7 @@ class TestQNodeVmapIntegration:
             assert eqn.outvars[0].aval.shape == (2, 2)
             assert eqn.outvars[1].aval.shape == (2, 2)
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         expected = jnp.array(
             [
                 [0.98235508 + 0.00253459j, 0.0198374 - 0.18595308j],
@@ -1535,7 +1535,7 @@ class TestQNodeAutographIntegration:
                 qml.H(i)
             return qml.state()
 
-        jaxpr = jax.make_jaxpr(c)(3)
+        jaxpr = qpjax.make_jaxpr(c)(3)
         assert jaxpr.eqns[0].params["transform"] == qml.transforms.merge_rotations
         j2 = jaxpr.eqns[0].params["inner_jaxpr"]
         assert j2.eqns[0].params["transform"] == qml.transforms.cancel_inverses
@@ -1560,7 +1560,7 @@ class TestQNodeAutographIntegration:
         def w(n):
             return c(n + 1) + c(n + 3)
 
-        jaxpr = jax.make_jaxpr(w)(3)
+        jaxpr = qpjax.make_jaxpr(w)(3)
 
         for i in [1, 3]:
 
@@ -1738,7 +1738,7 @@ class TestStaticArgnums:
     @pytest.mark.parametrize("sort_static_argnums", [True, False])
     def test_qnode_static_argnums(self, sort_static_argnums):
         """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
-        # Testing using `jax.jit` with `static_argnums` is done in the `TestCaptureCaching` class
+        # Testing using `qpjax.jit` with `static_argnums` is done in the `TestCaptureCaching` class
 
         dev = qml.device("default.qubit", wires=2)
         args = (1.5, 2.5, 3.5)
@@ -1751,7 +1751,7 @@ class TestStaticArgnums:
 
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
-        jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+        jaxpr = qpjax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert len(qfunc_jaxpr.invars) == 1
 
@@ -1778,7 +1778,7 @@ class TestStaticArgnums:
 
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
-        jaxpr = jax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
+        jaxpr = qpjax.make_jaxpr(circuit, static_argnums=static_argnums)(*args)
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert len(qfunc_jaxpr.invars) == len(args[0])
         assert qml.math.allclose(qfunc_jaxpr.eqns[3].invars[0].val, args[1][0])

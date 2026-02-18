@@ -18,7 +18,7 @@ import numpy as np
 
 has_jax = True
 try:
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
 except ImportError:
     has_jax = False
 
@@ -57,9 +57,9 @@ def constant(scalar, time):
 
     .. code-block:: python
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit")
 
@@ -73,7 +73,7 @@ def constant(scalar, time):
     >>> circuit(params)
     Array(0.40808193, dtype=float64)
 
-    >>> jax.grad(circuit)(params)
+    >>> qpjax.grad(circuit)(params)
     Array([-3.65178003], dtype=float64)
     """
     return scalar
@@ -99,7 +99,7 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
         If ``x`` is a function, it must accept two arguments: the trainable parameters and time. The primary use
         of ``rect`` is for numerical simulations via :class:`ParametrizedEvolution`, which assumes ``t`` to be a single scalar
         argument. If you need to efficiently compute multiple times, you need to broadcast over ``t`` via
-        `jax.vmap <https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html>`_ (see examples below).
+        `qpjax.vmap <https://qpjax.readthedocs.io/en/latest/_autosummary/qpjax.vmap.html>`_ (see examples below).
 
     **Example**
 
@@ -118,7 +118,7 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
         windowed_f = qml.pulse.rect(f, windows=windows)
 
         y1 = f(p, time)
-        y2 = jax.vmap(windowed_f, (None, 0))(p, time)
+        y2 = qpjax.vmap(windowed_f, (None, 0))(p, time)
 
         plt.plot(time, y1, label=f"polyval(p={p}, t)")
         plt.plot(time, y2, label=f"rect(polyval, windows={windows})(p={p}, t)")
@@ -132,7 +132,7 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
             :target: javascript:void(0);
 
     Note that in order to efficiently create ``y2``, we broadcasted ``windowed_f`` over the
-    time argument using `jax.vmap <https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html>`_.
+    time argument using `qpjax.vmap <https://qpjax.readthedocs.io/en/latest/_autosummary/qpjax.vmap.html>`_.
 
     ``rect`` can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 

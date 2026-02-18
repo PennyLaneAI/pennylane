@@ -30,7 +30,7 @@ except ImportError:
     pass
 
 # if this fails, test file will be skipped
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 def f1(p, t):
@@ -68,7 +68,7 @@ class TestParametrizedHamiltonianPytree:
     def test_attributes(self, H, fn, coeffs_callable, params):
         """Test that the attributes of the ParametrizedHamiltonianPytree class are initialized
         correctly."""
-        from jax.experimental import sparse
+        from qpjax.experimental import sparse
 
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
             H, dense=False, wire_order=[2, 3, 1, 0]

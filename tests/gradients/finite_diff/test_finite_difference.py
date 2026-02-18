@@ -1015,8 +1015,8 @@ class TestFiniteDiffGradients:
     def test_jax(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])
@@ -1033,7 +1033,7 @@ class TestFiniteDiffGradients:
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
             return fn(dev.execute(tapes))
 
-        res = jax.jacobian(cost_fn)(params)
+        res = qpjax.jacobian(cost_fn)(params)
         assert isinstance(res, tuple)
         x, y = params
         expected = np.array(
@@ -1047,10 +1047,10 @@ class TestFiniteDiffGradients:
     @pytest.mark.jax
     def test_jax_probs(self, approx_order, strategy, tol):  # pylint: disable=unused-argument
         """Tests that the output of the finite-difference transform is similar using or not diff method on the QNode."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
-        x = jax.numpy.array(0.543)
+        x = qpjax.numpy.array(0.543)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -1067,15 +1067,15 @@ class TestFiniteDiffGradients:
             return qml.probs(wires=0), qml.probs(wires=1)
 
         transform_output = qml.gradients.finite_diff(circuit)(x)
-        framework_output = jax.jacobian(circuit)(x)
-        assert jax.numpy.allclose(
-            jax.numpy.stack(transform_output), jax.numpy.stack(framework_output)
+        framework_output = qpjax.jacobian(circuit)(x)
+        assert qpjax.numpy.allclose(
+            qpjax.numpy.stack(transform_output), qpjax.numpy.stack(framework_output)
         )
 
         transform_output = qml.gradients.finite_diff(circuit_fd)(x)
-        framework_output = jax.jacobian(circuit_fd)(x)
-        assert jax.numpy.allclose(
-            jax.numpy.stack(transform_output), jax.numpy.stack(framework_output)
+        framework_output = qpjax.jacobian(circuit_fd)(x)
+        assert qpjax.numpy.allclose(
+            qpjax.numpy.stack(transform_output), qpjax.numpy.stack(framework_output)
         )
 
 
@@ -1092,7 +1092,7 @@ class TestJaxArgnums:
 
     def test_single_expectation_value(self, argnums, interface, approx_order, strategy):
         """Test for single expectation value."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1103,8 +1103,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.finite_diff(
             circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=1e-5
@@ -1123,7 +1123,7 @@ class TestJaxArgnums:
 
     def test_multi_expectation_values(self, argnums, interface, approx_order, strategy):
         """Test for multiple expectation values."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1134,8 +1134,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.finite_diff(
             circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=1e-5
@@ -1158,7 +1158,7 @@ class TestJaxArgnums:
 
     def test_hessian(self, argnums, interface, approx_order, strategy):
         """Test for hessian."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1169,21 +1169,21 @@ class TestJaxArgnums:
             qml.RY(y, wires=[1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, -0.654])
-        y = jax.numpy.array(-0.123)
+        x = qpjax.numpy.array([0.543, -0.654])
+        y = qpjax.numpy.array(-0.123)
 
-        res = jax.jacobian(
+        res = qpjax.jacobian(
             qml.gradients.finite_diff(
                 circuit, approx_order=approx_order, strategy=strategy, h=1e-5, argnums=argnums
             ),
             argnums=argnums,
         )(x, y)
-        res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
+        res_expected = qpjax.hessian(circuit, argnums=argnums)(x, y)
 
         tol = 10e-6
 
         if len(argnums) == 1:
-            # jax.hessian produces an additional tuple axis, which we have to index away here
+            # qpjax.hessian produces an additional tuple axis, which we have to index away here
             assert np.allclose(res, res_expected[0], atol=tol)
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]

@@ -441,7 +441,7 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jax(self):
         """Test the jax interface"""
-        import jax
+        import qpjax
 
         dev = qml.device("reference.qubit", wires=5)
 
@@ -453,7 +453,7 @@ class TestInterfaces:
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
-        res = jax.grad(circuit)(self.params)
+        res = qpjax.grad(circuit)(self.params)
 
         assert qml.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
@@ -461,11 +461,11 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jit(self):
         """Test that jax jit works"""
-        import jax
+        import qpjax
 
         dev = qml.device("reference.qubit", wires=5)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit(coeffs):
             H = qml.ops.LinearCombination(
@@ -474,7 +474,7 @@ class TestInterfaces:
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
-        res = jax.grad(circuit)(self.params)
+        res = qpjax.grad(circuit)(self.params)
 
         assert qml.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)

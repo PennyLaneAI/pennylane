@@ -154,7 +154,7 @@ class TestInterfacesStructureConstants:
     def test_jax_structure_constants(self):
         """Test jax interface for structure constants"""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dla_jax = jnp.array(dla0)
         adj_jax = qml.structure_constants(dla_jax, matrix=True)

@@ -237,11 +237,11 @@ def _deallocate_primitive(self, *wires):
     return []
 
 
-def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
+def plxpr_to_tape(plxpr: "qpjax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
     Args:
-        plxpr (jax.extend.core.Jaxpr): a pennylane variant jaxpr
+        plxpr (qpjax.extend.core.Jaxpr): a pennylane variant jaxpr
         consts (list): the consts for the jaxpr
         *args : the arguments to execute the plxpr with
 
@@ -266,7 +266,7 @@ def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> 
 
         qml.capture.enable()
 
-        plxpr = jax.make_jaxpr(f)(0.5)
+        plxpr = qpjax.make_jaxpr(f)(0.5)
         tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
         print(qml.drawer.tape_text(tape, decimals=2))
 

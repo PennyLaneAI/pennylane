@@ -195,7 +195,7 @@ class TestMeasurements:
 
     @pytest.mark.jax
     def test_op_math_observable_jit_compatible(self):
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -204,7 +204,7 @@ class TestMeasurements:
             return qml.expval((t1 * qml.X(0)) @ (t2 * qml.Y(1)))
 
         t1, t2 = 0.5, 1.0
-        assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
+        assert qml.math.allclose(qnode(t1, t2), qpjax.jit(qnode)(t1, t2))
 
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
@@ -360,9 +360,9 @@ class TestNaNMeasurements:
         expected shape."""
         state = qml.math.full((2, 2), np.nan, like="jax")
         if use_jit:
-            import jax
+            import qpjax
 
-            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
+            res = qpjax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
         else:
             res = measure(mp, state, is_state_batched=False)
 
@@ -396,9 +396,9 @@ class TestNaNMeasurements:
         expected shape."""
         state = qml.math.full((2, 2), np.nan, like="jax")
         if use_jit:
-            import jax
+            import qpjax
 
-            res = jax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
+            res = qpjax.jit(measure, static_argnums=[0, 2])(mp, state, is_state_batched=False)
         else:
             res = measure(mp, state, is_state_batched=False)
 
@@ -459,20 +459,20 @@ class TestSumOfTermsDifferentiability:
     @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
+        x = qpjax.numpy.array(0.52, dtype=qpjax.numpy.float64)
         coeffs = (5.2, 6.7)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
+        f = qpjax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
 
         out = f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        g = jax.grad(f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_g = jax.grad(self.expected)(x, coeffs)
+        g = qpjax.grad(f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_g = qpjax.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.torch

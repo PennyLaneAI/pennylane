@@ -1177,9 +1177,9 @@ class TestPauliSentenceMatrix:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_dense_matrix_jax(self, use_jit):
-        """Test calculating and differentiating the matrix with jax."""
+        """Test calculating and differentiating the matrix with qpjax."""
 
-        import jax
+        import qpjax
 
         def f(x, y):
             _pw1 = qml.pauli.PauliWord({0: "X", 1: "Y"})
@@ -1188,10 +1188,10 @@ class TestPauliSentenceMatrix:
             return H.to_mat()
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
-        x = jax.numpy.array(0.1 + 0j)
-        y = jax.numpy.array(0.2 + 0j)
+        x = qpjax.numpy.array(0.1 + 0j)
+        y = qpjax.numpy.array(0.2 + 0j)
 
         pw1_mat = np.array([[0, 0, 0, -1j], [0, 0, 1j, 0], [0, -1j, 0, 0], [1j, 0, 0, 0]])
         pw2_mat = np.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
@@ -1199,7 +1199,7 @@ class TestPauliSentenceMatrix:
         mat = f(x, y)
         assert qml.math.allclose(mat, x * pw1_mat + y * pw2_mat)
 
-        gx, gy = jax.jacobian(f, holomorphic=True, argnums=(0, 1))(x, y)
+        gx, gy = qpjax.jacobian(f, holomorphic=True, argnums=(0, 1))(x, y)
         assert qml.math.allclose(gx, pw1_mat)
         assert qml.math.allclose(gy, pw2_mat)
 
@@ -1207,17 +1207,17 @@ class TestPauliSentenceMatrix:
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_tracer_coefficients_jax(self, use_jit):
         """Tests that functions with abstract coefficients can be jitted."""
-        import jax
+        import qpjax
 
         def f(c1, c2):
             op = c1 * qml.X(0) + c2 * qml.X(0)
             return op.simplify()
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
             # Need for assert_equal to recognize they are the same.
             # Complains about mismatching interfaces (numpy vs jax).
-            coeffs = jax.numpy.array(1.0)
+            coeffs = qpjax.numpy.array(1.0)
         else:
             coeffs = 1.0
 
@@ -1491,7 +1491,7 @@ class TestPauliArithmeticWithADInterfaces:
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_jax_initialization(self, scalar):
         """Test initializing PauliSentence from jax array"""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         tensor = scalar * jnp.ones(4)
         res = PauliSentence(dict(zip(words, tensor)))
@@ -1551,7 +1551,7 @@ class TestPauliArithmeticWithADInterfaces:
     @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
     def test_jax_scalar_multiplication(self, ps, scalar):
         """Test that multiplying with a jax array works and results in the correct types"""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         res1 = jnp.array(scalar) * ps
         res2 = ps * jnp.array(scalar)

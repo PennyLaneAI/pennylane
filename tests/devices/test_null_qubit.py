@@ -276,10 +276,10 @@ class TestBasicCircuit:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_results_and_backprop(self, use_jit):
-        """Tests execution and gradients with jax."""
-        import jax
+        """Tests execution and gradients with qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.678)
+        phi = qpjax.numpy.array(0.678)
 
         dev = NullQubit()
 
@@ -290,11 +290,11 @@ class TestBasicCircuit:
             return dev.execute(qs)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         expected = np.zeros(2)
         assert np.array_equal(f(phi), expected)
-        assert np.array_equal(jax.jacobian(f)(phi), expected)
+        assert np.array_equal(qpjax.jacobian(f)(phi), expected)
 
     @pytest.mark.torch
     def test_torch_results_and_backprop(self):
@@ -655,16 +655,16 @@ class TestExecutingBatches:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax(self, use_jit):
-        """Test batches can be executed and have backprop derivatives in jax."""
-        import jax
+        """Test batches can be executed and have backprop derivatives in qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.123)
+        phi = qpjax.numpy.array(0.123)
 
-        f = jax.jit(self.f_hashable) if use_jit else self.f_hashable
+        f = qpjax.jit(self.f_hashable) if use_jit else self.f_hashable
         results = f(phi)
         self.assert_results(results)
 
-        g0, g1 = jax.jacobian(f)(phi)
+        g0, g1 = qpjax.jacobian(f)(phi)
         assert isinstance(g0, tuple)
         assert np.array_equal(g0, np.zeros(2))
         assert np.array_equal(g1, np.zeros(4))
@@ -762,13 +762,13 @@ class TestSumOfTermsDifferentiability:
     @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_jax_backprop(self, style, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
-        import jax
+        import qpjax
 
-        x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
-        f = jax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
+        x = qpjax.numpy.array(0.52, dtype=qpjax.numpy.float64)
+        f = qpjax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
 
         assert f(x, style=style) == 0
-        assert jax.grad(f)(x, style=style) == 0
+        assert qpjax.grad(f)(x, style=style) == 0
 
     @pytest.mark.xfail(reason="torch backprop does not work")
     @pytest.mark.torch
@@ -1246,14 +1246,14 @@ class TestJacobian:
 
     @pytest.mark.jax
     def test_jacobian_jax(self, method, device_vjp):
-        """Test the jacobian with jax."""
-        import jax
-        from jax import numpy as jnp
+        """Test the jacobian with qpjax."""
+        import qpjax
+        from qpjax import numpy as jnp
 
         x = jnp.array(0.1)
         if device_vjp:
             pytest.xfail(reason="cannot handle jax's processing of device VJPs")
-        probs_jac, expval_jac = jax.jacobian(self.get_circuit(method, device_vjp))(x)
+        probs_jac, expval_jac = qpjax.jacobian(self.get_circuit(method, device_vjp))(x)
         assert np.array_equal(probs_jac, np.zeros(2))
         assert np.array_equal(expval_jac, 0.0)
 
@@ -1341,38 +1341,38 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
 def test_execute_plxpr():
     """Test that null.qubit can execute plxpr."""
 
-    import jax
+    import qpjax
 
     def f(x):
         qml.RX(x, 0)
         return qml.expval(qml.Z(0)), qml.probs(), 4, qml.var(qml.X(0)), qml.state()
 
-    jaxpr = jax.make_jaxpr(f)(0.5)
+    jaxpr = qpjax.make_jaxpr(f)(0.5)
 
     dev = qml.device("null.qubit", wires=4)
     res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
     assert qml.math.allclose(res[0], 0)
-    assert qml.math.allclose(res[1], jax.numpy.zeros(2**4))
+    assert qml.math.allclose(res[1], qpjax.numpy.zeros(2**4))
     assert qml.math.allclose(res[2], 0)  # other values are still just zero
     assert qml.math.allclose(res[3], 0)
-    assert qml.math.allclose(res[4], jax.numpy.zeros(2**4, dtype=complex))
+    assert qml.math.allclose(res[4], qpjax.numpy.zeros(2**4, dtype=complex))
 
 
 @pytest.mark.capture
 def test_execute_plxpr_shots():
-    import jax
+    import qpjax
 
     def f(x):
         qml.RX(x, 0)
         return qml.expval(qml.Z(0)), 5, qml.sample(wires=(0, 1))
 
-    jaxpr = jax.make_jaxpr(f)(0.5)
+    jaxpr = qpjax.make_jaxpr(f)(0.5)
 
     dev = qml.device("null.qubit", wires=4)
     res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, shots=50)
     assert qml.math.allclose(res[0], 0)
     assert qml.math.allclose(res[1], 0)
-    assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))
+    assert qml.math.allclose(res[2], qpjax.numpy.zeros((50, 2)))
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

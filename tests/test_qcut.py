@@ -2184,7 +2184,7 @@ class TestMCPostprocessing:
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-        import jax
+        import qpjax
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
@@ -2198,7 +2198,7 @@ class TestMCPostprocessing:
             np.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [
-            qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
+            qml.math.convert_like(fs, qpjax.numpy.ones(1)) for fs in fixed_samples
         ]
 
         postprocessed = qcut.qcut_processing_fn_sample(
@@ -2397,7 +2397,7 @@ class TestMCPostprocessing:
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-        import jax
+        import qpjax
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
@@ -2411,7 +2411,7 @@ class TestMCPostprocessing:
             np.array([[1.0], [1.0], [1.0]]),
         ]
         convert_fixed_samples = [
-            qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
+            qml.math.convert_like(fs, qpjax.numpy.ones(1)) for fs in fixed_samples
         ]
 
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
@@ -2911,7 +2911,7 @@ class TestCutCircuitMCTransform:
         Tests that `cut_circuit_mc` returns the correct type of sample
         output value in Jax
         """
-        import jax
+        import qpjax
 
         shots = 10
         dev = dev_fn(wires=2)
@@ -2933,7 +2933,7 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        convert_input = qml.math.convert_like(v, jax.numpy.ones(1))
+        convert_input = qml.math.convert_like(v, qpjax.numpy.ones(1))
 
         res = cut_circuit(convert_input)
 
@@ -3045,7 +3045,7 @@ class TestCutCircuitMCTransform:
         Tests that `cut_circuit_mc` returns the correct type of expectation
         value output in Jax
         """
-        import jax
+        import qpjax
 
         shots = 10
         dev = dev_fn(wires=2)
@@ -3067,7 +3067,7 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        convert_input = qml.math.convert_like(v, jax.numpy.ones(1))
+        convert_input = qml.math.convert_like(v, qpjax.numpy.ones(1))
         res = cut_circuit(convert_input)
 
         assert isinstance(res, type(convert_input))
@@ -3323,8 +3323,8 @@ class TestContractTensors:
         """Test if the basic contraction is differentiable using the jax interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         params = jnp.array(self.params)
 
@@ -3335,7 +3335,7 @@ class TestContractTensors:
             r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
             return r
 
-        grad = jax.grad(contract)(params)
+        grad = qpjax.grad(contract)(params)
 
         assert jnp.allclose(grad, self.expected_grad)
 
@@ -3609,7 +3609,7 @@ class TestQCutProcessingFn:
     @pytest.mark.parametrize("n", [1, 2])
     def test_process_tensor_jax(self, n):
         """Test if the tensor returned by _process_tensor is equal to the expected value"""
-        import jax
+        import qpjax
 
         U = unitary_group.rvs(2**n, random_state=1967)
 
@@ -3648,7 +3648,7 @@ class TestQCutProcessingFn:
             input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
-        results = qml.math.cast_like(np.concatenate(results), jax.numpy.ones(1))
+        results = qml.math.cast_like(np.concatenate(results), qpjax.numpy.ones(1))
 
         # Now apply _process_tensor
         tensor = qcut._process_tensor(results, n, n)
@@ -3825,8 +3825,8 @@ class TestQCutProcessingFn:
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         x = jnp.array(0.9)
 
@@ -3847,7 +3847,7 @@ class TestQCutProcessingFn:
 
             return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
 
-        grad = jax.grad(f)(x)
+        grad = qpjax.grad(f)(x)
         expected_grad = (
             3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
         ) * f(1)
@@ -3983,8 +3983,8 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4004,8 +4004,8 @@ class TestCutCircuitTransform:
         res = cut_circuit(x)
         res_expected = circuit(x)
 
-        grad = jax.grad(cut_circuit)(x)
-        grad_expected = jax.grad(circuit)(x)
+        grad = qpjax.grad(cut_circuit)(x)
+        grad_expected = qpjax.grad(circuit)(x)
 
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
@@ -4197,8 +4197,8 @@ class TestCutCircuitTransform:
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4213,7 +4213,7 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = jnp.array(0.531)
-        cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
+        cut_circuit_jit = qpjax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
 
         # Run once with original value
         spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
@@ -4228,9 +4228,9 @@ class TestCutCircuitTransform:
         spy.assert_called_once()
         assert np.isclose(res, res_expected)
 
-        jax.grad(cut_circuit_jit)(x)
-        grad = jax.grad(cut_circuit_jit)(x)
-        grad_expected = jax.grad(circuit)(x)
+        qpjax.grad(cut_circuit_jit)(x)
+        grad = qpjax.grad(cut_circuit_jit)(x)
+        grad_expected = qpjax.grad(circuit)(x)
 
         assert np.isclose(grad, grad_expected)
         assert spy.call_count == 1
@@ -4245,9 +4245,9 @@ class TestCutCircuitTransform:
 
             assert np.isclose(res, res_expected)
 
-            jax.grad(cut_circuit_jit)(x)
-            grad = jax.grad(cut_circuit_jit)(x)
-            grad_expected = jax.grad(circuit)(x)
+            qpjax.grad(cut_circuit_jit)(x)
+            grad = qpjax.grad(cut_circuit_jit)(x)
+            grad_expected = qpjax.grad(circuit)(x)
 
             assert np.isclose(grad, grad_expected)
 

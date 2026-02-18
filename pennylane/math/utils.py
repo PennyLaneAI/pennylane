@@ -340,7 +340,7 @@ def is_abstract(tensor, like=None):
     (JIT) compilation.
 
     Abstract tensors most commonly occur within a function that has been
-    decorated using ``@tf.function`` or ``@jax.jit``.
+    decorated using ``@tf.function`` or ``@qpjax.jit``.
 
     .. note::
 
@@ -365,8 +365,8 @@ def is_abstract(tensor, like=None):
 
     .. code-block:: python
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         def function(x):
             print("Value:", x)
@@ -381,10 +381,10 @@ def is_abstract(tensor, like=None):
     Abstract: False
     Array(0.26, dtype=float32)
 
-    However, if we use the ``@jax.jit`` decorator, the tensor will now be abstract:
+    However, if we use the ``@qpjax.jit`` decorator, the tensor will now be abstract:
 
     >>> x = jnp.array([0.5, 0.1])
-    >>> jax.jit(function)(x)
+    >>> qpjax.jit(function)(x)
     Value: Traced<ShapedArray(float32[2])>with<DynamicJaxprTrace(level=0/1)>
     Abstract: True
     Array(0.26, dtype=float32)
@@ -420,15 +420,15 @@ def is_abstract(tensor, like=None):
     interface = like or math.get_interface(tensor)
 
     if interface == "jax":
-        import jax
+        import qpjax
 
-        # Use jax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.0+
+        # Use qpjax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.0+
         # (e.g., LinearizeTracer, JVPTracer, BatchTracer, JaxprTracer, DynamicJaxprTracer, etc.)
-        if isinstance(tensor, jax.core.Tracer):
+        if isinstance(tensor, qpjax.core.Tracer):
             # Tracer objects will be used when computing gradients or applying transforms.
-            # If the value of the tracer is known, jax.core.is_concrete will return True.
+            # If the value of the tracer is known, qpjax.core.is_concrete will return True.
             # Otherwise, it will be abstract.
-            return not jax.core.is_concrete(tensor)
+            return not qpjax.core.is_concrete(tensor)
 
         return False
 
@@ -542,16 +542,16 @@ def requires_grad(tensor, interface=None):
         return False
 
     if interface == "jax":
-        import jax
+        import qpjax
 
-        return isinstance(tensor, jax.core.Tracer)
+        return isinstance(tensor, qpjax.core.Tracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
 
 
 def in_backprop(tensor, interface=None):
     """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd,
-    TensorFlow and Jax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
+    TensorFlow and qpjax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
     rather checking if the gradient is actually calculated.
 
     Args:
@@ -587,9 +587,9 @@ def in_backprop(tensor, interface=None):
         return isinstance(tensor, ArrayBox)
 
     if interface == "jax":
-        import jax
+        import qpjax
 
-        return isinstance(tensor, jax.core.Tracer)
+        return isinstance(tensor, qpjax.core.Tracer)
 
     if interface in {"numpy", "scipy"}:
         return False

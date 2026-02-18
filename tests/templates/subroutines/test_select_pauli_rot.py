@@ -188,7 +188,7 @@ class TestSelectPauliRot:
     def test_interface_jax(self):
         """Test that SelectPauliRot works with jax"""
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         angles = [1, 2, 3, 4]
 
@@ -262,8 +262,8 @@ class TestSelectPauliRot:
     def test_jax_jit(self):
         """Test that SelectPauliRot works with jax"""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         angles = jnp.array([1.0, 2.0, 3.0, 4.0])
 
@@ -281,7 +281,7 @@ class TestSelectPauliRot:
             return qml.state()
 
         expected_output = circuit(angles)
-        generated_output = jax.jit(circuit)(angles)
+        generated_output = qpjax.jit(circuit)(angles)
 
         assert np.allclose(expected_output, generated_output)
         assert qml.math.get_interface(generated_output) == "jax"

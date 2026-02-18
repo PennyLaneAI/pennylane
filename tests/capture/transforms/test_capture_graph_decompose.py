@@ -135,7 +135,7 @@ class TestDecomposeInterpreterGraphEnabled:
         def f():
             CustomOp(wires=[0, 1])
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         assert collector.state["ops"] == [qml.H(1), qml.CNOT(wires=[0, 1]), qml.H(1)]
@@ -150,7 +150,7 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.MultiRZ(x, wires=[0, 1, 2])
 
         decomposed_f = DecomposeInterpreter(gate_set={"Hadamard", "CNOT", "RZ", "RY"})(f)
-        jaxpr = jax.make_jaxpr(decomposed_f)(0.1, 0.2, 0.3)
+        jaxpr = qpjax.make_jaxpr(decomposed_f)(0.1, 0.2, 0.3)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
         assert collector.state["ops"] == [
@@ -169,7 +169,7 @@ class TestDecomposeInterpreterGraphEnabled:
         ]
 
         decomposed_f = DecomposeInterpreter(gate_set={"RY", "RZ", "CZ", "GlobalPhase"})(f)
-        jaxpr = jax.make_jaxpr(decomposed_f)(0.1, 0.2, 0.3)
+        jaxpr = qpjax.make_jaxpr(decomposed_f)(0.1, 0.2, 0.3)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
         assert collector.state["ops"] == [
@@ -229,7 +229,7 @@ class TestDecomposeInterpreterGraphEnabled:
         def f(x):
             qml.ctrl(qml.MultiRZ(x, wires=[0, 1]), control=[2])
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = qpjax.make_jaxpr(f)(0.5)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5)
         assert collector.state["ops"] == [
@@ -257,7 +257,7 @@ class TestDecomposeInterpreterGraphEnabled:
         def f(x):
             qml.ctrl(inner_f, control=[2])(x, wires=[0, 1])
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = qpjax.make_jaxpr(f)(0.5)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.5)
         assert collector.state["ops"] == [
@@ -295,7 +295,7 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.adjoint(qml.adjoint(qml.MultiRZ(x, wires=[0, 1])))
             qml.adjoint(CustomOp(x, y, z, wires=[0]))
 
-        jaxpr = jax.make_jaxpr(f)(0.1, 0.2, 0.3)
+        jaxpr = qpjax.make_jaxpr(f)(0.1, 0.2, 0.3)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
         assert collector.state["ops"] == [
@@ -322,7 +322,7 @@ class TestDecomposeInterpreterGraphEnabled:
         def f(x, y, z):
             qml.adjoint(inner_f)(x, y, z, wires=[0])
 
-        jaxpr = jax.make_jaxpr(f)(0.1, 0.2, 0.3)
+        jaxpr = qpjax.make_jaxpr(f)(0.1, 0.2, 0.3)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.1, 0.2, 0.3)
         assert collector.state["ops"] == [
@@ -346,7 +346,7 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.cond(x > 0.5, true_fn, false_fn)()
 
         # The PLxPR is constructed with the true_fn branch
-        jaxpr = jax.make_jaxpr(f)(0.6, [0, 1])
+        jaxpr = qpjax.make_jaxpr(f)(0.6, [0, 1])
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.6, *[0, 1])
         assert collector.state["ops"] == [
@@ -382,7 +382,7 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.ctrl(qml.cond(x > 0.5, true_fn, false_fn), control=wires[0])()
 
         # The PLxPR is constructed with the true_fn branch
-        jaxpr = jax.make_jaxpr(f)(0.6, [0, 1])
+        jaxpr = qpjax.make_jaxpr(f)(0.6, [0, 1])
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0.6, *[0, 1])
         assert collector.state["ops"] == [
@@ -441,7 +441,7 @@ class TestDecomposeInterpreterGraphEnabled:
             m0 = qml.measure(0) if m_type == "mcm" else qml.pauli_measure("XZ", wires=[0, 1])
             qml.cond(m0, qml.X)(0)
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
         ops = collector.state["ops"]
@@ -539,7 +539,7 @@ class TestDecomposeInterpreterGraphEnabled:
             LargeOpDynamicWireDecomp(wires=[0, 1, 2, 3, 4])
             CustomOpDynamicWireDecomp(wires=[0, 1, 2])
 
-        plxpr = jax.make_jaxpr(f)()
+        plxpr = qpjax.make_jaxpr(f)()
         tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
 
         if num_work_wires is None:
@@ -561,7 +561,7 @@ class TestDecomposeInterpreterGraphEnabled:
         def f():
             qml.change_op_basis(qml.prod(qml.X(0), qml.Y(0)), qml.Z(0))
 
-        plxpr = jax.make_jaxpr(f)()
+        plxpr = qpjax.make_jaxpr(f)()
         tape = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
         assert tape.operations == [
             qml.Y(0),
@@ -601,7 +601,7 @@ class TestDecomposeInterpreterGraphEnabled:
             SomeOtherOp(wires=[0, 1, 2, 3, 4])
             CustomOpDynamicWireDecomp(wires=[0, 1, 4])
 
-        plxpr = jax.make_jaxpr(circuit)()
+        plxpr = qpjax.make_jaxpr(circuit)()
         decomp = qml.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
         [result], _ = qml.transforms.resolve_dynamic_wires([decomp], min_int=5)
 

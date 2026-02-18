@@ -28,7 +28,7 @@ from pennylane.pulse import ParametrizedHamiltonian
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     try:
-        import jax  # pylint: disable=unused-import
+        import qpjax  # pylint: disable=unused-import
 
         pytest.skip()
     except ImportError:
@@ -58,9 +58,9 @@ class TestConstant:
 
     def test_constant_is_jittable(self):
         """Test that the callable returned by the ``constant`` function is jittable."""
-        import jax
+        import qpjax
 
-        c = jax.jit(qml.pulse.constant)
+        c = qpjax.jit(qml.pulse.constant)
 
         scalar = 1.23
         times = np.arange(0, 10, step=1e-2)
@@ -133,12 +133,12 @@ class TestRect:
     @pytest.mark.jax
     def test_rect_is_jittable(self):
         """Test that the callable returned by the ``rect`` function is jittable."""
-        import jax
+        import qpjax
 
         def f(p, t):
             return p * t
 
-        c = jax.jit(qml.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)]))
+        c = qpjax.jit(qml.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)]))
 
         times = np.arange(0, 10, step=1e-2)
         param = 10
@@ -178,8 +178,8 @@ class TestIntegration:
     def test_qnode(self):
         """Test that the evolution of a parametrized hamiltonian defined with convenience functions
         can be executed on a QNode."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         def f1(p, t):
             return p * t
@@ -196,7 +196,7 @@ class TestIntegration:
             time_step = 1e-3
             times = jnp.arange(*t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+                yield qpjax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -205,7 +205,7 @@ class TestIntegration:
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
             qml.evolve(H)(params=params, t=t)
@@ -223,8 +223,8 @@ class TestIntegration:
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
         assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
         assert qml.math.allclose(
-            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+            qpjax.grad(circuit)(params), qpjax.grad(true_circuit)(params), atol=5e-3
         )
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+            qpjax.grad(jitted_circuit)(params), qpjax.grad(true_circuit)(params), atol=5e-3
         )

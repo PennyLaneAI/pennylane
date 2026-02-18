@@ -70,14 +70,14 @@ class TestParametricMidMeasure:
 
     @pytest.mark.jax
     def test_flatten_unflatten_jax(self):
-        """Test that jax.tree_util can flatten and unflatten the ParametricMidMeasure"""
+        """Test that qpjax.tree_util can flatten and unflatten the ParametricMidMeasure"""
 
-        import jax
+        import qpjax
 
         op = ParametricMidMeasure(Wires(0), angle=1.23, id="m1", plane="XY")
 
-        leaves, struct = jax.tree_util.tree_flatten(op)
-        unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
+        leaves, struct = qpjax.tree_util.tree_flatten(op)
+        unflattened_op = qpjax.tree_util.tree_unflatten(struct, leaves)
 
         assert op.hash == unflattened_op.hash
 
@@ -251,14 +251,14 @@ class TestMidMeasureXAndY:
     @pytest.mark.jax
     @pytest.mark.parametrize("mp_class", [XMidMeasure, YMidMeasure])
     def test_flatten_unflatten_jax(self, mp_class):
-        """Test that jax.tree_util can flatten and unflatten the ParametricMidMeasure"""
+        """Test that qpjax.tree_util can flatten and unflatten the ParametricMidMeasure"""
 
-        import jax
+        import qpjax
 
         op = mp_class(Wires(0), id="m1")
 
-        leaves, struct = jax.tree_util.tree_flatten(op)
-        unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
+        leaves, struct = qpjax.tree_util.tree_flatten(op)
+        unflattened_op = qpjax.tree_util.tree_unflatten(struct, leaves)
 
         assert op.hash == unflattened_op.hash
 
@@ -504,14 +504,14 @@ class TestMeasureFunctions:
     )
     def test_x_and_y_with_program_capture(self, meas_func, angle, plane, wire, reset, postselect):
         """Test that the measure_ functions are captured as expected"""
-        import jax
+        import qpjax
 
         def circ():
             m = meas_func(wire, reset=reset, postselect=postselect)
             qml.cond(m, qml.X, qml.Y)(0)
             return qml.expval(qml.Z(2))
 
-        plxpr = jax.make_jaxpr(circ)()
+        plxpr = qpjax.make_jaxpr(circ)()
 
         # measurement is captured as epxected
         assert plxpr.eqns[0].primitive.name == "measure_in_basis"
@@ -520,14 +520,14 @@ class TestMeasureFunctions:
         assert plxpr.eqns[0].params["reset"] == reset
 
         # parameters held in invars
-        assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
-        assert jax.numpy.isclose(wire, plxpr.eqns[0].invars[1].val)
+        assert qpjax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
+        assert qpjax.numpy.isclose(wire, plxpr.eqns[0].invars[1].val)
 
         # measurement value is assigned and passed forward
         assert plxpr.eqns[1].primitive.name == "cond"
         assert plxpr.eqns[1].invars[0] == plxpr.eqns[0].outvars[0]
         invar_aval = plxpr.eqns[1].params["jaxpr_branches"][0].invars[0].aval
-        assert invar_aval.dtype == jax.numpy.int64
+        assert invar_aval.dtype == qpjax.numpy.int64
         assert invar_aval.shape == ()
 
     @pytest.mark.capture
@@ -540,13 +540,13 @@ class TestMeasureFunctions:
         self, angle, plane, wire, reset, postselect, angle_type
     ):
         """Test that the measure_ functions are captured as expected"""
-        import jax
+        import qpjax
         import networkx as nx
 
         if angle_type == "numpy":
             angle = np.array(angle)
         elif angle_type == "jax":
-            angle = jax.numpy.array(angle)
+            angle = qpjax.numpy.array(angle)
 
         def circ():
             m = measure_arbitrary_basis(
@@ -556,28 +556,28 @@ class TestMeasureFunctions:
             qml.ftqc.make_graph_state(nx.grid_graph((4,)), [0, 1, 2, 3])
             return qml.expval(qml.Z(2))
 
-        plxpr = jax.make_jaxpr(circ)()
+        plxpr = qpjax.make_jaxpr(circ)()
         assert plxpr.eqns[0].primitive.name == "measure_in_basis"
         assert plxpr.eqns[0].params["plane"] == plane
         assert plxpr.eqns[0].params["postselect"] == postselect
         assert plxpr.eqns[0].params["reset"] == reset
         outvar_aval = plxpr.eqns[0].outvars[0].aval
         assert outvar_aval.shape == ()
-        assert outvar_aval.dtype == jax.numpy.bool
+        assert outvar_aval.dtype == qpjax.numpy.bool
 
         # dynamic parameters held in invars for numpy, and consts for jax
         if "jax" in angle_type:
-            assert jax.numpy.isclose(angle, plxpr.consts[0])
+            assert qpjax.numpy.isclose(angle, plxpr.consts[0])
         else:
-            assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
+            assert qpjax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
 
         # Wires captured as invars
-        assert jax.numpy.allclose(wire, plxpr.eqns[0].invars[1].val)
+        assert qpjax.numpy.allclose(wire, plxpr.eqns[0].invars[1].val)
 
         assert plxpr.eqns[1].primitive.name == "cond"
         invar_aval = plxpr.eqns[1].params["jaxpr_branches"][0].invars[0].aval
         assert invar_aval.shape == ()
-        assert invar_aval.dtype == jax.numpy.int64
+        assert invar_aval.dtype == qpjax.numpy.int64
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
@@ -936,14 +936,14 @@ class TestWorkflows:
         by the QNode"""
 
         if "jax" in angle_type or use_jit:
-            jax = pytest.importorskip("jax")
-            array_fn = jax.numpy.array
+            qpjax = pytest.importorskip("jax")
+            array_fn = qpjax.numpy.array
         else:
             array_fn = np.array
 
         if mcm_method == "tree-traversal" and use_jit:
             # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
-            pytest.skip("TT & jax.jit are incompatible")
+            pytest.skip("TT & qpjax.jit are incompatible")
 
         dev = qml.device("default.qubit")
 
@@ -954,9 +954,9 @@ class TestWorkflows:
 
         def jit_wrapper(func):
             if use_jit:
-                import jax
+                import qpjax
 
-                return jax.jit(func)
+                return qpjax.jit(func)
             return func
 
         @jit_wrapper

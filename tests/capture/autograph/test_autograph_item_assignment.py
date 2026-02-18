@@ -20,9 +20,9 @@ pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 
 # pylint: disable = wrong-import-position
-import jax.numpy as jnp
+import qpjax.numpy as jnp
 from jax import make_jaxpr
-from jax.core import eval_jaxpr
+from qpjax.core import eval_jaxpr
 
 import pennylane as qml
 from pennylane.capture.autograph import run_autograph
@@ -203,7 +203,7 @@ def test_qnode_with_python_array_assignment():
     assert jnp.allclose(res, -1.0)
 
     # Test gradient
-    grad = jax.grad(ag_circuit, argnums=0)(new_angle)
+    grad = qpjax.grad(ag_circuit, argnums=0)(new_angle)
     # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
     assert jnp.allclose(grad, 0.0)
 
@@ -229,7 +229,7 @@ def test_qnode_with_jax_array_assignment():
     assert jnp.allclose(res, -1.0)
 
     # Test gradient
-    grad = jax.grad(ag_circuit, argnums=1)(angles_in, new_angle)
+    grad = qpjax.grad(ag_circuit, argnums=1)(angles_in, new_angle)
     # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
     assert jnp.allclose(grad, 0.0)
 
@@ -246,7 +246,7 @@ def test_item_assignment_is_differentiable():
     array_in = jnp.ones(5)
     value_in = 5.0
     args = (array_in, value_in)
-    grad_jaxpr = make_jaxpr(jax.grad(ag_fn, argnums=1))(*args)
+    grad_jaxpr = make_jaxpr(qpjax.grad(ag_fn, argnums=1))(*args)
     result = eval_jaxpr(grad_jaxpr.jaxpr, grad_jaxpr.consts, *args)
 
     assert jnp.allclose(result[0], 1.0)

@@ -62,9 +62,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     _shortname = None
 
-    _obs_primitive: Optional["jax.extend.core.Primitive"] = None
-    _wires_primitive: Optional["jax.extend.core.Primitive"] = None
-    _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
+    _obs_primitive: Optional["qpjax.extend.core.Primitive"] = None
+    _wires_primitive: Optional["qpjax.extend.core.Primitive"] = None
+    _mcm_primitive: Optional["qpjax.extend.core.Primitive"] = None
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)

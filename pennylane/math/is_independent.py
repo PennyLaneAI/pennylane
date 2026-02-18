@@ -78,7 +78,7 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
 # pylint: disable=import-outside-toplevel
 def _jax_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
-    using JAX.
+    using qpjax.
 
     Args:
         func (callable): Function to test for independence
@@ -94,7 +94,7 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
 
     In JAX, we test this by constructing the VJP of the passed function
     and inspecting its signature.
-    The first argument of the output of ``jax.vjp`` is a ``Partial``.
+    The first argument of the output of ``qpjax.vjp`` is a ``Partial``.
     If *any* processing happens to any input, the arguments of that
     ``Partial`` are unequal to ``((),)`` (JAX < 0.7.0) or ``([],)`` (JAX >= 0.7.0).
     Functions that depend on the input in a trivial manner, i.e., without
@@ -109,11 +109,11 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
         This is an experimental function and unknown edge
         cases may exist to this two-stage test.
     """
-    import jax
+    import qpjax
 
     mapped_func = partial(func, **kwargs)
 
-    _vjp = jax.vjp(mapped_func, *args)[1]
+    _vjp = qpjax.vjp(mapped_func, *args)[1]
 
     # JAX 0.7.0+ changed the VJP structure: args are now ([],) instead of ((),)
     if _vjp.args[0].args not in (((),), ([],)):

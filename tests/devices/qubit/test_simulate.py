@@ -190,10 +190,10 @@ class TestBasicCircuit:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_results_and_backprop(self, use_jit):
-        """Tests exeuction and gradients with jax."""
-        import jax
+        """Tests exeuction and gradients with qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.678)
+        phi = qpjax.numpy.array(0.678)
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -202,13 +202,13 @@ class TestBasicCircuit:
             return simulate(qs)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         result = f(phi)
         assert qml.math.allclose(result[0], -np.sin(phi))
         assert qml.math.allclose(result[1], np.cos(phi))
 
-        g = jax.jacobian(f)(phi)
+        g = qpjax.jacobian(f)(phi)
         assert qml.math.allclose(g[0], -np.cos(phi))
         assert qml.math.allclose(g[1], -np.sin(phi))
 
@@ -548,9 +548,9 @@ class TestDebugger:
     @pytest.mark.jax
     def test_debugger_jax(self):
         """Tests debugger with JAX"""
-        import jax
+        import qpjax
 
-        phi = jax.numpy.array(0.678)
+        phi = qpjax.numpy.array(0.678)
         debugger = Debugger()
 
         def f(x):
@@ -907,10 +907,10 @@ class TestOperatorArithmetic:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_op_arithmetic(self, use_jit):
-        """Test operator arithmetic circuit with non-integer wires works with jax."""
-        import jax
+        """Test operator arithmetic circuit with non-integer wires works with qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(1.2)
+        phi = qpjax.numpy.array(1.2)
 
         def f(x):
             ops = [
@@ -930,13 +930,13 @@ class TestOperatorArithmetic:
             return simulate(qs)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         results = f(phi)
         assert qml.math.allclose(results[0], -np.sin(phi) - 1)
         assert qml.math.allclose(results[1], 3 * np.cos(phi))
 
-        g = jax.jacobian(f)(phi)
+        g = qpjax.jacobian(f)(phi)
         assert qml.math.allclose(g[0], -np.cos(phi))
         assert qml.math.allclose(g[1], -3 * np.sin(phi))
 
@@ -1120,30 +1120,30 @@ class TestQInfoMeasurements:
     def test_qinfo_jax(self, use_jit):
         """Test qinfo meausrements work with jax and jitting."""
 
-        import jax
+        import qpjax
 
         def f(x):
             qs = qml.tape.QuantumScript([qml.IsingXX(x, wires=(0, 1))], self.measurements)
             return simulate(qs)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
-        phi = jax.numpy.array(-0.792)
+        phi = qpjax.numpy.array(-0.792)
 
         results = f(phi)
         for val1, val2 in zip(results, self.expected_results(phi)):
             assert qml.math.allclose(val1, val2)
 
         def real_out(phi):
-            return tuple(jax.numpy.real(r) for r in f(phi))
+            return tuple(qpjax.numpy.real(r) for r in f(phi))
 
-        grad_real = jax.jacobian(real_out)(phi)
+        grad_real = qpjax.jacobian(real_out)(phi)
 
         def imag_out(phi):
-            return tuple(jax.numpy.imag(r) for r in f(phi))
+            return tuple(qpjax.numpy.imag(r) for r in f(phi))
 
-        grad_imag = jax.jacobian(imag_out)(phi)
+        grad_imag = qpjax.jacobian(imag_out)(phi)
         grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag))
         expected_grads = self.expected_grad(phi)
 

@@ -181,11 +181,11 @@ class TestDifferentiability:
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_jax(self, shots, use_jit, seed):
-        """Test that the QNode executes and is differentiable with JAX. The shots
+        """Test that the QNode executes and is differentiable with qpjax. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", seed=seed)
 
@@ -194,13 +194,13 @@ class TestDifferentiability:
             qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
         )
         if use_jit:
-            qnode = jax.jit(qnode)
+            qnode = qpjax.jit(qnode)
 
-        params = jax.numpy.array(self.params)
+        params = qpjax.numpy.array(self.params)
 
-        jac_fn = jax.jacobian(qnode)
+        jac_fn = qpjax.jacobian(qnode)
         if use_jit:
-            jac_fn = jax.jit(jac_fn)
+            jac_fn = qpjax.jit(jac_fn)
 
         jac = jac_fn(params)
         assert jac.shape == (2,)

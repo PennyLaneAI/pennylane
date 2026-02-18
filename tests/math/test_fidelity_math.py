@@ -23,7 +23,7 @@ pytestmark = pytest.mark.all_interfaces
 
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 class TestFidelityMath:
@@ -319,7 +319,7 @@ class TestGradient:
         """Test gradients are correct for jax"""
         x = jnp.array(x)
         res = cost_fn(x)
-        grad = jax.grad(cost_fn)(x)
+        grad = qpjax.grad(cost_fn)(x)
 
         assert qml.math.allclose(res, expected_res(x), tol)
         assert qml.math.allclose(grad, expected_grad(x), tol)
@@ -331,9 +331,9 @@ class TestGradient:
         """Test gradients are correct for jax-jit"""
         x = jnp.array(x)
 
-        jitted_cost = jax.jit(cost_fn)
+        jitted_cost = qpjax.jit(cost_fn)
         res = jitted_cost(x)
-        grad = jax.grad(jitted_cost)(x)
+        grad = qpjax.grad(jitted_cost)(x)
 
         assert qml.math.allclose(res, expected_res(x), tol)
         assert qml.math.allclose(grad, expected_grad(x), tol)
@@ -368,7 +368,7 @@ class TestGradient:
         """Test gradients are correct for a broadcasted input for jax"""
         x = jnp.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
         res = cost_fn(x)
-        grad = qml.math.diag(jax.jacobian(cost_fn)(x))
+        grad = qml.math.diag(qpjax.jacobian(cost_fn)(x))
 
         assert qml.math.allclose(res, expected_res(x), tol)
         assert qml.math.allclose(grad, expected_grad(x), tol)
@@ -379,9 +379,9 @@ class TestGradient:
         """Test gradients are correct for a broadcasted input for jax-jit"""
         x = jnp.array([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2])
 
-        jitted_cost = jax.jit(cost_fn)
+        jitted_cost = qpjax.jit(cost_fn)
         res = jitted_cost(x)
-        grad = qml.math.diag(jax.jacobian(jitted_cost)(x))
+        grad = qml.math.diag(qpjax.jacobian(jitted_cost)(x))
 
         assert qml.math.allclose(res, expected_res(x), tol)
         assert qml.math.allclose(grad, expected_grad(x), tol)

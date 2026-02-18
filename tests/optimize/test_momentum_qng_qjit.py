@@ -67,7 +67,7 @@ class TestOptimize:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_step_and_cost(self, dev_name):
         """Test that the step and step_and_cost methods are returning the correct result."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         @qml.qnode(qml.device(dev_name))
         def circ(params):
@@ -100,7 +100,7 @@ class TestOptimize:
     def test_step_and_cost_with_gen_hamiltonian(self, dev_name):
         """Test that the step and step_and_cost methods are returning the correct result
         when the generator of an operator is a Hamiltonian."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         @qml.qnode(qml.device(dev_name, wires=4))
         def circ(params):
@@ -132,7 +132,7 @@ class TestOptimize:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_qubit_rotations_circuit(self, tol, dev_name):
         """Test that a simple qubit rotations circuit gets optimized correctly, checking params and cost at each step."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         @qml.qnode(qml.device(dev_name))
         def circ(params):
@@ -170,9 +170,9 @@ class TestOptimize:
 
     @pytest.mark.jax
     def test_jit(self):
-        """Test optimizer compatibility with jax.jit compilation."""
-        import jax
-        import jax.numpy as jnp
+        """Test optimizer compatibility with qpjax.jit compilation."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         device = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(circuit, device=device)
@@ -184,8 +184,8 @@ class TestOptimize:
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
 
-        step = jax.jit(partial(opt.step, qnode))
-        step_and_cost = jax.jit(partial(opt.step_and_cost, qnode))
+        step = qpjax.jit(partial(opt.step, qnode))
+        step_and_cost = qpjax.jit(partial(opt.step_and_cost, qnode))
         new_params1_jit, state1_jit = step(params, state)
         new_params2_jit, state2_jit, cost_jit = step_and_cost(params, state)
 
@@ -207,7 +207,7 @@ class TestOptimize:
     @pytest.mark.external
     def test_qjit(self):
         """Test optimizer compatibility with qml.qjit compilation."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         pytest.importorskip("catalyst")
 

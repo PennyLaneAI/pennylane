@@ -887,8 +887,8 @@ class TestExpvalBackward:
     def test_backward_jax(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the jax interface"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="jax")
         exact_circuit = strongly_entangling_circuit_exact(3, "jax")
@@ -900,8 +900,8 @@ class TestExpvalBackward:
             )
         )
 
-        actual = jax.jacrev(shadow_circuit)(x, obs, k=1)
-        expected = jax.jacrev(exact_circuit)(x, obs)
+        actual = qpjax.jacrev(shadow_circuit)(x, obs, k=1)
+        expected = qpjax.jacrev(exact_circuit)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 

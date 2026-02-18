@@ -33,7 +33,7 @@ make_vjp = unary_to_nary(_make_vjp)
 
 has_jax = True
 try:
-    import jax
+    import qpjax
 except ImportError:
     has_jax = False
 
@@ -59,14 +59,14 @@ def _get_jacobian_prim():
         args = args[n_consts:]
 
         def func(*inner_args):
-            res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+            res = qpjax.core.eval_jaxpr(jaxpr, consts, *inner_args)
             return res[0] if scalar_out else res
 
         if scalar_out:
-            res = jax.grad(func, argnums=argnums)(*args)
+            res = qpjax.grad(func, argnums=argnums)(*args)
         else:
-            res = jax.jacobian(func, argnums=argnums)(*args)
-        return jax.tree_util.tree_leaves(res)
+            res = qpjax.jacobian(func, argnums=argnums)(*args)
+        return qpjax.tree_util.tree_leaves(res)
 
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
@@ -85,11 +85,11 @@ def _get_jacobian_prim():
 
 
 def _shape(shape, dtype, weak_type=False):
-    if jax.config.jax_dynamic_shapes and any(
+    if qpjax.config.jax_dynamic_shapes and any(
         not isinstance(s, int) for s in shape
     ):  # pragma: no cover
-        return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)
-    return jax.core.ShapedArray(shape, dtype, weak_type=weak_type)
+        return qpjax.core.DShapedArray(shape, dtype, weak_type=weak_type)
+    return qpjax.core.ShapedArray(shape, dtype, weak_type=weak_type)
 
 
 def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int, ...], bool]:
@@ -132,7 +132,7 @@ def _args_and_argnums(args, argnums):
             f" positional arguments. Got {len(args)} positional arguments."
         )
 
-    from jax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
+    from qpjax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
 
     flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
     full_in_tree = treedef_tuple(in_trees)
@@ -179,7 +179,7 @@ def _setup_method(method):
 def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
+    from qpjax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)
     method = _setup_method(method)
@@ -193,7 +193,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
         flat_fn = capture.FlatFn(func, full_in_tree)
 
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
-        jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
+        jaxpr = qpjax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
 
         num_abstract_shapes = len(abstract_shapes)
         shift = num_abstract_shapes

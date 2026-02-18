@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 jax = pytest.importorskip("jax")
 
-import jax.numpy as jnp
+import qpjax.numpy as jnp
 
 from pennylane.tape.plxpr_conversion import plxpr_to_tape
 
@@ -44,16 +44,16 @@ class TestPauliMeasure:
             return m0
 
         wires = jnp.array(range(len(pauli_word)))
-        jaxpr = jax.make_jaxpr(f)(wires)
+        jaxpr = qpjax.make_jaxpr(f)(wires)
         assert jaxpr.eqns[-1].primitive.name == "pauli_measure"
         invars = jaxpr.eqns[-1].invars
         outvars = jaxpr.eqns[-1].outvars
-        expected_dtype = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+        expected_dtype = jnp.int64 if qpjax.config.jax_enable_x64 else jnp.int32
         assert len(invars) == len(wires)
         for invar in invars:
-            assert invar.aval == jax.core.ShapedArray((), expected_dtype)
+            assert invar.aval == qpjax.core.ShapedArray((), expected_dtype)
         assert len(outvars) == 1
-        assert outvars[0].aval == jax.core.ShapedArray((), expected_dtype)
+        assert outvars[0].aval == qpjax.core.ShapedArray((), expected_dtype)
         assert set(jaxpr.eqns[-1].params.keys()) == {"pauli_word", "postselect"}
 
     @pytest.mark.integration
@@ -67,7 +67,7 @@ class TestPauliMeasure:
             m0 = qml.pauli_measure(pauli_word, wires=wires, postselect=postselect)
             return qml.expval(m0)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
         assert len(tape.operations) == 1
         assert isinstance(tape.operations[0], PauliMeasure)

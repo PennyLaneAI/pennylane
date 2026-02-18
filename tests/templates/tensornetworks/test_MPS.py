@@ -521,7 +521,7 @@ class TestTemplateOutputs:
         kwargs,
         expected_circuit,
     ):
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=wires)
         block = getattr(self, block)
@@ -540,6 +540,6 @@ class TestTemplateOutputs:
             )
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         assert qml.math.isclose(circuit(), jit_circuit())

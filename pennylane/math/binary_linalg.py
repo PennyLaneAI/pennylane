@@ -91,7 +91,7 @@ def binary_finite_reduced_row_echelon(binary_matrix, inplace=False):
 
     .. warning::
 
-        This function is currently not compatible with JAX.
+        This function is currently not compatible with qpjax.
 
     **Example**
 
@@ -156,7 +156,7 @@ def binary_matrix_rank(binary_matrix: np.ndarray) -> int:
 
     .. warning::
 
-        This function is currently not compatible with JAX.
+        This function is currently not compatible with qpjax.
 
     **Example**
 
@@ -212,7 +212,7 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
 
     .. warning::
 
-        This function is currently not compatible with JAX.
+        This function is currently not compatible with qpjax.
 
     **Example**
 
@@ -267,7 +267,7 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
 
     .. warning::
 
-        This function is currently not compatible with JAX.
+        This function is currently not compatible with qpjax.
 
     """
     # We assume ``basis`` to have full rank.
@@ -297,7 +297,7 @@ def binary_select_basis(bitstrings: np.ndarray):
 
     .. warning::
 
-        This function is currently not compatible with JAX.
+        This function is currently not compatible with qpjax.
     """
     r = bitstrings.shape[0]
     basis = np.zeros((r, 0), dtype=int)

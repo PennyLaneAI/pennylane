@@ -311,8 +311,8 @@ def apply_operation(
 
     Keyword Arguments:
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``.
-            This is the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``.
+            This is the key to the JAX pseudo random number generator. Only for simulation using qpjax.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
         tape_shots (Shots): The shots object of the tape.
 

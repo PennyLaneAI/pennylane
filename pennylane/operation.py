@@ -214,7 +214,7 @@ from .pytrees import register_pytree
 
 has_jax = True
 try:
-    import jax
+    import qpjax
 
 except ImportError:
     has_jax = False
@@ -272,7 +272,7 @@ def _get_abstract_operator() -> type:
     if not has_jax:  # pragma: no cover
         raise ImportError("Jax is required for plxpr.")  # pragma: no cover
 
-    class AbstractOperator(jax.core.AbstractValue):
+    class AbstractOperator(qpjax.core.AbstractValue):
         """An operator captured into plxpr."""
 
         # pylint: disable=missing-function-docstring
@@ -321,7 +321,7 @@ def _get_abstract_operator() -> type:
 
 def create_operator_primitive(
     operator_type: type["qml.operation.Operator"],
-) -> Optional["jax.extend.core.Primitive"]:
+) -> Optional["qpjax.extend.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
     Called when defining any :class:`~.Operator` subclass, and is used to set the
@@ -331,7 +331,7 @@ def create_operator_primitive(
         operator_type (type): a subclass of qml.operation.Operator
 
     Returns:
-        Optional[jax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        Optional[qpjax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
         ``None`` is returned if jax is not available.
 
     """
@@ -519,7 +519,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         :title: Serialization and Pytree format
         :href: serialization
 
-        PennyLane operations are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
+        PennyLane operations are automatically registered as `Pytrees <https://qpjax.readthedocs.io/en/latest/pytrees.html>`_ .
 
         For most operators, this process will happen automatically without need for custom implementations.
 
@@ -676,9 +676,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
 
-    _primitive: Optional["jax.extend.core.Primitive"] = None
+    _primitive: Optional["qpjax.extend.core.Primitive"] = None
     """
-    Optional[jax.extend.core.Primitive]
+    Optional[qpjax.extend.core.Primitive]
     """
 
     resource_keys: ClassVar[Set] = set()
@@ -725,7 +725,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
 
-        array_types = (jax.numpy.ndarray, np.ndarray)
+        array_types = (qpjax.numpy.ndarray, np.ndarray)
         iterable_wires_types = (
             list,
             tuple,
@@ -1201,7 +1201,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
-            # typically during compilation of a function decorated with jax.jit or tf.function
+            # typically during compilation of a function decorated with qpjax.jit or tf.function
             return
 
         self._ndim_params = ndims

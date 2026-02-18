@@ -41,7 +41,7 @@ from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 
 try:
-    import jax
+    import qpjax
 except ImportError:
     # Handling the case where JAX is not installed is done via _assert_has_jax
     pass
@@ -89,7 +89,7 @@ def _one_parameter_generators(op):
     # Compute the Jacobian of _compute_matrix, giving the Jacobian of the real and imag parts
     # The output is a tuple, with one entry per parameter, each of which has the axes
     # (mat_dim, mat_dim, *parameter_shape)
-    jac_real, jac_imag = jax.jacobian(_compute_matrix_split)(op.data)
+    jac_real, jac_imag = qpjax.jacobian(_compute_matrix_split)(op.data)
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
@@ -454,7 +454,7 @@ def pulse_odegen(
     .. warning::
 
         This transform may not be applied directly to QNodes. Use JAX entrypoints
-        (``jax.grad``, ``jax.jacobian``, ...) instead or apply the transform on the tape
+        (``qpjax.grad``, ``qpjax.jacobian``, ...) instead or apply the transform on the tape
         level. Also see the examples below.
 
     **Example**
@@ -469,8 +469,8 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        from jax import numpy as jnp
-        jax.config.update("jax_enable_x64", True)
+        from qpjax import numpy as jnp
+        qpjax.config.update("jax_enable_x64", True)
         H = (
             qml.pulse.constant * qml.Y(0)
             + jnp.polyval * qml.Y(1)
@@ -492,10 +492,10 @@ def pulse_odegen(
             return qml.expval(qml.X(0))
 
     We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
-    This allows us to simply differentiate it with ``jax.grad``, which internally
+    This allows us to simply differentiate it with ``qpjax.grad``, which internally
     makes use of the pulse generator parameter-shift method.
 
-    >>> jax.grad(circuit)(params)
+    >>> qpjax.grad(circuit)(params)
     [Array(1.41897932, dtype=float64, weak_type=True),
      Array([0.00164913, 0.00284788], dtype=float64),
      Array(-0.09984584, dtype=float64, weak_type=True)]

@@ -311,7 +311,7 @@ class TestSingleExcitation:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit")
 
@@ -321,7 +321,7 @@ class TestSingleExcitation:
             excitation(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+        assert np.allclose(qpjax.grad(circuit)(phi), np.sin(phi))
 
 
 class TestDoubleExcitation:
@@ -595,7 +595,7 @@ class TestDoubleExcitation:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit")
 
@@ -606,7 +606,7 @@ class TestDoubleExcitation:
             excitation(phi, wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+        assert np.allclose(qpjax.grad(circuit)(phi), np.sin(phi))
 
 
 class TestOrbitalRotation:
@@ -936,7 +936,7 @@ class TestOrbitalRotation:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit")
 
@@ -944,9 +944,9 @@ class TestOrbitalRotation:
         circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="jax", diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-        phi_j = jax.numpy.array(phi)
+        phi_j = qpjax.numpy.array(phi)
 
-        assert np.allclose(jax.grad(total)(phi_j), self.expected_grad_fn(phi))
+        assert np.allclose(qpjax.grad(total)(phi_j), self.expected_grad_fn(phi))
 
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -1154,7 +1154,7 @@ class TestFermionicSWAP:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit")
 
@@ -1164,7 +1164,7 @@ class TestFermionicSWAP:
             qml.FermionicSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+        assert np.allclose(qpjax.grad(circuit)(phi), np.sin(phi))
 
 
 label_data = [

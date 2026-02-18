@@ -254,8 +254,8 @@ def test_partial_evaluation_autograd(diff_method):
 def test_partial_evaluation_jax(diff_method):
     """Test gradient of partial evaluation matches gradients of
     individual full evaluations using jax"""
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 
     dev = qml.device("default.qubit", wires=2)
 
@@ -278,12 +278,12 @@ def test_partial_evaluation_jax(diff_method):
 
     # we could also sum over the batch dimension and use the regular
     # gradient instead of the jacobian, but either works
-    grad = jnp.diagonal(jax.jacrev(batched_partial_circuit)(x))
+    grad = jnp.diagonal(qpjax.jacrev(batched_partial_circuit)(x))
 
     # check the results against individually executed circuits
     indiv_grad = []
     for x_indiv in x:
-        indiv_grad.append(jax.grad(circuit, argnums=0)(x_indiv, y))
+        indiv_grad.append(qpjax.grad(circuit, argnums=0)(x_indiv, y))
 
     assert np.allclose(grad, indiv_grad)
 
@@ -466,8 +466,8 @@ def test_lambda_evaluation_autograd(diff_method):
 def test_lambda_evaluation_jax(diff_method):
     """Test gradient of lambda argument replacement matches
     gradients of individual full evaluations using JAX"""
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 
     dev = qml.device("default.qubit", wires=2)
 
@@ -498,12 +498,12 @@ def test_lambda_evaluation_jax(diff_method):
 
     # we could also sum over the batch dimension and use the regular
     # gradient instead of the jacobian, but either works
-    grad = jnp.diagonal(jax.jacrev(batched_partial_circuit)(y0))
+    grad = jnp.diagonal(qpjax.jacrev(batched_partial_circuit)(y0))
 
     # check the results against individually executed circuits
     indiv_grad = []
     for y0_indiv in y0:
-        grad_wrt_second_arg = jax.grad(circuit, argnums=1)(x, y + y0_indiv * np.ones(2))
+        grad_wrt_second_arg = qpjax.grad(circuit, argnums=1)(x, y + y0_indiv * np.ones(2))
         grad_wrt_y0 = jnp.sum(grad_wrt_second_arg)
         indiv_grad.append(grad_wrt_y0)
 

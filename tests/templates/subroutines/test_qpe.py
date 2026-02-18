@@ -402,7 +402,7 @@ class TestDecomposition:
     @pytest.mark.jax
     def test_jit(self):
         """Tests the template correctly compiles with JAX JIT."""
-        import jax
+        import qpjax
 
         phase = 5
         target_wires = [0]
@@ -422,7 +422,7 @@ class TestDecomposition:
 
             return qml.probs(estimation_wires)
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())
 

@@ -1369,9 +1369,9 @@ def test_jax_pytree_integration(qscript_type):
     tape = qscript_type(ops, mps, shots=100)
     tape.trainable_params = [2]
 
-    import jax
+    import qpjax
 
-    data, _ = jax.tree_util.tree_flatten(tape)
+    data, _ = qpjax.tree_util.tree_flatten(tape)
     assert data[0] == 0.5
     assert data[1] == 1.2
     assert data[2] == 2.3

@@ -85,26 +85,26 @@ class TestSampleState:
     @pytest.mark.jax
     def test_prng_key_as_seed_uses_sample_state_jax(self, mocker):
         """Tests that sample_state calls _sample_probs_jax if the seed is a JAX PRNG key"""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
         state = qml.math.array(two_qubit_state, like="jax")
 
         # prng_key specified, should call _sample_probs_jax
-        _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
+        _ = sample_state(state, 10, prng_key=qpjax.random.PRNGKey(15))
 
         spy.assert_called_once()
 
     @pytest.mark.jax
     def test_sample_state_jax(self, seed):
         """Tests that the returned samples are as expected when explicitly calling sample_state."""
-        import jax
+        import qpjax
 
         state = qml.math.array(two_qubit_state, like="jax")
 
-        samples = sample_state(state, 10, prng_key=jax.random.PRNGKey(seed))
+        samples = sample_state(state, 10, prng_key=qpjax.random.PRNGKey(seed))
 
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
@@ -113,13 +113,13 @@ class TestSampleState:
     @pytest.mark.jax
     def test_prng_key_determines_sample_state_jax_results(self):
         """Test that setting the seed as a JAX PRNG key determines the results for sample_state"""
-        import jax
+        import qpjax
 
         state = qml.math.array(two_qubit_state, like="jax")
 
-        samples = sample_state(state, shots=10, prng_key=jax.random.PRNGKey(12))
-        samples2 = sample_state(state, shots=10, prng_key=jax.random.PRNGKey(12))
-        samples3 = sample_state(state, shots=10, prng_key=jax.random.PRNGKey(13))
+        samples = sample_state(state, shots=10, prng_key=qpjax.random.PRNGKey(12))
+        samples2 = sample_state(state, shots=10, prng_key=qpjax.random.PRNGKey(12))
+        samples3 = sample_state(state, shots=10, prng_key=qpjax.random.PRNGKey(13))
 
         assert np.all(samples == samples2)
         assert not np.allclose(samples, samples3)
@@ -746,7 +746,7 @@ class TestRenormalization:
         state = qml.math.array(two_qubit_state_to_be_normalized, like=interface)
         _ = sample_state(state, 10)
 
-    # jax.random.choice accepts unnormalized probabilities
+    # qpjax.random.choice accepts unnormalized probabilities
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "torch"])
     def test_sample_state_renorm_error(self, interface):
@@ -764,7 +764,7 @@ class TestRenormalization:
         state = qml.math.array(batched_state_to_be_normalized, like=interface)
         _ = sample_state(state, 10, is_state_batched=True)
 
-    # jax.random.choices accepts unnormalized probabilities
+    # qpjax.random.choices accepts unnormalized probabilities
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "torch"])
     def test_sample_batched_state_renorm_error(self, interface):
@@ -935,9 +935,9 @@ class TestBroadcastingPRNG:
 
     def test_sample_measure(self, mocker, seed):
         """Test that broadcasting works for qml.sample and single shots"""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
@@ -958,7 +958,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(seed),
+            prng_key=qpjax.random.PRNGKey(seed),
         )[0]
 
         spy.assert_called()
@@ -991,7 +991,7 @@ class TestBroadcastingPRNG:
     )
     def test_nonsample_measure(self, mocker, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and single shots"""
-        import jax
+        import qpjax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
@@ -1011,7 +1011,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(seed),
+            prng_key=qpjax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -1030,7 +1030,7 @@ class TestBroadcastingPRNG:
     def test_sample_measure_shot_vector(self, mocker, shots, seed):
         """Test that broadcasting works for qml.sample and shot vectors"""
 
-        import jax
+        import qpjax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
@@ -1051,7 +1051,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(seed),
+            prng_key=qpjax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -1106,7 +1106,7 @@ class TestBroadcastingPRNG:
     def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected, seed):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
 
-        import jax
+        import qpjax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
@@ -1126,7 +1126,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(seed),
+            prng_key=qpjax.random.PRNGKey(seed),
         )
 
         spy.assert_called()
@@ -1368,15 +1368,15 @@ class TestSampleProbs:
         See https://github.com/PennyLaneAI/pennylane/issues/9000 for the report.
         """
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         feature_count = 2
 
-        key = jax.random.key(123)
-        key_inputs, key_params = jax.random.split(key)
+        key = qpjax.random.key(123)
+        key_inputs, key_params = qpjax.random.split(key)
 
-        inputs = jax.random.uniform(key_inputs, shape=(1450, 2))
-        params = jax.random.uniform(key_params, shape=(2, 3))
+        inputs = qpjax.random.uniform(key_inputs, shape=(1450, 2))
+        params = qpjax.random.uniform(key_params, shape=(2, 3))
 
         device = qml.device("default.qubit")
 

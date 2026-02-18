@@ -80,7 +80,7 @@ class TestCollectOpsandMeas:
             loop(x, 0)
 
         obj = CollectOpsandMeas()
-        x = jax.numpy.array(1.2)
+        x = qpjax.numpy.array(1.2)
         obj(g)(x)
 
         assert len(obj.state["ops"]) == 3
@@ -97,7 +97,7 @@ class TestCollectOpsandMeas:
             qml.cond(value, qml.RX, false_fn=qml.RY)(x, 0)
 
         obj1 = CollectOpsandMeas()
-        x = jax.numpy.array(-0.5)
+        x = qpjax.numpy.array(-0.5)
         obj1(f)(x, True)
         assert len(obj1.state["ops"]) == 1
         qml.assert_equal(obj1.state["ops"][0], qml.RX(x, 0))
@@ -135,7 +135,7 @@ class TestCollectOpsandMeas:
             qml.cond(m0, rx)(x, 2)
             return m0
 
-        x = jax.numpy.array(0.987)
+        x = qpjax.numpy.array(0.987)
 
         obj = CollectOpsandMeas()
         mv = obj(f)(x)
@@ -164,7 +164,7 @@ class TestCollectOpsandMeas:
 
             qml.cond(m0, rx, elifs=(m1, ry), false_fn=rz)(x, 0)
 
-        x = jax.numpy.array(0.5)
+        x = qpjax.numpy.array(0.5)
 
         obj = CollectOpsandMeas()
         obj(f)(x)
@@ -182,7 +182,7 @@ class TestCollectOpsandMeas:
             qml.adjoint(qfunc, lazy=lazy)(x)
 
         obj = CollectOpsandMeas()
-        x = jax.numpy.array(2.1)
+        x = qpjax.numpy.array(2.1)
         obj(f)(x)
 
         assert len(obj.state["ops"]) == 3
@@ -201,7 +201,7 @@ class TestCollectOpsandMeas:
             qml.ctrl(qfunc, control=[1, 2], control_values=[False, False])(x, 0)
 
         obj = CollectOpsandMeas()
-        x = jax.numpy.array(-0.98)
+        x = qpjax.numpy.array(-0.98)
         obj(f)(x)
 
         assert len(obj.state["ops"]) == 2
@@ -339,7 +339,7 @@ class TestPlxprToTape:
             qml.QFT(wires=(0, 1, 2))
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(-0.5)
+        jaxpr = qpjax.make_jaxpr(f)(-0.5)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
@@ -360,7 +360,7 @@ class TestPlxprToTape:
             qml.QFT(wires=(0, 1, 2))
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(-0.5)
+        jaxpr = qpjax.make_jaxpr(f)(-0.5)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
@@ -380,7 +380,7 @@ class TestPlxprToTape:
 
             g()
 
-        jaxpr = jax.make_jaxpr(f)(5)
+        jaxpr = qpjax.make_jaxpr(f)(5)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 3)
         assert len(tape.operations) == 3
         qml.assert_equal(tape[0], qml.X(0))
@@ -400,8 +400,8 @@ class TestPlxprToTape:
 
             loop(x, 0)
 
-        jaxpr = jax.make_jaxpr(g)(-0.8)
-        x = jax.numpy.array(1.2)
+        jaxpr = qpjax.make_jaxpr(g)(-0.8)
+        x = qpjax.numpy.array(1.2)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 3
@@ -417,8 +417,8 @@ class TestPlxprToTape:
         def f(x, value):
             qml.cond(value, qml.RX, false_fn=qml.RY)(x, 0)
 
-        x = jax.numpy.array(-0.5)
-        jaxpr = jax.make_jaxpr(f)(x, False)
+        x = qpjax.numpy.array(-0.5)
+        jaxpr = qpjax.make_jaxpr(f)(x, False)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x, True)
         assert len(tape.operations) == 1
         qml.assert_equal(tape.operations[0], qml.RX(x, 0))
@@ -434,7 +434,7 @@ class TestPlxprToTape:
             m0 = qml.measure(0)
             return qml.sample(op=m0)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(tape.operations) == 1
@@ -455,9 +455,9 @@ class TestPlxprToTape:
             qml.cond(m0, rx)(x, 2)
             return qml.sample(m0)
 
-        x = jax.numpy.array(0.987)
+        x = qpjax.numpy.array(0.987)
 
-        jaxpr = jax.make_jaxpr(f)(x)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 2
@@ -485,8 +485,8 @@ class TestPlxprToTape:
 
             qml.cond(m0, rx, elifs=(m1, ry), false_fn=rz)(x, 0)
 
-        x = jax.numpy.array(0.5)
-        jaxpr = jax.make_jaxpr(f)(x)
+        x = qpjax.numpy.array(0.5)
+        jaxpr = qpjax.make_jaxpr(f)(x)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
         assert len(tape.operations) == 5
         assert isinstance(tape.operations[0], MidMeasure)
@@ -506,8 +506,8 @@ class TestPlxprToTape:
         def f(x):
             qml.adjoint(qfunc, lazy=lazy)(x)
 
-        x = jax.numpy.array(2.1)
-        jaxpr = jax.make_jaxpr(f)(0.6)
+        x = qpjax.numpy.array(2.1)
+        jaxpr = qpjax.make_jaxpr(f)(0.6)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 3
@@ -525,8 +525,8 @@ class TestPlxprToTape:
         def f(x):
             qml.ctrl(qfunc, control=[1, 2], control_values=[False, False])(x, 0)
 
-        x = jax.numpy.array(-0.98)
-        jaxpr = jax.make_jaxpr(f)(0.1)
+        x = qpjax.numpy.array(-0.98)
+        jaxpr = qpjax.make_jaxpr(f)(0.1)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 2
@@ -548,7 +548,7 @@ class TestPlxprToTape:
             m0 = qml.measure(0)
             qml.cond(m0, true_fn, elifs=(value, elif_fn))(x)
 
-        jaxpr = jax.make_jaxpr(f)(0.5, False)
+        jaxpr = qpjax.make_jaxpr(f)(0.5, False)
         with pytest.raises(ValueError, match="Cannot use qml.cond with a combination"):
             qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, False)
 
@@ -560,7 +560,7 @@ class TestPlxprToTape:
             with qml.allocation.allocate(2, state="zero", restored=True) as wires:
                 qml.CNOT(wires)
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
         assert len(tape.operations) == 4
         qml.assert_equal(tape.operations[0], qml.H(0))
@@ -581,7 +581,7 @@ class TestPlxprToTape:
             some_func(x)
             some_func(x)
 
-        jaxpr = jax.make_jaxpr(c)(0.5)
+        jaxpr = qpjax.make_jaxpr(c)(0.5)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5)
         assert isinstance(tape, qml.tape.QuantumScript)
         assert len(tape) == 2

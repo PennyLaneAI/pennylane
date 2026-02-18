@@ -43,12 +43,12 @@ class CaptureMeta(type):
 
         qml.capture.enable()
 
-        class AbstractMyObj(jax.core.AbstractValue):
+        class AbstractMyObj(qpjax.core.AbstractValue):
             pass
 
         class MyObj(metaclass=qml.capture.CaptureMeta):
 
-            primitive = jax.extend.core.Primitive("MyObj")
+            primitive = qpjax.extend.core.Primitive("MyObj")
 
             @classmethod
             def _primitive_bind_call(cls, a):
@@ -65,10 +65,10 @@ class CaptureMeta(type):
         def _(a):
             return AbstractMyObj()
 
-    >>> jaxpr = jax.make_jaxpr(MyObj)(0.1)
+    >>> jaxpr = qpjax.make_jaxpr(MyObj)(0.1)
     >>> jaxpr
     { lambda ; a:f32[]. let b:AbstractMyObj() = MyObj a in (b,) }
-    >>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.1)
+    >>> qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.1)
     [<__main__.MyObj at 0x17fc3ea50>]
 
     """

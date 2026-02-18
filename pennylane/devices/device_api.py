@@ -349,8 +349,8 @@ class Device(abc.ABC):
                     results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
                     return postprocessing(results)
 
-                x = jax.numpy.array([1.0, 2.0, 3.0])
-                jax.grad(f)(x)
+                x = qpjax.numpy.array([1.0, 2.0, 3.0])
+                qpjax.grad(f)(x)
 
 
             In the above code, the quantum derivatives are registered with jax in the ``jax_boundary`` function.
@@ -483,8 +483,8 @@ class Device(abc.ABC):
                     results = jax_boundary(circuit_batch, dev, execute_fn, None, {})
                     return postprocessing(results)
 
-                x = jax.numpy.array([1.0, 2.0, 3.0])
-                jax.grad(f)(x)
+                x = qpjax.numpy.array([1.0, 2.0, 3.0])
+                qpjax.grad(f)(x)
 
             In the above code, the quantum derivatives are registered with jax in the ``jax_boundary``
             function. Only then is the classical postprocessing called on the result object.
@@ -626,7 +626,7 @@ class Device(abc.ABC):
 
         **Interface parameters:**
 
-        The provided ``circuits`` may contain interface specific data-types like ``torch.Tensor`` or ``jax.Array`` when
+        The provided ``circuits`` may contain interface specific data-types like ``torch.Tensor`` or ``qpjax.Array`` when
         :attr:`~.ExecutionConfig.gradient_method` of ``"backprop"`` is requested. If the gradient method is not backpropagation,
         then only vanilla numpy parameters or builtins will be present in the circuits.
 
@@ -996,7 +996,7 @@ class Device(abc.ABC):
 
     def eval_jaxpr(
         self,
-        jaxpr: "jax.extend.core.Jaxpr",
+        jaxpr: "qpjax.extend.core.Jaxpr",
         consts: list[TensorLike],
         *args,
         execution_config: ExecutionConfig | None = None,
@@ -1005,7 +1005,7 @@ class Device(abc.ABC):
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
         Args:
-            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
+            jaxpr (qpjax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
             consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
             *args (TensorLike): the variables to use with the jaxpr.
 
@@ -1021,7 +1021,7 @@ class Device(abc.ABC):
 
     def jaxpr_jvp(
         self,
-        jaxpr: "jax.extend.core.Jaxpr",
+        jaxpr: "qpjax.extend.core.Jaxpr",
         args,
         tangents,
         execution_config: ExecutionConfig | None = None,
@@ -1030,11 +1030,11 @@ class Device(abc.ABC):
         See the ``capture`` module for more details.
 
         Args:
-            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
+            jaxpr (qpjax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
                 and measurements
             args (Sequence[TensorLike]): the ``consts`` followed by the normal   arguments
             tangents (Sequence[TensorLike]): the tangents corresponding to ``args``.
-                May contain ``jax.interpreters.ad.Zero``.
+                May contain ``qpjax.interpreters.ad.Zero``.
 
         Keyword Args:
             execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
@@ -1043,15 +1043,15 @@ class Device(abc.ABC):
             Sequence[TensorLike], Sequence[TensorLike]: the results and jacobian vector products
 
         >>> qml.capture.enable()
-        >>> import jax
-        >>> closure_var = jax.numpy.array(0.5)
+        >>> import qpjax
+        >>> closure_var = qpjax.numpy.array(0.5)
         >>> def f(x):
         ...     qml.RX(closure_var, 0)
         ...     qml.RX(x, 1)
         ...     return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
-        >>> jaxpr = jax.make_jaxpr(f)(1.2)
+        >>> jaxpr = qpjax.make_jaxpr(f)(1.2)
         >>> args = (closure_var, 1.2)
-        >>> zero = jax.interpreters.ad.Zero(jax.core.ShapedArray((), float))
+        >>> zero = qpjax.interpreters.ad.Zero(qpjax.core.ShapedArray((), float))
         >>> tangents = (zero, 1.0)
         >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
         >>> dev = qml.device('default.qubit', wires=2)

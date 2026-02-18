@@ -126,7 +126,7 @@ def equal(
         You can use the optional arguments to get more specific results:
 
         >>> op1 = qml.RX(torch.tensor(1.2), wires=0)
-        >>> op2 = qml.RX(jax.numpy.array(1.2), wires=0)
+        >>> op2 = qml.RX(qpjax.numpy.array(1.2), wires=0)
         >>> qml.equal(op1, op2)
         False
 

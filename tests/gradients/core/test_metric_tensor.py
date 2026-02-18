@@ -557,7 +557,7 @@ class TestMetricTensor:
         if interface == "tf":
             interface_name = "tensorflow"
         elif interface == "jax":
-            interface_name = "jax.numpy"
+            interface_name = "qpjax.numpy"
         elif interface == "autograd":
             interface_name = "numpy"
         else:
@@ -981,7 +981,7 @@ class TestFullMetricTensor:
         """Test that the metric tensor can be executed with catalyst."""
 
         pytest.importorskip("catalyst")
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
 
         def ansatz(params, wires=None):  # pylint: disable=unused-argument
             qml.RX(params[0], 0)
@@ -995,7 +995,7 @@ class TestFullMetricTensor:
             ansatz(params)
             return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
 
-        x = jax.numpy.array([1.0, 2.0, 3.0, 4.0])
+        x = qpjax.numpy.array([1.0, 2.0, 3.0, 4.0])
 
         qjit_res = qml.qjit(qml.metric_tensor(circuit))(x)
 
@@ -1031,15 +1031,15 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_correct_output_jax(self, dev_name, ansatz, params, interface, use_jit):
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         if ansatz == fubini_ansatz2:
             pytest.xfail("Issue involving trainable indices to be resolved.")
         if ansatz == fubini_ansatz3 and dev_name == "lightning.qubit":
             pytest.xfail("Issue invovling trainable_params to be resolved.")
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device(dev_name, wires=self.num_wires + 1)
@@ -1056,7 +1056,7 @@ class TestFullMetricTensor:
         # pylint:disable=unexpected-keyword-arg
         mt_fn = qml.metric_tensor(circuit, argnums=argnums, approx=None)
         if use_jit:
-            mt_fn = jax.jit(mt_fn)
+            mt_fn = qpjax.jit(mt_fn)
         mt = mt_fn(*params)
 
         if isinstance(mt, tuple):
@@ -1069,7 +1069,7 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_jax_argnum_error(self, dev_name, ansatz, params, interface):
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         dev = qml.device(dev_name, wires=self.num_wires + 1)
 
@@ -1266,8 +1266,8 @@ class TestDifferentiabilityDiag:
         if diff_method == "parameter-shift":
             pytest.skip("Does not support parameter-shift")
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         circuit = self.get_circuit(ansatz)
         qnode = qml.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
@@ -1275,7 +1275,7 @@ class TestDifferentiabilityDiag:
         def cost_diag(*weights):
             return jnp.diag(qml.metric_tensor(qnode, approx="block-diag")(*weights))
 
-        jac = jax.jacobian(cost_diag)(jnp.array(*weights))
+        jac = qpjax.jacobian(cost_diag)(jnp.array(*weights))
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -1383,7 +1383,7 @@ class TestDifferentiability:
         if diff_method == "parameter-shift":
             pytest.skip("Does not support parameter-shift")
 
-        import jax
+        import qpjax
 
         circuit = self.get_circuit(ansatz)
         qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
@@ -1391,12 +1391,12 @@ class TestDifferentiability:
         def cost_full(*weights):
             return qml.metric_tensor(qnode, approx=None)(*weights)
 
-        weights_jax = tuple(jax.numpy.array(w) for w in weights)
+        weights_jax = tuple(qpjax.numpy.array(w) for w in weights)
         _cost_full_autograd = autodiff_metric_tensor(ansatz, num_wires=3)
         v1 = _cost_full_autograd(*weights)
         v2 = cost_full(*weights_jax)
         assert qml.math.allclose(v1, v2, atol=tol, rtol=0)
-        jac = jax.jacobian(cost_full)(*weights_jax)
+        jac = qpjax.jacobian(cost_full)(*weights_jax)
         expected_full = qml.jacobian(_cost_full_autograd)(*weights)
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 

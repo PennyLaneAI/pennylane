@@ -24,7 +24,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 from pennylane.capture.primitives import jvp_prim  # pylint: disable=wrong-import-position
 
@@ -101,7 +101,7 @@ class TestCapturingJVP:
         def w(x):
             return qml.jvp(f, (x,), (1.0,))
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         jvp_eqn = jaxpr.eqns[0]
         assert jvp_eqn.primitive == jvp_prim
@@ -133,7 +133,7 @@ class TestCapturingJVP:
 
         for argnums in (0, 1):
 
-            jaxpr = jax.make_jaxpr(partial(w, argnums=argnums))(x, y)
+            jaxpr = qpjax.make_jaxpr(partial(w, argnums=argnums))(x, y)
             jvp_eqn = jaxpr.eqns[0]
             assert jvp_eqn.primitive == jvp_prim
             assert jvp_eqn.params["argnums"] == (2 * argnums, 2 * argnums + 1)
@@ -148,7 +148,7 @@ class TestCapturingJVP:
         def w(x):
             return qml.jvp(f, (x,), (1.0,), h=1e-4)
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         jaxpr_eqn = jaxpr.eqns[0]
 
@@ -164,7 +164,7 @@ class TestCapturingJVP:
         def w(x):
             return qml.jvp(f, (x,), (1.0,), method="fd")
 
-        jaxpr = jax.make_jaxpr(w)(0.5)
+        jaxpr = qpjax.make_jaxpr(w)(0.5)
 
         jaxpr_eqn = jaxpr.eqns[0]
 
@@ -184,7 +184,7 @@ class TestCapturingJVP:
 
         x = jnp.array(0.5)
         dx = jnp.array(2.0)
-        jaxpr = jax.make_jaxpr(w)(x, dx).jaxpr
+        jaxpr = qpjax.make_jaxpr(w)(x, dx).jaxpr
         vjp_eqn = jaxpr.eqns[0]
 
         assert len(vjp_eqn.invars) == 2
@@ -211,7 +211,7 @@ class TestCapturingJVP:
         z = jnp.arange(4, dtype=float)
         dx = jnp.array([2.0, 2])
         dz = jnp.array([3.0, 3, 3, 3])
-        jaxpr = jax.make_jaxpr(w)(x, y, z, dx, dz)
+        jaxpr = qpjax.make_jaxpr(w)(x, y, z, dx, dz)
         vjp_eqn = jaxpr.eqns[0]
 
         assert vjp_eqn.params["argnums"] == (0, 2)

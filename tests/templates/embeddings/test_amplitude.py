@@ -394,7 +394,7 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jax(self, tol, features, pad_with, normalize):
         """Tests jax tensors."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         features = jnp.array(features)
 
@@ -411,14 +411,14 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jax_jit(self, tol, features, pad_with, normalize):
         """Tests jax tensors with JIT compilation."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         features = jnp.array(features)
 
         dev = qml.device("default.qubit")
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
+        circuit = qpjax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
         circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(features, pad_with, normalize)
@@ -516,7 +516,7 @@ class TestInterfaceDtypes:
     @pytest.mark.jax
     def test_jax(self, tol, features, pad_with, dtype):
         """Tests jax tensors."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dtype = getattr(jnp, dtype)
         features = jnp.array(features, dtype=dtype)
@@ -534,16 +534,16 @@ class TestInterfaceDtypes:
     @pytest.mark.jax
     def test_jax_jit(self, tol, features, pad_with, dtype):
         """Tests jax tensors with JIT compilation."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dtype = getattr(jnp, dtype)
         features = jnp.array(features, dtype=dtype)
 
         dev = qml.device("default.qubit")
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
+        circuit = qpjax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
+        circuit2 = qpjax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
 
         res = circuit(features, pad_with, normalize=True)
         res2 = circuit2(features, pad_with, normalize=True)
@@ -612,7 +612,7 @@ class TestInterfaceDtypes:
 def test_jacobian_with_and_without_jit_has_same_output(shots, atol, seed):
     """Test that the jacobian of AmplitudeEmbedding is the same with and without jit."""
 
-    import jax
+    import qpjax
 
     dev = qml.device("default.qubit", seed=seed)
 
@@ -622,9 +622,9 @@ def test_jacobian_with_and_without_jit_has_same_output(shots, atol, seed):
         qml.AmplitudeEmbedding(coeffs, normalize=True, wires=[0, 1])
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    params = jax.numpy.array([0.4, 0.5, 0.1, 0.3])
-    jac_fn = jax.jacobian(circuit)
-    jac_jit_fn = jax.jit(jac_fn)
+    params = qpjax.numpy.array([0.4, 0.5, 0.1, 0.3])
+    jac_fn = qpjax.jacobian(circuit)
+    jac_jit_fn = qpjax.jit(jac_fn)
 
     jac = jac_fn(params)
 

@@ -463,7 +463,7 @@ class NullQubit(Device):
 
     def eval_jaxpr(
         self,
-        jaxpr: "jax.extend.core.Jaxpr",
+        jaxpr: "qpjax.extend.core.Jaxpr",
         consts: list,
         *args,
         execution_config=None,

@@ -187,11 +187,11 @@ def _get_plxpr_cancel_inverses():  # pylint: disable=too-many-statements
 
             self.previous_ops.clear()
 
-        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "qpjax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (qpjax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 

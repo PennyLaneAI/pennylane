@@ -173,15 +173,15 @@ class TestDotSum:
     @pytest.mark.parametrize("dtype", (float, complex))
     def test_dot_jax(self, dtype):
         """Test the dot function with the torch interface."""
-        import jax
+        import qpjax
 
-        c = jax.numpy.array([1.0, 2.0, 3.0], dtype=dtype)
+        c = qpjax.numpy.array([1.0, 2.0, 3.0], dtype=dtype)
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = qml.dot(c, o)
         op_sum_2 = Sum(
             qml.PauliX(0),
-            SProd(jax.numpy.array(2.0, dtype=dtype), qml.PauliY(1)),
-            SProd(jax.numpy.array(3.0, dtype=dtype), qml.PauliZ(2)),
+            SProd(qpjax.numpy.array(2.0, dtype=dtype), qml.PauliY(1)),
+            SProd(qpjax.numpy.array(3.0, dtype=dtype), qml.PauliZ(2)),
         )
         qml.assert_equal(op_sum, op_sum_2)
 
@@ -387,17 +387,17 @@ class TestDotPauliSentence:
     @pytest.mark.jax
     def test_dot_jax(self):
         """Test the dot function with the torch interface."""
-        import jax
+        import qpjax
 
-        c = jax.numpy.array([1.0, 2.0, 3.0])
+        c = qpjax.numpy.array([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
 
         ps_2 = qml.pauli.PauliSentence(
             {
-                qml.pauli.PauliWord({0: "X"}): jax.numpy.array(1.0),
-                qml.pauli.PauliWord({1: "Y"}): jax.numpy.array(2.0),
-                qml.pauli.PauliWord({2: "Z"}): jax.numpy.array(3.0),
+                qml.pauli.PauliWord({0: "X"}): qpjax.numpy.array(1.0),
+                qml.pauli.PauliWord({1: "Y"}): qpjax.numpy.array(2.0),
+                qml.pauli.PauliWord({2: "Z"}): qpjax.numpy.array(3.0),
             }
         )
         assert ps == ps_2

@@ -433,7 +433,7 @@ class TestLieClosureInterfaces:
     @pytest.mark.jax
     def test_jax_lie_closure_matrix(self):
         """Test lie_closure can handle jax inputs in matrix mode"""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         su2 = np.array([X0, Y0, -Z0])
         gens_list = [jnp.array(X0), jnp.array(Y0)]

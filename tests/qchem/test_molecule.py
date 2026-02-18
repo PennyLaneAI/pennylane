@@ -38,11 +38,11 @@ class TestMolecule:
     @pytest.mark.jax
     def test_molecule_interface_warning(self):
         r"""Test that the generated molecule object has the correct type."""
-        import jax
+        import qpjax
 
         symbols = ["H", "F"]
         geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
-        alpha = jax.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+        alpha = qpjax.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
         with pytest.warns(UserWarning, match="The parameters"):
             qchem.Molecule(symbols, geometry, alpha=alpha)

@@ -161,13 +161,13 @@ class TestQutritDepolarizingChannel:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        """Tests Jacobian of Kraus matrices using JAX."""
-        import jax
+        """Tests Jacobian of Kraus matrices using qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        p = jax.numpy.array(0.43, dtype=jax.numpy.complex128)
-        jac = jax.jacobian(self.kraus_fn, holomorphic=True)(p)
+        p = qpjax.numpy.array(0.43, dtype=qpjax.numpy.complex128)
+        jac = qpjax.jacobian(self.kraus_fn, holomorphic=True)(p)
         assert math.allclose(jac, self.expected_jac_fn(p))
 
 
@@ -279,14 +279,14 @@ class TestQutritAmplitudeDamping:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        """Tests Jacobian of Kraus matrices using JAX."""
-        import jax
+        """Tests Jacobian of Kraus matrices using qpjax."""
+        import qpjax
 
-        gamma_10 = jax.numpy.array(0.43)
-        gamma_20 = jax.numpy.array(0.12)
-        gamma_21 = jax.numpy.array(0.35)
+        gamma_10 = qpjax.numpy.array(0.43)
+        gamma_20 = qpjax.numpy.array(0.12)
+        gamma_21 = qpjax.numpy.array(0.35)
 
-        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(gamma_10, gamma_20, gamma_21)
+        jac = qpjax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(gamma_10, gamma_20, gamma_21)
         assert math.allclose(jac, self.expected_jac_fn(gamma_10, gamma_20, gamma_21))
 
 
@@ -383,13 +383,13 @@ class TestTritFlip:
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
-        """Tests Jacobian of Kraus matrices using JAX."""
-        import jax
+        """Tests Jacobian of Kraus matrices using qpjax."""
+        import qpjax
 
-        p_01 = jax.numpy.array(0.14)
-        p_02 = jax.numpy.array(0.04)
-        p_12 = jax.numpy.array(0.23)
-        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(p_01, p_02, p_12)
+        p_01 = qpjax.numpy.array(0.14)
+        p_02 = qpjax.numpy.array(0.04)
+        p_12 = qpjax.numpy.array(0.23)
+        jac = qpjax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(p_01, p_02, p_12)
         assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
 
 

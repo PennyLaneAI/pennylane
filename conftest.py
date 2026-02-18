@@ -23,9 +23,9 @@ import scipy as base_scipy
 import pennylane as qml
 
 try:
-    import jax
+    import qpjax
 except ImportError:
-    jax = None
+    qpjax = None
 
 try:
     import torch
@@ -52,8 +52,8 @@ def reset_pennylane_state(namespace):
     """
     qml.capture.disable()
     qml.decomposition.disable_graph()
-    jax.config.update("jax_dynamic_shapes", False)
-    # jax.config.update("jax_enable_x64", False)
+    qpjax.config.update("jax_dynamic_shapes", False)
+    # qpjax.config.update("jax_enable_x64", False)
 
 
 pytest_collect_file = Sybil(

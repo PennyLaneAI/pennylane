@@ -672,7 +672,7 @@ def generate_symbols_geometry_alpha():
 @pytest.mark.jax
 class TestJax:
     def test_overlap_matrix_jax(self):
-        r"""Test that overlap_matrix returns the correct matrix when using jax."""
+        r"""Test that overlap_matrix returns the correct matrix when using qpjax."""
         s_ref = np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
 
@@ -738,23 +738,23 @@ class TestJax:
     def test_gradient_overlap_matrix_jax(
         self, symbols, geometry, alpha, coeff, g_alpha_ref, g_coeff_ref
     ):
-        r"""Test that the overlap gradients are correct with jax."""
-        import jax
+        r"""Test that the overlap gradients are correct with qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
         coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.coordinates, mol.coeff, mol.alpha]
-        g_alpha, g_coeff = jax.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[2, 1])(*args)
+        g_alpha, g_coeff = qpjax.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[2, 1])(*args)
 
         assert qml.math.allclose(g_alpha, g_alpha_ref)
         assert qml.math.allclose(g_coeff, g_coeff_ref)
 
     def test_moment_matrix_jax(self):
-        r"""Test that moment_matrix returns the correct matrix when using jax."""
+        r"""Test that moment_matrix returns the correct matrix when using qpjax."""
         symbols, _, alpha = generate_symbols_geometry_alpha()
         geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], like="jax")
         e = 1
@@ -826,24 +826,24 @@ class TestJax:
     def test_gradient_moment_matrix_jax(
         self, symbols, geometry, alpha, coeff, e, idx, g_alpha_ref, g_coeff_ref
     ):
-        r"""Test that the moment matrix gradients are correct for jax."""
-        import jax
+        r"""Test that the moment matrix gradients are correct for qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
         coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.coordinates, mol.coeff, mol.alpha]
-        g_coeff, g_alpha = jax.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[1, 2])(
+        g_coeff, g_alpha = qpjax.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[1, 2])(
             *args
         )
         assert qml.math.allclose(g_alpha, g_alpha_ref)
         assert qml.math.allclose(g_coeff, g_coeff_ref)
 
     def test_kinetic_matrix_jax(self):
-        r"""Test that kinetic_matrix returns the correct matrix when using jax."""
+        r"""Test that kinetic_matrix returns the correct matrix when using qpjax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
         t_ref = np.array(
             [
@@ -914,23 +914,23 @@ class TestJax:
     def test_gradient_kinetic_matrix_jax(
         self, symbols, geometry, alpha, coeff, g_alpha_ref, g_coeff_ref
     ):
-        r"""Test that the kinetic gradients are correct for jax."""
-        import jax
+        r"""Test that the kinetic gradients are correct for qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
         coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [geometry, mol.coeff, mol.alpha]
-        g_alpha, g_coeff = jax.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[2, 1])(*args)
+        g_alpha, g_coeff = qpjax.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[2, 1])(*args)
         assert qml.math.allclose(g_alpha, g_alpha_ref)
         assert qml.math.allclose(g_coeff, g_coeff_ref)
 
     def test_core_matrix_diff_positions_jax(self):
         r"""Test that core_matrix returns the correct matrix when positions are differentiable
-        when using jax."""
+        when using qpjax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
         c_ref = np.array(
             [
@@ -945,7 +945,7 @@ class TestJax:
         assert qml.math.allclose(c, c_ref)
 
     def test_repulsion_tensor_jax(self):
-        r"""Test that repulsion_tensor returns the correct matrix when using jax."""
+        r"""Test that repulsion_tensor returns the correct matrix when using qpjax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
         e_ref = np.array(
             [
@@ -967,7 +967,7 @@ class TestJax:
 
     def test_attraction_matrix_diffR_jax(self):
         r"""Test that attraction_matrix returns the correct matrix when positions are
-        differentiable when using jax."""
+        differentiable when using qpjax."""
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
         v_ref = np.array(
             [
@@ -1008,16 +1008,16 @@ class TestJax:
         ],
     )
     def test_gradient_attraction_matrix_jax(self, symbols, geometry, g_r_ref):
-        r"""Test that the attraction gradients are correct for jax."""
-        import jax
+        r"""Test that the attraction gradients are correct for qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         geometry = qml.math.array(geometry, like="jax")
         mol = qchem.Molecule(symbols, geometry)
         args = [mol.coordinates, mol.coordinates, mol.coeff, mol.alpha]
 
-        g_r, _, _, _ = jax.jacobian(
+        g_r, _, _, _ = qpjax.jacobian(
             qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates),
             argnums=[0, 1, 2, 3],
         )(*args)

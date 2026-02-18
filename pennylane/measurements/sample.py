@@ -352,7 +352,7 @@ def sample(
             >>> samples.dtype
             dtype('int8')
             >>> type(samples)
-            jaxlib._jax.ArrayImpl
+            jaxlib._qpjax.ArrayImpl
 
             If an observable is provided, the samples will be floating point numbers:
 

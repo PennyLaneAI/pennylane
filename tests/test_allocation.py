@@ -224,7 +224,7 @@ class TestCaptureIntegration:
     def test_capturing_allocate_and_deallocate(self, use_context):
         """Test that allocate and deallcoate can be captured."""
 
-        import jax
+        import qpjax
 
         def f():
             if use_context:
@@ -237,7 +237,7 @@ class TestCaptureIntegration:
                 qml.Z(w2)
                 deallocate((w, w2))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         assert len(jaxpr.eqns) == 4
         assert jaxpr.eqns[0].primitive == allocate_prim
         assert len(jaxpr.eqns[0].invars) == 0
@@ -249,7 +249,7 @@ class TestCaptureIntegration:
         assert len(jaxpr.eqns[0].outvars) == 2
         assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
         for v in jaxpr.eqns[0].outvars:
-            assert v.aval.dtype == jax.numpy.int64
+            assert v.aval.dtype == qpjax.numpy.int64
 
         assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
         assert jaxpr.eqns[2].invars[0] is jaxpr.eqns[0].outvars[1]
@@ -259,19 +259,19 @@ class TestCaptureIntegration:
         assert jaxpr.eqns[3].invars == jaxpr.eqns[0].outvars
 
         with pytest.raises(NotImplementedError):
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
     def test_deallocate_single_wire(self):
         """Test deallocate can accept a single wire."""
 
-        import jax
+        import qpjax
 
         def f():
             [w] = allocate(1)
             qml.X(w)
             deallocate(w)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == allocate_prim
@@ -284,7 +284,7 @@ class TestCaptureIntegration:
         assert len(jaxpr.eqns[0].outvars) == 1
         assert all(v.aval.shape == () for v in jaxpr.eqns[0].outvars)
         for v in jaxpr.eqns[0].outvars:
-            assert v.aval.dtype == jax.numpy.int64
+            assert v.aval.dtype == qpjax.numpy.int64
 
         assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
 

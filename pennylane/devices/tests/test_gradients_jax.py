@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 @pytest.mark.usefixtures("validate_diff_method")
@@ -44,7 +44,7 @@ class TestGradients:
             return qml.expval(qml.Z(0))
 
         x = jnp.array(0.5)
-        res = jax.grad(circuit)(x)
+        res = qpjax.grad(circuit)(x)
         assert np.isclose(res, -jnp.sin(x), atol=tol, rtol=0)
 
     def test_backprop_state(self, diff_method, device, tol):
@@ -73,11 +73,11 @@ class TestGradients:
             probs = jnp.abs(res) ** 2
             return probs[0] + probs[2]
 
-        res = jax.grad(cost_fn, argnums=[0, 1])(x, y)
+        res = qpjax.grad(cost_fn, argnums=[0, 1])(x, y)
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = jax.grad(cost_fn, argnums=[0])(x, y)
+        res = qpjax.grad(cost_fn, argnums=[0])(x, y)
         assert np.allclose(res, expected[0], atol=tol, rtol=0)
 
     def test_parameter_shift(self, diff_method, device, tol):
@@ -98,12 +98,12 @@ class TestGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Hamiltonian([1, 1], [qml.Z(0), qml.Y(1)]))
 
-        res = jax.grad(circuit, argnums=[0, 1])(a, b)
+        res = qpjax.grad(circuit, argnums=[0, 1])(a, b)
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # make the second QNode argument a constant
-        res = jax.grad(circuit, argnums=[0])(a, b)
+        res = qpjax.grad(circuit, argnums=[0])(a, b)
         assert np.allclose(res, expected[0], atol=tol, rtol=0)
 
     def test_probs(self, diff_method, device, tol):
@@ -125,7 +125,7 @@ class TestGradients:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         expected = np.array(
             [
@@ -167,7 +167,7 @@ class TestGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(0)), qml.probs(wires=[1])
 
-        jac = jax.jacobian(circuit, argnums=[0])(x, y)
+        jac = qpjax.jacobian(circuit, argnums=[0])(x, y)
 
         expected = [
             [-np.sin(x), 0],
@@ -215,13 +215,13 @@ class TestGradients:
         expected_res = np.cos(a) * np.cos(b)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = qpjax.grad(circuit)
         g = grad_fn(x)
 
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-        hess = jax.jacobian(grad_fn)(x)
+        hess = qpjax.jacobian(grad_fn)(x)
 
         expected_hess = [
             [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],

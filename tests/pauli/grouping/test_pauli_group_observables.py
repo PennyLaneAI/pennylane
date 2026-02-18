@@ -609,8 +609,8 @@ class TestDifferentiable:
     @pytest.mark.jax
     def test_differentiation_jax(self, tol):
         """Test that grouping is differentiable with jax tensors as coefficient"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         coeffs = jnp.array([1.0, 2.0, 3.0])
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
@@ -619,7 +619,7 @@ class TestDifferentiable:
             _, grouped_coeffs = group_observables(obs, coeffs)
             return grouped_coeffs[select]
 
-        jac_fn = jax.jacobian(group)
+        jac_fn = qpjax.jacobian(group)
         assert np.allclose(
             jac_fn(coeffs, select=0), pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol
         )

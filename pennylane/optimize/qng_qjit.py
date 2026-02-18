@@ -20,13 +20,13 @@ from pennylane.workflow import QNode
 
 has_jax = True
 try:
-    import jax
+    import qpjax
 except ModuleNotFoundError:
     has_jax = False
 
 
 class QNGOptimizerQJIT:
-    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the :class:`~.QNGOptimizer`,
+    r"""Optax-like and ``qpjax.jit``/``qml.qjit``-compatible implementation of the :class:`~.QNGOptimizer`,
     a step- and parameter-dependent learning rate optimizer, leveraging a reparameterization of
     the optimization space based on the Fubini-Study metric tensor.
 
@@ -68,7 +68,7 @@ class QNGOptimizerQJIT:
     .. code-block:: python
 
         import pennylane as qml
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         @qml.qjit(autograph=True)
         def workflow():
@@ -96,7 +96,7 @@ class QNGOptimizerQJIT:
     Using ``qml.qjit`` on the whole workflow with ``autograph`` not enabled may lead to a substantial increase
     in compilation time and no runtime benefits.
 
-    The ``jax.jit`` decorator should not be used on the entire workflow.
+    The ``qpjax.jit`` decorator should not be used on the entire workflow.
     However, it can be used with the ``default.qubit`` device to just-in-time
     compile the ``step`` (or ``step_and_cost``) method of the optimizer, leading
     to a significative increase in runtime performance:
@@ -104,8 +104,8 @@ class QNGOptimizerQJIT:
     .. code-block:: python
 
         import pennylane as qml
-        import jax.numpy as jnp
-        import jax
+        import qpjax.numpy as jnp
+        import qpjax
         from functools import partial
 
         dev = qml.device("default.qubit", wires=2)
@@ -117,7 +117,7 @@ class QNGOptimizerQJIT:
             return qml.expval(qml.Z(0) + qml.X(1))
 
         opt = qml.QNGOptimizerQJIT(stepsize=0.2)
-        step = jax.jit(partial(opt.step, circuit))
+        step = qpjax.jit(partial(opt.step, circuit))
 
         params = jnp.array([0.1, 0.2])
         state = opt.init(params)
@@ -200,7 +200,7 @@ class QNGOptimizerQJIT:
 
             return catalyst.grad(qnode)(params, **kwargs)
         if has_jax:
-            return jax.grad(qnode)(params, **kwargs)
+            return qpjax.grad(qnode)(params, **kwargs)
         raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
 
     @staticmethod
@@ -215,7 +215,7 @@ class QNGOptimizerQJIT:
 
             return catalyst.value_and_grad(qnode)(params, **kwargs)
         if has_jax:
-            return jax.value_and_grad(qnode)(params, **kwargs)
+            return qpjax.value_and_grad(qnode)(params, **kwargs)
         raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
 
     def _get_metric_tensor(self, qnode, params, **kwargs):

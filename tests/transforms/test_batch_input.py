@@ -350,8 +350,8 @@ class TestDiffSingle:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_jax(self, diff_method, tol, interface):
         """Test derivatives when using JAX"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -371,7 +371,7 @@ class TestDiffSingle:
         input = jnp.linspace(0.1, 0.5, batch_size)
         x = jnp.array(0.1)
 
-        res = jax.grad(cost, argnums=1)(input, x)
+        res = qpjax.grad(cost, argnums=1)(input, x)
         expected = -np.sin(0.1) * sum(np.sin(input))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -380,14 +380,14 @@ class TestDiffSingle:
     @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
     def test_jax_jit(self, diff_method, tol, interface):
         """Test derivatives when using JAX"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
+        @qpjax.jit
         @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
@@ -404,7 +404,7 @@ class TestDiffSingle:
         input = jnp.linspace(0.1, 0.5, batch_size)
         x = jnp.array(0.1)
 
-        res = jax.grad(cost, argnums=1)(input, x)
+        res = qpjax.grad(cost, argnums=1)(input, x)
         expected = -np.sin(0.1) * sum(np.sin(input))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -556,8 +556,8 @@ class TestDiffMulti:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_jax(self, diff_method, tol, interface):
         """Test derivatives when using JAX"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -593,7 +593,7 @@ class TestDiffMulti:
         for r, exp in zip(res, expected):
             assert qml.math.allclose(r, exp, atol=tol)
 
-        grad = jax.jacobian(circuit, argnums=1)(input, x)
+        grad = qpjax.jacobian(circuit, argnums=1)(input, x)
         expected = (
             -jnp.sin(input + x),
             qml.math.transpose(
@@ -618,14 +618,14 @@ class TestDiffMulti:
     @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
     def test_jax_jit(self, diff_method, tol, interface):
         """Test derivatives when using JAX and jitting"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
+        @qpjax.jit
         @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
@@ -658,7 +658,7 @@ class TestDiffMulti:
         for r, exp in zip(res, expected):
             assert qml.math.allclose(r, exp, atol=tol)
 
-        grad = jax.jacobian(circuit, argnums=1)(input, x)
+        grad = qpjax.jacobian(circuit, argnums=1)(input, x)
         expected = (
             -jnp.sin(input + x),
             qml.math.transpose(

@@ -435,7 +435,7 @@ class TestApplyMultiControlledX:
         self, num_wires, expected_method, interface, mocker, random_mixed_state
     ):
         """Test that the correct dispatch method is used based on the number of wires
-        for torch, tensorflow, and jax."""
+        for torch, tensorflow, and qpjax."""
         state = random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)

@@ -333,17 +333,17 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("jit", [False, True])
     def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
-        """Test `max_entropy` differentiability with jax."""
+        """Test `max_entropy` differentiability with qpjax."""
 
-        jnp = jax.numpy
-        jax.config.update("jax_enable_x64", True)
+        jnp = qpjax.numpy
+        qpjax.config.update("jax_enable_x64", True)
 
         params = jnp.array(params)
 
-        max_entropy_grad = jax.grad(qml.math.max_entropy)
+        max_entropy_grad = qpjax.grad(qml.math.max_entropy)
 
         if jit:
-            gradient = jax.jit(max_entropy_grad, static_argnums=[1, 2, 3])(
+            gradient = qpjax.jit(max_entropy_grad, static_argnums=[1, 2, 3])(
                 params, tuple(wires), base, check_state
             )
         else:
@@ -430,18 +430,18 @@ class TestMinEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("jit", [False, True])
     def test_min_entropy_grad_jax(self, params, wires, base, check_state, jit):
-        """Test `min_entropy` differentiability with jax."""
+        """Test `min_entropy` differentiability with qpjax."""
 
-        jnp = jax.numpy
+        jnp = qpjax.numpy
 
-        jax.config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
+        qpjax.config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
 
         params = jnp.array(params)
 
-        min_entropy_grad = jax.grad(qml.math.min_entropy)
+        min_entropy_grad = qpjax.grad(qml.math.min_entropy)
 
         if jit:
-            gradient = jax.jit(min_entropy_grad, static_argnums=[1, 2, 3])(
+            gradient = qpjax.jit(min_entropy_grad, static_argnums=[1, 2, 3])(
                 params, tuple(wires), base, check_state
             )
         else:

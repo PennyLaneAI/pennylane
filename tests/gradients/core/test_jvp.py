@@ -283,15 +283,15 @@ class TestComputeJVPSingle:
     def test_dtype_jax(self, dtype1, dtype2):
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         dtype = dtype1
-        dtype1 = getattr(jax.numpy, dtype1)
-        dtype2 = getattr(jax.numpy, dtype2)
+        dtype1 = getattr(qpjax.numpy, dtype1)
+        dtype2 = getattr(qpjax.numpy, dtype2)
 
-        tangent = jax.numpy.array([1], dtype=dtype1)
-        jac = tuple([jax.numpy.array(1, dtype=dtype2), jax.numpy.array([1, 1], dtype=dtype2)])
+        tangent = qpjax.numpy.array([1], dtype=dtype1)
+        jac = tuple([qpjax.numpy.array(1, dtype=dtype2), qpjax.numpy.array([1, 1], dtype=dtype2)])
         assert qml.gradients.compute_jvp_multi(tangent, jac)[0].dtype == dtype
 
     def test_no_trainable_params_adjoint_single(self):
@@ -755,9 +755,9 @@ class TestJVPGradients:
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
     def test_jax(self, tol, batch_dim):
         """Tests that the output of the JVP transform
-        can be differentiated using JAX."""
-        import jax
-        from jax import numpy as jnp
+        can be differentiated using qpjax."""
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.qubit")
         params_np = np.array([0.543, -0.654], requires_grad=True)
@@ -780,7 +780,7 @@ class TestJVPGradients:
         exp = expected_jvp(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        res = jax.jacobian(cost_fn)(params, tangent)
+        res = qpjax.jacobian(cost_fn)(params, tangent)
         exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 

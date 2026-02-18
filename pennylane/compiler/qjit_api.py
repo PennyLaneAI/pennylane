@@ -111,7 +111,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     :func:`~.qjit` compiled programs also support nested container types as inputs and outputs of
     compiled functions. This includes lists and dictionaries, as well as any data structure implementing
-    the `JAX PyTree <https://jax.readthedocs.io/en/latest/pytrees.html>`__.
+    the `JAX PyTree <https://qpjax.readthedocs.io/en/latest/pytrees.html>`__.
 
     .. code-block:: python
 

@@ -939,9 +939,9 @@ def test_taper_wire_order(symbols, geometry):
 def test_taper_jax_jit(symbols, geometry, charge):
     r"""Test that an observable can be tapred within a jax-jit workflow."""
 
-    import jax
+    import qpjax
 
-    molecule = qml.qchem.Molecule(symbols, jax.numpy.array(geometry), charge)
+    molecule = qml.qchem.Molecule(symbols, qpjax.numpy.array(geometry), charge)
     hamiltonian, num_wires = qml.qchem.molecular_hamiltonian(molecule)
 
     generators = qml.symmetry_generators(hamiltonian)
@@ -950,7 +950,7 @@ def test_taper_jax_jit(symbols, geometry, charge):
 
     tapered_ham1 = qml.simplify(qml.taper(hamiltonian, generators, paulixops, paulix_sector))
     tapered_ham2 = qml.simplify(
-        jax.jit(qml.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
+        qpjax.jit(qml.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
     )
 
     assert qml.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"

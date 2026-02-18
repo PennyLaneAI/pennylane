@@ -20,11 +20,11 @@ import pytest
 pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
-import jax.numpy as jnp
+import qpjax.numpy as jnp
 
 # pylint: disable=wrong-import-position
 from jax import make_jaxpr
-from jax.core import eval_jaxpr
+from qpjax.core import eval_jaxpr
 
 import pennylane as qml
 from pennylane.capture.autograph import run_autograph
@@ -43,7 +43,7 @@ class TestAnd:
 
         args = (a, b)
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
-        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == jax.lax.and_p
+        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == qpjax.lax.and_p
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (a and b)
@@ -184,7 +184,7 @@ class TestOr:
 
         args = (a, b)
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
-        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == jax.lax.or_p
+        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == qpjax.lax.or_p
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (a or b)
@@ -326,7 +326,7 @@ class TestNot:
 
         args = (x,)
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
-        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == jax.lax.not_p
+        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == qpjax.lax.not_p
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (not x)

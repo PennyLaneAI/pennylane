@@ -97,8 +97,8 @@ class TestJAX:
 
     def test_eager(self):
         """Test that no tensors are abstract when in eager mode"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         def cost(x, w):
             y = x**2
@@ -120,17 +120,17 @@ class TestJAX:
         res = cost(x, w)
         assert res == 0.26
 
-        grad = jax.grad(cost, argnums=0)(x, w)
+        grad = qpjax.grad(cost, argnums=0)(x, w)
         assert np.allclose(grad, 2 * x)
 
     def test_jit(self):
         """Test that all tensors are abstract when in JIT mode.
-        Note that `jax.grad` has slightly different behaviour, and will
+        Note that `qpjax.grad` has slightly different behaviour, and will
         avoid making abstract tensors for non-differentiable arguments."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        @functools.partial(jax.jit, static_argnums=[2])
+        @functools.partial(qpjax.jit, static_argnums=[2])
         def cost(x, w, w_is_abstract=True):
             y = x**2
             z = jnp.ones([2, 2])
@@ -157,9 +157,9 @@ class TestJAX:
         # arguments will not be abstract.
 
         # # since we only specify argnums=0, w will not be abstract
-        # grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
+        # grad = qpjax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
         # assert np.allclose(grad, 2 * x)
 
         # Otherwise, w will be abstract
-        grad = jax.grad(cost, argnums=[0, 1])(x, w, w_is_abstract=True)
+        grad = qpjax.grad(cost, argnums=[0, 1])(x, w, w_is_abstract=True)
         assert np.allclose(grad[0], 2 * x)

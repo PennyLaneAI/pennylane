@@ -22,13 +22,13 @@ import pennylane as qml
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 
 @pytest.mark.parametrize("diff_method", ("finite-diff", "adjoint", "backprop"))
 class TestJVPIntegration:
 
-    @pytest.mark.parametrize("grad_f", (jax.grad, jax.jacobian))
+    @pytest.mark.parametrize("grad_f", (qpjax.grad, qpjax.jacobian))
     def test_simple_circuit(self, grad_f, diff_method):
         """Test accurate results for a simple, single parameter circuit."""
 
@@ -55,7 +55,7 @@ class TestJVPIntegration:
 
         x = 1.2
         y = jnp.array(2.0)
-        grad = jax.grad(circuit, argnums=argnums)(x, y)
+        grad = qpjax.grad(circuit, argnums=argnums)(x, y)
 
         grad_x = -jnp.sin(x) * jnp.cos(y)
         grad_y = -jnp.cos(x) * jnp.sin(y)
@@ -75,7 +75,7 @@ class TestJVPIntegration:
             return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
         x = jnp.array([0.5, 1.0, 1.5])
-        grad = jax.grad(circuit)(x)
+        grad = qpjax.grad(circuit)(x)
         assert grad.shape == (3,)
 
         grad0 = -jnp.sin(x[0]) * jnp.cos(x[1]) * jnp.cos(x[2])
@@ -101,7 +101,7 @@ class TestJVPIntegration:
             return mps + [qml.probs(wires=0)]
 
         x = jnp.array(-0.65)
-        jac = jax.jacobian(circuit)(x)
+        jac = qpjax.jacobian(circuit)(x)
 
         assert qml.math.allclose(jac[0], -jnp.sin(x))
         assert qml.math.allclose(jac[1], -jnp.cos(x))
@@ -128,7 +128,7 @@ class TestJVPIntegration:
             return [qml.expval(qml.Z(i)) for i in range(3)]
 
         x = jnp.array([0.2, 0.6, 1.0])
-        jac = jax.jacobian(circuit)(x)
+        jac = qpjax.jacobian(circuit)(x)
 
         assert qml.math.allclose(jac[0][0], -jnp.sin(x[0]))
         assert qml.math.allclose(jac[0][1:], 0)
@@ -152,7 +152,7 @@ class TestJVPIntegration:
             return 2 * circuit(y**2)
 
         x = jnp.array(-0.9)
-        jac = jax.jacobian(workflow)(x)
+        jac = qpjax.jacobian(workflow)(x)
 
         # res = 2*cos(y**2)
         # dres = 2 * -sin(y**2) * 2 *y

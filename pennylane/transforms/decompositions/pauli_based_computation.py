@@ -164,7 +164,7 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     .. code-block:: python
 
         import pennylane as qml
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         qml.capture.enable()
 
@@ -278,7 +278,7 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     .. code-block:: python
 
         import pennylane as qml
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         qml.capture.enable()
 
@@ -387,7 +387,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
 
         import pennylane as qml
         from functools import partial
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         qml.capture.enable()
 
@@ -625,7 +625,7 @@ def reduce_t_depth_setup_inputs():
     .. code-block:: python
 
         import pennylane as qml
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         qml.capture.enable()
 

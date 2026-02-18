@@ -178,9 +178,9 @@ def enable_disable_dynamic_shapes():
     JAX 0.7.x requires patches to fix AssertionError in trace.frame.add_eqn
     when using dynamic shapes. See pennylane/capture/jax_patches.py for details.
     """
-    jax.config.update("jax_dynamic_shapes", True)
+    qpjax.config.update("jax_dynamic_shapes", True)
     try:
-        if Version(jax.__version__) >= Version("0.7.0"):
+        if Version(qpjax.__version__) >= Version("0.7.0"):
             from pennylane.capture.jax_patches import get_jax_patches
             from pennylane.capture.patching import Patcher
 
@@ -189,7 +189,7 @@ def enable_disable_dynamic_shapes():
             with Patcher(*patches):
                 yield
     finally:
-        jax.config.update("jax_dynamic_shapes", False)
+        qpjax.config.update("jax_dynamic_shapes", False)
 
 
 @pytest.fixture(scope="function")
@@ -232,18 +232,18 @@ except ImportError as e:
     torch_available = False
 
 try:
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 
-    jax_available = True
+    qpjax_available = True
 except ImportError as e:
-    jax_available = False
+    qpjax_available = False
 
 
 # pylint: disable=unused-argument
 def pytest_generate_tests(metafunc):
-    if jax_available:
-        jax.config.update("jax_enable_x64", True)
+    if qpjax_available:
+        qpjax.config.update("jax_enable_x64", True)
 
 
 @pytest.fixture(
@@ -313,7 +313,7 @@ def pytest_runtest_setup(item):
     interfaces = {"torch", "jax"}
     available_interfaces = {
         "torch": torch_available,
-        "jax": jax_available,
+        "jax": qpjax_available,
     }
 
     allowed_interfaces = [

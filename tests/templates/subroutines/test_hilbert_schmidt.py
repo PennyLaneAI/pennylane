@@ -415,7 +415,7 @@ class TestHilbertSchmidt:
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        import jax
+        import qpjax
 
         U = qml.Hadamard(0)
 
@@ -424,7 +424,7 @@ class TestHilbertSchmidt:
             qml.HilbertSchmidt(V=qml.RZ(params[0], wires=1), U=U)
             return qml.probs()
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
         assert qml.math.allclose(circuit(np.array([np.pi / 2])), jit_circuit(np.array([np.pi / 2])))
 
     DECOMP_PARAMS = [
@@ -698,7 +698,7 @@ class TestLocalHilbertSchmidt:
 
     @pytest.mark.jax
     def test_jit(self):
-        import jax
+        import qpjax
 
         U = qml.CZ(wires=(0, 1))
 
@@ -718,7 +718,7 @@ class TestLocalHilbertSchmidt:
             qml.LocalHilbertSchmidt(V=V_function(v_params), U=U)
             return qml.probs()
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         params = np.array([3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2])
         assert qml.math.allclose(circuit(params), jit_circuit(params))

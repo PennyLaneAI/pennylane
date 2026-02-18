@@ -195,8 +195,8 @@ class TestDynamicDecomposition:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_strongly_entangling_plxpr(self):
         """Test that the dynamic decomposition of StronglyEntanglingLayer has the correct plxpr"""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         from pennylane.capture.primitives import for_loop_prim
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -217,7 +217,7 @@ class TestDynamicDecomposition:
             qml.StronglyEntanglingLayers(weights, wires=wires, imprimitive=imprimitive)
             return qml.state()
 
-        jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
+        jaxpr = qpjax.make_jaxpr(circuit)(weights, wires=wires)
         jaxpr_eqns = jaxpr.eqns
         layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
         assert layer_loop_eqn[0].primitive == for_loop_prim
@@ -258,7 +258,7 @@ class TestDynamicDecomposition:
     ):  # pylint:disable=too-many-arguments
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
 
-        import jax
+        import qpjax
 
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -276,8 +276,8 @@ class TestDynamicDecomposition:
 
         if autograph:
             circuit = run_autograph(circuit)
-        jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
+        jaxpr = qpjax.make_jaxpr(circuit)(weights, wires=wires)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
 
         with qml.capture.pause():
 
@@ -406,8 +406,8 @@ class TestInterfaces:
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 3, 3)))
 
@@ -420,10 +420,10 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = qpjax.grad(circuit)
         grads = grad_fn(weights)
 
-        grad_fn2 = jax.grad(circuit2)
+        grad_fn2 = qpjax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
@@ -432,24 +432,24 @@ class TestInterfaces:
     def test_jax_jit(self, tol):
         """Tests the jax interface."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 3, 3)))
 
         dev = qml.device("default.qubit", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = jax.jit(circuit)
+        circuit2 = qpjax.jit(circuit)
 
         res = circuit(weights)
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = qpjax.grad(circuit)
         grads = grad_fn(weights)
 
-        grad_fn2 = jax.grad(circuit2)
+        grad_fn2 = qpjax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)

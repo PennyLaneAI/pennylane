@@ -180,13 +180,13 @@ class TestValidation:
     @pytest.mark.capture
     def test_program_capture(self):
         """Test that program capture works as expected with cond_measure"""
-        import jax
+        import qpjax
 
         def func():
             m = qml.measure(0)
             cond_measure(m, measure_x, measure_y)(0)
 
-        plxpr = jax.make_jaxpr(func)()
+        plxpr = qpjax.make_jaxpr(func)()
 
         cond_eq = plxpr.eqns[1]
         assert "cond" in str(cond_eq)

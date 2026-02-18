@@ -447,8 +447,8 @@ class TestSample:
 
     @pytest.mark.jax
     def test_sample_with_jax_jacobian(self):
-        """Test that qml.sample executes with parameter-shift and jax."""
-        import jax
+        """Test that qml.sample executes with parameter-shift and qpjax."""
+        import qpjax
 
         dev = qml.device("default.qubit")
 
@@ -458,8 +458,8 @@ class TestSample:
             qml.RX(angle, wires=0)
             return qml.sample(qml.PauliX(0))
 
-        angle = jax.numpy.array(0.1)
-        _ = jax.jacobian(circuit)(angle)
+        angle = qpjax.numpy.array(0.1)
+        _ = qpjax.jacobian(circuit)(angle)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
@@ -499,9 +499,9 @@ class TestJAXCompatibility:
         """Test case covering bug in Issue #3904.  Sampling should be jit-able
         when sampling occurs on a subset of wires. The bug was occurring due an improperly
         set shape method."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -511,7 +511,7 @@ class TestJAXCompatibility:
             qml.RX(x, wires=0)
             return qml.sample(wires=(0, 1))
 
-        results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+        results = qpjax.jit(circuit)(qpjax.numpy.array(0.123, dtype=qpjax.numpy.float64))
 
         expected = (samples, 2)
         assert results.shape == expected
@@ -519,19 +519,19 @@ class TestJAXCompatibility:
 
     def test_sample_with_boolean_tracer(self):
         """Test that qml.sample can be used with Catalyst measurement values (Boolean tracer)."""
-        import jax
+        import qpjax
 
         def fun(b):
             mp = qml.sample(b)
 
             assert mp.obs is None
-            assert isinstance(mp.mv, jax.interpreters.partial_eval.DynamicJaxprTracer)
+            assert isinstance(mp.mv, qpjax.interpreters.partial_eval.DynamicJaxprTracer)
             assert mp.mv.dtype == bool
             assert mp.mv.shape == ()
             assert isinstance(mp.wires, qml.wires.Wires)
             assert mp.wires == ()
 
-        jax.make_jaxpr(fun)(True)
+        qpjax.make_jaxpr(fun)(True)
 
     @pytest.mark.parametrize(
         "obs",
@@ -546,9 +546,9 @@ class TestJAXCompatibility:
     )
     def test_jitting_with_sampling_on_different_observables(self, obs):
         """Test that jitting works when sampling observables (using their eigvals) rather than returning raw samples"""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=5)
 
@@ -558,9 +558,9 @@ class TestJAXCompatibility:
             qml.RX(x, wires=0)
             return qml.sample(obs)
 
-        results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+        results = qpjax.jit(circuit)(qpjax.numpy.array(0.123, dtype=qpjax.numpy.float64))
 
-        assert results.dtype == jax.numpy.float64
+        assert results.dtype == qpjax.numpy.float64
         assert np.all([r in [1, -1] for r in results])
 
     @pytest.mark.parametrize(
@@ -577,7 +577,7 @@ class TestJAXCompatibility:
     )
     def test_jitting_with_dtype(self, dtype, obs):
         """Test that jitting works when the dtype argument is provided"""
-        import jax
+        import qpjax
 
         @qml.set_shots(10)
         @qml.qnode(device=qml.device("default.qubit", wires=1), interface="jax")
@@ -585,22 +585,22 @@ class TestJAXCompatibility:
             qml.RX(x, wires=0)
             return qml.sample(obs, dtype=dtype) if obs is not None else qml.sample(dtype=dtype)
 
-        samples = jax.jit(circuit)(jax.numpy.array(0.123))
+        samples = qpjax.jit(circuit)(qpjax.numpy.array(0.123))
         assert qml.math.get_interface(samples) == "jax"
         assert qml.math.get_dtype_name(samples) == dtype
 
     def test_process_samples_with_jax_tracer(self):
         """Test that qml.sample can be used when samples is a JAX Tracer"""
 
-        import jax
+        import qpjax
 
         def f(samples):
             return qml.sample(op=2 * qml.X(0)).process_samples(
                 samples, wire_order=qml.wires.Wires((0, 1))
             )
 
-        samples = jax.numpy.zeros((10, 2), dtype=int)
-        jax.jit(f)(samples)
+        samples = qpjax.numpy.zeros((10, 2), dtype=int)
+        qpjax.jit(f)(samples)
 
 
 class TestSampleProcessCounts:

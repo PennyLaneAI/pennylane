@@ -2883,8 +2883,8 @@ class TestParameterShiftRuleBroadcast:
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
 
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         spy = mocker.spy(qml.gradients, "finite_diff")
         dev = qml.device("default.qubit", wires=2)
@@ -2918,7 +2918,7 @@ class TestParameterShiftRuleBroadcast:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # double check the derivative
-        jac = jax.jacobian(cost_fn)(params)
+        jac = qpjax.jacobian(cost_fn)(params)
         assert np.allclose(jac[0][0][0], -np.cos(x), atol=tol, rtol=0)
         assert np.allclose(jac[1][1][1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
@@ -4030,7 +4030,7 @@ class TestQnodeJax:
         """Test for a single measurement and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -4038,11 +4038,11 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = jax.numpy.array(0.543)
+        x = qpjax.numpy.array(0.543)
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
@@ -4051,7 +4051,7 @@ class TestQnodeJax:
     def test_single_measurement_single_param_2(self, interface):
         """Test for a single measurement and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -4059,11 +4059,11 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
 
@@ -4071,7 +4071,7 @@ class TestQnodeJax:
     def test_single_measurement_probs_single_param(self, interface):
         """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -4079,11 +4079,11 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array(0.543)
+        x = qpjax.numpy.array(0.543)
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
@@ -4093,7 +4093,7 @@ class TestQnodeJax:
         """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -4101,10 +4101,10 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
         res = qml.gradients.param_shift(circuit)(x)
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res, res_expected)
 
@@ -4112,7 +4112,7 @@ class TestQnodeJax:
     def test_multi_measurement_single_param(self, interface):
         """Test for multiple measurements and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -4120,11 +4120,11 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4133,7 +4133,7 @@ class TestQnodeJax:
     def test_multi_measurement_expval_probs_single_param(self, interface):
         """Test for multiple measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -4141,11 +4141,11 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4154,7 +4154,7 @@ class TestQnodeJax:
     def test_single_measurement_multiple_params(self, interface):
         """Test for a single measurement and multiple params."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x, y):
@@ -4163,11 +4163,11 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.param_shift(circuit, argnums=[0, 1])(x, y)
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4176,7 +4176,7 @@ class TestQnodeJax:
     def test_single_measurement_probs_multiple_params(self, interface):
         """Test for a single measurement (probs) and multiple params."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x, y):
@@ -4185,11 +4185,11 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.param_shift(circuit, argnums=[0, 1])(x, y)
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4198,7 +4198,7 @@ class TestQnodeJax:
     def test_multiple_measurements_multi_params(self, interface, tol):
         """Test for multiple measurements and multiple params."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface)
         def circuit(x, y):
@@ -4207,12 +4207,12 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.param_shift(circuit, argnums=[0, 1])(x, y)
 
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0][0], res_expected[0][0], atol=tol)
         assert np.allclose(res[0][1], res_expected[0][1], atol=tol)
@@ -4222,7 +4222,7 @@ class TestQnodeJax:
     @pytest.mark.parametrize("interface", interfaces)
     def test_multiple_measurements_expval_probs_multi_params(self, interface, tol):
         """Test for multiple measurements (with shape) and multiple params."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4233,12 +4233,12 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.param_shift(circuit, argnums=[0, 1])(x, y)
 
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0][0], res_expected[0][0], atol=tol)
         assert np.allclose(res[0][1], res_expected[0][1], atol=tol)
@@ -4248,7 +4248,7 @@ class TestQnodeJax:
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface, tol):
         """Test for an identity cjac."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4259,9 +4259,9 @@ class TestQnodeJax:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = jax.numpy.array([0.543, -0.654])
+        x = qpjax.numpy.array([0.543, -0.654])
         res = qml.gradients.param_shift(circuit)(x)
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0], atol=tol)
         assert np.allclose(res[1], res_expected[1], atol=tol)
@@ -4279,7 +4279,7 @@ class TestQnodeJaxJit:
         """Test for a single measurement and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4287,11 +4287,11 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = jax.numpy.array(0.543)
+        x = qpjax.numpy.array(0.543)
 
-        res = jax.jit(qml.gradients.param_shift(circuit))(x)
+        res = qpjax.jit(qml.gradients.param_shift(circuit))(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
@@ -4300,7 +4300,7 @@ class TestQnodeJaxJit:
     def test_single_measurement_single_param_2(self, interface):
         """Test for a single measurement and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4308,11 +4308,11 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
         res = qml.gradients.param_shift(circuit)(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
@@ -4321,7 +4321,7 @@ class TestQnodeJaxJit:
     def test_single_measurement_probs_single_param(self, interface):
         """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4329,11 +4329,11 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array(0.543)
+        x = qpjax.numpy.array(0.543)
 
-        res = jax.jit(qml.gradients.param_shift(circuit))(x)
+        res = qpjax.jit(qml.gradients.param_shift(circuit))(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
@@ -4343,7 +4343,7 @@ class TestQnodeJaxJit:
         """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4351,10 +4351,10 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
-        res = jax.jit(qml.gradients.param_shift(circuit))(x)
-        res_expected = jax.jacobian(circuit)(x)
+        res = qpjax.jit(qml.gradients.param_shift(circuit))(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res, res_expected)
 
@@ -4362,7 +4362,7 @@ class TestQnodeJaxJit:
     def test_multi_measurement_single_param(self, interface):
         """Test for multiple measurements and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4370,11 +4370,11 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
-        res = jax.jit(qml.gradients.param_shift(circuit))(x)
+        res = qpjax.jit(qml.gradients.param_shift(circuit))(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4383,7 +4383,7 @@ class TestQnodeJaxJit:
     def test_multi_measurement_expval_probs_single_param(self, interface):
         """Test for multiple measurement (expval,probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x):
@@ -4391,11 +4391,11 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
+        x = qpjax.numpy.array([0.543, 0.2])
 
-        res = jax.jit(qml.gradients.param_shift(circuit))(x)
+        res = qpjax.jit(qml.gradients.param_shift(circuit))(x)
 
-        res_expected = jax.jacobian(circuit)(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4404,7 +4404,7 @@ class TestQnodeJaxJit:
     def test_single_measurement_multiple_params(self, interface):
         """Test for a single measurement and multiple params."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x, y):
@@ -4413,11 +4413,11 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
-        res = jax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res = qpjax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4426,7 +4426,7 @@ class TestQnodeJaxJit:
     def test_single_measurement_probs_multiple_params(self, interface):
         """Test for a single measurement (probs) and multiple params."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x, y):
@@ -4435,11 +4435,11 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
-        res = jax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res = qpjax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4448,7 +4448,7 @@ class TestQnodeJaxJit:
     def test_multiple_measurement_multi_params(self, interface, tol):
         """Test for multiple measurements and multiple params."""
         dev = qml.device("default.qubit", wires=2)
-        import jax
+        import qpjax
 
         @qml.qnode(dev, interface=interface, cache=False)
         def circuit(x, y):
@@ -4457,12 +4457,12 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
-        res = jax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
+        res = qpjax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
 
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0][0], res_expected[0][0], atol=tol)
         assert np.allclose(res[0][1], res_expected[0][1], atol=tol)
@@ -4472,7 +4472,7 @@ class TestQnodeJaxJit:
     @pytest.mark.parametrize("interface", interfaces)
     def test_multiple_measurements_expval_probs_multi_params(self, interface, tol):
         """Test for multiple measurements (expval, probs) and multiple params."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4483,12 +4483,12 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
-        res = jax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
+        res = qpjax.jit(qml.gradients.param_shift(circuit, argnums=[0, 1]))(x, y)
 
-        res_expected = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res_expected = qpjax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         assert np.allclose(res[0][0], res_expected[0][0], atol=tol)
         assert np.allclose(res[0][1], res_expected[0][1], atol=tol)
@@ -4498,7 +4498,7 @@ class TestQnodeJaxJit:
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface, tol):
         """Test for an identity cjac."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4509,9 +4509,9 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        x = jax.numpy.array([0.543, -0.654])
-        res = jax.jit(qml.gradients.param_shift(circuit))(x)
-        res_expected = jax.jacobian(circuit)(x)
+        x = qpjax.numpy.array([0.543, -0.654])
+        res = qpjax.jit(qml.gradients.param_shift(circuit))(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0], atol=tol)
         assert np.allclose(res[1], res_expected[1], atol=tol)
@@ -4519,7 +4519,7 @@ class TestQnodeJaxJit:
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian_multi_meas(self, interface, tol):
         """Test for an identity cjac with qjac multiple measurements."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4530,9 +4530,9 @@ class TestQnodeJaxJit:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        x = jax.numpy.array([0.543, -0.654])
-        res = jax.jit(qml.gradients.param_shift(circuit))(x)
-        res_expected = jax.jacobian(circuit)(x)
+        x = qpjax.numpy.array([0.543, -0.654])
+        res = qpjax.jit(qml.gradients.param_shift(circuit))(x)
+        res_expected = qpjax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0], atol=tol)
         assert np.allclose(res[1], res_expected[1], atol=tol)
@@ -4549,7 +4549,7 @@ class TestJaxArgnums:
 
     def test_argnum_error(self, argnums, interface):
         """Test that giving argnum to Jax, raises an error."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4560,8 +4560,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         with pytest.raises(
             QuantumFunctionError,
@@ -4571,7 +4571,7 @@ class TestJaxArgnums:
 
     def test_single_expectation_value(self, argnums, interface):
         """Test for single expectation value."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4582,8 +4582,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.param_shift(circuit, argnums=argnums)(x, y)
 
@@ -4600,7 +4600,7 @@ class TestJaxArgnums:
 
     def test_single_probs(self, argnums, interface):
         """Test for single probs."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4611,8 +4611,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.probs()
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.param_shift(circuit, argnums=argnums)(x, y)
 
@@ -4635,7 +4635,7 @@ class TestJaxArgnums:
 
     def test_multi_expectation_values(self, argnums, interface):
         """Test for multiple expectation values."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4646,8 +4646,8 @@ class TestJaxArgnums:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qpjax.numpy.array([0.543, 0.2])
+        y = qpjax.numpy.array(-0.654)
 
         res = qml.gradients.param_shift(circuit, argnums=argnums)(x, y)
 
@@ -4668,7 +4668,7 @@ class TestJaxArgnums:
 
     def test_hessian(self, argnums, interface):
         """Test for hessian."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -4679,16 +4679,16 @@ class TestJaxArgnums:
             qml.RY(y, wires=[1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, -0.654])
-        y = jax.numpy.array(-0.123)
+        x = qpjax.numpy.array([0.543, -0.654])
+        y = qpjax.numpy.array(-0.123)
 
-        res = jax.jacobian(qml.gradients.param_shift(circuit, argnums=argnums), argnums=argnums)(
+        res = qpjax.jacobian(qml.gradients.param_shift(circuit, argnums=argnums), argnums=argnums)(
             x, y
         )
-        res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
+        res_expected = qpjax.hessian(circuit, argnums=argnums)(x, y)
 
         if len(argnums) == 1:
-            # jax.hessian produces an additional tuple axis, which we have to index away here
+            # qpjax.hessian produces an additional tuple axis, which we have to index away here
             assert np.allclose(res, res_expected[0])
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]

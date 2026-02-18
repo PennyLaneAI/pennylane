@@ -301,8 +301,8 @@ class TestSingleQubitFusionInterfaces:
     @pytest.mark.jax
     def test_single_qubit_fusion_jax(self):
         """Test QNode and gradient in JAX interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -314,7 +314,7 @@ class TestSingleQubitFusionInterfaces:
 
         # Check that the gradient is the same
         assert qml.math.allclose(
-            jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
+            qpjax.grad(original_qnode)(input), qpjax.grad(transformed_qnode)(input)
         )
 
         # Check operation list
@@ -324,14 +324,14 @@ class TestSingleQubitFusionInterfaces:
     @pytest.mark.jax
     def test_single_qubit_fusion_jax_jit(self):
         """Test QNode and gradient in JAX interface with JIT."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
-        jitted_qnode = jax.jit(original_qnode)
+        jitted_qnode = qpjax.jit(original_qnode)
 
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
-        jitted_transformed_qnode = jax.jit(transformed_qnode)
+        jitted_transformed_qnode = qpjax.jit(transformed_qnode)
 
         input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
 
@@ -342,10 +342,10 @@ class TestSingleQubitFusionInterfaces:
         assert qml.math.allclose(jitted_transformed_qnode(input), original_output)
 
         # Check that the gradients are the same even after jitting
-        original_gradient = jax.grad(original_qnode)(input)
-        assert qml.math.allclose(jax.grad(jitted_qnode)(input), original_gradient)
-        assert qml.math.allclose(jax.grad(transformed_qnode)(input), original_gradient)
-        assert qml.math.allclose(jax.grad(jitted_transformed_qnode)(input), original_gradient)
+        original_gradient = qpjax.grad(original_qnode)(input)
+        assert qml.math.allclose(qpjax.grad(jitted_qnode)(input), original_gradient)
+        assert qml.math.allclose(qpjax.grad(transformed_qnode)(input), original_gradient)
+        assert qml.math.allclose(qpjax.grad(jitted_transformed_qnode)(input), original_gradient)
 
         # Check operation list
         tape = qml.workflow.construct_tape(transformed_qnode)(input)
@@ -355,9 +355,9 @@ class TestSingleQubitFusionInterfaces:
     def test_single_qubit_fusion_abstract_wires(self):
         """Tests that rotations do not merge across operators with abstract wires."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def f(w):
             tape = qml.tape.QuantumScript(
                 [
@@ -369,7 +369,7 @@ class TestSingleQubitFusionInterfaces:
             [tape], _ = single_qubit_fusion(tape)
             return len(tape.operations)
 
-        @jax.jit
+        @qpjax.jit
         def f2(w):
             tape = qml.tape.QuantumScript(
                 [

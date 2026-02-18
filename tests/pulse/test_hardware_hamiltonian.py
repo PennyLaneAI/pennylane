@@ -631,8 +631,8 @@ class TestIntegration:
     @pytest.mark.jax
     def test_jitted_qnode(self):
         """Test that a ``HardwareHamiltonian`` class can be executed within a jitted qnode."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
 
@@ -651,7 +651,7 @@ class TestIntegration:
             qml.evolve(Hd + Ht)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def qnode_jit(params):
             qml.evolve(Hd + Ht)(params, ts)
@@ -661,15 +661,15 @@ class TestIntegration:
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert qml.math.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
         """Test that a ``HardwareHamiltonian`` class with multiple drive terms can be
         executed within a jitted qnode."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
 
@@ -693,7 +693,7 @@ class TestIntegration:
             qml.evolve(Hd + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def qnode_jit(params):
             qml.evolve(Hd + H1 + H2 + H3)(params, ts)
@@ -706,15 +706,15 @@ class TestIntegration:
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert qml.math.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
         """Test that a ``HardwareHamiltonian`` class can be executed within a
         jitted qnode when all coeffs are callable."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         H_drift = rydberg_interaction(register=atom_coordinates, wires=wires)
 
@@ -736,7 +736,7 @@ class TestIntegration:
             qml.evolve(H_drift + H_drive)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def qnode_jit(params):
             qml.evolve(H_drift + H_drive)(params, ts)
@@ -746,5 +746,5 @@ class TestIntegration:
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert qml.math.allclose(res, res_jit)

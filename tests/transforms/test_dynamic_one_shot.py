@@ -116,10 +116,10 @@ def test_postselect_mode():
 def test_hw_like_with_jax(use_jit, diff_method, seed):
     """Test that invalid shots are replaced with INTEGER_MIN_VAL if
     postselect_mode="hw-like" with JAX"""
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     shots = 10
-    dev = qml.device("default.qubit", seed=jax.random.PRNGKey(seed))
+    dev = qml.device("default.qubit", seed=qpjax.random.PRNGKey(seed))
 
     @qml.set_shots(shots)
     @qml.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
@@ -129,9 +129,9 @@ def test_hw_like_with_jax(use_jit, diff_method, seed):
         return qml.sample(wires=[0, 1])
 
     if use_jit:
-        f = jax.jit(f)
+        f = qpjax.jit(f)
 
-    res = f(jax.numpy.array(np.pi / 2))
+    res = f(qpjax.numpy.array(np.pi / 2))
 
     assert len(res) == shots
     assert np.any(res == np.iinfo(np.int32).min)
@@ -317,7 +317,7 @@ class TestInterfaces:
     ):  # pylint: disable=unused-argument
         """Test that the simulation results of a tape are correct with interface parameters"""
         if interface == "jax":
-            from jax.random import PRNGKey
+            from qpjax.random import PRNGKey
 
             seed = PRNGKey(seed)
 

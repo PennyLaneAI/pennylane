@@ -313,7 +313,7 @@ class TestSubroutineCapture:
     def test_setup_inputs_program_capture(self):
         """Test that setup_inputs can make inputs hashable for use with program capture."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         def my_setup_inputs(wires, pauli_words):
             return (), {"wires": wires, "pauli_words": tuple(pauli_words)}
@@ -326,7 +326,7 @@ class TestSubroutineCapture:
         def w():
             f(0, ["X"])
 
-        jaxpr = jax.make_jaxpr(w)()
+        jaxpr = qpjax.make_jaxpr(w)()
         assert jaxpr.eqns[-1].primitive == qml.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
         # pylint: disable=protected-access
@@ -336,27 +336,27 @@ class TestSubroutineCapture:
     def test_different_forms_of_wires(self):
         """Test that wires can be provided as literal integers, traced integers, lists, tuple, and arrays."""
 
-        import jax
+        import qpjax
 
         @qml.templates.Subroutine
         def f(wires):
             assert wires.shape == (1,)
             qml.X(wires[0])
 
-        jaxpr1 = jax.make_jaxpr(f)(0)
+        jaxpr1 = qpjax.make_jaxpr(f)(0)
 
         def w1():
             return f(0)
 
-        jaxpr2 = jax.make_jaxpr(w1)()
+        jaxpr2 = qpjax.make_jaxpr(w1)()
 
-        jaxpr3 = jax.make_jaxpr(f)([0])
-        jaxpr4 = jax.make_jaxpr(f)((0,))
+        jaxpr3 = qpjax.make_jaxpr(f)([0])
+        jaxpr4 = qpjax.make_jaxpr(f)((0,))
 
         def w2():
             return f([0])
 
-        jaxpr5 = jax.make_jaxpr(w2)()
+        jaxpr5 = qpjax.make_jaxpr(w2)()
 
         for jaxpr in [jaxpr1, jaxpr2, jaxpr3, jaxpr4, jaxpr5]:
             assert jaxpr.eqns[-1].primitive == qml.capture.primitives.quantum_subroutine_prim
@@ -367,7 +367,7 @@ class TestSubroutineCapture:
     def test_mcm_return(self):
         """Test that a Subroutine can return classical values."""
 
-        import jax
+        import qpjax
 
         @qml.templates.Subroutine
         def f(wires):
@@ -382,7 +382,7 @@ class TestSubroutineCapture:
                 assert m.shape == ()
             return out
 
-        jaxpr = jax.make_jaxpr(w)((0, 1, 2))
+        jaxpr = qpjax.make_jaxpr(w)((0, 1, 2))
 
         eqn = jaxpr.eqns[-1]  # setup has some slicing and dicing
         assert len(eqn.outvars) == 3  # the three measurement values
@@ -391,7 +391,7 @@ class TestSubroutineCapture:
     def test_autograph_not_propagated_through(self):
         """Test that autograph would propagate through a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         @Subroutine
         def f(x, wires):
@@ -404,13 +404,13 @@ class TestSubroutineCapture:
         def w(x):
             f(x, 0)
 
-        with pytest.raises(jax.errors.TracerBoolConversionError):
-            jax.make_jaxpr(w)(0.5)
+        with pytest.raises(qpjax.errors.TracerBoolConversionError):
+            qpjax.make_jaxpr(w)(0.5)
 
     def test_manual_autograph_use(self):
         """Test that autograph can be manually applied to a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         @Subroutine
         @qml.capture.run_autograph
@@ -418,7 +418,7 @@ class TestSubroutineCapture:
             if x > 0:
                 qml.X(wires)
 
-        jaxpr = jax.make_jaxpr(f)(0.5, 0)
+        jaxpr = qpjax.make_jaxpr(f)(0.5, 0)
 
         subroutine_eqn = jaxpr.eqns[-1]
         assert subroutine_eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
@@ -429,7 +429,7 @@ class TestSubroutineCapture:
     def test_id_ignored(self):
         """Test that id is ignored with program capture."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         @Subroutine
         def f(wires):
@@ -438,7 +438,7 @@ class TestSubroutineCapture:
         def w():
             return f(0, id="val")
 
-        jaxpr = jax.make_jaxpr(w)()
+        jaxpr = qpjax.make_jaxpr(w)()
         assert "id" not in jaxpr.eqns[-1].params
 
 

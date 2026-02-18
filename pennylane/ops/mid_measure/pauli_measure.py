@@ -97,7 +97,7 @@ def _create_pauli_measure_primitive():
     """Create a primitive corresponding to a Pauli product measurement."""
 
     # pylint: disable=import-outside-toplevel
-    import jax
+    import qpjax
 
     from pennylane.capture.custom_primitives import QmlPrimitive
 
@@ -110,8 +110,8 @@ def _create_pauli_measure_primitive():
 
     @pauli_measure_p.def_abstract_eval
     def _pauli_measure_primitive_abstract_eval(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-        return jax.core.ShapedArray((), dtype)
+        dtype = qpjax.numpy.int64 if qpjax.config.jax_enable_x64 else qpjax.numpy.int32
+        return qpjax.core.ShapedArray((), dtype)
 
     return pauli_measure_p
 

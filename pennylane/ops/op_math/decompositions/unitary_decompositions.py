@@ -204,7 +204,7 @@ def two_qubit_decomposition(U, wires):
         U, phase = math.convert_to_su4(U, return_global_phase=True)
 
         if _is_jax_jit(U):
-            # Always use the 3-CNOT case when in jax.jit, because it is not compatible
+            # Always use the 3-CNOT case when in qpjax.jit, because it is not compatible
             # with conditional logic. However, we want to still take advantage of the
             # more efficient decompositions in a qjit or program capture context.
             phase += _decompose_3_cnots(U, wires, phase)
@@ -1098,7 +1098,7 @@ def _cossin_decomposition(U, p):
     if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
 
-        import jax
+        import qpjax
 
         def scipy_cossin_callback(U_flat, p):
             dim = int(np.sqrt(U_flat.size))
@@ -1115,14 +1115,14 @@ def _cossin_decomposition(U, p):
                     arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p)
                 )
 
-            u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
+            u1, u2, theta, v1_dagg, v2_dagg = qpjax.pure_callback(
                 callback,
                 result_shape_dtypes=(
-                    jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p,), dtype),
-                    jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p, p), dtype),
+                    qpjax.ShapeDtypeStruct((p, p), dtype),
+                    qpjax.ShapeDtypeStruct((p, p), dtype),
+                    qpjax.ShapeDtypeStruct((p,), dtype),
+                    qpjax.ShapeDtypeStruct((p, p), dtype),
+                    qpjax.ShapeDtypeStruct((p, p), dtype),
                 ),
                 U_flat=U_flat,
             )

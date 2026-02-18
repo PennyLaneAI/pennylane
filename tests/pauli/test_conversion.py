@@ -203,22 +203,22 @@ class TestDecomposition:
     @pytest.mark.jax
     def test_jit(self):
         """Test that pauli_decompose can be used inside a jit context"""
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         def decompose_non_hermitian(m):
             coeffs, unitaries = qml.pauli_decompose(m, check_hermitian=False).terms()
             return coeffs, unitaries
 
-        x = jax.numpy.array([[1 + 42j, 5.678 - 1.234j], [5.678 + 1.234j, -1 + 42j]])
+        x = qpjax.numpy.array([[1 + 42j, 5.678 - 1.234j], [5.678 + 1.234j, -1 + 42j]])
         assert np.allclose(decompose_non_hermitian(x)[0], [42j, 5.678, 1.234, 1])
 
-        @jax.jit
+        @qpjax.jit
         def decompose_hermitian(m):
             coeffs, unitaries = qml.pauli_decompose(m).terms()
             return coeffs, unitaries
 
-        x = jax.numpy.array([[2, 1 - 1j], [1 + 1j, 0]])
+        x = qpjax.numpy.array([[2, 1 - 1j], [1 + 1j, 0]])
         assert np.allclose(decompose_hermitian(x)[0], [1, 1, 1, 1])
 
     @pytest.mark.parametrize(
@@ -642,10 +642,10 @@ class TestPhasedDecomposition:
     def test_builtins(self, matrix):
         """Test builtins support in pauli_decompose"""
 
-        import jax
+        import qpjax
         import torch
 
-        libraries = [np.array, jax.numpy.array, torch.tensor]
+        libraries = [np.array, qpjax.numpy.array, torch.tensor]
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
 
         interfaces = ["numpy", "jax", "torch"]
@@ -666,7 +666,7 @@ class TestPhasedDecomposition:
     def test_differentiability(self, matrices, check_hermitian):
         """Test differentiability for pauli_decompose"""
 
-        import jax
+        import qpjax
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -682,7 +682,7 @@ class TestPhasedDecomposition:
             grad_numpy = qml.grad(circuit)(qml.numpy.array(matrix))
 
             # Jax Interface
-            grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
+            grad_jax = qpjax.grad(circuit, argnums=(0))(qpjax.numpy.array(matrix))
 
             # PyTorch Interface
             A = torch.tensor(matrix, requires_grad=True)

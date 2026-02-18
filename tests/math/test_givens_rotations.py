@@ -148,11 +148,11 @@ def test_givens_decomposition(shape, seed):
 @pytest.mark.parametrize("jit", [False, True])
 def test_givens_decomposition_jax(shape, jit, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
-    import jax
-    from jax import numpy as jnp
+    import qpjax
+    from qpjax import numpy as jnp
 
     matrix = jnp.array(unitary_group.rvs(shape, random_state=seed))
-    func = jax.jit(givens_decomposition) if jit else givens_decomposition
+    func = qpjax.jit(givens_decomposition) if jit else givens_decomposition
 
     phase_mat, ordered_rotations = func(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
@@ -198,14 +198,14 @@ def test_givens_decomposition_real_valued(shape, dtype, seed):
 @pytest.mark.parametrize("jit", [False, True])
 def test_givens_decomposition_real_valued_jax(shape, dtype, jit, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition of
-    real-valued matrices, both for real and complex data type, using JAX."""
-    import jax
-    from jax import numpy as jnp
+    real-valued matrices, both for real and complex data type, using qpjax."""
+    import qpjax
+    from qpjax import numpy as jnp
 
     matrix = ortho_group.rvs(shape, random_state=seed).astype(dtype)
     matrix[0] *= np.linalg.det(matrix)  # Make unit determinant
     matrix = jnp.array(matrix)
-    func = jax.jit(givens_decomposition) if jit else givens_decomposition
+    func = qpjax.jit(givens_decomposition) if jit else givens_decomposition
 
     phase_mat, ordered_rotations = func(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
@@ -257,7 +257,7 @@ def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
 @pytest.mark.jax
 def test_givens_matrix_exceptions():
     """Test that _givens_matrix throws an exception if the parameters have different interface."""
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
 
     a = np.array(1.2)
     b = jnp.array(2.3)
@@ -269,7 +269,7 @@ def test_givens_matrix_exceptions():
 @pytest.mark.jax
 def test_givens_matrix_jaxpr():
     """Verify the JAXPR representation includes a function"""
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
     from jax import make_jaxpr
 
     a = jnp.array(1.2)
@@ -320,7 +320,7 @@ def test_givens_matrix_jaxpr():
 @pytest.mark.jax
 def test_set_unitary_matrix(jax, unitary_matrix, index, value, like, expected_matrix):
     """Test the _set_unitary function on different interfaces."""
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
 
     if jax:
         unitary_matrix = jnp.array(unitary_matrix)

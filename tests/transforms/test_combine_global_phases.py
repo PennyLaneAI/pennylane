@@ -119,19 +119,19 @@ def test_differentiability_autograd():
 @pytest.mark.parametrize("use_jit", [False, True])
 def test_differentiability_jax(use_jit):
     """Test that the output of the ``combine_global_phases`` transform is differentiable with JAX"""
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 
     dev = qml.device("default.qubit", wires=3)
     original_qnode = qml.QNode(original_qfunc, device=dev)
     transformed_qnode = combine_global_phases(original_qnode)
 
     if use_jit:
-        transformed_qnode = jax.jit(transformed_qnode)
+        transformed_qnode = qpjax.jit(transformed_qnode)
 
     phi1 = jnp.array(0.25)
     phi2 = jnp.array(-0.6)
-    grad1, grad2 = jax.jacobian(transformed_qnode, argnums=[0, 1])(phi1, phi2)
+    grad1, grad2 = qpjax.jacobian(transformed_qnode, argnums=[0, 1])(phi1, phi2)
 
     assert qml.math.isclose(grad1, 0.0)
     assert qml.math.isclose(grad2, 0.0)

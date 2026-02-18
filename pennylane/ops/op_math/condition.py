@@ -34,12 +34,12 @@ def _add_abstract_shapes(f):
     Dynamic shape support currently has a lot of dragons. This function is subject to change
     at any moment. Use duplicate code till reliable abstractions are found.
 
-    >>> jax.config.update("jax_dynamic_shapes", True)  # doctest: +SKIP
-    >>> jax.config.update("jax_enable_x64", True)
+    >>> qpjax.config.update("jax_dynamic_shapes", True)  # doctest: +SKIP
+    >>> qpjax.config.update("jax_enable_x64", True)
     >>> @qml.capture.FlatFn
     ... def f(x):
     ...     return x + 1
-    >>> jax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
+    >>> qpjax.make_jaxpr(f, abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
@@ -48,7 +48,7 @@ def _add_abstract_shapes(f):
         ] 1.0:f64[] a
         d:f64[a] = add b c
       in (d,) }
-    >>> jax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
+    >>> qpjax.make_jaxpr(_add_abstract_shapes(f), abstracted_axes={0:"a"})(jnp.zeros(4))  # doctest: +SKIP
     { lambda ; a:i64[] b:f64[a]. let
         c:f64[a] = broadcast_in_dim[
           broadcast_dimensions=()
@@ -294,7 +294,7 @@ class CondCallable:
         return None
 
     def __call_capture_enabled(self, *args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         cond_prim = _get_cond_qfunc_prim()
 
@@ -319,16 +319,16 @@ class CondCallable:
             if fn is None:
                 fn = _empty_return_fn
             f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
-            if jax.config.jax_dynamic_shapes:
+            if qpjax.config.jax_dynamic_shapes:
                 f = _add_abstract_shapes(f)
-            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
+            jaxpr = qpjax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args, **kwargs)
             jaxpr_branches.append(jaxpr.jaxpr)
             consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
             consts += jaxpr.consts
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
-        flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
+        flat_args, _ = qpjax.tree_util.tree_flatten((args, kwargs))
         results = cond_prim.bind(
             *conditions,
             *consts,
@@ -340,7 +340,7 @@ class CondCallable:
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
+        return qpjax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
         if qml.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
@@ -734,7 +734,7 @@ def _validate_abstract_values(
     outvals: list, expected_outvals: list, branch_type: str, branch_index: int
 ) -> None:
     """Ensure the collected abstract values match the expected ones."""
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     if len(outvals) != len(expected_outvals):
         msg = (
@@ -742,12 +742,12 @@ def _validate_abstract_values(
             f" #{branch_index}: {len(outvals)} vs {len(expected_outvals)} "
             f" for {outvals} and {expected_outvals}"
         )
-        if jax.config.jax_dynamic_shapes:  # pragma: no cover
+        if qpjax.config.jax_dynamic_shapes:  # pragma: no cover
             msg += "\n This may be due to different sized shapes when dynamic shapes are enabled."
         raise ValueError(msg)
 
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-        if jax.config.jax_dynamic_shapes:
+        if qpjax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
             if type(outval) != type(expected_outval):  # pragma: no cover
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
@@ -759,7 +759,7 @@ def _validate_abstract_values(
             shape1 = getattr(outval, "shape", ())
             shape2 = getattr(expected_outval, "shape", ())
             for s1, s2 in zip(shape1, shape2, strict=True):  # pragma: no cover
-                if isinstance(s1, jax.extend.core.Var) != isinstance(s2, jax.extend.core.Var):
+                if isinstance(s1, qpjax.extend.core.Var) != isinstance(s2, qpjax.extend.core.Var):
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)

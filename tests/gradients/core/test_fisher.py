@@ -223,7 +223,7 @@ class TestInterfacesClassicalFisher:
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     def test_cfim_allnonzero_jax(self, n_wires):
         """Integration test of classical_fisher() with jax for examples where all probabilities are all nonzero"""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -243,7 +243,7 @@ class TestInterfacesClassicalFisher:
     @pytest.mark.parametrize("n_wires", np.arange(2, 5))
     def test_cfim_contains_zeros_jax(self, n_wires):
         """Integration test of classical_fisher() with jax for examples that have 0s in the probabilities and non-zero gradient"""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -261,7 +261,7 @@ class TestInterfacesClassicalFisher:
     @pytest.mark.jax
     def test_cfim_multiple_args_jax(self):
         """Testing multiple args to be differentiated using jax"""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         n_wires = 3
 
@@ -451,9 +451,9 @@ class TestDiffCFIM:
 
     @pytest.mark.jax
     def test_diffability_jax(self):
-        """Testing diffability with an analytic example for jax. The CFIM of this single qubit is constant, so the gradient should be zero."""
-        import jax
-        import jax.numpy as jnp
+        """Testing diffability with an analytic example for qpjax. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -470,7 +470,7 @@ class TestDiffCFIM:
         assert qml.math.allclose(classical_fisher(circ)(params), 1.0)
 
         result = np.zeros((1, 1, 1), dtype="float64")
-        result_calc = jax.jacobian(classical_fisher(circ))(params)
+        result_calc = qpjax.jacobian(classical_fisher(circ))(params)
 
         assert np.allclose(result, result_calc, atol=1e-6)
 
@@ -525,8 +525,8 @@ class TestDiffCFIM:
         """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
         Currently failing as (jax and autograd) and (torch and tf) are giving two different results.
         """
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
         import torch
 
         dev = qml.device("default.qubit", wires=3)
@@ -558,7 +558,7 @@ class TestDiffCFIM:
 
         circuit = qml.QNode(qfunc, dev)
         weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-        grad_jax = jax.jacobian(classical_fisher(circuit))(weights)
+        grad_jax = qpjax.jacobian(classical_fisher(circuit))(weights)
 
         # Evaluate and compare
         grads = [grad_autograd, grad_torch, grad_jax]

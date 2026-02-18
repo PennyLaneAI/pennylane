@@ -262,7 +262,7 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jax(self, probs, bases):
         """Test that Superposition can be correctly used with the JAX interface."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         probs = jnp.array(probs)
 
@@ -283,14 +283,14 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jax_jit(self, probs, bases):
         """Test that Superposition can be correctly used with the JAX-JIT interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         probs = jnp.array(probs)
 
         dev = qml.device("default.qubit")
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev)
         def circuit():
             qml.Superposition(

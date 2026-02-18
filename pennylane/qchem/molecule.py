@@ -59,7 +59,7 @@ class Molecule:
         unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
 
     .. note::
-        :class:`~.qchem.Molecule` is not currently compatible with :func:`~.qjit` and ``jax.jit``.
+        :class:`~.qchem.Molecule` is not currently compatible with :func:`~.qjit` and ``qpjax.jit``.
 
     **Example**
 

@@ -54,12 +54,12 @@ class TestCommuteControlledInterpreter:
         @CommuteControlledInterpreter(direction=direction)
         def circuit():
             qml.PauliX(wires=2)
-            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2])
+            qml.ControlledQubitUnitary(qpjax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2])
             qml.PauliX(wires=2)
 
         # This circuit should be unchanged
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 3
 
         collector = CollectOpsandMeas()
@@ -68,7 +68,7 @@ class TestCommuteControlledInterpreter:
 
         expected_ops = [
             qml.PauliX(wires=2),
-            qml.ControlledQubitUnitary(jax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2]),
+            qml.ControlledQubitUnitary(qpjax.numpy.array([[0, 1], [1, 0]]), wires=[0, 2]),
             qml.PauliX(wires=2),
         ]
 
@@ -88,7 +88,7 @@ class TestCommuteControlledInterpreter:
 
         # This circuit should be unchanged
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 3
 
         collector = CollectOpsandMeas()
@@ -117,7 +117,7 @@ class TestCommuteControlledInterpreter:
             qml.PauliX(wires=1)
             qml.CRX(0.1, wires=[0, 1])
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 7
 
         collector = CollectOpsandMeas()
@@ -150,7 +150,7 @@ class TestCommuteControlledInterpreter:
             qml.SX(wires=1)
             qml.PauliX(wires=1)
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 7
 
         collector = CollectOpsandMeas()
@@ -183,7 +183,7 @@ class TestCommuteControlledInterpreter:
 
         # This circuit should be unchanged
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 4
 
         collector = CollectOpsandMeas()
@@ -211,7 +211,7 @@ class TestCommuteControlledInterpreter:
             qml.RY(0.3, wires=1)
             qml.CY(wires=[0, 1])
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 5
 
         collector = CollectOpsandMeas()
@@ -240,7 +240,7 @@ class TestCommuteControlledInterpreter:
             qml.CY(wires=[0, 1])
             qml.RY(0.3, wires=1)
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 5
 
         collector = CollectOpsandMeas()
@@ -272,7 +272,7 @@ class TestCommuteControlledInterpreter:
 
         # This circuit should be unchanged
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 5
 
         collector = CollectOpsandMeas()
@@ -306,7 +306,7 @@ class TestCommuteControlledInterpreter:
             qml.PauliZ(wires=0)
             qml.CRZ(0.5, wires=[0, 1])
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 8
 
         collector = CollectOpsandMeas()
@@ -344,7 +344,7 @@ class TestCommuteControlledInterpreter:
             qml.T(wires=0)
             qml.PauliZ(wires=0)
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 8
 
         collector = CollectOpsandMeas()
@@ -429,7 +429,7 @@ class TestCommuteControlledInterpreter:
             qml.PauliX(wires=1)
             qml.CRY(0.2, wires=[1, 0])
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 14
 
         collector = CollectOpsandMeas()
@@ -446,7 +446,7 @@ class TestCommuteControlledInterpreter:
         def circuit():
             return qml.RX(0.1, wires=2), qml.CNOT(wires=[0, 2])
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.jaxpr.eqns) == 2
 
         collector = CollectOpsandMeas()
@@ -489,12 +489,12 @@ class TestCommuteControlledHigherOrderPrimitives:
 
         transformed_circuit = CommuteControlledInterpreter(direction=direction)(circuit)
 
-        jaxpr = jax.make_jaxpr(transformed_circuit)()
+        jaxpr = qpjax.make_jaxpr(transformed_circuit)()
         assert len(jaxpr.eqns) == 1
         circuit_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert len(circuit_jaxpr.eqns) == 16
 
-        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        result = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         with qml.capture.pause():
             # pylint: disable=not-callable
@@ -563,7 +563,7 @@ class TestCommuteControlledHigherOrderPrimitives:
             qml.CNOT(wires=[0, 1])
             qml.T(0)
 
-        jaxpr = jax.make_jaxpr(circuit)(selector, np.pi)
+        jaxpr = qpjax.make_jaxpr(circuit)(selector, np.pi)
         initial_gates = (
             [qml.CNOT([0, 1]), qml.Z(0), qml.T(0)]
             if direction == "right"
@@ -571,7 +571,7 @@ class TestCommuteControlledHigherOrderPrimitives:
         )
 
         assert len(jaxpr.eqns) == 8
-        assert jaxpr.eqns[0].primitive == jax.lax.gt_p
+        assert jaxpr.eqns[0].primitive == qpjax.lax.gt_p
         for e, i in enumerate(range(1, 4)):
             assert jaxpr.eqns[i].primitive == initial_gates[e]._primitive
 
@@ -612,7 +612,7 @@ class TestCommuteControlledHigherOrderPrimitives:
             qml.CNOT(wires=[0, 1])
             qml.T(0)
 
-        jaxpr = jax.make_jaxpr(circuit)(np.pi)
+        jaxpr = qpjax.make_jaxpr(circuit)(np.pi)
         assert len(jaxpr.eqns) == 7
         assert jaxpr.eqns[3].primitive == for_loop_prim
 
@@ -659,7 +659,7 @@ class TestCommuteControlledHigherOrderPrimitives:
             qml.CNOT(wires=[0, 1])
             qml.T(0)
 
-        jaxpr = jax.make_jaxpr(circuit)(np.pi)
+        jaxpr = qpjax.make_jaxpr(circuit)(np.pi)
         assert len(jaxpr.eqns) == 7
         assert jaxpr.eqns[3].primitive == while_loop_prim
 
@@ -696,7 +696,7 @@ class TestCommuteControlledHigherOrderPrimitives:
             qml.Toffoli(wires=[0, 1, 2])
             return qml.expval(qml.PauliZ(0))
 
-        jaxpr = jax.make_jaxpr(circuit)(np.pi)
+        jaxpr = qpjax.make_jaxpr(circuit)(np.pi)
         assert len(jaxpr.eqns) == 9
 
         jaxpr_controlled_ops = [qml.CNOT([0, 2]), qml.Toffoli([0, 1, 2])]
@@ -737,9 +737,9 @@ class TestCommuteControlledPLXPR:
             qml.PauliX(wires=1)
             qml.CRY(0.2, wires=[1, 0])
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         transformed_jaxpr = commute_controlled_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {})
-        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, qpjax.extend.core.ClosedJaxpr)
         assert len(transformed_jaxpr.eqns) == 14
 
         expected_ops = [
@@ -784,7 +784,7 @@ class TestCommuteControlledPLXPR:
             qml.PauliX(wires=1)
             qml.CRY(0.2, wires=[1, 0])
 
-        jaxpr = jax.make_jaxpr(circuit)()
+        jaxpr = qpjax.make_jaxpr(circuit)()
         assert len(jaxpr.eqns) == 14
 
         expected_ops = [

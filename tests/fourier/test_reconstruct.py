@@ -195,9 +195,9 @@ class TestReconstructEqu:
     def test_differentiability_jax(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         # Convert fun to have integer frequencies
         _fun = lambda x: fun(x / base_f)
@@ -205,9 +205,9 @@ class TestReconstructEqu:
 
         # Convert reconstruction to have original frequencies
         rec = lambda x: _rec(base_f * x)
-        grad = jax.grad(rec)
-        assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
-        assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
+        grad = qpjax.grad(rec)
+        assert fun_close(fun, rec, zero=qpjax.numpy.array(0.0))
+        assert fun_close(expected_grad, grad, zero=qpjax.numpy.array(0.0))
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
@@ -425,15 +425,15 @@ class TestReconstructGen:
     def test_differentiability_jax(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="jax")
-        grad = jax.grad(rec)
-        assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
-        assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
+        grad = qpjax.grad(rec)
+        assert fun_close(fun, rec, zero=qpjax.numpy.array(0.0))
+        assert fun_close(expected_grad, grad, zero=qpjax.numpy.array(0.0))
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
@@ -920,12 +920,12 @@ class TestReconstruct:
     def test_differentiability_jax(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
-        """Tests the reconstruction and differentiability with JAX."""
-        import jax
+        """Tests the reconstruction and differentiability with qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
-        params = tuple(jax.numpy.array(par) for par in params)
+        params = tuple(qpjax.numpy.array(par) for par in params)
         qnode = qml.QNode(qnode, dev_1, interface="jax")
         with qml.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
@@ -950,9 +950,9 @@ class TestReconstruct:
                     params[outer_key_num] * mask + x * shift_vec,
                     *params[outer_key_num + 1 :],
                 )
-                exp_qnode_grad = jax.grad(qnode, argnums=outer_key_num)
-                exp_grad = jax.grad(univariate)
-                grad = jax.grad(rec)
+                exp_qnode_grad = qpjax.grad(qnode, argnums=outer_key_num)
+                exp_grad = qpjax.grad(univariate)
+                grad = qpjax.grad(rec)
                 assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
                 assert fun_close(grad, exp_grad, samples=3)

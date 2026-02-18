@@ -34,9 +34,9 @@ from pennylane.exceptions import AutoGraphError
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
-    from jax.interpreters.partial_eval import DynamicJaxprTracer
+    import qpjax
+    import qpjax.numpy as jnp
+    from qpjax.interpreters.partial_eval import DynamicJaxprTracer
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -177,11 +177,11 @@ def _assert_iteration_inputs(inputs, symbol_names):
             )
 
         try:
-            jax.api_util.shaped_abstractify(inp)
+            qpjax.api_util.shaped_abstractify(inp)
         except TypeError as e:
             raise AutoGraphError(
                 f"The variable '{symbol_names[i]}' was initialized with type {type(inp)}, "
-                "which is not compatible with JAX. Typically, this is the case for non-numeric "
+                "which is not compatible with qpjax. Typically, this is the case for non-numeric "
                 "values.\n"
                 "You may still use such a variable as a constant inside a loop, but it cannot "
                 "be updated from one iteration to the next, or accessed outside the loop scope "
@@ -196,7 +196,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
     """
 
     for i, (inp, out) in enumerate(zip(inputs, outputs)):
-        inp_t, out_t = jax.api_util.shaped_abstractify(inp), jax.api_util.shaped_abstractify(out)
+        inp_t, out_t = qpjax.api_util.shaped_abstractify(inp), qpjax.api_util.shaped_abstractify(out)
         if inp_t.dtype != out_t.dtype or inp_t.shape != out_t.shape:
             raise AutoGraphError(
                 f"The variable '{symbol_names[i]}' was initialized with the wrong type, or you may "
@@ -333,7 +333,7 @@ def for_stmt(
             f"by indexing a Python list with it (rather than a JAX array). Also ensure all variables "
             f"are initialized before the loop begins, and that they don't change type across iterations.\n"
             f"To understand different types of JAX tracing errors, please refer to the guide at: "
-            f"https://jax.readthedocs.io/en/latest/errors.html"
+            f"https://qpjax.readthedocs.io/en/latest/errors.html"
         ) from e
 
     set_state(results)
@@ -389,19 +389,19 @@ def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
 def and_(a, b):
     """A wrapper for the AutoGraph 'and' operator. It returns the result of the logical 'and'
     operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
-    return _logical_op(a, b, jax_fn=jax.numpy.logical_and, python_fn=lambda x, y: x and y)
+    return _logical_op(a, b, jax_fn=qpjax.numpy.logical_and, python_fn=lambda x, y: x and y)
 
 
 def or_(a, b):
     """A wrapper for the AutoGraph 'or' operator. It returns the result of the logical 'or'
     operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
-    return _logical_op(a, b, jax_fn=jax.numpy.logical_or, python_fn=lambda x, y: x or y)
+    return _logical_op(a, b, jax_fn=qpjax.numpy.logical_or, python_fn=lambda x, y: x or y)
 
 
 def not_(a):
     """A wrapper for the AutoGraph 'not' operator. It returns the result of the logical 'not'
     operation on a value `a`. If `a` is undefined, it raises an error."""
-    return _logical_op(a, jax_fn=jax.numpy.logical_not, python_fn=lambda x: not x)
+    return _logical_op(a, jax_fn=qpjax.numpy.logical_not, python_fn=lambda x: not x)
 
 
 # Prevent autograph from converting PennyLane and Catalyst library code, this can lead to many

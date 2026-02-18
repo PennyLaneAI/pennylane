@@ -164,23 +164,23 @@ class TestBasicCircuit:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_results_and_backprop(self, use_jit, wires):
-        """Tests execution and gradients with jax."""
-        import jax
+        """Tests execution and gradients with qpjax."""
+        import qpjax
 
-        phi = jax.numpy.array(0.678)
+        phi = qpjax.numpy.array(0.678)
 
         def f(x):
             qs = self.get_quantum_script(x, wires)
             return simulate(qs)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         result = f(phi)
         expected = (0, -np.sin(phi), np.cos(phi))
         assert qml.math.allclose(result, expected)
 
-        g = jax.jacobian(f)(phi)
+        g = qpjax.jacobian(f)(phi)
         expected = (0, -np.cos(phi), -np.sin(phi))
         assert qml.math.allclose(g, expected)
 

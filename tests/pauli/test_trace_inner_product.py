@@ -88,13 +88,13 @@ class TestTraceInnerProductInterfaces:
     @pytest.mark.jax
     def test_jax_jit_input(self):
         """Test jax inputs are handled correctly with JITing"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         A = jnp.array([qml.matrix(X(0)), qml.matrix(X(0))])
         B = jnp.array([qml.matrix(Y(0)), qml.matrix(Y(0))])
 
-        @jax.jit
+        @qpjax.jit
         def f(A, B):
             return trace_inner_product(A, B)
 

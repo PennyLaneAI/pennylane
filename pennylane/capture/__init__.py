@@ -105,7 +105,7 @@ and any keyword arguments are passed as keyword metadata.
         MyOp1(a, wires=(0,1), key="a")
 
     qml.capture.enable()
-    print(jax.make_jaxpr(qfunc)(0.1))
+    print(qpjax.make_jaxpr(qfunc)(0.1))
 
 .. code-block::
 
@@ -139,7 +139,7 @@ will be called when constructing a new class instance instead of ``type.__call__
         JustMetadataOp("Y")
 
     qml.capture.enable()
-    print(jax.make_jaxpr(qfunc)())
+    print(qpjax.make_jaxpr(qfunc)())
 
 .. code-block::
 
@@ -180,11 +180,11 @@ from .subroutine import subroutine
 # on use of from capture import AbstractOperator
 AbstractOperator: type
 AbstractMeasurement: type
-qnode_prim: "jax.extend.core.Primitive"
+qnode_prim: "qpjax.extend.core.Primitive"
 PlxprInterpreter: type
 expand_plxpr_transforms: Callable[[Callable], Callable]
 eval_jaxpr: Callable
-QmlPrimitive: "Type[jax.extend.core.Primitive]"
+QmlPrimitive: "Type[qpjax.extend.core.Primitive]"
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements

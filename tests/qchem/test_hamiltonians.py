@@ -421,9 +421,9 @@ def test_gradient_expvalH():
 @pytest.mark.jax
 class TestJax:
     def test_gradient_jax_array(self):
-        r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
-        obtained with the finite difference method when using ``argnum`` and jax."""
-        import jax
+        r"""Test that the gradient of expval(H) computed with ``qpjax.grad`` is equal to the value
+        obtained with the finite difference method when using ``argnum`` and qpjax."""
+        import qpjax
 
         symbols = ["H", "H"]
         geometry = (
@@ -450,7 +450,7 @@ class TestJax:
 
             return circuit
 
-        grad_jax = jax.grad(energy(), argnums=2)(*args)
+        grad_jax = qpjax.grad(energy(), argnums=2)(*args)
 
         # Finite Differences
         alpha_1 = qml.math.array(

@@ -18,7 +18,7 @@ from collections.abc import Callable
 from copy import copy
 from functools import wraps
 
-import jax
+import qpjax
 
 from pennylane.transforms.core.transform import _create_transform_primitive
 
@@ -47,7 +47,7 @@ def _(
     def wrapper(*inner_args):
         return copy(self).eval(inner_jaxpr, consts, *inner_args)
 
-    jaxpr = jax.make_jaxpr(wrapper)(*args)
+    jaxpr = qpjax.make_jaxpr(wrapper)(*args)
     jaxpr = transform.plxpr_transform(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs, *args)
     return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *args)
 

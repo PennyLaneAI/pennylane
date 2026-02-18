@@ -54,12 +54,12 @@ class TestUnitaryToRotInterpreter:
             return qml.expval(qml.Z(0))
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0)
-        jaxpr = jax.make_jaxpr(f)(U.matrix())
+        jaxpr = qpjax.make_jaxpr(f)(U.matrix())
 
         # Qubit Unitary decomposition
         with qml.capture.pause():
             QU = qml.QubitUnitary(U.matrix(), 0)
-            decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
+            decomp = qpjax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
             assert len(decomp) > 1
         for i, eqn in enumerate(jaxpr.eqns[-len(decomp) : -2]):
             assert eqn.primitive == decomp[i]._primitive
@@ -81,14 +81,14 @@ class TestUnitaryToRotInterpreter:
             qml.QubitUnitary(U, [0, 1])
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)(U.matrix())
+        jaxpr = qpjax.make_jaxpr(f)(U.matrix())
 
         # Theoretical decomposition based on,
         # https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.two_qubit_decomposition.html
 
         with qml.capture.pause():
             QU = qml.QubitUnitary(U.matrix(), [0, 1])
-            decomp = jax.jit(two_qubit_decomposition)(QU.parameters[0], QU.wires)
+            decomp = qpjax.jit(two_qubit_decomposition)(QU.parameters[0], QU.wires)
             assert len(decomp) > 1
         for i, eqn in enumerate(jaxpr.eqns[-len(decomp) - 2 : -2]):
             assert eqn.primitive == decomp[i]._primitive
@@ -106,7 +106,7 @@ class TestUnitaryToRotInterpreter:
             return qml.expval(qml.Z(0))
 
         U = qml.numpy.eye(8)
-        jaxpr = jax.make_jaxpr(f)(U)
+        jaxpr = qpjax.make_jaxpr(f)(U)
 
         assert jaxpr.eqns[0].primitive == qml.QubitUnitary._primitive
 
@@ -124,14 +124,14 @@ class TestUnitaryToRotInterpreter:
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0)
         args = (U.matrix(), 0)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         expected_ops = [
-            qml.RZ(jax.numpy.array(1.0), wires=[0]),
-            qml.RY(jax.numpy.array(2.0), wires=[0]),
-            qml.RZ(jax.numpy.array(3.0), wires=[0]),
+            qml.RZ(qpjax.numpy.array(1.0), wires=[0]),
+            qml.RY(qpjax.numpy.array(2.0), wires=[0]),
+            qml.RZ(qpjax.numpy.array(3.0), wires=[0]),
         ]
 
         ops = collector.state["ops"]
@@ -153,15 +153,15 @@ def test_plxpr_to_plxpr():
 
     U = qml.Rot(1.0, 2.0, 3.0, wires=0)
     args = (U.matrix(),)
-    jaxpr = jax.make_jaxpr(circuit)(*args)
+    jaxpr = qpjax.make_jaxpr(circuit)(*args)
     transformed_jaxpr = unitary_to_rot_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, [], {}, *args)
 
-    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, qpjax.extend.core.ClosedJaxpr)
 
     # Qubit Unitary decomposition
     with qml.capture.pause():
         QU = qml.QubitUnitary(U.matrix(), 0)
-        decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
+        decomp = qpjax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
         assert len(decomp) > 1
 
     for i, eqn in enumerate(transformed_jaxpr.eqns[-len(decomp) : -2]):
@@ -187,7 +187,7 @@ class TestHigherOrderPrimitiveIntegration:
             qml.ctrl(ctrl_fn, [2, 3])(U)
             qml.RY(0, 1)
 
-        jaxpr = jax.make_jaxpr(f)(qml.Rot(1.0, 2.0, 3.0, wires=0).matrix())
+        jaxpr = qpjax.make_jaxpr(f)(qml.Rot(1.0, 2.0, 3.0, wires=0).matrix())
         assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == qml.RX._primitive
         assert jaxpr.eqns[1].primitive == ctrl_transform_prim
@@ -209,7 +209,7 @@ class TestHigherOrderPrimitiveIntegration:
 
             qml.adjoint(g, lazy=lazy)(U)
 
-        jaxpr = jax.make_jaxpr(f)(qml.Rot(1.0, 2.0, 3.0, wires=0).matrix())
+        jaxpr = qpjax.make_jaxpr(f)(qml.Rot(1.0, 2.0, 3.0, wires=0).matrix())
 
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         assert jaxpr.eqns[0].params["lazy"] == lazy
@@ -234,7 +234,7 @@ class TestHigherOrderPrimitiveIntegration:
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
         args = (U, 3)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
 
         # Measurement
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
@@ -262,7 +262,7 @@ class TestHigherOrderPrimitiveIntegration:
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
         args = (U, 3)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == while_loop_prim
         # Measurement
         assert jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
@@ -300,7 +300,7 @@ class TestHigherOrderPrimitiveIntegration:
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0).matrix()
         args = (U, 3)
-        jaxpr = jax.make_jaxpr(f)(*args)
+        jaxpr = qpjax.make_jaxpr(f)(*args)
         # First 2 primitives are the conditions for the true and elif branches
         assert jaxpr.eqns[2].primitive == cond_prim
 
@@ -355,7 +355,7 @@ class TestHigherOrderPrimitiveIntegration:
 
             return qml.grad(circuit)(a, b, c)
 
-        jaxpr = jax.make_jaxpr(f)(1.0, 2.0, 3.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0, 2.0, 3.0)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
 
@@ -382,7 +382,7 @@ class TestHigherOrderPrimitiveIntegration:
 
             return qml.jacobian(circuit)(a, b, c)
 
-        jaxpr = jax.make_jaxpr(f)(1.0, 2.0, 3.0)
+        jaxpr = qpjax.make_jaxpr(f)(1.0, 2.0, 3.0)
 
         assert jaxpr.eqns[0].primitive == jacobian_prim
         assert not jaxpr.eqns[0].params["scalar_out"]
@@ -406,16 +406,16 @@ class TestHigherOrderPrimitiveIntegration:
             qml.X(0)
             return qml.expval(qml.Z(0))
 
-        U = qml.Rot(jax.numpy.pi, 0, 0, wires=0)
+        U = qml.Rot(qpjax.numpy.pi, 0, 0, wires=0)
 
-        jaxpr = jax.make_jaxpr(f)(U.matrix())
+        jaxpr = qpjax.make_jaxpr(f)(U.matrix())
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
         # Qubit Unitary decomposition
         with qml.capture.pause():
             QU = qml.QubitUnitary(U.matrix(), 0)
-            decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
+            decomp = qpjax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
             assert len(decomp) > 1
         for i, eqn in enumerate(qfunc_jaxpr.eqns[-len(decomp) - 3 : -3]):
             assert eqn.primitive == decomp[i]._primitive
@@ -427,7 +427,7 @@ class TestHigherOrderPrimitiveIntegration:
         assert qfunc_jaxpr.eqns[-2].primitive == qml.PauliZ._primitive
         assert qfunc_jaxpr.eqns[-1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, U.matrix())
+        res = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, U.matrix())
         assert qml.math.allclose(res, -1.0)
 
 
@@ -443,18 +443,18 @@ class TestExpandPlxprTransformIntegration:
             return qml.expval(qml.Z(0))
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0)
-        jaxpr = jax.make_jaxpr(f)(U.matrix())
+        jaxpr = qpjax.make_jaxpr(f)(U.matrix())
 
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qml.transforms.unitary_to_rot
 
         transformed_f = qml.capture.expand_plxpr_transforms(f)
-        transformed_jaxpr = jax.make_jaxpr(transformed_f)(U.matrix())
+        transformed_jaxpr = qpjax.make_jaxpr(transformed_f)(U.matrix())
 
         # Qubit Unitary decomposition
         with qml.capture.pause():
             QU = qml.QubitUnitary(U.matrix(), 0)
-            decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
+            decomp = qpjax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
             assert len(decomp) > 1
         for i, eqn in enumerate(transformed_jaxpr.eqns[-len(decomp) : -2]):
             assert eqn.primitive == decomp[i]._primitive
@@ -473,12 +473,12 @@ class TestExpandPlxprTransformIntegration:
             return qml.expval(qml.Z(0))
 
         U = qml.Rot(1.0, 2.0, 3.0, wires=0)
-        jaxpr = jax.make_jaxpr(f)(U.matrix())
+        jaxpr = qpjax.make_jaxpr(f)(U.matrix())
 
         # Qubit Unitary decomposition
         with qml.capture.pause():
             QU = qml.QubitUnitary(U.matrix(), 0)
-            decomp = jax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
+            decomp = qpjax.jit(one_qubit_decomposition)(QU.parameters[0], QU.wires[0])
             assert len(decomp) > 1
         for i, eqn in enumerate(jaxpr.eqns[-len(decomp) : -2]):
             assert eqn.primitive == decomp[i]._primitive

@@ -793,7 +793,7 @@ class TestInterfaces:
     def test_get_unitary_matrix_interface_jax(self):
         """Test with JAX interface"""
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         @partial(qml.matrix, wire_order=[0, 1, 2])
         def circuit(theta):
@@ -821,7 +821,7 @@ class TestDifferentiation:
     @pytest.mark.jax
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
-        import jax
+        import qpjax
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -832,13 +832,13 @@ class TestDifferentiation:
             U = qml.matrix(circuit, wire_order=[0, 1])(theta)
             return qml.math.real(qml.math.trace(U))
 
-        x = jax.numpy.array(v)
+        x = qpjax.numpy.array(v)
 
         l = loss(x)
-        dl = jax.grad(loss)(x)
+        dl = qpjax.grad(loss)(x)
         matrix = qml.matrix(circuit, wire_order=[0, 1])(x)
 
-        assert isinstance(matrix, jax.numpy.ndarray)
+        assert isinstance(matrix, qpjax.numpy.ndarray)
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
@@ -1001,12 +1001,12 @@ class TestWireOrderErrors:
 
 @pytest.mark.jax
 def test_jitting_matrix():
-    """Test that qml.matrix is jittable with jax."""
-    import jax
+    """Test that qml.matrix is jittable with qpjax."""
+    import qpjax
 
     op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
 
-    jit_mat = jax.jit(qml.matrix)(op)
+    jit_mat = qpjax.jit(qml.matrix)(op)
     normal_mat = qml.matrix(op)
 
     assert qml.math.allclose(normal_mat, jit_mat)

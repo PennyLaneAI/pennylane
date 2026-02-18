@@ -64,14 +64,14 @@ def _pauli_measure_prim(self, *wires, pauli_word, postselect):  # pylint: disabl
 def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
 
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     invals = invals[shots_len:]
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
     f = partial(copy(self).eval, qfunc_jaxpr, consts)
-    new_qfunc_jaxpr = jax.make_jaxpr(f)(*args)
+    new_qfunc_jaxpr = qpjax.make_jaxpr(f)(*args)
     self.eval(new_qfunc_jaxpr.jaxpr, new_qfunc_jaxpr.consts, *args)
 
     return [0] * len(qfunc_jaxpr.outvars)

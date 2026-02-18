@@ -408,7 +408,7 @@ class TestBroadcasting:
     def test_broadcasted_params_jax(self, params, exp_batch_size):
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with JAX parameters."""
-        import jax
+        import qpjax
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
@@ -416,7 +416,7 @@ class TestBroadcasting:
             ndim_params = (0, 2)
             num_wires = 1
 
-        params = tuple(jax.numpy.array(p) for p in params)
+        params = tuple(qpjax.numpy.array(p) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
@@ -1129,7 +1129,7 @@ class TestOperatorIntegration:
     @pytest.mark.jax
     def test_sum_scalar_jax_tensor(self):
         """Test the __sum__ dunder method with a scalar jax tensor."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         scalar = jnp.array(5)
         sum_op = qml.RX(1.23, 0) + scalar
@@ -1274,7 +1274,7 @@ class TestOperatorIntegration:
     @pytest.mark.jax
     def test_mul_scalar_jax_tensor(self):
         """Test the __mul__ dunder method with a scalar jax tensor."""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         scalar = jnp.array(5)
         prod_op = qml.RX(1.23, 0) * scalar
@@ -1928,16 +1928,16 @@ def test_docstring_example_of_operator_class(tol):
 def test_custom_operator_is_jax_pytree():
     """Test that a custom operator is registered as a jax pytree."""
 
-    import jax
+    import qpjax
 
     class CustomOperator(qml.operation.Operator):
         pass
 
     op = CustomOperator(1.2, wires=0)
-    data, structure = jax.tree_util.tree_flatten(op)
+    data, structure = qpjax.tree_util.tree_flatten(op)
     assert data == [1.2]
 
-    new_op = jax.tree_util.tree_unflatten(structure, [2.3])
+    new_op = qpjax.tree_util.tree_unflatten(structure, [2.3])
     qml.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 

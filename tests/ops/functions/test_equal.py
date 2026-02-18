@@ -386,11 +386,11 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import jax
+        import qpjax
         import torch
 
         param_torch = torch.tensor(0.123)
-        param_jax = jax.numpy.array(0.123)
+        param_jax = qpjax.numpy.array(0.123)
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
@@ -450,11 +450,11 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = [0, 1]
 
-        import jax
+        import qpjax
         import torch
 
         param_torch = torch.tensor(0.123)
-        param_jax = jax.numpy.array(0.123)
+        param_jax = qpjax.numpy.array(0.123)
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
@@ -539,11 +539,11 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = [0, 1, 2, 3]
 
-        import jax
+        import qpjax
         import torch
 
         param_torch = torch.tensor(0.123)
-        param_jax = jax.numpy.array(0.123)
+        param_jax = qpjax.numpy.array(0.123)
         param_qml = npp.array(0.123)
         param_np = np.array(0.123)
 
@@ -629,11 +629,11 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import jax
+        import qpjax
         import torch
 
         param_torch = torch.tensor([1, 2, 3])
-        param_jax = jax.numpy.array([1, 2, 3])
+        param_jax = qpjax.numpy.array([1, 2, 3])
         param_qml = npp.array([1, 2, 3])
         param_np = np.array([1, 2, 3])
 
@@ -718,11 +718,11 @@ class TestEqual:
         # pylint: disable=too-many-statements
         wire = 0
 
-        import jax
+        import qpjax
         import torch
 
         param_torch = torch.tensor([1, 2])
-        param_jax = jax.numpy.array([1, 2])
+        param_jax = qpjax.numpy.array([1, 2])
         param_qml = npp.array([1, 2])
         param_np = np.array([1, 2])
 
@@ -771,7 +771,7 @@ class TestEqual:
 
         wire = [1, 2, 3]
         param_torch = torch.tensor(1)
-        param_jax = jax.numpy.array(1)
+        param_jax = qpjax.numpy.array(1)
         param_qml = npp.array(1)
         param_np = np.array(1)
 
@@ -820,7 +820,7 @@ class TestEqual:
 
         wire = [1, 2]
         param_torch = torch.tensor([1, 2, 3])
-        param_jax = jax.numpy.array([1, 2, 3])
+        param_jax = qpjax.numpy.array([1, 2, 3])
         param_qml = npp.array([1, 2, 3])
         param_np = np.array([1, 2, 3])
 
@@ -869,7 +869,7 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor(1)
-        param_jax = jax.numpy.array(1)
+        param_jax = qpjax.numpy.array(1)
         param_qml = npp.array(1)
         param_np = np.array(1)
 
@@ -918,7 +918,7 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor([[1, 0], [0, 1]]) * 1j
-        param_jax = jax.numpy.eye(2) * 1j
+        param_jax = qpjax.numpy.eye(2) * 1j
         param_qml = npp.eye(2) * 1j
         param_np = np.eye(2) * 1j
 
@@ -967,7 +967,7 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor([1.0, 1.0j])
-        param_jax = jax.numpy.array([1.0, 1.0j])
+        param_jax = qpjax.numpy.array([1.0, 1.0j])
         param_qml = npp.array([1.0, 1.0j])
         param_np = np.array([1.0, 1.0j])
 
@@ -1016,7 +1016,7 @@ class TestEqual:
 
         wire = 0
         param_torch = torch.tensor([[1, 0], [0, 1]]) * 1j
-        param_jax = jax.numpy.eye(2) * 1j
+        param_jax = qpjax.numpy.eye(2) * 1j
         param_qml = npp.eye(2) * 1j
         param_np = np.eye(2) * 1j
 
@@ -1314,7 +1314,7 @@ class TestEqual:
         -JAX and Torch
         -Autograd and Torch
         """
-        import jax
+        import qpjax
         import torch
 
         wire = 0
@@ -1330,14 +1330,14 @@ class TestEqual:
         # assertion involves using a JAX function that transforms a JAX NumPy
         # array into a Tracer
         def jax_assertion_func(x, other_tensor):
-            operation1 = op1(jax.numpy.array(x), wires=1)
+            operation1 = op1(qpjax.numpy.array(x), wires=1)
             operation2 = op1(other_tensor, wires=1)
             assert qml.equal(operation1, operation2, check_interface=False, check_trainability=True)
             return x
 
         par = 0.3
         for tensor in non_jax_tensors:
-            jax.grad(jax_assertion_func, argnums=0)(par, tensor)
+            qpjax.grad(jax_assertion_func, argnums=0)(par, tensor)
 
         # Autograd and Torch
         # ------------------
@@ -1590,10 +1590,10 @@ class TestMeasurementsEqual:
     def test_observables_different_interfaces(self):
         """Check that the check_interface keyword is used when comparing observables."""
 
-        import jax
+        import qpjax
 
         M1 = np.eye(2)
-        M2 = jax.numpy.eye(2)
+        M2 = qpjax.numpy.eye(2)
         ob1 = qml.Hermitian(M1, 0)
         ob2 = qml.Hermitian(M2, 0)
 
@@ -1781,12 +1781,12 @@ class TestMeasurementsEqual:
     def test_abstract_mv_equality(self, mp_fn):
         """Test that equality is verified correctly for measurements collecting statistics for
         abstract mid-circuit measurement values"""
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         m1 = True
         m2 = False
 
-        @jax.jit
+        @qpjax.jit
         def eq_traced(a, b):
             assert qml.math.is_abstract(a)
             assert qml.math.is_abstract(b)
@@ -1875,11 +1875,11 @@ class TestSymbolicOpComparison:
     @pytest.mark.jax
     def test_kwargs_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import jax
+        import qpjax
         import torch
 
         base1 = qml.RX(torch.tensor(1.2), wires=0)
-        base2 = qml.RX(jax.numpy.array(1.2), wires=0)
+        base2 = qml.RX(qpjax.numpy.array(1.2), wires=0)
 
         op1 = Controlled(base1, control_wires=1)
         op2 = Controlled(base2, control_wires=1)
@@ -2477,11 +2477,11 @@ class TestProdComparisons:
     @pytest.mark.all_interfaces
     def test_prod_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import jax
+        import qpjax
         import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
-        base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
+        base_list2 = [qml.RX(qpjax.numpy.array(1.2), wires=0), qml.RX(qpjax.numpy.array(2.3), wires=1)]
 
         op1 = qml.prod(*base_list1)
         op2 = qml.prod(*base_list2)
@@ -2570,11 +2570,11 @@ class TestSumComparisons:
     @pytest.mark.all_interfaces
     def test_sum_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import jax
+        import qpjax
         import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
-        base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
+        base_list2 = [qml.RX(qpjax.numpy.array(1.2), wires=0), qml.RX(qpjax.numpy.array(2.3), wires=1)]
 
         op1 = qml.sum(*base_list1)
         op2 = qml.sum(*base_list2)
@@ -2886,9 +2886,9 @@ class TestBasisRotation:
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [op1])
     def test_non_equal_interfaces(self, op):
-        import jax
+        import qpjax
 
-        rotation_mat_jax = jax.numpy.array(
+        rotation_mat_jax = qpjax.numpy.array(
             [
                 [-0.618452, -0.68369054 - 0.38740723j],
                 [-0.78582258, 0.53807284 + 0.30489424j],
@@ -3052,19 +3052,19 @@ class DepthIncreaseOperator(Operator):
 def test_ops_with_abstract_parameters_not_equal():
     """Test that ops are not equal if any data is tracers."""
 
-    import jax
+    import qpjax
 
-    assert not jax.jit(qml.equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
+    assert not qpjax.jit(qml.equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
     with pytest.raises(AssertionError, match="Data contains a tracer"):
-        jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
+        qpjax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
 
-    assert not jax.jit(qml.equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+    assert not qpjax.jit(qml.equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
     with pytest.raises(AssertionError, match="Data contains a tracer"):
-        jax.jit(assert_equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
+        qpjax.jit(assert_equal)(qml.exp(qml.X(0), 0.5), qml.exp(qml.X(0), 0.5))
 
-    assert not jax.jit(qml.equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
+    assert not qpjax.jit(qml.equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
     with pytest.raises(AssertionError, match="Data contains a tracer"):
-        jax.jit(assert_equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
+        qpjax.jit(assert_equal)(qml.X(0) * 0.5, qml.X(0) * 0.5)
 
 
 @pytest.mark.parametrize(

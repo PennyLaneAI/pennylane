@@ -248,9 +248,9 @@ def classical_fisher(qnode, argnums=0):
         interface = qnode.interface
 
         if interface in ("jax", "jax-jit"):
-            import jax
+            import qpjax
 
-            jac = jax.jacobian(new_qnode, argnums=argnums)
+            jac = qpjax.jacobian(new_qnode, argnums=argnums)
 
         elif interface == "torch":
             jac = _torch_jac(new_qnode)

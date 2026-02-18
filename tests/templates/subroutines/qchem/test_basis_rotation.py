@@ -549,14 +549,14 @@ class TestInterfaces:
     def test_jax_jit(self, unitary, device_name, tol):
         """Test the jax interface."""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         unitary_matrix = jnp.array(unitary)
 
         dev = qml.device(device_name, wires=3)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev), static_argnames="check")
+        circuit = qpjax.jit(qml.QNode(circuit_template, dev), static_argnames="check")
         circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(unitary_matrix)
@@ -566,10 +566,10 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
         assert qml.math.allclose(res, res3, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = qpjax.grad(circuit)
         grads = grad_fn(unitary_matrix)
 
-        grad_fn2 = jax.grad(circuit2)
+        grad_fn2 = qpjax.grad(circuit2)
         grads2 = grad_fn2(unitary_matrix)
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)

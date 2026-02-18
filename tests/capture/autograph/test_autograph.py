@@ -312,7 +312,7 @@ class TestIntegration:
             return qml.expval(qml.Z(0))
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        assert qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_adjoint_of_operator_type(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
@@ -323,7 +323,7 @@ class TestIntegration:
             return qml.expval(qml.Z(0))
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
+        assert qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_adjoint_no_argument(self):
         """Test that passing no argument to qml.adjoint raises an error."""
@@ -394,9 +394,9 @@ class TestIntegration:
             return qml.state()
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
-        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
-        assert jax.numpy.allclose(result, expected_state)
+        expected_state = 1 / np.sqrt(2) * qpjax.numpy.array([1, 0, 0, 1])
+        result = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
+        assert qpjax.numpy.allclose(result, expected_state)
 
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""
@@ -408,9 +408,9 @@ class TestIntegration:
             return qml.state()
 
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
-        expected_state = 1 / np.sqrt(2) * jax.numpy.array([1, 0, 0, 1])
-        result = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
-        assert jax.numpy.allclose(result, expected_state)
+        expected_state = 1 / np.sqrt(2) * qpjax.numpy.array([1, 0, 0, 1])
+        result = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0]
+        assert qpjax.numpy.allclose(result, expected_state)
 
     def test_ctrl_no_argument(self):
         """Test that passing no argument to qml.ctrl raises an error."""
@@ -512,7 +512,7 @@ class TestIntegration:
             return jacobian(inner)(x)
 
         ag_fn = run_autograph(fn)
-        assert ag_fn(3.0) == tuple([jax.numpy.array(2.0), jax.numpy.array(6.0)])
+        assert ag_fn(3.0) == tuple([qpjax.numpy.array(2.0), qpjax.numpy.array(6.0)])
 
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(fn)
@@ -571,7 +571,7 @@ class TestIntegration:
             MyOperation(x, wires=0)
 
         ag_fn = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_fn)(0.5)
+        jaxpr = qpjax.make_jaxpr(ag_fn)(0.5)
         # pylint: disable=protected-access
         assert jaxpr.jaxpr.eqns[0].primitive == MyOperation._primitive
         assert len(jaxpr.jaxpr.eqns) == 1

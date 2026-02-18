@@ -410,7 +410,7 @@ class TestExpvalEstimationInterfaces:
 
 def convert_to_interface(arr, interface):
     """Dispatch arrays for different interfaces"""
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
     import torch
 
     if interface == "autograd":

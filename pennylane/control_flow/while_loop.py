@@ -36,7 +36,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
     Python while loop.
 
     This decorator provides a functional version of the traditional while loop,
-    similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
+    similar to `qpjax.lax.while_loop <https://qpjax.readthedocs.io/en/latest/_autosummary/qpjax.lax.while_loop.html>`__.
     That is, any variables that are modified across iterations need to be provided as
     inputs and outputs to the loop body function:
 
@@ -112,19 +112,19 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
             >>> arg = 2
             >>> workflow(arg)
 
-            Alternatively, the function can be traced with ``jax.make_jaxpr`` to produce a JAXPR representation,
+            Alternatively, the function can be traced with ``qpjax.make_jaxpr`` to produce a JAXPR representation,
             which captures the abstract computational graph for the given input and generates the abstract shapes.
             The resulting JAXPR can then be evaluated using ``qml.capture.eval_jaxpr``:
 
-            >>> jaxpr = jax.make_jaxpr(workflow)(arg)
+            >>> jaxpr = qpjax.make_jaxpr(workflow)(arg)
             >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
 
         A dynamically shaped array is an array whose shape depends on an abstract value. This is
         an experimental jax mode that can be turned on with:
 
-        >>> import jax
-        >>> import jax.numpy as jnp
-        >>> jax.config.update("jax_dynamic_shapes", True)
+        >>> import qpjax
+        >>> import qpjax.numpy as jnp
+        >>> qpjax.config.update("jax_dynamic_shapes", True)
         >>> qml.capture.enable()
 
         ``allow_array_resizing="auto"`` will try and choose between the following two possible modes.
@@ -289,9 +289,9 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return fn_res
 
     def _get_jaxprs(self, init_state, allow_array_resizing):
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
-        flat_args, in_tree = jax.tree_util.tree_flatten(init_state)
+        flat_args, in_tree = qpjax.tree_util.tree_flatten(init_state)
         tmp_array_resizing = False if allow_array_resizing == "auto" else allow_array_resizing
         abstracted_axes, abstract_shapes, shape_locations = loop_determine_abstracted_axes(
             tuple(flat_args), allow_array_resizing=tmp_array_resizing
@@ -308,10 +308,10 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             dummy_init_state = flat_args
 
         try:
-            jaxpr_body_fn = jax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
+            jaxpr_body_fn = qpjax.make_jaxpr(new_body_fn, abstracted_axes=abstracted_axes)(
                 *dummy_init_state
             )
-            jaxpr_cond_fn = jax.make_jaxpr(flat_cond_fn, abstracted_axes=abstracted_axes)(
+            jaxpr_cond_fn = qpjax.make_jaxpr(flat_cond_fn, abstracted_axes=abstracted_axes)(
                 *dummy_init_state
             )
         except ValueError as e:
@@ -328,7 +328,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
     def _call_capture_enabled(self, *init_state):
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import qpjax  # pylint: disable=import-outside-toplevel
 
         while_loop_prim = _get_while_loop_qfunc_prim()
 
@@ -352,7 +352,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         )
 
         results = results[-out_tree.num_leaves :]
-        return jax.tree_util.tree_unflatten(out_tree, results)
+        return qpjax.tree_util.tree_unflatten(out_tree, results)
 
     def __call__(self, *init_state):
 

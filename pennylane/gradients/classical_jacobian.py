@@ -180,12 +180,12 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             jac = _jacobian(*args, **kwargs)
 
         elif qnode.interface in ["jax", "jax-jit"]:
-            import jax
+            import qpjax
 
             argnum = 0 if wrapper_argnum is None else wrapper_argnum
 
             def _jacobian(*args, **kwargs):
-                return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
+                return qpjax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
             jac = _jacobian(*args, **kwargs)
 

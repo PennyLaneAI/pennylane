@@ -22,8 +22,8 @@ from pennylane import math
 
 has_jax = True
 try:
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 except ModuleNotFoundError:  # pragma: no cover
     has_jax = False
 
@@ -343,7 +343,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     # (left, real_valued) = (False, False)
     # array = [[phase * sine, cosine], [-phase * cosine, sine]]
     if interface == "jax":
-        cosine, sine = jax.lax.cond(
+        cosine, sine = qpjax.lax.cond(
             left,
             lambda cosine, sine: (cosine, sine),
             lambda cosine, sine: (sine, -cosine),
@@ -368,7 +368,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         return phase, g00, g01
 
     if interface == "jax":
-        phase, g00, g01 = jax.lax.cond(real_valued, real_branch, complex_branch, g00, g01)
+        phase, g00, g01 = qpjax.lax.cond(real_valued, real_branch, complex_branch, g00, g01)
     else:
         if real_valued:
             phase, g00, g01 = real_branch(g00, g01)
@@ -435,7 +435,7 @@ def _absorb_phases_so(left_givens, right_givens, phases):
         grot_mat = ph0 * grot_mat
         ph1 = phases[i, i] if mod else phases[j, j]
         if interface == "jax":
-            grot_mat = jax.lax.cond(ph1 < 0, lambda mat: mat.T, lambda mat: mat, grot_mat)
+            grot_mat = qpjax.lax.cond(ph1 < 0, lambda mat: mat.T, lambda mat: mat, grot_mat)
 
         elif ph1 < 0:
             grot_mat = grot_mat.T
@@ -500,7 +500,7 @@ def _commute_phases_u(left_givens, right_givens, phases):
 @lru_cache
 def _givens_matrix_jax():
 
-    @partial(jax.jit, static_argnames=("real_valued",))
+    @partial(qpjax.jit, static_argnames=("real_valued",))
     def givens_matrix_jax(a, b, left=True, tol=1e-8, real_valued=False):
         return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
 
@@ -509,7 +509,7 @@ def _givens_matrix_jax():
 
 def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
     interface = math.get_interface(a)
-    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+    if interface == "jax" and isinstance(jnp.array(0), qpjax.core.Tracer):
         return _givens_matrix_jax()(a, b, left=left, tol=tol, real_valued=real_valued)
     return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
 
@@ -526,7 +526,7 @@ def _right_givens_core(indices, unitary, N, j, real_valued):
 @lru_cache
 def _right_givens_jax():
 
-    @partial(jax.jit, static_argnames=("real_valued",))
+    @partial(qpjax.jit, static_argnames=("real_valued",))
     def _right_givens_jax(indices, unitary, N, j, real_valued):
         return _right_givens_core(indices, unitary, N, j, real_valued)
 
@@ -535,7 +535,7 @@ def _right_givens_jax():
 
 def _right_givens(indices, unitary, N, j, real_valued):
     interface = math.get_interface(unitary)
-    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+    if interface == "jax" and isinstance(jnp.array(0), qpjax.core.Tracer):
         return _right_givens_jax()(indices, unitary, N, j, real_valued)
     return _right_givens_core(indices, unitary, N, j, real_valued)
 
@@ -552,7 +552,7 @@ def _left_givens_core(indices, unitary, j, real_valued):
 @lru_cache
 def _left_givens_jax():
 
-    @partial(jax.jit, static_argnames=("real_valued",))
+    @partial(qpjax.jit, static_argnames=("real_valued",))
     def _left_givens_jax(indices, unitary, j, real_valued):
         return _left_givens_core(indices, unitary, j, real_valued)
 
@@ -561,7 +561,7 @@ def _left_givens_jax():
 
 def _left_givens(indices, unitary, j, real_valued):
     interface = math.get_interface(unitary)
-    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+    if interface == "jax" and isinstance(jnp.array(0), qpjax.core.Tracer):
         return _left_givens_jax()(indices, unitary, j, real_valued)
     return _left_givens_core(indices, unitary, j, real_valued)
 

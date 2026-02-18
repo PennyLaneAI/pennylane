@@ -260,8 +260,8 @@ class TestStateBackward:
     def test_backward_jax(self):
         """Test the gradient of the state for the JAX interface"""
         # pylint: disable=cell-var-from-loop
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="jax")
 
@@ -269,11 +269,11 @@ class TestStateBackward:
         shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
         x = jnp.array(self.x)
-        actual = jax.jacobian(lambda x: qml.math.real(qml.math.stack(shadow_circuit(x))))(x)
+        actual = qpjax.jacobian(lambda x: qml.math.real(qml.math.stack(shadow_circuit(x))))(x)
 
         for act, w in zip(qml.math.unstack(actual), sub_wires):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "jax")
-            expected = jax.jacobian(lambda x: qml.math.real(exact_circuit(x)))(x)
+            expected = qpjax.jacobian(lambda x: qml.math.real(exact_circuit(x)))(x)
 
             assert qml.math.allclose(act, expected, atol=1e-1)
 

@@ -426,7 +426,7 @@ def time_independent_hamiltonian():
 
 def time_dependent_hamiltonian():
     """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
-    import jax.numpy as jnp
+    import qpjax.numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
@@ -449,7 +449,7 @@ class TestApplyParametrizedEvolution:
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time-independent hamiltonian"""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         initial_state = np.array(
             [
@@ -477,8 +477,8 @@ class TestApplyParametrizedEvolution:
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time dependent Hamiltonian"""
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         initial_state = np.array(
             [
@@ -497,7 +497,7 @@ class TestApplyParametrizedEvolution:
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+                yield qpjax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
         U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
@@ -512,7 +512,7 @@ class TestApplyParametrizedEvolution:
         than half of the wires in the state uses the default function to evolve
         the matrix"""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         spy = mocker.spy(qml.math, "einsum")
 
@@ -547,7 +547,7 @@ class TestApplyParametrizedEvolution:
         than half of the wires in the state uses the default function to evolve
         the matrix"""
 
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         spy = mocker.spy(qml.math, "einsum")
 
@@ -621,7 +621,7 @@ class TestApplyParametrizedEvolution:
 
     def test_parametrized_evolution_raises_error(self):
         """Test applying a ParametrizedEvolution without params or t specified raises an error."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
         ev = qml.evolve(qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX("a")]))
@@ -635,7 +635,7 @@ class TestApplyParametrizedEvolution:
         """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
         and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
         method is used."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         H = qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy = mocker.spy(qml.math, "einsum")
@@ -848,23 +848,23 @@ class TestRXCalcGrad:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_rx_grad_jax(self, method, use_jit):
-        """Test that the application of an rx gate is differentiable with jax."""
+        """Test that the application of an rx gate is differentiable with qpjax."""
 
-        import jax
+        import qpjax
 
-        state = jax.numpy.array(self.state)
+        state = qpjax.numpy.array(self.state)
 
         def f(phi):
             op = qml.RX(phi, wires=0)
             return method(op, state)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         phi = 0.325
 
         new_state = f(phi)
-        g = jax.jacobian(f, holomorphic=True)(phi + 0j)
+        g = qpjax.jacobian(f, holomorphic=True)(phi + 0j)
         self.compare_expected_result(phi, state, new_state, g)
 
     @pytest.mark.torch
@@ -1227,9 +1227,9 @@ class TestApplyGroverOperator:
     def test_correctness_jax(self, op_wires, state_wires, batch_dim):
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
         when applying it to a Jax state."""
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
@@ -1245,7 +1245,7 @@ class TestApplyGroverOperator:
             expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
 
         # Cast to interface and apply operation
-        state = jax.numpy.array(state)
+        state = qpjax.numpy.array(state)
         out = apply_operation(op, state, is_state_batched=batched, debugger=None)
 
         assert qml.math.allclose(out, expected_via_mat)
@@ -1321,8 +1321,8 @@ class TestMultiControlledXKernel:
     @pytest.mark.jax
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_with_jax(self, batch_dim):
-        """Test that the custom kernel works with JAX."""
-        from jax import numpy as jnp
+        """Test that the custom kernel works with qpjax."""
+        from qpjax import numpy as jnp
 
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5

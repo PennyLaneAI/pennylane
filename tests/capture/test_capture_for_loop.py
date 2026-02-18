@@ -26,7 +26,7 @@ import pennylane as qml
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 # must be below jax importorskip
 from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
@@ -47,13 +47,13 @@ class TestCaptureForLoop:
         ):
             f()
 
-    @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
+    @pytest.mark.parametrize("array", [qpjax.numpy.zeros(0), qpjax.numpy.zeros(5)])
     def test_for_loop_identity(self, array):
         """Test simple for-loop primitive vs dynamic dimensions."""
 
         def fn(arg):
 
-            a = jax.numpy.ones(arg.shape)
+            a = qpjax.numpy.ones(arg.shape)
 
             @qml.for_loop(0, 10, 2)
             def loop(_, a):
@@ -62,22 +62,22 @@ class TestCaptureForLoop:
             a2 = loop(a)
             return a2
 
-        expected = jax.numpy.ones(array.shape)
+        expected = qpjax.numpy.ones(array.shape)
         result = fn(array)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(fn)(array)
+        jaxpr = qpjax.make_jaxpr(fn)(array)
         assert jaxpr.eqns[1].primitive == for_loop_prim
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
+    @pytest.mark.parametrize("array", [qpjax.numpy.zeros(0), qpjax.numpy.zeros(5)])
     def test_for_loop_defaults(self, array):
         """Test simple for-loop primitive using default values."""
 
         def fn(arg):
 
-            a = jax.numpy.ones(arg.shape)
+            a = qpjax.numpy.ones(arg.shape)
 
             @qml.for_loop(0, 10, 1)
             def loop1(_, a):
@@ -94,19 +94,19 @@ class TestCaptureForLoop:
             r1, r2, r3 = loop1(a), loop2(a), loop3(a)
             return r1, r2, r3
 
-        expected = jax.numpy.ones(array.shape)
+        expected = qpjax.numpy.ones(array.shape)
         result = fn(array)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(fn)(array)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        jaxpr = qpjax.make_jaxpr(fn)(array)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
         "array, expected",
         [
-            (jax.numpy.zeros(5), jax.numpy.array([0, 1, 4, 9, 16])),
-            (jax.numpy.zeros(10), jax.numpy.array([0, 1, 4, 9, 16, 25, 36, 49, 64, 81])),
+            (qpjax.numpy.zeros(5), qpjax.numpy.array([0, 1, 4, 9, 16])),
+            (qpjax.numpy.zeros(10), qpjax.numpy.array([0, 1, 4, 9, 16, 25, 36, 49, 64, 81])),
         ],
     )
     def test_for_loop_default(self, array, expected):
@@ -115,7 +115,7 @@ class TestCaptureForLoop:
         def fn(arg):
 
             stop = arg.shape[0]
-            a = jax.numpy.ones(stop)
+            a = qpjax.numpy.ones(stop)
 
             @qml.for_loop(0, stop, 1)
             def loop1(i, a):
@@ -135,8 +135,8 @@ class TestCaptureForLoop:
         result = fn(array)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(fn)(array)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        jaxpr = qpjax.make_jaxpr(fn)(array)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     def test_for_loop_grad(self):
@@ -157,14 +157,14 @@ class TestCaptureForLoop:
             return qml.grad(inner_func)(x)
 
         def func_jax(x):
-            return jax.grad(inner_func)(x)
+            return qpjax.grad(inner_func)(x)
 
         x = 0.7
         jax_out = func_jax(x)
         assert qml.math.allclose(func_qml(x), jax_out)
 
         # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_qml)(x)
+        jaxpr = qpjax.make_jaxpr(func_qml)(x)
         assert len(jaxpr.eqns) == 1  # a single grad equation
 
         grad_eqn = jaxpr.eqns[0]
@@ -182,17 +182,17 @@ class TestCaptureForLoop:
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
 
-        manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        manual_eval = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert qml.math.allclose(manual_eval, jax_out)
 
-    @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
+    @pytest.mark.parametrize("array", [qpjax.numpy.zeros(0), qpjax.numpy.zeros(5)])
     def test_for_loop_shared_indbidx(self, array):
         """Test for-loops with shared dynamic input dimensions."""
 
         def fn(arg):
 
-            a = jax.numpy.ones(arg.shape, dtype=float)
-            b = jax.numpy.ones(arg.shape, dtype=float)
+            a = qpjax.numpy.ones(arg.shape, dtype=float)
+            b = qpjax.numpy.ones(arg.shape, dtype=float)
 
             @qml.for_loop(0, 10, 2)
             def loop(_, a, b):
@@ -202,11 +202,11 @@ class TestCaptureForLoop:
             return a2 + b2
 
         result = fn(array)
-        expected = 2 * jax.numpy.ones(array.shape)
+        expected = 2 * qpjax.numpy.ones(array.shape)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(fn)(array)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        jaxpr = qpjax.make_jaxpr(fn)(array)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -228,12 +228,12 @@ class TestCaptureForLoop:
         result = fn(*args)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(fn)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(fn)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
-        "array, expected", [(jax.numpy.array([0]), 0), (jax.numpy.array([0.1, 0.2, 0.3, 0.4]), 1.0)]
+        "array, expected", [(qpjax.numpy.array([0]), 0), (qpjax.numpy.array([0.1, 0.2, 0.3, 0.4]), 1.0)]
     )
     def test_for_loop_dynamic_array(self, array, expected):
         """Test for-loops with dynamic array inputs."""
@@ -251,8 +251,8 @@ class TestCaptureForLoop:
         result = fn(array)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(fn)(array)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        jaxpr = qpjax.make_jaxpr(fn)(array)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
 
@@ -264,7 +264,7 @@ class TestDynamicShapes:
         """Test that the for loop can accept inputs with dynamic shapes."""
 
         def f(x):
-            n = jax.numpy.shape(x)[0]
+            n = qpjax.numpy.shape(x)[0]
 
             @qml.for_loop(n)
             def g(_, y):
@@ -272,11 +272,11 @@ class TestDynamicShapes:
 
             return g(x)
 
-        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(5))
+        jaxpr = qpjax.make_jaxpr(f, abstracted_axes=("a",))(qpjax.numpy.arange(5))
 
-        [shape, output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jax.numpy.arange(3))
-        expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
-        assert jax.numpy.allclose(output, expected)
+        [shape, output] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, qpjax.numpy.arange(3))
+        expected = qpjax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
+        assert qpjax.numpy.allclose(output, expected)
         assert qml.math.allclose(shape, 3)
 
     # pylint: disable=unused-argument
@@ -284,13 +284,13 @@ class TestDynamicShapes:
         """Test that for_loops can create dynamically shaped arrays."""
 
         def f(i, x):
-            y = jax.numpy.arange(i)
-            return jax.numpy.sum(y)
+            y = qpjax.numpy.arange(i)
+            return qpjax.numpy.sum(y)
 
         def w():
             return qml.for_loop(4)(f)(0)
 
-        jaxpr = jax.make_jaxpr(w)()
+        jaxpr = qpjax.make_jaxpr(w)()
         [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert qml.math.allclose(r, 3)  # sum([0,1,2]) from final loop iteration
 
@@ -302,7 +302,7 @@ class TestDynamicShapes:
         def f(i, a, b):
             a_size = a.shape[0]
             b_size = b.shape[0]
-            return jax.numpy.ones(a_size + b_size), 2 * b
+            return qpjax.numpy.ones(a_size + b_size), 2 * b
 
         def w(i0):
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
@@ -311,7 +311,7 @@ class TestDynamicShapes:
         with pytest.warns(
             qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
         ):
-            jaxpr = jax.make_jaxpr(w)(1)
+            jaxpr = qpjax.make_jaxpr(w)(1)
 
         assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
@@ -329,7 +329,7 @@ class TestDynamicShapes:
         with pytest.warns(
             qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
         ):
-            jaxpr = jax.make_jaxpr(w)(2)
+            jaxpr = qpjax.make_jaxpr(w)(2)
 
         assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
@@ -344,7 +344,7 @@ class TestDynamicShapes:
         def w(i0):
             return f(i0, jnp.ones(i0))
 
-        jaxpr = jax.make_jaxpr(w)(2)
+        jaxpr = qpjax.make_jaxpr(w)(2)
         [a_size, final_j, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qml.math.allclose(a_size, 2)  # what it was initialized with
         assert qml.math.allclose(final_j, 5)  # 2 +3
@@ -368,7 +368,7 @@ class TestDynamicShapes:
         with pytest.warns(
             qml.exceptions.CaptureWarning, match="Structured capture of qml.for_loop failed"
         ):
-            jaxpr = jax.make_jaxpr(w)(3)
+            jaxpr = qpjax.make_jaxpr(w)(3)
         assert for_loop_prim not in {eqn.primitive for eqn in jaxpr.eqns}
 
     @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
@@ -383,7 +383,7 @@ class TestDynamicShapes:
             a0, b0 = jnp.ones(i0), jnp.ones(i0)
             return f(a0, b0)
 
-        jaxpr = jax.make_jaxpr(w)(2)
+        jaxpr = qpjax.make_jaxpr(w)(2)
         [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qml.math.allclose(dynamic_shape, 2)  # the initial size
         assert qml.math.allclose(a, jnp.array([7, 7]))  # 1 + 0 + 1 + 2 + 3 = 7
@@ -403,7 +403,7 @@ class TestDynamicShapes:
             y0 = jnp.ones(i0)
             return f(x0, y0)
 
-        jaxpr = jax.make_jaxpr(workflow)(2)
+        jaxpr = qpjax.make_jaxpr(workflow)(2)
         [s, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
         assert qml.math.allclose(s, 8)
         x_expected = jnp.ones(8)
@@ -421,7 +421,7 @@ class TestDynamicShapes:
         def w(i0):
             return f(jnp.zeros(i0), jnp.zeros(i0))
 
-        jaxpr = jax.make_jaxpr(w)(2)
+        jaxpr = qpjax.make_jaxpr(w)(2)
         [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
         assert jnp.allclose(shape1, 15)
         assert jnp.allclose(shape2, 3)
@@ -453,8 +453,8 @@ class TestCaptureCircuitsForLoop:
         expected = np.cos(0 + 1 + 2)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(circuit)()
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        jaxpr = qpjax.make_jaxpr(circuit)()
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize("arg, expected", [(2, 0.18239626), (10.5, -0.77942717)])
@@ -471,7 +471,7 @@ class TestCaptureCircuitsForLoop:
             @qml.for_loop(0, 10, 1)
             def loop_body(i, x):
                 qml.RX(x, wires=0)
-                qml.RY(jax.numpy.sin(x), wires=0)
+                qml.RY(qpjax.numpy.sin(x), wires=0)
                 return x + i**2
 
             loop_body(arg)
@@ -481,8 +481,8 @@ class TestCaptureCircuitsForLoop:
         result = circuit(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(circuit)(arg)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        jaxpr = qpjax.make_jaxpr(circuit)(arg)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize("arg, expected", [(2, -0.49999517), (0, -0.03277611)])
@@ -504,7 +504,7 @@ class TestCaptureCircuitsForLoop:
             def loop_body(i, x):
                 qml.RX(arg1, wires=0)
                 qml.RX(arg2, wires=0)
-                qml.RY(jax.numpy.sin(x), wires=0)
+                qml.RY(qpjax.numpy.sin(x), wires=0)
                 return x + i**2
 
             loop_body(arg)
@@ -514,8 +514,8 @@ class TestCaptureCircuitsForLoop:
         result = circuit(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(circuit)(arg)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        jaxpr = qpjax.make_jaxpr(circuit)(arg)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -535,7 +535,7 @@ class TestCaptureCircuitsForLoop:
             @qml.for_loop(lower_bound, upper_bound, step)
             def loop_body(i, x):
                 qml.RX(x, wires=0)
-                qml.RY(jax.numpy.sin(x), wires=0)
+                qml.RY(qpjax.numpy.sin(x), wires=0)
                 return x + i**2
 
             loop_body(arg)
@@ -546,8 +546,8 @@ class TestCaptureCircuitsForLoop:
         result = circuit(*args)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -591,8 +591,8 @@ class TestCaptureCircuitsForLoop:
         result = circuit(*args)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
@@ -635,8 +635,8 @@ class TestCaptureCircuitsForLoop:
         result = circuit(*args)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        jaxpr = qpjax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = qpjax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
 

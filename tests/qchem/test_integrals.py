@@ -892,7 +892,7 @@ def generate_symbols_alpha_coeff():
 @pytest.mark.jax
 class TestJax:
     def test_generate_params_jax(self):
-        """Test that _generate_params returns correct basis set parameters for JAX."""
+        """Test that _generate_params returns correct basis set parameters for qpjax."""
         alpha = qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax")
         coeff = qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax")
         r = qml.math.array([0.0, 0.0, 0.0], like="jax")
@@ -912,7 +912,7 @@ class TestJax:
     )
     def test_overlap_integral_jax(self, geometry_values, r_values, o_ref_values):
         r"""Test that overlap_integral function returns a correct value for the overlap
-        integral when using jax."""
+        integral when using qpjax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
         geometry = qml.math.array(geometry_values, like="jax")
         r = qml.math.array(r_values)
@@ -939,8 +939,8 @@ class TestJax:
     )
     def test_gradient_overlap_jax(self, symbols, geometry, alpha, coeff):
         r"""Test that the overlap gradient computed with respect to the basis parameters is
-        correct for jax."""
-        import jax
+        correct for qpjax."""
+        import qpjax
 
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
@@ -950,13 +950,13 @@ class TestJax:
         basis_b = mol.basis_set[1]
         args = [geometry, coeff, alpha]
 
-        g_alpha = jax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=[2])(*args)
-        g_coeff = jax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=[1])(*args)
+        g_alpha = qpjax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=[2])(*args)
+        g_coeff = qpjax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=[1])(*args)
 
         # compute attraction gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
-        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
-        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+        g_ref_alpha = qpjax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = qpjax.numpy.zeros(6).reshape(coeff.shape)
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
@@ -1000,7 +1000,7 @@ class TestJax:
     )
     def test_moment_integral_jax(self, symbols, geometry_values, e, idx, ref):
         r"""Test that moment_integral function returns a correct value for the moment
-        integral when using jax."""
+        integral when using qpjax."""
         geometry = qml.math.array(geometry_values, like="jax")
 
         mol = qchem.Molecule(symbols, geometry)
@@ -1032,8 +1032,8 @@ class TestJax:
     )
     def test_gradient_moment_jax(self, symbols, geometry, alpha, coeff, e, idx):
         r"""Test that the moment gradient computed with respect to the basis parameters is
-        correct for jax."""
-        import jax
+        correct for qpjax."""
+        import qpjax
 
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
@@ -1043,13 +1043,13 @@ class TestJax:
         basis_b = mol.basis_set[1]
         args = [geometry, coeff, alpha]
 
-        g_alpha = jax.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnums=[2])(*args)
-        g_coeff = jax.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnums=[1])(*args)
+        g_alpha = qpjax.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnums=[2])(*args)
+        g_coeff = qpjax.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnums=[1])(*args)
 
         # compute attraction gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
-        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
-        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+        g_ref_alpha = qpjax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = qpjax.numpy.zeros(6).reshape(coeff.shape)
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
@@ -1104,7 +1104,7 @@ class TestJax:
     )
     def test_kinetic_integral_jax(self, geometry_values, t_ref_values):
         r"""Test that kinetic_integral function returns a correct value for the kinetic
-        integral when using jax."""
+        integral when using qpjax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
         geometry = qml.math.array(geometry_values, like="jax")
         t_ref = qml.math.array(t_ref_values, like="jax")
@@ -1130,8 +1130,8 @@ class TestJax:
     )
     def test_gradient_kinetic_jax(self, symbols, geometry, alpha, coeff):
         r"""Test that the kinetic gradient computed with respect to the basis parameters is
-        correct for jax."""
-        import jax
+        correct for qpjax."""
+        import qpjax
 
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
@@ -1141,13 +1141,13 @@ class TestJax:
         basis_b = mol.basis_set[1]
         args = [geometry, coeff, alpha]
 
-        g_alpha = jax.grad(qchem.kinetic_integral(basis_a, basis_b), argnums=[2])(*args)
-        g_coeff = jax.grad(qchem.kinetic_integral(basis_a, basis_b), argnums=[1])(*args)
+        g_alpha = qpjax.grad(qchem.kinetic_integral(basis_a, basis_b), argnums=[2])(*args)
+        g_coeff = qpjax.grad(qchem.kinetic_integral(basis_a, basis_b), argnums=[1])(*args)
 
         # compute attraction gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
-        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
-        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+        g_ref_alpha = qpjax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = qpjax.numpy.zeros(6).reshape(coeff.shape)
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
@@ -1194,8 +1194,8 @@ class TestJax:
     )
     def test_gradient_attraction_jax(self, symbols, geometry, alpha, coeff):
         r"""Test that the attraction gradient computed with respect to the basis parameters is
-        correct for jax."""
-        import jax
+        correct for qpjax."""
+        import qpjax
 
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
@@ -1206,13 +1206,13 @@ class TestJax:
         args = [geometry, coeff, alpha]
         r_nuc = geometry[0]
 
-        g_alpha = jax.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnums=[2])(*args)
-        g_coeff = jax.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnums=[1])(*args)
+        g_alpha = qpjax.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnums=[2])(*args)
+        g_coeff = qpjax.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnums=[1])(*args)
 
         # compute attraction gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
-        g_ref_alpha = jax.numpy.zeros(6).reshape(alpha.shape)
-        g_ref_coeff = jax.numpy.zeros(6).reshape(coeff.shape)
+        g_ref_alpha = qpjax.numpy.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = qpjax.numpy.zeros(6).reshape(coeff.shape)
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
@@ -1267,7 +1267,7 @@ class TestJax:
     )
     def test_repulsion_integral_jax(self, geometry, e_ref):
         r"""Test that repulsion_integral function returns a correct value for the repulsion
-        integral when using jax."""
+        integral when using qpjax."""
         symbols = ["H", "H"]
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(
@@ -1322,10 +1322,10 @@ class TestJax:
     )
     def test_gradient_repulsion_jax(self, symbols, geometry, alpha, coeff):
         r"""Test that the repulsion gradient computed with respect to the basis parameters is
-        correct with jax."""
-        import jax
+        correct with qpjax."""
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
         geometry = qml.math.array(geometry, like="jax")
         alpha = qml.math.array(alpha, like="jax")
         coeff = qml.math.array(coeff, like="jax")
@@ -1334,16 +1334,16 @@ class TestJax:
         basis_b = mol.basis_set[1]
         args = [geometry, coeff, alpha]
 
-        g_alpha = jax.grad(
+        g_alpha = qpjax.grad(
             qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[2]
         )(*args)
-        g_coeff = jax.grad(
+        g_coeff = qpjax.grad(
             qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[1]
         )(*args)
 
         assert qml.math.allclose(
             g_alpha,
-            jax.numpy.array(
+            qpjax.numpy.array(
                 [
                     [-0.00110959, -0.0066617, 0.06292986],
                     [-0.00110959, -0.0066617, 0.06292986],
@@ -1354,7 +1354,7 @@ class TestJax:
         )
         assert qml.math.allclose(
             g_coeff,
-            jax.numpy.array(
+            qpjax.numpy.array(
                 [
                     [-0.03518772, 0.0140035, -0.00464647],
                     [-0.03518772, 0.0140035, -0.00464647],

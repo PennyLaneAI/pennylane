@@ -391,20 +391,20 @@ class TestBatchedOperations:
 
 
 class TestJaxSampling:
-    """Test sampling functionality using JAX."""
+    """Test sampling functionality using qpjax."""
 
     @pytest.mark.jax
     def test_sample_state_jax(self):
-        """Test sampling from a quantum state using JAX."""
-        import jax
-        import jax.numpy as jnp
+        """Test sampling from a quantum state using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define a simple state vector for a single qubit |0>
         state_vector = jnp.array([1, 0], dtype=jnp.complex64)
         state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set the PRNG key
-        prng_key = jax.random.PRNGKey(0)
+        prng_key = qpjax.random.PRNGKey(0)
 
         # Sample from the state
         samples = sample_state(state, shots=10, prng_key=prng_key)
@@ -415,16 +415,16 @@ class TestJaxSampling:
 
     @pytest.mark.jax
     def test_sample_state_jax_entangled_state(self):
-        """Test sampling from an entangled state using JAX."""
-        import jax
-        import jax.numpy as jnp
+        """Test sampling from an entangled state using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define a Bell state |00> + |11>
         state_vector = jnp.array([1, 0, 0, 1], dtype=jnp.complex64) / jnp.sqrt(2)
         state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2, 2, 2))
 
         # Set the PRNG key
-        prng_key = jax.random.PRNGKey(42)
+        prng_key = qpjax.random.PRNGKey(42)
 
         # Sample from the state
         samples = sample_state(state, shots=1000, prng_key=prng_key)
@@ -440,15 +440,15 @@ class TestJaxSampling:
     @pytest.mark.jax
     def test_sample_state_jax_reproducibility(self):
         """Test that sampling with the same PRNG key produces the same samples."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define a simple state vector for a single qubit |+>
         state_vector = jnp.array([1, 1], dtype=jnp.complex64) / jnp.sqrt(2)
         state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set the PRNG key
-        prng_key = jax.random.PRNGKey(0)
+        prng_key = qpjax.random.PRNGKey(0)
 
         # Sample from the state twice with the same key
         samples1 = sample_state(state, shots=100, prng_key=prng_key)
@@ -460,16 +460,16 @@ class TestJaxSampling:
     @pytest.mark.jax
     def test_sample_state_jax_different_keys(self):
         """Test that sampling with different PRNG keys produces different samples."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define a simple state vector for a single qubit |+>
         state_vector = jnp.array([1, 1], dtype=jnp.complex64) / jnp.sqrt(2)
         state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set different PRNG keys
-        prng_key1 = jax.random.PRNGKey(0)
-        prng_key2 = jax.random.PRNGKey(1)
+        prng_key1 = qpjax.random.PRNGKey(0)
+        prng_key2 = qpjax.random.PRNGKey(1)
 
         # Sample from the state with different keys
         samples1 = sample_state(state, shots=100, prng_key=prng_key1)
@@ -480,16 +480,16 @@ class TestJaxSampling:
 
     @pytest.mark.jax
     def test_measure_with_samples_jax(self):
-        """Test measure_with_samples using JAX."""
-        import jax
-        import jax.numpy as jnp
+        """Test measure_with_samples using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define a simple state vector for a single qubit |0>
         state_vector = jnp.array([1, 0], dtype=jnp.complex64)
         state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2))
 
         # Set the PRNG key
-        prng_key = jax.random.PRNGKey(0)
+        prng_key = qpjax.random.PRNGKey(0)
 
         # Define a measurement process
         mp = qml.sample(wires=0)
@@ -504,16 +504,16 @@ class TestJaxSampling:
 
     @pytest.mark.jax
     def test_measure_with_samples_jax_entangled_state(self):
-        """Test measure_with_samples with an entangled state using JAX."""
-        import jax
-        import jax.numpy as jnp
+        """Test measure_with_samples with an entangled state using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define a Bell state |00> + |11>
         state_vector = jnp.array([1, 0, 0, 1], dtype=jnp.complex64) / jnp.sqrt(2)
         state = qml.math.reshape(jnp.outer(state_vector, jnp.conj(state_vector)), (2, 2, 2, 2))
 
         # Set the PRNG key
-        prng_key = jax.random.PRNGKey(42)
+        prng_key = qpjax.random.PRNGKey(42)
 
         # Define a measurement process
         mp = qml.sample(wires=[0, 1])
@@ -532,9 +532,9 @@ class TestJaxSampling:
 
     @pytest.mark.jax
     def test_sample_state_jax_batched(self):
-        """Test sampling from a batched state using JAX."""
-        import jax
-        import jax.numpy as jnp
+        """Test sampling from a batched state using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define two state vectors for single qubits |0> and |1>
         state_vectors = jnp.array([[1, 0], [0, 1]], dtype=jnp.complex64)
@@ -547,7 +547,7 @@ class TestJaxSampling:
         )
 
         # Set the PRNG key
-        prng_key = jax.random.PRNGKey(0)
+        prng_key = qpjax.random.PRNGKey(0)
 
         # Sample from the batched state
         samples = sample_state(states, shots=10, is_state_batched=True, prng_key=prng_key)
@@ -559,9 +559,9 @@ class TestJaxSampling:
 
     @pytest.mark.jax
     def test_measure_with_samples_jax_batched(self):
-        """Test measure_with_samples with a batched state using JAX."""
-        import jax
-        import jax.numpy as jnp
+        """Test measure_with_samples with a batched state using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         # Define two state vectors for single qubits |+> and |->
         state_vectors = jnp.array([[1, 1], [1, -1]], dtype=jnp.complex64) / jnp.sqrt(2)
@@ -574,7 +574,7 @@ class TestJaxSampling:
         )
 
         # Set the PRNG key
-        prng_key = jax.random.PRNGKey(0)
+        prng_key = qpjax.random.PRNGKey(0)
 
         # Define a measurement process (PauliX measurement)
         mp = qml.sample(qml.PauliX(0))

@@ -626,7 +626,7 @@ class TestDifferentiableZNE:
     @pytest.mark.jax
     def test_exponential_extrapolation_jax(self):
         """Test exponential extrapolation works with expvals stored as a jax array."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         scale_factors = [1, 3, 5]
         noise_scaled_expvals = jnp.array([0.9, 0.8, 0.7])
@@ -660,8 +660,8 @@ class TestDifferentiableZNE:
     @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
     def test_diffability_jax(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
         qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
@@ -676,26 +676,26 @@ class TestDifferentiableZNE:
 
         res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
-        grad = jax.grad(mitigated_qnode)(theta)
-        grad_ideal = jax.grad(qnode_ideal)(theta)
+        grad = qpjax.grad(mitigated_qnode)(theta)
+        grad_ideal = qpjax.grad(qnode_ideal)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
-        jax.grad(qnode_noisy)(theta)
+        qpjax.grad(qnode_noisy)(theta)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
     @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
     def test_diffability_jaxjit(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax-jit"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
         qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = jax.jit(
+        mitigated_qnode = qpjax.jit(
             mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
@@ -705,11 +705,11 @@ class TestDifferentiableZNE:
 
         res = mitigated_qnode(theta)
         assert qml.math.allclose(res, out_ideal, atol=1e-2)
-        grad = jax.grad(mitigated_qnode)(theta)
-        grad_ideal = jax.grad(qnode_ideal)(theta)
+        grad = qpjax.grad(mitigated_qnode)(theta)
+        grad_ideal = qpjax.grad(qnode_ideal)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
-        jax.grad(qnode_noisy)(theta)
+        qpjax.grad(qnode_noisy)(theta)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
@@ -796,8 +796,8 @@ class TestDifferentiableZNE:
     def test_diffability_jax_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in jax for multiple measurements"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
         qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
@@ -813,8 +813,8 @@ class TestDifferentiableZNE:
         res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
-        grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
-        grad_ideal = jax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
+        grad = qpjax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        grad_ideal = qpjax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
@@ -824,15 +824,15 @@ class TestDifferentiableZNE:
     def test_diffability_jaxjit_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and
         returns the correct gradient in jax-jit for multiple measurements"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
         qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = jax.jit(
+        mitigated_qnode = qpjax.jit(
             mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
@@ -843,8 +843,8 @@ class TestDifferentiableZNE:
         res = qml.math.stack(mitigated_qnode(theta))
         assert qml.math.allclose(res, out_ideal_multi, atol=1e-2)
 
-        grad = jax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
-        grad_ideal = jax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
+        grad = qpjax.jacobian(lambda t: qml.math.stack(mitigated_qnode(t)))(theta)
+        grad_ideal = qpjax.jacobian(lambda t: qml.math.stack(qnode_ideal(t)))(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 

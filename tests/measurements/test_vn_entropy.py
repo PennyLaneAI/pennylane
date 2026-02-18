@@ -345,7 +345,7 @@ class TestIntegration:
     @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with jax interface."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
@@ -367,8 +367,8 @@ class TestIntegration:
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base, diff_method, interface):
-        """Test entropy for a QNode gradient with Jax."""
-        import jax
+        """Test entropy for a QNode gradient with qpjax."""
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -377,7 +377,7 @@ class TestIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
 
-        grad_entropy = jax.grad(circuit_entropy)(jax.numpy.array(param))
+        grad_entropy = qpjax.grad(circuit_entropy)(qpjax.numpy.array(param))
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         # higher tolerance for finite-diff method
@@ -393,8 +393,8 @@ class TestIntegration:
     @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, device, interface):
         """Test entropy for a QNode with jax-jit interface."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
@@ -403,7 +403,7 @@ class TestIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
 
-        entropy = jax.jit(circuit_entropy)(jnp.array(param))
+        entropy = qpjax.jit(circuit_entropy)(jnp.array(param))
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
@@ -417,7 +417,7 @@ class TestIntegration:
     @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with Jax-jit."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -426,7 +426,7 @@ class TestIntegration:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
 
-        grad_entropy = jax.jit(jax.grad(circuit_entropy))(jax.numpy.array(param))
+        grad_entropy = qpjax.jit(qpjax.grad(circuit_entropy))(qpjax.numpy.array(param))
 
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 

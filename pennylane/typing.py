@@ -66,7 +66,7 @@ True
 True
 >>> issubclass(list, TensorLike)
 True
->>> issubclass(jax.Array, TensorLike)
+>>> issubclass(qpjax.Array, TensorLike)
 True
 
 """
@@ -77,8 +77,8 @@ def _is_jax(other, subclass=False):
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
             from jax import Array
-            from jax.core import Tracer
-            from jax.numpy import ndarray
+            from qpjax.core import Tracer
+            from qpjax.numpy import ndarray
 
             JaxTensor = ndarray | Array | Tracer
             check = issubclass if subclass else isinstance

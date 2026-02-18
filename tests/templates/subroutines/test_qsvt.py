@@ -405,8 +405,8 @@ class TestQSVTMatrix:
         [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0, 0.2], [0, 1])],
     )
     def test_QSVT_jax(self, input_matrix, poly, wires):
-        """Test that the qsvt function matrix is correct for jax."""
-        import jax.numpy as jnp
+        """Test that the qsvt function matrix is correct for qpjax."""
+        import qpjax.numpy as jnp
 
         angles = qml.poly_to_angles(poly, "QSVT")
         default_matrix = qml.matrix(
@@ -431,13 +431,13 @@ class TestQSVTMatrix:
     )
     def test_QSVT_jax_with_identity(self, input_matrix, poly, wires):
         """Test that applying the identity operation before the qsvt function in
-        a JIT context does not affect the matrix for jax.
+        a JIT context does not affect the matrix for qpjax.
 
         The main purpose of this test is to ensure that the types of the block
         encoding and projector-controlled phase shift data in a QSVT instance
         are taken into account when inferring the backend of a QuantumScript.
         """
-        import jax
+        import qpjax
 
         def identity_and_qsvt(angles):
             qml.Identity(wires=wires[0])
@@ -449,7 +449,7 @@ class TestQSVTMatrix:
                 ],
             )
 
-        @jax.jit
+        @qpjax.jit
         def get_matrix_with_identity(angles):
             return qml.matrix(identity_and_qsvt, wire_order=wires)(angles)
 
@@ -693,8 +693,8 @@ class Testqsvt:
 
     @pytest.mark.jax
     def test_qsvt_jax(self):
-        """Test that the qsvt function generates the correct matrix with jax."""
-        import jax.numpy as jnp
+        """Test that the qsvt function generates the correct matrix with qpjax."""
+        import qpjax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
@@ -727,9 +727,9 @@ class Testqsvt:
 
     @pytest.mark.jax
     def test_qsvt_grad(self):
-        """Test that the qsvt function generates the correct output with qml.grad and jax.grad."""
-        import jax
-        import jax.numpy as jnp
+        """Test that the qsvt function generates the correct output with qml.grad and qpjax.grad."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
@@ -741,18 +741,18 @@ class Testqsvt:
             qml.qsvt(A, poly, [0, 1, 2], "embedding")
             return qml.expval(qml.Z(0) @ qml.Z(1))
 
-        assert np.allclose(qml.grad(circuit)(np.array(A)), jax.grad(circuit)(jnp.array(A)))
+        assert np.allclose(qml.grad(circuit)(np.array(A)), qpjax.grad(circuit)(jnp.array(A)))
         assert not np.allclose(qml.grad(circuit)(np.array(A)), 0.0)
 
     @pytest.mark.jax
     def test_qsvt_jit(self):
         """
-        Test that the qsvt function works with jax.jit.
+        Test that the qsvt function works with qpjax.jit.
         Note that the traceable argument is A.
         """
 
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
         A = [[-0.1, 0, 0, 0.1], [0, 0.2, 0, 0], [0, 0, -0.2, -0.2], [0.1, 0, -0.2, -0.1]]
@@ -766,7 +766,7 @@ class Testqsvt:
 
         not_jitted_output = circuit(jnp.array(A))
 
-        jitted_circuit = jax.jit(circuit)
+        jitted_circuit = qpjax.jit(circuit)
         jitted_output = jitted_circuit(jnp.array(A))
         assert jnp.allclose(not_jitted_output, jitted_output)
 
@@ -1080,7 +1080,7 @@ class TestIterativeSolver:
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast(self, x, degree):
         """Test internal function _qsp_iterate_broadcast"""
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
         qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
@@ -1119,12 +1119,12 @@ class TestIterativeSolver:
     def test_interface_jax(self):
         """Test `poly_to_angles` works with jax"""
 
-        import jax
+        import qpjax
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         angles = qml.poly_to_angles(poly, "QSVT")
 
-        poly_jax = jax.numpy.array(poly)
+        poly_jax = qpjax.numpy.array(poly)
         angles_jax = qml.poly_to_angles(poly_jax, "QSVT")
 
         assert qml.math.allclose(angles, angles_jax)

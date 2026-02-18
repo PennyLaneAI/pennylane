@@ -76,10 +76,10 @@ class TestSimplifyOperators:
     def test_jit_simplification(self):
         """Test that simplification can be jitted."""
 
-        import jax
+        import qpjax
 
         sum_op = qml.sum(qml.PauliX(0), qml.PauliX(0))
-        simp_op = jax.jit(qml.simplify)(sum_op)
+        simp_op = qpjax.jit(qml.simplify)(sum_op)
 
         qml.assert_equal(
             simp_op, qml.s_prod(2.0, qml.PauliX(0)), check_interface=False, check_trainability=False
@@ -189,9 +189,9 @@ class TestSimplifyCallables:
     def test_jitting_simplified_qfunc(self):
         """Test that we can jit qnodes that have a simplified quantum function."""
 
-        import jax
+        import qpjax
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(qml.device("default.qubit", wires=1))
         @qml.simplify
         def circuit(x):
@@ -199,9 +199,9 @@ class TestSimplifyCallables:
             _ = qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
-        x = jax.numpy.array(4 * jax.numpy.pi + 0.1)
+        x = qpjax.numpy.array(4 * qpjax.numpy.pi + 0.1)
         res = circuit(x)
-        assert qml.math.allclose(res, jax.numpy.sin(x))
+        assert qml.math.allclose(res, qpjax.numpy.sin(x))
 
-        grad = jax.grad(circuit)(x)
-        assert qml.math.allclose(grad, jax.numpy.cos(x))
+        grad = qpjax.grad(circuit)(x)
+        assert qml.math.allclose(grad, qpjax.numpy.cos(x))

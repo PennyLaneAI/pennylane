@@ -894,7 +894,7 @@ def expm(tensor, like=None):
     if like == "torch":
         return tensor.matrix_exp()
     if like == "jax":
-        from jax.scipy.linalg import expm as jax_expm
+        from qpjax.scipy.linalg import expm as jax_expm
 
         return jax_expm(tensor)
     if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
@@ -910,7 +910,7 @@ def expm(tensor, like=None):
 def norm(tensor, like=None, **kwargs):
     """Compute the norm of a tensor in each interface."""
     if like == "jax":
-        from jax.numpy.linalg import norm
+        from qpjax.numpy.linalg import norm
 
     elif (
         like == "tensorflow"
@@ -970,7 +970,7 @@ def svd(tensor, like=None, **kwargs):
         return svd(tensor, **kwargs)
 
     if like == "jax":
-        from jax.numpy.linalg import svd
+        from qpjax.numpy.linalg import svd
 
     elif like == "torch":
         # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
@@ -1017,7 +1017,7 @@ def gammainc(m, t, like=None):
         (array[float]): value of the incomplete Gamma function
     """
     if like == "jax":
-        from jax.scipy.special import gammainc
+        from qpjax.scipy.special import gammainc
 
         return gammainc(m, t)
 
@@ -1044,9 +1044,9 @@ def detach(tensor, like=None):
         with a stopped gradient.
     """
     if like == "jax":
-        import jax
+        import qpjax
 
-        return jax.lax.stop_gradient(tensor)
+        return qpjax.lax.stop_gradient(tensor)
 
     if like == "torch":
         return tensor.detach()
@@ -1078,7 +1078,7 @@ def set_index(array, idx, val, like=None):
     Whether the original array is modified is interface-dependent.
     """
     if like == "jax":
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         # ensure array is jax array (interface may be jax because of idx or val and not array)
         jax_array = jnp.array(array)

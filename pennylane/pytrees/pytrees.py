@@ -22,7 +22,7 @@ import autograd
 
 has_jax = True
 try:
-    import jax.tree_util as jax_tree_util
+    import qpjax.tree_util as jax_tree_util
 except ImportError:
     has_jax = False
 

@@ -496,8 +496,8 @@ class TestIntegration:
     @pytest.mark.jax
     def test_jitted_qnode(self):
         """Test that regular and jitted qnode yield same result"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         Hi = transmon_interaction(qubit_freq, connections, coupling, wires=wires)
 
@@ -520,14 +520,14 @@ class TestIntegration:
             qml.evolve(H)(params, ts)
             return qml.expval(H_obj)
 
-        qnode_jit = jax.jit(qnode)
+        qnode_jit = qpjax.jit(qnode)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
 
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert qml.math.isclose(res, res_jit)
 
     @pytest.mark.jax
@@ -536,8 +536,8 @@ class TestIntegration:
     ):
         """Test that a transmon system with multiple drive terms can be
         executed within a jitted qnode."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         Hi = transmon_interaction(qubit_freq, connections, coupling, wires=wires)
 
@@ -567,7 +567,7 @@ class TestIntegration:
             qml.evolve(Hi + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
-        qnode_jit = jax.jit(qnode)
+        qnode_jit = qpjax.jit(qnode)
 
         params = (
             jnp.ones(5),
@@ -578,17 +578,17 @@ class TestIntegration:
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert qml.math.isclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
         """Test that a transmons system can be simulated within a
         jitted qnode when all coeffs are callable."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         H_drift = transmon_interaction(qubit_freq, connections, coupling, wires=wires)
 
@@ -613,11 +613,11 @@ class TestIntegration:
             qml.evolve(H_drift + H_drive)(params, ts)
             return qml.expval(H_obj)
 
-        qnode_jit = jax.jit(qnode)
+        qnode_jit = qpjax.jit(qnode)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert qml.math.isclose(res, res_jit)

@@ -192,8 +192,8 @@ def apply_operation(
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
             keep the same number of shots. ``None`` by default.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
         tape_shots (Shots): the shots object of the tape
 
@@ -281,8 +281,8 @@ def apply_conditional(
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
         interface (str): The machine learning interface of the state
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
@@ -294,7 +294,7 @@ def apply_conditional(
     interface = math.get_deep_interface(state)
     if interface == "jax":
         # pylint: disable=import-outside-toplevel
-        from jax.lax import cond
+        from qpjax.lax import cond
 
         return cond(
             op.meas_val.concretize(mid_measurements),
@@ -339,8 +339,8 @@ def apply_mid_measure(
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
             keep the same number of shots. ``None`` by default.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        prng_key (Optional[qpjax.random.PRNGKey]): An optional ``qpjax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using qpjax.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
@@ -370,7 +370,7 @@ def apply_mid_measure(
 
     if prng_key is not None:
         # pylint: disable=import-outside-toplevel
-        from jax.random import binomial
+        from qpjax.random import binomial
 
         def binomial_fn(n, p):
             return binomial(prng_key, n, p).astype(int)
@@ -384,7 +384,7 @@ def apply_mid_measure(
     mid_measurements[op] = sample
 
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
-    # to select the sample branch enables jax.jit and prevents it from using Python callbacks
+    # to select the sample branch enables qpjax.jit and prevents it from using Python callbacks
     matrix = math.array([[(sample + 1) % 2, 0.0], [0.0, (sample) % 2]], like=interface)
     state = apply_operation(
         ops.QubitUnitary(matrix, wire),
@@ -395,7 +395,7 @@ def apply_mid_measure(
     state = state / math.norm(state)
 
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.X(wire), ...)
-    # to reset enables jax.jit and prevents it from using Python callbacks
+    # to reset enables qpjax.jit and prevents it from using Python callbacks
     element = op.reset and sample == 1
     matrix = math.array(
         [[(element + 1) % 2, (element) % 2], [(element) % 2, (element + 1) % 2]],
@@ -729,8 +729,8 @@ def _evolve_state_vector_under_parametrized_evolution(
     """
 
     try:
-        import jax
-        from jax.experimental.ode import odeint
+        import qpjax
+        from qpjax.experimental.ode import odeint
 
         from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
@@ -754,7 +754,7 @@ def _evolve_state_vector_under_parametrized_evolution(
         state = state.flatten()
         out_shape = [2] * num_wires
 
-    with jax.ensure_compile_time_eval():
+    with qpjax.ensure_compile_time_eval():
         H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(  # pragma: no cover
             operation.H,
             dense=operation.dense,

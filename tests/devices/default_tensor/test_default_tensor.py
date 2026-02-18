@@ -421,9 +421,9 @@ class TestJaxSupport:
     """Test the JAX support for the DefaultTensor device."""
 
     def test_jax(self, method):
-        """Test the device with JAX."""
+        """Test the device with qpjax."""
 
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
         dev = qml.device("default.tensor", wires=1, method=method)
         ref_dev = qml.device("default.qubit", wires=1)
 
@@ -432,7 +432,7 @@ class TestJaxSupport:
             qml.Rot(x[0], x[1], x[2], wires=0)
             return qml.expval(qml.Z(0))
 
-        weights = jax.numpy.array([0.2, 0.5, 0.1])
+        weights = qpjax.numpy.array([0.2, 0.5, 0.1])
         qnode = qml.QNode(circuit, dev, interface="jax")
         ref_qnode = qml.QNode(circuit, ref_dev, interface="jax")
 
@@ -441,10 +441,10 @@ class TestJaxSupport:
     def test_jax_jit(self, method):
         """Test the device with JAX's JIT compiler."""
 
-        jax = pytest.importorskip("jax")
+        qpjax = pytest.importorskip("jax")
         dev = qml.device("default.tensor", wires=1, method=method)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
             qml.Hadamard(0)

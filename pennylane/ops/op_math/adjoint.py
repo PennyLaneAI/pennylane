@@ -142,7 +142,7 @@ def adjoint(fn, lazy=True):
             qml.adjoint(func)()
             return qml.probs()
 
-    >>> import jax.numpy as jnp
+    >>> import qpjax.numpy as jnp
     >>> workflow(jnp.pi/2, 3, 0)
     Array([0.5, 0.5], dtype=float64)
 
@@ -231,15 +231,15 @@ def _get_adjoint_qfunc_prim():
 def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     """Capture compatible way of performing an adjoint transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
-    import jax  # pylint: disable=import-outside-toplevel
+    import qpjax  # pylint: disable=import-outside-toplevel
 
     adjoint_prim = _get_adjoint_qfunc_prim()
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
-        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
-        flat_args = jax.tree_util.tree_leaves(args)
+        jaxpr = qpjax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        flat_args = qpjax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,

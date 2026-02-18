@@ -64,7 +64,7 @@ def test_auto_with_jax():
     """Test that 'auto' interface resolves to 'jax' correctly.."""
     try:
         # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
 
@@ -120,7 +120,7 @@ def test_jax():
     """Test that non-abstract JAX parameters in tapes resolve to 'jax'."""
     try:
         # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
 
@@ -139,15 +139,15 @@ def test_jax_jit():
     """Test that abstract JAX parameters in tapes resolve to 'jax-jit'."""
     try:
         # pylint: disable=import-outside-toplevel
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
 
     param = jnp.array(0.5)
     assert not qml.math.is_abstract(param)
 
-    @jax.jit
+    @qpjax.jit
     def abstract_func(x):
         assert qml.math.is_abstract(x)
         tapes = [

@@ -48,12 +48,12 @@ def test_parity_numeric(arg_type, args, expected_outcome):
 )
 def test_parity_numeric_jax(args, expected_outcome):
     """Test the parity function behaves as expected with jax and jax-jit"""
-    import jax
+    import qpjax
 
-    values = jax.numpy.array(args)
+    values = qpjax.numpy.array(args)
 
     assert parity(*values) == expected_outcome
-    assert jax.jit(parity)(*values) == expected_outcome
+    assert qpjax.jit(parity)(*values) == expected_outcome
 
 
 @pytest.mark.parametrize(

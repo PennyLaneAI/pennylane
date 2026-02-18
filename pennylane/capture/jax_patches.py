@@ -47,7 +47,7 @@ Apply patches via the Patcher context manager::
     from pennylane.capture.jax_patches import get_jax_patches
 
     with Patcher(*get_jax_patches()):
-        jaxpr = jax.make_jaxpr(fn, abstracted_axes={0: 'n'})(x)
+        jaxpr = qpjax.make_jaxpr(fn, abstracted_axes={0: 'n'})(x)
 
 Inspiration
 -----------
@@ -65,26 +65,26 @@ JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 
 has_jax = True
 try:
-    import jax
+    import qpjax
 
     # only do the following if jax is 0.7.x
-    jax_version = jax.__version__
+    jax_version = qpjax.__version__
     from packaging import version
 
     if version.parse(jax_version) >= version.parse("0.7.0") and version.parse(
         jax_version
     ) < version.parse("0.8.0"):
-        from jax._src import config as jax_config
-        from jax._src import core, pjit, source_info_util
-        from jax._src.core import JaxprEqnContext, Var
-        from jax._src.interpreters import partial_eval as pe
-        from jax._src.interpreters.partial_eval import (
+        from qpjax._src import config as jax_config
+        from qpjax._src import core, pjit, source_info_util
+        from qpjax._src.core import JaxprEqnContext, Var
+        from qpjax._src.interpreters import partial_eval as pe
+        from qpjax._src.interpreters.partial_eval import (
             DynamicJaxprTracer,
             TracingEqn,
             compute_on,
             xla_metadata_lib,
         )
-        from jax._src.lax import lax
+        from qpjax._src.lax import lax
 except ModuleNotFoundError:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
@@ -279,7 +279,7 @@ def get_jax_patches():
         >>> from pennylane.capture.jax_patches import get_jax_patches
         >>> with Patcher(*get_jax_patches()):
         ...     # JAX operations with patches applied
-        ...     jaxpr = jax.make_jaxpr(my_function)(args)
+        ...     jaxpr = qpjax.make_jaxpr(my_function)(args)
     """
     if not has_jax:
         return ()  # pragma: no cover

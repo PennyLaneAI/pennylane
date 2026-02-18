@@ -28,7 +28,7 @@ pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from jax import numpy as jnp  # pylint: disable=wrong-import-position, wrong-import-order
+from qpjax import numpy as jnp  # pylint: disable=wrong-import-position, wrong-import-order
 
 
 def test_error_is_raised_with_capture_disabled():
@@ -68,7 +68,7 @@ class TestMakePLxPR:
 
         spy.assert_called()
         assert hasattr(plxpr, "jaxpr")
-        isinstance(plxpr, jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(plxpr, qpjax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])
@@ -96,7 +96,7 @@ class TestMakePLxPR:
             spy.assert_has_calls([call(circ, static_argnums=static_argnums)])
 
         # plxpr behaves as expected wrt static argnums
-        res = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, *non_static_params)
+        res = qpjax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, *non_static_params)
         assert np.allclose(res, circ(*params))
 
     @pytest.mark.parametrize("autograph", [True, False])
@@ -122,8 +122,8 @@ class TestMakePLxPR:
 
         # output is as expected for return_shape=True
         assert len(output) == 2
-        isinstance(output[0], jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
-        isinstance(output[0], jax.ShapeDtypeStruct)  # pylint: disable=protected-access
+        isinstance(output[0], qpjax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(output[0], qpjax.ShapeDtypeStruct)  # pylint: disable=protected-access
 
 
 @pytest.mark.capture
@@ -153,7 +153,7 @@ class TestAutoGraphIntegration:
         assert "cond[" in str(plxpr2)
 
         def eval(x):
-            return jax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
+            return qpjax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
 
         assert np.allclose(eval(2), [0.70710678, 0.70710678])
         assert np.allclose(eval(1), [0, 1j])
@@ -180,7 +180,7 @@ class TestAutoGraphIntegration:
         assert "while_loop[" in str(plxpr2)
 
         def eval(x):
-            return jax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
+            return qpjax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
 
         assert np.allclose(eval(0), [-1])
         assert np.allclose(eval(5), [0])
@@ -207,6 +207,6 @@ class TestAutoGraphIntegration:
 
         def eval(x):
             x = jnp.array(x)
-            return jax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
+            return qpjax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
 
         assert np.allclose(eval([np.pi, np.pi / 2]), [-1, 0])

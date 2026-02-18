@@ -1231,8 +1231,8 @@ class TestParamShiftInterfaces:
     def test_jax(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using JAX, yielding second derivatives."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         dev = qml.device("default.gaussian", wires=1)
         params = jnp.array([0.543, -0.654])
@@ -1264,7 +1264,7 @@ class TestParamShiftInterfaces:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = jax.jacobian(cost_fn)(params)
+        res = qpjax.jacobian(cost_fn)(params)
 
         expected = np.array(
             [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]

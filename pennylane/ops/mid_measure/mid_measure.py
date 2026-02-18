@@ -49,12 +49,12 @@ def _create_mid_measure_primitive():
     Called when using :func:`~pennylane.measure`.
 
     Returns:
-        jax.extend.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        qpjax.extend.core.Primitive: A new jax primitive corresponding to a mid-circuit
         measurement.
 
     """
     # pylint: disable=import-outside-toplevel
-    import jax
+    import qpjax
 
     from pennylane.capture.custom_primitives import QmlPrimitive
 
@@ -66,8 +66,8 @@ def _create_mid_measure_primitive():
 
     @mid_measure_p.def_abstract_eval
     def _abstract_eval(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-        return jax.core.ShapedArray((), dtype)
+        dtype = qpjax.numpy.int64 if qpjax.config.jax_enable_x64 else qpjax.numpy.int32
+        return qpjax.core.ShapedArray((), dtype)
 
     return mid_measure_p
 

@@ -743,7 +743,7 @@ class TestMatrix:
     @pytest.mark.jax
     def test_prod_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         theta = jnp.array(1.23)
         rot_params = jnp.array([0.12, 3.45, 6.78])
@@ -921,7 +921,7 @@ class TestProperties:
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         theta = jnp.array(1.23)
         prod_ops = (
@@ -1024,12 +1024,12 @@ class TestProperties:
     @pytest.mark.jax
     def test_eigvals_jax_jit(self):
         """Assert computing the eigvals of a Prod is compatible with jax-jit."""
-        import jax
+        import qpjax
 
         def f(t1, t2):
             return qml.prod(qml.RX(t1, 0), qml.RX(t2, 0)).eigvals()
 
-        assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
+        assert qml.math.allclose(f(0.5, 1.0), qpjax.jit(f)(0.5, 1.0))
 
     def test_eigvals_no_wires_identity(self):
         """Test that eigvals can be computed if a component is an identity on no wires."""
@@ -1296,7 +1296,7 @@ class TestSimplify:
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
-        import jax.numpy as jnp
+        import qpjax.numpy as jnp
 
         c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46j)
 

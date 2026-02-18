@@ -290,10 +290,10 @@ class TestAdjointMetricTensorTape:
         """Test that the output is correct when using JAX and
         calling the adjoint metric tensor directly on a tape."""
 
-        import jax
+        import qpjax
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        j_params = tuple(jax.numpy.array(p) for p in params)
+        j_params = tuple(qpjax.numpy.array(p) for p in params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface="jax")
@@ -410,12 +410,12 @@ class TestAdjointMetricTensorQNode:
         """Test that the output is correct when using JAX and
         calling the adjoint metric tensor on a QNode."""
 
-        import jax
+        import qpjax
 
-        jax.config.update("jax_enable_x64", True)
+        qpjax.config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        j_params = tuple(jax.numpy.array(p) for p in params)
+        j_params = tuple(qpjax.numpy.array(p) for p in params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface="jax")
@@ -536,10 +536,10 @@ class TestAdjointMetricTensorDifferentiability:
         """Test that the derivative is correct when using JAX and
         calling the adjoint metric tensor on a QNode."""
 
-        import jax
+        import qpjax
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
-        j_params = tuple(jax.numpy.array(p) for p in params)
+        j_params = tuple(qpjax.numpy.array(p) for p in params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface="jax")
@@ -551,7 +551,7 @@ class TestAdjointMetricTensorDifferentiability:
         mt_fn = qml.adjoint_metric_tensor(circuit)
         argnums = list(range(len(params)))
 
-        mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
+        mt_jac = qpjax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
         if isinstance(mt_jac, tuple):
             if not isinstance(expected, tuple) and len(mt_jac) == 1:

@@ -26,13 +26,13 @@ from conftest import atol_for_shots, get_device, test_matrix
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
-jax.config.update("jax_enable_x64", True)
+jnp = pytest.importorskip("qpjax.numpy")
+qpjax.config.update("jax_enable_x64", True)
 
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
-jax.config.update("jax_enable_x64", True)
+jnp = pytest.importorskip("qpjax.numpy")
+qpjax.config.update("jax_enable_x64", True)
 
 
 @pytest.mark.jax
@@ -60,7 +60,7 @@ class TestJaxJitRun:
         b = jnp.array(0.2)
 
         with device.tracker:
-            res = jax.jit(cost)(a, b)
+            res = qpjax.jit(cost)(a, b)
 
         assert len(res) == 2
 
@@ -89,7 +89,7 @@ class TestJaxJitRun:
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = jnp.array(0.1)
-        res = jax.jit(jax.jacobian(cost))(a)
+        res = qpjax.jit(qpjax.jacobian(cost))(a)
         if not shots.has_partitioned_shots:
             assert res.shape == ()  # pylint: disable=no-member
 
@@ -124,7 +124,7 @@ class TestJaxJitRun:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        g = jax.jit(jax.jacobian(cost, argnums=[0, 1]))(a, b)
+        g = qpjax.jit(qpjax.jacobian(cost, argnums=[0, 1]))(a, b)
         assert isinstance(g, tuple) and len(g) == 2
 
         expected = ([-jnp.sin(a), jnp.sin(a) * jnp.sin(b)], [0, -jnp.cos(a) * jnp.cos(b)])

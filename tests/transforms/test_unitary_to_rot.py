@@ -195,9 +195,9 @@ class TestDecomposeSingleQubitUnitaryTransform:
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
     def test_unitary_to_rot_jax(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface."""
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
@@ -223,9 +223,9 @@ class TestDecomposeSingleQubitUnitaryTransform:
     def test_unitary_to_rot_jax_jit(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
         # pylint: disable=unused-argument
-        import jax
+        import qpjax
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+        U = qpjax.numpy.array(U, dtype=qpjax.numpy.complex128)
 
         dev = qml.device("default.qubit", wires=["a", "b"])
 
@@ -235,7 +235,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         original_qnode = qml.QNode(test_qfunc, dev)
         transformed_qnode = qml.QNode(unitary_to_rot(test_qfunc), dev)
-        jitted_qnode = jax.jit(transformed_qnode)
+        jitted_qnode = qpjax.jit(transformed_qnode)
 
         original_result = original_qnode(U)
         transformed_result = transformed_qnode(U)
@@ -400,8 +400,8 @@ class TestQubitUnitaryDifferentiability:
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
     def test_gradient_unitary_to_rot_jax(self, rot_angles, diff_method):
         """Tests differentiability in jax interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
@@ -432,13 +432,13 @@ class TestQubitUnitaryDifferentiability:
         transformed_result = transformed_qnode(angles)
         assert qml.math.allclose(original_result, transformed_result)
 
-        original_grad = jax.grad(original_qnode)(angles)
-        transformed_grad = jax.grad(transformed_qnode)(angles)
+        original_grad = qpjax.grad(original_qnode)(angles)
+        transformed_grad = qpjax.grad(transformed_qnode)(angles)
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
         # Check that we can also JIT
-        grad_of_jit = jax.grad(jax.jit(transformed_qnode))(angles)
-        jit_of_grad = jax.jit(jax.grad(transformed_qnode))(angles)
+        grad_of_jit = qpjax.grad(qpjax.jit(transformed_qnode))(angles)
+        jit_of_grad = qpjax.jit(qpjax.grad(transformed_qnode))(angles)
         assert np.allclose(original_grad, jit_of_grad, atol=1e-7)
         assert np.allclose(original_grad, grad_of_jit, atol=1e-7)
 
@@ -678,8 +678,8 @@ class TestTwoQubitUnitaryDifferentiability:
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_gradient_unitary_to_rot_two_qubit_jax(self, diff_method):
         """Tests differentiability in jax interface."""
-        import jax
-        from jax import numpy as jnp
+        import qpjax
+        from qpjax import numpy as jnp
 
         U0 = jnp.array(test_two_qubit_unitaries[0], dtype=jnp.complex128)
         U1 = jnp.array(test_two_qubit_unitaries[1], dtype=jnp.complex128)
@@ -708,7 +708,7 @@ class TestTwoQubitUnitaryDifferentiability:
         tape = qml.workflow.construct_tape(transformed_qnode)(x)
         assert len(tape.operations) == 15
 
-        original_grad = jax.grad(original_qnode, argnums=0)(x)
-        transformed_grad = jax.grad(transformed_qnode, argnums=0)(x)
+        original_grad = qpjax.grad(original_qnode, argnums=0)(x)
+        transformed_grad = qpjax.grad(transformed_qnode, argnums=0)(x)
 
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-6)

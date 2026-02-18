@@ -427,7 +427,7 @@ class TestDifferentiation:
     def test_jax(self, v):
         """Test that differentiation works correctly when using JAX"""
 
-        import jax
+        import qpjax
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -438,13 +438,13 @@ class TestDifferentiation:
             U = qml.eigvals(circuit)(theta)
             return qml.math.sum(qml.math.real(U))
 
-        x = jax.numpy.array(v)
+        x = qpjax.numpy.array(v)
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             l = loss(x)
-            dl = jax.grad(loss)(x)
+            dl = qpjax.grad(loss)(x)
 
-        assert isinstance(l, jax.numpy.ndarray)
+        assert isinstance(l, qpjax.numpy.ndarray)
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 

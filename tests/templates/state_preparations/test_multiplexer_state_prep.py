@@ -114,7 +114,7 @@ class TestMultiplexerStatePreparation:
     def test_interface_jax(self):
         """Test MultiplexerStatePreparation works with jax"""
 
-        from jax import numpy as jnp
+        from qpjax import numpy as jnp
 
         state = [1 / 2, -1 / 2, 1j / 2, -1j / 2]
 
@@ -231,9 +231,9 @@ class TestMultiplexerStatePreparation:
     @pytest.mark.jax
     def test_jit(self):
         """Tests the template correctly compiles with JAX JIT."""
-        import jax
+        import qpjax
 
-        state = jax.numpy.array([1 / 2j, -1 / 2, 1 / 2, -1 / 2])
+        state = qpjax.numpy.array([1 / 2j, -1 / 2, 1 / 2, -1 / 2])
 
         wires = range(2)
         dev = qml.device("default.qubit", wires=6)
@@ -250,6 +250,6 @@ class TestMultiplexerStatePreparation:
             )
             return qml.probs(wires)
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         assert qml.math.allclose(circuit(state), jit_circuit(state))

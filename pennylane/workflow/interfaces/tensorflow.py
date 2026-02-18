@@ -254,7 +254,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
 
         def vjp_fn(*dy, **tfkwargs):
             # TF obeys the dL/dz_conj convention instead of the
-            # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
+            # dL/dz convention of PennyLane, autograd and qpjax. This converts between the formats
             dy = _recursive_conj(dy)
 
             if not differentiable:

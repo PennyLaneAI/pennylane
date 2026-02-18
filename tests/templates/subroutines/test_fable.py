@@ -155,8 +155,8 @@ class TestFable:
 
     @pytest.mark.jax
     def test_jax(self, input_matrix):
-        """Test that the Fable operator matrix is correct for jax."""
-        import jax.numpy as jnp
+        """Test that the Fable operator matrix is correct for qpjax."""
+        import qpjax.numpy as jnp
 
         circuit_default = qml.FABLE(input_matrix, wires=range(5), tol=0)
         jax_matrix = jnp.array(input_matrix)
@@ -177,9 +177,9 @@ class TestFable:
 
     @pytest.mark.jax
     def test_fable_grad_jax(self, input_matrix):
-        """Test that FABLE is differentiable when using jax."""
-        import jax
-        import jax.numpy as jnp
+        """Test that FABLE is differentiable when using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit")
         delta = 0.001
@@ -217,7 +217,7 @@ class TestFable:
             qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad_fn = jax.grad(circuit_jax)
+        grad_fn = qpjax.grad(circuit_jax)
         gradient_numeric = (
             circuit_jax(input_jax_positive_delta) - circuit_jax(input_jax_negative_delta)
         ) / (2 * delta)
@@ -226,9 +226,9 @@ class TestFable:
 
     @pytest.mark.jax
     def test_fable_jax_jit(self, input_matrix):
-        """Test that FABLE is differentiable when using jax."""
-        import jax
-        import jax.numpy as jnp
+        """Test that FABLE is differentiable when using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit")
 
@@ -267,9 +267,9 @@ class TestFable:
             qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        jitted_fn = jax.jit(circuit_jax)
+        jitted_fn = qpjax.jit(circuit_jax)
 
-        grad_fn = jax.grad(jitted_fn)
+        grad_fn = qpjax.grad(jitted_fn)
         gradient_numeric = (
             circuit_jax(input_jax_positive_delta) - circuit_jax(input_jax_negative_delta)
         ) / (2 * delta)
@@ -280,14 +280,14 @@ class TestFable:
 
     @pytest.mark.jax
     def test_fable_grad_jax_jit_error(self, input_matrix):
-        """Test that FABLE is differentiable when using jax."""
-        import jax
-        import jax.numpy as jnp
+        """Test that FABLE is differentiable when using qpjax."""
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit")
         input_matrix_jax = jnp.array(input_matrix)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
             qml.FABLE(input_matrix, wires=range(5), tol=0.01)

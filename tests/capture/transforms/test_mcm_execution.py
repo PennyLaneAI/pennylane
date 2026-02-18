@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+jnp = pytest.importorskip("qpjax.numpy")
 
 # We import sampling so that we can correctly spy function calls for unit testing
 from pennylane.devices.qubit import sampling
@@ -52,7 +52,7 @@ class TestExecutionAnalytic:
             qml.Hadamard(0)
             return qml.expval(qml.PauliX(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
         assert qml.math.allclose(res, 0)
 
@@ -67,7 +67,7 @@ class TestExecutionAnalytic:
             qml.measure(0, reset=True)
             return qml.expval(qml.PauliZ(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
         assert qml.math.allclose(res, 1)
 
@@ -85,7 +85,7 @@ class TestExecutionAnalytic:
             qml.measure(0, reset=reset, postselect=postselect)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Z(1))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
 
         eigval = -2 * postselect + 1
@@ -106,7 +106,7 @@ class TestExecutionAnalytic:
             qml.RX(m * jnp.pi, 0)
             return qml.expval(qml.PauliZ(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
         # If 0 measured, RX does nothing, so state is |0>. If 1 measured, RX(pi)
         # makes state |1> -> |0>, so <Z> will always be 1
@@ -141,7 +141,7 @@ class TestExecutionAnalytic:
             return qml.expval(qml.PauliZ(0))
 
         phi = jnp.pi / 3
-        jaxpr = jax.make_jaxpr(f)(phi)
+        jaxpr = qpjax.make_jaxpr(f)(phi)
         res = dev.eval_jaxpr(
             jaxpr.jaxpr, jaxpr.consts, phi, execution_config=create_execution_config()
         )
@@ -180,7 +180,7 @@ class TestExecutionAnalytic:
 
             return qml.expval(qml.PauliZ(0))
 
-        jaxpr = jax.make_jaxpr(f)(0.5)
+        jaxpr = qpjax.make_jaxpr(f)(0.5)
 
         arg_true = 3.0
         res = dev.eval_jaxpr(
@@ -230,7 +230,7 @@ class TestExecutionAnalytic:
 
         transformed_f = DeferMeasurementsInterpreter(num_wires=5)(f)
 
-        jaxpr = jax.make_jaxpr(transformed_f)()
+        jaxpr = qpjax.make_jaxpr(transformed_f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=create_execution_config())
 
         with qml.capture.pause():
@@ -251,7 +251,7 @@ class TestExecutionFiniteShots:
     def test_hw_like_samples(self, postselect, n_postselects):
         """Test that postselect_mode="hw-like" updates the number of samples as expected."""
         num_wires = 5
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
+        dev = qml.device("default.qubit", wires=num_wires, seed=qpjax.random.PRNGKey(5432))
         config = create_execution_config(postselect_mode="hw-like")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -261,7 +261,7 @@ class TestExecutionFiniteShots:
                 qml.measure(0, postselect=postselect)
             return qml.sample(wires=[0])
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = tuple(
             dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=1000)[0]
             for _ in range(10)
@@ -277,7 +277,7 @@ class TestExecutionFiniteShots:
     def test_fill_shots_samples(self, postselect, n_postselects):
         """Test that postselect_mode="fill-shots" updates the number of samples as expected."""
         num_wires = 5
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
+        dev = qml.device("default.qubit", wires=num_wires, seed=qpjax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode="fill-shots")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -287,7 +287,7 @@ class TestExecutionFiniteShots:
                 qml.measure(0, postselect=postselect)
             return qml.sample(wires=[0])
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = tuple(
             dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=1000)[0]
             for _ in range(5)
@@ -299,7 +299,7 @@ class TestExecutionFiniteShots:
     def test_correct_sampling(self, mocker):
         """Test that sampling is performed with the correct pipeline."""
         num_wires = 5
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
+        dev = qml.device("default.qubit", wires=num_wires, seed=qpjax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode="fill-shots")
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -310,7 +310,7 @@ class TestExecutionFiniteShots:
 
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
 
         expected_state = qml.math.zeros(2**num_wires, dtype=complex)
         # Last MCM resets state, so only first half of state-vector will be non-zero,
@@ -335,7 +335,7 @@ class TestExecutionFiniteShots:
     def test_correct_sampling_postselection(self, postselect_mode, n_postselects, mocker):
         """Test that sampling is performed using the correct pipeline with postselection."""
         num_wires = 4
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(5432))
+        dev = qml.device("default.qubit", wires=num_wires, seed=qpjax.random.PRNGKey(5432))
         config = create_execution_config(postselect_mode=postselect_mode)
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -346,7 +346,7 @@ class TestExecutionFiniteShots:
 
             return qml.expval(qml.Z(0))
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
 
         spied_shots = []
         # Map n_postselects to tuple (state index with non-zero amplitude, amplitude)
@@ -384,7 +384,7 @@ class TestExecutionFiniteShots:
     def test_mcm_samples_shape(self, postselect_mode, n_iters):
         """Test that returning samples of mcms has the correct shape."""
         num_wires = 4
-        dev = qml.device("default.qubit", wires=num_wires, seed=jax.random.PRNGKey(1234))
+        dev = qml.device("default.qubit", wires=num_wires, seed=qpjax.random.PRNGKey(1234))
         config = create_execution_config(postselect_mode=postselect_mode)
 
         @DeferMeasurementsInterpreter(num_wires=num_wires)
@@ -396,7 +396,7 @@ class TestExecutionFiniteShots:
 
             return qml.sample(op=ms)
 
-        jaxpr = jax.make_jaxpr(f)()
+        jaxpr = qpjax.make_jaxpr(f)()
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config, shots=100)
 
         if postselect_mode == "fill-shots":

@@ -293,8 +293,8 @@ class TestIntegration:
     @pytest.mark.jax
     def test_jitted_qnode(self):
         """Test that a Rydberg ensemble can be simulated within a jitted qnode."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
 
@@ -316,7 +316,7 @@ class TestIntegration:
             qml.evolve(Hd + Ht)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def qnode_jit(params):
             qml.evolve(Hd + Ht)(params, ts)
@@ -326,15 +326,15 @@ class TestIntegration:
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert np.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
         """Test that a Rydberg ensemble with multiple drive terms can be
         executed within a jitted qnode."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
 
@@ -364,7 +364,7 @@ class TestIntegration:
             qml.evolve(Hd + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def qnode_jit(params):
             qml.evolve(Hd + H1 + H2 + H3)(params, ts)
@@ -379,15 +379,15 @@ class TestIntegration:
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert np.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
         """Test that a Rydberg ensemble can be simulated within a
         jitted qnode when all coeffs are callable."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         H_drift = rydberg_interaction(register=atom_coordinates, wires=wires)
 
@@ -412,7 +412,7 @@ class TestIntegration:
             qml.evolve(H_drift + H_drive)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(dev, interface="jax")
         def qnode_jit(params):
             qml.evolve(H_drift + H_drive)(params, ts)
@@ -422,18 +422,18 @@ class TestIntegration:
         res = qnode(params)
         res_jit = qnode_jit(params)
 
-        assert isinstance(res, jax.Array)
+        assert isinstance(res, qpjax.Array)
         assert np.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_pennylane_and_exact_solution_correspond(self):
         """Test that the results of PennyLane simulation match (within reason) the exact solution"""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         def exact(H, H_obj, t):
             psi0 = jnp.eye(2 ** len(H.wires))[0]
-            U_exact = jax.scipy.linalg.expm(-1j * t * qml.matrix(H([], 1)))
+            U_exact = qpjax.scipy.linalg.expm(-1j * t * qml.matrix(H([], 1)))
             return (
                 psi0 @ U_exact.conj().T @ qml.matrix(H_obj, wire_order=[0, 1, 2]) @ U_exact @ psi0
             )
@@ -448,7 +448,7 @@ class TestIntegration:
 
         H_obj = qml.PauliZ(0)
 
-        @jax.jit
+        @qpjax.jit
         @qml.qnode(default_qubit, interface="jax")
         def circuit(t):
             qml.evolve(H)([], t)

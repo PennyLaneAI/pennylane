@@ -403,11 +403,11 @@ class TestTRXCalcGrad:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_trx_grad_jax(self, use_jit, two_qutrit_state, subspace):
-        """Test that the application of a trx gate is differentiable with jax."""
+        """Test that the application of a trx gate is differentiable with qpjax."""
 
-        import jax
+        import qpjax
 
-        state = jax.numpy.array(two_qutrit_state)
+        state = qpjax.numpy.array(two_qutrit_state)
 
         def f(phi):
             op = qml.TRX(phi, wires=0, subspace=subspace)
@@ -415,10 +415,10 @@ class TestTRXCalcGrad:
             return measure(qml.probs(), new_state)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         probs = f(self.phi)
-        jacobian = jax.jacobian(f)(self.phi)
+        jacobian = qpjax.jacobian(f)(self.phi)
         self.compare_expected_result(self.phi, state, probs, subspace, jacobian)
 
     @pytest.mark.torch
@@ -508,11 +508,11 @@ class TestChannelCalcGrad:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_channel_grad_jax(self, use_jit, two_qutrit_state):
-        """Test that the application of a channel is differentiable with jax."""
+        """Test that the application of a channel is differentiable with qpjax."""
 
-        import jax
+        import qpjax
 
-        state = jax.numpy.array(two_qutrit_state)
+        state = qpjax.numpy.array(two_qutrit_state)
 
         def f(p):
             op = CustomChannel(p, wires=1)
@@ -520,10 +520,10 @@ class TestChannelCalcGrad:
             return measure(qml.probs(), new_state)
 
         if use_jit:
-            f = jax.jit(f)
+            f = qpjax.jit(f)
 
         probs = f(self.p)
-        jacobian = jax.jacobian(f)(self.p)
+        jacobian = qpjax.jacobian(f)(self.p)
         self.compare_expected_result(self.p, state, probs, jacobian)
 
     @pytest.mark.torch

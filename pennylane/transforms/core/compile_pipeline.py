@@ -30,7 +30,7 @@ from .cotransform_cache import CotransformCache
 from .transform import BoundTransform, Transform
 
 if TYPE_CHECKING:
-    import jax
+    import qpjax
 
     import pennylane as qml
 
@@ -674,12 +674,12 @@ class CompilePipeline:
         return tuple(tapes), postprocessing_fn
 
     def __call_jaxpr(
-        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
-    ) -> jax.extend.core.ClosedJaxpr:
+        self, jaxpr: qpjax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> qpjax.extend.core.ClosedJaxpr:
         # pylint: disable=import-outside-toplevel
-        import jax
+        import qpjax
 
-        cur_jaxpr = jax.extend.core.ClosedJaxpr(jaxpr, consts)
+        cur_jaxpr = qpjax.extend.core.ClosedJaxpr(jaxpr, consts)
         for container in self:
             _, targs, tkwargs, _, plxpr_transform, _, _ = container
             cur_jaxpr = plxpr_transform(cur_jaxpr.jaxpr, cur_jaxpr.consts, targs, tkwargs, *args)
@@ -704,8 +704,8 @@ class CompilePipeline:
 
     @overload
     def __call__(
-        self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args
-    ) -> jax.extend.core.ClosedJaxpr: ...
+        self, jaxpr: qpjax.extend.core.Jaxpr, consts: Sequence, *args
+    ) -> qpjax.extend.core.ClosedJaxpr: ...
     @overload
     def __call__(self, qnode: qml.QNode, *args, **kwargs) -> qml.QNode: ...
     @overload

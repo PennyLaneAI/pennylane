@@ -177,9 +177,9 @@ def test_flatten_unflatten(mp):
 @pytest.mark.parametrize("mp", valid_meausurements)
 def test_jax_pytree_integration(mp):
     """Test that measurement processes are jax pytrees."""
-    import jax
+    import qpjax
 
-    jax.tree_util.tree_flatten(mp)
+    qpjax.tree_util.tree_flatten(mp)
 
 
 @pytest.mark.parametrize(

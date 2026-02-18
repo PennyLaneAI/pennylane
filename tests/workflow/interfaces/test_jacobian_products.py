@@ -773,8 +773,8 @@ class TestTransformsDifferentiability:
 
     @pytest.mark.jax
     def test_execute_jvp_jax(self):
-        """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
-        import jax
+        """Test that execute_and_compute_jvp is jittable and differentiable with qpjax."""
+        import qpjax
 
         jpc = param_shift_jpc
 
@@ -782,19 +782,19 @@ class TestTransformsDifferentiability:
             tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
             return jpc.execute_and_compute_jvp((tape,), tangents)[1][0]
 
-        x = jax.numpy.array(0.1)
-        tangents = ((jax.numpy.array(0.5),),)
+        x = qpjax.numpy.array(0.1)
+        tangents = ((qpjax.numpy.array(0.5),),)
 
         res = f(x, tangents=tangents)
         assert qml.math.allclose(res, -tangents[0][0] * np.sin(x))
 
-        jit_res = jax.jit(f)(x, tangents=tangents)
+        jit_res = qpjax.jit(f)(x, tangents=tangents)
         assert qml.math.allclose(jit_res, -tangents[0][0] * np.sin(x))
 
-        grad = jax.grad(f)(x, tangents=tangents)
+        grad = qpjax.grad(f)(x, tangents=tangents)
         assert qml.math.allclose(grad, -tangents[0][0] * np.cos(x))
 
-        tangent_grad = jax.grad(f, argnums=1)(x, tangents)
+        tangent_grad = qpjax.grad(f, argnums=1)(x, tangents)
         assert qml.math.allclose(tangent_grad[0][0], -np.sin(x))
 
     @pytest.mark.autograd

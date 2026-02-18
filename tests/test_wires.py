@@ -23,12 +23,12 @@ import pennylane as qml
 from pennylane.exceptions import WireError
 from pennylane.wires import Wires
 
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    jax_available = True
+if util.find_spec("qpjax") is not None:
+    qpjax = import_module("qpjax")
+    qpjax_available = True
 else:
-    jax_available = False
-    jax = None
+    qpjax_available = False
+    qpjax = None
 
 
 # pylint: disable=too-many-public-methods, too-many-positional-arguments
@@ -217,8 +217,8 @@ class TestWires:
         """Tests that Wires object has a JAX array representation."""
 
         wires = Wires([4, 0, 1])
-        array = jax.numpy.asarray(wires)
-        assert isinstance(array, jax.numpy.ndarray)
+        array = qpjax.numpy.asarray(wires)
+        assert isinstance(array, qpjax.numpy.ndarray)
         for w1, w2 in zip(array, [4, 0, 1]):
             assert w1 == w2
 
@@ -395,7 +395,7 @@ class TestWires:
     )
     def test_wires_pytree(self, source):
         """Test that Wires class supports the PyTree flattening interface"""
-        from jax.tree_util import tree_flatten, tree_unflatten
+        from qpjax.tree_util import tree_flatten, tree_unflatten
 
         wires = Wires(source)
         wires_flat, tree = tree_flatten(wires)
@@ -522,12 +522,12 @@ class TestWiresJax:
         "iterable, expected",
         (
             [
-                (jax.numpy.array([0, 1, 2]), (0, 1, 2)),
-                (jax.numpy.array([0]), (0,)),
-                (jax.numpy.array(0), (0,)),
-                (jax.numpy.array([]), ()),
+                (qpjax.numpy.array([0, 1, 2]), (0, 1, 2)),
+                (qpjax.numpy.array([0]), (0,)),
+                (qpjax.numpy.array(0), (0,)),
+                (qpjax.numpy.array([]), ()),
             ]
-            if jax_available
+            if qpjax_available
             else []
         ),
     )
@@ -540,13 +540,13 @@ class TestWiresJax:
         "input",
         (
             [
-                [jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])],
-                [jax.numpy.array([0, 1, 2]), 3],
-                jax.numpy.array([[0, 1, 2]]),
-                jax.numpy.array([[[0, 1], [2, 3]]]),
-                jax.numpy.array([[[[0]]]]),
+                [qpjax.numpy.array([0, 1, 2]), qpjax.numpy.array([3, 4])],
+                [qpjax.numpy.array([0, 1, 2]), 3],
+                qpjax.numpy.array([[0, 1, 2]]),
+                qpjax.numpy.array([[[0, 1], [2, 3]]]),
+                qpjax.numpy.array([[[[0]]]]),
             ]
-            if jax_available
+            if qpjax_available
             else []
         ),
     )
@@ -557,7 +557,7 @@ class TestWiresJax:
 
     @pytest.mark.parametrize(
         "iterable",
-        [jax.numpy.array([4, 1, 1, 3]), jax.numpy.array([0, 0])] if jax_available else [],
+        [qpjax.numpy.array([4, 1, 1, 3]), qpjax.numpy.array([0, 0])] if qpjax_available else [],
     )
     def test_error_for_repeated_wires_jax(self, iterable):
         """Tests that a Wires object cannot be created from a JAX array with repeated indices."""
@@ -565,20 +565,20 @@ class TestWiresJax:
             Wires(iterable)
 
     def test_array_representation_jax(self):
-        """Tests that Wires object has an array representation with JAX."""
+        """Tests that Wires object has an array representation with qpjax."""
 
         wires = Wires([4, 0, 1])
-        array = jax.numpy.array(wires.labels)
-        assert isinstance(array, jax.numpy.ndarray)
+        array = qpjax.numpy.array(wires.labels)
+        assert isinstance(array, qpjax.numpy.ndarray)
         assert array.shape == (3,)
-        for w1, w2 in zip(array, jax.numpy.array([4, 0, 1])):
+        for w1, w2 in zip(array, qpjax.numpy.array([4, 0, 1])):
             assert w1 == w2
 
     @pytest.mark.parametrize(
         "source",
         (
-            [jax.numpy.array([0, 1, 2]), jax.numpy.array([0]), jax.numpy.array(0)]
-            if jax_available
+            [qpjax.numpy.array([0, 1, 2]), qpjax.numpy.array([0]), qpjax.numpy.array(0)]
+            if qpjax_available
             else []
         ),
     )
@@ -586,7 +586,7 @@ class TestWiresJax:
         """Test that Wires class supports the PyTree flattening interface with JAX arrays."""
 
         wires = Wires(source)
-        wires_flat, tree = jax.tree_util.tree_flatten(wires)
-        wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
+        wires_flat, tree = qpjax.tree_util.tree_flatten(wires)
+        wires2 = qpjax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"

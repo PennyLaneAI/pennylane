@@ -247,7 +247,7 @@ class TestTemporaryAND:
     @pytest.mark.jax
     def test_jax_jit(self):
         """Tests that TemporaryAND works with jax and jit"""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit")
 
@@ -261,6 +261,6 @@ class TestTemporaryAND:
             qml.adjoint(qml.TemporaryAND([0, 1, 2]))
             return qml.probs([0, 1, 2, 3])
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())

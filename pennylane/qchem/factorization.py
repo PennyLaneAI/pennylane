@@ -26,7 +26,7 @@ try:  # pragma: no cover
 
     import optax
     from jax import jit
-    from jax import numpy as jnp
+    from qpjax import numpy as jnp
     from jax import scipy as jsp
     from jax import value_and_grad
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover

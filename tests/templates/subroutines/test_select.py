@@ -529,8 +529,8 @@ class TestInterfaces:
     @pytest.mark.slow
     def test_jax(self):
         """Tests the jax interface."""
-        import jax
-        import jax.numpy as jnp
+        import qpjax
+        import qpjax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -545,10 +545,10 @@ class TestInterfaces:
         )
         assert qml.math.get_interface(qml.matrix(circuit_jax)(input_jax)) == "jax"
 
-        grad_fn = jax.grad(circuit_default)
+        grad_fn = qpjax.grad(circuit_default)
         grads = grad_fn(input_jax)
 
-        grad_fn2 = jax.grad(circuit_jax)
+        grad_fn2 = qpjax.grad(circuit_jax)
         grads2 = grad_fn2(input_jax)
 
         assert qml.math.allclose(grads, grads2)
@@ -556,7 +556,7 @@ class TestInterfaces:
     @pytest.mark.jax
     def test_jax_jit(self):
         """Tests jit within the jax interface."""
-        import jax
+        import qpjax
 
         dev = qml.device("default.qubit", wires=4)
         ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
@@ -566,7 +566,7 @@ class TestInterfaces:
             qml.Select(ops, control=[0, 1])
             return qml.state()
 
-        jit_circuit = jax.jit(circuit)
+        jit_circuit = qpjax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())
 

@@ -148,10 +148,10 @@ def test_kak_Heisenberg_summed(is_orthogonal, dense):
 @pytest.mark.jax
 def test_run_opt_with_other_optimizer():
     """Test that run_opt works with alternate optimizer"""
-    import jax
-    import jax.numpy as jnp
+    import qpjax
+    import qpjax.numpy as jnp
 
-    jax.config.update("jax_enable_x64", True)
+    qpjax.config.update("jax_enable_x64", True)
     import optax
 
     def cost(x):
