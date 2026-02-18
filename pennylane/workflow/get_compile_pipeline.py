@@ -76,7 +76,7 @@ def get_compile_pipeline(
 
     Args:
         qnode (QNode): The QNode to get the compile pipeline for.
-        level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline.
+        level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline. Defaults to ``"device"``.
 
             - ``"top"``: Returns an empty pipeline representing the initial stage before any transformations are applied.
             - ``"user"``: Only includes transformations that are manually applied by the user.
