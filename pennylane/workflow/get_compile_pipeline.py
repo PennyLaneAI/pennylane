@@ -72,7 +72,7 @@ def get_compile_pipeline(
     qnode: QNode,
     level: str | int | slice = "device",
 ) -> Callable[P, CompilePipeline]:
-    """Retrieve the compile pipeline used during execution of a QNode.
+    """Retrieve the compile pipeline used during execution of a QNode at a designated level.
 
     Args:
         qnode (QNode): The QNode to get the compile pipeline for.
