@@ -203,7 +203,7 @@ class Adder(Operation):
         **Example**
 
         >>> qml.Adder.compute_decomposition(k=2, x_wires=[0,1,2], mod=8, work_wires=[3])
-        [(Adjoint(QFT(wires=[0, 1, 2]))) @ PhaseAdder(wires=[0, 1, 2]) @ QFT(wires=[0, 1, 2])]
+        [(Adjoint(<QFT(wires=Wires([0, 1, 2]))>)) @ PhaseAdder(wires=[0, 1, 2]) @ <QFT(wires=Wires([0, 1, 2]))>]
         """
         if mod == 2 ** len(x_wires):
             qft_wires = x_wires

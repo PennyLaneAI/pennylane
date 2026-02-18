@@ -266,8 +266,7 @@ class OutAdder(Operation):
         >>> ops = qml.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ QFT(wires=[5, 6])]
-
+        [(Adjoint(<QFT(wires=Wires([5, 6]))>)) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ <QFT(wires=Wires([5, 6]))>]
         """
         if mod != 2 ** len(output_wires) and mod is not None:
             qft_new_output_wires = work_wires[:1] + output_wires
