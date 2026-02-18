@@ -307,6 +307,30 @@ def test_level_is_integer(level):
         assert cp == CompilePipeline(qml.transforms.cancel_inverses, qml.transforms.merge_rotations)
 
 
+@pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])
+def test_level_is_slice(level_slice):
+    """Tests that slice levels are correctly handled."""
+
+    @qml.metric_tensor
+    @qml.transforms.merge_rotations
+    @qml.transforms.cancel_inverses
+    @qml.qnode(
+        qml.device("default.qubit"),
+        diff_method="parameter-shift",
+        gradient_kwargs={"shifts": qml.numpy.pi / 4},
+    )
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.H(0)
+        qml.H(0)
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+    sliced_cp = get_compile_pipeline(circuit, level=level_slice)(1.0)
+    full_cp = get_compile_pipeline(circuit, level="device")(1.0)
+    assert full_cp[level_slice] == sliced_cp
+
+
 def test_informative_transforms():
     """Tests that informative transforms are handled correctly."""
 
