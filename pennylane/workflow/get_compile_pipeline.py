@@ -188,7 +188,8 @@ def get_compile_pipeline(
           [5] _expand_transform_param_shift(shifts=0.7853981633974483)
         )
 
-        We can use ``qml.marker`` to further subdivide our compile pipeline into stages,
+        We can also retrieve our compile pipeline up to a specific stage indicated by the name given to a :func:`qml.marker`,
+        which in our example is indicated by the ``"checkpoint"`` marker,
 
         >>> print(get_compile_pipeline(circuit, level="checkpoint")(3.14))
         CompilePipeline(
