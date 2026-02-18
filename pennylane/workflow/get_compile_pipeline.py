@@ -101,14 +101,15 @@ def get_compile_pipeline(
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
         @qml.qnode(dev)
-        def circuit():
-            qml.RX(1, wires=0)
+        def circuit(angle):
+            qml.RX(angle, wires=0)
             qml.H(0)
             qml.H(0)
-            qml.RX(1, wires=0)
+            qml.RX(angle, wires=0)
             return qml.expval(qml.Z(0))
 
-    >>> print(get_compile_pipeline(circuit)()) # or level="device"
+    >>> args = (3.14,)
+    >>> print(get_compile_pipeline(circuit)(*args)) # or level="device"
     CompilePipeline(
       [1] cancel_inverses(),
       [2] merge_rotations(),
