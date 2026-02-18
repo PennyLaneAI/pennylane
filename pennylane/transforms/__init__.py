@@ -119,7 +119,6 @@ Transforms for Clifford+T decomposition and Pauli-based computation
 
 These transforms accept quantum circuits and decomposes them to the Clifford+T basis.
 
-.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 
