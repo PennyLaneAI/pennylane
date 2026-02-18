@@ -53,6 +53,7 @@ ci = [
     "build"
 ]
 dev = [
+    "sybil",
     "pre-commit>=2.19.0",
     "pytest>=8.4.1",
     "pytest-cov>=3.0.0",
