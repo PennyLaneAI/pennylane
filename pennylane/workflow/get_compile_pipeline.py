@@ -227,9 +227,9 @@ def get_compile_pipeline(
           [3] metric_tensor(device_wires=None)
         )
 
-        Note that they follow standard Pythonic indexing meaning that ``level=slice(1, 4)`` corresponds to the second
-        to the fourth transform (equivalent to ``level=[2, 3, 4]``). The ``"checkpoint"`` marker is still in the pipeline as it marks a location in the pipeline
-        rather than being attached to a particular transformation.
+        Note that standard Pythonic indexing is used meaning that ``level=slice(1, 4)`` corresponds to the second
+        to the fourth transform (equivalent to ``level=[2, 3, 4]``). Additionally, the ``"checkpoint"`` marker is
+        still in the pipeline as it marks a location in the pipeline rather than being attached to a particular transformation.
 
     """
 
