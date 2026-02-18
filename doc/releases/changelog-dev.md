@@ -245,6 +245,11 @@
   a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Added specialized gate kernels for RX, RY, RZ, and Hadamard in the default qubit device.
+  These bypass generic einsum/tensordot dispatch and use direct NumPy contractions for pure-numpy
+  states, with correct fallbacks for autodiff interfaces (autograd, torch, JAX, TensorFlow).
+  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -590,6 +595,7 @@ Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
+Jacob Kitchen,
 Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
