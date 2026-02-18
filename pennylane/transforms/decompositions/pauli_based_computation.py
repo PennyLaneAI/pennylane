@@ -19,9 +19,6 @@ import catalyst
 
 
 def to_ppr_setup_inputs():
-    """
-    .. autofunction:: catalyst.passes.to_ppr
-    """
     return (), {}
 
 
