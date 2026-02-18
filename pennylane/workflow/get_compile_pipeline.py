@@ -188,9 +188,6 @@ def get_compile_pipeline(
           [5] _expand_transform_param_shift(shifts=0.7853981633974483)
         )
 
-        which in this case is ``_expand_transform_param_shift``, a transform that expands all trainable operations
-        to a state where the parameter shift transform can operate on them.
-
         We can use ``qml.marker`` to further subdivide our compile pipeline into stages,
 
         >>> print(get_compile_pipeline(circuit, level="checkpoint")(3.14))
