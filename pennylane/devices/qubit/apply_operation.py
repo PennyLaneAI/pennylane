@@ -34,6 +34,10 @@ _HADAMARD_MAT = np.array(
     [[_INV_SQRT2, _INV_SQRT2], [_INV_SQRT2, -_INV_SQRT2]],
     dtype=np.complex128,
 )
+_HADAMARD_CACHE = {
+    np.dtype("complex64"): _HADAMARD_MAT.astype(np.complex64),
+    np.dtype("complex128"): _HADAMARD_MAT,
+}
 
 
 def _get_slice(index, axis, num_axes):
@@ -68,7 +72,7 @@ def _get_slice(index, axis, num_axes):
 def _apply_single_qubit_np(mat, state, axis):
     """Apply a 2x2 numpy matrix to ``state`` via ``np.tensordot``.
 
-    This is the NumPy-only fast path for single-qubit gates. Callers must
+    This is the NumPy-only contraction path for single-qubit gates. Callers must
     verify the interface is ``"numpy"`` before calling; autodiff tensors
     will lose gradient tracking.
 
@@ -611,7 +615,8 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
         # H uses direct matrix application since its coefficients are constant;
         # no parameter-dependent logic needed unlike RX/RY/RZ.
         axis = op.wires[0] + is_state_batched
-        return _apply_single_qubit_np(_HADAMARD_MAT, state, axis)
+        mat = _HADAMARD_CACHE.get(state.dtype, _HADAMARD_MAT.astype(state.dtype))
+        return _apply_single_qubit_np(mat, state, axis)
 
     if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
