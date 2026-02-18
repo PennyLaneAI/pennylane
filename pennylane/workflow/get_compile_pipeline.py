@@ -78,7 +78,7 @@ def get_compile_pipeline(
         qnode (QNode): The QNode to get the compile pipeline for.
         level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline.
 
-            - ``"top"``: An empty pipeline, representing the initial stage before any transformations are applied.
+            - ``"top"``: Returns an empty pipeline representing the initial stage before any transformations are applied.
             - ``"user"``: Includes only manually applied user transformations.
             - ``"gradient"``: Includes user transformations and any appended gradient-related passes.
             - ``"device"``: The full pipeline (user + gradient + device) as prepared for device execution.
