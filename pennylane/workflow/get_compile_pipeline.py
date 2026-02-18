@@ -216,9 +216,8 @@ def get_compile_pipeline(
           [3] _expand_metric_tensor(device_wires=None)
         )
 
-        Slice levels enable you to extract a specific range of transformations in the compile pipeline.
-        Note that they follow standard Pythonic indexing meaning ``level=slice(1, 4)`` is from the second
-        to fourth transform (equivalent to ``level=[2, 3, 4]``):
+        ``level`` can also accept a ``slice`` object enabling you to extract a specific range of transformations in the compile pipeline.
+        For example, we can retrieve the second to fourth transform with:
 
         >>> print(get_compile_pipeline(circuit, level=slice(1,4))(3.14))
         CompilePipeline(
