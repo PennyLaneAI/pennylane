@@ -12,7 +12,8 @@
   indices pointing to the populated computational basis states:
 
   ```pycon
-  >>> coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
+  >>> coefficients = [0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25]
+  >>> coefficients = np.array(coefficients)
   >>> indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
   >>> wires = qml.wires.Wires(range(5))
   ```
@@ -32,7 +33,7 @@
       return qml.state()
   ```
   ```pycon
-  >>> prepared_state = circuit()[::2**8] # Slice the state because there are eight work wires
+  >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
   >>> where = np.where(prepared_state)
   >>> print(where)
   (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)

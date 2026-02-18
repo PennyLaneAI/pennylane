@@ -677,10 +677,15 @@ class SumOfSlatersPrep(Operation):
 
     We can check that we prepared the right state:
 
-    >>> prepared_state = circuit()
-    >>> # print(np.where(prepared_state))
+    >>> prepared_state = circuit()[::2**8] # Slice the state, as there are eight work wires
+    >>> where = np.where(prepared_state)
+    >>> print(where)
+    (array([ 0,  1,  4, 13, 14, 17, 19, 22, 23, 25]),)
+    >>> print(prepared_state[where])
+    [ 0.25+0.j    0.  +0.25j -0.25+0.j    0.5 +0.j    0.5 +0.j    0.25+0.j
+     -0.  -0.25j  0.25+0.j   -0.25+0.j    0.25+0.j  ]
 
-    Internally, the state preparation looks like this:
+    That looks exactly right! Internally, the state preparation looks like this:
 
     >>> print(qml.draw(circuit, show_matrices=False)())
      0: ──────╭QROM(M0)─╭○─╭○─╭○─╭○─╭○─╭●─╭●─╭●─╭●─╭●──────────╭●─╭●─╭●─╭●─┤  State
@@ -722,12 +727,54 @@ class SumOfSlatersPrep(Operation):
          'qrom_work_wires': 3,
          'mcx_cache_wires': 1}
 
-        .. admonition:: Gotchas of reported work register sizes
+        .. note::
+            :title: Gotchas of reported work register sizes
 
             Note that these register sizes might be upper bounds in some scenarios, and that
             further decomposing the circuit efficiently may require additional work wires, for
             example for the ``MultiControlledX`` gates. In contrast, the QROM work wires are
             explicitly accounted for, which is due to some internal technical limitation.
+
+        **Two encoding modes**
+
+        Depending on the encoding computed by :func:`~.compute_sos_encoding`, the state preparation
+        circuit requires an additional register of auxiliary qubits and two more layers of
+        :class:`~.CNOT` gates, or not. The example shown above did not require those, because
+        small examples tend to be particularly easy to encode.
+        We can force a more expensive encoding with ``indices`` that are powers of two on at least
+        seven qubits:
+
+        .. code-block:: python3
+
+            coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, 0.5])
+            indices = tuple(2**i for i in range(7))
+            wires = qml.wires.Wires(range(7))
+
+            @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
+            @qml.decompose(gate_set=gate_set, num_work_wires=10)
+            @qml.qnode(qml.device("null.qubit", wires=100))
+            def circuit():
+                qml.SumOfSlatersPrep(coefficients, wires, indices)
+                return qml.state()
+
+        >>> print(qml.draw(circuit, show_matrices=False)())
+         0: ──────╭QROM(M0)─╭●──────────────────────────────────────────────╭●───────────────────┤  State
+         1: ──────├QROM(M0)─│──╭●───────────────────────────────────────────│──╭●────────────────┤  State
+         2: ──────├QROM(M0)─│──│──╭●────────────────────────────────────────│──│──╭●─────────────┤  State
+         3: ──────├QROM(M0)─│──│──│──╭●─────────────────────────────────────│──│──│──╭●──────────┤  State
+         4: ──────├QROM(M0)─│──│──│──│─────╭●───────────────────────────────│──│──│──│─────╭●────┤  State
+         5: ──────├QROM(M0)─│──│──│──│──╭●─│──╭●────────────────────────────│──│──│──│──╭●─│──╭●─┤  State
+         6: ──────├QROM(M0)─│──│──│──│──│──│──│─────────────────────────────│──│──│──│──│──│──│──┤  State
+         7: ─╭|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──────────────╭X─╭X────╭X────│──│──│──│──│──│──│──┤  State
+         8: ─├|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│─────╭X─╭X────│──│─────│──╭X─│──│──│──│──│──│──│──┤  State
+         9: ─╰|Ψ⟩─├QROM(M0)─│──│──│──│──│──│──│──╭X─│──│──╭X─│──│──╭X─│──│──│──│──│──│──│──│──│──┤  State
+        10: ──────│─────────╰X─│──│──│──│──│──│──├○─├○─├○─├○─├○─├○─├○─├●─├●─╰X─│──│──│──│──│──│──┤  State
+        11: ──────│────────────╰X─│──│──│──│──│──├○─├○─├○─├○─├○─├●─├●─├○─├○────╰X─│──│──│──│──│──┤  State
+        12: ──────│───────────────╰X─│──│──│──│──├○─├○─├○─├○─├●─├○─├○─├○─├○───────╰X─│──│──│──│──┤  State
+        13: ──────│──────────────────╰X─╰X─│──│──├●─├○─├●─├●─├○─├○─├○─├○─├○──────────╰X─╰X─│──│──┤  State
+        14: ──────│────────────────────────╰X─╰X─╰●─╰●─╰○─╰○─╰○─╰○─╰○─╰○─╰○────────────────╰X─╰X─┤  State
+        15: ──────├QROM(M0)──────────────────────────────────────────────────────────────────────┤  State
+        16: ──────╰QROM(M0)──────────────────────────────────────────────────────────────────────┤  State
 
     """
 
