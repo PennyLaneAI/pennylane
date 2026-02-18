@@ -81,6 +81,58 @@
 
 <h3>Improvements 🛠</h3>
 
+* When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
+  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
+  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
+  of how many markers are present.
+
+  Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
+  pipeline's string representation now shows both transforms and markers:
+
+  As an example, we now have the following behaviour:
+
+  ```python
+  pipeline = qml.CompilePipeline()
+  pipeline.add_marker("no-transforms")
+  pipeline += qml.transforms.cancel_inverses
+
+  @qml.marker("after-cancel-inverses")
+  @pipeline
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+    qml.X(0)
+    qml.H(0)
+    qml.H(0)
+    return qml.probs()
+  ```
+
+  The compilation pipeline has a new string representation that can be used to 
+  inspect the transforms and markers,
+
+  ```pycon
+  >>> print(circuit.compile_pipeline)
+  CompilePipeline(
+     ├─▶ no-transforms
+    [1] cancel_inverses()
+     └─▶ after-cancel-inverses
+  )
+  ```
+
+  As usual, marker labels can be used as an argument to `level` in `draw`
+  and `specs`, showing the cumulative result of applying transforms up to said marker:
+
+  ```pycon
+  >>> print(qml.draw(c, level="no-transforms")()) # or level=0
+  0: ──X──H──H─┤  Probs
+  >>> print(qml.draw(c, level="after-cancel-inverses")()) # or level=1
+  0: ──X─┤  Probs
+  ```
+  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+  
+* Raises a more informative error if something that is not a measurement process is returned from a 
+  QNode when program capture is turned on.
+  [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
+
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
