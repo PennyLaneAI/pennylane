@@ -83,10 +83,8 @@ def get_compile_pipeline(
             - ``"gradient"``: Includes user-specified transformations and any appended gradient-related passes.
             - ``"device"``: The full pipeline (user + gradient + device) as prepared for device execution.
             - ``str``: Includes all transformations up to the name of a specific :func:`qml.marker` inserted into the pipeline.
-            - ``int``: The number of transformations to include from the start of the pipeline
-                (e.g. ``level=0`` is empty and ``level=3`` extracts the first three transforms).
-            - ``slice``: Extract a specific range of transformations using standard 0-based Pythonic indexing
-                (e.g. ``level=slice(1, 4)`` retrieves the second to the fourth transformations).
+            - ``int``: The number of transformations to include from the start of the pipeline (e.g. ``level=0`` is empty and ``level=3`` extracts the first three transforms).
+            - ``slice``: Extract a specific range of transformations using standard 0-based Pythonic indexing (e.g. ``level=slice(1, 4)`` retrieves the second to the fourth transformations).
 
     Returns:
         CompilePipeline: the compile pipeline corresponding to the requested level.
