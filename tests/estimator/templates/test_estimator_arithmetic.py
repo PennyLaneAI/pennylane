@@ -29,6 +29,500 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use,too-many-arguments
 
 
+class TestResourcePhaseAdder:
+    """Test the PhaseAdder resource operator."""
+
+    @pytest.mark.parametrize(
+        "num_x_wires, mod, wires",
+        (
+            (5, 1, [1, 2, 3, 4, 5]),
+            (5, 2, ["a", "b", "c", 1, 2]),
+            (5, 5, None),
+            (5, 2**5, None),
+            (5, None, None),
+        ),
+    )
+    def test_init(self, num_x_wires, mod, wires):
+        """Test the init method of the class."""
+        phase_add = qre.PhaseAdder(num_x_wires, mod, wires)
+        resource_params = phase_add.resource_params
+
+        if mod is None:
+            mod = 2**num_x_wires
+
+        assert resource_params["mod"] == mod 
+        assert resource_params["num_x_wires"] == num_x_wires
+        assert phase_add.wires == (Wires(wires) if wires is not None else None)
+        assert phase_add.num_wires == num_x_wires
+
+    @pytest.mark.parametrize("mod", (0, -3, 9, 100))
+    def test_init_raises_error(self, mod):
+        """Test that an error is raised if number of wires is 
+        not compatible with the mod value."""
+        with pytest.raises(ValueError, match=f"mod must take values inbetween \(1, 8\), got {mod}"):
+            qre.PhaseAdder(num_x_wires=3, mod=mod)
+
+    @pytest.mark.parametrize(
+        "num_x_wires, mod",
+        (
+            (2, 1),
+            (7, 2),
+            (8, 5),
+            (5, 2**5),
+            (3, None),
+        ),
+    )
+    def test_resource_rep(self, num_x_wires, mod):
+        """Test the resource_rep method of the class."""
+        op = qre.PhaseAdder(num_x_wires, mod)
+        
+        if mod is None:
+            mod = 2**num_x_wires
+        expected = qre.CompressedResourceOp(
+            qre.PhaseAdder, 
+            num_x_wires,
+            params={"num_x_wires": num_x_wires, "mod": mod}
+        )
+
+        assert op.resource_rep_from_op() == expected
+
+    @pytest.mark.parametrize(
+        "op, expected_decomp",
+        (
+            (
+                qre.PhaseAdder(num_x_wires=5, mod=2),
+                [
+                    Allocate(2),
+                    GateCount(qre.PhaseShift.resource_rep(), 5 + 1),
+                    GateCount(qre.PhaseShift.resource_rep(), 5 + 1),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.QFT.resource_rep(5 + 1),
+                            cmpr_target_op=qre.CNOT.resource_rep(),
+                            num_wires=5+2,
+                        )
+                    ),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op = qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 5 + 1),),
+                                5 + 1,
+                            ),
+                            num_ctrl_wires = 1,
+                            num_zero_ctrl = 0,
+                        )
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.Adjoint.resource_rep(
+                                qre.Prod.resource_rep(
+                                    (
+                                        (qre.QFT.resource_rep(5 + 1), 1),
+                                        (qre.PhaseShift.resource_rep(), 5 + 1),
+                                    ),
+                                    num_wires = 5 + 1,
+                                )
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(qre.X.resource_rep(), 1, 1),
+                            num_wires=5+2,
+                        )
+                    ),
+                    Deallocate(2),
+                ],
+            ),
+            (
+                qre.PhaseAdder(num_x_wires=7, mod=31),
+                [
+                    Allocate(2),
+                    GateCount(qre.PhaseShift.resource_rep(), 7 + 1),
+                    GateCount(qre.PhaseShift.resource_rep(), 7 + 1),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.QFT.resource_rep(7 + 1),
+                            cmpr_target_op=qre.CNOT.resource_rep(),
+                            num_wires = 7+2
+                        )
+                    ),
+                    GateCount(
+                        qre.Controlled.resource_rep(
+                            base_cmpr_op = qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 7 + 1),),
+                                7 + 1,
+                            ),
+                            num_ctrl_wires = 1,
+                            num_zero_ctrl = 0,
+                        )
+                    ),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.Adjoint.resource_rep(
+                                qre.Prod.resource_rep(
+                                    (
+                                        (qre.QFT.resource_rep(7 + 1), 1),
+                                        (qre.PhaseShift.resource_rep(), 7 + 1),
+                                    ),
+                                    num_wires = 7 + 1,
+                                )
+                            ),
+                            cmpr_target_op=qre.Controlled.resource_rep(qre.X.resource_rep(), 1, 1),
+                            num_wires = 7 + 2,
+                        )
+                    ),
+                    Deallocate(2),
+                ],
+            ),
+            (
+                qre.PhaseAdder(num_x_wires=5, mod=32),
+                [
+                    GateCount(qre.PhaseShift.resource_rep(), 5)
+                ],
+            ),
+            (
+                qre.PhaseAdder(num_x_wires=5, mod=None),
+                [
+                    GateCount(qre.PhaseShift.resource_rep(), 5)
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, op, expected_decomp):
+        """Test that the resource_decomp produces the expected resources."""
+        assert op.resource_decomp(**op.resource_params) == expected_decomp
+    
+    @pytest.mark.parametrize("z", (1, 2, 3, 5))
+    @pytest.mark.parametrize(
+        "num_x_wires, mod",
+        (
+            (2, 1),
+            (7, 2),
+            (8, 5),
+            (5, 2**5),
+            (3, None),
+        ),
+    )
+    def test_pow_resources(self, num_x_wires, mod, z):
+        """Test the pow_resource_decomp works as expected."""
+        op = qre.PhaseAdder(num_x_wires, mod)
+        cmpr_op = op.resource_rep_from_op()
+        assert op.pow_resource_decomp(z, op.resource_params) == [GateCount(cmpr_op)]
+
+
+class TestResourceAdder:
+    """Test the PhaseAdder resource operator."""
+
+    @pytest.mark.parametrize(
+        "num_x_wires, mod, wires",
+        (
+            (5, 1, [1, 2, 3, 4, 5]),
+            (5, 2, ["a", "b", "c", 1, 2]),
+            (5, 5, None),
+            (5, 2**5, None),
+            (5, None, None),
+        ),
+    )
+    def test_init(self, num_x_wires, mod, wires):
+        """Test the init method of the class."""
+        adder = qre.Adder(num_x_wires, mod, wires)
+        resource_params = adder.resource_params
+
+        if mod is None:
+            mod = 2**num_x_wires
+
+        assert resource_params["mod"] == mod 
+        assert resource_params["num_x_wires"] == num_x_wires
+        assert adder.wires == (Wires(wires) if wires is not None else None)
+        assert adder.num_wires == num_x_wires
+
+    @pytest.mark.parametrize("mod", (0, -3, 9, 100))
+    def test_init_raises_error(self, mod):
+        """Test that an error is raised if number of wires is 
+        not compatible with the mod value."""
+        with pytest.raises(ValueError, match=f"mod must take values inbetween \(1, 8\), got {mod}"):
+            qre.Adder(num_x_wires=3, mod=mod)
+
+    @pytest.mark.parametrize(
+        "num_x_wires, mod",
+        (
+            (2, 1),
+            (7, 2),
+            (8, 5),
+            (5, 2**5),
+            (3, None),
+        ),
+    )
+    def test_resource_rep(self, num_x_wires, mod):
+        """Test the resource_rep method of the class."""
+        op = qre.Adder(num_x_wires, mod)
+        
+        if mod is None:
+            mod = 2**num_x_wires
+        expected = qre.CompressedResourceOp(
+            qre.Adder, 
+            num_x_wires,
+            params={"num_x_wires": num_x_wires, "mod": mod}
+        )
+
+        assert op.resource_rep_from_op() == expected
+
+    @pytest.mark.parametrize(
+        "op, expected_decomp",
+        (
+            (
+                qre.Adder(num_x_wires=5, mod=2),
+                [
+                    Allocate(2),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.QFT.resource_rep(num_wires=5+1),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                cmpr_factors_and_counts=(
+                                    (qre.PhaseShift.resource_rep(), 5 + 1),
+                                    (qre.PhaseShift.resource_rep(), 5 + 1),
+                                    (
+                                        qre.ChangeOpBasis.resource_rep(
+                                            cmpr_compute_op=qre.QFT.resource_rep(5 + 1),
+                                            cmpr_target_op=qre.CNOT.resource_rep(),
+                                            num_wires=5+2,
+                                        ),
+                                        1,
+                                    ),
+                                    (
+                                        qre.Controlled.resource_rep(
+                                            base_cmpr_op = qre.Prod.resource_rep(
+                                                ((qre.PhaseShift.resource_rep(), 5 + 1),),
+                                                5 + 1,
+                                            ),
+                                            num_ctrl_wires = 1,
+                                            num_zero_ctrl = 0,
+                                        ),
+                                        1
+                                    ),
+                                    (
+                                        qre.ChangeOpBasis.resource_rep(
+                                            cmpr_compute_op=qre.Adjoint.resource_rep(
+                                                qre.Prod.resource_rep(
+                                                    (
+                                                        (qre.QFT.resource_rep(5 + 1), 1),
+                                                        (qre.PhaseShift.resource_rep(), 5 + 1),
+                                                    ),
+                                                    num_wires = 5 + 1,
+                                                )
+                                            ),
+                                            cmpr_target_op=qre.Controlled.resource_rep(
+                                                qre.X.resource_rep(), 1, 1
+                                            ),
+                                            num_wires=5+2,
+                                        ),
+                                        1,
+                                    ),
+                                ),
+                                num_wires=5 + 2,
+                            ),
+                            num_wires=5 + 2,
+                        )
+                    ),
+                    Deallocate(2),
+                ],
+            ),
+            (
+                qre.Adder(num_x_wires=7, mod=31),
+                [
+                    Allocate(2),
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.QFT.resource_rep(num_wires=7+1),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                cmpr_factors_and_counts=(
+                                    (qre.PhaseShift.resource_rep(), 7 + 1),
+                                    (qre.PhaseShift.resource_rep(), 7 + 1),
+                                    (
+                                        qre.ChangeOpBasis.resource_rep(
+                                            cmpr_compute_op=qre.QFT.resource_rep(7 + 1),
+                                            cmpr_target_op=qre.CNOT.resource_rep(),
+                                            num_wires=7+2,
+                                        ),
+                                        1,
+                                    ),
+                                    (
+                                        qre.Controlled.resource_rep(
+                                            base_cmpr_op = qre.Prod.resource_rep(
+                                                ((qre.PhaseShift.resource_rep(), 7 + 1),),
+                                                7 + 1,
+                                            ),
+                                            num_ctrl_wires = 1,
+                                            num_zero_ctrl = 0,
+                                        ),
+                                        1
+                                    ),
+                                    (
+                                        qre.ChangeOpBasis.resource_rep(
+                                            cmpr_compute_op=qre.Adjoint.resource_rep(
+                                                qre.Prod.resource_rep(
+                                                    (
+                                                        (qre.QFT.resource_rep(7 + 1), 1),
+                                                        (qre.PhaseShift.resource_rep(), 7 + 1),
+                                                    ),
+                                                    num_wires = 7 + 1,
+                                                )
+                                            ),
+                                            cmpr_target_op=qre.Controlled.resource_rep(
+                                                qre.X.resource_rep(), 1, 1
+                                            ),
+                                            num_wires=7+2,
+                                        ),
+                                        1,
+                                    ),
+                                ),
+                                num_wires=7 + 2,
+                            ),
+                            num_wires=7 + 2,
+                        )
+                    ),
+                    Deallocate(2),
+                ],
+            ),
+            (
+                qre.Adder(num_x_wires=5, mod=32),
+                [
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.QFT.resource_rep(5),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 5),),
+                                5,
+                            ),
+                            num_wires=5,
+                        )
+                    ),
+                ],
+            ),
+            (
+                qre.Adder(num_x_wires=5, mod=None),
+                [
+                    GateCount(
+                        qre.ChangeOpBasis.resource_rep(
+                            cmpr_compute_op=qre.QFT.resource_rep(5),
+                            cmpr_target_op=qre.Prod.resource_rep(
+                                ((qre.PhaseShift.resource_rep(), 5),),
+                                5,
+                            ),
+                            num_wires=5,
+                        )
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, op, expected_decomp):
+        """Test that the resource_decomp produces the expected resources."""
+        assert op.resource_decomp(**op.resource_params) == expected_decomp
+    
+    @pytest.mark.parametrize("z", (1, 2, 3, 5))
+    @pytest.mark.parametrize(
+        "num_x_wires, mod",
+        (
+            (2, 1),
+            (7, 2),
+            (8, 5),
+            (5, 2**5),
+            (3, None),
+        ),
+    )
+    def test_pow_resources(self, num_x_wires, mod, z):
+        """Test the pow_resource_decomp works as expected."""
+        op = qre.Adder(num_x_wires, mod)
+        cmpr_op = op.resource_rep_from_op()
+        assert op.pow_resource_decomp(z, op.resource_params) == [GateCount(cmpr_op)]
+
+
+class TestResourceOutAdder:
+    """Test the OutAdder resource operator."""
+
+    def test_init(self):
+        """Test the init method of the class."""
+        pass
+
+    def test_resource_params(self):
+        """Test the resource_params property of the class."""
+        pass
+
+    def test_resource_rep(self):
+        """Test the resource_rep method of the class."""
+        pass
+
+    def test_resources(self):
+        """Test that the resource_decomp produces the expected resources."""
+        pass
+
+
+class TestResourceClassicalOutMultiplier:
+    """Test the ClassicalOutMultiplier resource operator."""
+
+    def test_init(self):
+        """Test the init method of the class."""
+        pass
+
+    def test_resource_params(self):
+        """Test the resource_params property of the class."""
+        pass
+
+    def test_resource_rep(self):
+        """Test the resource_rep method of the class."""
+        pass
+
+    def test_resources(self):
+        """Test that the resource_decomp produces the expected resources."""
+        pass
+    
+    def test_pow_resources(self):
+        """Test the pow_resource_decomp works as expected."""
+        pass
+
+
+class TestResourceMultiplier:
+    """Test the Multiplier resource operator."""
+
+    def test_init(self):
+        """Test the init method of the class."""
+        pass
+
+    def test_resource_params(self):
+        """Test the resource_params property of the class."""
+        pass
+
+    def test_resource_rep(self):
+        """Test the resource_rep method of the class."""
+        pass
+
+    def test_resources(self):
+        """Test that the resource_decomp produces the expected resources."""
+        pass
+    
+    def test_pow_resources(self):
+        """Test the pow_resource_decomp works as expected."""
+        pass
+
+
+class TestResourceModExp:
+    """Test the ModExp resource operator."""
+
+    def test_init(self):
+        """Test the init method of the class."""
+        pass
+
+    def test_resource_params(self):
+        """Test the resource_params property of the class."""
+        pass
+
+    def test_resource_rep(self):
+        """Test the resource_rep method of the class."""
+        pass
+
+    def test_resources(self):
+        """Test that the resource_decomp produces the expected resources."""
+        pass
+
+
 class TestResourceOutOfPlaceSquare:
     """Test the OutOfPlaceSquare class."""
 

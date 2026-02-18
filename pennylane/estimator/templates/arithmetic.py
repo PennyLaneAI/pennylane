@@ -81,8 +81,11 @@ class PhaseAdder(
     resource_keys = {"num_x_wires", "mod"}
 
     def __init__(self, num_x_wires, mod=None, wires=None):
-        self.mod = mod or 2**num_x_wires
+        self.mod = 2**num_x_wires if mod is None else mod
         self.num_x_wires = num_x_wires
+
+        if (self.mod > 2**num_x_wires) or (self.mod < 1):
+            raise ValueError(f"mod must take values inbetween (1, {2**num_x_wires}), got {mod}")
 
         self.num_wires = self.num_x_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -115,7 +118,7 @@ class PhaseAdder(
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        mod = mod or 2**num_x_wires
+        mod = 2**num_x_wires if mod is None else mod
         params = {"num_x_wires": num_x_wires, "mod": mod}
         return CompressedResourceOp(cls, num_x_wires, params)
 
@@ -139,7 +142,7 @@ class PhaseAdder(
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        mod = mod or 2**num_x_wires
+        mod = 2**num_x_wires if mod is None else mod
 
         phase_shift = qre.PhaseShift.resource_rep()
         if mod == 2**num_x_wires:
@@ -160,13 +163,13 @@ class PhaseAdder(
 
         prod_phase_shifts = Prod.resource_rep(
             cmpr_factors_and_counts=((phase_shift, num_x_wires + 1),),
-            num_wires=num_x_wires,
+            num_wires=num_x_wires + 1,
         )
         ctrl_sum_N = Controlled.resource_rep(prod_phase_shifts, 1, 0)
         gate_lst.append(GateCount(ctrl_sum_N))  # Ctrl-Sum(N)
 
         qft_sum_k = Prod.resource_rep(
-            cmpr_factors_and_counts=((qft, 1), (prod_phase_shifts, 1)),
+            cmpr_factors_and_counts=((qft, 1), (phase_shift, num_x_wires + 1)),
             num_wires=num_x_wires + 1,
         )
         zero_cnot = Controlled.resource_rep(
@@ -181,7 +184,7 @@ class PhaseAdder(
         )
 
         gate_lst.append(  # Sum(-k) QFT^dagger CNOT QFT Sum(k)
-            GateCount(qre.Adjoint.resource_rep(change_op_basis_qft_sum_k_cnot))
+            GateCount(change_op_basis_qft_sum_k_cnot)
         )
         gate_lst.append(Deallocate(2))
         return gate_lst
@@ -207,7 +210,7 @@ class PhaseAdder(
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
 
-class Adder(ResourceOperator):  # Add_in(k, N): Inplace0 Quantum-Classical Modular Adder
+class Adder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Modular Adder
     r"""Resource class for the inplace quantum-classical modular Adder gate.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -249,8 +252,11 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace0 Quantum-Classical Modul
     resource_keys = {"num_x_wires", "mod"}
 
     def __init__(self, num_x_wires, mod=None, wires=None):
-        self.mod = mod or 2**num_x_wires
+        self.mod = 2**num_x_wires if mod is None else mod
         self.num_x_wires = num_x_wires
+        
+        if (self.mod > 2**num_x_wires) or (self.mod < 1):
+            raise ValueError(f"mod must take values inbetween (1, {2**num_x_wires}), got {mod}")
 
         self.num_wires = self.num_x_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -283,7 +289,7 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace0 Quantum-Classical Modul
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        mod = mod or 2**num_x_wires
+        mod = 2**num_x_wires if mod is None else mod
         params = {"num_x_wires": num_x_wires, "mod": mod}
         return CompressedResourceOp(cls, num_x_wires, params)
 
@@ -307,7 +313,7 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace0 Quantum-Classical Modul
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        mod = mod or 2**num_x_wires
+        mod = 2**num_x_wires if mod is None else mod
 
         phase_shift = qre.PhaseShift.resource_rep()
         if mod == 2**num_x_wires:
@@ -330,10 +336,11 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace0 Quantum-Classical Modul
         qft_n_plus_one = qre.QFT.resource_rep(num_x_wires + 1)
         prod_phase_shifts_n_plus_one = Prod.resource_rep(
             cmpr_factors_and_counts=((phase_shift, num_x_wires + 1),),
-            num_wires=num_x_wires,
+            num_wires=num_x_wires + 1,
         )
-        (sum_k, sum_N) = (prod_phase_shifts_n_plus_one, prod_phase_shifts_n_plus_one)
-        ctrl_sum_N = Controlled.resource_rep(sum_N, 1, 0)
+        ctrl_sum_N = Controlled.resource_rep(
+            prod_phase_shifts_n_plus_one, 1, 0,
+        )
 
         qft_cnot_qft_dag = ChangeOpBasis.resource_rep(
             cmpr_compute_op=qft_n_plus_one,
@@ -342,7 +349,7 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace0 Quantum-Classical Modul
         )
 
         qft_sum_k = Prod.resource_rep(
-            cmpr_factors_and_counts=((qft_n_plus_one, 1), (sum_k, 1)),
+            cmpr_factors_and_counts=((qft_n_plus_one, 1), (phase_shift, num_x_wires + 1)),
             num_wires=num_x_wires + 1,
         )
         zero_cnot = Controlled.resource_rep(
@@ -359,9 +366,9 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace0 Quantum-Classical Modul
 
         target_circ = Prod.resource_rep(
             cmpr_factors_and_counts=(
-                (sum_k, 1),
-                (qre.Adjoint.resource_rep(sum_N), 1),
-                (qre.Adjoint.resource_rep(qft_cnot_qft_dag), 1),
+                (phase_shift, num_x_wires + 1),
+                (phase_shift, num_x_wires + 1),
+                (qft_cnot_qft_dag, 1),
                 (ctrl_sum_N, 1),
                 (change_op_basis_qft_sum_k_cnot, 1),
             ),
@@ -443,10 +450,13 @@ class OutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantum Mo
     resource_keys = {"num_x_wires", "num_y_wires", "num_output_wires", "mod"}
 
     def __init__(self, num_x_wires, num_y_wires, num_output_wires, mod=None, wires=None):
-        self.mod = mod or 2**num_output_wires
+        self.mod = 2**num_output_wires if mod is None else mod
         self.num_x_wires = num_x_wires
         self.num_y_wires = num_y_wires
         self.num_output_wires = num_output_wires
+
+        if (self.mod > 2**num_output_wires) or (self.mod < 1):
+            raise ValueError(f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}")
 
         self.num_wires = num_x_wires + num_y_wires + num_output_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -490,7 +500,7 @@ class OutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantum Mo
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        mod = mod or 2**num_output_wires
+        mod = 2**num_output_wires if mod is None else mod
         params = {
             "num_output_wires": num_output_wires,
             "num_x_wires": num_x_wires,
@@ -523,7 +533,7 @@ class OutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantum Mo
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        mod = mod or 2**num_output_wires
+        mod = 2**num_output_wires if mod is None else mod
         phase_add = PhaseAdder.resource_rep(num_output_wires, mod)
         ctrl_adder = qre.Controlled.resource_rep(phase_add, 1, 0)
 
@@ -770,11 +780,12 @@ class ClassicalOutMultiplier(
     resource_keys = {"num_x_wires", "num_output_wires", "mod"}
 
     def __init__(self, num_x_wires, num_output_wires, mod=None, wires=None):
-        min_mod_wires = ceil_log2(mod)  # add error about this
-
-        self.mod = mod or 2**num_output_wires
+        self.mod = 2**num_output_wires if mod is None else mod
         self.num_x_wires = num_x_wires
         self.num_output_wires = num_output_wires
+
+        if (self.mod > 2**num_output_wires) or (self.mod < 1):
+            raise ValueError(f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}")
 
         self.num_wires = num_x_wires + num_output_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -813,7 +824,7 @@ class ClassicalOutMultiplier(
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        mod = mod or 2**num_output_wires
+        mod = 2**num_output_wires if mod is None else mod
         params = {"mod": mod, "num_x_wires": num_x_wires, "num_output_wires": num_output_wires}
         return CompressedResourceOp(cls, num_x_wires + num_output_wires, params)
 
@@ -838,7 +849,7 @@ class ClassicalOutMultiplier(
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        mod = mod or 2**num_output_wires
+        mod = 2**num_output_wires if mod is None else mod
         base_adder = Adder.resource_rep(num_output_wires, mod)
         ctrl_adder = qre.Controlled.resource_rep(
             base_cmpr_op=base_adder,
@@ -909,10 +920,13 @@ class Multiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classical 
 
     resource_keys = {"num_x_wires", "mod"}
 
-    def __init__(self, num_x_wires, mod, wires=None):
-        min_mod_wires = ceil_log2(mod)  # add error about this
-        self.mod = mod
+    def __init__(self, num_x_wires, mod=None, wires=None):
+        self.mod = 2**num_x_wires if mod is None else mod
         self.num_x_wires = num_x_wires
+
+        if (self.mod > 2**num_x_wires) or (self.mod < 1):
+            raise ValueError(f"mod must take values inbetween (1, {2**num_x_wires}), got {mod}")
+
 
         self.num_wires = num_x_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -933,7 +947,7 @@ class Multiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classical 
         return {"mod": self.mod, "num_x_wires": self.num_x_wires}
 
     @classmethod
-    def resource_rep(cls, num_x_wires, mod) -> CompressedResourceOp:
+    def resource_rep(cls, num_x_wires, mod=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -945,11 +959,12 @@ class Multiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classical 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        mod = 2**num_x_wires if mod is None else mod
         params = {"mod": mod, "num_x_wires": num_x_wires}
         return CompressedResourceOp(cls, num_x_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_x_wires, mod) -> list[GateCount]:
+    def resource_decomp(cls, num_x_wires, mod=None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -968,6 +983,7 @@ class Multiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classical 
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
+        mod = 2**num_x_wires if mod is None else mod
         gate_lst = []
         gate_lst.append(qre.Allocate(num_x_wires))
 
@@ -1154,9 +1170,12 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
     resource_keys = {"num_x_wires", "num_output_wires", "mod"}
 
     def __init__(self, num_x_wires, num_output_wires, mod=None, wires=None):
-        self.mod = mod or 2**num_output_wires
+        self.mod = 2**num_output_wires if mod is None else mod
         self.num_x_wires = num_x_wires
         self.num_output_wires = num_output_wires
+
+        if (self.mod > 2**num_output_wires) or (self.mod < 1):
+            raise ValueError(f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}")
 
         self.num_wires = num_x_wires + num_output_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -1195,7 +1214,7 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
-        mod = mod or 2**num_output_wires
+        mod = 2**num_output_wires if mod is None else mod
         params = {"num_x_wires": num_x_wires, "num_output_wires": num_output_wires, "mod": mod}
         return CompressedResourceOp(cls, num_x_wires + num_output_wires, params)
 
@@ -1220,7 +1239,7 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        mod = mod or 2**num_output_wires
+        mod = 2**num_output_wires if mod is None else mod
         mult_in = Multiplier.resource_rep(num_output_wires, mod)
         ctrl_mult = qre.Controlled.resource_rep(mult_in, 1, 0)
         return [GateCount(ctrl_mult, num_x_wires)]
