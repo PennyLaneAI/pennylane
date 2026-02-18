@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -63,6 +63,16 @@ def test_mid_measure_deprecations():
 
 class NotValidMeasurement(MeasurementProcess):
     _shortname = "NotValidReturnType"
+
+
+def test_id_deprecation():
+    """Tests that using 'id' is deprecated."""
+
+    class DummyMP(MeasurementProcess):
+        """Dummy measurement process with no return type."""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = DummyMP(wires=qml.wires.Wires(0), id="something")
 
 
 def test_no_measure():
