@@ -108,7 +108,9 @@ def _align_torch_interfaces(params, state0, state1, state_interface, param_inter
     return params, state0, state1
 
 
-def _prepare_batched_params(params, state, state0, state1, axis, n_dim, is_state_batched):
+def _prepare_batched_params(  # pylint: disable=too-many-arguments
+    params, state, state0, state1, axis, n_dim, is_state_batched
+):
     """Prepare parameters and state slices for batched parametric operations.
 
     Args:
