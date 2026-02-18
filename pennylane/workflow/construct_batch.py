@@ -15,10 +15,12 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core import CompilePipeline
 
 from ._setup_transform_program import _setup_transform_program
@@ -161,6 +163,11 @@ def get_transform_program(
     gradient_fn="unset",
 ) -> CompilePipeline:
     """Extract a transform program at a designated level.
+
+    .. warning::
+
+        This function is deprecated and will be removed in v0.46. To retrieve the execution
+        pipeline of a QNode, please use :func:`~.workflow.get_compile_pipeline`.
 
     Args:
         qnode (QNode): the qnode to get the transform program for.
@@ -306,6 +313,13 @@ def get_transform_program(
         )
 
     """
+    warnings.warn(
+        "This function is deprecated and will be removed in v0.46. "
+        "To retrieve the execution pipeline of a QNode, please consider using "
+        "'pennylane.workflow.get_compile_pipeline'.",
+        PennyLaneDeprecationWarning,
+    )
+
     _validate_level(level)
     if gradient_fn == "unset":
         config = qml.workflow.construct_execution_config(qnode, resolve=False)()
