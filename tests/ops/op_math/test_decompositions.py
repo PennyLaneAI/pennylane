@@ -1595,6 +1595,7 @@ class TestQubitUnitaryDecompositionGraph:
             (qml.matrix(qml.QFT, wire_order=range(2))(range(2)), 2),
             (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [2, 0])), 2),
             (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
+            (qml.matrix(qml.QFT, wire_order=range(5))(range(5)), 5),
             (qml.GroverOperator.compute_matrix(6, []), 6),
         ],
     )
