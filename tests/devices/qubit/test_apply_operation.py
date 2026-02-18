@@ -1697,8 +1697,8 @@ class TestNumpyFastPathAutograd:
 
     @pytest.mark.jax
     def test_rx_jax_param_numpy_state(self):
-        """Test that _is_numpy_only correctly rejects JAX scalar params
-        on a numpy state, and the result is still correct."""
+        """Test that RX with JAX scalar params on a numpy state
+        correctly falls through to the non-numpy path."""
         import jax
 
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
@@ -1711,9 +1711,9 @@ class TestNumpyFastPathAutograd:
         assert qml.math.allclose(result, expected, atol=1e-7)
 
     @pytest.mark.jax
-    def test_default_fastpath_skips_jax_params(self):
-        """Test that _apply_operation_default does not use numpy fast path
-        when op parameters are JAX arrays, even if state is numpy."""
+    def test_default_handles_jax_params(self):
+        """Test that _apply_operation_default correctly handles JAX params
+        on a numpy state via the einsum path."""
         import jax
 
         from pennylane.devices.qubit.apply_operation import _apply_operation_default
@@ -1864,6 +1864,68 @@ class TestNumpyFastPathCorrectness:
         result_h = apply_operation(op_h, state)
         expected_h = apply_operation_tensordot(op_h, state)
         assert qml.math.allclose(result_h, expected_h)
+
+
+class TestStateBatchedKernels:
+    """Test specialized kernels with is_state_batched=True (batch of states, unbatched op)."""
+
+    def test_rx_state_batched(self):
+        """Test RX kernel with a batch of 3 states."""
+        state = np.random.randn(3, 2, 2).astype(complex)
+        state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
+        op = qml.RX(0.5, wires=0)
+        result = apply_operation(op, state, is_state_batched=True)
+        expected = apply_operation_einsum(op, state, is_state_batched=True)
+        assert qml.math.allclose(result, expected)
+
+    def test_ry_state_batched(self):
+        """Test RY kernel with a batch of 3 states."""
+        state = np.random.randn(3, 2, 2).astype(complex)
+        state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
+        op = qml.RY(0.5, wires=1)
+        result = apply_operation(op, state, is_state_batched=True)
+        expected = apply_operation_einsum(op, state, is_state_batched=True)
+        assert qml.math.allclose(result, expected)
+
+    def test_rz_state_batched(self):
+        """Test RZ kernel with a batch of 3 states."""
+        state = np.random.randn(3, 2, 2).astype(complex)
+        state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
+        op = qml.RZ(0.5, wires=0)
+        result = apply_operation(op, state, is_state_batched=True)
+        expected = apply_operation_einsum(op, state, is_state_batched=True)
+        assert qml.math.allclose(result, expected)
+
+    def test_hadamard_state_batched(self):
+        """Test Hadamard kernel with a batch of 3 states."""
+        state = np.random.randn(3, 2, 2).astype(complex)
+        state /= np.linalg.norm(state, axis=(1, 2), keepdims=True)
+        op = qml.Hadamard(wires=1)
+        result = apply_operation(op, state, is_state_batched=True)
+        expected = apply_operation_einsum(op, state, is_state_batched=True)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.torch
+    def test_rx_state_batched_torch(self):
+        """Test RX kernel with batched torch state."""
+        import torch
+
+        state_np = np.random.randn(3, 2, 2).astype(complex)
+        state = torch.tensor(state_np, dtype=torch.complex128)
+        op = qml.RX(0.5, wires=0)
+        result = apply_operation(op, state, is_state_batched=True)
+        expected = apply_operation_einsum(op, state, is_state_batched=True)
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.autograd
+    def test_rz_state_batched_autograd(self):
+        """Test RZ kernel with batched autograd state."""
+        state_np = np.random.randn(3, 2, 2).astype(complex)
+        state = qml.numpy.array(state_np, requires_grad=False)
+        op = qml.RZ(0.5, wires=1)
+        result = apply_operation(op, state, is_state_batched=True)
+        expected = apply_operation_einsum(op, state, is_state_batched=True)
+        assert qml.math.allclose(result, expected)
 
 
 class TestBatchedStateKernels:
