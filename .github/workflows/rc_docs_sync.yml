@@ -1,0 +1,88 @@
+# This workflow will sync changes in the release candidate branch to master during a
+# feature freeze. The action is run daily and will only create a pull request when
+# there exists a release candidate branch corresponding to the current package version
+# as declared in pennylane/_version.py, that is if the branch "v0.23.0-rc0" exists while
+# the package version is "v0.24.0-dev".
+
+name: Sync release docs with release candidate 
+
+# Controls when the workflow will run
+on:
+  # Scheduled trigger every weekday at 2:47am UTC
+  schedule:
+  - cron:  '47 3 * * 1-5'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job to sync the master branch with changes from the rc
+  sync:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out the PennyLane repository
+      - uses: actions/checkout@v3
+        with:
+          ref: master
+
+      # Sets up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Ensure setuptools is up-to-date for pyproject.toml processing
+      - name: Install latest setuptools 
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools
+
+      # Check for the existence of an rc branch for the current PennyLane version
+      - name: Check for rc branch
+        run: |
+          VERSION=$(python setup.py --version)
+          IFS=. read MAJ MIN PAT <<< "${VERSION%-dev[0-9]*}"
+          RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
+          DOCS_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-docs"
+          if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
+            echo "branch_exists=true" >> $GITHUB_ENV
+            echo "rc_branch=$RC_BRANCH" >> $GITHUB_ENV
+            echo "docs_branch=$DOCS_BRANCH" >> $GITHUB_ENV
+          else
+            echo "branch_exists=false" >> $GITHUB_ENV
+          fi
+          echo "new_changes=false" >> $GITHUB_ENV
+
+      # Create a new branch at from the current rc to be used in the PR
+      - name: Create temp branch
+        if: ${{ env.branch_exists == 'true' }}
+        run: |
+          git fetch
+          git checkout "${{ env.docs_branch }}"
+          BRANCH="docs-rc_$(date +'%Y-%m-%d-%H-%M-%S')"
+          echo "tmp_branch=$BRANCH" >> $GITHUB_ENV
+          git checkout -b "$BRANCH"
+          # Exclude some files known to be divergent during the release process from the PR
+          git checkout ${{ env.rc_branch }} -- pennylane/_version.py
+          git checkout ${{ env.rc_branch }} -- doc/development/release_notes.md
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git commit -m "exclude files from pr"
+          # check for new changes on the rc branch only, based on the diff between master and rc
+          if ! git diff ${{ env.rc_branch }} HEAD --quiet -- $(git diff --name-only ${{ env.rc_branch }}...HEAD); then
+            echo "new_changes=true" >> $GITHUB_ENV
+            git push --set-upstream origin "$BRANCH"
+          fi
+
+      # Create PR to master
+      - name: Create pull request
+        if: ${{ env.new_changes == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git checkout ${{ env.tmp_branch }}
+          gh pr create --base ${{ env.rc_branch }} --title "Daily docs rc sync to rc" --body "" 
