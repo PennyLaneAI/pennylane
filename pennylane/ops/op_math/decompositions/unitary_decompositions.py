@@ -259,7 +259,7 @@ def multi_qubit_decomposition(U, wires):
 
     .. code-block:: pycon
 
-        >>> matrix_target = qml.matrix(qml.AQFT(10, [0,1,2]))
+        >>> matrix_target = qml.matrix(qml.QFT, wire_order=[0,1,2])([0,1,2])
         >>> ops = qml.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
         >>> matrix_decomposition = qml.matrix(qml.prod(*ops[::-1]), wire_order = [0,1,2])
         >>> print([op.name for op in ops])
