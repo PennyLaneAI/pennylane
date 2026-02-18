@@ -3247,11 +3247,15 @@ class TestCompareSubroutines:
         op1 = LabelledOp(base, "my-base")
         op2 = LabelledOp(base, "my-base")
         op3 = LabelledOp(qml.PauliX(15), "my-base")
+        op4 = LabelledOp(base, "blah")
 
         assert qml.equal(op1, op2) is True
         assert qml.equal(op1, op3) is False
         with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
             assert_equal(op1, op3)
+        assert qml.equal(op1, op4) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different custom labels"):
+            assert_equal(op1, op4)
 
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_marked_op_comparison(self, base):
@@ -3259,8 +3263,12 @@ class TestCompareSubroutines:
         op1 = MarkedOp(base, "my-base")
         op2 = MarkedOp(base, "my-base")
         op3 = MarkedOp(qml.PauliX(15), "my-base")
+        op4 = MarkedOp(base, "blah")
 
         assert qml.equal(op1, op2) is True
         assert qml.equal(op1, op3) is False
         with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
             assert_equal(op1, op3)
+        assert qml.equal(op1, op4) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different markers"):
+            assert_equal(op1, op4)
