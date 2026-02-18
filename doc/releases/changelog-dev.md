@@ -75,6 +75,10 @@
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
+* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
+  compile pipeline of a given QNode at a specific level.
+  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  
 * Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
