@@ -72,10 +72,11 @@ def get_compile_pipeline(
     qnode: QNode,
     level: str | int | slice = "device",
 ) -> Callable[P, CompilePipeline]:
-    """Retrieve the compile pipeline used during execution of a QNode at a designated level.
+    """Return a callable that, when invoked with the same arguments as the ``qnode``, produces the compilation pipeline
+    at the designated level.
 
     Args:
-        qnode (QNode): The QNode to get the compile pipeline for.
+        qnode (:class:`~.QNode`): The QNode to get the compilation pipeline for.
         level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline. Defaults to ``"device"``.
 
             - ``"top"``: Returns an empty pipeline representing the initial stage before any transformations are applied.
@@ -87,7 +88,7 @@ def get_compile_pipeline(
             - ``slice``: Extract a specific range of transformations using standard 0-based Pythonic indexing (e.g. ``level=slice(1, 4)`` retrieves the second to the fourth transformations).
 
     Returns:
-        CompilePipeline: the compile pipeline corresponding to the requested level.
+        Callable: A function with the same signature as ``qnode``. Calling it with the QNode's arguments will return the :class:`~.CompilePipeline` corresponding to the requested level.
 
     **Example:**
 
