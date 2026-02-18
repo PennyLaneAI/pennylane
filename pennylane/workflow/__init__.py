@@ -44,7 +44,8 @@ Jacobian Product Calculation
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
-from .construct_batch import construct_batch, get_transform_program, marker
+from .construct_batch import construct_batch, get_transform_program
+from .marker import marker
 from .construct_tape import construct_tape
 from .construct_execution_config import construct_execution_config
 from .execution import execute

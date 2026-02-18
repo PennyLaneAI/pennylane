@@ -138,6 +138,33 @@ class TestDecomposeInterpreter:
         assert jaxpr.eqns[2].primitive == qml.PhaseShift._primitive
         assert jaxpr.eqns[3].primitive == qml.PhaseShift._primitive
 
+    def test_subroutine(self):
+        """Test that decompose works when there is a subroutine in the circuit."""
+        interpreter = DecomposeInterpreter(gate_set=qml.gate_sets.ROTATIONS_PLUS_CNOT)
+
+        @qml.templates.Subroutine
+        def f(x, wires):
+            qml.IsingXX(x, wires)
+
+        @interpreter
+        def w(x):
+            f(x, (0, 1))
+            f(x, (1, 2))
+
+        jaxpr = jax.make_jaxpr(w)(0.5)
+
+        eqn1 = jaxpr.eqns[3]  # the first subroutine prim
+        eqn2 = jaxpr.eqns[7]  # the second subroutine prim
+
+        for eqn in [eqn1, eqn2]:
+            assert eqn.primitive == qml.capture.primitives.quantum_subroutine_prim
+            j = eqn.params["jaxpr"]
+            assert j.eqns[4].primitive == qml.CNOT._primitive
+            assert j.eqns[5].primitive == qml.RX._primitive
+            assert j.eqns[6].primitive == qml.CNOT._primitive
+
+        assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
+
     @pytest.mark.parametrize("decompose", [True, False])
     def test_decompose_sum(self, decompose, recwarn):
         """Test that a function containing `Sum` can be decomposed correctly."""
