@@ -91,8 +91,6 @@ def get_compile_pipeline(
 
     **Example:**
 
-    Consider this simple circuit,
-
     .. code-block:: python
 
         from pennylane.workflow import get_compile_pipeline
@@ -109,8 +107,6 @@ def get_compile_pipeline(
             qml.RX(1, wires=0)
             return qml.expval(qml.Z(0))
 
-    We can retrieve the compile pipeline used during execution with,
-
     >>> print(get_compile_pipeline(circuit)()) # or level="device"
     CompilePipeline(
       [1] cancel_inverses(),
@@ -123,15 +119,6 @@ def get_compile_pipeline(
       [8] _conditional_broadcast_expand(),
       [9] no_sampling(name=backprop + default.qubit)
     )
-
-    or use the ``level`` argument to inspect specific stages of the pipeline.
-
-    >>> print(get_compile_pipeline(circuit, level="user")())
-    CompilePipeline(
-      [1] cancel_inverses(),
-      [2] merge_rotations()
-    )
-
     .. details::
         :title: Usage Details
 
