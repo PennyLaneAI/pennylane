@@ -72,7 +72,7 @@ def get_compile_pipeline(
     qnode: QNode,
     level: str | int | slice = "device",
 ) -> Callable[P, CompilePipeline]:
-    """Return a callable that, when invoked with the same arguments as the ``qnode``, produces the compilation pipeline
+    """Return a function that, when invoked with the same arguments as the ``qnode``, produces the compilation pipeline
     at the designated level.
 
     Args:
@@ -88,7 +88,7 @@ def get_compile_pipeline(
             - ``slice``: Extract a specific range of transformations using standard 0-based Pythonic indexing (e.g. ``level=slice(1, 4)`` retrieves the second to the fourth transformations).
 
     Returns:
-        Callable: A function with the same signature as ``qnode``. Calling it with the QNode's arguments will return the :class:`~.CompilePipeline` corresponding to the requested level.
+        Callable: A function with the same signature as ``qnode``. When called, the function will return the :class:`~.CompilePipeline` corresponding to the requested level.
 
     **Example:**
 
