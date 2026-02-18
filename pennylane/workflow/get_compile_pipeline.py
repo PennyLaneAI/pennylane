@@ -174,6 +174,9 @@ def get_compile_pipeline(
         )
 
         The ``"gradient"`` level builds on top of this to then add any relevant gradient transforms,
+        which in this case corresponds to ``_expand_transform_param_shift``. This is a transform that expands all trainable operations
+        to a state where the parameter shift transform can operate on them. For example, it will decompose any
+        parametrized templates into operators that have generators.
 
         >>> print(get_compile_pipeline(circuit, level="gradient")(3.14))
         CompilePipeline(
