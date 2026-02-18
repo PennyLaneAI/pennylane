@@ -123,7 +123,8 @@ def get_compile_pipeline(
         :title: Usage Details
 
         Consider the circuit below which has three user applied transforms (i.e. :func:`~.cancel_inverses`,
-        :func:`~.merge_rotations`, and :func:`~.metric_tensor`), a ``"checkpoint"`` marker, and uses the parameter-shift gradient method.
+        :func:`~.merge_rotations`, and :func:`~.metric_tensor`), a ``"checkpoint"`` marker, and uses
+        the parameter-shift gradient method.
 
         .. code-block:: python
 
@@ -141,8 +142,8 @@ def get_compile_pipeline(
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
-        By default, without specifying a ``level`` we will get the full compile pipeline that is used during execution on this device.
-        Note that this can also be retrieved by manually specifying ``level="device"``,
+        By default, without specifying a ``level`` we will get the full compile pipeline that is used
+        during execution on this device. Note that this can also be retrieved by manually specifying ``level="device"``,
 
         >>> print(get_compile_pipeline(circuit)(3.14)) # or level="device"
         CompilePipeline(
@@ -160,7 +161,8 @@ def get_compile_pipeline(
           [11] _conditional_broadcast_expand()
         )
 
-        As can be seen above, this not only includes the two transforms we manually applied, but also a set of transforms used by the device in order to execute the circuit.
+        As can be seen above, this not only includes the two transforms we manually applied, but also a set of transforms
+        used by the device in order to execute the circuit.
 
         The ``"user"`` level will retrieve the portion of the compile pipeline that was manually applied to the qnode,
 
@@ -174,9 +176,9 @@ def get_compile_pipeline(
         )
 
         The ``"gradient"`` level builds on top of this to then add any relevant gradient transforms,
-        which in this case corresponds to ``_expand_transform_param_shift``. This is a transform that expands all trainable operations
-        to a state where the parameter shift transform can operate on them. For example, it will decompose any
-        parametrized templates into operators that have generators.
+        which in this case corresponds to ``_expand_transform_param_shift``. This is a transform that
+        expands all trainable operations to a state where the parameter shift transform can operate on them.
+        For example, it will decompose any parametrized templates into operators that have generators.
 
         >>> print(get_compile_pipeline(circuit, level="gradient")(3.14))
         CompilePipeline(
@@ -213,7 +215,8 @@ def get_compile_pipeline(
           [3] _expand_metric_tensor(device_wires=None)
         )
 
-        Slice levels enable you to extract a specific range of transformations in the compile pipeline. For example, we can retrieve the second to fourth transform by using a slice,
+        Slice levels enable you to extract a specific range of transformations in the compile pipeline.
+        For example, we can retrieve the second to fourth transform by using a slice,
 
         >>> print(get_compile_pipeline(circuit, level=slice(1,4))(3.14))
         CompilePipeline(
