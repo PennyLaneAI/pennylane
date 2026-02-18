@@ -314,7 +314,7 @@ def get_transform_program(
 
     """
     warnings.warn(
-        "This function is deprecated and will be removed in v0.46. "
+        "The 'get_transform_program' function is deprecated and will be removed in v0.46. "
         "To retrieve the execution pipeline of a QNode, please consider using "
         "'pennylane.workflow.get_compile_pipeline'.",
         PennyLaneDeprecationWarning,

@@ -16,11 +16,14 @@ Contains tests for the `qml.workflow.get_transform_program` getter and `construc
 
 """
 
+import warnings
+
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core import BoundTransform, CompilePipeline
 from pennylane.workflow import construct_batch, get_transform_program
 
@@ -94,6 +97,32 @@ class TestMarker:
         assert qml.math.allclose(res, np.cos(0.5))
 
 
+@pytest.fixture
+def ignore_get_transform_program_deprecation():
+    """Fixture to suppress PennyLaneDeprecationWarning for 'get_transform_program' tests."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=PennyLaneDeprecationWarning,
+            message="The 'get_transform_program' function is deprecated",
+        )
+        yield
+
+
+def test_get_transform_program_is_deprecated():
+    """Tests that the 'get_transform_program' function is deprecated."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        return qml.state()
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'get_transform_program' function is deprecated"
+    ):
+        get_transform_program(circuit)
+
+
+@pytest.mark.usefixtures("ignore_get_transform_program_deprecation")
 class TestCompilePipelineGetter:
     def test_bad_string_key(self):
         """Test a value error is raised if a bad string key is provided."""
