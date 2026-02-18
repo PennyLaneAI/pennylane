@@ -49,7 +49,7 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(len(val))
+            key.append(ShapedArray(shape=(len(val),), dtype=int))
         else:
             leaves, struct = flatten(val)
 
@@ -175,8 +175,12 @@ class SubroutineOp(Operation):
             wires.extend(reg_wires)
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
-        data = tuple(flatten(dynamic_args)[0])
+        data = flatten(dynamic_args)[0]
         super().__init__(*data, wires=wires, id=id)
+
+        self._hyperparameters = {
+            "decomposition": tuple(decomposition),
+        }
         self.name = subroutine.name
 
     @property
@@ -215,6 +219,13 @@ class SubroutineOp(Operation):
 def _calculate_resources(subroutine: "Subroutine", signature_key):
     return subroutine.compute_resources(*signature_key)
 
+
+@register_resources(_calculate_resources)
+def _Subroutine_decomp(*data, wires, decomposition):
+    _ = [queuing.apply(op) for op in decomposition]
+
+
+add_decomps(SubroutineOp, _Subroutine_decomp)
 
 P = ParamSpec("P")
 
