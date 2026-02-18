@@ -218,7 +218,7 @@ def get_compile_pipeline(
 
         Slice levels enable you to extract a specific range of transformations in the compile pipeline.
         Note that they follow standard Pythonic indexing meaning ``level=slice(1, 4)`` is from the second
-        to fourth transform (equivalent to ``level=[1, 2, 3]``):
+        to fourth transform (equivalent to ``level=[2, 3, 4]``):
 
         >>> print(get_compile_pipeline(circuit, level=slice(1,4))(3.14))
         CompilePipeline(
