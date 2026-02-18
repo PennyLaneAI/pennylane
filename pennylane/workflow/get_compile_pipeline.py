@@ -58,7 +58,7 @@ def _resolve_level(
     elif level == "gradient":
         level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
     elif level == "device":
-        # Captures everything: user + gradient + device + final
+        # Captures everything: user + gradient + device
         level = slice(0, None)
     elif isinstance(level, str):
         level = slice(0, _find_level(full_pipeline, level))
