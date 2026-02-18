@@ -609,10 +609,20 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
-@apply_operation.register
-def apply_rz(op: ops.RZ, state, is_state_batched: bool = False, debugger=None, **_):
-    """Apply RZ to state."""
+def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
+    """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
 
+    Args:
+        op (Operator): The rotation gate
+        state (tensor_like): Input quantum state
+        is_state_batched (bool): Whether the state has a leading batch dimension
+        compute_coeffs (callable): ``(params, lib) -> (a, b, c, d)`` returning the
+            four entries of the 2×2 matrix ``[[a, b], [c, d]]``. ``lib`` is either
+            the ``np`` or ``math`` module depending on the code path.
+
+    Returns:
+        tensor_like: output state
+    """
     n_dim = math.ndim(state)
     state_interface = math.get_interface(state)
 
@@ -629,149 +639,79 @@ def apply_rz(op: ops.RZ, state, is_state_batched: bool = False, debugger=None, *
     params = op.parameters[0]
     state0 = state[sl_0]
     state1 = state[sl_1]
+
     if op.batch_size is not None:
         params = math.cast(params, dtype=complex)
         params, state0, state1, axis = _prepare_batched_params(
             params, state, state0, state1, axis, n_dim, is_state_batched
         )
-        state0 = math.multiply(math.cast(state0, dtype=complex), math.exp(-0.5j * params))
-        state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(0.5j * params))
-        return math.stack([state0, state1], axis=axis)
+        a, b, c, d = compute_coeffs(params, math)
+        state0 = math.cast(state0, dtype=complex)
+        state1 = math.cast(state1, dtype=complex)
+        new0 = math.multiply(state0, a) + math.multiply(state1, b)
+        new1 = math.multiply(state0, c) + math.multiply(state1, d)
+        return math.stack([new0, new1], axis=axis)
+
     param_interface = math.get_interface(params)
     if state_interface == "numpy" and param_interface == "numpy":
         p = np.asarray(params, dtype=np.complex128)
-        e = np.exp(-0.5j * p)
+        a, b, c, d = compute_coeffs(p, np)
         if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
-            return np.stack([np.multiply(state0, e), np.multiply(state1, np.conj(e))], axis=axis)
-        mat = np.array([[e, 0], [0, np.conj(e)]])
+            return np.stack(
+                [
+                    np.multiply(state0, a) + np.multiply(state1, b),
+                    np.multiply(state0, c) + np.multiply(state1, d),
+                ],
+                axis=axis,
+            )
+        mat = np.array([[a, b], [c, d]], dtype=np.complex128)
         return _apply_single_qubit_np(mat, state, axis)
+
     params = math.cast(params, dtype=complex)
     params, state0, state1 = _align_torch_interfaces(
         params, state0, state1, state_interface, param_interface
     )
-    state0 = math.multiply(math.cast(state0, dtype=complex), math.exp(-0.5j * params))
-    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(0.5j * params))
-    return math.stack([state0, state1], axis=axis)
+    a, b, c, d = compute_coeffs(params, math)
+    state0 = math.cast(state0, dtype=complex)
+    state1 = math.cast(state1, dtype=complex)
+    new0 = math.multiply(state0, a) + math.multiply(state1, b)
+    new1 = math.multiply(state0, c) + math.multiply(state1, d)
+    return math.stack([new0, new1], axis=axis)
+
+
+def _rz_coeffs(params, lib):
+    e = lib.exp(-0.5j * params)
+    return e, 0, 0, lib.conj(e)
+
+
+def _rx_coeffs(params, lib):
+    c = lib.cos(params / 2)
+    js = -1j * lib.sin(params / 2)
+    return c, js, js, c
+
+
+def _ry_coeffs(params, lib):
+    c = lib.cos(params / 2)
+    s = lib.sin(params / 2)
+    return c, -s, s, c
+
+
+@apply_operation.register
+def apply_rz(op: ops.RZ, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply RZ to state."""
+    return _apply_rotation_1q(op, state, is_state_batched, _rz_coeffs)
 
 
 @apply_operation.register
 def apply_rx(op: ops.RX, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply RX to state."""
-
-    n_dim = math.ndim(state)
-    state_interface = math.get_interface(state)
-
-    if (
-        n_dim >= 9 and state_interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    axis = op.wires[0] + is_state_batched
-
-    sl_0 = _get_slice(0, axis, n_dim)
-    sl_1 = _get_slice(1, axis, n_dim)
-
-    params = op.parameters[0]
-    state0 = state[sl_0]
-    state1 = state[sl_1]
-    if op.batch_size is not None:
-        params = math.cast(params, dtype=complex)
-        params, state0, state1, axis = _prepare_batched_params(
-            params, state, state0, state1, axis, n_dim, is_state_batched
-        )
-        cos = math.cos(params / 2)
-        isin = -1j * math.sin(params / 2)
-        state0 = math.cast(state0, dtype=complex)
-        state1 = math.cast(state1, dtype=complex)
-        new_state0 = math.multiply(state0, cos) + math.multiply(state1, isin)
-        new_state1 = math.multiply(state0, isin) + math.multiply(state1, cos)
-        return math.stack([new_state0, new_state1], axis=axis)
-    param_interface = math.get_interface(params)
-    if state_interface == "numpy" and param_interface == "numpy":
-        p = np.asarray(params, dtype=np.complex128)
-        c = np.cos(p / 2)
-        js = -1j * np.sin(p / 2)
-        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
-            return np.stack(
-                [
-                    np.multiply(state0, c) + np.multiply(state1, js),
-                    np.multiply(state0, js) + np.multiply(state1, c),
-                ],
-                axis=axis,
-            )
-        mat = np.array([[c, js], [js, c]])
-        return _apply_single_qubit_np(mat, state, axis)
-    params = math.cast(params, dtype=complex)
-    params, state0, state1 = _align_torch_interfaces(
-        params, state0, state1, state_interface, param_interface
-    )
-    cos = math.cos(params / 2)
-    isin = -1j * math.sin(params / 2)
-    state0 = math.cast(state0, dtype=complex)
-    state1 = math.cast(state1, dtype=complex)
-    new_state0 = math.multiply(state0, cos) + math.multiply(state1, isin)
-    new_state1 = math.multiply(state0, isin) + math.multiply(state1, cos)
-    return math.stack([new_state0, new_state1], axis=axis)
+    return _apply_rotation_1q(op, state, is_state_batched, _rx_coeffs)
 
 
 @apply_operation.register
 def apply_ry(op: ops.RY, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply RY to state."""
-
-    n_dim = math.ndim(state)
-    state_interface = math.get_interface(state)
-
-    if (
-        n_dim >= 9 and state_interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    axis = op.wires[0] + is_state_batched
-
-    sl_0 = _get_slice(0, axis, n_dim)
-    sl_1 = _get_slice(1, axis, n_dim)
-
-    params = op.parameters[0]
-    state0 = state[sl_0]
-    state1 = state[sl_1]
-    if op.batch_size is not None:
-        params = math.cast(params, dtype=complex)
-        params, state0, state1, axis = _prepare_batched_params(
-            params, state, state0, state1, axis, n_dim, is_state_batched
-        )
-        cos = math.cos(params / 2)
-        sin = math.sin(params / 2)
-        state0 = math.cast(state0, dtype=complex)
-        state1 = math.cast(state1, dtype=complex)
-        new_state0 = math.multiply(state0, cos) - math.multiply(state1, sin)
-        new_state1 = math.multiply(state0, sin) + math.multiply(state1, cos)
-        return math.stack([new_state0, new_state1], axis=axis)
-    param_interface = math.get_interface(params)
-    if state_interface == "numpy" and param_interface == "numpy":
-        p = np.asarray(params, dtype=np.complex128)
-        c = np.cos(p / 2)
-        s = np.sin(p / 2)
-        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
-            return np.stack(
-                [
-                    np.multiply(state0, c) - np.multiply(state1, s),
-                    np.multiply(state0, s) + np.multiply(state1, c),
-                ],
-                axis=axis,
-            )
-        mat = np.array([[c, -s], [s, c]], dtype=np.complex128)
-        return _apply_single_qubit_np(mat, state, axis)
-    params = math.cast(params, dtype=complex)
-    params, state0, state1 = _align_torch_interfaces(
-        params, state0, state1, state_interface, param_interface
-    )
-    cos = math.cos(params / 2)
-    sin = math.sin(params / 2)
-    state0 = math.cast(state0, dtype=complex)
-    state1 = math.cast(state1, dtype=complex)
-    new_state0 = math.multiply(state0, cos) - math.multiply(state1, sin)
-    new_state1 = math.multiply(state0, sin) + math.multiply(state1, cos)
-    return math.stack([new_state0, new_state1], axis=axis)
+    return _apply_rotation_1q(op, state, is_state_batched, _ry_coeffs)
 
 
 @apply_operation.register
