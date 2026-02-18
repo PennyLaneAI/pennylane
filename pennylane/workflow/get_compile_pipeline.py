@@ -79,10 +79,10 @@ def get_compile_pipeline(
         level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline.
 
             - ``"top"``: Returns an empty pipeline representing the initial stage before any transformations are applied.
-            - ``"user"``: Includes only manually applied user transformations.
-            - ``"gradient"``: Includes user transformations and any appended gradient-related passes.
+            - ``"user"``: Only includes transformations that are manually applied by the user.
+            - ``"gradient"``: Includes user-specified transformations and any appended gradient-related passes.
             - ``"device"``: The full pipeline (user + gradient + device) as prepared for device execution.
-            - ``str``: The name of the specific :func:`qml.marker` manually inserted into the pipeline.
+            - ``str``: Includes all transformations up to the name of a specific :func:`qml.marker` inserted into the pipeline.
             - ``int``: The number of transformations to include from the start of the pipeline (e.g. ``level=0`` is empty).
             - ``slice``: A subset of the full pipeline defined by a slice object.
 
