@@ -2038,7 +2038,10 @@ class TestMixedInterfaceParams:
 
     @pytest.mark.autograd
     def test_rx_autograd_state_numpy_param(self):
-        """Test RX with autograd state and plain numpy param."""
+        """Test RX with autograd state and plain numpy param.
+        This exercises the _align_torch_interfaces no-op path: interfaces
+        differ (autograd vs numpy) but neither is torch, so no conversion
+        is needed."""
         state = qml.numpy.array([1.0 + 0j, 0.0], requires_grad=False)
         op = qml.RX(0.5, wires=0)
         result = apply_operation(op, state)
@@ -2049,7 +2052,10 @@ class TestMixedInterfaceParams:
 
     @pytest.mark.autograd
     def test_ry_numpy_state_autograd_param(self):
-        """Test RY with numpy state and autograd param (gradient tracking)."""
+        """Test RY with numpy state and autograd param (gradient tracking).
+        This exercises the _align_torch_interfaces no-op path: interfaces
+        differ (numpy vs autograd) but neither is torch, so no conversion
+        is needed."""
         state = np.array([1.0 + 0j, 0.0], dtype=complex)
         phi = qml.numpy.array(0.5, requires_grad=True)
         op = qml.RY(phi, wires=0)
