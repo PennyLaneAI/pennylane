@@ -15,8 +15,6 @@
 
 from pennylane.transforms.core import transform
 
-import catalyst
-
 
 def to_ppr_setup_inputs():
     """
