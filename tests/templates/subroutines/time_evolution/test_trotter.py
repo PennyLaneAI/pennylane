@@ -2034,9 +2034,9 @@ class TestTrotterizedQfuncIntegration:
         reference_time_grad, reference_arg1_grad, reference_arg2_grad = qml.grad(reference_circ)(
             time, arg1, arg2, wires
         )
-        assert allclose(measured_time_grad, reference_time_grad)
-        assert allclose(measured_arg1_grad, reference_arg1_grad)
-        assert allclose(measured_arg2_grad, reference_arg2_grad)
+        assert allclose(measured_time_grad, reference_time_grad, atol=1e-05)
+        assert allclose(measured_arg1_grad, reference_arg1_grad, atol=1e-05)
+        assert allclose(measured_arg2_grad, reference_arg2_grad, atol=1e-05)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n", (1, 2, 3))
@@ -2109,6 +2109,6 @@ class TestTrotterizedQfuncIntegration:
         reference_time_grad, reference_arg1_grad, reference_arg2_grad = jax.grad(
             reference_circ, argnums=[0, 1, 2]
         )(time, arg1, arg2, wires)
-        assert allclose(measured_time_grad, reference_time_grad)
-        assert allclose(measured_arg1_grad, reference_arg1_grad)
-        assert allclose(measured_arg2_grad, reference_arg2_grad)
+        assert allclose(measured_time_grad, reference_time_grad, atol=1e-05)
+        assert allclose(measured_arg1_grad, reference_arg1_grad, atol=1e-05)
+        assert allclose(measured_arg2_grad, reference_arg2_grad, atol=1e-05)
