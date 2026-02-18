@@ -89,6 +89,9 @@ def _align_torch_interfaces(params, state0, state1, state_interface, param_inter
     Returns:
         tuple: ``(params, state0, state1)`` with aligned interfaces
     """
+    # Only torch requires explicit alignment because it cannot interoperate
+    # with other frameworks in math.multiply. Other mismatches (e.g. autograd
+    # state + numpy params) work without conversion via math.* dispatch.
     if state_interface != param_interface:
         if state_interface == "torch":
             params = math.array(params, like=state_interface)
