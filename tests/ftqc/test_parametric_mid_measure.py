@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import measure as apply_qubit_measurement
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ftqc import (
     ParametricMidMeasure,
     XMidMeasure,
@@ -33,6 +33,20 @@ from pennylane.ftqc import (
 )
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
+
+
+@pytest.mark.parametrize("test_class", [ParametricMidMeasure, XMidMeasure, YMidMeasure])
+def test_id_deprecations(test_class):
+    """Tests that 'id' is deprecated properly."""
+
+    additional_kwargs = {}
+    if test_class is ParametricMidMeasure:
+        additional_kwargs = {"angle": 0, "plane": "XY"}
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
+    ):
+        _ = test_class(Wires(0), **additional_kwargs, id="something")
 
 
 class TestParametricMidMeasure:
@@ -597,7 +611,6 @@ class TestMeasureFunctions:
 
 
 class TestDrawParametricMidMeasure:
-
     @pytest.mark.parametrize(
         "mp_class, expected_label",
         [(ParametricMidMeasure, "XY"), (XMidMeasure, "X"), (YMidMeasure, "Y")],

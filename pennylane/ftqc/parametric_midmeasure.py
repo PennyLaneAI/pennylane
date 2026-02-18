@@ -17,7 +17,6 @@ mid-circuit measurements with a parameterized measurement axis."""
 
 import hashlib
 import uuid
-import warnings
 from collections.abc import Hashable, Iterable
 from copy import copy
 from functools import lru_cache
@@ -26,7 +25,7 @@ import numpy as np
 
 from pennylane import capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import is_abstract, isscalar, ndim, unwrap
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, measure
 from pennylane.ops.op_math import Conditional, adjoint
@@ -370,20 +369,15 @@ class ParametricMidMeasure(MidMeasure):
         plane: str | None,
         reset: bool | None = False,
         postselect: int | None = None,
-        id: str | None = None,
         meas_uid: str | None = None,
+        id: str | None = None,
     ):
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-            )
-            # Only override if meas_uid wasn't explicitly provided
-            if meas_uid is None:
-                meas_uid = id
-
         self.batch_size = None
-        super().__init__(wires=Wires(wires), reset=reset, postselect=postselect, meas_uid=meas_uid)
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
+        super().__init__(
+            wires=Wires(wires), reset=reset, postselect=postselect, id=id, meas_uid=meas_uid
+        )
         self.hyperparameters["plane"] = plane
         self.hyperparameters["angle"] = angle
 
@@ -498,23 +492,18 @@ class XMidMeasure(ParametricMidMeasure):
         wires: Wires | None,
         reset: bool | None = False,
         postselect: int | None = None,
-        id: str | None = None,
         meas_uid: str | None = None,
+        id: str | None = None,
     ):
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-            )
-            # Only override if meas_uid wasn't explicitly provided
-            if meas_uid is None:
-                meas_uid = id
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=0,
             plane="XY",
             reset=reset,
             postselect=postselect,
+            id=id,
             meas_uid=meas_uid,
         )
 
@@ -571,23 +560,18 @@ class YMidMeasure(ParametricMidMeasure):
         wires: Wires | None,
         reset: bool | None = False,
         postselect: int | None = None,
-        id: str | None = None,
         meas_uid: str | None = None,
+        id: str | None = None,
     ):
-        if id is not None:
-            warnings.warn(
-                "The 'id' argument has been renamed to 'meas_uid'. Access through 'id' will be removed in v0.46.",
-                PennyLaneDeprecationWarning,
-            )
-            # Only override if meas_uid wasn't explicitly provided
-            if meas_uid is None:
-                meas_uid = id
+        # NOTE: The base class handles the deprecation warning of 'id'
+        # and the logic of meas_uid = id if meas_uid is None.
         super().__init__(
             wires=Wires(wires),
             angle=np.pi / 2,
             plane="XY",
             reset=reset,
             postselect=postselect,
+            id=id,
             meas_uid=meas_uid,
         )
 
@@ -747,12 +731,10 @@ def diagonalize_mcms(tape):
     curr_idx = 0
 
     for i, op in enumerate(tape.operations):
-
         if i != curr_idx:
             continue
 
         if isinstance(op, ParametricMidMeasure):
-
             # add diagonalizing gates to tape
             diag_gates = op.diagonalizing_gates()
             new_operations.extend(diag_gates)
@@ -768,7 +750,6 @@ def diagonalize_mcms(tape):
             mps_mapping[op] = new_mp
 
         elif isinstance(op, Conditional):
-
             # from MCM mapping, map any MCMs in the condition if needed
             mps = [mps_mapping.get(op, op) for op in op.meas_val.measurements]
 
