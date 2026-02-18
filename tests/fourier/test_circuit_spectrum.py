@@ -47,7 +47,6 @@ class TestCircuits:
     """Tests that the spectrum is returned as expected."""
 
     @pytest.mark.parametrize("n_layers, n_qubits", [(1, 1), (2, 3), (4, 1)])
-    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_spectrum_grows_with_gates(self, n_layers, n_qubits):
         """Test that the spectrum grows linearly with the number of
         encoding gates if we use Pauli rotation encoding."""
@@ -66,7 +65,6 @@ class TestCircuits:
         expected_degree = n_qubits * n_layers
         assert np.allclose(res["x"], range(-expected_degree, expected_degree + 1))
 
-    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_encoding_gates(self):
         """Test that the spectrum contains the ids provided in encoding_gates, or
         all ids if encoding_gates is None."""
@@ -91,7 +89,6 @@ class TestCircuits:
         res = circuit_spectrum(_circuit, encoding_gates=["a"])(0.1)
         assert res == {"a": []}
 
-    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_spectrum_changes_with_qnode_args(self):
         """Test that the spectrum changes per call if a qnode argument changes the
         circuit architecture."""
@@ -112,7 +109,6 @@ class TestCircuits:
         res_false = circuit_spectrum(_circuit)(False)
         assert np.allclose(res_false["x"], range(-2, 3))
 
-    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_input_gates_not_of_correct_form(self):
         """Test that an error is thrown if gates marked as encoding gates
         are not single-parameter gates."""
@@ -153,7 +149,6 @@ class TestInterfaces:
     all interfaces."""
 
     @pytest.mark.autograd
-    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_integration_autograd(self):
         """Test that the spectra of a circuit is calculated correctly
         in the autograd interface."""
@@ -170,7 +165,6 @@ class TestInterfaces:
             assert v1 == v2
 
     @pytest.mark.torch
-    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_integration_torch(self):
         """Test that the spectra of a circuit is calculated correctly
         in the torch interface."""
@@ -208,7 +202,6 @@ class TestInterfaces:
             assert v1 == v2
 
     @pytest.mark.jax
-    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_integration_jax(self):
         """Test that the spectra of a circuit is calculated correctly
         in the jax interface."""
