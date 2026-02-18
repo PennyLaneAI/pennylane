@@ -162,7 +162,7 @@ def get_compile_pipeline(
           [11] _conditional_broadcast_expand()
         )
 
-        As can be seen above, this not only includes the two transforms we manually applied, but also a set of transforms
+        As can be seen above, this not only includes the three transforms we manually applied, but also a set of transforms
         used by the device in order to execute the circuit.
 
         The ``"user"`` level will retrieve the portion of the compile pipeline that was manually applied to the qnode,
