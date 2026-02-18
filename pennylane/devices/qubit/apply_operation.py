@@ -25,8 +25,6 @@ from pennylane import math, ops
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, MidMeasure
 
-SQRT2INV = 1 / math.sqrt(2)
-
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
@@ -58,26 +56,6 @@ def _get_slice(index, axis, num_axes):
     idx = [slice(None)] * num_axes
     idx[axis] = index
     return tuple(idx)
-
-
-def _is_numpy_only(op, state):
-    """Check that both state and op parameters are plain NumPy arrays.
-
-    Args:
-        op (Operator): Operator whose parameters are checked
-        state (array[complex]): Input quantum state
-
-    Returns:
-        bool: True if both state and all op parameters have interface ``"numpy"``
-    """
-    if math.get_interface(state) != "numpy":
-        return False
-    if not op.data:
-        return True
-    try:
-        return all(math.get_interface(p) == "numpy" for p in op.data)
-    except (TypeError, AttributeError):
-        return False
 
 
 def _apply_single_qubit_np(mat, state, axis):
@@ -619,7 +597,8 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
 
     if state_interface == "numpy":
         axis = op.wires[0] + is_state_batched
-        mat = np.array([[SQRT2INV, SQRT2INV], [SQRT2INV, -SQRT2INV]])
+        inv = 1 / np.sqrt(2)
+        mat = np.array([[inv, inv], [inv, -inv]])
         return _apply_single_qubit_np(mat, state, axis)
 
     if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
@@ -659,6 +638,8 @@ def apply_rz(op: ops.RZ, state, is_state_batched: bool = False, debugger=None, *
     if state_interface == "numpy" and param_interface == "numpy":
         p = np.asarray(params, dtype=np.complex128)
         e = np.exp(-0.5j * p)
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return np.stack([np.multiply(state0, e), np.multiply(state1, np.conj(e))], axis=axis)
         mat = np.array([[e, 0], [0, np.conj(e)]])
         return _apply_single_qubit_np(mat, state, axis)
     params = math.cast(params, dtype=complex)
@@ -707,6 +688,14 @@ def apply_rx(op: ops.RX, state, is_state_batched: bool = False, debugger=None, *
         p = np.asarray(params, dtype=np.complex128)
         c = np.cos(p / 2)
         js = -1j * np.sin(p / 2)
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return np.stack(
+                [
+                    np.multiply(state0, c) + np.multiply(state1, js),
+                    np.multiply(state0, js) + np.multiply(state1, c),
+                ],
+                axis=axis,
+            )
         mat = np.array([[c, js], [js, c]])
         return _apply_single_qubit_np(mat, state, axis)
     params = math.cast(params, dtype=complex)
@@ -759,6 +748,14 @@ def apply_ry(op: ops.RY, state, is_state_batched: bool = False, debugger=None, *
         p = np.asarray(params, dtype=np.complex128)
         c = np.cos(p / 2)
         s = np.sin(p / 2)
+        if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
+            return np.stack(
+                [
+                    np.multiply(state0, c) - np.multiply(state1, s),
+                    np.multiply(state0, s) + np.multiply(state1, c),
+                ],
+                axis=axis,
+            )
         mat = np.array([[c, -s], [s, c]], dtype=np.complex128)
         return _apply_single_qubit_np(mat, state, axis)
     params = math.cast(params, dtype=complex)
