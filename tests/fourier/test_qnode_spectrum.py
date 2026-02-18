@@ -540,6 +540,7 @@ class TestJax:
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
 
+    @pytest.mark.xfail(reason="No alternative for 'id' yet.", strict=True)
     def test_hermitian_observable_with_jax_jit(self):
         """Test that qnode_spectrum works with Hermitian observables under JAX JIT.
 
