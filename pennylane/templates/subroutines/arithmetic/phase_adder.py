@@ -29,6 +29,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
+from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
@@ -248,7 +249,7 @@ class PhaseAdder(Operation):
                 ops.change_op_basis(
                     ops.adjoint(QFT)(wires=x_wires),
                     ops.ctrl(ops.X(work_wire), control=aux_k, control_values=1),
-                    QFT(wires=x_wires),
+                    QFT.operator(wires=x_wires),
                 )
             )
 
@@ -262,7 +263,9 @@ class PhaseAdder(Operation):
                         *[ops.adjoint(op) for op in _add_k_fourier(k, x_wires)],
                     ),
                     ops.CNOT(wires=[aux_k, work_wire[0]]),
-                    ops.prod(*_add_k_fourier(k, x_wires)[::-1], QFT(wires=x_wires), ops.X(aux_k)),
+                    ops.prod(
+                        *_add_k_fourier(k, x_wires)[::-1], QFT.operator(wires=x_wires), ops.X(aux_k)
+                    ),
                 )
             )
 
@@ -278,7 +281,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         int,
         {
             resource_rep(ops.X): 1,
-            adjoint_resource_rep(QFT, {"num_wires": num_x_wires}): 1,
+            adjoint_resource_rep(SubroutineOp): 1,
             adjoint_resource_rep(ops.PhaseShift): num_x_wires,
         },
     )
@@ -287,7 +290,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         int,
         {
             resource_rep(ops.PhaseShift): num_x_wires,
-            resource_rep(QFT, num_wires=num_x_wires): 1,
+            resource_rep(SubroutineOp): 1,
             resource_rep(ops.X): 1,
         },
     )
@@ -296,9 +299,9 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         ops.PhaseShift: num_x_wires,
         adjoint_resource_rep(ops.PhaseShift): num_x_wires,
         change_op_basis_resource_rep(
-            adjoint_resource_rep(QFT, {"num_wires": num_x_wires}),
+            adjoint_resource_rep(SubroutineOp),
             resource_rep(ops.CNOT),
-            resource_rep(QFT, num_wires=num_x_wires),
+            resource_rep(SubroutineOp),
         ): 1,
         ops.ControlledPhaseShift: num_x_wires,
         change_op_basis_resource_rep(
@@ -330,7 +333,7 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
     ops.change_op_basis(
         ops.adjoint(QFT)(wires=x_wires),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
-        QFT(wires=x_wires),
+        QFT.operator(wires=x_wires),
     )
     ops.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
     ops.change_op_basis(
@@ -340,7 +343,9 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
             *reversed(ops.adjoint(_add_k_fourier_loop)(k)),
         ),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
-        ops.prod(ops.prod(_add_k_fourier_loop)(k), QFT(wires=x_wires), ops.X(aux_k), lazy=False),
+        ops.prod(
+            ops.prod(_add_k_fourier_loop)(k), QFT.operator(wires=x_wires), ops.X(aux_k), lazy=False
+        ),
     )
 
 

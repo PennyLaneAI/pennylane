@@ -199,7 +199,7 @@ class TestOutAdder:
         else:
             qft_new_output_wires = output_wires
             work_wire = None
-        op_list.append(qml.QFT(wires=qft_new_output_wires))
+        op_list.append(qml.QFT.operator(wires=qft_new_output_wires))
         op_list.append(
             qml.ControlledSequence(
                 qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires

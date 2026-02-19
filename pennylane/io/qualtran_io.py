@@ -49,6 +49,47 @@ except (ModuleNotFoundError, ImportError) as import_error:
     Bloq = object
 
 
+_Subroutine_call_graph_map: dict = {}
+"""A registry for the call graphs of SubroutineOps."""
+
+_Subroutine_to_bloq_map: dict = {}
+"""A registry for SubroutineOps we want to convert to Bloq."""
+
+
+def _register_subroutine_call_graph(subroutine: qtemps.Subroutine):
+    """Register a function for the call graph of a SubroutineOp using a decorator.
+
+    .. code-block::
+        @_register_subroutine_call_graph(MySubroutine)
+        def _call_graph(op: SubroutineOp):
+            ...
+
+    """
+
+    def subroutine_call_graph_decorator(f):
+        _Subroutine_call_graph_map[subroutine] = f
+        return f
+
+    return subroutine_call_graph_decorator
+
+
+def _register_subroutine_to_bloq(subroutine: qtemps.Subroutine):
+    """Register a function conversion of a SubroutineOp to Bloq using a decorator.
+
+    .. code-block::
+        @_register_subroutine_to_bloq(MySubroutine)
+        def _to_bloq(op: SubroutineOp):
+            ...
+
+    """
+
+    def subroutine_to_bloq_decorator(f):
+        _Subroutine_to_bloq_map[subroutine] = f
+        return f
+
+    return subroutine_to_bloq_decorator
+
+
 def _get_op_call_graph_estimator(op):
     """Return call graph for PennyLane Operator. The call graph depends on the results of calling
     estimate on said PennyLane Operator."""
@@ -82,6 +123,15 @@ def _get_op_call_graph(op):  # pylint: disable=unused-argument
 
 
 @_get_op_call_graph.register
+def _call_graph_for_subroutine(op: qtemps.SubroutineOp):
+    if op.subroutine in _Subroutine_call_graph_map:
+        return _Subroutine_call_graph_map[op.subroutine](op)
+    raise NotImplementedError(
+        f"Subroutine {op.subroutine} has no registered call graph."
+    )  # pragma: no cover
+
+
+@_get_op_call_graph.register
 def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     """Call graph for Quantum Phase Estimation"""
 
@@ -94,7 +144,7 @@ def _(op: qtemps.subroutines.qpe.QuantumPhaseEstimation):
     ).controlled(CtrlSpec(cvs=[1]))
     gate_counts[controlled_unitary] = (2 ** len(op.estimation_wires)) - 1
     adjoint_qft = _map_to_bloq(
-        qtemps.QFT(wires=op.estimation_wires), map_ops=False, call_graph="decomposition"
+        qtemps.QFT.operator(wires=op.estimation_wires), map_ops=False, call_graph="decomposition"
     ).adjoint()
     gate_counts[adjoint_qft] = 1
 
@@ -325,8 +375,8 @@ def _(op: qtemps.subroutines.QROM):
     return gate_types
 
 
-@_get_op_call_graph.register
-def _(op: qtemps.subroutines.QFT):
+@_register_subroutine_call_graph(qtemps.subroutines.QFT)
+def _(op):
     """Call graph for Quantum Fourier Transform"""
 
     # From PL Decomposition
@@ -425,7 +475,7 @@ def _(op: qtemps.subroutines.ModExp):
         num_aux_swap = num_aux_wires - 1
 
     qft = _map_to_bloq(
-        qtemps.QFT(wires=range(num_aux_wires)), map_ops=False, call_graph="decomposition"
+        qtemps.QFT.operator(wires=range(num_aux_wires)), map_ops=False, call_graph="decomposition"
     )
     qft_dag = qft.adjoint()
 
@@ -522,6 +572,17 @@ def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
     return None
 
 
+@_map_to_bloq.register
+def _to_bloq_for_subroutine(op: qtemps.SubroutineOp, custom_mapping=None, map_ops=True, **kwargs):
+    if op.subroutine in _Subroutine_to_bloq_map:
+        return _Subroutine_to_bloq_map[op.subroutine](
+            op, custom_mapping=custom_mapping, map_ops=map_ops, **kwargs
+        )
+    raise NotImplementedError(
+        f"Subroutine {op.subroutine} has no registered conversion to Bloq."
+    )  # pragma: no cover
+
+
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(
@@ -544,8 +605,8 @@ def _(
 
 
 # pylint: disable=import-outside-toplevel
-@_map_to_bloq.register
-def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
+@_register_subroutine_to_bloq(qtemps.subroutines.QFT)
+def _(op, custom_mapping=None, map_ops=True, **kwargs):
     """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
     from qualtran.bloqs.qft import QFTTextBook
 
