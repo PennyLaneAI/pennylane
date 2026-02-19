@@ -196,7 +196,7 @@ class TestPrepSelPrep:
     ]
     coeffs1 = lcu1.terms()[0]
 
-    @pytest.mark.parametrize(
+    @pytest.mark.parametrize(98
         ("lcu", "control", "expected"),
         [
             (
