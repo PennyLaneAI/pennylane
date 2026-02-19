@@ -608,15 +608,10 @@ class TestDevicePreprocessing:
 
         @qml.qnode(dev)
         def circuit():
-            qml.IsingXX(1.0, [0, 1])
+            qml.AQFT(10, [0, 1])
             return qml.state()
 
-        assert qml.math.allclose(
-            circuit(),
-            np.array(
-                [0.87758256 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.47942554j], dtype=np.complex128
-            ),
-        )
+        assert qml.math.allclose(circuit(), [0.5] * 4)
 
     @pytest.mark.parametrize("mcm_method", [None, "deferred"])
     @pytest.mark.parametrize("shots", [None, 1000])
