@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Literal
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+from pennylane.deprecations import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 from pennylane.math.interface_utils import Interface
 from pennylane.transforms.core import CompilePipeline
 
