@@ -14,7 +14,6 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
-import numpy as np
 import pytest
 
 import pennylane as qml

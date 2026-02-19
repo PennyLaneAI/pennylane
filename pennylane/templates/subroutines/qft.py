@@ -23,18 +23,19 @@ import numpy as np
 from pennylane import math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.templates import Subroutine
 from pennylane.wires import Wires, WiresLike
 
 
 def setup_qft(wires: WiresLike):
+    """Run pre-validation on the wires provided to QFT."""
     wires = Wires(wires)
     return (wires,), {}
 
 
 def qft_decomp_resources(wires: WiresLike):
+    """Calculate the resources for QFT."""
     num_wires = len(wires)
     return {
         Hadamard: num_wires,
@@ -164,12 +165,12 @@ def QFT(wires: WiresLike):
             def cphaseshift_loop(j):
                 ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
 
-            cphaseshift_loop()
+            cphaseshift_loop()  # pylint: disable=no-value-for-parameter
 
-    outer_loop()
+    outer_loop()  # pylint: disable=no-value-for-parameter
 
     @for_loop(n_wires // 2)
     def swaps(i):
         SWAP(wires=[wires[i], wires[n_wires - i - 1]])
 
-    swaps()
+    swaps()  # pylint: disable=no-value-for-parameter
