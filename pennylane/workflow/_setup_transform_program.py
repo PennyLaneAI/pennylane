@@ -90,7 +90,6 @@ def _setup_transform_program(
     )
     if not interface_data_supported:
         inner_transform_program.add_transform(convert_to_numpy_parameters)
-
     if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
 
