@@ -778,12 +778,12 @@ class ClassicalOutMultiplier(
        allocated wires: 3
          zero state: 3
          any state: 0
-     Total gates : 1.089E+5
-       'Toffoli': 530,
-       'T': 1.063E+5,
-       'CNOT': 1.780E+3,
+     Total gates : 1.021E+5
+       'Toffoli': 80,
+       'T': 1.001E+5,
+       'CNOT': 1.740E+3,
        'X': 10,
-       'Hadamard': 280
+       'Hadamard': 210
     """
 
     resource_keys = {"num_x_wires", "num_output_wires", "mod"}
@@ -1172,17 +1172,17 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
     >>> modexp = qre.ModExp(5, 10, mod=32)
     >>> print(qre.estimate(modexp))
     --- Resources: ---
-     Total wires: 29
+     Total wires: 28
        algorithmic wires: 15
-       allocated wires: 14
-         zero state: 14
+       allocated wires: 13
+         zero state: 13
          any state: 0
-     Total gates : 5.662E+6
-       'Toffoli': 9.255E+4,
-       'T': 5.372E+6,
-       'CNOT': 1.096E+5,
-       'X': 100,
-       'Hadamard': 8.720E+4
+     Total gates : 4.979E+6
+       'Toffoli': 2.450E+3,
+       'T': 4.888E+6,
+       'CNOT': 8.170E+5,
+       'X': 200,
+       'Hadamard': 6.600E+3
     """
 
     resource_keys = {"num_x_wires", "num_output_wires", "mod"}
