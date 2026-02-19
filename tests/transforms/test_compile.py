@@ -304,6 +304,7 @@ class TestCompileIntegration:
         tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         compare_operation_lists(tape.operations, names_expected, wires_expected)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_decompose_into_basis_gates(self, wires):
         """Test that running multiple passes produces the correct results."""
@@ -322,43 +323,11 @@ class TestCompileIntegration:
 
         original_result = qnode(0.3, 0.4, 0.5)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
-        assert np.allclose(
-            original_result, transformed_result
-        ), f"{original_result} != {transformed_result}"
-
-        names_expected = [
-            "RZ",
-            "RX",
-            "RZ",
-            "CNOT",
-            "RX",
-            "RZ",
-            "RY",
-            "RY",
-            "CNOT",
-            "RY",
-            "CNOT",
-            "GlobalPhase",
-        ]
-
-        wires_expected = [
-            Wires(wires[0]),
-            Wires(wires[0]),
-            Wires(wires[0]),
-            Wires([wires[2], wires[1]]),
-            Wires(wires[0]),
-            Wires(wires[1]),
-            Wires(wires[2]),
-            Wires(wires[2]),
-            Wires([wires[1], wires[2]]),
-            Wires(wires[2]),
-            Wires([wires[1], wires[2]]),
-            Wires([]),
-        ]
+        assert qml.math.allclose(original_result, transformed_result)
 
         tape = qml.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         transformed_ops = _fuse_global_phases(tape.operations)
-        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+        assert all(op.name in basis_set for op in transformed_ops)
 
     def test_compile_template(self):
         """Test that functions with templates are correctly expanded and compiled."""

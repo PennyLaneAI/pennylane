@@ -2301,6 +2301,9 @@ class TestTapeExpansionWithControlled:
         [new_tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
         assert equal_list(list(new_tape), expected_ops(ctrl_values))
 
+    # This test assumes a very specific decomposition at a specific level of expansion, which
+    # no longer makes much sense in the graph-based decomposition system.
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_diagonal_ctrl(self):
         """Test ctrl on diagonal gates."""
         with qml.queuing.AnnotatedQueue() as q_tape:
@@ -2333,6 +2336,9 @@ class TestTapeExpansionWithControlled:
         )
         assert not equal_list(list(tape), expected)
 
+    # This test verifies that op.decomposition() matches the decomposed tape, which is no longer
+    # the case when graph-based decomposition system is enabled.
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     @pytest.mark.parametrize("M", unitaries)
     def test_controlled_qubit_unitary(self, M):
         """Test ctrl on ControlledQubitUnitary."""
@@ -2352,6 +2358,9 @@ class TestTapeExpansionWithControlled:
         expected = qml.ControlledQubitUnitary(M, wires=[1, 2, 0]).decomposition()
         assert tape.circuit == expected
 
+    # This test assumes a very specific decomposition at a specific level of expansion, which
+    # no longer makes much sense in the graph-based decomposition system.
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [

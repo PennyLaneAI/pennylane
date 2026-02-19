@@ -101,6 +101,7 @@ class TestGateSetDecomposition:
         for op, expected_type in zip(new_tape.operations, expected_ops):
             assert isinstance(op, expected_type)
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_error_if_old_decomp_method(self):
         """Test that a clear error is raised if trying to use the convert_to_mbqc_gateset
         transform with the old decomposition method"""
