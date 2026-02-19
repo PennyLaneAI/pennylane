@@ -670,6 +670,9 @@ class SumOfSlatersPrep(Operation):
 
     This is all the information we require to create the state
     preparation: ``coefficients``, ``indices``, and ``wires``.
+    The ``indices`` correspond to the computational basis states interpreted
+    via their binary representation (e.g., :math:`|3\rangle = |11\rangle` for two qubits
+    or :math:`|3\rangle = |011\rangle` for three qubits).
 
     .. code-block:: python
 
