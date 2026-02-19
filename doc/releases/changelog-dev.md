@@ -91,6 +91,16 @@
   new graph-based decomposition system.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
+* Added support for various arithmetic operators to the :mod:`pennylane.estimator` module.
+  [(#9073)](https://github.com/PennyLaneAI/pennylane/pull/9073)
+  
+  - :class:`~.estimator.Adder`,
+  - :class:`~.estimator.PhaseAdder`,
+  - :class:`~.estimator.OutAdder`,
+  - :class:`~.estimator.Multiplier`,
+  - :class:`~.estimator.ClassicalOutMultiplier`,
+  - :class:`~.estimator.ModExp`,
+
 <h3>Improvements 🛠</h3>
 
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
