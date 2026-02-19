@@ -254,7 +254,7 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Modula
     def __init__(self, num_x_wires, mod=None, wires=None):
         self.mod = 2**num_x_wires if mod is None else mod
         self.num_x_wires = num_x_wires
-        
+
         if (self.mod > 2**num_x_wires) or (self.mod < 1):
             raise ValueError(f"mod must take values inbetween (1, {2**num_x_wires}), got {mod}")
 
@@ -339,7 +339,9 @@ class Adder(ResourceOperator):  # Add_in(k, N): Inplace Quantum-Classical Modula
             num_wires=num_x_wires + 1,
         )
         ctrl_sum_N = Controlled.resource_rep(
-            prod_phase_shifts_n_plus_one, 1, 0,
+            prod_phase_shifts_n_plus_one,
+            1,
+            0,
         )
 
         qft_cnot_qft_dag = ChangeOpBasis.resource_rep(
@@ -456,7 +458,9 @@ class OutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantum Mo
         self.num_output_wires = num_output_wires
 
         if (self.mod > 2**num_output_wires) or (self.mod < 1):
-            raise ValueError(f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}")
+            raise ValueError(
+                f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}"
+            )
 
         self.num_wires = num_x_wires + num_y_wires + num_output_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -542,12 +546,18 @@ class OutAdder(ResourceOperator):  # Add_out(N): Out-of-place Quantum-Quantum Mo
             num_qft_wires += 1
 
         qft = qre.QFT.resource_rep(num_wires=num_qft_wires)
-        adj_qft = qre.Adjoint.resource_rep(qft)
 
         return [
-            GateCount(qft),
-            GateCount(ctrl_adder, num_x_wires + num_y_wires),
-            GateCount(adj_qft),
+            GateCount(
+                qre.ChangeOpBasis.resource_rep(
+                    cmpr_compute_op=qft,
+                    cmpr_target_op=qre.Prod.resource_rep(
+                        cmpr_factors_and_counts=((ctrl_adder, num_x_wires + num_y_wires),),
+                        num_wires=num_x_wires + num_y_wires + num_output_wires,
+                    ),
+                    num_wires=num_x_wires + num_y_wires + num_output_wires,
+                )
+            ),
         ]
 
 
@@ -785,7 +795,9 @@ class ClassicalOutMultiplier(
         self.num_output_wires = num_output_wires
 
         if (self.mod > 2**num_output_wires) or (self.mod < 1):
-            raise ValueError(f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}")
+            raise ValueError(
+                f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}"
+            )
 
         self.num_wires = num_x_wires + num_output_wires
         if wires is not None and len(wires) != self.num_wires:
@@ -927,7 +939,6 @@ class Multiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classical 
         if (self.mod > 2**num_x_wires) or (self.mod < 1):
             raise ValueError(f"mod must take values inbetween (1, {2**num_x_wires}), got {mod}")
 
-
         self.num_wires = num_x_wires
         if wires is not None and len(wires) != self.num_wires:
             raise ValueError(f"Expected {self.num_wires} wires, got {wires}")
@@ -990,10 +1001,18 @@ class Multiplier(ResourceOperator):  # Mult_in(k, N): Inplace Quantum-Classical 
         swap = qre.SWAP.resource_rep()
         mult = ClassicalOutMultiplier.resource_rep(num_x_wires, num_x_wires, mod)
 
-        gate_lst.append(GateCount(mult))
-        gate_lst.append(GateCount(swap, num_x_wires))
-        gate_lst.append(GateCount(qre.Adjoint.resource_rep(mult)))
-
+        gate_lst.append(
+            GateCount(
+                qre.ChangeOpBasis.resource_rep(
+                    cmpr_compute_op=mult,
+                    cmpr_target_op=qre.Prod.resource_rep(
+                        cmpr_factors_and_counts=((swap, num_x_wires),),
+                        num_wires=2 * num_x_wires,
+                    ),
+                    num_wires=2 * num_x_wires,
+                ),
+            )
+        )
         gate_lst.append(qre.Deallocate(num_x_wires))
         return gate_lst
 
@@ -1175,7 +1194,9 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
         self.num_output_wires = num_output_wires
 
         if (self.mod > 2**num_output_wires) or (self.mod < 1):
-            raise ValueError(f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}")
+            raise ValueError(
+                f"mod must take values inbetween (1, {2**num_output_wires}), got {mod}"
+            )
 
         self.num_wires = num_x_wires + num_output_wires
         if wires is not None and len(wires) != self.num_wires:
