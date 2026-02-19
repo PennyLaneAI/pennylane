@@ -54,7 +54,7 @@ class PhaseAdder(
 
     Resources:
         The resources are based on the quantum Fourier transform method presented in
-        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. It is referred too as the :math:`Sum(k)`
+        `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. It is referred to as the :math:`Sum(k)`
         operator within the Quantum Fourier Adder.
 
     **Example**
