@@ -437,7 +437,7 @@ def _(op: qtemps.subroutines.Select):
     return gate_types
 
 
-@_register_subroutine_call_graph(qops.StatePrep.operator())
+@_register_subroutine_call_graph(qops.StatePrep)
 def _(op):
     """Call graph for StatePrep"""
 
