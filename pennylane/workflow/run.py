@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
-from pennylane.workflow import _cache_transform
+from pennylane.workflow._cache_transform import _cache_transform
 
 from .jacobian_products import (
     DeviceDerivatives,
