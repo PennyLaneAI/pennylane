@@ -620,10 +620,19 @@ def compute_sos_encoding(bits):
 
 
 class SumOfSlatersPrep(Operation):
-    """Prepare a sum-of-Slaters state.
-    This operation implements the state preparation as introduced in Sec. III A of
-    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__, which
-    is tailored to sparse states.
+    r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
+
+    This operation prepares an arbitrary state
+
+    .. math:: |\psi\rangle = \sum_{\ell \in \text{indices}} c_\ell |\ell\rangle,
+
+    where :math:`c_\ell` are the ``coefficients`` corresponding to the ``indices`` :math:`\ell`.
+    The states :math:`|\ell\rangle` are computational basis states, interpreted via the
+    binary representation of :math:`\ell`.
+
+    This state preparation technique was introduced in Sec. III A of
+    `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__
+    and is tailored to sparse states.
 
     .. seealso::
 
