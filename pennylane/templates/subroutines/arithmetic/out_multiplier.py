@@ -26,6 +26,7 @@ from pennylane.templates.subroutines.controlled_sequence import ControlledSequen
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
+from ... import SubroutineOp
 from .phase_adder import PhaseAdder
 
 
@@ -270,7 +271,7 @@ class OutMultiplier(Operation):
         **Example**
 
         >>> qml.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        [(Adjoint(QFT(wires=[5, 6]))) @ (ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3])) @ QFT(wires=[5, 6])]
+        [(Adjoint(<QFT(wires=Wires([5, 6]))>)) @ (ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3])) @ <QFT(wires=Wires([5, 6]))>]
         """
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
@@ -281,7 +282,7 @@ class OutMultiplier(Operation):
 
         op_list = [
             change_op_basis(
-                QFT(wires=qft_output_wires),
+                QFT.operator(wires=qft_output_wires),
                 ControlledSequence(
                     ControlledSequence(
                         PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
@@ -299,7 +300,7 @@ def _out_multiplier_decomposition_resources(
     qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
     return {
         change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires),
+            resource_rep(SubroutineOp),
             resource_rep(
                 ControlledSequence,
                 base_class=ControlledSequence,
@@ -331,7 +332,7 @@ def _out_multiplier_decomposition(
         work_wire = ()
 
     change_op_basis(
-        QFT(wires=qft_output_wires),
+        QFT.operator(wires=qft_output_wires),
         ControlledSequence(
             ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
             control=y_wires,

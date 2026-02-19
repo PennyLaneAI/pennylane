@@ -289,8 +289,8 @@ def _(op: qtemps.SemiAdder):
     )
 
 
-@_map_to_resource_op.register
-def _(op: qtemps.QFT):
+@_register_subroutine(qtemps.QFT)
+def _handle_qft(op):
     return re_temps.QFT(num_wires=len(op.wires), wires=op.wires)
 
 

@@ -163,7 +163,7 @@ class TestQSVTBasics:
         """Test that the wire order is preserved."""
 
         op1 = qml.GroverOperator(wires=[0, 3])
-        op2 = qml.QFT(wires=[2, 1])
+        op2 = qml.QFT.operator(wires=[2, 1])
         qsvt_wires = qml.QSVT(op2, [op1]).wires
         assert qsvt_wires == op1.wires + op2.wires
 
