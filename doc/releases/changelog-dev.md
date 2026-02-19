@@ -451,7 +451,7 @@
 * The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid` and will be removed in v0.46. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
 
-* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` and :class:`~.ops.SymbolicOp` has been deprecated and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
 
 * The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
