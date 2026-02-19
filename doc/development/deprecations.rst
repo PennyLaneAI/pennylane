@@ -19,7 +19,7 @@ Pending deprecations
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` and :class:`~.ops.SymbolicOp` has been deprecated and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46. 
 
   - Deprecated in v0.45
   - Will be removed in v0.46
