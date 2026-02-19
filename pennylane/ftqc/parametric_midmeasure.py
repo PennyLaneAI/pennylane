@@ -483,6 +483,7 @@ class XMidMeasure(ParametricMidMeasure):
             ("reset", self.reset),
             ("postselect", self.postselect),
             ("meas_uid", self.meas_uid),
+            ("id", self._id),
         )
         return (), (self.wires, metadata)
 
@@ -551,6 +552,7 @@ class YMidMeasure(ParametricMidMeasure):
             ("reset", self.reset),
             ("postselect", self.postselect),
             ("meas_uid", self.meas_uid),
+            ("id", self._id),
         )
         return (), (self.wires, metadata)
 
