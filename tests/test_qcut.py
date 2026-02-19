@@ -314,7 +314,7 @@ class TestMeasurePrepareNodes:
             cls(0.5, wires=0)
 
     def test_id(self, cls):
-        """Test that nodes can be initialized with an id or recieves its own UUID."""
+        """Test that nodes can be initialized with an id or receives its own UUID."""
         n = cls(wires=0, id="hi")
         assert n.id == "hi"
         n = cls(wires=0, id=None)

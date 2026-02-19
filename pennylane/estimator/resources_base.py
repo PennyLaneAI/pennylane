@@ -44,7 +44,7 @@ class Resources:
         any_state_wires (int): Number of allocated wires returned in an unknowned state.
         algo_wires (int): Number of algorithmic wires, default value is ``0``.
         gate_types (dict): A dictionary mapping operations (:class:`~.pennylane.estimator.ResourceOperator`) to
-            their number of occurences in the decomposed circuit.
+            their number of occurrences in the decomposed circuit.
 
     **Example**
 

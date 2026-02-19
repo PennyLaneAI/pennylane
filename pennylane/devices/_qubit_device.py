@@ -1210,8 +1210,8 @@ class QubitDevice(Device):
 
     @staticmethod
     def _count_unbinned_samples(indices, batch_size, dim):
-        """Count the occurences of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability."""
+        """Count the occurrences of sampled indices and convert them to relative
+        counts in order to estimate their occurrence probability."""
         if batch_size is None:
             prob = np.zeros(dim, dtype=np.float64)
             basis_states, counts = np.unique(indices, return_counts=True)
@@ -1229,8 +1229,8 @@ class QubitDevice(Device):
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
-        """Count the occurences of bins of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability per bin."""
+        """Count the occurrences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurrence probability per bin."""
 
         if batch_size is None:
             prob = np.zeros((dim, num_bins), dtype=np.float64)
@@ -1419,7 +1419,7 @@ class QubitDevice(Device):
         return np.squeeze(np.var(samples, axis=axis))
 
     def _samples_to_counts(self, samples, mp: CountsMP, num_wires):
-        """Groups the samples into a dictionary showing number of occurences for
+        """Groups the samples into a dictionary showing number of occurrences for
         each possible outcome.
 
         The format of the dictionary depends on whether the MeasurementProcess CountsMP returns all counts or not. By default,
@@ -1436,7 +1436,7 @@ class QubitDevice(Device):
             num_wires (int): number of wires the sampled observable was performed on
 
         Returns:
-            dict: dictionary with format ``{'outcome': num_occurences}``, including all
+            dict: dictionary with format ``{'outcome': num_occurrences}``, including all
                 outcomes for the sampled observable
 
         **Example**

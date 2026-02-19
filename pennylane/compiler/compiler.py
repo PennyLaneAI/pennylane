@@ -91,7 +91,7 @@ def _refresh_compilers():
     for _, eps_dict in AvailableCompilers.names_entrypoints.items():
         ep_interface = AvailableCompilers.entrypoints_interface
         if any(ep not in eps_dict.keys() for ep in ep_interface):
-            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")  # pragma: no cover
+            raise KeyError(f"expected {ep_interface}, but received {eps_dict}")  # pragma: no cover
 
 
 # Scan installed compiler packages

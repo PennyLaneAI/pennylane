@@ -1544,7 +1544,7 @@ class TestCompilePipelineCall:
         for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
             assert eqn1.primitive == eqn2.primitive
             # Jaxpr equality is based on identity and so since they were constructed
-            # seperately, they will not be equal (hence the string check)
+            # separately, they will not be equal (hence the string check)
             assert str(eqn1.params) == str(eqn2.params)
 
     @pytest.mark.capture
