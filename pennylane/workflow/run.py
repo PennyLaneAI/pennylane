@@ -151,12 +151,11 @@ def _construct_ml_execution_pipeline(
     if config.grad_on_execution is True:
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    cache_full_jacobian = config.interface == Interface.AUTOGRAD
     jpc = TransformJacobianProducts(
         execute_fn,
         config.gradient_method,
         config.gradient_keyword_arguments,
-        cache_full_jacobian,
+        cache_full_jacobian=config.interface == Interface.AUTOGRAD,
     )
     for i in range(1, config.derivative_order):
         differentiable = i > 1
