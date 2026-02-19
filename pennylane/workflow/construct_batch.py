@@ -164,10 +164,12 @@ def construct_batch(
 
             from pennylane.workflow import construct_batch
 
+            dev = qml.device('default.qubit')
+
             @qml.transforms.undo_swaps
             @qml.transforms.merge_rotations
             @qml.transforms.cancel_inverses
-            @qml.qnode(qml.device('default.qubit'), diff_method="parameter-shift", gradient_kwargs = {"shifts": np.pi/4})
+            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs = {"shifts": np.pi/4})
             def circuit(x):
                 qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
                 qml.RX(x, wires=0)
