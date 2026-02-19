@@ -24,10 +24,9 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.math import ceil_log2
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ,unused-argument,signature-differs
+# pylint: disable=arguments-differ,unused-argument,signature-differs,too-many-arguments
 
 
 class PhaseAdder(

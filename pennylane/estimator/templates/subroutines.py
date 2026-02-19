@@ -19,7 +19,6 @@ from collections import defaultdict
 import pennylane.estimator as qre
 from pennylane import math as pl_math
 from pennylane import numpy as qnp
-from pennylane.estimator.ops.op_math.symbolic import Controlled
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
