@@ -172,61 +172,57 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
 
     """
     # Ensuring original matrix is not manipulated and we support builtin types.
-    matrix = qml.math.convert_like(matrix, next(iter([*matrix[0]]), []))
+    matrix = math.convert_like(matrix, next(iter([*matrix[0]]), []))
 
     # Pad with zeros to make the matrix shape equal and a power of two.
     if padding:
-        shape = qml.math.shape(matrix)
-        num_qubits = int(qml.math.ceil(qml.math.log2(qml.math.max(shape))))
+        shape = math.shape(matrix)
+        num_qubits = math.ceil_log2(math.max(shape))
         if shape[0] != shape[1] or shape[0] != 2**num_qubits:
-            padd_diffs = qml.math.abs(qml.math.array(shape) - 2**num_qubits)
+            padd_diffs = math.abs(math.array(shape) - 2**num_qubits)
             padding = (
                 ((0, padd_diffs[0]), (0, padd_diffs[1]))
-                if qml.math.get_interface(matrix) != "torch"
+                if math.get_interface(matrix) != "torch"
                 else ((padd_diffs[0], 0), (padd_diffs[1], 0))
             )
-            matrix = qml.math.pad(matrix, padding, mode="constant", constant_values=0)
+            matrix = math.pad(matrix, padding, mode="constant", constant_values=0)
 
-    shape = qml.math.shape(matrix)
+    shape = math.shape(matrix)
     num_qubits, wire_order = _validate_and_normalize_decomposition_inputs(
         shape, wire_order, is_sparse=False
     )
 
     # Permute by XORing
-    indices = [qml.math.array(range(shape[0]))]
+    indices = [math.array(range(shape[0]))]
     for idx in range(shape[0] - 1):
-        indices.append(qml.math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
-    term_mat = qml.math.cast(
-        qml.math.stack(
-            [qml.math.gather(matrix[idx], indice) for idx, indice in enumerate(indices)]
-        ),
+        indices.append(math.bitwise_xor(indices[-1], (idx + 1) ^ (idx)))
+    term_mat = math.cast(
+        math.stack([math.gather(matrix[idx], indice) for idx, indice in enumerate(indices)]),
         complex,
     )
 
     # Perform Hadamard transformation on coloumns
-    hadamard_transform_mat = _walsh_hadamard_transform(qml.math.transpose(term_mat))
+    hadamard_transform_mat = _walsh_hadamard_transform(math.transpose(term_mat))
 
     # Account for the phases from Y
-    phase_mat = qml.math.ones(shape, dtype=complex).reshape((2,) * (2 * num_qubits))
+    phase_mat = math.ones(shape, dtype=complex).reshape((2,) * (2 * num_qubits))
     for idx in range(num_qubits):
         index = [slice(None)] * (2 * num_qubits)
         index[idx] = index[idx + num_qubits] = 1
         phase_mat[tuple(index)] *= 1j
-    phase_mat = qml.math.convert_like(qml.math.reshape(phase_mat, shape), matrix)
+    phase_mat = math.convert_like(math.reshape(phase_mat, shape), matrix)
 
     # c_00 + c_11 -> I; c_00 - c_11 -> Z; c_01 + c_10 -> X; 1j*(c_10 - c_01) -> Y
     # https://quantumcomputing.stackexchange.com/a/31790
-    term_mat = qml.math.transpose(qml.math.multiply(hadamard_transform_mat, phase_mat))
+    term_mat = math.transpose(math.multiply(hadamard_transform_mat, phase_mat))
 
     # Obtain the coefficients for each Pauli word
     coeffs, obs = [], []
     for pauli_rep in product("IXYZ", repeat=num_qubits):
-        bit_array = qml.math.array(
-            [[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int
-        ).T
+        bit_array = math.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
 
-        if not is_abstract(matrix) and qml.math.allclose(coefficient, 0):
+        if not is_abstract(matrix) and math.allclose(coefficient, 0):
             continue
 
         observables = (
@@ -238,7 +234,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
             coeffs.append(coefficient)
             obs.append(observables)
 
-    coeffs = qml.math.stack(coeffs)
+    coeffs = math.stack(coeffs)
 
     if not pauli:
         with qml.QueuingManager.stop_recording():
@@ -312,7 +308,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         if max_dim == 0:
             target_dim = 1
         else:
-            target_dim = int(2 ** math.ceil(math.log2(max_dim)))
+            target_dim = 2 ** math.ceil_log2(max_dim)
         if shape != (target_dim, target_dim):
             sparse_matrix = sps.coo_matrix(
                 (sparse_matrix.data, (sparse_matrix.row, sparse_matrix.col)),
@@ -361,7 +357,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
     coeffs = []
     obs_terms = []
     for word, coeff in coeffs_map.items():
-        if qml.math.allclose(coeff, 0):
+        if math.allclose(coeff, 0):
             continue
         if hide_identity and not all(char == I for char in word):
             observables = [(char, wire) for wire, char in zip(wire_order, word) if char != I]
@@ -371,9 +367,9 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
         obs_terms.append(observables)
 
     if not coeffs:
-        coeffs = qml.math.cast(qml.math.array([], dtype=complex), complex)
+        coeffs = math.cast(math.array([], dtype=complex), complex)
     else:
-        coeffs = qml.math.cast(qml.math.stack(coeffs), complex)
+        coeffs = math.cast(math.stack(coeffs), complex)
 
     if not pauli:
         with qml.QueuingManager.stop_recording():
@@ -526,7 +522,7 @@ def pauli_decompose(
 
     """
     is_sparse = sps.issparse(H)
-    shape = H.shape if is_sparse else qml.math.shape(H)
+    shape = H.shape if is_sparse else math.shape(H)
 
     if is_sparse:
         _validate_sparse_matrix_shape(shape)
@@ -542,7 +538,7 @@ def pauli_decompose(
             if is_sparse:
                 _check_hermitian_sparse(H)
             else:
-                if not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
+                if not math.allclose(H, math.conj(math.transpose(H))):
                     raise ValueError("The matrix is not Hermitian")
 
     _pauli_decompose = (
@@ -553,7 +549,7 @@ def pauli_decompose(
     )
 
     if check_hermitian:
-        coeffs = qml.math.real(coeffs)
+        coeffs = math.real(coeffs)
 
     if pauli:
         return PauliSentence(
@@ -563,7 +559,8 @@ def pauli_decompose(
             }
         )
 
-    return qml.Hamiltonian(coeffs, obs)
+    with qml.queuing.QueuingManager.stop_recording():
+        return qml.Hamiltonian(coeffs, obs)
 
 
 def pauli_sentence(op):

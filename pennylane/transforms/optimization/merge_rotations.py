@@ -373,6 +373,7 @@ def merge_rotations(
         stopping_condition=stop_at,
         name="merge_rotations",
         error=qml.operation.DecompositionUndefinedError,
+        strict=False,
     )
     list_copy = expanded_tape.operations
     new_operations = []
@@ -388,7 +389,7 @@ def merge_rotations(
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
-        if not current_gate in composable_rotations:
+        if current_gate not in composable_rotations:
             new_operations.append(current_gate)
             list_copy.pop(0)
             continue

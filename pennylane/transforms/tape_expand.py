@@ -14,9 +14,11 @@
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
 # pylint: disable=unused-argument
+import warnings
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 
 
@@ -60,7 +62,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     Then the expansion function can be obtained via
 
-    >>> expand_fn = qml.transforms.create_expand_fn(depth=5, stop_at=stop_at)
+    >>> expand_fn = qml.transforms.create_expand_fn(depth=5, stop_at=stop_at)  # doctest: +SKIP
 
     We can test the newly generated function on an example tape:
 
@@ -74,15 +76,24 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
         ]
         tape = qml.tape.QuantumTape(ops)
 
-    >>> new_tape = expand_fn(tape)
-    >>> print(qml.drawer.tape_text(tape, decimals=1))
+    >>> new_tape = expand_fn(tape)  # doctest: +SKIP
+    >>> print(qml.drawer.tape_text(tape, decimals=1))  # doctest: +SKIP
     0: ──RX(0.2)───Rot(1.7,0.9,-1.1)─┤
     1: ──RX(-2.4)──Rot(-3.1,0.7,1.4)─┤
-    >>> print(qml.drawer.tape_text(new_tape, decimals=1))
+    >>> print(qml.drawer.tape_text(new_tape, decimals=1))  # doctest: +SKIP
     0: ──RX(0.2)───Rot(1.7,0.9,-1.1)───────────────────┤
     1: ──RX(-2.4)──RZ(-3.1)───────────RY(0.7)──RZ(1.4)─┤
 
     """
+
+    warnings.warn(
+        """
+        The create_expand_fn is deprecated in PennyLane v0.45 and will be removed in v0.46.
+        Please use the qml.transforms.decompose function for decomposing circuits.
+        """,
+        PennyLaneDeprecationWarning,
+    )
+
     # pylint: disable=unused-argument
     if device is not None:
         if stop_at is None:
@@ -141,11 +152,14 @@ def _multipar_stopping_fn(obj):
         return True
 
 
-expand_multipar = create_expand_fn(
-    depth=None,
-    stop_at=_multipar_stopping_fn,
-    docstring=_expand_multipar_doc,
-)
+# pylint: disable=missing-function-docstring
+def expand_multipar(*args, **kwargs):
+    return create_expand_fn(
+        depth=None,
+        stop_at=_multipar_stopping_fn,
+        docstring=_expand_multipar_doc,
+    )(*args, **kwargs)
+
 
 _expand_trainable_multipar_doc = """Expand out a tape so that all its trainable
 operations have a single parameter.
@@ -169,15 +183,25 @@ def _trainable_multipar_stopping_fn(obj):
     return _multipar_stopping_fn(obj) or not any(math.requires_grad(d) for d in obj.data)
 
 
-expand_trainable_multipar = create_expand_fn(
-    depth=None,
-    stop_at=_trainable_multipar_stopping_fn,
-    docstring=_expand_trainable_multipar_doc,
-)
+# pylint: disable=missing-function-docstring
+def expand_trainable_multipar(*args, **kwargs):
+    return create_expand_fn(
+        depth=None,
+        stop_at=_trainable_multipar_stopping_fn,
+        docstring=_expand_trainable_multipar_doc,
+    )(*args, **kwargs)
 
 
 def create_expand_trainable_multipar(tape, use_tape_argnum=False):
     """Creates the expand_trainable_multipar expansion transform with an option to include argnums."""
+
+    warnings.warn(
+        """
+        The create_expand_trainable_multipar is deprecated in PennyLane v0.45 and will be removed in v0.46.
+        Please use the qml.transforms.decompose function for decomposing circuits.
+        """,
+        PennyLaneDeprecationWarning,
+    )
 
     if not use_tape_argnum:
         return expand_trainable_multipar
@@ -221,11 +245,14 @@ def _expand_nonunitary_gen_stop_at(obj):
     )
 
 
-expand_nonunitary_gen = create_expand_fn(
-    depth=None,
-    stop_at=_expand_nonunitary_gen_stop_at,
-    docstring=_expand_nonunitary_gen_doc,
-)
+def expand_nonunitary_gen(*args, **kwargs):
+    """Expands until all ops have unitary generators."""
+    return create_expand_fn(
+        depth=None,
+        stop_at=_expand_nonunitary_gen_stop_at,
+        docstring=_expand_nonunitary_gen_doc,
+    )(*args, **kwargs)
+
 
 _expand_invalid_trainable_doc = """Expand out a tape so that it supports differentiation
 of requested operations.
@@ -253,8 +280,10 @@ def _stop_at_expand_invalid_trainable(obj):
     )
 
 
-expand_invalid_trainable = create_expand_fn(
-    depth=None,
-    stop_at=_stop_at_expand_invalid_trainable,
-    docstring=_expand_invalid_trainable_doc,
-)
+def expand_invalid_trainable(*args, **kwargs):
+    """Expands until all ops are trainable."""
+    return create_expand_fn(
+        depth=None,
+        stop_at=_stop_at_expand_invalid_trainable,
+        docstring=_expand_invalid_trainable_doc,
+    )(*args, **kwargs)

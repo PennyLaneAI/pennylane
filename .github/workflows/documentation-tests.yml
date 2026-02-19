@@ -12,7 +12,8 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-
+  workflow_call:
+  
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -49,13 +50,23 @@ jobs:
 
       - name: Install Catalyst and Lightning (dev)
         run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
+          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
 
-      - name: Install dependencies
+      - name: Install dependencies of Catalyst and Lightning
         run: |
           pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+
+      - name: Install PennyLane (editable)
+        run: |
           pip install -e .
-          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
+
+      - name: Install testing packages
+        run: |
+          pip install sybil pytest
+
+      - name: Install additional packages
+        run: |
+          pip install "jax==0.7.1" "jaxlib==0.7.1" torch pyzx matplotlib
 
       - name: Print Dependencies
         run: |
@@ -78,7 +89,6 @@ jobs:
           --ignore=pennylane/ops/qubit
           --ignore=pennylane/ops/qutrit
           --ignore=pennylane/capture
-          --ignore=pennylane/decomposition
           --ignore=pennylane/devices
           "
           IGNORE_OPTS_AUXILIARY="

@@ -19,6 +19,8 @@ from __future__ import annotations
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from textwrap import dedent
 from typing import overload
@@ -26,7 +28,7 @@ from typing import overload
 from pennylane.operation import Operator
 
 from .resources import Resources, auto_wrap
-from .utils import translate_op_alias
+from .utils import to_name
 
 
 @dataclass(frozen=True)
@@ -192,7 +194,7 @@ def register_resources(
             qml.CZ(wires=wires)
             qml.H(wires=wires[1])
 
-        @qml.transforms.decompose(gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
+        @qml.decompose(gate_set={qml.CZ, qml.H}, fixed_decomps={qml.CNOT: my_cnot})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.CNOT(wires=[0, 1])
@@ -337,7 +339,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qml.transforms.decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qml.decompose(fixed_decomps=decomps, num_work_wires=1)
           @qml.qnode(qml.device("default.qubit"))
           def circuit():
               qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -447,8 +449,10 @@ class DecompositionRule:
         self._work_wire_spec = work_wires
 
 
-_decompositions = defaultdict(list)
+_decompositions_private = defaultdict(list)
 """dict[str, list[DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
+
+_decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
 
 def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
@@ -524,9 +528,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qml.register_resources"
         )
-    if isinstance(op_type, type):
-        op_type = op_type.__name__
-    _decompositions[translate_op_alias(op_type)].extend(decomps)
+    _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]:
@@ -550,30 +552,28 @@ def list_decomps(op: type[Operator] | Operator | str) -> list[DecompositionRule]
     **Example**
 
     >>> import pennylane as qml
-    >>> qml.list_decomps(qml.CRX)
-    [<pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9de0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9db0>,
-     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
+    >>> from pprint import pprint
+    >>> pprint(qml.list_decomps(qml.CRX))
+    [<pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>,
+     <pennylane.decomposition.decomposition_rule.DecompositionRule object at 0x...>]
 
     Each decomposition rule can be inspected:
 
     >>> print(qml.list_decomps(qml.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi, wires, **__):
-        qml.RX(phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
-        qml.RX(-phi / 2, wires=wires[1]),
-        qml.CZ(wires=wires),
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+        qml.RX(phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
+        qml.RX(-phi / 2, wires=wires[1])
+        qml.CZ(wires=wires)
     >>> print(qml.draw(qml.list_decomps(qml.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    if isinstance(op, Operator):
-        return _decompositions[op.name][:]
-    if isinstance(op, type):
-        op = op.__name__
-    return _decompositions[translate_op_alias(op)][:]
+    return _decompositions_var.get()[to_name(op)][:]
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -595,12 +595,24 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    if isinstance(op, Operator):
-        return op.name in _decompositions and len(_decompositions[op.name]) > 0
-    if isinstance(op, type):
-        op = op.__name__
-    op = translate_op_alias(op)
-    return op in _decompositions and len(_decompositions[op]) > 0
+    op_name = to_name(op)
+    _decompositions = _decompositions_var.get()
+    return op_name in _decompositions and len(_decompositions[op_name]) > 0
+
+
+@contextmanager
+def local_decomps():
+    """Start a new context in which additions to decomposition rules are localized.
+
+    This context manager is thread-safe because it uses ``ContextVar`` under the hood.
+
+    """
+    _new_decompositions = defaultdict(list, {k: v[:] for k, v in _decompositions_private.items()})
+    token = _decompositions_var.set(_new_decompositions)
+    try:
+        yield
+    finally:
+        _decompositions_var.reset(token)
 
 
 @register_resources({})
@@ -616,7 +628,7 @@ def null_decomp(*_, **__):
 
         qml.decomposition.enable_graph()
 
-        @qml.transforms.decompose(
+        @qml.decompose(
             gate_set={qml.RZ},
             fixed_decomps={qml.GlobalPhase: null_decomp}
         )

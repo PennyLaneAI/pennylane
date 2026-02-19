@@ -336,7 +336,7 @@ class TestSpecsTransform:
                 program = super().preprocess_transforms(execution_config)
                 program.add_transform(
                     qml.devices.preprocess.decompose,
-                    target_gates=qml.devices.default_qubit.ALL_DQ_GATE_SET,
+                    target_gates=qml.devices.default_qubit.ALL_DQ_GATES,
                     stopping_condition=self.stopping_condition,
                 )
                 return program
@@ -510,7 +510,7 @@ Resource specifications:
         """Test that we can draw at a custom level."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():
@@ -562,17 +562,18 @@ class TestSpecsGraphModeExclusive:
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyCustomOp, decomp_fallback, decomp_with_work_wire)
 
-        # Test with parametrized number of device wires
-        dev = qml.device("default.qubit", wires=num_device_wires)
+            # Test with parametrized number of device wires
+            dev = qml.device("default.qubit", wires=num_device_wires)
 
-        @qml.qnode(dev)
-        def circuit():
-            MyCustomOp(0)  # Uses only wire 0
-            return qml.expval(qml.Z(0))
+            @qml.qnode(dev)
+            def circuit():
+                MyCustomOp(0)  # Uses only wire 0
+                return qml.expval(qml.Z(0))
 
-        specs = qml.specs(circuit, level="device")()
+            specs = qml.specs(circuit, level="device")()
 
         # Work wires calculation should be: device_wires - tape_wires
         if num_device_wires:
@@ -596,17 +597,18 @@ class TestSpecsGraphModeExclusive:
         def work_wire_decomp(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyLimitedOp, simple_decomp, work_wire_decomp)
 
-        # Device with only 2 wires - insufficient for the 10 work wires needed
-        dev = qml.device("default.qubit", wires=2)
+            # Device with only 2 wires - insufficient for the 10 work wires needed
+            dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
-        def circuit():
-            MyLimitedOp(0)  # Uses wire 0, fallback should be used
-            return qml.expval(qml.Z(0))
+            @qml.qnode(dev)
+            def circuit():
+                MyLimitedOp(0)  # Uses wire 0, fallback should be used
+                return qml.expval(qml.Z(0))
 
-        specs = qml.specs(circuit, level="device")()
+            specs = qml.specs(circuit, level="device")()
 
         # Should report 1 work wire available (2 device wires - 1 tape wire)
         assert specs["num_device_wires"] == 2

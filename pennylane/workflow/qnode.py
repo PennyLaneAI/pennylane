@@ -162,7 +162,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
-def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform) -> None:
+def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform | None) -> None:
     if diff_method is None:
         return
 
@@ -662,14 +662,11 @@ class QNode:
             Access through ``transform_program`` will be removed in PennyLane v0.46.
 
         """
-        # TODO: After https://github.com/PennyLaneAI/catalyst/pull/2385/changes merges
-        # uncomment this deprecation message.
-
-        # warnings.warn(
-        #    "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
-        #    "Access through 'transform_program' will be removed in PennyLane v0.46.",
-        #    PennyLaneDeprecationWarning,
-        # )
+        warnings.warn(
+            "The 'transform_program' property of the QNode has been renamed to 'compile_pipeline'. "
+            "Access through 'transform_program' will be removed in PennyLane v0.46.",
+            PennyLaneDeprecationWarning,
+        )
         return self.compile_pipeline
 
     @property

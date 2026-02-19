@@ -26,17 +26,18 @@ from pennylane.workflow import construct_batch, get_transform_program
 
 
 class TestMarker:
+    """Tests the integration with the QNode."""
 
     def test_level_not_found(self):
         """Test the error message when a requested level is not found."""
 
-        @qml.marker(level="something")
+        @qml.marker("something")
         @qml.qnode(qml.device("null.qubit"))
         def c():
             return qml.state()
 
         expected = (
-            r"level bla not found in transform program. "
+            r"Level bla not found in transform program. "
             r"Builtin options are 'top', 'user', 'device', and 'gradient'."
             r" Custom levels are \['something'\]."
         )
@@ -47,7 +48,7 @@ class TestMarker:
         """Test that custom levels can be specified and accessed."""
 
         @qml.transforms.merge_rotations
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("null.qubit"))
         def c():
@@ -83,7 +84,7 @@ class TestMarker:
     def test_execution_with_marker_transform(self):
         """Test that the marker transform does not effect execution results."""
 
-        @qml.marker(level="my_level")
+        @qml.marker("my_level")
         @qml.qnode(qml.device("default.qubit"))
         def c(x):
             qml.RX(x, 0)
@@ -91,37 +92,6 @@ class TestMarker:
 
         res = c(0.5)
         assert qml.math.allclose(res, np.cos(0.5))
-
-    def test_tape_application(self):
-        """Test that the tape transform leaves the input unaffected."""
-
-        input = qml.tape.QuantumScript([qml.X(0)], [qml.state()])
-        (out,), fn = qml.marker(input, level="level")
-        assert input is out
-        assert fn(("a",)) == "a"
-
-    def test_uniqueness_checking(self):
-        """Test an error is raised if a level is not unique."""
-
-        @qml.marker(level="something")
-        @qml.marker(level="something")
-        @qml.qnode(qml.device("null.qubit"))
-        def c():
-            return qml.state()
-
-        with pytest.raises(ValueError, match="Found multiple markers for level something"):
-            construct_batch(c)()
-
-    def test_protected_levels(self):
-        """Test an error is raised for using a protected level."""
-
-        @qml.marker(level="gradient")
-        @qml.qnode(qml.device("null.qubit"))
-        def c():
-            return qml.state()
-
-        with pytest.raises(ValueError, match="Found marker for protected level gradient."):
-            construct_batch(c)()
 
 
 class TestCompilePipelineGetter:
@@ -132,7 +102,7 @@ class TestCompilePipelineGetter:
         def circuit():
             return qml.state()
 
-        with pytest.raises(ValueError, match=r"level bla not found in transform program."):
+        with pytest.raises(ValueError, match=r"Level bla not found in transform program."):
             get_transform_program(circuit, level="bla")
 
     def test_bad_other_key(self):
@@ -285,9 +255,9 @@ class TestCompilePipelineGetter:
         grad_program = get_transform_program(circuit, level="gradient")
         assert len(grad_program) == 4
         assert grad_program[0].tape_transform == qml.compile.tape_transform
-        assert grad_program[1].tape_transform == qml.gradients.param_shift.expand_transform
-        assert grad_program[2].tape_transform == qml.metric_tensor.expand_transform
-        assert grad_program[3].tape_transform == qml.metric_tensor.tape_transform
+        assert grad_program[1].tape_transform == qml.metric_tensor.expand_transform
+        assert grad_program[2].tape_transform == qml.metric_tensor.tape_transform
+        assert grad_program[3].tape_transform == qml.gradients.param_shift.expand_transform
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
@@ -295,11 +265,8 @@ class TestCompilePipelineGetter:
         assert len(dev_program) == 4 + len(
             circuit.device.preprocess_transforms(config)
         )  # currently 8
-        assert dev_program[-1].tape_transform == qml.metric_tensor.tape_transform
 
         full_program = get_transform_program(circuit)
-        assert full_program[-1].tape_transform == qml.metric_tensor.tape_transform
-
         assert dev_program == full_program
 
 

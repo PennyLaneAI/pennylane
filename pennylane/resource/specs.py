@@ -83,30 +83,26 @@ def _specs_qjit_device_level_tracking(
         compute_depth=compute_depth,
     )
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", category=UserWarning, message="The device's shots value does not match "
-        )
-        if pass_pipeline_wrapped:
-            new_qnode = original_qnode.update(device=spoofed_dev)
+    if pass_pipeline_wrapped:
+        new_qnode = original_qnode.update(device=spoofed_dev)
 
-            def recursively_add_passes(pass_pipeline):
-                if isinstance(pass_pipeline, catalyst.passes.pass_api.PassPipelineWrapper):
-                    inner_fxn = recursively_add_passes(pass_pipeline.qnode)
-                    new_pass_pipeline = catalyst.passes.pass_api.PassPipelineWrapper(
-                        inner_fxn,
-                        pass_pipeline.pass_name_or_pipeline,
-                        *pass_pipeline.flags,
-                        **pass_pipeline.valued_options,
-                    )
-                    return new_pass_pipeline
-                return new_qnode
+        def recursively_add_passes(pass_pipeline):
+            if isinstance(pass_pipeline, catalyst.passes.pass_api.PassPipelineWrapper):
+                inner_fxn = recursively_add_passes(pass_pipeline.qnode)
+                new_pass_pipeline = catalyst.passes.pass_api.PassPipelineWrapper(
+                    inner_fxn,
+                    pass_pipeline.pass_name_or_pipeline,
+                    *pass_pipeline.flags,
+                    **pass_pipeline.valued_options,
+                )
+                return new_pass_pipeline
+            return new_qnode
 
-            pass_pipeline = recursively_add_passes(qjit.original_function)
-            new_qjit = QJIT(pass_pipeline, copy.deepcopy(qjit.compile_options))
-        else:
-            new_qnode = qjit.original_function.update(device=spoofed_dev)
-            new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
+        pass_pipeline = recursively_add_passes(qjit.original_function)
+        new_qjit = QJIT(pass_pipeline, copy.deepcopy(qjit.compile_options))
+    else:
+        new_qnode = qjit.original_function.update(device=spoofed_dev)
+        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
 
     if os.path.exists(_RESOURCE_TRACKING_FILEPATH):
         # TODO: Warn that something has gone wrong here
@@ -119,16 +115,10 @@ def _specs_qjit_device_level_tracking(
         with open(_RESOURCE_TRACKING_FILEPATH, encoding="utf-8") as f:
             resource_data = json.load(f)
 
-        # TODO: Once measurements are tracked for runtime specs, include that data here
-        warnings.warn(
-            "Measurement resource tracking is not yet supported for qjit'd QNodes. "
-            "The returned SpecsResources will have an empty measurements field.",
-            UserWarning,
-        )
         return SpecsResources(
             gate_types=resource_data["gate_types"],
             gate_sizes={int(k): v for (k, v) in resource_data["gate_sizes"].items()},
-            measurements={},  # Not tracked at the moment
+            measurements=resource_data["measurements"],
             num_allocs=resource_data["num_wires"],
             depth=resource_data["depth"],
         )
@@ -159,7 +149,7 @@ def _preprocess_level_input(level, marker_to_level) -> list[int]:
     for i, lvl in enumerate(level):
         if isinstance(lvl, str):
             if lvl not in marker_to_level:
-                raise ValueError(f"Marker name '{lvl}' not found in the transform program.")
+                raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
         elif isinstance(lvl, int):
             if lvl < 0:
@@ -188,17 +178,18 @@ def _specs_qjit_intermediate_passes(
     from catalyst.python_interface.inspection import mlir_specs
 
     # Note that this only gets transforms manually applied by the user
-    trans_prog = original_qnode.compile_pipeline
+    compile_pipeline = original_qnode.compile_pipeline
 
-    single_level = isinstance(level, (int, str)) and not level in ("all", "all-mlir")
+    single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
 
     # Maps to convert back and forth between marker name and int level
-    marker_to_level = {
-        trans.kwargs["level"]: i + 1
-        for i, trans in enumerate(trans_prog)
-        if trans.tape_transform == qml.marker.tape_transform
+    marker_to_level: dict[str, int] = {
+        marker: compile_pipeline.get_marker_level(marker) for marker in compile_pipeline.markers
     }
-    level_to_marker = {v: k for k, v in marker_to_level.items()}
+    # Multiple markers can correspond to the same level
+    level_to_markers = defaultdict(list)
+    for marker, lvl in marker_to_level.items():
+        level_to_markers[lvl].append(marker)
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     if level not in ("all", "all-mlir"):
@@ -206,13 +197,14 @@ def _specs_qjit_intermediate_passes(
 
     resources = {}
 
-    # Handle tape/PLxPR transforms
+    # Handle transforms
     if level != "all-mlir":
-        # If capture is enabled, find the seam where PLxPR transforms end and MLIR passes begin
+        # This value is used to determine the last level which is a transform and not an MLIR pass
         num_trans_levels = 0
 
-        # If the pass name is None, it indicates a PLxPR transform which is not recognized by Catalyst
-        for i, trans in reversed(list(enumerate(trans_prog))):
+        # Find the seam where transforms end and MLIR passes begin
+        # If the pass name is None, it indicates a transform which is NOT also a Catalyst pass
+        for i, trans in reversed(list(enumerate(compile_pipeline))):
             if trans.pass_name is None:
                 num_trans_levels = i + 1
                 break
@@ -225,7 +217,7 @@ def _specs_qjit_intermediate_passes(
             # pass (the marker map does not account for when the lowering pass takes place)
             # NOTE: This is actually currently unused, since markers are tape transforms only
             level = [
-                lvl + 1 if lvl in level_to_marker and lvl >= num_trans_levels else lvl
+                lvl + 1 if lvl in level_to_markers and lvl >= num_trans_levels else lvl
                 for lvl in level
             ]
 
@@ -236,7 +228,7 @@ def _specs_qjit_intermediate_passes(
             else [lvl for lvl in level if lvl < num_trans_levels]
         )
 
-        # Handle tape transforms
+        # Handle transforms
         for trans_level in trans_levels:
             # User transforms always come first, so level and trans_level align correctly
             batch, _ = qml.workflow.construct_batch(original_qnode, level=trans_level)(
@@ -247,12 +239,13 @@ def _specs_qjit_intermediate_passes(
             if len(res) == 1:
                 res = res[0]
 
-            if trans_level == 0:
+            if trans_level in level_to_markers:
+                trans_name: str = ", ".join(level_to_markers[trans_level])
+            elif trans_level == 0:
                 trans_name = "Before transforms"
-            elif trans_level in level_to_marker:
-                trans_name = level_to_marker[trans_level]
             else:
-                trans_name = trans_prog[trans_level - 1].transform.__name__
+                # TODO: Use PLxPR transforms where appropriate
+                trans_name = compile_pipeline[trans_level - 1].tape_transform.__name__
 
             # If the same transform appears multiple times, append a suffix
             if trans_name in resources:
@@ -268,9 +261,19 @@ def _specs_qjit_intermediate_passes(
         if level not in ("all", "all-mlir")
         else "all"
     )
+    # NOTE: Add back one to account for the inserted MLIR lowering pass,
+    # which is not accounted for in the marker levels
+    num_tape_transforms = num_trans_levels
+    mlir_level_to_markers = {
+        lvl - num_tape_transforms + 1: markers
+        for lvl, markers in level_to_markers.items()
+        if lvl >= num_tape_transforms
+    }
     if mlir_levels == "all" or len(mlir_levels) > 0:
         try:
-            results = mlir_specs(qjit, mlir_levels, *args, **kwargs)
+            results = mlir_specs(
+                qjit, mlir_levels, *args, **kwargs, level_to_markers=mlir_level_to_markers
+            )
         except ValueError as ve:
             levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
             bad_levels = [str(int(lvl) + num_trans_levels) for lvl in levels[1].split(", ")]
@@ -284,8 +287,18 @@ def _specs_qjit_intermediate_passes(
                 for size, count in sizes.items():
                     gate_sizes[size] += count
 
+            gate_types = {}
+
+            for res_name, sizes in res.operations.items():
+                if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+                    # Separate out PPMs and PPRs by weight
+                    for size, count in sizes.items():
+                        gate_types[f"{res_name}-w{size}"] = count
+                else:
+                    gate_types[res_name] = sum(sizes.values())
+
             res_resources = SpecsResources(
-                gate_types={r: sum(sizes.values()) for r, sizes in res.operations.items()},
+                gate_types=gate_types,
                 gate_sizes=dict(gate_sizes),
                 measurements=dict(res.measurements),
                 num_allocs=res.num_allocs,
@@ -578,11 +591,7 @@ def specs(
             RX: 1
         <BLANKLINE>
           Measurements:
-            No measurements.
-
-        .. warning::
-            Measurement data is not currently supported with runtime resource tracking, so measurement
-            data may show as missing.
+            probs(all wires): 1
 
         **Pass-by-pass specs** analyze the intermediate representations of compiled circuits.
         This can be helpful for determining how circuit resources change after a given transform or compilation pass.

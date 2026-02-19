@@ -392,7 +392,7 @@ class Select(Operation):
         if 2 ** len(control) < len(ops):
             raise ValueError(
                 f"Not enough control wires ({len(control)}) for the desired number of "
-                + f"operations ({len(ops)}). At least {_ceil_log(len(ops))} control "
+                + f"operations ({len(ops)}). At least {math.ceil_log2(len(ops))} control "
                 + "wires are required."
             )
 
@@ -604,14 +604,6 @@ add_decomps(Select, _select_decomp_multi_control)
 # Decomposition of Select using unary iterator
 
 
-def _ceil(a):
-    return int(math.ceil(a))
-
-
-def _ceil_log(a):
-    return _ceil(math.log2(a))
-
-
 def _add_first_k_units(ops, controls, work_wires, k):
     """Add all controlled-applied operators within the unary iterator scheme.
 
@@ -623,7 +615,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     """
     assert k == len(ops) > 2
 
-    needed_controls = 2 * _ceil_log(k) - 1
+    needed_controls = 2 * math.ceil_log2(k) - 1
     assert len(controls) >= needed_controls, f"{len(controls)=}, {needed_controls=}"
     controls = controls[:needed_controls]
 
@@ -631,11 +623,11 @@ def _add_first_k_units(ops, controls, work_wires, k):
     new_work_wires = work_wires + controls[:2]
     new_controls = controls[2:]
 
-    a = _ceil_log(k)  # a >= 2 because k>2 by assertion above
+    a = math.ceil_log2(k)  # a >= 2 because k>2 by assertion above
     k01 = 2 ** (a - 1)  # First half of circuit will implement 2^(a-1)>=2 operators
     k0 = k1 = 2 ** (a - 2)  # First two quarters of circuit each implement 2^(a-2)>=1 operator(s).
     l = k - k01
-    k2 = _ceil(2 ** (_ceil_log(l) - 1))
+    k2 = int(math.ceil(2 ** (math.ceil_log2(l) - 1)))
     k3 = k - k01 - k2
 
     # Open TemporaryAND (controlled on |00>) + first quarter + CX (controlled on |0>) + second quarter
@@ -657,7 +649,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
         middle_part = [adjoint(TemporaryAND)(and_wires, control_values=(0, 1))]
 
     else:
-        c_bar = 2 * (_ceil_log(k) - _ceil_log(k - k01) - 1)
+        c_bar = 2 * (math.ceil_log2(k) - math.ceil_log2(k - k01) - 1)
         and_wires_sec_half = [controls[0], controls[c_bar + 1], controls[c_bar + 2]]
         new_controls_sec_half = controls[c_bar + 2 :]
         new_work_wires_sec_half = work_wires + controls[: c_bar + 2]
@@ -714,7 +706,7 @@ def _add_k_units(ops, controls, work_wires, k):
 
     """
     assert k == len(ops) > 0
-    num_bits = _ceil_log(k)
+    num_bits = math.ceil_log2(k)
     needed_controls = 2 * num_bits + 1
     assert len(controls) >= needed_controls, f"{len(controls)=}, {needed_controls=}"
 
@@ -824,7 +816,7 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
             ): 1
             for i, op_rep in enumerate(op_reps)
         }
-    if num_ops / 2 ** _ceil_log(num_ops) > 3 / 4:
+    if num_ops / 2 ** math.ceil_log2(num_ops) > 3 / 4:
         counts.update(
             {
                 resource_rep(TemporaryAND): num_ops - 3,
@@ -1049,7 +1041,7 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
 
     # Validate number of control wires
     c = len(control)
-    min_num_controls = max(_ceil_log(K), 1)
+    min_num_controls = max(math.ceil_log2(K), 1)
     if c < min_num_controls:
         raise ValueError(
             f"At least {min_num_controls} control wires are required to implement Select of "

@@ -80,12 +80,17 @@ class TestQNode:
 
         dev = get_device(dev_name, wires=1, seed=seed)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             dev,
             interface=interface,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -152,12 +157,17 @@ class TestQNode:
         b = jax.numpy.array(0.2)
         c = jax.numpy.array(0.3)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
@@ -181,12 +191,17 @@ class TestQNode:
         U = jax.numpy.array([[0, 1], [1, 0]])
         a = jax.numpy.array(0.1)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
@@ -210,8 +225,13 @@ class TestQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
 
-        class U3(qml.U3):
+        class MyU3(qml.U3):
+
+            name = "MyU3"
+
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
@@ -220,40 +240,50 @@ class TestQNode:
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        a = jax.numpy.array(0.1)
-        p = jax.numpy.array([0.1, 0.2, 0.3])
+        with qml.decomposition.local_decomps():
 
-        @qnode(
-            get_device(dev_name, wires=1, seed=seed),
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-            gradient_kwargs=gradient_kwargs,
-        )
-        def circuit(a, p):
-            qml.RX(a, wires=0)
-            U3(p[0], p[1], p[2], wires=0)
-            return qml.expval(qml.PauliX(0))
+            @qml.register_resources({qml.Rot: 1, qml.PhaseShift: 1})
+            def _decomp(theta, phi, lam, wires):
+                qml.Rot(lam, theta, -lam, wires)
+                qml.PhaseShift(phi + lam, wires)
 
-        res = jax.jit(circuit)(a, p)
-        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            qml.add_decomps(MyU3, _decomp)
 
-        res = jax.jit(jax.grad(circuit, argnums=1))(a, p)
-        expected = np.array(
-            [
-                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                - np.sin(p[1])
-                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                np.sin(a)
-                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            a = jax.numpy.array(0.1)
+            p = jax.numpy.array([0.1, 0.2, 0.3])
+
+            @qnode(
+                get_device(dev_name, wires=1, seed=seed),
+                diff_method=diff_method,
+                interface=interface,
+                grad_on_execution=grad_on_execution,
+                device_vjp=device_vjp,
+                gradient_kwargs=gradient_kwargs,
+            )
+            def circuit(a, p):
+                qml.RX(a, wires=0)
+                MyU3(p[0], p[1], p[2], wires=0)
+                return qml.expval(qml.PauliX(0))
+
+            res = jax.jit(circuit)(a, p)
+            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+            )
+            assert np.allclose(res, expected, atol=tol, rtol=0)
+
+            res = jax.jit(jax.grad(circuit, argnums=1))(a, p)
+            expected = np.array(
+                [
+                    np.cos(p[1])
+                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                    - np.sin(p[1])
+                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                    np.sin(a)
+                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+                ]
+            )
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_options(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed
@@ -313,6 +343,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -379,6 +411,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -446,6 +480,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -502,6 +538,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 3
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -591,6 +629,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -669,6 +709,8 @@ class TestVectorValuedQNode:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "hadamard":
+            kwargs["aux_wire"] = 2
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -933,6 +975,7 @@ class TestShotsIntegration:
         # Test return shapes for shot vectors
         assert isinstance(res, tuple)
         assert len(res) == 2  # Two different shot counts
+        # pylint: disable=not-an-iterable
         assert all(isinstance(r, jax.numpy.ndarray) for r in res)
         assert all(r.shape == () for r in res)  # Scalar outputs
 
@@ -1067,12 +1110,17 @@ class TestQubitIntegration:
 
         dev = get_device(dev_name, wires=2, seed=seed)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         @qnode(
             dev,
             interface=interface,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit1(weights):
             Template(weights, wires=[0, 1])
@@ -1084,6 +1132,7 @@ class TestQubitIntegration:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit2(data, weights):
             qml.templates.AngleEmbedding(jax.numpy.stack([data, 0.7]), wires=[0, 1])
@@ -1177,6 +1226,8 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs["num_directions"] = 20
             gradient_kwargs["h"] = H_FOR_SPSA
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         dev = get_device(dev_name, wires=1, seed=seed)
 
@@ -1230,6 +1281,8 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         dev = get_device(dev_name, wires=1, seed=seed)
 
@@ -1286,6 +1339,10 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip(
+                "Higher order derivatives not supported with hadamard gradient in standard mode."
+            )
 
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -1310,6 +1367,7 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = jax.jit(jax.jacobian(circuit))
+
         g = jac_fn(x)
 
         expected_g = [
@@ -1349,6 +1407,8 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -1415,6 +1475,10 @@ class TestQubitIntegrationHigherOrder:
                 "sampler_rng": np.random.default_rng(seed),
             }
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip(
+                "Higher order derivatives not supported with hadamard gradient in standard mode."
+            )
 
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -1438,6 +1502,7 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))
+
         g = jac_fn(a, b)
 
         expected_g = np.array(
@@ -1446,6 +1511,7 @@ class TestQubitIntegrationHigherOrder:
                 [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
             ]
         )
+
         assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
 
         hess = jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
@@ -1913,6 +1979,8 @@ class TestJIT:
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(seed)}
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
 
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -2020,6 +2088,10 @@ class TestJIT:
         if diff_method == "adjoint" and device_vjp and jacobian is jax.jacfwd:
             pytest.xfail(reason="TypeError applying forward-mode autodiff.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "reversed-direct"
+
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
@@ -2029,6 +2101,7 @@ class TestJIT:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b, c):
             qml.RY(a, wires=0)
@@ -2064,6 +2137,8 @@ class TestJIT:
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(seed)}
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
 
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2104,6 +2179,7 @@ class TestJIT:
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
     # pylint: disable=unused-argument
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_matrix_parameter(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface, seed
     ):
@@ -2118,6 +2194,10 @@ class TestJIT:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("device vjps are not compatible with forward differentiation.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         # pylint: disable=unused-argument
         @qml.qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -2125,6 +2205,7 @@ class TestJIT:
             interface=interface,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circ(p, U):
             qml.QubitUnitary(U, wires=0)
@@ -2165,8 +2246,11 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
+        elif diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 1
 
         @qml.set_shots(shots=shots)
         @qnode(
@@ -2175,6 +2259,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -2205,6 +2290,10 @@ class TestReturn:
         if "lightning" in dev_name:
             pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 1
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -2212,6 +2301,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2245,6 +2335,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 1
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -2252,6 +2346,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2283,6 +2378,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2290,6 +2389,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -2321,6 +2421,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2328,6 +2432,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2365,6 +2470,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2372,6 +2481,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2401,6 +2511,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
@@ -2411,6 +2525,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2453,6 +2568,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2460,6 +2579,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2598,6 +2718,10 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -2605,6 +2729,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -2641,6 +2766,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -2648,6 +2777,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2693,6 +2823,10 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["aux_wire"] = 2
+
         @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -2700,6 +2834,7 @@ class TestReturn:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2746,6 +2881,10 @@ class TestReturnHessian:
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2753,6 +2892,7 @@ class TestReturnHessian:
             max_diff=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2789,6 +2929,10 @@ class TestReturnHessian:
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
+        gradient_kwargs = {}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2796,6 +2940,7 @@ class TestReturnHessian:
             max_diff=2,
             grad_on_execution=grad_on_execution,
             device_vjp=device_vjp,
+            gradient_kwargs=gradient_kwargs,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -3052,9 +3197,13 @@ class TestReturnHessian:
 def test_jax_device_hessian_shots(hessian, diff_method):
     """The hessian of multiple measurements with a multiple param array return a single array."""
 
+    gradient_kwargs = {}
+    if diff_method == "hadamard":
+        gradient_kwargs["mode"] = "direct"
+
     @jax.jit
     @qml.set_shots(shots=10000)
-    @qml.qnode(DefaultQubit(), diff_method=diff_method, max_diff=2)
+    @qml.qnode(DefaultQubit(), diff_method=diff_method, max_diff=2, gradient_kwargs=gradient_kwargs)
     def circuit(x):
         qml.RY(x[0], wires=0)
         qml.RX(x[1], wires=0)
@@ -3106,6 +3255,8 @@ class TestSubsetArgnums:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            kwargs["mode"] = "direct"
 
         @qml.qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -3168,6 +3319,8 @@ class TestSubsetArgnums:
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            kwargs["mode"] = "direct"
 
         @qml.qnode(
             get_device(dev_name, wires=2, seed=seed),

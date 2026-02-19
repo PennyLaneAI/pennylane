@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-
 import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
@@ -28,11 +27,31 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.exceptions import (
+    DecompositionWarning,
+    DeviceError,
+    PennyLaneDeprecationWarning,
+    QuantumFunctionError,
+)
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _make_execution_config
 from pennylane.workflow.set_shots import set_shots
+
+
+def test_transform_program_prop_is_deprecated():
+    """Tests that the deprecation warning is raised."""
+
+    @qml.qnode(qml.device("reference.qubit"))
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="The 'transform_program' property of the QNode has been renamed",
+    ):
+        _ = circuit.transform_program
 
 
 def dummyfunc():
@@ -820,8 +839,12 @@ class TestIntegration:
         x = pnp.array(0.543, requires_grad=True)
         y = pnp.array(-0.654, requires_grad=True)
 
+        gradient_kwargs = {"argnum": [1]}
+        if diff_method == "hadamard":
+            gradient_kwargs["mode"] = "direct"
+
         @qnode(
-            dev, diff_method=diff_method, gradient_kwargs={"argnum": [1]}
+            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1113,10 +1136,12 @@ class TestIntegration:
             def decomposition(self) -> list:
                 return []
 
-        graph = nx.complete_graph(3)
-        tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
-        res = qml.execute([tape], dev)
-        assert qml.math.get_interface(res) == "numpy"
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(DummyCustomGraphOp, null_decomp)
+            graph = nx.complete_graph(3)
+            tape = qml.tape.QuantumScript([DummyCustomGraphOp(graph)], [qml.expval(qml.PauliZ(0))])
+            res = qml.execute([tape], dev)
+            assert qml.math.get_interface(res) == "numpy"
 
     def test_error_device_vjp_unsuppoprted(self):
         """Test that an error is raised in the device_vjp is unsupported."""
@@ -1907,6 +1932,10 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
+        @qml.register_resources({qml.RX: 1})
+        def _decomp(param, wires):
+            qml.RX(3 * param, wires)
+
         @qnode(dev, diff_method=diff_method, grad_on_execution=grad_on_execution)
         def circuit(x):
             UnsupportedOp(x, wires=0)
@@ -1917,8 +1946,10 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = pnp.array(0.5)
-        circuit(x)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(UnsupportedOp, _decomp)
+            x = pnp.array(0.5)
+            circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
@@ -1927,8 +1958,8 @@ class TestTapeExpansion:
 
     @pytest.mark.autograd
     def test_no_gradient_expansion(self):
-        """Test that an unsupported operation with defined gradient recipe is
-        not expanded"""
+        """Test that an unsupported operation with defined gradient recipe is not expanded"""
+
         dev = qml.device("default.qubit", wires=1)
 
         # pylint: disable=too-few-public-methods
@@ -1938,26 +1969,36 @@ class TestTapeExpansion:
             num_wires = 1
 
             grad_method = "A"
+
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            UnsupportedOp(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
+        with qml.decomposition.local_decomps():
 
-        x = pnp.array(0.5, requires_grad=True)
-        qml.grad(circuit)(x)
+            @qml.register_resources({qml.RX: 1})
+            def _decomp(data, wires):
+                qml.RX(3 * data, wires)
 
-        # check second derivative
-        assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
+            qml.add_decomps(UnsupportedOp, _decomp)
+
+            @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                UnsupportedOp(x, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            x = pnp.array(0.5, requires_grad=True)
+            qml.grad(circuit)(x)
+
+            # check second derivative
+            assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
+
         dev = qml.device("default.qubit", wires=1)
 
         # pylint: disable=too-few-public-methods
@@ -1969,22 +2010,30 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RY(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            qml.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
-            return qml.expval(qml.PauliX(0))
+        with qml.decomposition.local_decomps():
 
-        x = pnp.array(0.5, requires_grad=True)
-        circuit(x)
+            @qml.register_resources({qml.RY: 1})
+            def custom_decomposition(param, wires):
+                qml.RY(3 * param, wires=wires)
 
-        res = qml.grad(circuit)(x)
+            qml.add_decomps(PhaseShift, custom_decomposition)
 
-        assert np.allclose(res, -3 * np.sin(3 * x))
+            @qnode(dev, diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                qml.Hadamard(wires=0)
+                PhaseShift(x, wires=0)
+                return qml.expval(qml.PauliX(0))
 
-        # test second order derivatives
-        res = qml.grad(qml.grad(circuit))(x)
-        assert np.allclose(res, -9 * np.cos(3 * x))
+            x = pnp.array(0.5, requires_grad=True)
+            circuit(x)
+
+            res = qml.grad(circuit)(x)
+
+            assert np.allclose(res, -3 * np.sin(3 * x))
+
+            # test second order derivatives
+            res = qml.grad(qml.grad(circuit))(x)
+            assert np.allclose(res, -9 * np.cos(3 * x))
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""
@@ -2017,8 +2066,13 @@ def test_resets_after_execution_error():
         BadOp(x, wires=0)
         return qml.state()
 
-    with pytest.raises(DeviceError):
-        circuit(qml.numpy.array(0.1))
+    if qml.decomposition.enabled_graph():
+        with pytest.raises(DeviceError):
+            with pytest.warns(DecompositionWarning):
+                circuit(qml.numpy.array(0.1))
+    else:
+        with pytest.raises(DeviceError):
+            circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
 

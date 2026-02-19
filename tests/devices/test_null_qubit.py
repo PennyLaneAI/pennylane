@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices import ExecutionConfig, NullQubit
+from pennylane.devices import ExecutionConfig, NullQubit, preprocess
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -105,6 +105,12 @@ def test_set_device_target():
         for i, arg in enumerate(t1.args):
             if not callable(arg):
                 assert arg == t2.args[i]
+
+        if t1.tape_transform == preprocess.decompose.tape_transform:
+            assert t1.kwargs.pop("strict") is False, (
+                "null.qubit should add strict=False to the decompose transform to allow "
+                "pass-through of ops that do not define a decomposition."
+            )
 
         assert len(t1.kwargs) == len(t2.kwargs)
         for k in t1.kwargs:
@@ -1392,12 +1398,13 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         def decomp_with_work_wire(wires):
             qml.X(wires)
 
-        qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
 
-        tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
-        dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-        program = dev.preprocess_transforms()
-        (out_tape,), _ = program([tape])
+            tape = qml.tape.QuantumScript([MyNullQubitOp(0)])
+            dev = qml.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+            program = dev.preprocess_transforms()
+            (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == 2
         assert out_tape.operations[0].name == "Hadamard"
