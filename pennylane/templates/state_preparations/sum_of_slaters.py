@@ -679,7 +679,7 @@ class SumOfSlatersPrep(Operation):
 
         @qml.transforms.resolve_dynamic_wires(min_int=max(wires)+1)
         @qml.decompose(gate_set=gate_set, num_work_wires=10)
-        @qml.qnode(qml.device("lightning.qubit", wires=wires))
+        @qml.qnode(qml.device("lightning.qubit", wires=13))
         def circuit():
             qml.SumOfSlatersPrep(coefficients, wires, indices)
             return qml.state()
@@ -737,7 +737,8 @@ class SumOfSlatersPrep(Operation):
          'mcx_cache_wires': 1}
 
         .. note::
-            :title: Gotchas of reported work register sizes
+
+            **Gotchas of reported work register sizes**
 
             Note that these register sizes might be upper bounds in some scenarios, and that
             further decomposing the circuit efficiently may require additional work wires, for
@@ -753,7 +754,7 @@ class SumOfSlatersPrep(Operation):
         We can force a more expensive encoding with ``indices`` that are powers of two on at least
         seven qubits:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, 0.5])
             indices = tuple(2**i for i in range(7))
