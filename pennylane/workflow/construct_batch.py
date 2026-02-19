@@ -15,13 +15,11 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
-import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.transforms.core import CompilePipeline
+from pennylane import math
+from pennylane.tape import make_qscript
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -33,25 +31,6 @@ if TYPE_CHECKING:
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
-
-
-def _get_full_transform_program(qnode: QNode, gradient_fn) -> CompilePipeline:
-    program = CompilePipeline(qnode.compile_pipeline)
-
-    if getattr(gradient_fn, "expand_transform", False):
-        program.add_transform(
-            qml.transform(gradient_fn.expand_transform),
-            **qnode.gradient_kwargs,
-        )
-
-    mcm_config = qml.devices.MCMConfig(
-        postselect_mode=qnode.execute_kwargs["postselect_mode"],
-        mcm_method=qnode.execute_kwargs["mcm_method"],
-    )
-
-    config = _make_execution_config(qnode, gradient_fn, mcm_config)
-    config = qnode.device.setup_execution_config(config)
-    return program + qnode.device.preprocess_transforms(config)
 
 
 def _validate_level(
@@ -155,197 +134,6 @@ def _get_inner_transform_slice(
     start = max(0, (level.start or 0) - num_user_transforms)
     stop = None if level.stop is None else max(0, level.stop - num_user_transforms)
     return slice(start, stop, level.step)
-
-
-def get_transform_program(
-    qnode: QNode,
-    level: Literal["top", "user", "device", "gradient"] | int | slice = "device",
-    gradient_fn="unset",
-) -> CompilePipeline:
-    """Extract a transform program at a designated level.
-
-    .. warning::
-
-        This function is deprecated and will be removed in v0.46. To retrieve the execution
-        pipeline of a QNode, please use :func:`~.workflow.get_compile_pipeline`.
-
-    Args:
-        qnode (QNode): the qnode to get the transform program for.
-        level (str, int, slice): An indication of what transforms to use from the full program.
-
-            - ``"device"``: Uses the entire transformation pipeline.
-            - ``"top"``: Ignores transformations and returns the original tape as defined.
-            - ``"user"``: Includes transformations that are manually applied by the user.
-            - ``"gradient"``: Extracts the gradient-level tape.
-            - ``int``: Can also accept an integer, corresponding to a number of transforms in the program. ``level=0`` corresponds to the start of the program.
-            - ``slice``: Can also accept a ``slice`` object to select an arbitrary subset of the transform program.
-
-        gradient_fn (None, str, Transform): The processed gradient fn for the workflow.
-
-    Returns:
-        CompilePipeline: the transform program corresponding to the requested level.
-
-    .. details::
-        :title: Usage Details
-
-        The transforms are organized as:
-
-        .. image:: ../../_static/transforms_order.png
-            :align: center
-            :width: 800px
-            :target: javascript:void(0);
-
-        where ``transform1`` is first applied to the ``QNode`` followed by ``transform2``.  First, user transforms are run on the tapes,
-        followed by the gradient expansion, followed by the device expansion. "Final" transforms, like ``param_shift`` and ``metric_tensor``,
-        always occur at the end of the program, despite being part of user transforms. Note that when requesting a level by name
-        (e.g. "gradient" or "device"), the preceding levels would be applied as well.
-
-        .. code-block:: python
-
-            dev = qml.device('default.qubit')
-
-            @qml.metric_tensor # final transform
-            @qml.transforms.merge_rotations # transform 2
-            @qml.transforms.cancel_inverses # transform 1
-            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
-            def circuit():
-                return qml.expval(qml.Z(0))
-
-        By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
-
-        >>> print(qml.workflow.get_transform_program(circuit))
-        CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] _expand_metric_tensor(device_wires=None),
-          [4] metric_tensor(device_wires=None),
-          [5] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [6] defer_measurements(allow_postselect=True),
-          [7] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [8] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [9] validate_device_wires(None, name=default.qubit),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-          [11] _conditional_broadcast_expand()
-        )
-
-        The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
-        :func:`~.merge_rotations` and :func:`~.metric_tensor`.
-
-        >>> print(qml.workflow.get_transform_program(circuit, level="user"))
-        CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] _expand_metric_tensor(device_wires=None),
-          [4] metric_tensor(device_wires=None)
-        )
-
-        The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
-        This expands all trainable operations to a state where the parameter shift transform can operate on them. For example,
-        it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
-        present at the very end of resulting program.
-
-        >>> print(qml.workflow.get_transform_program(circuit, level="gradient"))
-        CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] _expand_metric_tensor(device_wires=None),
-          [4] metric_tensor(device_wires=None),
-          [5] _expand_transform_param_shift(shifts=0.7853981633974483)
-        )
-
-        ``"top"`` and ``0`` both return empty transform programs.
-
-        >>> print(qml.workflow.get_transform_program(circuit, level="top"))
-        CompilePipeline()
-        >>> print(qml.workflow.get_transform_program(circuit, level=0))
-        CompilePipeline()
-
-        The ``level`` can also be any integer, corresponding to a number of transforms in the program.
-
-        >>> print(qml.workflow.get_transform_program(circuit, level=2))
-        CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations()
-        )
-
-        ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
-        transform program.  This allows you to select different starting transforms or strides.
-        For example, you can skip the first transform or reverse the order:
-
-        >>> print(qml.workflow.get_transform_program(circuit, level=slice(1,3)))
-        CompilePipeline(
-          [1] merge_rotations(),
-          [2] _expand_metric_tensor(device_wires=None)
-        )
-        >>> print(qml.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
-        CompilePipeline(
-          [1] _conditional_broadcast_expand(),
-          [2] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-          [3] validate_device_wires(None, name=default.qubit),
-          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [5] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [6] defer_measurements(allow_postselect=True),
-          [7] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [8] metric_tensor(device_wires=None),
-          [9] _expand_metric_tensor(device_wires=None),
-          [10] merge_rotations(),
-          [11] cancel_inverses()
-        )
-
-        You can get creative and pick a single category of transforms as follows, excluding
-        any preceding transforms (and the final transform if it exists):
-
-        >>> user_prog = qml.workflow.get_transform_program(circuit, level="user")
-        >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
-        >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
-        >>> print(grad_prog[len(user_prog) - 1 : -1])
-        CompilePipeline(
-          [1] metric_tensor(device_wires=None)
-        )
-        >>> print(dev_prog[len(grad_prog) - 1 : -1])
-        CompilePipeline(
-          [1] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [2] defer_measurements(allow_postselect=True),
-          [3] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [5] validate_device_wires(None, name=default.qubit),
-          [6] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit)
-        )
-
-    """
-    warnings.warn(
-        "The 'get_transform_program' function is deprecated and will be removed in v0.46. "
-        "To retrieve the execution pipeline of a QNode, please consider using "
-        "'pennylane.workflow.get_compile_pipeline'.",
-        PennyLaneDeprecationWarning,
-    )
-
-    _validate_level(level)
-    if gradient_fn == "unset":
-        config = qml.workflow.construct_execution_config(qnode, resolve=False)()
-        # pylint: disable = protected-access
-        config = qml.workflow.resolution._resolve_diff_method(config, qnode.device)
-        gradient_fn = config.gradient_method
-    has_gradient_expand = bool(getattr(gradient_fn, "expand_transform", False))
-    full_transform_program = _get_full_transform_program(qnode, gradient_fn)
-
-    num_user = len(qnode.compile_pipeline)
-
-    if level == "device":
-        level = slice(0, None)
-    elif level == "top":
-        level = slice(0, 0)
-    elif level == "user":
-        level = slice(0, num_user)
-    elif level == "gradient":
-        level = num_user + 1 if has_gradient_expand else num_user
-        level = slice(0, level)
-    elif isinstance(level, str):
-        level = slice(0, _find_level(full_transform_program, level))
-    elif isinstance(level, int):
-        level = slice(0, level)
-
-    return full_transform_program[level]
 
 
 def construct_batch(
@@ -458,9 +246,9 @@ def construct_batch(
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
             }
 
-        initial_tape = qml.tape.make_qscript(qnode.func, shots=shots)(*args, **kwargs)
+        initial_tape = make_qscript(qnode.func, shots=shots)(*args, **kwargs)
         params = initial_tape.get_parameters(trainable_only=False)
-        initial_tape.trainable_params = qml.math.get_trainable_indices(params)
+        initial_tape.trainable_params = math.get_trainable_indices(params)
 
         # This should be fine, since the case where `has_gradient_expand==True`
         # only increase 1 to the end of level slice
@@ -473,10 +261,10 @@ def construct_batch(
             return user_transformed_tapes, user_post_processing
         #### User transforms finished #####
         # The new config process we would like to use.
-        mcm_config = qml.devices.MCMConfig(
-            postselect_mode=qnode.execute_kwargs["postselect_mode"],
-            mcm_method=qnode.execute_kwargs["mcm_method"],
-        )
+        mcm_config = {
+            "postselect_mode": qnode.execute_kwargs["postselect_mode"],
+            "mcm_method": qnode.execute_kwargs["mcm_method"],
+        }
         execution_config = _make_execution_config(qnode, qnode.diff_method, mcm_config)
 
         ###### Resolution of the execution config ######

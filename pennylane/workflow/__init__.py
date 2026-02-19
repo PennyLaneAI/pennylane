@@ -26,7 +26,6 @@ Execution functions and utilities
     ~workflow.construct_tape
     ~workflow.construct_batch
     ~workflow.construct_execution_config
-    ~workflow.get_transform_program
     ~workflow.get_compile_pipeline
     ~workflow.get_best_diff_method
     ~workflow.set_shots
@@ -45,21 +44,41 @@ Jacobian Product Calculation
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
-from .construct_batch import construct_batch, get_transform_program
-from .marker import marker
-from .construct_tape import construct_tape
-from .construct_execution_config import construct_execution_config
-from .get_compile_pipeline import get_compile_pipeline
-from .execution import execute
-from .get_best_diff_method import get_best_diff_method
-from .qnode import QNode, qnode
-from .resolution import (
-    _resolve_execution_config,
-    _resolve_mcm_config,
-    _resolve_diff_method,
-    _resolve_interface,
-)
-from .set_shots import set_shots
+import warnings
+from pennylane.exceptions import PennyLaneDeprecationWarning
+
 from ._cache_transform import _cache_transform
 from ._setup_transform_program import _setup_transform_program
+from .construct_batch import construct_batch
+from .construct_execution_config import construct_execution_config
+from .construct_tape import construct_tape
+from .execution import execute
+from .get_best_diff_method import get_best_diff_method
+from .get_compile_pipeline import get_compile_pipeline
+from .marker import marker
+from .qnode import QNode, qnode
+from .resolution import (
+    _resolve_diff_method,
+    _resolve_execution_config,
+    _resolve_interface,
+    _resolve_mcm_config,
+)
 from .run import run
+from .set_shots import set_shots
+
+
+def __getattr__(name):
+    if name == "get_transform_program":
+        # pylint: disable=import-outside-toplevel
+        from pennylane.noise.add_noise import _get_transform_program
+
+        warnings.warn(
+            "The 'get_transform_program' function is deprecated and will be removed in v0.46. "
+            "To retrieve the execution pipeline of a QNode, please consider using "
+            "'pennylane.workflow.get_compile_pipeline'.",
+            PennyLaneDeprecationWarning,
+        )
+
+        return _get_transform_program
+
+    raise AttributeError(f"module 'workflow' has no attribute '{name}'")
