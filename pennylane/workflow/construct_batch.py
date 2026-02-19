@@ -288,17 +288,17 @@ def get_transform_program(qnode, level="device", gradient_fn="unset"):
         )
 
     """
-    # pylint: disable=import-outside-toplevel
-
-    # NOTE: Remove once deprecation cycle is complete
-    from pennylane.noise.add_noise import _get_transform_program
-
     warnings.warn(
         "The 'get_transform_program' function is deprecated and will be removed in v0.46. "
         "To retrieve the execution pipeline of a QNode, please consider using "
         "'pennylane.workflow.get_compile_pipeline'.",
         PennyLaneDeprecationWarning,
     )
+    # pylint: disable=import-outside-toplevel
+
+    # NOTE: Remove once deprecation cycle is complete
+    from pennylane.noise.add_noise import _get_transform_program
+
     return _get_transform_program(qnode, level, gradient_fn)
 
 
