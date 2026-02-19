@@ -524,6 +524,10 @@ def _(op: qtemps.ModExp):
 def _(op: qtemps.PhaseAdder):
     mod = op.hyperparameters["mod"]
     x_wires = op.hyperparameters["x_wires"]
+
+    if mod != 2 ** (len(x_wires)):  # An extra wire was prepended
+        x_wires = x_wires[1:]
+
     return re_temps.PhaseAdder(
         len(x_wires),
         mod=mod,

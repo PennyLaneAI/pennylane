@@ -61,6 +61,12 @@ class TestResourcePhaseAdder:
         ):
             qre.PhaseAdder(num_x_wires=3, mod=mod)
 
+    def test_wire_error(self):
+        """Test that an error is raised if the wires provided does not match
+        the number of wires expected."""
+        with pytest.raises(ValueError, match=f"Expected 3 wires,"):
+            qre.PhaseAdder(num_x_wires=3, mod=3, wires=[0, 1])
+
     @pytest.mark.parametrize(
         "num_x_wires, mod",
         (
@@ -225,6 +231,12 @@ class TestResourceAdder:
         assert resource_params["num_x_wires"] == num_x_wires
         assert adder.wires == (Wires(wires) if wires is not None else None)
         assert adder.num_wires == num_x_wires
+
+    def test_wire_error(self):
+        """Test that an error is raised if the wires provided does not match
+        the number of wires expected."""
+        with pytest.raises(ValueError, match=f"Expected 3 wires,"):
+            qre.Adder(num_x_wires=3, mod=3, wires=[0, 1])
 
     @pytest.mark.parametrize("mod", (0, -3, 9, 100))
     def test_init_raises_error(self, mod):
@@ -465,6 +477,12 @@ class TestResourceOutAdder:
         ):
             qre.OutAdder(2, 2, 3, mod=mod)
 
+    def test_wire_error(self):
+        """Test that an error is raised if the wires provided does not match
+        the number of wires expected."""
+        with pytest.raises(ValueError, match=f"Expected 10 wires,"):
+            qre.OutAdder(num_x_wires=3, num_y_wires=3, num_output_wires=4, mod=3, wires=[0, 1])
+
     @pytest.mark.parametrize(
         "num_x_wires, num_y_wires, num_output_wires, mod",
         (
@@ -632,6 +650,12 @@ class TestResourceClassicalOutMultiplier:
         ):
             qre.ClassicalOutMultiplier(2, 3, mod=mod)
 
+    def test_wire_error(self):
+        """Test that an error is raised if the wires provided does not match
+        the number of wires expected."""
+        with pytest.raises(ValueError, match=f"Expected 8 wires,"):
+            qre.ClassicalOutMultiplier(num_x_wires=3, num_output_wires=5, mod=3, wires=[0, 1])
+
     @pytest.mark.parametrize(
         "num_x_wires, num_output_wires, mod",
         (
@@ -773,6 +797,12 @@ class TestResourceMultiplier:
             ValueError, match=re.escape(f"mod must take values inbetween (1, 8), got {mod}")
         ):
             qre.Multiplier(num_x_wires=3, mod=mod)
+
+    def test_wire_error(self):
+        """Test that an error is raised if the wires provided does not match
+        the number of wires expected."""
+        with pytest.raises(ValueError, match=f"Expected 3 wires,"):
+            qre.Multiplier(num_x_wires=3, mod=3, wires=[0, 1])
 
     @pytest.mark.parametrize(
         "num_x_wires, mod",
@@ -942,6 +972,12 @@ class TestResourceModExp:
             ValueError, match=re.escape(f"mod must take values inbetween (1, 8), got {mod}")
         ):
             qre.ModExp(2, 3, mod=mod)
+
+    def test_wire_error(self):
+        """Test that an error is raised if the wires provided does not match
+        the number of wires expected."""
+        with pytest.raises(ValueError, match=f"Expected 8 wires,"):
+            qre.ModExp(num_x_wires=3, num_output_wires=5, mod=3, wires=[0, 1])
 
     @pytest.mark.parametrize(
         "num_x_wires, num_output_wires, mod",

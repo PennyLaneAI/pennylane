@@ -103,11 +103,84 @@ class TestMapToResourceOp:
         "operator, expected_res_op",
         [
             (
+                qtemps.Adder(k=2, x_wires=[0, 1], mod=4),
+                re_temps.Adder(2, 4, wires=[0, 1]),
+            ),
+            (
+                qtemps.Adder(k=2, x_wires=[0, 1], mod=3, work_wires=["w1", "w2"]),
+                re_temps.Adder(2, 3, wires=[0, 1]),
+            ),
+            (
+                qtemps.PhaseAdder(k=2, x_wires=[0, 1], mod=4),
+                re_temps.PhaseAdder(2, 4, wires=[0, 1]),
+            ),
+            (
+                qtemps.PhaseAdder(k=2, x_wires=["w1", 0, 1], mod=3, work_wire=["w2"]),
+                re_temps.PhaseAdder(2, 3, wires=[0, 1]),
+            ),
+            (
+                qtemps.OutAdder(
+                    x_wires=[0, 1],
+                    y_wires=[2, 3],
+                    output_wires=[4, 5, 6],
+                    mod=8,
+                ),
+                re_temps.OutAdder(2, 2, 3, mod=8, wires=[0, 1, 2, 3, 4, 5, 6]),
+            ),
+            (
+                qtemps.OutAdder(
+                    x_wires=[0, 1],
+                    y_wires=[2, 3],
+                    output_wires=[4, 5, 6],
+                    mod=5,
+                    work_wires=["w1", "w2"],
+                ),
+                re_temps.OutAdder(2, 2, 3, mod=5, wires=[0, 1, 2, 3, 4, 5, 6]),
+            ),
+            (
+                qtemps.Multiplier(
+                    k=3,
+                    x_wires=[0, 1, 2, 3],
+                    mod=10,
+                    work_wires=[f"w{i}" for i in range(4 + 2)],
+                ),
+                re_temps.Multiplier(4, mod=10, wires=[0, 1, 2, 3]),
+            ),
+            (
+                qtemps.Multiplier(
+                    k=3,
+                    x_wires=[0, 1, 2, 3],
+                    mod=16,
+                    work_wires=[f"w{i}" for i in range(4)],
+                ),
+                re_temps.Multiplier(4, mod=16, wires=[0, 1, 2, 3]),
+            ),
+            (
+                qtemps.ModExp(
+                    x_wires=[0, 1, 2],
+                    output_wires=[3, 4, 5, 6],
+                    base=3,
+                    mod=16,
+                    work_wires=[f"w{i}" for i in range(4)],
+                ),
+                re_temps.ModExp(3, 4, mod=16, wires=[0, 1, 2, 3, 4, 5, 6]),
+            ),
+            (
+                qtemps.ModExp(
+                    x_wires=[0, 1, 2],
+                    output_wires=[3, 4, 5, 6],
+                    base=3,
+                    mod=8,
+                    work_wires=[f"w{i}" for i in range(4 + 2)],
+                ),
+                re_temps.ModExp(3, 4, mod=8, wires=[0, 1, 2, 3, 4, 5, 6]),
+            ),
+            (
                 qtemps.OutMultiplier(x_wires=[0, 1], y_wires=[2], output_wires=[3, 4]),
                 re_temps.OutMultiplier(a_num_wires=2, b_num_wires=1, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
+                qtemps.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
                 re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4]),
             ),
             (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
