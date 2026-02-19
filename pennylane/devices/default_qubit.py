@@ -576,6 +576,8 @@ class DefaultQubit(Device):
             self._prng_key = None
             self._rng = np.random.default_rng(seed)
         self._debugger = None
+        
+        # time.sleep(2.0)  # Give the debugger time to start
 
     @debug_logger
     def supports_derivatives(
