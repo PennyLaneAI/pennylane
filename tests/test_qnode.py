@@ -1401,12 +1401,13 @@ class TestShots:
             circuit(0.3)
             circuit(0.3)
 
+    @pytest.mark.autograd
     def test_no_warning_internal_cache_reuse(self):
         """Tests that no warning is raised when only the internal cache is reused."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.set_shots(5)
-        @qml.qnode(dev, cache=True)
+        @qml.qnode(dev, interface="autograd", cache=True)
         def circuit(x):
             qml.RZ(x, wires=0)
             return qml.probs(wires=0)
