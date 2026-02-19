@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+* Added the function :func:`~.drawer.label` to attach custom labels to operator instances
+  for circuit drawing.
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+
+* Added the function :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+  for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`.
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+
 * Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
   reversible bit encodings. For now, only classical preprocessing required to implement the
@@ -67,6 +75,10 @@
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
+* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
+  compile pipeline of a given QNode at a specific level.
+  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  
 * Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
@@ -128,6 +140,7 @@
   0: ──X─┤  Probs
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+  [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
   
 * Raises a more informative error if something that is not a measurement process is returned from a 
   QNode when program capture is turned on.
@@ -248,7 +261,12 @@
 * Added specialized gate kernels for RX, RY, RZ, and Hadamard in the default qubit device.
   These bypass generic einsum/tensordot dispatch and use direct NumPy contractions for pure-numpy
   states, with correct fallbacks for autodiff interfaces (autograd, torch, JAX, TensorFlow).
+  
   [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
+  dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
+  ``pbc.fabricate`` and ``pbc.prepare``.
+  [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -471,6 +489,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add `sybil` to `dev` dependency group in `pyproject.toml`.
+  [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
+
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
@@ -599,6 +620,7 @@ Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
+Sengthai Heng,
 Jacob Kitchen,
 Christina Lee,
 Andrija Paurevic,
