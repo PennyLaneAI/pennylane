@@ -250,7 +250,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     **Example:**
 
     For an example usage of ``mitigate_depolarizing_noise`` please refer to the
-    `PennyLane demo on the kernel module <https://github.com/PennyLaneAI/qml/tree/master/demonstrations/tutorial_kernel_based_training.py>`_ or `the postprocessing demo for arXiv:2105.02276 <https://github.com/thubregtsen/qhack/blob/master/paper/post_processing_demo.py>`_.
+    `PennyLane demo on the kernel module <https://pennylane.ai/demos/tutorial_kernel_based_training>`_ or `the postprocessing demo for arXiv:2105.02276 <https://github.com/thubregtsen/qhack/blob/master/paper/post_processing_demo.py>`_.
     """
     dim = 2**num_wires
 
