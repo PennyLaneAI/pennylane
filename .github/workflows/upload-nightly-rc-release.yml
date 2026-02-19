@@ -5,6 +5,7 @@ on:
     # Run every weekday at 5:50 EDT (cron is in UTC)
     - cron: "50 9 * * 1-5"
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   setup-rc:
@@ -89,9 +90,9 @@ jobs:
         name: rc-nightly-wheels
         path: dist
 
-    - name: Upload wheels
-      uses: pypa/gh-action-pypi-publish@release/v1
-      if: ${{ needs.setup-rc.outputs.branch_exists == 'true' }}
-      with:
-        repository-url: https://test.pypi.org/legacy/
-        packages-dir: dist
+    # - name: Upload wheels
+    #   uses: pypa/gh-action-pypi-publish@release/v1
+    #   if: ${{ needs.setup-rc.outputs.branch_exists == 'true' }}
+    #   with:
+    #     repository-url: https://test.pypi.org/legacy/
+    #     packages-dir: dist
