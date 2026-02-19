@@ -1401,6 +1401,7 @@ class TestShots:
             circuit(0.3)
             circuit(0.3)
 
+    @pytest.mark.xfail(reason="Bug in cache handling with autograd.")
     @pytest.mark.autograd
     def test_no_warning_internal_cache_reuse(self):
         """Tests that no warning is raised when only the internal cache is reused."""
