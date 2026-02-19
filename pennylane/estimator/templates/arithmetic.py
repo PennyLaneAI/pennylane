@@ -1180,7 +1180,7 @@ class ModExp(ResourceOperator):  # ModExp(a, N): Out-of-place Modular Exponentia
      Total gates : 4.979E+6
        'Toffoli': 2.450E+3,
        'T': 4.888E+6,
-       'CNOT': 8.170E+5,
+       'CNOT': 8.170E+4,
        'X': 200,
        'Hadamard': 6.600E+3
     """
