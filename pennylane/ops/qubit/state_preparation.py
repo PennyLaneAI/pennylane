@@ -15,6 +15,8 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+from functools import partial
+
 # pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
@@ -27,6 +29,7 @@ from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
+from pennylane.templates import Subroutine
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -213,7 +216,169 @@ def _basis_state_decomp(state, wires, **__):
 add_decomps(BasisState, _basis_state_decomp)
 
 
-class StatePrep(StatePrepBase):
+def _preprocess(state, wires, pad_with, normalize, validate_norm):
+    """Validate and pre-process inputs as follows:
+
+    * If state is batched, the processing that follows is applied to each state set in the batch.
+    * Check that the state tensor is one-dimensional.
+    * If pad_with is None, check that the last dimension of the state tensor
+      has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
+      last dimension of the state tensor is not larger than :math:`2^n` and pad state
+      with value if necessary.
+    * If normalize is false, check that last dimension of state is normalised to one. Else, normalise the
+      state tensor.
+    """
+    if isinstance(state, (list, tuple)):
+        state = math.array(state)
+
+    shape = math.shape(state)
+
+    # check shape
+    if len(shape) not in (1, 2):
+        raise ValueError(
+            f"State must be a one-dimensional tensor, or two-dimensional with batching; got shape {shape}."
+        )
+
+    n_states = shape[-1]
+    dim = 2 ** len(Wires(wires))
+    if pad_with is None and n_states != dim:
+        raise ValueError(
+            f"State must be of length {dim}; got length {n_states}. "
+            f"Use the 'pad_with' argument for automated padding."
+        )
+
+    if pad_with is not None:
+        normalize = True
+        if n_states > dim:
+            raise ValueError(
+                f"Input state must be of length {dim} or "
+                f"smaller to be padded; got length {n_states}."
+            )
+
+        # pad
+        if n_states < dim:
+            padding = [pad_with] * (dim - n_states)
+            if len(shape) > 1:
+                padding = [padding] * shape[0]
+            padding = math.convert_like(padding, state)
+            state = math.hstack([state, padding])
+
+    if not (validate_norm or normalize):
+        return state
+
+    # normalize
+    if "int" in str(state.dtype):
+        state = math.cast_like(state, 0.0)
+
+    norm = math.linalg.norm(state, axis=-1)
+
+    if math.is_abstract(norm):
+        if normalize:
+            state = state / math.reshape(norm, (*shape[:-1], 1))
+
+    elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        if normalize:
+            state = state / math.reshape(norm, (*shape[:-1], 1))
+        else:
+            raise ValueError(
+                f"The state must be a vector of norm 1.0; got norm {norm}. "
+                "Use 'normalize=True' to automatically normalize."
+            )
+
+    return state
+
+
+def _preprocess_csr(state, wires, pad_with, normalize, validate_norm):
+    """Validate and pre-process inputs as follows:
+
+    * If the state is batched, the following processing is applied to each state set in the batch.
+    * Check that the state tensor is one-dimensional.
+    * pad_with has to be None.
+    * If normalize is false, check that the last dimension of the state is normalized to one. Else, normalize the
+      state tensor.
+    """
+
+    if pad_with:
+        raise ValueError("Non-zero Padding is not supported for sparse states")
+    shape = state.shape
+
+    # Check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is a 2D array
+    if len(shape) == 2 and shape[0] != 1:
+        raise NotImplementedError(
+            "StatePrep does not yet support parameter broadcasting with sparse state vectors."
+        )
+
+    n_states = shape[-1]
+    dim = 2 ** len(Wires(wires))
+    if n_states > dim:
+        raise ValueError(
+            f"State must be of length {dim} or smaller to be padded; got length {n_states}."
+        )
+    if n_states < dim:
+        warn(
+            f"State must be of length {dim}; got length {n_states}. "
+            f"Automatically padding with zeros.",
+            UserWarning,
+        )
+        # pad a csr_matrix with zeros
+        state.resize((1, dim))
+
+    if not (validate_norm or normalize):
+        return state
+
+    # normalize
+    if np.issubdtype(state.dtype, np.integer):
+        state = state.astype(float)
+
+    norm = sp.sparse.linalg.norm(state)
+
+    if normalize:
+        state /= norm
+
+    elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+        raise ValueError(
+            f"The state must be a vector of norm 1.0; got norm {norm}. "
+            "Use 'normalize=True' to automatically normalize."
+        )
+    return state
+
+
+def setup_state_prep(
+    state: TensorLike | csr_matrix,
+    wires: WiresLike,
+    pad_with=None,
+    normalize: bool = False,
+    validate_norm: bool = False,
+):
+    if sp.sparse.issparse(state):
+        state = state.tocsr()
+        state = _preprocess_csr(
+            state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+        )
+    else:
+        state = _preprocess(
+            state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
+        )
+
+    return (state, wires), {
+        "pad_with": pad_with,
+        "normalize": normalize,
+        "validate_norm": validate_norm,
+    }
+
+
+# pylint: disable=unused-argument
+def state_prep_decomp_resources(state, wires):
+    return qml.MottonenStatePreparation.compute_resources(state, wires)
+
+
+@partial(
+    Subroutine,
+    static_argnames=[],
+    setup_inputs=setup_state_prep,
+    compute_resources=state_prep_decomp_resources,
+)
+def StatePrep(state: TensorLike, wires: WiresLike, **kwargs):
     r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = False)
     Prepare subsystems using a state vector in the computational basis.
 
@@ -341,260 +506,7 @@ class StatePrep(StatePrepBase):
 
 
     """
-
-    resource_keys = frozenset({"num_wires"})
-
-    @property
-    def resource_params(self):
-        return {"num_wires": len(self.wires)}
-
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (1,)
-    """int: Number of dimensions per trainable parameter of the operator."""
-
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(
-        self,
-        state: TensorLike | csr_matrix,
-        wires: WiresLike,
-        pad_with=None,
-        normalize: bool = False,
-        id: str | None = None,
-        validate_norm: bool = False,
-    ):
-        self.is_sparse = False
-        if sp.sparse.issparse(state):
-            state = state.tocsr()
-            state = self._preprocess_csr(
-                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
-            )
-            self.is_sparse = True
-        else:
-            state = self._preprocess(
-                state, wires, pad_with=pad_with, normalize=normalize, validate_norm=validate_norm
-            )
-
-        self._hyperparameters = {
-            "pad_with": pad_with,
-            "normalize": normalize,
-            "validate_norm": validate_norm,
-        }
-
-        super().__init__(state, wires=wires, id=id)
-
-    def _check_batching(self):
-        if self.is_sparse:
-            self._batch_size = None
-        else:
-            super()._check_batching()
-
-    # pylint: disable=unused-argument
-    @staticmethod
-    def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.StatePrep.decomposition`.
-
-        Args:
-            state (array[complex]): a state vector of size 2**len(wires)
-            wires (Iterable, Wires): the wire(s) the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qml.StatePrep.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
-        [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
-
-        """
-        return [MottonenStatePreparation.operator(state, wires)]
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-
-        return tuple(
-            self.parameters,
-        ), (metadata, self.wires)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, **dict(metadata[0]), wires=metadata[1])
-
-    def state_vector(self, wire_order: WiresLike | None = None):
-
-        if self.is_sparse:
-            op_vector = _sparse_statevec_permute_and_embed(
-                self.parameters[0], self.wires, wire_order
-            )
-            return csr_array(op_vector)
-
-        num_op_wires = len(self.wires)
-        op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
-        op_vector = math.reshape(self.parameters[0], op_vector_shape)
-
-        if wire_order is None or Wires(wire_order) == self.wires:
-            return op_vector
-
-        wire_order = Wires(wire_order)
-        if not wire_order.contains_wires(self.wires):
-            raise WireError(f"Custom wire_order must contain all {self.name} wires")
-
-        # add zeros for each wire that isn't being set
-        extra_wires = Wires(set(wire_order) - set(self.wires))
-        for _ in extra_wires:
-            op_vector = math.stack([op_vector, math.zeros_like(op_vector)], axis=-1)
-
-        # transpose from operator wire order to provided wire order
-        current_wires = self.wires + extra_wires
-        transpose_axes = [current_wires.index(w) for w in wire_order]
-        if self.batch_size:
-            transpose_axes = [0] + [a + 1 for a in transpose_axes]
-        return math.transpose(op_vector, transpose_axes)
-
-    @staticmethod
-    def _preprocess(state, wires, pad_with, normalize, validate_norm):
-        """Validate and pre-process inputs as follows:
-
-        * If state is batched, the processing that follows is applied to each state set in the batch.
-        * Check that the state tensor is one-dimensional.
-        * If pad_with is None, check that the last dimension of the state tensor
-          has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
-          last dimension of the state tensor is not larger than :math:`2^n` and pad state
-          with value if necessary.
-        * If normalize is false, check that last dimension of state is normalised to one. Else, normalise the
-          state tensor.
-        """
-        if isinstance(state, (list, tuple)):
-            state = math.array(state)
-
-        shape = math.shape(state)
-
-        # check shape
-        if len(shape) not in (1, 2):
-            raise ValueError(
-                f"State must be a one-dimensional tensor, or two-dimensional with batching; got shape {shape}."
-            )
-
-        n_states = shape[-1]
-        dim = 2 ** len(Wires(wires))
-        if pad_with is None and n_states != dim:
-            raise ValueError(
-                f"State must be of length {dim}; got length {n_states}. "
-                f"Use the 'pad_with' argument for automated padding."
-            )
-
-        if pad_with is not None:
-            normalize = True
-            if n_states > dim:
-                raise ValueError(
-                    f"Input state must be of length {dim} or "
-                    f"smaller to be padded; got length {n_states}."
-                )
-
-            # pad
-            if n_states < dim:
-                padding = [pad_with] * (dim - n_states)
-                if len(shape) > 1:
-                    padding = [padding] * shape[0]
-                padding = math.convert_like(padding, state)
-                state = math.hstack([state, padding])
-
-        if not (validate_norm or normalize):
-            return state
-
-        # normalize
-        if "int" in str(state.dtype):
-            state = math.cast_like(state, 0.0)
-
-        norm = math.linalg.norm(state, axis=-1)
-
-        if math.is_abstract(norm):
-            if normalize:
-                state = state / math.reshape(norm, (*shape[:-1], 1))
-
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-            if normalize:
-                state = state / math.reshape(norm, (*shape[:-1], 1))
-            else:
-                raise ValueError(
-                    f"The state must be a vector of norm 1.0; got norm {norm}. "
-                    "Use 'normalize=True' to automatically normalize."
-                )
-
-        return state
-
-    @staticmethod
-    def _preprocess_csr(state, wires, pad_with, normalize, validate_norm):
-        """Validate and pre-process inputs as follows:
-
-        * If the state is batched, the following processing is applied to each state set in the batch.
-        * Check that the state tensor is one-dimensional.
-        * pad_with has to be None.
-        * If normalize is false, check that the last dimension of the state is normalized to one. Else, normalize the
-          state tensor.
-        """
-
-        if pad_with:
-            raise ValueError("Non-zero Padding is not supported for sparse states")
-        shape = state.shape
-
-        # Check shape. Note that csr_matrix is always 2D; scipy should have already checked that the input is a 2D array
-        if len(shape) == 2 and shape[0] != 1:
-            raise NotImplementedError(
-                "StatePrep does not yet support parameter broadcasting with sparse state vectors."
-            )
-
-        n_states = shape[-1]
-        dim = 2 ** len(Wires(wires))
-        if n_states > dim:
-            raise ValueError(
-                f"State must be of length {dim} or smaller to be padded; got length {n_states}."
-            )
-        if n_states < dim:
-            warn(
-                f"State must be of length {dim}; got length {n_states}. "
-                f"Automatically padding with zeros.",
-                UserWarning,
-            )
-            # pad a csr_matrix with zeros
-            state.resize((1, dim))
-
-        if not (validate_norm or normalize):
-            return state
-
-        # normalize
-        if np.issubdtype(state.dtype, np.integer):
-            state = state.astype(float)
-
-        norm = sp.sparse.linalg.norm(state)
-
-        if normalize:
-            state /= norm
-
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-            raise ValueError(
-                f"The state must be a vector of norm 1.0; got norm {norm}. "
-                "Use 'normalize=True' to automatically normalize."
-            )
-        return state
-
-
-def _stateprep_resources(num_wires):
-    return {qml.templates.SubroutineOp: 1}
-
-
-@register_resources(_stateprep_resources)
-def _state_prep_decomp(state, wires, **_):
-    qml.MottonenStatePreparation(state, wires)
-
-
-add_decomps(StatePrep, _state_prep_decomp)
+    MottonenStatePreparation(state, wires)
 
 
 class QubitDensityMatrix(Operation):
