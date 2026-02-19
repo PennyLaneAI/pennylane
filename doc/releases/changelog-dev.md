@@ -464,7 +464,8 @@
 
   These are now handled by dedicated functions:
 
-  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit.
+  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
+     as the original behaviour was never supported.
 
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
