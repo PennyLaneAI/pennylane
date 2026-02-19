@@ -413,7 +413,7 @@ class StatePrep(StatePrepBase):
         [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
 
         """
-        return [MottonenStatePreparation(state, wires)]
+        return [MottonenStatePreparation.operator(state, wires)]
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())

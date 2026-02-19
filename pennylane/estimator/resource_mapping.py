@@ -294,6 +294,11 @@ def _handle_qft(op):
     return re_temps.QFT(num_wires=len(op.wires), wires=op.wires)
 
 
+@_register_subroutine(qtemps.MottonenStatePreparation)
+def _handle_mottonen(op):
+    return re_temps.MottonenStatePreparation(num_wires=len(op.wires), wires=op.wires)
+
+
 @_map_to_resource_op.register
 def _(op: qtemps.AQFT):
     return re_temps.AQFT(
