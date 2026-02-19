@@ -538,6 +538,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Jacobian-level caching is now unconditionally enabled for `autograd` interface,
+  preventing redundant derivative tape executions during the backward pass.
+  [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
+
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
   of an operator product via the dunder method ``__matmul__``. 
   [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
