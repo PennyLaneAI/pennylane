@@ -300,6 +300,23 @@ class TestCaptureTransforms:
         assert qfunc_jaxpr.eqns[1].primitive == qml.Z._primitive
         assert qfunc_jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_qnode_returns_dynamic_shape(self):
+        """ "Test that a qnode that returns dynamic shapes can be transformed."""
+
+        def workflow(shots: int):
+            @qml.transform(pass_name="my_other_pass_name")
+            @qml.transform(pass_name="cancel-inverses")
+            @qml.qnode(qml.device("lightning.qubit", wires=1), shots=shots)
+            def aloha():
+                qml.Hadamard(wires=0)
+                return qml.sample()
+
+            return aloha()
+
+        jax.make_jaxpr(workflow)(3)
+        # TODO: actually check the jaxpr
+
 
 class TestTapeTransformFallback:
     """Unit tests for falling back to tape transforms."""

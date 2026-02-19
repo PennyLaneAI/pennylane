@@ -142,8 +142,20 @@ def determine_abstracted_axes(args):
     return abstracted_axes, abstract_shapes  # pragma: no cover
 
 
+VarList = list["jax.core.extend.Var"]
+ENV = dict["jax.core.extend.Var", "jax.core.extend.Var"]
+
+
+# pylint: disable=unused-argument
+def default_create_initial_env(params: dict, invars: VarList) -> ENV:
+    """The default version of create_initial_env that return an empty dictionary."""
+    return {}
+
+
 def register_custom_staging_rule(
-    primitive, get_outvars_from_params: Callable[[dict], list["jax.extend.core.Var"]]
+    primitive,
+    get_outvars_from_params: Callable[[dict], VarList],
+    create_initial_env: Callable[[dict, VarList], ENV] = default_create_initial_env,
 ) -> None:
     """Register a custom staging rule for a primitive, where the output should match the variables retrieved by
     ``get_outvars_from_params``.
@@ -152,6 +164,9 @@ def register_custom_staging_rule(
         primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
         get_outvars_from_params (Callable[[dict], list[jax.extend.core.Var]]): A function that takes in the equation's ``params``
             and returns ``jax.extend.core.Var`` we need to mimic for the primitives return.
+        create_initial_env (Callable[[dict, list[jax.extend.core.Var]], dict]): A function that
+            takes in the equations ``params`` and the primitive's input variables, and outputs a dictionary that maps
+            the inner variables to the outer variables
 
     For example, the ``cond_prim`` will request its custom staging rule like:
 
@@ -161,6 +176,7 @@ def register_custom_staging_rule(
 
     The return of any ``cond_prim`` will match the output variables of the first jaxpr branch.
 
+    ``create_initial_env`` can be used when the output shapes contain variables in the input jaxpr.
     """
     # see https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L3538
     # and https://github.com/jax-ml/jax/blob/9e62994bce7c7fcbb2f6a50c9ef89526cd2c2be6/jax/_src/lax/lax.py#L208
@@ -216,7 +232,11 @@ def register_custom_staging_rule(
             )
         outvars = get_outvars_from_params(params)
 
-        env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var
+        # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
+        invars: VarList = [t.val for t in tracers]
+
+        # branch var to new equation var
+        env: dict[jax.extend.core.Var, jax.extend.core.Var] = create_initial_env(params, invars)
         if outvars:
             out_tracers, returned_vars = tuple(
                 zip(*(_tracer_and_outvar(jaxpr_trace, var, env) for var in outvars), strict=True)
@@ -224,8 +244,6 @@ def register_custom_staging_rule(
         else:
             out_tracers, returned_vars = (), ()
 
-        # JAX 0.7.0: Use t.val to get var from tracer, and TracingEqn for frame.add_eqn
-        invars = [t.val for t in tracers]
         eqn = jax.core.new_jaxpr_eqn(
             invars,
             returned_vars,

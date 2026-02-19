@@ -538,6 +538,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug with program capture when a transform is applied to a qnode with a dynamic number of shots
+  and return `qml.sample`.
+  [(#9053)](https://github.com/PennyLaneAI/pennylane/pull/9053)
+
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
   of an operator product via the dunder method ``__matmul__``. 
   [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
