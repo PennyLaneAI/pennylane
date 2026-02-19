@@ -9,12 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid` and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid`` and will be removed in v0.46. 
 
   - Deprecated in v0.45
   - Will be removed in v0.46
 
-* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid` and will be removed in v0.46. 
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid`` and will be removed in v0.46. 
 
   - Deprecated in v0.45
   - Will be removed in v0.46
