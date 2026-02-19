@@ -64,13 +64,3 @@ from .resolution import (
 )
 from .run import run
 from .set_shots import set_shots
-
-
-def __getattr__(name):
-    if name == "get_transform_program":
-        # pylint: disable=import-outside-toplevel
-        from pennylane.noise.add_noise import _get_transform_program
-
-        return _get_transform_program
-
-    raise AttributeError(f"module 'workflow' has no attribute '{name}'")
