@@ -162,7 +162,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
         )
 
 
-def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform) -> None:
+def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transform | None) -> None:
     if diff_method is None:
         return
 
