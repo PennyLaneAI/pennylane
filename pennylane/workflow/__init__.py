@@ -44,12 +44,10 @@ Jacobian Product Calculation
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
-import warnings
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 from ._cache_transform import _cache_transform
 from ._setup_transform_program import _setup_transform_program
-from .construct_batch import construct_batch
+from .construct_batch import construct_batch, get_transform_program
 from .construct_execution_config import construct_execution_config
 from .construct_tape import construct_tape
 from .execution import execute
@@ -71,13 +69,6 @@ def __getattr__(name):
     if name == "get_transform_program":
         # pylint: disable=import-outside-toplevel
         from pennylane.noise.add_noise import _get_transform_program
-
-        warnings.warn(
-            "The 'get_transform_program' function is deprecated and will be removed in v0.46. "
-            "To retrieve the execution pipeline of a QNode, please consider using "
-            "'pennylane.workflow.get_compile_pipeline'.",
-            PennyLaneDeprecationWarning,
-        )
 
         return _get_transform_program
 

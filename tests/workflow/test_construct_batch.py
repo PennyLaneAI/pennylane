@@ -105,7 +105,7 @@ def test_get_transform_program_is_deprecated():
     with pytest.warns(
         PennyLaneDeprecationWarning, match="The 'get_transform_program' function is deprecated"
     ):
-        qml.workflow.get_transform_program(circuit)
+        _ = qml.workflow.get_transform_program(circuit)
 
 
 @qml.transforms.merge_rotations

@@ -140,7 +140,7 @@ def add_noise(tape, noise_model, level="user"):
 
             noisy_circuit = qml.noise.add_noise(circuit, noise_model)
 
-        >>> print(qml.workflow.get_compile_pipeline(circuit)(1,2,3,4))
+        >>> print(_get_transform_program(circuit)(1,2,3,4))
          CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -155,7 +155,7 @@ def add_noise(tape, noise_model, level="user"):
           [11] validate_observables(stopping_condition=..., name=default.mixed)
         )
 
-        >>> print(qml.workflow.get_compile_pipeline(noisy_circuit)(1,2,3,4))
+        >>> print(_get_transform_program(noisy_circuit)(1,2,3,4))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -432,7 +432,7 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
-        >>> print(qml.workflow.get_transform_program(circuit))
+        >>> print(_get_transform_program(circuit))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -450,7 +450,7 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
         :func:`~.merge_rotations` and :func:`~.metric_tensor`.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level="user"))
+        >>> print(_get_transform_program(circuit, level="user"))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -463,7 +463,7 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
         it will decompose any parametrized templates into operators that have generators. Note how ``metric_tensor`` is still
         present at the very end of resulting program.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level="gradient"))
+        >>> print(_get_transform_program(circuit, level="gradient"))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
@@ -474,14 +474,14 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         ``"top"`` and ``0`` both return empty transform programs.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level="top"))
+        >>> print(_get_transform_program(circuit, level="top"))
         CompilePipeline()
-        >>> print(qml.workflow.get_transform_program(circuit, level=0))
+        >>> print(_get_transform_program(circuit, level=0))
         CompilePipeline()
 
         The ``level`` can also be any integer, corresponding to a number of transforms in the program.
 
-        >>> print(qml.workflow.get_transform_program(circuit, level=2))
+        >>> print(_get_transform_program(circuit, level=2))
         CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations()
@@ -491,12 +491,12 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
         transform program.  This allows you to select different starting transforms or strides.
         For example, you can skip the first transform or reverse the order:
 
-        >>> print(qml.workflow.get_transform_program(circuit, level=slice(1,3)))
+        >>> print(_get_transform_program(circuit, level=slice(1,3)))
         CompilePipeline(
           [1] merge_rotations(),
           [2] _expand_metric_tensor(device_wires=None)
         )
-        >>> print(qml.workflow.get_transform_program(circuit, level=slice(None, None, -1)))
+        >>> print(_get_transform_program(circuit, level=slice(None, None, -1)))
         CompilePipeline(
           [1] _conditional_broadcast_expand(),
           [2] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
@@ -514,9 +514,9 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
         You can get creative and pick a single category of transforms as follows, excluding
         any preceding transforms (and the final transform if it exists):
 
-        >>> user_prog = qml.workflow.get_transform_program(circuit, level="user")
-        >>> grad_prog = qml.workflow.get_transform_program(circuit, level="gradient")
-        >>> dev_prog = qml.workflow.get_transform_program(circuit, level="device")
+        >>> user_prog = _get_transform_program(circuit, level="user")
+        >>> grad_prog = _get_transform_program(circuit, level="gradient")
+        >>> dev_prog = _get_transform_program(circuit, level="device")
         >>> print(grad_prog[len(user_prog) - 1 : -1])
         CompilePipeline(
           [1] metric_tensor(device_wires=None)
