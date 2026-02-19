@@ -443,12 +443,15 @@
 
 * The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
   [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+  [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)  
 
   The ``id`` argument previously served two purposes: (1) adding custom labels
   to operator instances which were rendered in circuit drawings and (2)
   tagging encoding gates for Fourier spectrum analysis.
 
   These are now handled by dedicated functions:
+
+  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit.
 
   - Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
