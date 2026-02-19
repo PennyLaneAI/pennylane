@@ -91,11 +91,7 @@ def _setup_transform_program(
     if not interface_data_supported:
         inner_transform_program.add_transform(convert_to_numpy_parameters)
 
-    # NOTE: For the AUTOGRAD interface, tape-level caching should be skipped
-    # because AUTOGRAD uses it's own caching which caches the entire Jacobian
-    # rather than re-executing individual tapes (see run.py).
-    # Adding _cache_transform here would result in stale executions when using finite shots.
-    if cache is not None and resolved_execution_config.interface is not Interface.AUTOGRAD:
+    if cache is not None:
         inner_transform_program.add_transform(_cache_transform, cache=cache)
 
     return outer_transform_program, inner_transform_program

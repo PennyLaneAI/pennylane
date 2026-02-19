@@ -14,6 +14,7 @@
 """
 This module contains a developer focused execution function for internal executions
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -25,7 +26,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
-from pennylane.workflow._cache_transform import _cache_transform
 
 from .jacobian_products import (
     DeviceDerivatives,
@@ -72,7 +72,6 @@ def _construct_tf_autograph_pipeline(
     execute_fn = inner_execute_with_empty_jac
 
     if config.use_device_gradient:
-
         if config.grad_on_execution:
 
             def wrap_execute_and_compute_derivatives(internal_tapes):
@@ -132,7 +131,6 @@ def _construct_ml_execution_pipeline(
         ValueError: If gradients are computed on execution (`grad_on_execution=True`).
     """
     inner_execute = _make_inner_execute(device, inner_transform_program, config)
-    cache = _cache_transform in inner_transform_program
 
     execute_fn = inner_execute
 
@@ -153,7 +151,7 @@ def _construct_ml_execution_pipeline(
     if config.grad_on_execution is True:
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    cache_full_jacobian = (config.interface == Interface.AUTOGRAD) and not cache
+    cache_full_jacobian = config.interface == Interface.AUTOGRAD
     jpc = TransformJacobianProducts(
         execute_fn,
         config.gradient_method,
@@ -302,7 +300,6 @@ def run(
     if (
         config.interface == Interface.TF_AUTOGRAPH
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-
         execute_fn, diff_method = _construct_tf_autograph_pipeline(
             config, device, inner_transform_program
         )
