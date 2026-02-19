@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+* Added the function :func:`~.drawer.label` to attach custom labels to operator instances
+  for circuit drawing.
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+
+* Added the function :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+  for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`.
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+
 * Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
   reversible bit encodings. For now, only classical preprocessing required to implement the
@@ -67,6 +75,10 @@
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
+* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
+  compile pipeline of a given QNode at a specific level.
+  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  
 * Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
@@ -81,6 +93,55 @@
 
 <h3>Improvements 🛠</h3>
 
+* When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
+  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
+  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
+  of how many markers are present.
+
+  Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
+  pipeline's string representation now shows both transforms and markers:
+
+  As an example, we now have the following behaviour:
+
+  ```python
+  pipeline = qml.CompilePipeline()
+  pipeline.add_marker("no-transforms")
+  pipeline += qml.transforms.cancel_inverses
+
+  @qml.marker("after-cancel-inverses")
+  @pipeline
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+    qml.X(0)
+    qml.H(0)
+    qml.H(0)
+    return qml.probs()
+  ```
+
+  The compilation pipeline has a new string representation that can be used to 
+  inspect the transforms and markers,
+
+  ```pycon
+  >>> print(circuit.compile_pipeline)
+  CompilePipeline(
+     ├─▶ no-transforms
+    [1] cancel_inverses()
+     └─▶ after-cancel-inverses
+  )
+  ```
+
+  As usual, marker labels can be used as an argument to `level` in `draw`
+  and `specs`, showing the cumulative result of applying transforms up to said marker:
+
+  ```pycon
+  >>> print(qml.draw(c, level="no-transforms")()) # or level=0
+  0: ──X──H──H─┤  Probs
+  >>> print(qml.draw(c, level="after-cancel-inverses")()) # or level=1
+  0: ──X─┤  Probs
+  ```
+  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+  [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
+  
 * Raises a more informative error if something that is not a measurement process is returned from a 
   QNode when program capture is turned on.
   [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
@@ -196,6 +257,11 @@
 * When the new graph-based decomposition system is enabled, the `decompose` transform no longer tries to find
   a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
+  dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
+  ``pbc.fabricate`` and ``pbc.prepare``.
+  [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -418,6 +484,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add `sybil` to `dev` dependency group in `pyproject.toml`.
+  [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
+
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
 
@@ -542,6 +611,7 @@ Ali Asadi,
 Astral Cai,
 Yushao Chen,
 Marcus Edwards,
+Sengthai Heng,
 Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
