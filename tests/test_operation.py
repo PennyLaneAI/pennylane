@@ -43,10 +43,11 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-def test_id_is_deprecated():
+@pytest.mark.parametrize("test_class", [Operator, Operation])
+def test_id_is_deprecated(test_class):
     """Tests that the 'id' argument is deprecated."""
 
-    class DummyOp(Operator):
+    class DummyOp(test_class):
         """Custom dummy operator."""
 
     _ = DummyOp(0.5, [0])
@@ -56,10 +57,11 @@ def test_id_is_deprecated():
         _ = DummyOp(0.5, [0], id="blah")
 
 
-def test_id_with_label_is_deprecated():
+@pytest.mark.parametrize("test_class", [Operator, Operation])
+def test_id_with_label_is_deprecated(test_class):
     """Tests that using 'label' with a set 'id' argument gives useful warning."""
 
-    class DummyOp(Operator):
+    class DummyOp(test_class):
         """Custom dummy operator."""
 
     with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
