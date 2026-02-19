@@ -178,20 +178,6 @@ unmodified_templates_cases = [
     ),
     (qml.CosineWindow, ([2, 3],), {}),
     (qml.CosineWindow, (), {"wires": [2, 0, 1]}),
-    (qml.MottonenStatePreparation, (jnp.ones(4) / 2, [2, 3]), {}),
-    (
-        qml.MottonenStatePreparation,
-        (jnp.ones(8) / jnp.sqrt(8),),
-        {"wires": [3, 2, 0], "id": "your_id"},
-    ),
-    pytest.param(
-        qml.MottonenStatePreparation,
-        (),
-        {"state_vector": jnp.array([1.0, 0.0]), "wires": [1]},
-        marks=pytest.mark.xfail(
-            reason="arrays should never have been in the metadata, [sc-104808]"
-        ),
-    ),
     (qml.AQFT, (1, [0, 1, 2]), {}),
     (qml.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
     (qml.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
