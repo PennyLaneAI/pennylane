@@ -25,3 +25,4 @@ from .mpldrawer import MPLDrawer
 from .style import available_styles, use_style
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+from .draw_graph import draw_graph
