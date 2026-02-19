@@ -376,7 +376,7 @@ def _(op: qtemps.subroutines.QROM):
 
 
 @_register_subroutine_call_graph(qtemps.subroutines.QFT)
-def _(op):
+def _qft_call_graph(op):
     """Call graph for Quantum Fourier Transform"""
 
     # From PL Decomposition
@@ -606,7 +606,7 @@ def _(
 
 # pylint: disable=import-outside-toplevel
 @_register_subroutine_to_bloq(qtemps.subroutines.QFT)
-def _(op, custom_mapping=None, map_ops=True, **kwargs):
+def _qft_to_bloq(op, custom_mapping=None, map_ops=True, **kwargs):
     """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
     from qualtran.bloqs.qft import QFTTextBook
 
