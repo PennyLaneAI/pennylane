@@ -613,6 +613,10 @@
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Fixes a bug where the wires were incorrectly mapped when converting from a `qp.QuantumPhaseEstimation`
+  operator to its resource estimator `qp.estimator.QPE` equivalent.
+  [(#9082)](https://github.com/PennyLaneAI/pennylane/pull/9082)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
