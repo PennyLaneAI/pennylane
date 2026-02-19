@@ -37,7 +37,7 @@ Pending deprecations
 
   .. warning::
 
-    Neither of these functions are currently supported inside :func:`~.qjit`-compiled circuits.
+    Neither of these functions are currently supported inside :func:`~.qjit`-compiled circuits, as the corresponding `id` behaviour didn't work beforehand.
 
   Use :func:`~.drawer.label` to attach a custom label to an operator instance
   for circuit drawing:
