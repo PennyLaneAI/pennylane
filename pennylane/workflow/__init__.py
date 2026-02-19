@@ -26,6 +26,7 @@ Execution functions and utilities
     ~workflow.construct_tape
     ~workflow.construct_batch
     ~workflow.construct_execution_config
+    ~workflow.get_transform_program
     ~workflow.get_compile_pipeline
     ~workflow.get_best_diff_method
     ~workflow.set_shots
