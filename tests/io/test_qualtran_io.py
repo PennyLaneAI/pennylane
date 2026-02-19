@@ -568,7 +568,7 @@ class TestToBloqDecomposition:
                 qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True, call_graph="decomposition"
             ): 15,
             qml.to_bloq(
-                qml.adjoint(qml.QFT(wires=range(1, 5))), False, call_graph="decomposition"
+                qml.adjoint(qml.QFT.operator(wires=range(1, 5))), False, call_graph="decomposition"
             ): 1,
         }
 
@@ -626,7 +626,7 @@ class TestToBloqDecomposition:
                 {
                     (qml.Hadamard(0), True): 4,
                     (qml.ctrl(qml.RX(0.1, wires=0), control=[1]), True): 15,
-                    (qml.adjoint(qml.QFT(wires=range(1, 5))), False): 1,
+                    (qml.adjoint(qml.QFT.operator(wires=range(1, 5))), False): 1,
                 },
             ),
             (
@@ -650,7 +650,7 @@ class TestToBloqDecomposition:
             ),
             (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
             (
-                qml.QFT(wires=range(5)),
+                qml.QFT.operator(wires=range(5)),
                 # From ResourceQFT
                 {
                     (qml.H(0), True): 5,
@@ -854,8 +854,8 @@ class TestToBloqDecomposition:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(4))), control=[4]), False): 1,
-                    (qml.ctrl(qml.QFT(range(4)), control=[4]), False): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT.operator(range(4))), control=[4]), False): 1,
+                    (qml.ctrl(qml.QFT.operator(range(4)), control=[4]), False): 1,
                     (qml.Toffoli([0, 1, 2]), True): 6,
                 },
             ),
@@ -868,8 +868,8 @@ class TestToBloqDecomposition:
                     work_wires=[6, 7, 8, 9, 10],
                 ),
                 {
-                    (qml.ctrl(qml.QFT(range(3)), control=[4]), False): 1,
-                    (qml.ctrl(qml.adjoint(qml.QFT(range(3))), control=[4]), False): 1,
+                    (qml.ctrl(qml.QFT.operator(range(3)), control=[4]), False): 1,
+                    (qml.ctrl(qml.adjoint(qml.QFT.operator(range(3))), control=[4]), False): 1,
                     (qml.Toffoli([0, 1, 2]), True): 21,
                 },
             ),
@@ -926,11 +926,11 @@ class TestToBloqDecomposition:
                 },
             ),
             (
-                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                qml.Select(ops=[qml.X(2), qml.QFT.operator(wires=[2, 3, 4])], control=[0, 1]),
                 {
                     (qml.X(wires=[2]), True): 2,
                     (qml.ctrl(qml.X(2), control=[0]), True): 1,
-                    (qml.ctrl(qml.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
+                    (qml.ctrl(qml.QFT.operator(wires=[2, 3, 4]), control=[0]), True): 1,
                 },
             ),
             (
@@ -961,7 +961,7 @@ class TestToBloqDecomposition:
                 ),
                 "qpe_bloq",
             ),
-            (qml.QFT(wires=range(4)), "qft_bloq"),
+            (qml.QFT.operator(wires=range(4)), "qft_bloq"),
             (
                 qml.ModExp(
                     x_wires=[0, 1],
@@ -1041,7 +1041,7 @@ class TestToBloqDecomposition:
                 "qsvt_custom_mapping",
                 "qsvt_custom_bloq",
             ),
-            (qml.QFT(wires=range(4)), "qft_custom_mapping", "qft_custom_bloq"),
+            (qml.QFT.operator(wires=range(4)), "qft_custom_mapping", "qft_custom_bloq"),
             (
                 qml.ModExp(
                     x_wires=[0, 1],
@@ -1121,7 +1121,7 @@ class TestToBloqDecomposition:
                     )
                 },
                 "qft_custom_mapping": {
-                    qml.QFT(wires=range(4)): TextbookQPE(
+                    qml.QFT.operator(wires=range(4)): TextbookQPE(
                         unitary=qml.to_bloq(qml.RX(0.1, wires=0)),
                         ctrl_state_prep=LPResourceState(4),
                     )
@@ -1327,7 +1327,7 @@ class TestToBloqEstimator:
             ),
             (qml.BasisState(np.array([1, 1]), wires=[0, 1]), {(qml.X(0), True): 2}),
             (
-                qml.QFT(wires=range(5)),
+                qml.QFT.operator(wires=range(5)),
                 {
                     (qml.H(0), True): 5,
                     (qml.CNOT([0, 1]), True): 26,
@@ -1480,7 +1480,7 @@ class TestToBloqEstimator:
                 },
             ),
             (
-                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                qml.Select(ops=[qml.X(2), qml.QFT.operator(wires=[2, 3, 4])], control=[0, 1]),
                 {
                     (qml.Toffoli([0, 1, 2]), True): 8,
                     (qml.CNOT([0, 1]), True): 14,
@@ -1523,8 +1523,8 @@ class TestToBloqEstimator:
                     work_wire=3,
                 ),
                 {
-                    (qml.T(0), True): 132,
-                    (qml.CNOT([0, 1]), True): 6,
+                    (qml.T(0), True): 264,
+                    (qml.CNOT([0, 1]), True): 8,
                     (qml.X([0]), True): 4,
                     (qml.Toffoli([0, 1, 2]), True): 4,
                     (qml.H(0), True): 6,
@@ -1603,7 +1603,7 @@ class TestToBloqEstimator:
                 },
             ),
             (
-                qml.Select(ops=[qml.X(2), qml.QFT(wires=[2, 3, 4])], control=[0, 1]),
+                qml.Select(ops=[qml.X(2), qml.QFT.operator(wires=[2, 3, 4])], control=[0, 1]),
                 {
                     (qml.Toffoli([0, 1, 2]), True): 8,
                     (qml.CNOT([0, 1]), True): 14,
@@ -1618,7 +1618,7 @@ class TestToBloqEstimator:
                     wires=range(3),
                     normalize=True,
                 ),
-                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+                {(qml.CNOT([0, 1]), True): 12, (qml.T(0), True): 616},
             ),
         ],
     )
