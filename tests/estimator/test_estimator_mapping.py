@@ -329,8 +329,19 @@ class TestMapToResourceOp:
                 ),
             ),
             (
-                qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
-                re_temps.QPE(base=re_ops.Z(), num_estimation_wires=2, wires=[2, 0, 1]),
+                qtemps.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+                re_temps.QPE(base=re_ops.Z(2), num_estimation_wires=2, wires=[0, 1]),
+            ),
+            (
+                qtemps.QuantumPhaseEstimation(
+                    qtemps.Multiplier(k=3, x_wires=[0, 1], mod=4, work_wires=["w0", "w1"]),
+                    estimation_wires=[2, 3],
+                ),
+                re_temps.QPE(
+                    base=re_temps.Multiplier(2, 4, wires=[0, 1]),
+                    num_estimation_wires=2,
+                    wires=[2, 3],
+                ),
             ),
             (
                 qml.TrotterProduct(
