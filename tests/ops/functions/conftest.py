@@ -23,7 +23,9 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
+from pennylane.fourier.mark import MarkedOp
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
@@ -39,6 +41,8 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 
 
 _INSTANCES_TO_TEST = [
+    (LabelledOp(qml.X(0), "my-x"), {}),
+    (MarkedOp(qml.X(0), "my-x"), {}),
     (qml.ops.MidMeasure(wires=0), {"skip_capture": True}),
     (qml.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
     (ChangeOpBasis(qml.T(0), qml.PauliZ(0)), {}),
@@ -169,6 +173,8 @@ These operators need to break PL conventions, and each one's reason is specified
 
 
 _ABSTRACT_OR_META_TYPES = {
+    MarkedOp,
+    LabelledOp,
     Adjoint,
     AdjointOperation,
     Operator,
