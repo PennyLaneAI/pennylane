@@ -598,6 +598,7 @@ class StatePrep(StatePrepBase):
         return state
 
 
+# pylint: disable=unused-argument
 def _stateprep_resources(num_wires):
     return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
 

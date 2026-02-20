@@ -18,13 +18,14 @@ import functools
 import math
 
 from pennylane import math
-from pennylane.ops.qubit.state_preparation import BasisState, _basis_state_decomp
+from pennylane.ops.qubit.state_preparation import _basis_state_decomp
 from pennylane.templates import Subroutine, SubroutineOp
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
 def basis_embedding_setup(features, wires):
+    """Run pre-validation on the features and wires provided to BasisEmbedding."""
     wires = Wires(wires)
     if isinstance(features, list):
         features = math.stack(features)
@@ -59,7 +60,9 @@ def basis_embedding_setup(features, wires):
     return (features, wires), {}
 
 
+# pylint: disable=unused-argument
 def basis_embedding_resources(features, wires):
+    """Calculate the resources for BasisEmbedding."""
     return {SubroutineOp: 1}
 
 
