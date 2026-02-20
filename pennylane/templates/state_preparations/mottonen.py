@@ -19,7 +19,6 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane.templates import Subroutine
 from pennylane.typing import TensorLike
 
@@ -266,6 +265,8 @@ def _get_alpha_y(a, n, k):
 
 
 def setup_mottonen(state_vector, wires):
+    """Run pre-validation on the arguments provided to MottonenStatePreparation."""
+
     # check if the `state_vector` param is batched
     batched = len(qml.math.shape(state_vector)) > 1
 
@@ -296,7 +297,9 @@ def setup_mottonen(state_vector, wires):
     return (state_vector, wires), {}
 
 
+# pylint: disable=unused-argument
 def mottonen_decomp_resources(state_vector, wires):
+    """Calculate the resources for MottonenStatePreparation."""
     n = 2 ** len(wires) - 1  # Equal to `sum(2**i for i in range(len(wires)))`
 
     return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
