@@ -33,6 +33,7 @@ from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
+from ... import SubroutineOp
 
 
 def generalized_singles(wires, delta_sz):
@@ -322,7 +323,7 @@ class kUpCCGSD(Operation):
         """
         op_list = []
 
-        op_list.append(BasisEmbedding(init_state, wires=wires))
+        op_list.append(BasisEmbedding.operator(init_state, wires=wires))
 
         for layer in range(k):
             for i, (w1, w2) in enumerate(d_wires):
@@ -368,7 +369,7 @@ class kUpCCGSD(Operation):
 
 def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
-    resources[resource_rep(BasisEmbedding, num_wires=num_wires)] = 1
+    resources[SubroutineOp] = 1
 
     for _ in range(k):
         for w1, w2 in d_wires:

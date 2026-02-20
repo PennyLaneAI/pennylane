@@ -22,6 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import DoubleExcitation, OrbitalRotation, cond
+from pennylane.templates import SubroutineOp
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires
 
@@ -287,7 +288,7 @@ class GateFabric(Operation):
                 wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
             ]
 
-        op_list.append(BasisEmbedding(init_state, wires=wires))
+        op_list.append(BasisEmbedding.operator(init_state, wires=wires))
 
         for layer in range(n_layers):
             for idx, wires_ in enumerate(wire_pattern):
@@ -326,7 +327,7 @@ class GateFabric(Operation):
 
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     resources = {
-        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        SubroutineOp: 1,
         resource_rep(DoubleExcitation): n_layers * len_wire_pattern,
     }
 
