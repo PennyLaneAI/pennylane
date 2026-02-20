@@ -22,7 +22,7 @@ from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
 from pennylane.devices.execution_config import MCMConfig
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DecompositionWarning, DeviceError
 from pennylane.operation import classproperty
 
 
@@ -403,8 +403,8 @@ class TestPreprocessing:
             (qml.CRX(0.1, wires=[0, 1]), True),
             (qml.Snapshot(), True),
             (qml.Barrier(), False),
-            (qml.QFT(wires=range(5)), True),
-            (qml.QFT(wires=range(10)), False),
+            (qml.QFT.operator(wires=range(5)), False),
+            (qml.QFT.operator(wires=range(10)), False),
             (qml.GroverOperator(wires=range(10)), True),
             (qml.GroverOperator(wires=range(14)), False),
             (
@@ -754,8 +754,14 @@ class TestPreprocessingIntegration:
         ]
 
         program = qml.device("default.qubit").preprocess_transforms()
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-            program(tapes)
+
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                with pytest.warns(DecompositionWarning):
+                    program(tapes)
+        else:
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                program(tapes)
 
     @pytest.mark.parametrize(
         "ops, measurement, message",
@@ -924,8 +930,13 @@ class TestPreprocessingIntegration:
 
         prog = DefaultQubit().preprocess_transforms(config)
 
-        with pytest.raises(DeviceError, match="not supported with default.qubit"):
-            prog((tape,))
+        if qml.decomposition.enabled_graph():
+            with pytest.raises(DeviceError, match="not supported with default.qubit"):
+                with pytest.warns(DecompositionWarning):
+                    prog((tape,))
+        else:
+            with pytest.raises(DeviceError, match="not supported with default.qubit"):
+                prog((tape,))
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")

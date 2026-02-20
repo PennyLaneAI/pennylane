@@ -413,7 +413,7 @@ class StatePrep(StatePrepBase):
         [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
 
         """
-        return [MottonenStatePreparation(state, wires)]
+        return [MottonenStatePreparation.operator(state, wires)]
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
@@ -586,7 +586,7 @@ class StatePrep(StatePrepBase):
 
 
 def _stateprep_resources(num_wires):
-    return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
+    return {qml.templates.SubroutineOp: 1}
 
 
 @register_resources(_stateprep_resources)

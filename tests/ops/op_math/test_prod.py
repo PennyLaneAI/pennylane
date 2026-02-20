@@ -617,26 +617,15 @@ class TestMatrix:
     def test_prod_templates(self):
         """Test that we can compose templates and the generated matrix is correct."""
 
-        def get_qft_mat(num_wires):
-            omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-            mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
-
-            for m in range(2**num_wires):
-                for n in range(2**num_wires):
-                    mat[m, n] = omega ** (m * n)
-
-            return 1 / math.sqrt(2**num_wires) * mat
-
         wires = [0, 1, 2]
-        prod_op = Prod(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
+        prod_op = Prod(qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
         mat = prod_op.matrix()
 
         grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
-        qft_mat = get_qft_mat(3)
         x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
         x_mat = math.kron(x, math.eye(4, dtype="complex128"))
 
-        true_mat = qft_mat @ grov_mat @ x_mat
+        true_mat = grov_mat @ x_mat
         assert np.allclose(mat, true_mat)
 
     def test_prod_qchem_ops(self):

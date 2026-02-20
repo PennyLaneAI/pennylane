@@ -800,7 +800,7 @@ class TestAdjointConstructorPreconstructedOp:
     """Test providing an already initialized operator to the transform."""
 
     @pytest.mark.parametrize(
-        "base", (qml.IsingXX(1.23, wires=("c", "d")), qml.QFT(wires=(0, 1, 2)))
+        "base", (qml.IsingXX(1.23, wires=("c", "d")), qml.QFT.operator(wires=(0, 1, 2)))
     )
     def test_single_op(self, base):
         """Test passing a single preconstructed op in a queuing context."""
@@ -858,7 +858,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert len(tape) == 1
         assert out is tape[0]
         assert isinstance(out, Adjoint)
-        assert out.base.__class__ is qml.QFT
+        assert out.base.__class__ is qml.templates.SubroutineOp
         assert out.wires == qml.wires.Wires((0, 1, 2))
 
     def test_adjoint_on_function(self):

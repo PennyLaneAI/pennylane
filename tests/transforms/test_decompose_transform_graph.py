@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
-
 from collections import defaultdict
 
 import numpy as np
@@ -22,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.decomposition.gate_set import GateSet
+from pennylane.exceptions import DecompositionWarning
 from pennylane.operation import Operation
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
@@ -336,7 +336,9 @@ class TestDecomposeGraphEnabled:
 
         tape = qml.tape.QuantumScript([CustomOpWithFallback(wires=[0, 1])])
 
-        with pytest.warns(UserWarning, match="The graph-based decomposition system is unable"):
+        with pytest.warns(
+            DecompositionWarning, match="The graph-based decomposition system is unable"
+        ):
             [new_tape], _ = qml.transforms.decompose(
                 [tape],
                 gate_set={"CNOT", "Hadamard"},
@@ -394,7 +396,9 @@ class TestDecomposeGraphEnabled:
         tape = qml.tape.QuantumScript([qml.X(0)])
 
         with pytest.warns(UserWarning, match="GlobalPhase is not assumed"):
-            with pytest.warns(UserWarning, match="The graph-based decomposition system is unable"):
+            with pytest.warns(
+                DecompositionWarning, match="The graph-based decomposition system is unable"
+            ):
                 [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX"})
 
         assert new_tape.operations == [qml.RX(np.pi, wires=0), qml.GlobalPhase(-np.pi / 2, wires=0)]
