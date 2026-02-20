@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for Controlled"""
-
 from copy import copy
 from functools import partial
 
@@ -38,6 +37,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.decomposition import gate_sets
+from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
@@ -128,9 +128,7 @@ class TestControlledInit:
     def test_nonparametric_ops(self):
         """Test pow initialization for a non parameteric operation."""
 
-        op = Controlled(
-            self.temp_op, (0, 1), control_values=[True, False], work_wires="aux", id="something"
-        )
+        op = Controlled(self.temp_op, (0, 1), control_values=[True, False], work_wires="aux")
 
         assert op.base is self.temp_op
         assert op.hyperparameters["base"] is self.temp_op
@@ -148,7 +146,6 @@ class TestControlledInit:
         assert op.work_wires == Wires("aux")
 
         assert op.name == "C(TempOperator)"
-        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
@@ -2119,8 +2116,12 @@ class TestTapeExpansionWithControlled:
             qml.PauliX(wires=1),
         ]
         assert len(tape) == 9
-        [expanded], _ = decompose(tape, gate_set={"X", "RZ", "RY", "CNOT", "PhaseShift"})
-        assert expanded.circuit == expected
+        [expanded], _ = decompose(
+            tape, gate_set={"X", "RZ", "RY", "CNOT", "PhaseShift", "GlobalPhase"}
+        )
+        actual_matrix = qml.matrix(expanded, wire_order=[0, 1, 2, 3, 4])
+        expected_matrix = qml.matrix(expected, wire_order=[0, 1, 2, 3, 4])
+        assert qml.math.allclose(actual_matrix, expected_matrix)
 
     @pytest.mark.parametrize(
         "op",
@@ -2136,7 +2137,17 @@ class TestTapeExpansionWithControlled:
             op(0.1, 0.2, 0.3, wires=0)
 
         tape = QuantumScript.from_queue(q_tape)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+
+        @register_resources({qml.RZ: 2, qml.RY: 1})
+        def _rot_to_rz_ry_rz(phi, theta, omega, wires, **__):
+            qml.RZ(phi, wires=wires)
+            qml.RY(theta, wires=wires)
+            qml.RZ(omega, wires=wires)
+
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(_Rot, _rot_to_rz_ry_rz)
+            [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+
         assert tape.circuit == [
             Controlled(qml.RZ(0.1, 0), control_wires=[3, 7]),
             Controlled(qml.RY(0.2, 0), control_wires=[3, 7]),
@@ -2148,23 +2159,27 @@ class TestTapeExpansionWithControlled:
         with qml.queuing.AnnotatedQueue() as q_tape:
             for op_ in qml.CRot.compute_decomposition(0.1, 0.2, 0.3, wires=[7, 0]):
                 qml.ctrl(op_, control=3)
+
         tape_expected = QuantumScript.from_queue(q_tape)
 
         def stopping_condition(o):
             return not isinstance(o, Controlled)
 
-        [actual], _ = decompose(
-            tape,
-            max_expansion=10,
-            stopping_condition=stopping_condition,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-        )
-        [expected], _ = decompose(
-            tape_expected,
-            max_expansion=10,
-            stopping_condition=stopping_condition,
-            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-        )
+        with qml.decomposition.local_decomps():
+            qml.add_decomps(_Rot, _rot_to_rz_ry_rz)
+            [actual], _ = decompose(
+                tape,
+                max_expansion=10,
+                stopping_condition=stopping_condition,
+                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            )
+            [expected], _ = decompose(
+                tape_expected,
+                max_expansion=10,
+                stopping_condition=stopping_condition,
+                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+            )
+
         actual_mat = qml.matrix(actual, wire_order=[3, 7, 0])
         expected_mat = qml.matrix(expected, wire_order=[3, 7, 0])
         assert qml.math.allclose(actual_mat, expected_mat, atol=tol, rtol=0)
@@ -2194,10 +2209,15 @@ class TestTapeExpansionWithControlled:
             *qml.CRY(4 * np.pi - 0.123, wires=[5, 3]).decomposition(),
             *qml.CRX(4 * np.pi - 0.789, wires=[5, 2]).decomposition(),
         ]
+        expected_matrix = qml.matrix(expected, wire_order=[0, 1, 2, 3, 4, 5])
+
         [tape1], _ = decompose(tape1, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
-        assert tape1.circuit == expected
+        actual_matrix = qml.matrix(tape1, wire_order=[0, 1, 2, 3, 4, 5])
+        assert qml.math.allclose(actual_matrix, expected_matrix)
+
         [tape2], _ = decompose(tape2, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
-        assert tape2.circuit == expected
+        actual_matrix = qml.matrix(tape2, wire_order=[0, 1, 2, 3, 4, 5])
+        assert qml.math.allclose(actual_matrix, expected_matrix)
 
     def test_ctrl_with_qnode(self):
         """Test ctrl works when in a qnode cotext."""

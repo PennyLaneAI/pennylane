@@ -400,7 +400,7 @@ class TestOtherTransforms:
         """Test that operations given are arguments to a conditioned function are not queued."""
 
         # Need to construct now so that id is not random
-        mp = qml.ops.MidMeasure(0, id="foo")
+        mp = qml.ops.MidMeasure(0, meas_uid="foo")
         mv = qml.ops.MeasurementValue([mp], lambda v: v)
 
         def circuit():

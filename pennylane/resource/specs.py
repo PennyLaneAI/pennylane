@@ -183,12 +183,13 @@ def _specs_qjit_intermediate_passes(
     single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
 
     # Maps to convert back and forth between marker name and int level
-    marker_to_level = {
-        trans.kwargs["level"]: i + 1
-        for i, trans in enumerate(compile_pipeline)
-        if trans.tape_transform == qml.marker.tape_transform
+    marker_to_level: dict[str, int] = {
+        marker: compile_pipeline.get_marker_level(marker) for marker in compile_pipeline.markers
     }
-    level_to_marker = {v: k for k, v in marker_to_level.items()}
+    # Multiple markers can correspond to the same level
+    level_to_markers = defaultdict(list)
+    for marker, lvl in marker_to_level.items():
+        level_to_markers[lvl].append(marker)
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     if level not in ("all", "all-mlir"):
@@ -216,7 +217,7 @@ def _specs_qjit_intermediate_passes(
             # pass (the marker map does not account for when the lowering pass takes place)
             # NOTE: This is actually currently unused, since markers are tape transforms only
             level = [
-                lvl + 1 if lvl in level_to_marker and lvl >= num_trans_levels else lvl
+                lvl + 1 if lvl in level_to_markers and lvl >= num_trans_levels else lvl
                 for lvl in level
             ]
 
@@ -238,10 +239,10 @@ def _specs_qjit_intermediate_passes(
             if len(res) == 1:
                 res = res[0]
 
-            if trans_level == 0:
+            if trans_level in level_to_markers:
+                trans_name: str = ", ".join(level_to_markers[trans_level])
+            elif trans_level == 0:
                 trans_name = "Before transforms"
-            elif trans_level in level_to_marker:
-                trans_name = level_to_marker[trans_level]
             else:
                 # TODO: Use PLxPR transforms where appropriate
                 trans_name = compile_pipeline[trans_level - 1].tape_transform.__name__
@@ -260,9 +261,19 @@ def _specs_qjit_intermediate_passes(
         if level not in ("all", "all-mlir")
         else "all"
     )
+    # NOTE: Add back one to account for the inserted MLIR lowering pass,
+    # which is not accounted for in the marker levels
+    num_tape_transforms = num_trans_levels
+    mlir_level_to_markers = {
+        lvl - num_tape_transforms + 1: markers
+        for lvl, markers in level_to_markers.items()
+        if lvl >= num_tape_transforms
+    }
     if mlir_levels == "all" or len(mlir_levels) > 0:
         try:
-            results = mlir_specs(qjit, mlir_levels, *args, **kwargs)
+            results = mlir_specs(
+                qjit, mlir_levels, *args, **kwargs, level_to_markers=mlir_level_to_markers
+            )
         except ValueError as ve:
             levels = re.match("Requested specs levels (.*) not found in MLIR pass list.", str(ve))
             bad_levels = [str(int(lvl) + num_trans_levels) for lvl in levels[1].split(", ")]

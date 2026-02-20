@@ -717,7 +717,7 @@ def _equal_measurements(
 def _equal_mid_measure(op1: MidMeasure, op2: MidMeasure, **_):
     return (
         op1.wires == op2.wires
-        and op1.id == op2.id
+        and op1.meas_uid == op2.meas_uid
         and op1.reset == op2.reset
         and op1.postselect == op2.postselect
     )
@@ -731,7 +731,7 @@ def _equal_pauli_measure(op1: PauliMeasure, op2: PauliMeasure, **_):
         return "op1 and op2 have different postselect values."
     if op1.pauli_word != op2.pauli_word:
         return f"op1 has pauli_word {op1.pauli_word} and op2 has pauli_word {op2.pauli_word}"
-    if op1.id != op2.id:
+    if op1.meas_uid != op2.meas_uid:
         return "op1 and op2 have different identifiers id."
     return True
 
