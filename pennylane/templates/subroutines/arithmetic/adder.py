@@ -25,6 +25,7 @@ from pennylane.templates import Subroutine
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
+from ... import SubroutineOp
 from .phase_adder import PhaseAdder
 
 
@@ -153,6 +154,7 @@ def Adder(
         Note that the ``Adder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo), that would be equivalent to setting
         the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
+
     if mod == 2 ** len(x_wires):
         qft_wires = x_wires
         work_wire = ()
@@ -160,4 +162,5 @@ def Adder(
         qft_wires = work_wires[:1] + x_wires
         work_wire = work_wires[1:]
 
-    change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+
+    change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))

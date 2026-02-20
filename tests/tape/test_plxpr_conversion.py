@@ -40,12 +40,29 @@ class TestCollectOpsandMeas:
             qml.QFT(wires=(0, 1, 2))
             return qml.expval(qml.Z(0))
 
+        qft_decomp = [
+            qml.H(0),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])
+            ),
+            qml.ControlledPhaseShift(
+                qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])
+            ),
+            qml.H(1),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])
+            ),
+            qml.H(2),
+            qml.SWAP(wires=[0, 2]),
+        ]
+
         obj = CollectOpsandMeas()
         obj(f)(1.2)
         qml.assert_equal(obj.state["ops"][0], qml.RX(1.2, 0))
         qml.assert_equal(obj.state["ops"][1], qml.CNOT((0, 1)))
-        qml.assert_equal(obj.state["ops"][2], qml.QFT((0, 1, 2)))
-        assert len(obj.state["ops"]) == 3
+        for i, op in enumerate(qft_decomp):
+            qml.assert_equal(obj.state["ops"][2 + i], op)
+        assert len(obj.state["ops"]) == 2 + len(qft_decomp)
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
 
@@ -317,12 +334,29 @@ class TestCollectOpsandMeas:
             qml.QFT(wires=(0, 1, 2))
             return qml.expval(qml.Z(0))
 
+        qft_decomp = [
+            qml.H(0),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])
+            ),
+            qml.ControlledPhaseShift(
+                qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])
+            ),
+            qml.H(1),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])
+            ),
+            qml.H(2),
+            qml.SWAP(wires=[0, 2]),
+        ]
+
         obj = CollectOpsandMeas()
         obj(f)(1.2)
         qml.assert_equal(obj.state["ops"][0], qml.RX(1.2, 0))
         qml.assert_equal(obj.state["ops"][1], qml.CNOT((0, 1)))
-        qml.assert_equal(obj.state["ops"][2], qml.QFT((0, 1, 2)))
-        assert len(obj.state["ops"]) == 3
+        for i, op in enumerate(qft_decomp):
+            qml.assert_equal(obj.state["ops"][2 + i], op)
+        assert len(obj.state["ops"]) == 9
 
         qml.assert_equal(obj.state["measurements"][0], qml.expval(qml.Z(0)))
 
@@ -339,12 +373,29 @@ class TestPlxprToTape:
             qml.QFT(wires=(0, 1, 2))
             return qml.expval(qml.Z(0))
 
+        qft_decomp = [
+            qml.H(0),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])
+            ),
+            qml.ControlledPhaseShift(
+                qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])
+            ),
+            qml.H(1),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])
+            ),
+            qml.H(2),
+            qml.SWAP(wires=[0, 2]),
+        ]
+
         jaxpr = jax.make_jaxpr(f)(-0.5)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
-        qml.assert_equal(tape[2], qml.QFT((0, 1, 2)))
-        assert len(tape.operations) == 3
+        for i, op in enumerate(qft_decomp):
+            qml.assert_equal(tape[2 + i], op)
+        assert len(tape.operations) == 9
 
         qml.assert_equal(tape.measurements[0], qml.expval(qml.Z(0)))
         assert tape.shots == qml.measurements.Shots(100)
@@ -360,12 +411,29 @@ class TestPlxprToTape:
             qml.QFT(wires=(0, 1, 2))
             return qml.expval(qml.Z(0))
 
+        qft_decomp = [
+            qml.H(0),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([1, 0])
+            ),
+            qml.ControlledPhaseShift(
+                qml.math.array(0.7853981633974483, like="jax"), wires=qml.wires.Wires([2, 0])
+            ),
+            qml.H(1),
+            qml.ControlledPhaseShift(
+                qml.math.array(1.5707963267948966, like="jax"), wires=qml.wires.Wires([2, 1])
+            ),
+            qml.H(2),
+            qml.SWAP(wires=[0, 2]),
+        ]
+
         jaxpr = jax.make_jaxpr(f)(-0.5)
         tape = qml.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
         qml.assert_equal(tape[0], qml.RX(1.2, 0))
         qml.assert_equal(tape[1], qml.CNOT((0, 1)))
-        qml.assert_equal(tape[2], qml.QFT((0, 1, 2)))
-        assert len(tape.operations) == 3
+        for i, op in enumerate(qft_decomp):
+            qml.assert_equal(tape[2 + i], op)
+        assert len(tape.operations) == 9
 
         qml.assert_equal(tape.measurements[0], qml.expval(qml.Z(0)))
         assert tape.shots == qml.measurements.Shots(100)

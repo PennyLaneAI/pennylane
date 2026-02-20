@@ -200,7 +200,7 @@ class TestAdder:
         adder_decomposition = qml.Adder.operator(k, x_wires, mod, work_wires).decomposition()
 
         op_list = []
-        op_list.append(qml.QFT(work_wires[:1] + x_wires))
+        op_list.append(qml.QFT.operator(work_wires[:1] + x_wires))
         op_list.append(qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]))
         op_list.append(qml.adjoint(qml.QFT)(work_wires[:1] + x_wires))
 
@@ -219,7 +219,7 @@ class TestAdder:
 
         ctrl_op1 = qml.ops.Controlled(
             qml.change_op_basis(
-                qml.QFT(work_wires[:1] + x_wires),
+                qml.QFT.operator(work_wires[:1] + x_wires),
                 qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]),
             ),
             control_wires,
@@ -227,12 +227,12 @@ class TestAdder:
         )
 
         ctrl_op2 = qml.prod(
-            qml.adjoint(qml.QFT(work_wires[:1] + x_wires)),
+            qml.adjoint(qml.QFT)(work_wires[:1] + x_wires),
             qml.ctrl(
                 qml.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]),
                 control=control_wires,
             ),
-            qml.QFT(work_wires[:1] + x_wires),
+            qml.QFT.operator(work_wires[:1] + x_wires),
         )
 
         mat1, mat2 = qml.matrix(ctrl_op1, wire_order), qml.matrix(ctrl_op2, wire_order)

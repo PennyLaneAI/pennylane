@@ -110,13 +110,13 @@ class TestMapToResourceOp:
                 qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
                 re_temps.SemiAdder(max_register_size=3, wires=[0, 1, 2, 3, 4]),
             ),
-            (qtemps.QFT(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
+            (qtemps.QFT.operator(wires=[0, 1, 2]), re_temps.QFT(num_wires=3, wires=[0, 1, 2])),
             (
                 qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4]),
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                qtemps.BasisRotation.operator(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
                 re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (
@@ -376,7 +376,7 @@ class TestMapToResourceOp:
             ),
             (
                 qops.ChangeOpBasis(
-                    compute_op=qtemps.QFT(wires=[0, 1, 2]),
+                    compute_op=qtemps.QFT.operator(wires=[0, 1, 2]),
                     target_op=qtemps.ControlledSequence(qops.S(wires=2), control=[0, 1]),
                     uncompute_op=qops.adjoint(qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4])),
                 ),
