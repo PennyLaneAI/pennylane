@@ -15,7 +15,7 @@
 An internal module for working with pytrees.
 """
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import autograd
@@ -176,7 +176,7 @@ def get_typename_type(typename: str) -> type[Any]:
         raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
-@dataclass(repr=False)
+@dataclass(repr=False, frozen=True)
 class PyTreeStructure:
     """A pytree data structure, holding the type, metadata, and child pytree structures.
 
@@ -194,7 +194,7 @@ class PyTreeStructure:
     metadata: Metadata = ()
     """Any metadata needed to reproduce the original object."""
 
-    children: list["PyTreeStructure"] = field(default_factory=list)
+    children: tuple["PyTreeStructure", ...] = ()
     """The children of the pytree node.  Can be either other structures or terminal leaves."""
 
     @property
@@ -214,7 +214,7 @@ class PyTreeStructure:
         return f"PyTree({self.type_.__name__}, {self.metadata}, [{children_string}])"
 
 
-leaf = PyTreeStructure(None, (), [])
+leaf = PyTreeStructure(None, (), ())
 
 
 def flatten(
