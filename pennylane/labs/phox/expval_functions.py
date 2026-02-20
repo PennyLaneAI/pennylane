@@ -48,38 +48,6 @@ class CircuitConfig:
     phase_layer: Callable | None = None
 
 
-def _phase(pauli: str, qubit: int) -> complex:
-    """
-    For a Pauli P return the phase applied by Conjugation with Hadamard (HPH).
-    Specifically, we have the relations:
-    HXH = Z
-    HYH = -Y
-    HZH = X
-    Args:
-        pauli (str): The Pauli operator ("I", "X", "Y", "Z").
-        qubit (int): The qubit index (0 or 1, although only checked for parity).
-    Returns:
-        complex: The phase factor.
-    Raises:
-        ValueError: If pauli is not one of "I", "X", "Y", "Z".
-    """
-
-    if pauli in ("I", "Z"):
-        return 1
-
-    if pauli == "Y":
-        if qubit == 0:
-            return -1j
-        return 1j
-
-    if pauli == "X":
-        if qubit == 0:
-            return 1
-        return -1
-
-    raise ValueError(f"Expected Pauli I, X, Y, or Z, got {pauli}.")
-
-
 def bitflip_expval(
     generators: ArrayLike, params: ArrayLike, ops: ArrayLike
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
@@ -138,71 +106,67 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
     return jnp.array(generators), param_map
 
 
-def build_expval_func(config: CircuitConfig) -> Callable[[ArrayLike, ArrayLike | None], tuple[jnp.ndarray, jnp.ndarray]]:
+def build_expval_func(
+    config: CircuitConfig,
+) -> Callable[[ArrayLike, ArrayLike | None], tuple[jnp.ndarray, jnp.ndarray]]:
     """
     Factory that returns a function for computing expectation values.
-
-    Args:
-        config (CircuitConfig): Configuration object containing circuit details.
-
-    Returns:
-        Callable: A function ``execute(params, phase_params=None)``.
     """
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     samples = jax.random.randint(config.key, (config.n_samples, config.n_qubits), 0, 2)
-    bitflips = jnp.array(
-        [[1 if g in ("Z", "Y") else 0 for g in op] for op in config.observables], dtype=jnp.int32
-    )
+    obs_arr = np.array(config.observables, dtype=str)
 
-    phases = jnp.array(
-        [
-            [
-                math.prod([_phase(gate, qubit) for gate, qubit in zip(op, sample)])
-                for sample in samples
-            ]
-            for op in config.observables
-        ]
-    )
+    is_Y = obs_arr == "Y"
+    is_Z = obs_arr == "Z"
+    is_X = obs_arr == "X"
 
-    @jax.jit
+    bitflips = jnp.array(is_Z | is_Y, dtype=jnp.int32)
+    mask_XY = jnp.array(is_X | is_Y, dtype=jnp.int32)
+    count_Y = jnp.array(is_Y.sum(axis=1), dtype=jnp.int32)
+    
+    sign_flip = 1 - 2 * ((mask_XY @ samples.T) % 2)
+    y_phase = (-1j) ** count_Y[:, jnp.newaxis]
+    phases = sign_flip * y_phase
+
+    vmapped_phase_func = None
+    if config.phase_layer is not None:
+        def compute_phase(p_params, sample, b_flips):
+            return config.phase_layer(p_params, sample) - config.phase_layer(
+                p_params, (sample + b_flips) % 2
+            )
+        
+        vmapped_phase_func = jax.vmap(
+            jax.vmap(compute_phase, in_axes=(None, 0, None)), 
+            in_axes=(None, None, 0)
+        )
+
     def expval_execution(params, phase_params=None):
-        B = (-1) ** (samples @ generators.T)
-        C = 1 - ((-1) ** (bitflips @ generators.T))
+        B = 1 - 2 * ((samples @ generators.T) % 2)
+        
+        C = 2 * ((bitflips @ generators.T) % 2)
 
-        # We need to expand params to match the param_map, since param_map tells us which params
-        # correspond to which generators. E.g. if param_map = [0, 1, 1], and params = [a, b],
-        # then the expanded params should be [a, b, b].
-        expanded_params = params if param_map is None else jnp.asarray(params)[param_map]
+        expanded_params = jnp.asarray(params)[param_map]
         E = C @ (expanded_params[:, None] * B.T)
 
-        if config.phase_layer is not None:
-
-            def compute_phase(p_params, sample, b_flips):
-                return config.phase_layer(p_params, sample) - config.phase_layer(
-                    p_params, (sample + b_flips) % 2
-                )
-
-            phase_matrix = jax.vmap(compute_phase, in_axes=(None, 0, None))
-            phase_matrix = jax.vmap(phase_matrix, in_axes=(None, None, 0))
-
-            E += phase_matrix(phase_params, samples, bitflips)
+        if vmapped_phase_func is not None:
+            E += vmapped_phase_func(phase_params, samples, bitflips)
 
         M = phases * jnp.exp(1j * E)
 
         if config.init_state is not None:
             X, P = config.init_state
-            P = P[:, jnp.newaxis]
-            F = jnp.broadcast_to(P, (P.shape[0], samples.shape[0])) * ((-1) ** (X @ samples.T))
-
-            H1 = ((-1) ** (bitflips @ X.T)) @ F
+            
+            F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))
+            
+            H1 = (1 - 2 * ((bitflips @ X.T) % 2)) @ F
             col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
-            H2 = jnp.broadcast_to(col_sums, (bitflips.shape[0], samples.shape[0]))
-            H = H1 * H2
+            H = H1 * col_sums
             M = M * H
 
         expvals = jnp.real(M)
         std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+        
         return jnp.mean(expvals, axis=1), std_err
 
     return expval_execution
