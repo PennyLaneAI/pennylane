@@ -505,14 +505,96 @@ class CircuitSpecs:
 
         return "\n".join(lines)
 
-    # Separate str and repr methods for simple and pretty printing
-    def __str__(self):
+    def _to_pretty_str_tabular(self) -> str:
         lines = []
 
         lines.append(f"Device: {self.device_name}")
         lines.append(f"Device wires: {self.num_device_wires}")
         lines.append(f"Shots: {self.shots}")
-        lines.append(f"Level: {self.level}")
+        lines.append("Levels:")
+        for level, level_name in self.level.items():
+            lines.append(f"- {level_name} ({level})")
+
+        lines.append("")  # Blank line
+
+        max_metric_length = 15
+        max_column_size = 3
+
+        # Use dict for these since they are sorted by default unlike a set
+        all_gate_types = {}
+        all_meas_types = {}
+
+        # This iteration order will present the gates in the order in which they appear
+        for res in self.resources.values():
+            for gate, count in res.gate_types.items():
+                all_gate_types[gate] = True
+                max_metric_length = max(max_metric_length, len(gate) + 2)
+                max_column_size = max(max_column_size, len(str(count)))
+            for meas, count in res.measurements.items():
+                all_meas_types[meas] = True
+                max_metric_length = max(max_metric_length, len(meas) + 2)
+                max_column_size = max(max_column_size, len(str(count)))
+
+        num_cols = len(self.resources)
+        lines.append(
+            f"Metric/Level".ljust(max_metric_length)
+            + "| "
+            + "| ".join(str(level).ljust(max_column_size) for level in self.level.keys())
+        )
+        lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
+        lines.append(
+            "Num Gates".ljust(max_metric_length)
+            + "| "
+            + "| ".join(
+                str(res.num_gates).ljust(max_column_size) for res in self.resources.values()
+            )
+        )
+        lines.append(
+            "Num allocs".ljust(max_metric_length)
+            + "| "
+            + "| ".join(
+                str(res.num_allocs).ljust(max_column_size) for res in self.resources.values()
+            )
+        )
+
+        lines.append("Gate types:".ljust(max_metric_length) + "| ")
+        for gate in all_gate_types:
+            lines.append(
+                f"- {gate}".ljust(max_metric_length)
+                + "| "
+                + "| ".join(
+                    str(res.gate_types.get(gate, 0)).ljust(max_column_size)
+                    for res in self.resources.values()
+                )
+            )
+        lines.append("Measurements:".ljust(max_metric_length) + "| ")
+        for meas in all_meas_types:
+            lines.append(
+                f"- {meas}".ljust(max_metric_length)
+                + "| "
+                + "| ".join(
+                    str(res.measurements.get(meas, 0)).ljust(max_column_size)
+                    for res in self.resources.values()
+                )
+            )
+
+        return "\n".join(lines).rstrip("\n")
+
+    def to_pretty_str(self, tabular: bool = False) -> str:
+        if tabular and isinstance(self.resources, dict):
+            return self._to_pretty_str_tabular()
+
+        lines = []
+
+        lines.append(f"Device: {self.device_name}")
+        lines.append(f"Device wires: {self.num_device_wires}")
+        lines.append(f"Shots: {self.shots}")
+        if isinstance(self.level, dict):
+            lines.append("Levels:")
+            for level, level_name in self.level.items():
+                lines.append(f"- {level_name} ({level})")
+        else:
+            lines.append(f"Level: {self.level}")
 
         lines.append("")  # Blank line
 
@@ -526,6 +608,10 @@ class CircuitSpecs:
             lines.append(self._resources_to_str(self.resources))
 
         return "\n".join(lines).rstrip("\n-")
+
+    # Separate str and repr methods for simple and pretty printing
+    def __str__(self) -> str:
+        return self.to_pretty_str()
 
     def _ipython_display_(self):  # pragma: no cover
         """Displays __str__ in ipython instead of __repr__"""
