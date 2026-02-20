@@ -339,7 +339,7 @@ class ParticleConservingU1(Operation):
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
         n_layers = math.shape(weights)[0]
-        op_list = [BasisEmbedding(init_state, wires=wires)]
+        op_list = [BasisEmbedding.operator(init_state, wires=wires)]
 
         for l in range(n_layers):
             for i, wires_ in enumerate(nm_wires):
@@ -372,7 +372,6 @@ def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
     num_nm_wires = num_wires - 1
 
     resources = {
-        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
         resource_rep(CZ): 3 * num_nm_wires * n_layers,
         resource_rep(CRot): 3 * num_nm_wires * n_layers,
         resource_rep(PhaseShift): 6 * num_nm_wires * n_layers,

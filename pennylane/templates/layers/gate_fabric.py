@@ -287,7 +287,7 @@ class GateFabric(Operation):
                 wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
             ]
 
-        op_list.append(BasisEmbedding(init_state, wires=wires))
+        op_list.append(BasisEmbedding.operator(init_state, wires=wires))
 
         for layer in range(n_layers):
             for idx, wires_ in enumerate(wire_pattern):
@@ -324,9 +324,9 @@ class GateFabric(Operation):
         return n_layers, n_wires // 2 - 1, 2
 
 
+# pylint: disable=unused-argument
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     resources = {
-        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
         resource_rep(DoubleExcitation): n_layers * len_wire_pattern,
     }
 
