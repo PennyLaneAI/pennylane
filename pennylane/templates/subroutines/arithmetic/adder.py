@@ -32,7 +32,8 @@ from .phase_adder import PhaseAdder
 from pennylane.templates.core import Subroutine
 
 
-def adder_decomp_resources(num_x_wires, mod) -> dict:
+def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()) -> dict:
+    num_x_wires = len(x_wires)
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_subroutine_resource_rep(
@@ -47,8 +48,11 @@ def adder_decomp_resources(num_x_wires, mod) -> dict:
     Subroutine,
     static_argnames=[],
     compute_resources=adder_decomp_resources,
+    wire_argnames=["x_wires", "work_wires"],
 )
-def Adder(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()):
+def Adder(
+    k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
+):  # pylint: disable=unused-argument
     r"""Performs the in-place modular addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
