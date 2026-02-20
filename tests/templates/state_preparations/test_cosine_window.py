@@ -150,6 +150,7 @@ class TestDecomposition:
 class TestRepresentation:
     """Test id and label."""
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         wires = [0, 1, 2]
