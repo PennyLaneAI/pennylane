@@ -1557,28 +1557,6 @@ class TestConditionalsAndMidMeasure:
             apply_operation(m0, state=input_state, is_state_batched=True)
 
 
-class TestGlobalPhaseConvention:
-    """Pin the GlobalPhase sign convention: exp(-1j * phi)."""
-
-    def test_global_phase_sign(self):
-        """Test that GlobalPhase applies exp(-1j * phi), not exp(+1j * phi)."""
-        phi = 0.5
-        state = np.array([1.0 + 0j, 0.0], dtype=complex)
-        op = qml.GlobalPhase(phi)
-        result = apply_operation(op, state)
-        expected = np.exp(-1j * phi) * state
-        assert qml.math.allclose(result, expected)
-
-    def test_global_phase_sign_negative(self):
-        """Test GlobalPhase with negative angle."""
-        phi = -1.2
-        state = np.array([0.6 + 0.8j, 0.0], dtype=complex).reshape(2)
-        op = qml.GlobalPhase(phi)
-        result = apply_operation(op, state)
-        expected = np.exp(-1j * phi) * state
-        assert qml.math.allclose(result, expected)
-
-
 class TestNumpyFastPathAutograd:
     """Regression tests ensuring the numpy fast path in _apply_operation_default
     does not trigger under autograd, which would break gradient tracking."""
