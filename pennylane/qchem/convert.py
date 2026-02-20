@@ -535,6 +535,17 @@ def import_state(solver, tol=1e-15):
     return wf
 
 
+def _fock_occupations_to_statevec_idx(int_a, int_b, norbs):
+    """Translate Fock occupation vectors for alpha and beta electrons into the corresponding
+    computational basis index in a dense statevector."""
+    bin_a = bin(int_a)[2:][::-1]
+    bin_b = bin(int_b)[2:][::-1]
+    bin_a += "0" * (norbs - len(bin_a))
+    bin_b += "0" * (norbs - len(bin_b))
+    bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b, strict=True))
+    return int(bin_ab, 2)
+
+
 def _wfdict_to_statevector(fcimatr_dict, norbs):
     r"""Convert a wavefunction in sparse dictionary format to a PennyLane statevector.
 
@@ -552,14 +563,10 @@ def _wfdict_to_statevector(fcimatr_dict, norbs):
     statevector = np.zeros(2 ** (2 * norbs), dtype=complex)
 
     for (int_a, int_b), coeff in fcimatr_dict.items():
-        bin_a = bin(int_a)[2:][::-1]
-        bin_b = bin(int_b)[2:][::-1]
-        bin_a += "0" * (norbs - len(bin_a))
-        bin_b += "0" * (norbs - len(bin_b))
-        bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b, strict=True))
-        statevector[int(bin_ab, 2)] += coeff
+        statevec_idx = _fock_occupations_to_statevec_idx(int_a, int_b, norbs)
+        statevector[statevec_idx] += coeff
 
-    statevector = statevector / np.sqrt(np.sum(statevector**2))
+    statevector /= np.linalg.norm(statevector)
 
     return statevector
 
