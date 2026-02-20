@@ -186,7 +186,7 @@ import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union, final
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -1238,7 +1238,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def num_params(self) -> int:
-        """Number of trainable parameters that the operator depends on.
+        """Number of parameters that the operator depends on.
 
         By default, this property returns as many parameters as were used for the
         operator creation. If the number of parameters for an operator subclass is fixed,
@@ -1949,6 +1949,61 @@ class Operation(Operator):
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
+
+
+class Gate(Operation):
+    """A basic building block acting on a fixed, small number of qubits with a limited call
+    signature with fully determined parameter shapes.
+
+    For this class, both ``num_wires`` and ``num_params`` must be specified as class properties
+    and can only be integers.
+
+    Gate's cannot have additional ``resource_keys``. The resources need to apply them must be able
+    to be strictly determined by the class type.
+
+    By inheriting from this class and following the more rigid structure, the class will have
+    improved integration with Catalyst.
+
+    """
+
+    def __init_subclass__(cls, **_):
+        if len(cls.resource_keys) > 0:
+            raise ValueError("Gate's must not have any resource keys.")
+        if not isinstance(cls.num_wires, int):
+            raise ValueError("Gate's must have a fixed integer number of wires.")
+        if not isinstance(cls.num_params, int):
+            raise ValueError(
+                "Gate's must have a fixed integer number of parameters set ahead of time."
+            )
+        if cls.ndim_params == Operator.ndim_params:  # pylint: disable=comparison-with-callable
+            cls.ndim_params = tuple(0 for _ in range(cls.num_params))
+        elif any(dim != 0 for dim in cls.ndim_params):
+            raise ValueError(
+                "Gate's must only have scalar parameter inputs. ndim_params is"
+                "automatically set to this default and cannot be overwritten."
+            )
+        return super().__init_subclass__(**_)
+
+    resource_keys = frozenset()
+
+    @property
+    @abc.abstractmethod
+    def num_wires(self) -> int:
+        """Number of wires the operator acts on."""
+
+    @property
+    @abc.abstractmethod
+    def num_params(self) -> int:
+        """Number of parameters that the operator depends on.
+
+        Returns:
+            int: number of parameters
+        """
+
+    @property
+    @final
+    def resource_params(self) -> dict:
+        return {}
 
 
 class Channel(Operation, abc.ABC):

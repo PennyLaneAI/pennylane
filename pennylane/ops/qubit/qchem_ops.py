@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
-from pennylane.operation import Operation
+from pennylane.operation import Gate
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -116,7 +116,7 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
     return diag + off_diag
 
 
-class SingleExcitation(Operation):
+class SingleExcitation(Gate):
     r"""
     Single excitation rotation.
 
@@ -169,20 +169,11 @@ class SingleExcitation(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     """Gradient computation method."""
 
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -308,7 +299,7 @@ add_decomps("Adjoint(SingleExcitation)", adjoint_rotation)
 add_decomps("Pow(SingleExcitation)", pow_rotation)
 
 
-class SingleExcitationMinus(Operation):
+class SingleExcitationMinus(Gate):
     r"""
     Single excitation rotation with negative phase-shift outside the rotation subspace.
 
@@ -340,20 +331,11 @@ class SingleExcitationMinus(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -480,7 +462,7 @@ add_decomps("Adjoint(SingleExcitationMinus)", adjoint_rotation)
 add_decomps("Pow(SingleExcitationMinus)", pow_rotation)
 
 
-class SingleExcitationPlus(Operation):
+class SingleExcitationPlus(Gate):
     r"""
     Single excitation rotation with positive phase-shift outside the rotation subspace.
 
@@ -512,20 +494,11 @@ class SingleExcitationPlus(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
@@ -645,7 +618,7 @@ add_decomps("Adjoint(SingleExcitationPlus)", adjoint_rotation)
 add_decomps("Pow(SingleExcitationPlus)", pow_rotation)
 
 
-class DoubleExcitation(Operation):
+class DoubleExcitation(Gate):
     r"""
     Double excitation rotation.
 
@@ -701,20 +674,11 @@ class DoubleExcitation(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     """Gradient computation method."""
 
     parameter_frequencies = [(0.5, 1.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
@@ -925,7 +889,7 @@ add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation)
 add_decomps("Pow(DoubleExcitation)", pow_rotation)
 
 
-class DoubleExcitationPlus(Operation):
+class DoubleExcitationPlus(Gate):
     r"""
     Double excitation rotation with positive phase-shift outside the rotation subspace.
 
@@ -961,20 +925,11 @@ class DoubleExcitationPlus(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.SparseHamiltonian":
         G = -1 * np.eye(16, dtype=np.complex64)
@@ -1022,7 +977,7 @@ add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_rotation)
 add_decomps("Pow(DoubleExcitationPlus)", pow_rotation)
 
 
-class DoubleExcitationMinus(Operation):
+class DoubleExcitationMinus(Gate):
     r"""
     Double excitation rotation with negative phase-shift outside the rotation subspace.
 
@@ -1066,12 +1021,6 @@ class DoubleExcitationMinus(Operation):
 
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.SparseHamiltonian":
         G = np.eye(16, dtype=np.complex64)
@@ -1117,7 +1066,7 @@ add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_rotation)
 add_decomps("Pow(DoubleExcitationMinus)", pow_rotation)
 
 
-class OrbitalRotation(Operation):
+class OrbitalRotation(Gate):
     r"""
     Spin-adapted spatial orbital rotation.
 
@@ -1180,20 +1129,11 @@ class OrbitalRotation(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     """Gradient computation method."""
 
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w0, w1, w2, w3 = self.wires
@@ -1332,7 +1272,7 @@ add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
 add_decomps("Pow(OrbitalRotation)", pow_rotation)
 
 
-class FermionicSWAP(Operation):
+class FermionicSWAP(Gate):
     r"""Fermionic SWAP rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -1394,20 +1334,11 @@ class FermionicSWAP(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     grad_method = "A"
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
     """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qml.Hamiltonian":
         w1, w2 = self.wires
