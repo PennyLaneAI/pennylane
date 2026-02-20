@@ -47,7 +47,7 @@ def _validate_level(
         ValueError: If the level is not recognized
     """
 
-    if isinstance(level, (int, slice, str)):
+    if isinstance(level, (int, slice, str)) and not isinstance(level, bool):
         return
 
     raise ValueError(f"level {level} not recognized. Acceptable types are int, str, and slice.")

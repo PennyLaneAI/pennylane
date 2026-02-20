@@ -124,6 +124,17 @@ def circuit1(weights, order):
 class TestConstructBatch:
     """Tests for the construct_batch function."""
 
+    @pytest.mark.parametrize("level", [[], 0.5, True])
+    def test_level_not_recognized(self, level):
+        """Tests when the level is not recognized."""
+
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"level .* not recognized"):
+            construct_batch(c, level=level)()
+
     def test_level_zero(self):
         """Test that level zero is purely the queued circuit."""
 
