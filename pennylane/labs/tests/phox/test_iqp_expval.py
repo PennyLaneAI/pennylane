@@ -41,12 +41,6 @@ def _prepare_obs_batch(obs_strings):
     return obs_strings, len(obs_strings[0])
 
 
-def _obs_strings_to_ints(obs_batch):
-    """Convert a batch of observable strings into an integer array (I=0, X=1, Y=2, Z=3)."""
-    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
-    return jnp.array([[mapping[char] for char in row] for row in obs_batch])
-
-
 def _prepare_pennylane_state(n_qubits, init_state_spec):
     """Check init_state_spec and build dense complex state vector."""
     state = np.zeros(2**n_qubits, dtype=complex)
@@ -185,19 +179,16 @@ class TestIQPExpval:
         key = jax.random.PRNGKey(42)
         atol = 3.5 / np.sqrt(n_samples)
 
-        # Config only takes static topology
-        config = CircuitConfig(gates=gates, n_qubits=n_qubits)
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state=jax_state,
+        )
         expval_func = build_expval_func(config)
-
-        # Prepare parameters and data tuples
-        int_obs = _obs_strings_to_ints(obs_batch)
-        P = jax_state[1] if jax_state is not None else None
-        X = jax_state[0] if jax_state is not None else None
-        
-        params_tuple = (params_jax, None, P)
-        data_tuple = (key, X, int_obs)
-
-        approx_val, _ = expval_func(params_tuple, data_tuple, n_samples)
+        approx_val, _ = expval_func(params_jax)
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -240,19 +231,16 @@ class TestIQPExpval:
         n_samples = 10000
         atol = 3.5 / np.sqrt(n_samples)
 
-        # Config only takes static topology
-        config = CircuitConfig(gates=gates, n_qubits=n_qubits)
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+            init_state=jax_state,
+        )
         expval_func = build_expval_func(config)
-
-        # Prepare parameters and data tuples
-        int_obs = _obs_strings_to_ints(obs_batch)
-        P = jax_state[1] if jax_state is not None else None
-        X = jax_state[0] if jax_state is not None else None
-        
-        params_tuple = (jnp.array(params), None, P)
-        data_tuple = (key, X, int_obs)
-
-        approx_val, _ = expval_func(params_tuple, data_tuple, n_samples)
+        approx_val, _ = expval_func(np.array(params))
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -279,14 +267,15 @@ class TestIQPExpval:
         # Tolerances for MC estimation
         atol = 0.05
 
-        config = CircuitConfig(gates=gates, n_qubits=n_qubits)
+        config = CircuitConfig(
+            gates=gates,
+            observables=obs_batch,
+            n_samples=n_samples,
+            key=key,
+            n_qubits=n_qubits,
+        )
         expval_func = build_expval_func(config)
-
-        int_obs = _obs_strings_to_ints(obs_batch)
-        params_tuple = (jnp.array(params), None, None)
-        data_tuple = (key, None, int_obs)
-
-        approx_val, _ = expval_func(params_tuple, data_tuple, n_samples)
+        approx_val, _ = expval_func(np.array(params))
 
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
@@ -342,15 +331,15 @@ class TestIQPExpval:
         config = CircuitConfig(
             n_qubits=n_qubits,
             gates=gates,
+            observables=obs_batch,
+            init_state=jax_state,
             phase_layer=compute_phase,
+            n_samples=50000,
+            key=jax.random.PRNGKey(42),
         )
+
         f = build_expval_func(config)
-
-        int_obs = _obs_strings_to_ints(obs_batch)
-        params_tuple = (jnp.array(params), phase_params, jax_state[1])
-        data_tuple = (jax.random.PRNGKey(42), jax_state[0], int_obs)
-
-        approx_val, _ = f(params_tuple, data_tuple, 50000)
+        approx_val, _ = f(jnp.array(params), phase_params)
 
         atol = 3.5 / np.sqrt(50000)
         assert np.allclose(exact_val, approx_val, atol=atol)
