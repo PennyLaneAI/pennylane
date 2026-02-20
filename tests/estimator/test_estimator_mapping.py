@@ -116,7 +116,7 @@ class TestMapToResourceOp:
                 re_temps.AQFT(order=3, num_wires=5, wires=[0, 1, 2, 3, 4]),
             ),
             (
-                qtemps.BasisRotation(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
+                qtemps.BasisRotation.operator(wires=[0, 1, 2, 3], unitary_matrix=np.eye(4)),
                 re_temps.BasisRotation(dim=4, wires=[0, 1, 2, 3]),
             ),
             (

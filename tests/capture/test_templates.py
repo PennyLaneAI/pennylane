@@ -296,7 +296,6 @@ tested_modified_templates = [
     qml.AllSinglesDoubles,
     qml.AmplitudeAmplification,
     qml.ApproxTimeEvolution,
-    qml.BasisRotation,
     qml.BBQRAM,
     qml.CommutingEvolution,
     qml.ControlledSequence,
@@ -425,36 +424,6 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         assert q.queue[0] == qml.AmplitudeAmplification(U, O, **kwargs)
-
-    def test_basis_rotation(self):
-        """Test the primitive bind call of BasisRotation."""
-
-        mat = np.eye(4)
-        wires = [0, 5]
-
-        def qfunc(wires, mat):
-            qml.BasisRotation(wires, mat, check=True)
-
-        # Validate inputs
-        qfunc(wires, mat)
-
-        # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(wires, mat)
-
-        assert len(jaxpr.eqns) == 1
-
-        eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qml.BasisRotation._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"check": True, "id": None}
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires, mat)
-
-        assert len(q) == 1
-        assert q.queue[0] == qml.BasisRotation(wires=wires, unitary_matrix=mat, check=True)
 
     def test_controlled_sequence(self):
         """Test the primitive bind call of ControlledSequence."""
