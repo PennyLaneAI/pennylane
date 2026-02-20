@@ -582,6 +582,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where `qml.transforms.transpile` would fail when `qml.GlobalPhase` gates
+  were present in a circuit.
+  [(#9041)](https://github.com/PennyLaneAI/pennylane/pull/9041)
+
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
   of an operator product via the dunder method ``__matmul__``. 
   [(#9029)](https://github.com/PennyLaneAI/pennylane/pull/9029)
@@ -654,6 +658,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
 Christina Lee,

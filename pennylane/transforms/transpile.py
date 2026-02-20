@@ -179,8 +179,8 @@ def transpile(
         while len(list_op_copy) > 0:
             op = list_op_copy[0]
 
-            # gates which act only on one wire
-            if len(op.wires) == 1:
+            # gates which act on no wires (GlobalPhase) or one wire
+            if len(op.wires) <= 1:
                 gates.append(op)
                 list_op_copy.pop(0)
                 continue
