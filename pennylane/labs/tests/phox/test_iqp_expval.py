@@ -35,11 +35,11 @@ except ImportError:
 def _prepare_obs_batch(obs_strings):
     """Refactor helper: Normalize obs_strings into a batch integer array and count qubits."""
     base_map = {"I": 0, "X": 1, "Y": 2, "Z": 3}
-    
+
     if isinstance(obs_strings[0], str) and len(obs_strings[0]) == 1 and obs_strings[0] in base_map:
         mapped = [[base_map[s] for s in obs_strings]]
         return mapped, len(obs_strings)
-    
+
     mapped = [[base_map[s] for s in row] for row in obs_strings]
     return mapped, len(obs_strings[0])
 
@@ -212,12 +212,12 @@ class TestIQPExpval:
             ),
         ],
     )
-    def test_build_expval_func_vs_pennylane(self, n_qubits, gates, params, obs_strings, init_state_spec):
+    def test_build_expval_func_vs_pennylane(
+        self, n_qubits, gates, params, obs_strings, init_state_spec
+    ):
         # pylint: disable=too-many-arguments
         generators_binary, param_map = _parse_generator_dict(gates, n_qubits)
-        generators_pl = [
-            list(np.where(row)[0]) for row in generators_binary
-        ]
+        generators_pl = [list(np.where(row)[0]) for row in generators_binary]
         params_pl = np.array(params)[param_map]
 
         obs_batch, _ = _prepare_obs_batch(obs_strings)
