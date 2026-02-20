@@ -289,7 +289,7 @@ class QROM(Operation):
     ):  # pylint: disable=arguments-differ
 
         if len(control_wires) == 0:
-            return [BasisEmbedding(bits, wires=target_wires) for bits in data]
+            return [BasisEmbedding.operator(bits, wires=target_wires) for bits in data]
 
         with QueuingManager.stop_recording():
 
@@ -300,7 +300,7 @@ class QROM(Operation):
             depth = int(2 ** np.floor(np.log2(depth)))
             depth = min(depth, data.shape[0])
 
-            ops = [BasisEmbedding(bits, wires=target_wires) for bits in data]
+            ops = [BasisEmbedding.operator(bits, wires=target_wires) for bits in data]
             ops_identity = ops + [qml_ops.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
             n_columns = len(ops) // depth + int(bool(len(ops) % depth))
