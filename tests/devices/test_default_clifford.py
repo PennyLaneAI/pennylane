@@ -743,3 +743,22 @@ def test_fail_import_stim(monkeypatch):
         m.setattr(qml.devices.default_clifford, "has_stim", False)
         with pytest.raises(ImportError, match="This feature requires stim"):
             qml.device("default.clifford")
+
+
+def test_basis_state_large_wires():
+    """Test that BasisState works with a large number of wires without crashing.
+
+    This ensures that BasisState uses the efficient Clifford decomposition
+    instead of expanding the full state vector (which would cause OOM for 64 wires).
+    """
+    # 64 wires would usually crash without the fix(usually more than 30)
+    dev = qml.device("default.clifford", wires=64, tableau=True)
+
+    @qml.qnode(dev)
+    def circuit():
+        # This should now use the efficient decomposition
+        qml.BasisState(np.zeros(64), wires=range(64))
+        return qml.expval(qml.Z(0))
+
+    res = circuit()
+    assert qml.math.isclose(res, 1.0)
