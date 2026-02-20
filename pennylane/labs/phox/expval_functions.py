@@ -23,6 +23,8 @@ import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
+from pennylane.labs.tests.conftest import init_state
+
 
 @dataclass
 class CircuitConfig:
@@ -151,22 +153,22 @@ def _core_expval_execution(
     C = 2 * ((bitflips @ generators.T) % 2)
 
     expanded_params = jnp.asarray(params)[param_map]
-    E = C @ (expanded_params[:, None] * B.T)
-
+    E = (C * expanded_params) @ B.T
     if vmapped_phase_func is not None:
         E += vmapped_phase_func(phase_params, samples, bitflips)
 
-    M = phases * jnp.exp(1j * E)
-
-    if init_state is not None:
+    if init_state is None:
+        expvals = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
+    else:
+        M = phases * jnp.exp(1j * E)
         X, P = init_state
         F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))
         H1 = (1 - 2 * ((bitflips @ X.T) % 2)) @ F
         col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
         H = H1 * col_sums
         M = M * H
+        expvals = jnp.real(M)
 
-    expvals = jnp.real(M)
     std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
 
     return jnp.mean(expvals, axis=1), std_err
