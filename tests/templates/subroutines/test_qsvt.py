@@ -16,6 +16,7 @@ Tests for the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import copy
+from importlib import import_module, util
 
 import pytest
 from numpy.linalg import matrix_power
@@ -27,14 +28,30 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
+    _compute_qsp_angles_iteratively,
     _poly_func,
     _qsp_iterate,
     _qsp_iterate_broadcast,
     _qsp_optimization,
     _W_of_x,
     _z_rotation,
+    jit_if_jax_available,
 )
 from pennylane.transforms import decompose
+
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    is_jax_available = True
+else:
+    is_jax_available = False
+    jax = None
+
+if util.find_spec("optax") is not None:
+    optax = import_module("optax")
+    is_optax_available = True
+else:
+    is_optax_available = False
+    optax = None
 
 
 def qfunc(A):
@@ -437,7 +454,6 @@ class TestQSVTMatrix:
         encoding and projector-controlled phase shift data in a QSVT instance
         are taken into account when inferring the backend of a QuantumScript.
         """
-        import jax
 
         def identity_and_qsvt(angles):
             qml.Identity(wires=wires[0])
@@ -728,7 +744,6 @@ class Testqsvt:
     @pytest.mark.jax
     def test_qsvt_grad(self):
         """Test that the qsvt function generates the correct output with qml.grad and jax.grad."""
-        import jax
         import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
@@ -751,7 +766,6 @@ class Testqsvt:
         Note that the traceable argument is A.
         """
 
-        import jax
         import jax.numpy as jnp
 
         poly = [-0.1, 0, 0.2, 0, 0.5]
@@ -819,6 +833,7 @@ class TestRootFindingSolver:
         with pytest.raises(AssertionError, match="Invalid conversion"):
             _ = qml.transform_angles(angles, "QFT", "QSVT")
 
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -855,7 +870,7 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
-    @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -892,6 +907,7 @@ class TestRootFindingSolver:
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "poly",
         [
@@ -982,6 +998,7 @@ class TestRootFindingSolver:
 
 
 class TestIterativeSolver:
+    @pytest.mark.external
     @pytest.mark.parametrize(
         "polynomial_coeffs_in_cheby_basis",
         [
@@ -993,44 +1010,56 @@ class TestIterativeSolver:
     def test_qsp_on_poly_with_parity(self, polynomial_coeffs_in_cheby_basis):
         """Test that _qsp_optimization returns correct angles"""
         degree = len(polynomial_coeffs_in_cheby_basis) - 1
-        parity = degree % 2
-        if parity:
-            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[1::2]
-        else:
-            target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis[0::2]
+        target_polynomial_coeffs = polynomial_coeffs_in_cheby_basis
         phis, cost_func = _qsp_optimization(degree, target_polynomial_coeffs)
 
-        rng = np.random.default_rng(123)
-        x_point = rng.uniform(size=1, low=-1.0, high=1.0)
+        key = jax.random.key(123)
+        x_point = jax.random.uniform(key=key, shape=(1,), minval=-1, maxval=1)
 
         x_point = x_point.item()
         # Theorem 4: |\alpha_i-\beta_i|\leq 2\sqrt(cost_func) https://arxiv.org/pdf/2002.11649
         # which \implies |target_poly(x)-approx_poly(x)|\leq 2\sqrt(cost_func) \sum_i |T_i(x)|
-        tolerance = (
-            np.sum(
-                np.array(
-                    [
-                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i, x=x_point))
-                        for i in range(len(target_polynomial_coeffs))
-                    ]
-                )
-            )
-            if not parity
-            else np.sum(
-                np.array(
-                    [
-                        2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=2 * i + 1, x=x_point))
-                        for i in range(len(target_polynomial_coeffs))
-                    ]
-                )
+        tolerance = np.sum(
+            np.array(
+                [
+                    2 * np.sqrt(cost_func) * abs(_cheby_pol(degree=i, x=x_point))
+                    for i in range(len(target_polynomial_coeffs))
+                ]
             )
         )
 
         assert qml.math.isclose(
-            _qsp_iterate_broadcast(phis, x_point, None),
-            _poly_func(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
+            _qsp_iterate_broadcast(phis, x_point, "jax"),
+            _poly_func(coeffs=target_polynomial_coeffs, x=x_point),
             atol=tolerance,
         )
+
+    def test_jit_if_jax_available(self):
+
+        def f(x):
+            return x @ x
+
+        jit_wrapped_f = jit_if_jax_available(f)
+
+        if is_jax_available:
+            assert hasattr(jit_wrapped_f, "lower")
+        else:
+            assert jit_wrapped_f is f
+
+    @pytest.mark.parametrize(
+        "polynomial_coeffs_in_cheby_basis",
+        [
+            (generate_polynomial_coeffs(10)),
+        ],
+    )
+    def test_raised_exceptions(self, polynomial_coeffs_in_cheby_basis):
+
+        if not is_jax_available:
+            with pytest.raises(ModuleNotFoundError, match="jax is required!"):
+                _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
+        elif not is_optax_available:
+            with pytest.raises(ModuleNotFoundError, match="optax is required!"):
+                _compute_qsp_angles_iteratively(polynomial_coeffs_in_cheby_basis)
 
     @pytest.mark.parametrize(
         "x, degree",
@@ -1046,29 +1075,35 @@ class TestIterativeSolver:
         coeffs = [0.0] * (degree) + [1.0]
         assert np.isclose(_cheby_pol(x, degree), Chebyshev(coeffs)(x))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
-        "coeffs, parity, x",
+        "coeffs, x",
         [
-            (generate_polynomial_coeffs(100, 0), 0, 0.1),
-            (generate_polynomial_coeffs(7, 1), 1, 0.2),
-            (generate_polynomial_coeffs(12, 0), 0, 0.3),
+            (generate_polynomial_coeffs(100, 0), 0.1),
+            (generate_polynomial_coeffs(7, 1), 0.2),
+            (generate_polynomial_coeffs(12, 0), 0.3),
+            (generate_polynomial_coeffs(12, None), 0.4),
         ],
     )
-    def test_poly_func(self, coeffs, parity, x):
+    def test_poly_func(self, coeffs, x):
         """Test internal function _poly_func"""
-        val = _poly_func(coeffs=coeffs[parity::2], parity=parity, x=x)
+        val = _poly_func(coeffs=coeffs, x=x)
         ref = Chebyshev(coeffs)(x)
         assert np.isclose(val, ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    def test_z_rotation(self, angle):
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_z_rotation(self, angle, interface):
         """Test internal function _z_rotation"""
-        assert np.allclose(_z_rotation(angle, None), qml.RZ.compute_matrix(-2 * angle))
+        assert np.allclose(_z_rotation(angle, interface), qml.RZ.compute_matrix(-2 * angle))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    def test_qsp_iterate(self, phi):
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_qsp_iterate(self, phi, interface):
         """Test internal function _qsp_iterate"""
-        mtx = _qsp_iterate(0.0, phi, None)
+        mtx = _qsp_iterate(0.0, phi, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
@@ -1080,17 +1115,18 @@ class TestIterativeSolver:
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast(self, x, degree):
         """Test internal function _qsp_iterate_broadcast"""
-        from jax import numpy as jnp
 
-        phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
+        phis = jax.numpy.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
         qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
         ref = qml.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
-        assert jnp.isclose(qsp_be, ref)
+        assert jax.numpy.isclose(qsp_be, ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    def test_W_of_x(self, x):
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_W_of_x(self, x, interface):
         """Test internal function _W_of_x"""
-        mtx = _W_of_x(x, None)
+        mtx = _W_of_x(x, interface)
         ref = qml.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
@@ -1118,8 +1154,6 @@ class TestIterativeSolver:
     @pytest.mark.jax
     def test_interface_jax(self):
         """Test `poly_to_angles` works with jax"""
-
-        import jax
 
         poly = [0, 1.0, 0, -1 / 2, 0, 1 / 3, 0]
         angles = qml.poly_to_angles(poly, "QSVT")
