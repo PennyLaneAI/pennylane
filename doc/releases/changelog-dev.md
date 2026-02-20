@@ -43,6 +43,7 @@ The following classes have been ported over:
 - `qml.MottonenStatePreparation` [(#9047)](https://github.com/PennyLaneAI/pennylane/pull/9047)
 - `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
 - `qml.QFT` [(#9057)](https://github.com/PennyLaneAI/pennylane/pull/9057)
+- `qml.Adder` [(#9086)](https://github.com/PennyLaneAI/pennylane/pull/9086)
 
 * Added a `qml.decomposition.local_decomps` context
   manager that allows one to add decomposition rules to an operator, only taking effect within the context.
