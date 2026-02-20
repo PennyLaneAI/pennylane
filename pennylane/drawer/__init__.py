@@ -29,7 +29,7 @@ from .tape_text import tape_text
 
 from importlib import metadata, import_module
 
-_eps = metadata.entry_points(group="pennylane.functionality")
+_eps = metadata.entry_points(group="catalyst.graph_drawer")
 
 
 def _load_catalyst_drawers():
