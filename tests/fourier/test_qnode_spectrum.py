@@ -24,6 +24,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.fourier.mark import mark
 from pennylane.fourier.qnode_spectrum import _process_ids, qnode_spectrum
 from pennylane.measurements import SampleMP, StateMP, VarianceMP
 
@@ -368,7 +369,6 @@ class TestCircuits:
         dev = qml.device("default.qubit", wires=3)
 
         class nondecompRot(qml.Rot):
-
             @staticmethod
             def compute_decomposition(phi, theta, omega, wires):
                 """Pseudo-decomposition: Just return the gate itself."""
@@ -567,7 +567,7 @@ class TestJax:
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.StatePrep(initial_state, wires=dev.wires)
-            qml.RZ(x, wires=0, id="x")
+            mark(qml.RZ(x, wires=0), "x")
             return qml.expval(qml.Hermitian(hermitian_matrix, wires=dev.wires))
 
         x = jnp.array(0.5)

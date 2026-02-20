@@ -14,12 +14,16 @@
 """Contains a transform that computes the simple frequency spectrum
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
+
+import warnings
 from functools import partial
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
+from .mark import MarkedOp
 from .utils import get_spectrum, join_spectra
 
 
@@ -40,19 +44,24 @@ def circuit_spectrum(
         define a ``generator``, and will fail if gates marked as inputs do not
         have this attribute.
 
-    Gates are marked as input-encoding gates in the quantum function by giving them an ``id``.
-    If two gates have the same ``id``, they are considered
+    Gates are marked as input-encoding gates in the quantum function by giving them an ``mark``.
+
+    >>> marked_op = qml.fourier.mark(qml.H(0), "marked-h")
+    >>> print(marked_op.marker)
+    marked-h
+
+    If two gates have the same ``marker``, they are considered
     to be used to encode the same input :math:`x_j`. The ``encoding_gates`` argument can be used
-    to indicate that only gates with a specific ``id`` should be interpreted as input-encoding gates.
-    Otherwise, all gates with an explicit ``id`` are considered to be input-encoding gates.
+    to indicate that only gates with a specific ``marker`` should be interpreted as input-encoding gates.
+    Otherwise, all gates with an explicit ``marker`` are considered to be input-encoding gates.
 
     .. note::
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit in which
-            input-encoding gates are marked by their ``id`` attribute
-        encoding_gates (list[str]): list of input-encoding gate ``id`` strings
+            input-encoding gates are marked by their ``marker`` attribute
+        encoding_gates (list[str]): list of input-encoding gate ``marker`` strings
             for which to compute the frequency spectra
         decimals (int): number of decimals to which to round frequencies.
 
@@ -60,7 +69,7 @@ def circuit_spectrum(
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will return a dictionary with the input-encoding gate ``id`` as keys and their frequency spectra as values.
+        will return a dictionary with the input-encoding gate ``marker`` as keys and their frequency spectra as values.
 
 
     **Details**
@@ -102,6 +111,7 @@ def circuit_spectrum(
     .. code-block:: python
 
         import pennylane as qml
+        from pennylane.fourier import mark
         import numpy as np
 
         n_layers = 2
@@ -112,9 +122,9 @@ def circuit_spectrum(
         def circuit(x, w):
             for l in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x[i], wires=i, id="x"+str(i))
+                    mark(qml.RX(x[i], wires=i), "x"+str(i))
                     qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
-            qml.RZ(x[0], wires=0, id="x0")
+            mark(qml.RZ(x[0], wires=0), "x0")
             return qml.expval(qml.Z(0))
 
         x = np.array([1, 2, 3])
@@ -123,9 +133,9 @@ def circuit_spectrum(
         res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1.00,"x0")──Rot(0.77,0.44,0.86)──RX(1.00,"x0")──Rot(0.45,0.37,0.93)──RZ(1.00,"x0")─┤  <Z>
-    1: ──RX(2.00,"x1")──Rot(0.70,0.09,0.98)──RX(2.00,"x1")──Rot(0.64,0.82,0.44)────────────────┤
-    2: ──RX(3.00,"x2")──Rot(0.76,0.79,0.13)──RX(3.00,"x2")──Rot(0.23,0.55,0.06)────────────────┤
+    0: ──RX(1.00, "x0")──Rot(0.77,0.44,0.86)──RX(1.00, "x0")──Rot(0.45,0.37,0.93)──RZ(1.00, "x0")─┤  <Z>
+    1: ──RX(2.00, "x1")──Rot(0.70,0.09,0.98)──RX(2.00, "x1")──Rot(0.64,0.82,0.44)─────────────────┤
+    2: ──RX(3.00, "x2")──Rot(0.76,0.79,0.13)──RX(3.00, "x2")──Rot(0.23,0.55,0.06)─────────────────┤
 
     >>> for inp, freqs in res.items():
     ...     print(f"{inp}: {freqs}")
@@ -148,9 +158,9 @@ def circuit_spectrum(
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[0], wires=0, id="x0")
-            qml.RX(x[1], wires=0, id="x1")
+            mark(qml.RX(x[0], wires=0), "x0")
+            mark(qml.PhaseShift(x[0], wires=0), "x0")
+            mark(qml.RX(x[1], wires=0), "x1")
             return qml.expval(qml.Z(0))
 
         x = np.array([1, 2])
@@ -162,7 +172,7 @@ def circuit_spectrum(
 
     .. note::
         The ``circuit_spectrum`` function does not check if the result of the
-        circuit is an expectation, or if gates with the same ``id``
+        circuit is an expectation, or if gates with the same ``marker``
         take the same value in a given call of the function.
 
     The ``circuit_spectrum`` function works in all interfaces:
@@ -173,8 +183,8 @@ def circuit_spectrum(
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.RX(x[0], wires=0, id="x0")
-            qml.PhaseShift(x[1], wires=0, id="x1")
+            mark(qml.RX(x[0], wires=0), "x0")
+            mark(qml.PhaseShift(x[1], wires=0), "x1")
             return qml.expval(qml.Z(0))
 
         x = torch.tensor([1, 2])
@@ -192,15 +202,26 @@ def circuit_spectrum(
         tape = tapes[0]
         freqs = {}
         for op in tape.operations:
-            id = op.id
+            # NOTE: Here for backwards compatibility remove once 'id' deprecation is complete
+            # pylint: disable=protected-access
+            if (id := op._id) is not None:
+                warnings.warn(
+                    "Using 'id' with 'circuit_spectrum' is deprecated "
+                    "and will be removed in v0.46. Instead, please use 'pennylane.fourier.mark' to "
+                    "add a marker to your operator. ",
+                    PennyLaneDeprecationWarning,
+                )
+                op = MarkedOp(op, id)
 
-            # if the operator has no specific ID, move to the next
-            if id is None:
+            # If the operator is not marked, move to the next
+            if not isinstance(op, MarkedOp):
                 continue
 
-            # if user has not specified encoding_gate id's,
-            # consider any id
-            is_encoding_gate = encoding_gates is None or id in encoding_gates
+            mark = op.marker
+
+            # if user has not specified encoding_gate mark's,
+            # consider any mark
+            is_encoding_gate = encoding_gates is None or mark in encoding_gates
 
             if is_encoding_gate:
                 if len(op.parameters) != 1:
@@ -211,21 +232,21 @@ def circuit_spectrum(
 
                 spec = get_spectrum(op, decimals=decimals)
 
-                # if id has been seen before, join this spectrum to another one
-                if id in freqs:
-                    spec = join_spectra(freqs[id], spec)
+                # if mark has been seen before, join this spectrum to another one
+                if mark in freqs:
+                    spec = join_spectra(freqs[mark], spec)
 
-                freqs[id] = spec
+                freqs[mark] = spec
 
         # Turn spectra into sorted lists and include negative frequencies
-        for id, spec in freqs.items():
+        for mark, spec in freqs.items():
             spec = sorted(spec)
-            freqs[id] = [-f for f in spec[:0:-1]] + spec
+            freqs[mark] = [-f for f in spec[:0:-1]] + spec
 
-        # Add trivial spectrum for requested gate ids that are not in the circuit
+        # Add trivial spectrum for requested gate marks that are not in the circuit
         if encoding_gates is not None:
-            for id in set(encoding_gates).difference(freqs):
-                freqs[id] = []
+            for mark in set(encoding_gates).difference(freqs):
+                freqs[mark] = []
 
         return freqs
 

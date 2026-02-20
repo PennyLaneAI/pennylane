@@ -275,6 +275,7 @@ class TestSubroutineCall:
         op = q.queue[0]
         assert op.bound_args.arguments["metadata"] == "default_value"
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_handle_id(self):
         """Test that Subroutine's can handle accepting an id."""
 
