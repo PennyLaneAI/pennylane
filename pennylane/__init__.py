@@ -204,9 +204,13 @@ from pennylane import estimator
 
 from pennylane.drawer import draw, draw_mpl, _catalyst_drawers  # pylint:disable=wrong-import-order
 
+_catalyst_entry_points = [_catalyst_drawers]
+
 _all_pl = [name for name, obj in globals().items() if callable(obj) and not name.startswith("_")]
 
-__all__ = _all_pl + list(_catalyst_drawers.keys())
+__all__ = _all_pl + [
+    list(_catalyst_entry_points[i].keys()) for i in range(len(_catalyst_entry_points))
+]
 
 from importlib import import_module
 from importlib.metadata import version as _metadata_version

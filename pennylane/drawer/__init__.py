@@ -29,21 +29,20 @@ from .tape_text import tape_text
 
 from importlib import metadata, import_module
 
-_eps = metadata.entry_points(group="catalyst.graph_drawer")
 
-
-def _load_catalyst_drawers():
-    drawers = {name: _eps[name].load() for name in _eps.names}
+def _load_catalyst_eps(entry_points):
+    drawers = {name: entry_points[name].load() for name in entry_points.names}
     return drawers
 
 
-_catalyst_drawers = _load_catalyst_drawers()
+_catalyst_eps = metadata.entry_points(group="catalyst.graph_drawer")
+_catalyst_drawers = _load_catalyst_eps(_catalyst_eps)
 
-_pl_drawers = [
+_drawer_module = [
     name for name, obj in globals().items() if callable(obj) and not name.startswith("_")
 ]
 
-__all__ = _pl_drawers + list(_catalyst_drawers.keys())
+__all__ = _drawer_module + list(_catalyst_drawers.keys())
 
 
 def __dir__():
