@@ -54,7 +54,7 @@ class AbstractArray:
         wires.
     """
 
-    shape: tuple[int]
+    shape: tuple[int,...]
     dtype: type = int
 
     def __len__(self):
