@@ -19,9 +19,17 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
+
+
+def test_id_deprecation():
+    """Tests that the id kwarg is deprecated"""
+
+    with pytest.warns(PennyLaneDeprecationWarning, match="The 'id' argument is deprecated"):
+        _ = SymbolicOp(qml.X(0), id="something")
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
@@ -44,15 +52,14 @@ class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-def test_intialization():
+def test_initialization():
     """Test initialization for a SymbolicOp"""
     base = Operator("a")
 
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
 
     assert op.base is base
     assert op.hyperparameters["base"] is base
-    assert op.id == "something"
     assert op.name == "Symbolic"
 
 
@@ -75,7 +82,7 @@ def test_copy():
 def test_map_wires():
     """Test the map_wires method."""
     base = Operator("a")
-    op = SymbolicOp(base, id="something")
+    op = SymbolicOp(base)
     # pylint:disable=attribute-defined-outside-init,protected-access
     op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}

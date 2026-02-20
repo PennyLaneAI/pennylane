@@ -102,12 +102,11 @@ class TestInitialization:
         """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op = Adjoint(base, id="something")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(PauliX)"
-        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -120,12 +119,11 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op = Adjoint(base, id="id")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(Rot)"
-        assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
