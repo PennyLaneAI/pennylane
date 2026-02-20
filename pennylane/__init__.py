@@ -212,6 +212,7 @@ __all__ = _all_pl + [
     list(_catalyst_entry_points[i].keys()) for i in range(len(_catalyst_entry_points))
 ]
 
+# pylint:disable=wrong-import-order
 from importlib import import_module
 from importlib.metadata import version as _metadata_version
 
