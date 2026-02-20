@@ -164,9 +164,7 @@ def test_iqp_optimization():
     gates = {0: [[0]], 1: [[1]]}
     params_init = jnp.array([0.1, 0.1])
 
-    # Convert to new mapped integer format
     ops_ints = [[3, 0], [0, 3]]
-
     key = jax.random.PRNGKey(42)
 
     config = CircuitConfig(
