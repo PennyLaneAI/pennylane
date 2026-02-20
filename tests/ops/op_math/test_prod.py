@@ -135,12 +135,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_prod_op(self, id):
         """Test the initialization of a Prod operator."""
-        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
         assert prod_op.wires == Wires((0, "a"))
         assert prod_op.num_wires == 2
         assert prod_op.name == "Prod"
-        assert prod_op.id == id
 
         assert prod_op.data == (0.23,)
         assert prod_op.parameters == [0.23]
@@ -465,10 +464,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             qml.prod(qml.RX(x, 0), qml.PauliZ(1))
             qml.CNOT([0, 1])
 
-        prod_gen = prod(qfunc, id=123987, lazy=False)
+        prod_gen = prod(qfunc, lazy=False)
         prod_op = prod_gen(1.1)
 
-        assert prod_op.id == 123987  # id was set
         qml.assert_equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
     def test_qfunc_init_only_works_with_one_qfunc(self):
@@ -1344,10 +1342,9 @@ class TestWrapperFunc:
         created using the class."""
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "prod_op"
 
-        prod_func_op = prod(*factors, id=op_id)
-        prod_class_op = Prod(*factors, id=op_id)
+        prod_func_op = prod(*factors)
+        prod_class_op = Prod(*factors)
         qml.assert_equal(prod_func_op, prod_class_op)
 
     def test_lazy_mode(self):
