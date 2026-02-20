@@ -383,24 +383,28 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
             name = literal.astext()
             url = f"code/api/pennylane.estimator.{module_name}.{name}"
             refuri = app.builder.get_relative_uri(fromdocname, url)
-            refnode = nodes.reference('', refuri=refuri)
+            refnode = nodes.reference("", refuri=refuri)
             refnode += nodes.literal(text=name)
             literal.parent.replace(literal, refnode)
             logger.info(
-                f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}")
+                f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}"
+            )
+
 
 import importlib.metadata
+
 
 def get_catalyst_docstrings():
     """
     Finds docstrings for Catalyst functionality. This can be extended in the future to other entry-point
     groups if needed. Current entry-point groups:
-    
+
     - catalyst.compilation_passes
+    - catalyst.graph_drawer
     """
 
     # add to this list as more entry-point groups are added to Catalyst
-    groups = ['catalyst.compilation_passes'] 
+    groups = ["catalyst.compilation_passes", "catalyst.graph_drawer"]
 
     docs_dict = {}
     for group in groups:
@@ -409,18 +413,20 @@ def get_catalyst_docstrings():
         for ep in eps:
             target_obj = ep.load()
             docs_dict[ep.name] = target_obj.__doc__.splitlines()
-            
+
     return docs_dict
 
+
 def catalyst_docstring_lookup(app, what, name, obj, options, lines):
-    short_name = name.split('.')[-1]
+    short_name = name.split(".")[-1]
     registry = get_catalyst_docstrings()
-    
+
     if short_name in registry:
         new_lines = registry[short_name]
         if lines != new_lines:
             lines.clear()
             lines.extend(new_lines)
+
 
 def setup(app):
     """Sphinx entry point for this extension."""

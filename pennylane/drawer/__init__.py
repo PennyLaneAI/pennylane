@@ -15,7 +15,7 @@
 This module provides the circuit drawing functionality used to display circuits visually.
 
 .. currentmodule:: pennylane.drawer
-.. autosummary::
+.. automodule::
     :toctree: api
 
 """
@@ -26,4 +26,36 @@ from .mpldrawer import MPLDrawer
 from .style import available_styles, use_style
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
-from .draw_graph import draw_graph
+
+from importlib import metadata, import_module
+
+_eps = metadata.entry_points(group="pennylane.functionality")
+
+
+def _load_catalyst_drawers():
+    drawers = {name: _eps[name].load() for name in _eps.names}
+    return drawers
+
+
+_catalyst_drawers = _load_catalyst_drawers()
+
+_pl_drawers = [
+    name for name, obj in globals().items() if callable(obj) and not name.startswith("_")
+]
+
+__all__ = _pl_drawers + list(_catalyst_drawers.keys())
+
+
+def __dir__():
+    return __all__ + list(globals().keys())
+
+
+def __getattr__(name):
+    if name in _catalyst_drawers:
+        func = _catalyst_drawers[name]
+        func.__module__ = __name__
+        setattr(import_module(__name__), name, func)
+        return func
+
+    else:
+        raise AttributeError(f"module 'pennylane.drawer' has no attribute {name}")
