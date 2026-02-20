@@ -73,18 +73,12 @@ def create_lattice_gates(
         neighbors = [n for n in lengths if n != source]
 
         for weight in range(max_weight):  # weight here is additional qubits
-            # If max_weight=2, we want weight=1 loop (pairs), weight=0 loop (singles handled separately usually?)
-            # The original logic was: weight in range(0, max_weight)
-            # gate = combo + [source].
-            # if weight=0 -> gate=[source] (1-body)
-            # if weight=1 -> gate=[neighbor, source] (2-body)
             for combo in combinations(neighbors, weight):
                 new_gate = sorted(list(combo) + [source])
                 if new_gate not in gates_list:
                     gates_list.append(new_gate)
 
     # Convert list of gates to the expected dictionary format {param_id: [gate]}
-    # We assign a unique parameter to each gate.
     gates_dict = {}
     for i, g in enumerate(gates_list):
         gates_dict[i] = [g]
@@ -123,9 +117,12 @@ def create_random_gates(
 
 def generate_pauli_observables(
     n_qubits: int, orders: list[int] = (1,), bases: list[str] = ("Z",)
-) -> list[list[str]]:
+) -> np.ndarray:
     """
-    Generates a batch of Pauli observables.
+    Generates a batch of Pauli observables as an integer array, compatible with
+    JAX execution functions.
+    
+    Mapping applies: I=0, X=1, Y=2, Z=3.
 
     Args:
         n_qubits (int): Number of qubits.
@@ -133,20 +130,25 @@ def generate_pauli_observables(
         bases (list[str]): Pauli bases to use ('X', 'Y', 'Z').
 
     Returns:
-        list[list[str]]: A list of observables, where each observable is a list of strings.
-                         Example for 2 qubits, order 1, base Z: [['Z', 'I'], ['I', 'Z']]
+        np.ndarray: A 2D array of integer observables.
+                    Example for 2 qubits, order 1, base Z: [[3, 0], [0, 3]]
     """
+    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
     observables = []
 
     for order in orders:
         if order > n_qubits:
             continue
         for base in bases:
+            base_int = mapping[base]
             for positions in combinations(range(n_qubits), order):
-                # Create 'I' string
-                obs_row = ["I"] * n_qubits
+                # Create 'I' integer string (0)
+                obs_row = [0] * n_qubits
                 for pos in positions:
-                    obs_row[pos] = base
+                    obs_row[pos] = base_int
                 observables.append(obs_row)
 
-    return observables
+    if not observables:
+        return np.empty((0, n_qubits), dtype=int)
+    
+    return np.array(observables, dtype=int)

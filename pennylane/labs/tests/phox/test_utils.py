@@ -73,13 +73,6 @@ class TestGateGeneration:
 
     def test_create_lattice_gates_periodic(self):
         """Test lattice gate generation with periodic boundaries."""
-        # 2x2 periodic adds edges (0,2) vertical, (0,1) horizontal
-        # (0,1) horiz, (1,0) wrapped? No, (0,1) is existing.
-        # (0,1), (2,3) -> horizontal
-        # (0,2), (1,3) -> vertical
-        # Wrapped horizontal: (0,1) and (2,3) covered. (1,0) is same.
-        # Wrapped vertical: (0,2) and (1,3) covered.
-
         # Let's try 3x1 chain periodic. 0-1-2. Edge 0-2 should exist.
         gates = create_lattice_gates(1, 3, periodic=True, max_weight=2)
         gate_set = {tuple(sorted(v[0])) for v in gates.values()}
@@ -118,47 +111,32 @@ class TestObservableGeneration:
     def test_generate_pauli_observables_single_z(self):
         """Test generating simple 1-body Z observables."""
         n_qubits = 2
-        obs = generate_pauli_observables(n_qubits, orders=[1], bases=["Z"])
+        obs = generate_pauli_observables(n_qubits, orders=[1], bases=["Z"]).tolist()
 
-        # Expect ['Z', 'I'] and ['I', 'Z']
+        # Expect [[3, 0], [0, 3]] where Z=3 and I=0
         assert len(obs) == 2
-        assert ["Z", "I"] in obs
-        assert ["I", "Z"] in obs
+        assert [3, 0] in obs
+        assert [0, 3] in obs
 
     def test_generate_pauli_observables_multi_basis(self):
         """Test mixed bases and orders."""
         n_qubits = 2
-        obs = generate_pauli_observables(n_qubits, orders=[1, 2], bases=["X", "Z"])
+        obs = generate_pauli_observables(n_qubits, orders=[1, 2], bases=["X", "Z"]).tolist()
 
-        # Order 1 (1-body):
-        # Base X: XI, IX
-        # Base Z: ZI, IZ
-        # -> 4 terms
-
-        # Order 2 (2-body):
-        # Base X: XX
-        # Base Z: ZZ
-        # -> 2 terms
-
-        # Total 6
         assert len(obs) == 6
-        assert ["X", "X"] in obs
-        assert ["Z", "Z"] in obs
-        assert [
-            "X",
-            "Z",
-        ] not in obs  # Function usually doesn't mix bases in one term unless bases=["XZ"]?
-        # Looking at implementation: `for base in bases`. It applies ONE base to the chosen positions.
+        assert [1, 1] in obs
+        assert [3, 3] in obs
+        assert [1, 3] not in obs
 
     def test_generate_pauli_observables_higher_order(self):
         """Test generating higher order terms."""
         n_qubits = 3
-        obs = generate_pauli_observables(n_qubits, orders=[3], bases=["Y"])
+        obs = generate_pauli_observables(n_qubits, orders=[3], bases=["Y"]).tolist()
 
         assert len(obs) == 1
-        assert obs[0] == ["Y", "Y", "Y"]
+        assert obs[0] == [2, 2, 2]
 
     def test_generate_pauli_observables_skip_invalid_order(self):
         """Test that orders > n_qubits are ignored."""
-        obs = generate_pauli_observables(2, orders=[5])
+        obs = generate_pauli_observables(2, orders=[5]).tolist()
         assert len(obs) == 0

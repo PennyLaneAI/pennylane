@@ -194,24 +194,23 @@ def test_iqp_optimization():
     n_samples = 100
 
     gates = {0: [[0]], 1: [[1]]}
-
     params_init = jnp.array([0.1, 0.1])
-
     ops_strings = [["Z", "I"], ["I", "Z"]]
-
     key = jax.random.PRNGKey(42)
 
-    config = CircuitConfig(
-        gates=gates,
-        observables=ops_strings,
-        n_samples=n_samples,
-        key=key,
-        n_qubits=n_qubits,
-    )
+    # Config setup
+    config = CircuitConfig(gates=gates, n_qubits=n_qubits)
     expval_func = build_expval_func(config)
 
-    def loss_fn(params):
-        expvals, _ = expval_func(params)
+    # Convert string observables to integers
+    mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
+    int_obs = jnp.array([[mapping[char] for char in row] for row in ops_strings])
+
+    # Dynamic loss function unpacks into execution function
+    def loss_fn(circuit_params):
+        params_tuple = (circuit_params, None, None)
+        data_tuple = (key, None, int_obs)
+        expvals, _ = expval_func(params_tuple, data_tuple, n_samples)
         return jnp.sum(expvals)
 
     loss_kwargs = {"params": params_init}
