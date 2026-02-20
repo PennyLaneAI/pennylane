@@ -271,6 +271,39 @@ class TestExecutionConfig:
         )
         assert isinstance(hash(config), int)
 
+    def test_str_multiline_format(self):
+        """Test that __str__ returns a human-readable multiline format."""
+        config = ExecutionConfig(
+            gradient_method="best",
+            device_options={"option1": 42},
+        )
+        str_output = str(config)
+
+        # Check that output is multiline (contains newlines)
+        assert "\n" in str_output
+
+        # Check that key field names appear in the output
+        assert "grad_on_execution" in str_output
+        assert "gradient_method" in str_output
+        assert "device_options" in str_output
+        assert "mcm_config" in str_output
+
+        # Check that our custom values appear
+        assert "'best'" in str_output
+        assert "'option1'" in str_output
+
+    def test_str_vs_repr_difference(self):
+        """Test that str() produces different output from repr() for readability."""
+        config = ExecutionConfig(gradient_method="parameter-shift")
+
+        str_output = str(config)
+        repr_output = repr(config)
+
+        # str should be multiline and more readable
+        assert "\n" in str_output
+        # repr (default dataclass) is single line
+        assert str_output != repr_output
+
 
 class TestMCMConfig:
     """Tests for the MCMConfig class."""
