@@ -40,6 +40,7 @@ def c():
 0: ──MyTemplate(0.10,0.20)─┤  State
 
 The following classes have been ported over:
+- `qml.MottonenStatePreparation` [(#9047)](https://github.com/PennyLaneAI/pennylane/pull/9047)
 - `qml.BasisRotation` [(#9026)](https://github.com/PennyLaneAI/pennylane/pull/9026)
 - `qml.QFT` [(#9057)](https://github.com/PennyLaneAI/pennylane/pull/9057)
 

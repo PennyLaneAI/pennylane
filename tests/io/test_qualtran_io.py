@@ -1523,8 +1523,8 @@ class TestToBloqEstimator:
                     work_wire=3,
                 ),
                 {
-                    (qml.T(0), True): 132,
-                    (qml.CNOT([0, 1]), True): 6,
+                    (qml.T(0), True): 264,
+                    (qml.CNOT([0, 1]), True): 8,
                     (qml.X([0]), True): 4,
                     (qml.Toffoli([0, 1, 2]), True): 4,
                     (qml.H(0), True): 6,
@@ -1618,7 +1618,7 @@ class TestToBloqEstimator:
                     wires=range(3),
                     normalize=True,
                 ),
-                {(qml.CNOT([0, 1]), True): 6, (qml.T(0), True): 132},
+                {(qml.CNOT([0, 1]), True): 12, (qml.T(0), True): 616},
             ),
         ],
     )
