@@ -708,8 +708,19 @@ class CompilePipeline:
             raise TransformError("The compile pipeline already has a terminal transform.")
 
         if expand_transform := transform.expand_transform:
-            self._compile_pipeline.append(expand_transform)
+
+            # Prevent duplicate expand transforms that differ only in kwargs
+            expand_already_present = any(
+                isinstance(t, BoundTransform)
+                    and t.tape_transform == expand_transform.tape_transform
+                    for t in self._compile_pipeline
+            )
+
+            if not expand_already_present:
+                self._compile_pipeline.append(expand_transform)
+
         self._compile_pipeline.append(transform)
+
 
     def extend(self, transforms: CompilePipeline | Sequence[BoundTransform | Transform]):
         """Extend the pipeline by appending transforms from an iterable.

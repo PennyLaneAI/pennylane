@@ -1911,8 +1911,27 @@ class TestCompilePipelineIntegration:
         assert len(pipeline) == 2
         assert pipeline[0].tape_transform is first_valid_transform
         assert pipeline[1].tape_transform is second_valid_transform
+    def test_no_duplicate_expand_when_applying_pipeline_to_qnode(self):
+        """Ensure that applying a CompilePipeline containing metric_tensor
+        to a QNode does not inject duplicate expand transforms."""
 
+        import pennylane as qml
 
+        pipeline = qml.transforms.merge_rotations + qml.metric_tensor
+
+        @pipeline
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            return qml.expval(qml.Z(0))
+
+        expands = [
+            t for t in circuit.compile_pipeline
+            if t.tape_transform
+            and t.tape_transform.__name__ == "_expand_metric_tensor"
+        ]
+
+        assert len(expands) == 1
+        
 class TestMarkers:
     """Tests markers in a compile pipeline"""
 
