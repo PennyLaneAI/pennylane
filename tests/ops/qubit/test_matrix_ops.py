@@ -553,8 +553,9 @@ class TestQubitUnitary:
             (qml.matrix(qml.Hadamard(wires=[0]) @ qml.RX(2, wires=1))),  # 0 cnots
             (qml.matrix(qml.RX(-1, wires=[0]) @ qml.RZ(-5, wires=1))),  # 0 cnots
             (
-                qml.matrix(
-                    qml.MottonenStatePreparation, wire_order=[0, 1])(np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1])
+                qml.matrix(qml.MottonenStatePreparation, wire_order=[0, 1])(
+                    np.sqrt([0.25, 0.15, 0.2, 0.4]), wires=[0, 1]
+                )
             ),  # 2 cnots
         ],
     )

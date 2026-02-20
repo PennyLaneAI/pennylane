@@ -324,6 +324,7 @@ class GateFabric(Operation):
         return n_layers, n_wires // 2 - 1, 2
 
 
+# pylint: disable=unused-argument
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     resources = {
         resource_rep(DoubleExcitation): n_layers * len_wire_pattern,

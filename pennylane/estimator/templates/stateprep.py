@@ -79,7 +79,7 @@ class MottonenStatePreparation(ResourceOperator):
             ``GateCount`` objects, where each object represents a specific quantum gate and the
             number of times it appears in the decomposition.
         """
-        n = 2 ** num_wires - 1
+        n = 2**num_wires - 1
 
         return [
             GateCount(resource_rep(qre.CNOT), 2 * (n - 1)),

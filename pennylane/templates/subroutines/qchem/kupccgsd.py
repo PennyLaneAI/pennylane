@@ -33,7 +33,6 @@ from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
-from ... import SubroutineOp
 
 
 def generalized_singles(wires, delta_sz):
@@ -367,9 +366,9 @@ class kUpCCGSD(Operation):
         return k, len(s_wires) + len(d_wires)
 
 
+# pylint: disable=unused-argument
 def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
-    resources[SubroutineOp] = 1
 
     for _ in range(k):
         for w1, w2 in d_wires:
