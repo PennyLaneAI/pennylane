@@ -347,6 +347,76 @@ class Select(Operation):
           apply :math:`2^{c-2}` operators each.
           The controlled gate on the right applies the single remaining operator.
 
+    .. details::
+        :title: Available decomposition rules
+
+        To access a given rule do:
+
+        .. code-block::
+
+            # General example of how to access
+            rule = qml.list_decomps(qml.Select)["name_of_rule"]
+
+        and use it like:
+
+        .. code-block::
+
+            qml.decomposition.enable_graph()
+
+            @partial(qml.transforms.decompose, gate_set={...}, fixed_decomps={qml.Select: rule})
+            @qml.qnode(qml.device("lighning.qubit", wires=3))
+            def circuit():
+                qml.Select(ops, control=[0,1])
+                return qml.probs()
+
+        The following decomposition rules are supported
+        
+        .. list-table::
+            :widths: 20 60
+            :header-rows: 1
+
+            * - **Rule Name**
+              - **Details**
+            * - :func:`multi_control <pennylane.templates.subroutines.select._select_decomp_multi_control>`
+              - Multi-controlled gate decomposition
+                
+                .. code-block::
+              
+                    num_wires: 4
+                    num_gates: 6
+                    depth: 6
+                    shots: Shots(total=None)
+                    gate_types:
+                    {'MultiControlledX': 5, 'ControlledQubitUnitary': 1}
+                    gate_sizes:
+                    {3: 3, 4: 3}
+                    num_wires: 4
+            * - :func:`unary <pennylane.templates.subroutines.select>`
+              - Unary iterator
+                
+                .. code-block::
+                
+                    num_wires: 4
+                    num_gates: 16
+                    depth: 14
+                    shots: Shots(total=None)
+                    gate_types:
+                    {'MultiControlledX': 5, 'PauliX': 2, 'CNOT': 4, 'QubitUnitary': 4, 'ControlledPhaseShift': 1}
+                    gate_sizes:
+                    {3: 2, 1: 6, 2: 5, 4: 3}
+            * - :func:`multi_control_work_wire <pennylane.templates.subroutines.select._select_decomp_multi_control_work_wire>`
+              - Multi-controlled gate decomposition where an auxiliary qubit is employed to encode whether the control condition is satisfied.
+              
+                .. code-block::
+                    
+                    num_wires: 4
+                    num_gates: 16
+                    depth: 14
+                    shots: Shots(total=None)
+                    gate_types:
+                    {'MultiControlledX': 5, 'PauliX': 2, 'CNOT': 4, 'QubitUnitary': 4, 'ControlledPhaseShift': 1}
+                    gate_sizes:
+                    {3: 2, 1: 6, 2: 5, 4: 3}
     """
 
     resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
