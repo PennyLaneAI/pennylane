@@ -54,7 +54,7 @@ class AbstractArray:
         wires.
     """
 
-    shape: tuple[int,...]
+    shape: tuple[int, ...]
     dtype: type = int
 
     def __len__(self):
@@ -448,12 +448,12 @@ class Subroutine:
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
 
-    For example, we should be able to calculate the resources using JAX's ``jax.core.AbstractArray``
-    instead of concrete array with real values.
+    For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
+    class.
 
-    >>> import jax
-    >>> abstract_params = jax.core.ShapedArray((10,), float)
-    >>> abstract_wires = jax.core.ShapedArray((10,), int)
+    >>> from pennylane.templates import AbstractArray
+    >>> abstract_params = AbstractArray((10,), float)
+    >>> abstract_wires = AbstractArray(10,))
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
