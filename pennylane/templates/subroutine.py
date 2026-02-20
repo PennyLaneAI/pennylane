@@ -405,6 +405,11 @@ class Subroutine:
         bound_args = self._full_setup_inputs(*args, **kwargs)
         return self._compute_resources(*bound_args.args, **bound_args.kwargs)
 
+    def compute_decomposition(self, *args, **kwargs):
+        with queuing.AnnotatedQueue() as q:
+            self._definition(*args, **kwargs)
+        return q.queue
+
     def definition(self, *args, **kwargs):
         """The quantum function definition of the subroutine."""
         return self._definition(*args, **kwargs)

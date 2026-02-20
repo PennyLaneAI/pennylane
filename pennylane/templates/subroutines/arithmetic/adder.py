@@ -15,6 +15,10 @@
 Contains the Adder template.
 """
 from functools import partial
+from typing import Tuple
+
+from pennylane import capture, math
+from pennylane.ops import cond, Prod
 
 from pennylane.decomposition import (
     change_op_basis_resource_rep,
@@ -25,8 +29,15 @@ from pennylane.templates import Subroutine
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import SubroutineOp
 from .phase_adder import PhaseAdder
+
+has_jax = True
+try:
+    import jax
+    from jax import numpy as jnp
+
+except ImportError:
+    has_jax = False
 
 
 def setup_adder(
@@ -155,12 +166,13 @@ def Adder(
         the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
 
-    if mod == 2 ** len(x_wires):
-        qft_wires = x_wires
-        work_wire = ()
-    else:
-        qft_wires = work_wires[:1] + x_wires
-        work_wire = work_wires[1:]
+    if capture.enabled():
+        x_wires, work_wires = math.array(x_wires, like="jax"), math.array(work_wires, like="jax")
 
+    def true_body(k, x_wires, mod, work_wires):
+        change_op_basis(Prod(*QFT.compute_decomposition(x_wires)), PhaseAdder(k, x_wires, mod, jnp.array([]) if capture.enabled() else []))
+    def false_body(k, x_wires, mod, work_wires):
+        qft_wires = jnp.concatenate(work_wires[:1], x_wires) if capture.enabled() else work_wires[:1] + x_wires
+        change_op_basis(Prod(*QFT.compute_decomposition(qft_wires)), PhaseAdder(k, qft_wires, mod, work_wires[1:]))
 
-    change_op_basis(QFT.operator(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+    cond(mod == 2 ** len(x_wires), true_body, false_body)(k, x_wires, mod, work_wires)
