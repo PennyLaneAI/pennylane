@@ -19,6 +19,7 @@ from copy import copy
 
 import pytest
 from numpy.linalg import matrix_power
+from numpy.polynomial import chebyshev
 from numpy.polynomial.chebyshev import Chebyshev
 
 import pennylane as qml
@@ -852,6 +853,43 @@ class TestRootFindingSolver:
             return qml.state()
 
         output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
+        expected = sum(coef * (x**i) for i, coef in enumerate(poly))
+        assert np.isclose(output.real, expected.real)
+
+    @pytest.mark.parametrize(
+        "poly",
+        [
+            (np.array([0.0, 0.29478458, 0.0, -0.0685941])),
+            (np.array([0.0, 0.26680652, 0.0, -0.11519821, 0.0, 0.02894724])),
+            # at the moment not testing with even poly's as there is not consensus between qsppack and nlft-qsp
+            # these poly's is used and verified elsewhere
+        ],
+    )
+    @pytest.mark.parametrize(
+        "angle_solver",
+        [
+            ("inlfft"),
+        ],
+    )
+    def test_correctness_QSP_angles_inlfft(self, poly, angle_solver):
+        """Tests that angles generate desired poly"""
+
+        poly_cheb = chebyshev.poly2cheb(poly)
+        angles = qml.poly_to_angles(list(poly_cheb), "QSP", angle_solver=angle_solver)
+        rng = np.random.default_rng(123)
+        x = rng.uniform(low=-1.0, high=1.0)
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit_qsp():
+            qml.RX(2 * angles[0], wires=0)
+            for angle in angles[1:]:
+                qml.RZ(-2 * np.arccos(x), wires=0)
+                qml.RX(2 * angle, wires=0)
+
+            return qml.state()
+
+        output = qml.matrix(circuit_qsp, wire_order=[0])()[0, 0]
+        print(output)
         expected = sum(coef * (x**i) for i, coef in enumerate(poly))
         assert np.isclose(output.real, expected.real)
 
