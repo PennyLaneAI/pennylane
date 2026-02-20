@@ -10,13 +10,14 @@ IQP simulator workflow
 ----------------------
 
 ``pennylane.labs.phox`` exposes a compact toolkit for constructing and
-simulating IQP-style circuits with JAX. The usual workflow is:
+simulating IQP-style circuits with JAX.
+The usual workflow is:
 
 1. Use the helpers in :mod:`pennylane.labs.phox.utils` to assemble gates and
    observables.
 2. Configure the simulator via :class:`pennylane.labs.phox.CircuitConfig`.
-3. Build a compiled expectation-value function with
-   :func:`pennylane.labs.phox.iqp_expval` and evaluate it for different
+3. Build a pure expectation-value function with
+   :func:`pennylane.labs.phox.build_expval_func` and evaluate it for different
    parameter sets.
 
 .. code-block:: python
@@ -28,13 +29,14 @@ simulating IQP-style circuits with JAX. The usual workflow is:
        CircuitConfig,
        create_lattice_gates,
        generate_pauli_observables,
-       iqp_expval,
+       build_expval_func,
    )
 
    n_rows, n_cols = 3, 3
    n_qubits = n_rows * n_cols
 
    gates = create_lattice_gates(n_rows, n_cols, distance=1, max_weight=2)
+   # Observables are now generated directly as integer arrays
    observables = generate_pauli_observables(n_qubits, orders=[2], bases=["Z"])
 
    key = jax.random.PRNGKey(0)
@@ -48,8 +50,8 @@ simulating IQP-style circuits with JAX. The usual workflow is:
        n_qubits=n_qubits,
    )
 
-   expval_fn = iqp_expval(config)
-   expvals, std_errs = expval_fn(params)
+   expval_fn = build_expval_func(config)
+   expvals, std_errs = expval_fn(params=params)
 
    print(expvals[:5])
    print(std_errs[:5])
@@ -58,16 +60,18 @@ Training with ``phox.train``
 ---------------------------
 
 Below is a small training loop that minimizes the sum of all two-body ``Z``
-correlators on the same 3x3 lattice. The loss function reuses the compiled
+correlators on the same 3x3 lattice.
+The loss function reuses the compiled
 ``expval_fn`` defined above.
 
 .. code-block:: python
 
-    import jax.numpy as jnp
+   import jax.numpy as jnp
    from pennylane.labs.phox import train, TrainingOptions
 
    def loss_fn(current_params):
-       expvals, _ = expval_fn(current_params)
+       # Using keyword arguments and relying on the pre-computed config defaults
+       expvals, _ = expval_fn(params=current_params)
        return jnp.sum(expvals)
 
    result = train(
