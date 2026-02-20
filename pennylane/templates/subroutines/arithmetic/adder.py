@@ -21,11 +21,11 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops.op_math import change_op_basis
+from pennylane.templates import Subroutine
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
-from pennylane.templates import Subroutine
 
 
 def setup_adder(
@@ -53,14 +53,13 @@ def setup_adder(
         )
 
     return (k, x_wires), {
-        "k": k,
         "mod": mod,
         "work_wires": work_wires,
-        "x_wires": x_wires
     }
 
 
-def adder_decomp_resources(num_x_wires, mod) -> dict:
+def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()) -> dict:
+    num_x_wires = len(x_wires)
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_resource_rep(
@@ -75,8 +74,11 @@ def adder_decomp_resources(num_x_wires, mod) -> dict:
     static_argnames=[],
     setup_inputs=setup_adder,
     compute_resources=adder_decomp_resources,
+    wire_argnames=["x_wires", "work_wires"],
 )
-def Adder(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()):
+def Adder(
+    k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
+):  # pylint: disable=unused-argument
     r"""Performs the in-place modular addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
