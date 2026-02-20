@@ -646,3 +646,17 @@ class TestGetTransformProgramHelper:
 
         full_program = _get_transform_program(circuit)
         assert dev_program == full_program
+
+    def test_marker_integration(self):
+        """Tests marker integration."""
+
+        @qml.marker("after-merge-rotations")
+        @qml.transforms.merge_rotations
+        @qml.qnode(qml.device("null.qubit"))
+        def c():
+            return qml.state()
+
+        program = _get_transform_program(c, level="after-merge-rotations")
+        expected_program = 1 * qml.transforms.merge_rotations
+        assert len(program) == 1
+        assert program == expected_program
