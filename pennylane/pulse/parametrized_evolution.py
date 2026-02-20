@@ -441,7 +441,7 @@ class ParametrizedEvolution(Operation):
             return_intermediate=return_intermediate,
             complementary=complementary,
             dense=dense,
-            id=self.id,
+            id=self._id,
             **odeint_kwargs,
         )
 

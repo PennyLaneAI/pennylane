@@ -17,6 +17,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Optional
@@ -27,6 +28,7 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
+    PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
@@ -48,6 +50,10 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
+    .. warning::
+
+        The ``id`` keyword argument is deprecated and will be removed in v0.46.
+
     Args:
         obs (Union[.Operator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
             is to be measured as part of the measurement process. Not all measurement processes
@@ -56,7 +62,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
+        id (str): **Deprecated** custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
 
@@ -178,6 +184,12 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             self.obs = obs
             self.mv = None
 
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument is deprecated and will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
         self.id = id
 
         if wires is not None:

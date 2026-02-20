@@ -378,6 +378,7 @@ class TestInputs:
         shape = qml.QAOAEmbedding.shape(n_layers, n_wires, n_broadcast)
         assert shape == expected_shape
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.QAOAEmbedding(np.array([0]), weights=np.array([[0]]), wires=[0], id="a")

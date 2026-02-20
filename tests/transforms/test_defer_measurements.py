@@ -182,8 +182,8 @@ def test_unsupported_measurements(mp, err_msg):
 def test_multi_mcm_stats_same_wire(mp, compose_mv):
     """Test that a tape collecting statistics on multiple mid-circuit measurements when
     they measure the same wire is transformed correctly."""
-    mp1 = MidMeasure(0, id="foo")
-    mp2 = MidMeasure(0, id="bar")
+    mp1 = MidMeasure(0, meas_uid="foo")
+    mp2 = MidMeasure(0, meas_uid="bar")
     mv1 = MeasurementValue([mp1], None)
     mv2 = MeasurementValue([mp2], None)
 
@@ -191,8 +191,8 @@ def test_multi_mcm_stats_same_wire(mp, compose_mv):
     tape = qml.tape.QuantumScript([qml.PauliX(0), mp1, mp2], [mp(op=mv)], shots=10)
     [deferred_tape], _ = qml.defer_measurements(tape)
 
-    emp1 = MidMeasure(1, id="foo")
-    emp2 = MidMeasure(2, id="bar")
+    emp1 = MidMeasure(1, meas_uid="foo")
+    emp2 = MidMeasure(2, meas_uid="bar")
     emv1 = MeasurementValue([emp1], None)
     emv2 = MeasurementValue([emp2], None)
     emv = emv1 * emv2 if compose_mv else [emv1, emv2]
@@ -441,11 +441,11 @@ class TestQNode:
 
         # Initializing mid circuit measurements here so that id can be controlled (affects
         # wire ordering for qml.cond)
-        mp0 = MidMeasure(wires=0, postselect=0, id=0)
+        mp0 = MidMeasure(wires=0, postselect=0, meas_uid=0)
         mv0 = MeasurementValue([mp0], lambda v: v)
-        mp1 = MidMeasure(wires=1, postselect=0, id=1)
+        mp1 = MidMeasure(wires=1, postselect=0, meas_uid=1)
         mv1 = MeasurementValue([mp1], lambda v: v)
-        mp2 = MidMeasure(wires=2, reset=True, postselect=1, id=2)
+        mp2 = MidMeasure(wires=2, reset=True, postselect=1, meas_uid=2)
         mv2 = MeasurementValue([mp2], lambda v: v)
 
         dm_transform = qml.defer_measurements
@@ -1577,13 +1577,13 @@ class TestQubitReuseAndReset:
             # Set measurement_ids so that the order of wires in combined
             # measurement values is consistent
 
-            mp0 = qml.ops.MidMeasure(0, reset=True, id=0)
+            mp0 = qml.ops.MidMeasure(0, reset=True, meas_uid=0)
             m0 = qml.ops.MeasurementValue([mp0], lambda v: v)
             qml.cond(~m0, qml.RX)(x, 1)
-            mp1 = qml.ops.MidMeasure(1, reset=True, id=1)
+            mp1 = qml.ops.MidMeasure(1, reset=True, meas_uid=1)
             m1 = qml.ops.MeasurementValue([mp1], lambda v: v)
             qml.cond(m0 & m1, qml.Hadamard)(0)
-            mp2 = qml.ops.MidMeasure(0, id=2)
+            mp2 = qml.ops.MidMeasure(0, meas_uid=2)
             m2 = qml.ops.MeasurementValue([mp2], lambda v: v)
             qml.cond(m1 | m2, qml.RY)(y, 2)
             return qml.expval(qml.PauliZ(2))

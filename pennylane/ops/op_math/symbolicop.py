@@ -14,12 +14,15 @@
 """
 This submodule defines a base class for symbolic operations representing operator math.
 """
+
+import warnings
 from abc import abstractmethod
 from copy import copy
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.queuing import QueuingManager
 
@@ -75,6 +78,12 @@ class SymbolicOp(Operator):
         self.hyperparameters["base"] = base
         if isinstance(base, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
             raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
+        if id is not None:
+            warnings.warn(
+                "The 'id' argument is deprecated and will be removed in v0.46.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
         self._id = id
         self._pauli_rep = None
         self.queue()
