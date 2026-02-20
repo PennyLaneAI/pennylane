@@ -14,7 +14,6 @@
 """
 Pure function implementations for the expectation value functions.
 """
-import math
 from dataclasses import dataclass
 from typing import Callable
 
@@ -22,8 +21,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
-
-from pennylane.labs.tests.conftest import init_state
 
 
 @dataclass
@@ -71,7 +68,6 @@ def bitflip_expval(
     indicator = (ops @ generators.T) % 2
     X = probs * indicator
 
-    # Use jnp.where to replace 0s with 1.0s before product to avoid zeroing out
     result = jnp.prod(jnp.where(X == 0, 1.0, X), axis=1)
 
     return result, jnp.zeros(ops.shape[0])
