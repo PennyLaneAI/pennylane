@@ -385,7 +385,7 @@ def specs(
 
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
-            computing the resource information. See :func:`~pennylane.workflow.get_transform_program` for more details
+            computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
             on the available levels. Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
