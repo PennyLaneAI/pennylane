@@ -19,6 +19,7 @@ from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
+from pennylane.templates import SubroutineOp
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires, WiresLike
 
@@ -227,7 +228,7 @@ class ParticleConservingU2(Operation):
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
         n_layers = math.shape(weights)[0]
-        op_list = [BasisEmbedding(init_state, wires=wires)]
+        op_list = [BasisEmbedding.operator(init_state, wires=wires)]
 
         for l in range(n_layers):
             for j, wires_ in enumerate(wires):
@@ -262,7 +263,7 @@ def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
     num_nm_wires = num_wires - 1
 
     return {
-        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
+        SubroutineOp: 1,
         resource_rep(RZ): n_layers * num_wires,
         resource_rep(CNOT): 2 * num_nm_wires * n_layers,
         resource_rep(CRX): num_nm_wires * n_layers,
