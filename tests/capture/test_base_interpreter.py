@@ -720,9 +720,9 @@ class TestHigherOrderPrimitiveRegistrations:
 
         assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
 
-    @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
+    @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian, qml.value_and_grad))
     def test_grad_and_jac(self, grad_f):
-        """Test interpreters can handle grad and jacobian HOP's."""
+        """Test interpreters can handle grad, jac, and value_and_grad HOP's."""
 
         @SimplifyInterpreter()
         def f(x):
@@ -735,8 +735,13 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr = jax.make_jaxpr(f)(0.5)
 
-        assert jaxpr.eqns[0].primitive == qml.capture.primitives.jacobian_prim
-        assert jaxpr.eqns[0].params["scalar_out"] == (grad_f == qml.grad)
+        if grad_f == qml.value_and_grad:
+            prim = qml.capture.primitives.value_and_grad_prim
+        else:
+            prim = qml.capture.primitives.jacobian_prim
+        assert jaxpr.eqns[0].primitive == prim
+        if grad_f != qml.value_and_grad:
+            assert jaxpr.eqns[0].params["scalar_out"] == (grad_f == qml.grad)
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
         assert qfunc_jaxpr.eqns[1].primitive == qml.RX._primitive  # eqn 0 is mul
@@ -819,6 +824,28 @@ class TestHigherOrderPrimitiveRegistrations:
                 return qml.expval(qml.Z(0) + qml.Z(0))
 
             return qml.vjp(circuit, (x,), (1.0,))
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+        assert len(jaxpr.consts) == 0
+        assert len(jaxpr.eqns[0].params["jaxpr"].constvars) == 0
+
+        jaxpr2 = jax.make_jaxpr(ConstAdder()(f))(0.5)
+        assert jaxpr2.consts == [scalar]
+        assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 0
+        assert jaxpr2.eqns[0].params["argnums"] == (1,)  # shifted by one
+
+    def test_value_and_grad_consts(self):
+        """Test interpreters can handle value_and_grad HOP's and propagate consts correctly."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                exponent = add_3.bind(0)
+                _ = qml.RX(y, 0) ** exponent
+                return qml.expval(qml.Z(0) + qml.Z(0))
+
+            return qml.value_and_grad(circuit)(x)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         assert len(jaxpr.consts) == 0

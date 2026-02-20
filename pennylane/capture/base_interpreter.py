@@ -36,6 +36,7 @@ from .primitives import (
     jacobian_prim,
     jvp_prim,
     qnode_prim,
+    value_and_grad_prim,
     quantum_subroutine_prim,
     vjp_prim,
     while_loop_prim,
@@ -641,6 +642,21 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return jacobian_prim.bind(
         *new_jaxpr.consts, *args, jaxpr=new_jaxpr.jaxpr, n_consts=len(new_jaxpr.consts), **params
+    )
+
+
+@PlxprInterpreter.register_primitive(value_and_grad_prim)
+def handle_value_and_grad(self, *invals, jaxpr, argnums, **params):
+    """Handle the value_and_grad primitive."""
+
+    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals[: len(jaxpr.invars)])
+
+    j = new_jaxpr.jaxpr
+    no_consts_jaxpr = j.replace(constvars=(), invars=j.constvars + j.invars)
+    argnums = tuple(a + len(j.constvars) for a in argnums)
+
+    return value_and_grad_prim.bind(
+        *new_jaxpr.consts, *invals, jaxpr=no_consts_jaxpr, argnums=argnums, **params
     )
 
 
