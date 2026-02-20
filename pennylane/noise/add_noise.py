@@ -324,6 +324,7 @@ def add_noise(tape, noise_model, level="user"):
 
     return new_tapes, post_processing_fn
 
+
 def _get_full_transform_program(qnode, gradient_fn):
     # NOTE: Copy so as to not mutate
     program = copy(qnode.compile_pipeline)
