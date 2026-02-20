@@ -14,12 +14,62 @@
 r"""
 Contains the BasisEmbedding template.
 """
+import functools
+import math
 
-from pennylane.decomposition import add_decomps
+from pennylane import math
 from pennylane.ops.qubit.state_preparation import BasisState, _basis_state_decomp
+from pennylane.templates import Subroutine, SubroutineOp
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 
-class BasisEmbedding(BasisState):
+def basis_embedding_setup(features, wires):
+    wires = Wires(wires)
+    if isinstance(features, list):
+        features = math.stack(features)
+
+    tracing = math.is_abstract(features)
+
+    if not math.shape(features):
+        if not tracing and features >= 2 ** len(wires):
+            raise ValueError(
+                f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {features}"
+            )
+        bin = 2 ** math.arange(len(wires))[::-1]
+        features = math.where((features & bin) > 0, 1, 0)
+
+    shape = math.shape(features)
+
+    if len(shape) != 1:
+        raise ValueError(f"State must be one-dimensional; got shape {shape}.")
+
+    n_states = shape[0]
+    if n_states != len(wires):
+        raise ValueError(
+            f"State must be of length {len(wires)}; got length {n_states} (state={features})."
+        )
+
+    if not tracing:
+        state_list = list(math.toarray(features))
+        if not set(state_list).issubset({0, 1}):
+            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
+    features = math.cast(features, int)
+
+    return (features, wires), {}
+
+
+def basis_embedding_resources(features, wires):
+    return {SubroutineOp: 1}
+
+
+@functools.partial(
+    Subroutine,
+    static_argnames=[],
+    setup_inputs=basis_embedding_setup,
+    compute_resources=basis_embedding_resources,
+)
+def BasisEmbedding(features: TensorLike, wires: WiresLike):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
     For example, for ``features=np.array([0, 1, 0])`` or ``features=2`` (binary 010), the
@@ -66,9 +116,4 @@ class BasisEmbedding(BasisState):
         Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
 
     """
-
-    def __init__(self, features, wires, id=None):
-        super().__init__(features, wires=wires, id=id)
-
-
-add_decomps(BasisEmbedding, _basis_state_decomp)
+    _basis_state_decomp(features, wires=wires)
