@@ -258,6 +258,11 @@
   a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Added specialized gate kernels for RX, RY, RZ, and Hadamard in the default qubit device.
+  These bypass generic einsum/tensordot dispatch and use direct NumPy contractions for pure-numpy
+  states, with correct fallbacks for autodiff interfaces (autograd, torch, JAX, TensorFlow).
+  
+  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
 * Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
   dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
   ``pbc.fabricate`` and ``pbc.prepare``.
@@ -585,6 +590,10 @@
 * The type of a parameter is fixed in the docstring of :class:`~.templates.layers.BasicEntanglerLayers`.
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
+* Fixed the ``apply_global_phase`` docstring to correctly state the phase convention as
+  :math:`e^{-i\phi}` instead of :math:`e^{i\phi}`.
+  [(#9075)](https://github.com/PennyLaneAI/pennylane/pull/9075)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where `qml.transforms.transpile` would fail when `qml.GlobalPhase` gates
@@ -666,6 +675,7 @@ Yushao Chen,
 Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
+Jacob Kitchen,
 Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
