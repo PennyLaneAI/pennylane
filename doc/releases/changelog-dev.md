@@ -587,6 +587,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Jacobian-level caching is now unconditionally enabled for `autograd` interface,
+  preventing redundant derivative tape executions during the backward pass.
+  [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
+
 * Fixed a bug where `qml.transforms.transpile` would fail when `qml.GlobalPhase` gates
   were present in a circuit.
   [(#9041)](https://github.com/PennyLaneAI/pennylane/pull/9041)
