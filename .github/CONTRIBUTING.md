@@ -9,7 +9,8 @@ Learn more about contributing to open source in general with
 [this great guide](https://opensource.guide/how-to-contribute/).
 
 Please pay attention to our
-[code of conduct](https://github.com/PennyLaneAI/pennylane/blob/master/.github/CODE_OF_CONDUCT.md)
+[code of conduct](https://github.com/PennyLaneAI/pennylane/blob/master/.github/CODE_OF_CONDUCT.md),
+as well as our policy on [AI contributions](https://github.com/PennyLaneAI/pennylane/blob/master/AI_Policy.md),
 and help us make quantum computing a welcoming place for all.
 
 ## How can I get involved in the community?
@@ -64,7 +65,8 @@ Want to help with the repository itself?  There are several different avenues fo
   ["good first issue" label](https://github.com/PennyLaneAI/pennylane/contribute).  Issues with
   this label are meant for newcomers and *should* contain fewer challenging bits.  If the issue
   ends up trickier than we assumed, you can start a conversation on the issue page or open up a
-  "Work in Progress" PR to ask for help. Developers new to PennyLane can use the dev dependency-group in the [pyproject.toml](https://github.com/PennyLaneAI/pennylane/blob/master/pyproject.toml) file to install dependencies required for PennyLane code development. Simply run `pip install  --group dev` from the root of the repository.
+  "Work in Progress" PR to ask for help. Developers new to PennyLane can use the dev dependency-group in the [pyproject.toml](https://github.com/PennyLaneAI/pennylane/blob/master/pyproject.toml) file to install dependencies required for PennyLane code development. Simply run `pip install  --group dev` from the root of the repository. 
+  Please ensure that you have read and adhere to the [AI contribution policy](https://github.com/PennyLaneAI/pennylane/blob/master/AI_Policy.md).
 
 * **Documentation**- If you would like to add to our documentation or suggest
   improvements/changes, let us know or submit a pull request directly. Changes that fix rendering
