@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2025-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,15 +13,24 @@
 # limitations under the License.
 r"""This module contains resource templates."""
 
-from .subroutines import (
+from .arithmetic import (
+    PhaseAdder,
+    Adder,
+    OutAdder,
+    SemiAdder,
+    Multiplier,
+    OutMultiplier,
+    ClassicalOutMultiplier,
+    ModExp,
     OutOfPlaceSquare,
+)
+
+from .subroutines import (
     IQP,
     HybridQRAM,
     SelectOnlyQRAM,
     BBQRAM,
     PhaseGradient,
-    OutMultiplier,
-    SemiAdder,
     QFT,
     AQFT,
     BasisRotation,
