@@ -167,7 +167,6 @@ from pennylane import pulse
 from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
-from pennylane.drawer import draw, draw_mpl
 
 from pennylane.io import (
     from_pyquil,
@@ -203,7 +202,20 @@ from pennylane import qnn
 
 from pennylane import estimator
 
+from pennylane.drawer import draw, draw_mpl, _catalyst_drawers  # pylint:disable=wrong-import-order
+
+_catalyst_entry_points = [_catalyst_drawers]
+
+_all_pl = [name for name, obj in globals().items() if callable(obj) and not name.startswith("_")]
+
+__all__ = _all_pl + [
+    list(_catalyst_entry_points[i].keys()) for i in range(len(_catalyst_entry_points))
+]
+
+# pylint:disable=wrong-import-order
+from importlib import import_module
 from importlib.metadata import version as _metadata_version
+
 from importlib.util import find_spec as _find_spec
 from packaging.version import Version as _Version
 
@@ -221,6 +233,10 @@ if _find_spec("numpy") is not None:
         )
 
 
+def __dir__():
+    return __all__ + list(globals().keys())
+
+
 def __getattr__(name):
 
     if name == "plugin_devices":
@@ -228,6 +244,12 @@ def __getattr__(name):
         from pennylane.devices.device_constructor import plugin_devices
 
         return plugin_devices
+
+    elif name in _catalyst_drawers:
+        func = _catalyst_drawers[name]
+        func.__module__ = __name__
+        setattr(import_module(__name__), name, func)
+        return func
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
