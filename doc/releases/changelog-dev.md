@@ -136,7 +136,10 @@ def c():
 
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
-  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
+  [(#9025)](https://github.
+
+* No unnecessary classical registers from being created when using `qml.to_openqasm` with `measure_all=False`.
+  [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -381,9 +384,6 @@ def c():
 
 * Fixes various issues found with decomposition rules for `QubitUnitary`, `BasisRotation`, `StronglyEntanglingLayers`.
   [(#8965)](https://github.com/PennyLaneAI/pennylane/pull/8965)
-
-* Fixes unnecessary classical registers from being created when using `qml.to_openqasm` and `measure_all=False`.
-  [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
 
 <h3>Contributors ✍️</h3>
 
