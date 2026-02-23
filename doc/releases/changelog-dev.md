@@ -533,6 +533,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove duplicate transforms found in both `ftqc/catalyst_pass_aliases.py` and `transforms/decompositions/pauli_based_decomposition.py`.
+  [(#9090)](https://github.com/PennyLaneAI/pennylane/pull/9090)
+
 * Add `sybil` to `dev` dependency group in `pyproject.toml`.
   [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
 
