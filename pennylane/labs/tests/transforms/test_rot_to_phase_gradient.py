@@ -114,7 +114,7 @@ class TestSelectPauliRotDecompositions:
             )
 
         with pytest.raises(
-            ValueError, match="work_wires needs to be at least as large as angle_wires - 1"
+            ValueError, match="work_wires needs to be at least as large as angle_wires, minus 1"
         ):
             _ = rot_to_phase_gradient(
                 circ,
@@ -147,14 +147,22 @@ class TestSelectPauliRotDecompositions:
         ],
     )
     @pytest.mark.parametrize("rot_axis", ["Z", "X", "Y"])
-    def test_correctness_select_pauli_rot_phase_gradient(self, phis, rot_axis):
+    @pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.external)])
+    def test_correctness_select_pauli_rot_phase_gradient(self, phis, rot_axis, use_qjit):
         """Test that decomposition produce the correct solution"""
 
         precision = 4
-        wire = "targ"
-        angle_wires = [f"ang_{i}" for i in range(precision)]
-        phase_grad_wires = [f"phg_{i}" for i in range(precision)]
-        work_wires = [f"work_{i}" for i in range(precision - 1)]
+        if use_qjit:
+            wire = 0
+            start = 1
+            angle_wires = list(range(start, start := start + precision))
+            phase_grad_wires = list(range(start, start := start + precision))
+            work_wires = list(range(start, start := start + precision - 1))
+        else:
+            wire = "targ"
+            angle_wires = [f"ang_{i}" for i in range(precision)]
+            phase_grad_wires = [f"phg_{i}" for i in range(precision)]
+            work_wires = [f"work_{i}" for i in range(precision - 1)]
 
         @partial(
             rot_to_phase_gradient,
@@ -162,7 +170,7 @@ class TestSelectPauliRotDecompositions:
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,
         )
-        @qp.qnode(qp.device("default.qubit"))
+        @qp.qnode(qp.device("lightning.qubit"))
         def select_pauli_rot_circ(phis, control_wires, target_wire):
             prepare_phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
@@ -190,6 +198,11 @@ class TestSelectPauliRotDecompositions:
 
             return qp.probs([target_wire] + control_wires + angle_wires)
 
+        if use_qjit:
+            import jax
+
+            phis = jax.numpy.array(phis)
+            select_pauli_rot_circ = qp.qjit(select_pauli_rot_circ)
         # pylint: disable=unsubscriptable-object
         expected_probs = select_pauli_rot_circ(phis, control_wires=[0, 1], target_wire=wire)
         assert np.allclose(expected_probs[0], 1)

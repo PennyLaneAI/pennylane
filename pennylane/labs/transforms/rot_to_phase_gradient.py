@@ -1,4 +1,4 @@
-# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``select_pauli_rot_phase_gradient`` transform.
+Contains the ``rot_to_phase_gradient`` transform.
 """
 # pylint: disable=too-many-branches
 # TODO: make function neat, e.g. using dispatching
@@ -44,9 +44,7 @@ def fanout(wires):
     """Fanout operator"""
     if len(wires) == 1:
         return qp.I(wires)
-    return qp.prod(
-        *[qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])][::-1]
-    )
+    return qp.prod(*[qp.CNOT(wires) for wires in zip(wires[~0:0:-1], wires[~1::-1])][::-1])
 
 
 @QueuingManager.stop_recording()
@@ -97,6 +95,29 @@ def _select_pauli_rot_phase_gradient(
         qp.prod(*ops[::-1]),
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
     )
+
+
+def _pauli_rot_phase_gradient(op, **other_wires):
+    wires = op.wires
+    phi = op.parameters[0]
+    if isinstance(op, (qp.IsingXX, qp.IsingYY, qp.IsingZZ)):
+        with QueuingManager.stop_recording():
+            pauli_word = op.name[-2:]
+            op = qp.PauliRot(phi, pauli_word=pauli_word, wires=wires)
+
+    # collect diagonalizing gates of each wire
+    # this turns any rotation to MultiRZ
+    diagonalizing_gates = []
+    for sub_op in op.decomposition():
+        if isinstance(sub_op, qp.MultiRZ):
+            break
+        diagonalizing_gates.append(sub_op)
+    diagonalizing_gate = fanout(wires) @ qp.prod(*diagonalizing_gates[::-1])
+
+    pg_op = _rz_phase_gradient(phi, wires[:1], **other_wires)
+    new_op = qp.change_op_basis(diagonalizing_gate, pg_op)
+
+    return new_op, phi / 2  # op to be appended, global phase
 
 
 @transform
@@ -182,121 +203,74 @@ def rot_to_phase_gradient(
 
     if len(phase_grad_wires) < len(angle_wires):
         raise ValueError(
-            f"phase_grad_wires needs to be at least as large as angle_wires. Got {len(phase_grad_wires)} phase_grad_wires, which is fewer than the {len(angle_wires)} angle_wires."
+            "phase_grad_wires needs to be at least as large as angle_wires. Got "
+            f"{len(phase_grad_wires)} phase_grad_wires, which is fewer than the "
+            f"{len(angle_wires)} angle_wires."
         )
 
     if len(work_wires) < len(angle_wires) - 1:
         raise ValueError(
-            f"work_wires needs to be at least as large as angle_wires - 1. Got {len(work_wires)} work_wires, which is fewer than the {len(angle_wires) - 1}."
+            "work_wires needs to be at least as large as angle_wires, minus 1. "
+            f"Got {len(work_wires)} work_wires and {len(angle_wires)} angle_wires."
         )
 
     operations = []
     global_phases = []
 
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
     for op in tape.operations:
         if isinstance(op, qp.SelectPauliRot):
             control_wires = op.wires[:-1]
             target_wire = op.wires[-1]
-            rot_axis = op.hyperparameters["rot_axis"]
-
-            angles = op.parameters[0]
 
             pg_op = _select_pauli_rot_phase_gradient(
-                angles,
+                op.data[0],
                 control_wires=control_wires,
                 target_wire=target_wire,
-                angle_wires=angle_wires,
-                phase_grad_wires=phase_grad_wires,
-                work_wires=work_wires,
+                **kwargs,
             )
 
-            match rot_axis:
+            match op.hyperparameters["rot_axis"]:
                 case "X":
-                    operations.append(
-                        qp.change_op_basis(
-                            qp.Hadamard(target_wire),
-                            pg_op,
-                            qp.Hadamard(target_wire),
-                        )
-                    )
+                    comp = uncomp = qp.Hadamard(target_wire)
+                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
                 case "Y":
-                    operations.append(
-                        qp.change_op_basis(
-                            qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire)),
-                            pg_op,
-                            qp.S(target_wire) @ qp.Hadamard(target_wire),
-                        )
-                    )
+                    comp = qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire))
+                    uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
+                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
                 case "Z":
                     operations.append(pg_op)
 
-        elif isinstance(op, (qp.RZ, qp.PhaseShift)) or (
+        elif isinstance(op, (qp.RX, qp.RY, qp.RZ, qp.PhaseShift)) or (
             isinstance(op, qp.MultiRZ) and len(op.wires) == 1
         ):
-            wire = op.wires
+            target_wire = op.wires[:1]
             phi = op.parameters[0]
-            global_phase_temp = phi / 2 if not isinstance(op, qp.PhaseShift) else 0
-            global_phases.append(global_phase_temp)
 
-            operations.append(
-                _rz_phase_gradient(
-                    phi,
-                    wire,
-                    angle_wires=angle_wires,
-                    phase_grad_wires=phase_grad_wires,
-                    work_wires=work_wires,
-                )
-            )
+            if not isinstance(op, qp.PhaseShift):
+                global_phases.append(phi / 2)
 
-        elif isinstance(op, (qp.RX, qp.RY)):
-            wire = op.wires
-            phi = op.parameters[0]
-            global_phases.append(phi / 2)
+            pg_op = _rz_phase_gradient(phi, target_wire, **kwargs)
 
-            diagonalizing_gate = (
-                qp.Hadamard(wire)
-                if isinstance(op, qp.RX)
-                else qp.Hadamard(wire) @ qp.adjoint(qp.S(wire))
-            )
-
-            operations.append(
-                qp.change_op_basis(
-                    diagonalizing_gate,
-                    _rz_phase_gradient(
-                        phi,
-                        wire,
-                        angle_wires=angle_wires,
-                        phase_grad_wires=phase_grad_wires,
-                        work_wires=work_wires,
-                    ),
-                )
-            )
-
-        elif isinstance(op, qp.MultiRZ) and len(op.wires) > 1:
-            wires = op.wires
-            phi = op.parameters[0]
-            global_phases.append(phi / 2)
-
-            diagonalizing_gate = fanout(wires)
-
-            operations.append(
-                qp.change_op_basis(
-                    diagonalizing_gate,
-                    _rz_phase_gradient(
-                        phi,
-                        wires[:1],
-                        angle_wires=angle_wires,
-                        phase_grad_wires=phase_grad_wires,
-                        work_wires=work_wires,
-                    ),
-                )
-            )
+            match type(op):
+                case qp.RX:
+                    comp = uncomp = qp.Hadamard(target_wire)
+                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
+                case qp.RY:
+                    comp = qp.Hadamard(target_wire) @ qp.adjoint(qp.S(target_wire))
+                    uncomp = qp.S(target_wire) @ qp.Hadamard(target_wire)
+                    operations.append(qp.change_op_basis(comp, pg_op, uncomp))
+                case qp.MultiRZ if len(op.wires) > 1:
+                    operations.append(qp.change_op_basis(fanout(op.wires), pg_op))
+                case _:
+                    operations.append(pg_op)
 
         elif isinstance(op, (qp.PauliRot, qp.IsingXX, qp.IsingYY, qp.IsingZZ)):
-            new_op, global_phase = _pauli_rot_phase_gradient(
-                op, angle_wires, phase_grad_wires, work_wires
-            )
-
+            new_op, global_phase = _pauli_rot_phase_gradient(op, **kwargs)
             operations.append(new_op)
             global_phases.append(global_phase)
 
@@ -316,34 +290,3 @@ def rot_to_phase_gradient(
         return results[0]
 
     return [new_tape], null_postprocessing
-
-
-def _pauli_rot_phase_gradient(op, angle_wires, phase_grad_wires, work_wires):
-    wires = op.wires
-    phi = op.parameters[0]
-    if isinstance(op, (qp.IsingXX, qp.IsingYY, qp.IsingZZ)):
-        with QueuingManager.stop_recording():
-            pauli_word = op.name[-2:]
-            op = qp.PauliRot(phi, pauli_word=pauli_word, wires=wires)
-
-    # collect diagonalizing gates of each wire
-    # this turns any rotation to MultiRZ
-    diagonalizing_gates = []
-    for sub_op in op.decomposition():
-        if isinstance(sub_op, qp.MultiRZ):
-            break
-        diagonalizing_gates.append(sub_op)
-    diagonalizing_gate = fanout(wires) @ qp.prod(*diagonalizing_gates[::-1])
-
-    new_op = qp.change_op_basis(
-        diagonalizing_gate,
-        _rz_phase_gradient(
-            phi,
-            wires[:1],
-            angle_wires=angle_wires,
-            phase_grad_wires=phase_grad_wires,
-            work_wires=work_wires,
-        ),
-    )
-
-    return new_op, phi / 2  # op to be appended, global phase
