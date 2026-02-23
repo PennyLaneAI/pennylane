@@ -25,7 +25,7 @@ from pennylane.ops.op_math import change_op_basis
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import SubroutineOp
+from ... import AbstractArray, SubroutineOp, subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
@@ -223,7 +223,7 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         change_op_basis_resource_rep(
-            resource_rep(SubroutineOp),
+            subroutine_resource_rep(QFT, AbstractArray((qft_wires,))),
             resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
         ): 1,
     }
