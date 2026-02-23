@@ -17,14 +17,13 @@ Contains the Adder template.
 from functools import partial
 
 from pennylane import capture, math
-from pennylane.ops import cond, Adjoint
-
 from pennylane.decomposition.resources import resource_rep
+from pennylane.ops import Adjoint, cond
 from pennylane.templates import Subroutine
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import subroutine_resource_rep, AbstractArray
+from ... import AbstractArray, subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 has_jax = True
@@ -68,7 +67,7 @@ def setup_adder(
 
 def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()) -> dict:
     num_x_wires = len(x_wires)
-    qft_wires = num_x_wires if mod == 2 ** num_x_wires else 1 + num_x_wires
+    qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     return {
         subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
         resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod): 1,
@@ -168,8 +167,13 @@ def Adder(
         QFT(x_wires)
         PhaseAdder(k, x_wires, mod, jnp.array([]) if capture.enabled() else [])
         Adjoint(QFT)(x_wires)
+
     def false_body(k, x_wires, mod, work_wires):
-        qft_wires = jnp.concatenate(work_wires[:1], x_wires) if capture.enabled() else work_wires[:1] + x_wires
+        qft_wires = (
+            jnp.concatenate(work_wires[:1], x_wires)
+            if capture.enabled()
+            else work_wires[:1] + x_wires
+        )
         QFT(qft_wires)
         PhaseAdder(k, qft_wires, mod, work_wires[1:])
         Adjoint(QFT)(qft_wires)

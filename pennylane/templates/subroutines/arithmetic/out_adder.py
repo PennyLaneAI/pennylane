@@ -20,12 +20,12 @@ from functools import partial
 from pennylane.decomposition import (
     resource_rep,
 )
-from pennylane.ops import Prod, adjoint
+from pennylane.ops import Prod, adjoint, cond
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, subroutine_resource_rep, Subroutine
+from ... import AbstractArray, Subroutine, subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
@@ -237,16 +237,29 @@ def OutAdder(
         Note that the ``OutAdder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
-    if mod != 2 ** len(output_wires) and mod is not None:
-        qft_new_output_wires = work_wires[:1] + output_wires
-        work_wire = work_wires[1:]
-    else:
+
+    def true_body(x_w, y_w, out_w, m, work_w):
+        qft_new_output_wires = work_w[:1] + out_w
+        work_wire = work_w[1:]
+
+        QFT(wires=qft_new_output_wires)
+        (
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=y_w)
+            @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=x_w)
+        )
+        adjoint(QFT)(wires=qft_new_output_wires)
+
+    def false_body(x_w, y_w, out_w, m, work_w):
         qft_new_output_wires = output_wires
         work_wire = ()
 
-    QFT(wires=qft_new_output_wires)
-    (
-        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-        @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
+        QFT(wires=qft_new_output_wires)
+        (
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=y_w)
+            @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=x_w)
+        )
+        adjoint(QFT)(wires=qft_new_output_wires)
+
+    cond(mod != 2 ** len(output_wires) and mod is not None, true_body, false_body)(
+        x_wires, y_wires, output_wires, mod, work_wires
     )
-    adjoint(QFT)(wires=qft_new_output_wires)
