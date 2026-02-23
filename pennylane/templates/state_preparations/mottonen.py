@@ -282,7 +282,7 @@ def setup_mottonen(state_vector, wires):
             )
 
         n_amplitudes = shape[0]
-        if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
+        if n_amplitudes != 2 ** len(wires):
             raise ValueError(
                 f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
             )
