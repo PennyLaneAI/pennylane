@@ -55,7 +55,7 @@ simulating IQP-style circuits with JAX. The usual workflow is:
    print(std_errs[:5])
 
 Training with ``phox.train``
----------------------------
+----------------------------
 
 Below is a small training loop that minimizes the sum of all two-body ``Z``
 correlators on the same 3x3 lattice. The loss function reuses the compiled
