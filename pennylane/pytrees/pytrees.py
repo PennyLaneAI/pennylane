@@ -211,7 +211,9 @@ class PyTreeStructure:
         if self.is_leaf:
             return "Leaf"
         children_string = ", ".join(str(c) for c in self.children)
-        return f"PyTree({self.type_.__name__}, {self.metadata}, [{children_string}])"
+        if len(self.children) == 1:
+            children_string += ","
+        return f"PyTree({self.type_.__name__}, {self.metadata}, ({children_string}))"
 
 
 leaf = PyTreeStructure(None, (), ())
@@ -259,7 +261,7 @@ def flatten(
         flattened_leaves += child_leaves
         child_structures.append(child_structure)
 
-    structure = PyTreeStructure(type(obj), metadata, child_structures)
+    structure = PyTreeStructure(type(obj), metadata, tuple(child_structures))
     return flattened_leaves, structure
 
 

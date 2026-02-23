@@ -128,6 +128,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     """
     bound = subroutine.signature.bind(*args, **kwargs)
+    bound.apply_defaults()
     for arg in subroutine.dynamic_argnames:
         leaves, struct = flatten(bound.arguments[arg])
         bound.arguments[arg] = (struct, tuple(leaves))
@@ -210,7 +211,7 @@ class SubroutineOp(Operation):
         key = _create_signature_key(
             self.bound_args,
             wire_argnames=self.subroutine.wire_argnames,
-            static_argnames=self.subroutine.wire_argnames,
+            static_argnames=self.subroutine.static_argnames,
         )
         return {"subroutine": self.subroutine, "signature_key": key}
 
@@ -433,7 +434,18 @@ class Subroutine:
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
 
-    While not currently integrated, a function to compute the resources can also be provided.
+    **Integration with Graph decompositions:**
+
+    .. warning::
+
+        Program capture Catalyst only supports graph decompositions for fundamental *Gates* with
+        Ahead-Of-Time compiled decomposition rules and simple call signatures. Graph decompositions
+        are not available for higher order algorithmic abstractions like ``Subroutine``, or operators
+        that decompose to ``Subroutine``, in Catalyst.
+
+
+    To use ``Subroutine`` with graph-based decompositions, a function to compute the resources must
+    be provided.
     The calculation of resources should only depend on the static arguments, the number of wires
     in each register, and the shape and ``dtype`` of the dynamic arguments. This will allow
     the calculation of the resources to performed in an abstract way.
@@ -441,21 +453,68 @@ class Subroutine:
     .. code-block:: python
 
         def RXLayerResources(params, wires):
-            return {qml.RX: qml.math.shape(params)[0]}
+            return {qp.RX: qp.math.shape(params)[0]}
 
-        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qp.templates.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
-                qml.RX(params[i], wires[i])
+                qp.RX(params[i], wires[i])
 
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     class.
 
     >>> from pennylane.templates import AbstractArray
     >>> abstract_params = AbstractArray((10,), float)
-    >>> abstract_wires = AbstractArray(10,))
+    >>> abstract_wires = AbstractArray((10,))
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
+
+    We can create an ``Operator`` that can decompose to a ``Subroutine`` using :class:`~.AbstractArray`
+    and :func:`~.subroutine_resource_rep`.
+
+    .. code-block:: python
+
+        from pennylane.templates import AbstractArray, subroutine_resource_rep
+
+        class MyOp(qp.operation.Operation):
+            pass
+
+        abstract_params = AbstractArray((3, ), float)
+        abstract_wires = AbstractArray((3, ))
+        rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
+
+        @qp.decomposition.register_resources({rxlayer_rep: 1})
+        def MyOpDecomposition(wires):
+            params = np.arange(3, dtype=float)
+            RXLayer(params, wires)
+
+        qp.add_decomps(MyOp, MyOpDecomposition)
+
+    .. code-block:: python
+
+        @qp.qnode(qp.device('default.qubit'))
+        def c():
+            MyOp((0,1,2))
+            return qp.expval(qp.Z(0))
+
+        qp.decomposition.enable_graph()
+
+
+    >>> print(qml.draw(c)())
+    0: ─╭MyOp─┤  <Z>
+    1: ─├MyOp─┤
+    2: ─╰MyOp─┤
+    >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
+    0: ─╭RXLayer(M0)─┤  <Z>
+    1: ─├RXLayer(M0)─┤
+    2: ─╰RXLayer(M0)─┤
+    <BLANKLINE>
+    M0 =
+    [0. 1. 2.]
+    >>> print(qml.draw(qml.decompose(c, max_expansion=2))())
+    0: ──RX(0.00)─┤  <Z>
+    1: ──RX(1.00)─┤
+    2: ──RX(2.00)─┤
 
     **Use of Autograph:**
 
