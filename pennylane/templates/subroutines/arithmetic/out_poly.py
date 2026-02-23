@@ -29,7 +29,7 @@ from pennylane.ops import adjoint, ctrl
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import SubroutineOp
+from ... import AbstractArray, SubroutineOp, subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
@@ -475,7 +475,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
 
     resources = Counter(
         {
-            resource_rep(SubroutineOp): 1,
+            subroutine_resource_rep(QFT, AbstractArray((num_output_adder_mod,))): 1,
         }
     )
 
@@ -501,7 +501,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
             )
             resources[ctrl_phase_rep] += 1
 
-    resources[adjoint_resource_rep(SubroutineOp)] = 1
+    resources[adjoint_subroutine_resource_rep(QFT, AbstractArray((num_output_adder_mod,)))] = 1
 
     return dict(resources)
 
