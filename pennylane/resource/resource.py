@@ -618,6 +618,15 @@ class CircuitSpecs:
         return "\n".join(lines).rstrip("\n")
 
     def to_pretty_str(self, tabular: bool = True) -> str:
+        """
+        Pretty string representation of the :class:`CircuitSpecs` object.
+
+        Args:
+            tabular (bool): Whether to display the resources in a tabular format.
+
+        Returns:
+            str: A pretty representation of this object.
+        """
         if tabular and isinstance(self.resources, dict):
             return self._to_pretty_str_tabular()
 
