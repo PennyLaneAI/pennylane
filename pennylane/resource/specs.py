@@ -222,7 +222,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     }
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
-    # if level not in ("all", "all-mlir"):
     mlir_only = level == "all-mlir"  # TODO: In a follow-up PR this will become more useful
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
     level = _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels)
