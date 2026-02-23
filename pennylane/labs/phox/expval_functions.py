@@ -106,7 +106,10 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
 
 def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarray:
     """Generates the stochastic sample matrix."""
-    return jax.random.randint(key, (n_samples, n_qubits), 0, 2)
+    n_bytes = (n_qubits + 7) // 8
+    random_bytes = jax.random.bits(key, shape=(n_samples, n_bytes), dtype=jnp.uint8)
+    unpacked_bits = jnp.unpackbits(random_bytes, axis=-1)
+    return unpacked_bits[:, :n_qubits]
 
 
 def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
