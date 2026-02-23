@@ -214,7 +214,7 @@ class TestSelectPauliRotDecompositions:
             work_wires=work_wires,
         )
         @qp.qnode(qp.device("lightning.qubit"))
-        def select_pauli_rot_circ(phis, control_wires, target_wire):
+        def select_pauli_rot_circ(phis, control_wires=None, target_wire=None):
             prepare_phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
             qp.S(target_wire)
@@ -243,17 +243,18 @@ class TestSelectPauliRotDecompositions:
 
             qp.adjoint(qp.SX(target_wire))
             qp.adjoint(qp.S(target_wire))
-            return qp.probs([target_wire] + control_wires + angle_wires)
+            return qp.probs([target_wire, *control_wires, *angle_wires])
 
         if use_qjit:
             import jax  # pylint: disable=import-outside-toplevel
 
             phis = jax.numpy.array(phis)
-            select_pauli_rot_circ = qp.qjit(select_pauli_rot_circ)
+            select_pauli_rot_circ = qp.qjit(select_pauli_rot_circ, static_argnums=(1, 2))
         else:
             phis = np.array(phis)
+
         # pylint: disable=unsubscriptable-object
-        expected_probs = select_pauli_rot_circ(phis, control_wires=control_wires, target_wire=wire)
+        expected_probs = select_pauli_rot_circ(phis, tuple(control_wires), wire)
         assert np.allclose(expected_probs[0], 1)
 
 

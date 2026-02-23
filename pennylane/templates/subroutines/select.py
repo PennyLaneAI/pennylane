@@ -396,10 +396,10 @@ class Select(Operation):
                 + "wires are required."
             )
 
-        # if any(
-        # control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
-        # ):
-        # raise ValueError("Control wires should be different from operation wires.")
+        if any(
+            control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
+        ):
+            raise ValueError("Control wires should be different from operation wires.")
 
         for op in ops:
             QueuingManager.remove(op)
