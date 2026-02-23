@@ -13,13 +13,14 @@
 # limitations under the License.
 """This module contains the base class for wire management."""
 import uuid
+import copy
 from collections.abc import Iterable
 
 from pennylane.allocation import AllocateState
 from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
-from pennylane.estimator.resource_operator import GateCount, ResourceOperator
+from pennylane.estimator.resource_operator import GateCount, ResourceOperator, Resources
 from pennylane.estimator.resources_base import DefaultGateSet
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
@@ -95,16 +96,6 @@ class MarkQubits:
         return self
 
 
-class MarkAuxiliary(MarkQubits):
-    def __repr__(self) -> str:
-        return f"MarkAuxiliary({self.wires})"
-
-
-class MarkLogical(MarkQubits):
-    def __repr__(self) -> str:
-        return f"MarkLogical({self.wires})"
-
-
 class MarkClean(MarkQubits):
     def __repr__(self) -> str:
         return f"MarkClean({self.wires})"
@@ -116,6 +107,7 @@ def _estimate_auxiliary_wires(
     gate_set: set[str] | None = None,
     config: ResourceConfig | None = None,
     num_available_any_state_aux: int = 0,
+    num_active_qubits: int = 0,
 ) -> Iterable:
     if scalar == 0:
         return 0, 0, 0
@@ -123,6 +115,7 @@ def _estimate_auxiliary_wires(
         config = ResourceConfig()
     if gate_set is None:
         gate_set = DefaultGateSet
+    local_num_available_any_state_aux = max(0, num_available_any_state_aux - num_active_qubits)
     any_state_aux_allocation = {}
 
     total = 0
@@ -140,36 +133,27 @@ def _estimate_auxiliary_wires(
                 action.count,
                 gate_set,
                 config,
-                num_available_any_state_aux,
+                num_available_any_state_aux + total,
+                num_active_qubits=action.gate.num_wires,
             )
 
-            if sub_max_dealloc < 0:
-                total += sub_max_dealloc  # sub_max_dealloc < 0
-                if total < max_dealloc:
-                    max_dealloc = total
-            total -= sub_max_dealloc  # reset
-
-            if sub_max_alloc > 0:
-                total += sub_max_alloc
-                if total > max_alloc:
-                    max_alloc = total
-            total -= sub_max_alloc  # reset
-
+            if total + sub_max_dealloc < max_dealloc: max_dealloc = total + sub_max_dealloc  # sub_max_dealloc < 0
+            if total + sub_max_alloc > max_alloc: max_alloc = total + sub_max_alloc
             total += sub_total
             continue
 
         elif isinstance(action, Allocate):
             if action.state == AllocateState.ANY and action.restored == True:
-                diff = num_available_any_state_aux - action.num_wires
+                diff = local_num_available_any_state_aux - action.num_wires
 
                 if diff < 0:
                     total += abs(diff)
                     any_state_aux_allocation[action] = abs(diff)
-                    num_available_any_state_aux = 0
+                    local_num_available_any_state_aux = 0
 
                 else:
                     any_state_aux_allocation[action] = 0
-                    num_available_any_state_aux = diff
+                    local_num_available_any_state_aux = diff
 
             else:
                 total += action.num_wires
@@ -179,7 +163,7 @@ def _estimate_auxiliary_wires(
                 try:
                     associated_alloc = any_state_aux_allocation.pop(action.allocated_register)
                     total -= associated_alloc
-                    num_available_any_state_aux += action.num_wires - associated_alloc
+                    local_num_available_any_state_aux += action.num_wires - associated_alloc
 
                 except KeyError as e:
                     raise ValueError(
@@ -189,18 +173,13 @@ def _estimate_auxiliary_wires(
             else:
                 total -= action.num_wires
 
-        if total > max_alloc:
-            max_alloc = total
-        if total < max_dealloc:
-            max_dealloc = total
+        if total > max_alloc: max_alloc = total
+        if total < max_dealloc: max_dealloc = total
 
     if len(any_state_aux_allocation) != 0:
         raise ValueError(
             f"Did NOT deallocate and restore all ANY state allocations as promised:\n{any_state_aux_allocation}"
         )
-
-    if scalar == 1:
-        return max_alloc, max_dealloc, total
 
     if total > 0:
         max_alloc += (scalar - 1) * total
@@ -269,10 +248,10 @@ def estimate_wires_from_circuit(
     processed_circ, circuit_wires = _process_circuit_lst(circuit_as_lst)
     total_algo_qubits = len(circuit_wires)
 
-    logical_auxiliary_wires = Wires([])
-    state_circuit_wires = {w: 0 for w in circuit_wires}  # 0: clean state, 1: any state
+    state_circuit_wires = {w: 1 for w in circuit_wires}  # 1: clean state, 0: any state
 
-    total = 0
+    total = 0          # A running counter for the number of active (allocated but not freed) qubits 
+                       #   --> we assume that these are in Any state as they were likely used and not cleaned
     max_alloc = 0
     max_dealloc = 0
 
@@ -280,49 +259,33 @@ def estimate_wires_from_circuit(
         if isinstance(circuit_element, MarkQubits):
             if isinstance(circuit_element, MarkClean):
                 for w in active_wires:
-                    state_circuit_wires[w] = 0
-
-            if isinstance(circuit_element, MarkAuxiliary):
-                logical_auxiliary_wires += active_wires
-
-            if isinstance(circuit_element, MarkLogical):
-                logical_auxiliary_wires -= active_wires
+                    state_circuit_wires[w] = 1
 
         else:
             for w in active_wires:
-                state_circuit_wires[w] = 1
+                state_circuit_wires[w] = 0
 
-            available_logical_auxiliaries = logical_auxiliary_wires - active_wires
-            num_dirty_logical_auxs = sum(
-                (state_circuit_wires[w_i] for w_i in available_logical_auxiliaries)
+            num_clean_logical_wires = sum(
+                (state_circuit_wires[w_i] for w_i in circuit_wires)
             )
-            num_clean_logical_auxs = len(available_logical_auxiliaries) - num_dirty_logical_auxs
+            num_any_state_logical_wires = len(circuit_wires) - num_clean_logical_wires
 
             sub_max_alloc, sub_max_dealloc, sub_total = _estimate_auxiliary_wires(
                 [GateCount(circuit_element)],
                 gate_set=gate_set,
                 config=config,
-                num_available_any_state_aux=num_dirty_logical_auxs,
+                num_available_any_state_aux=num_any_state_logical_wires + total,
+                num_active_qubits = circuit_element.num_wires,  # Should be equivalent to len(active_wires)
             )
 
             borrowable_qubits = sub_max_alloc - sub_total
-            num_clean_aux_used = min(num_clean_logical_auxs, borrowable_qubits)
+            num_clean_aux_used = min(num_clean_logical_wires, borrowable_qubits)
             sub_max_alloc -= num_clean_aux_used
 
-            if sub_max_dealloc < 0:
-                total += sub_max_dealloc  # sub_max_dealloc < 0
-                if total < max_dealloc:
-                    max_dealloc = total
-            total -= sub_max_dealloc  # reset
-
+            if total + sub_max_dealloc < max_dealloc: max_dealloc = total + sub_max_dealloc
             if total < 0:
                 raise ValueError("Deallocated more qubits than available to allocate.")
-
-            if sub_max_alloc > 0:
-                total += sub_max_alloc
-                if total > max_alloc:
-                    max_alloc = total
-            total -= sub_max_alloc  # reset
+            if total + sub_max_alloc > max_alloc: max_alloc = total + sub_max_alloc
 
             total += sub_total
 
@@ -332,3 +295,11 @@ def estimate_wires_from_circuit(
     any_state = total
     zeroed = max_alloc - total
     return total_algo_qubits, any_state, zeroed
+
+
+def estimate_wires_from_resources(
+    resources_as_lst: Resources,
+    gate_set: set,
+    config: dict,
+):
+    return

@@ -29,7 +29,5 @@ from .subroutines import QROM
 from .wires_manager import (
     Allocate,
     Deallocate,
-    MarkAuxiliary,
     MarkClean,
-    MarkLogical,
 )
