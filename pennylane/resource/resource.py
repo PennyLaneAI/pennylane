@@ -30,6 +30,11 @@ from pennylane.tape import QuantumScript
 from .error.error import _compute_algo_error
 
 
+def _count_to_str(count: int):
+    """Helper for printing counts, converts large counts to scientific notation."""
+    return str(count) if count < 1000 else f"{count:.3E}"
+
+
 @dataclass(frozen=True)
 class Resources:
     r"""Contains attributes which store key resources such as number of gates, number of wires, shots,
@@ -529,11 +534,11 @@ class CircuitSpecs:
             for gate, count in res.gate_types.items():
                 all_gate_types[gate] = True
                 max_metric_length = max(max_metric_length, len(gate) + 2)
-                max_column_size = max(max_column_size, len(str(count)))
+                max_column_size = max(max_column_size, len(_count_to_str(count)))
             for meas, count in res.measurements.items():
                 all_meas_types[meas] = True
                 max_metric_length = max(max_metric_length, len(meas) + 2)
-                max_column_size = max(max_column_size, len(str(count)))
+                max_column_size = max(max_column_size, len(_count_to_str(count)))
 
         num_cols = len(self.resources)
         lines.append(
@@ -543,17 +548,19 @@ class CircuitSpecs:
         )
         lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
         lines.append(
-            "Num Gates".ljust(max_metric_length)
-            + "| "
-            + "| ".join(
-                str(res.num_gates).ljust(max_column_size) for res in self.resources.values()
-            )
-        )
-        lines.append(
             "Num allocs".ljust(max_metric_length)
             + "| "
             + "| ".join(
-                str(res.num_allocs).ljust(max_column_size) for res in self.resources.values()
+                _count_to_str(res.num_allocs).ljust(max_column_size)
+                for res in self.resources.values()
+            )
+        )
+        lines.append(
+            "Num Gates".ljust(max_metric_length)
+            + "| "
+            + "| ".join(
+                _count_to_str(res.num_gates).ljust(max_column_size)
+                for res in self.resources.values()
             )
         )
 
@@ -563,7 +570,7 @@ class CircuitSpecs:
                 f"- {gate}".ljust(max_metric_length)
                 + "| "
                 + "| ".join(
-                    str(res.gate_types.get(gate, 0)).ljust(max_column_size)
+                    _count_to_str(res.gate_types.get(gate, 0)).ljust(max_column_size)
                     for res in self.resources.values()
                 )
             )
@@ -573,7 +580,7 @@ class CircuitSpecs:
                 f"- {meas}".ljust(max_metric_length)
                 + "| "
                 + "| ".join(
-                    str(res.measurements.get(meas, 0)).ljust(max_column_size)
+                    _count_to_str(res.measurements.get(meas, 0)).ljust(max_column_size)
                     for res in self.resources.values()
                 )
             )
