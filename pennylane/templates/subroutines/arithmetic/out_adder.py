@@ -15,23 +15,116 @@
 Contains the OutAdder template.
 """
 from collections import defaultdict
+from functools import partial
 
 from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
     resource_rep,
 )
-from pennylane.operation import Operation
-from pennylane.ops import Adjoint, Prod
+from pennylane.ops import Prod, adjoint, cond
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, subroutine_resource_rep
+from ... import AbstractArray, Subroutine, subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
-class OutAdder(Operation):
+def setup_out_adder(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod=None,
+    work_wires: WiresLike = (),
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    x_wires = Wires(x_wires)
+    y_wires = Wires(y_wires)
+    output_wires = Wires(output_wires)
+    work_wires = Wires(() if work_wires is None else work_wires)
+
+    num_work_wires = len(work_wires)
+
+    if mod is None:
+        mod = 2 ** (len(output_wires))
+    if mod > 2 ** len(output_wires):
+        raise ValueError(
+            "OutAdder must have enough wires to represent mod. The maximum mod "
+            f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
+        )
+    if mod != 2 ** len(output_wires) and num_work_wires != 2:
+        raise ValueError(f"If mod is not 2^{len(output_wires)}, two work wires should be provided.")
+    if len(work_wires) != 0:
+        if any(wire in work_wires for wire in x_wires):
+            raise ValueError("None of the wires in work_wires should be included in x_wires.")
+        if any(wire in work_wires for wire in y_wires):
+            raise ValueError("None of the wires in work_wires should be included in y_wires.")
+    if any(wire in y_wires for wire in x_wires):
+        raise ValueError("None of the wires in y_wires should be included in x_wires.")
+    if any(wire in x_wires for wire in output_wires):
+        raise ValueError("None of the wires in x_wires should be included in output_wires.")
+    if any(wire in y_wires for wire in output_wires):
+        raise ValueError("None of the wires in y_wires should be included in output_wires.")
+
+    return (), {
+        "x_wires": x_wires,
+        "y_wires": y_wires,
+        "output_wires": output_wires,
+        "work_wires": work_wires,
+        "mod": mod,
+    }
+
+
+def out_adder_decomp_resources(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod=None,
+    work_wires: WiresLike = (),
+) -> dict:  # pylint: disable=unused-argument
+    num_output_wires = len(output_wires)
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
+
+    qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
+
+    target_resources = defaultdict(int)
+    target_resources[
+        resource_rep(
+            ControlledSequence,
+            base_class=PhaseAdder,
+            base_params={"num_x_wires": qft_wires, "mod": mod},
+            num_control_wires=num_x_wires,
+        )
+    ] += 1
+    target_resources[
+        resource_rep(
+            ControlledSequence,
+            base_class=PhaseAdder,
+            base_params={"num_x_wires": qft_wires, "mod": mod},
+            num_control_wires=num_y_wires,
+        )
+    ] += 1
+
+    return {
+        subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
+        resource_rep(Prod, resources=target_resources): 1,
+        adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
+    }
+
+
+@partial(
+    Subroutine,
+    static_argnames=[],
+    setup_inputs=setup_out_adder,
+    compute_resources=out_adder_decomp_resources,
+    wire_argnames=["x_wires", "y_wires", "output_wires", "work_wires"],
+)
+def OutAdder(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod=None,
+    work_wires: WiresLike = (),
+):
     r"""Performs the out-place modular addition operation.
 
     This operator performs the modular addition of two integers :math:`x` and :math:`y` modulo
@@ -145,190 +238,28 @@ class OutAdder(Operation):
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
 
-    grad_method = None
+    def true_body(x_w, y_w, out_w, m, work_w):
+        qft_new_output_wires = work_w[:1] + out_w
+        work_wire = work_w[1:]
 
-    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
-
-    def __init__(
-        self,
-        x_wires: WiresLike,
-        y_wires: WiresLike,
-        output_wires: WiresLike,
-        mod=None,
-        work_wires: WiresLike = (),
-        id=None,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-
-        x_wires = Wires(x_wires)
-        y_wires = Wires(y_wires)
-        output_wires = Wires(output_wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        num_work_wires = len(work_wires)
-
-        if mod is None:
-            mod = 2 ** (len(output_wires))
-        if mod > 2 ** len(output_wires):
-            raise ValueError(
-                "OutAdder must have enough wires to represent mod. The maximum mod "
-                f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
-            )
-        if mod != 2 ** len(output_wires) and num_work_wires != 2:
-            raise ValueError(
-                f"If mod is not 2^{len(output_wires)}, two work wires should be provided."
-            )
-        if len(work_wires) != 0:
-            if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if any(wire in work_wires for wire in y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
-        if any(wire in y_wires for wire in x_wires):
-            raise ValueError("None of the wires in y_wires should be included in x_wires.")
-        if any(wire in x_wires for wire in output_wires):
-            raise ValueError("None of the wires in x_wires should be included in output_wires.")
-        if any(wire in y_wires for wire in output_wires):
-            raise ValueError("None of the wires in y_wires should be included in output_wires.")
-        for key in ["x_wires", "y_wires", "output_wires", "work_wires"]:
-            self.hyperparameters[key] = Wires(locals()[key])
-
-        # pylint: disable=consider-using-generator
-        all_wires = sum(
-            [self.hyperparameters[key] for key in ["x_wires", "y_wires", "output_wires"]], start=[]
+        QFT(wires=qft_new_output_wires)
+        (
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=y_w)
+            @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=x_w)
         )
-        if num_work_wires != 0:
-            all_wires += self.hyperparameters["work_wires"]
+        adjoint(QFT)(wires=qft_new_output_wires)
 
-        self.hyperparameters["mod"] = mod
-        super().__init__(wires=all_wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_y_wires": len(self.hyperparameters["y_wires"]),
-            "mod": self.hyperparameters["mod"],
-        }
-
-    @property
-    def num_params(self):
-        return 0
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
-
-    def map_wires(self, wire_map: dict):
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["x_wires", "y_wires", "output_wires", "work_wires"]
-        }
-
-        return OutAdder(
-            new_dict["x_wires"],
-            new_dict["y_wires"],
-            new_dict["output_wires"],
-            self.hyperparameters["mod"],
-            new_dict["work_wires"],
-        )
-
-    def decomposition(self):
-
-        return self.compute_decomposition(**self.hyperparameters)
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    def compute_decomposition(
-        x_wires, y_wires, output_wires, mod, work_wires
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            x_wires (Sequence[int]): the wires that store the integer :math:`x`
-            y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value.
-            mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`.
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition. The work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires should be provided. Defaults to ``None``.
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> ops = qml.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        >>> from pprint import pprint
-        >>> pprint(ops)
-        [(Adjoint(<QFT(wires=Wires([5, 6]))>)) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ <QFT(wires=Wires([5, 6]))>]
-        """
-        if mod != 2 ** len(output_wires) and mod is not None:
-            qft_new_output_wires = work_wires[:1] + output_wires
-            work_wire = work_wires[1:]
-        else:
-            qft_new_output_wires = output_wires
-            work_wire = ()
-
-        target_op = ControlledSequence(
-            PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
-        ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
-
-        op_list = [
-            QFT.operator(wires=qft_new_output_wires),
-            target_op,
-            Adjoint(QFT.operator(wires=qft_new_output_wires)),
-        ]
-
-        return op_list
-
-
-def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
-    qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
-    target_resources = defaultdict(int)
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": qft_wires, "mod": mod},
-            num_control_wires=num_x_wires,
-        )
-    ] += 1
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": qft_wires, "mod": mod},
-            num_control_wires=num_y_wires,
-        )
-    ] += 1
-
-    return {
-        subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
-        resource_rep(Prod, resources=target_resources): 1,
-        adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
-    }
-
-
-@register_resources(_out_adder_decomposition_resources)
-def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **__):
-    if mod != 2 ** len(output_wires) and mod is not None:
-        qft_new_output_wires = work_wires[:1] + output_wires
-        work_wire = work_wires[1:]
-    else:
+    def false_body(x_w, y_w, out_w, m, work_w):
         qft_new_output_wires = output_wires
         work_wire = ()
 
-    QFT.operator(wires=qft_new_output_wires)
-    (
-        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-        @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
+        QFT(wires=qft_new_output_wires)
+        (
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=y_w)
+            @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, m, work_wire), control=x_w)
+        )
+        adjoint(QFT)(wires=qft_new_output_wires)
+
+    cond(mod != 2 ** len(output_wires) and mod is not None, true_body, false_body)(
+        x_wires, y_wires, output_wires, mod, work_wires
     )
-    Adjoint(QFT.operator(wires=qft_new_output_wires))
-
-
-add_decomps(OutAdder, _out_adder_decomposition)
