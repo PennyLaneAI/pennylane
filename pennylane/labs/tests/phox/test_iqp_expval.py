@@ -19,7 +19,6 @@ import pytest
 
 import pennylane as qml
 
-# Attempt to import JAX and the lab module
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
