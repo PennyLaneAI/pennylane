@@ -14,11 +14,12 @@
 """
 Contains the Adder template.
 """
+from pennylane import Adjoint
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.decomposition.resources import resource_rep
+from pennylane.decomposition.resources import adjoint_resource_rep, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import adjoint
 from pennylane.templates.subroutines.qft import QFT

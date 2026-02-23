@@ -24,12 +24,12 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import SWAP, Prod, adjoint, prod
 from pennylane.templates.core import (
     AbstractArray,
-    adjoint_subroutine_resource_rep,
     subroutine_resource_rep,
+    adjoint_subroutine_resource_rep,
 )
+from pennylane.ops import SWAP, Prod, adjoint, prod
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
