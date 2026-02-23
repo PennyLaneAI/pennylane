@@ -981,7 +981,8 @@ class TestCircuitSpecs:
 
         r = self.example_specs_result_multi()
         assert [x.strip() for x in str(r).split()] == [
-            x.strip() for x in """Device: default.qubit
+            x.strip()
+            for x in """Device: default.qubit
 Device wires: 5
 Shots: Shots(total=1000)
 Levels:
@@ -997,7 +998,8 @@ Gate types:      |
 - CNOT           | 2    | 1    | 1
 Measurements:    |
 - expval(PauliX) | 1    | 1    | 0
-- expval(PauliZ) | 1    | 0    | 1""".split()]
+- expval(PauliZ) | 1    | 0    | 1""".split()
+        ]
 
 
 class TestCountResources:

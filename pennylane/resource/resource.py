@@ -30,7 +30,7 @@ from pennylane.tape import QuantumScript
 from .error.error import _compute_algo_error
 
 
-def _count_to_str(count: int):
+def _count_to_str(count: int) -> str:
     """Helper for printing counts, converts large counts to scientific notation."""
     return str(count) if count < 1000 else f"{count:.3E}"
 
@@ -532,7 +532,7 @@ class CircuitSpecs:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
         max_metric_length = 15
-        max_column_size = max(len(level) for level in flat_resources.keys()) + 2
+        max_column_size = max(len(level) for level in flat_resources) + 2
 
         # Use dict for these since they are sorted by default unlike a set
         all_gate_types = {}
@@ -552,6 +552,8 @@ class CircuitSpecs:
         return max_metric_length, max_column_size, all_gate_types, all_meas_types
 
     def _to_pretty_str_tabular(self) -> str:
+        """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
+        are many levels to display."""
         lines = []
 
         lines.append(f"Device: {self.device_name}")
@@ -572,7 +574,7 @@ class CircuitSpecs:
         lines.append(
             "Metric/Level".ljust(max_metric_length)
             + "| "
-            + "| ".join(level.ljust(max_column_size) for level in flat_resources.keys())
+            + "| ".join(level.ljust(max_column_size) for level in flat_resources)
         )
         lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
         lines.append(
@@ -616,6 +618,15 @@ class CircuitSpecs:
         return "\n".join(lines).rstrip("\n")
 
     def to_pretty_str(self, tabular: bool = True) -> str:
+        """
+        Pretty string representation of the :class:`CircuitSpecs` object.
+
+        Args:
+            tabular (bool): Whether to display the resources in a tabular format.
+
+        Returns:
+            str: A pretty representation of this object.
+        """
         if tabular and isinstance(self.resources, dict):
             return self._to_pretty_str_tabular()
 
