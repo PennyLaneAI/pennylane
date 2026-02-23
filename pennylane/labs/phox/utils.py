@@ -143,7 +143,6 @@ def generate_pauli_observables(
             continue
         for base in bases:
             for positions in combinations(range(n_qubits), order):
-                # Create 'I' string
                 obs_row = ["I"] * n_qubits
                 for pos in positions:
                     obs_row[pos] = base
