@@ -79,6 +79,8 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
+        from functools import partial
+
         def S0_resources(params, wires, rotation):
             return {qml.resource_rep(rotation): params.shape[0]}
 
@@ -355,9 +357,13 @@ class Subroutine:
 
     .. code-block:: python
 
+        from functools import partial
         from pennylane.templates import Subroutine
 
-        @Subroutine
+        def resources(x, y, wires):
+            return {qml.RX: 1, qml.RY: 1}
+
+        @partial(Subroutine, compute_resources=resources)
         def MyTemplate(x, y, wires):
             qml.RX(x, wires[0])
             qml.RY(y, wires[0])
@@ -453,12 +459,12 @@ class Subroutine:
     .. code-block:: python
 
         def RXLayerResources(params, wires):
-            return {qp.RX: qp.math.shape(params)[0]}
+            return {qml.RX: qml.math.shape(params)[0]}
 
-        @partial(qp.templates.Subroutine, compute_resources=RXLayerResources)
+        @partial(qml.templates.Subroutine, compute_resources=RXLayerResources)
         def RXLayer(params, wires):
             for i in range(params.shape[0]):
-                qp.RX(params[i], wires[i])
+                qml.RX(params[i], wires[i])
 
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     class.
@@ -476,28 +482,28 @@ class Subroutine:
 
         from pennylane.templates import AbstractArray, subroutine_resource_rep
 
-        class MyOp(qp.operation.Operation):
+        class MyOp(qml.operation.Operation):
             pass
 
         abstract_params = AbstractArray((3, ), float)
         abstract_wires = AbstractArray((3, ))
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
-        @qp.decomposition.register_resources({rxlayer_rep: 1})
+        @qml.decomposition.register_resources({rxlayer_rep: 1})
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)
             RXLayer(params, wires)
 
-        qp.add_decomps(MyOp, MyOpDecomposition)
+        qml.add_decomps(MyOp, MyOpDecomposition)
 
     .. code-block:: python
 
-        @qp.qnode(qp.device('default.qubit'))
+        @qml.qnode(qml.device('default.qubit'))
         def c():
             MyOp((0,1,2))
-            return qp.expval(qp.Z(0))
+            return qml.expval(qml.Z(0))
 
-        qp.decomposition.enable_graph()
+        qml.decomposition.enable_graph()
 
 
     >>> print(qml.draw(c)())

@@ -751,6 +751,7 @@ class TestGraphDecomposition:
             for i in range(params.shape[0]):
                 qml.RY(params[i], wires[i])
 
+        # pylint: disable=too-few-public-methods
         class SubroutineDemoOp(qml.operation.Operator):
 
             resource_keys = frozenset(())
