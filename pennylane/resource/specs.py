@@ -259,7 +259,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
                 while f"{trans_name}-{rep}" in resources:
                     rep += 1
                 trans_name += f"-{rep}"
-            resources[tape_level] = res
+            resources[trans_name] = res
             output_level[tape_level] = trans_name
 
     # Handle MLIR passes
@@ -298,11 +298,8 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
                 num_allocs=res.num_allocs,
                 depth=None,  # Can't get depth for intermediate stages
             )
-            resources[lvl + num_tape_levels] = res_resources
+            resources[level_name] = res_resources
             output_level[lvl + num_tape_levels] = level_name
-
-    # TODO: This next step should be removed, it's just for testing compatibility
-    resources = {output_level[lvl]: res for lvl, res in resources.items()}
 
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:

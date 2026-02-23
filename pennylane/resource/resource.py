@@ -513,6 +513,19 @@ class CircuitSpecs:
     def _to_pretty_str_tabular(self) -> str:
         lines = []
 
+        # All resource values, flattened across levels if necessary
+        flat_resources = {}
+        for level, res in zip(self.level.keys(), self.resources.values()):
+            if isinstance(res, SpecsResources):
+                flat_resources[str(level)] = res
+            elif isinstance(res, list):
+                for i, r in enumerate(res):
+                    flat_resources[f"{level}-{i}"] = r
+            else:
+                raise ValueError(
+                    "Resources must be either a SpecsResources object or a list of SpecsResources objects."
+                )  # pragma: no cover
+
         lines.append(f"Device: {self.device_name}")
         lines.append(f"Device wires: {self.num_device_wires}")
         lines.append(f"Shots: {self.shots}")
@@ -523,14 +536,14 @@ class CircuitSpecs:
         lines.append("")  # Blank line
 
         max_metric_length = 15
-        max_column_size = 3
+        max_column_size = max(len(level) for level in flat_resources.keys()) + 2
 
         # Use dict for these since they are sorted by default unlike a set
         all_gate_types = {}
         all_meas_types = {}
 
         # This iteration order will present the gates in the order in which they appear
-        for res in self.resources.values():
+        for res in flat_resources.values():
             for gate, count in res.gate_types.items():
                 all_gate_types[gate] = True
                 max_metric_length = max(max_metric_length, len(gate) + 3)
@@ -540,11 +553,11 @@ class CircuitSpecs:
                 max_metric_length = max(max_metric_length, len(meas) + 3)
                 max_column_size = max(max_column_size, len(_count_to_str(count)))
 
-        num_cols = len(self.resources)
+        num_cols = len(flat_resources)
         lines.append(
             f"Metric/Level".ljust(max_metric_length)
             + "| "
-            + "| ".join(str(level).ljust(max_column_size) for level in self.level.keys())
+            + "| ".join(level.ljust(max_column_size) for level in flat_resources.keys())
         )
         lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
         lines.append(
@@ -552,7 +565,7 @@ class CircuitSpecs:
             + "| "
             + "| ".join(
                 _count_to_str(res.num_allocs).ljust(max_column_size)
-                for res in self.resources.values()
+                for res in flat_resources.values()
             )
         )
         lines.append(
@@ -560,7 +573,7 @@ class CircuitSpecs:
             + "| "
             + "| ".join(
                 _count_to_str(res.num_gates).ljust(max_column_size)
-                for res in self.resources.values()
+                for res in flat_resources.values()
             )
         )
 
@@ -571,7 +584,7 @@ class CircuitSpecs:
                 + "| "
                 + "| ".join(
                     _count_to_str(res.gate_types.get(gate, 0)).ljust(max_column_size)
-                    for res in self.resources.values()
+                    for res in flat_resources.values()
                 )
             )
         lines.append("Measurements:".ljust(max_metric_length) + "| ")
@@ -581,7 +594,7 @@ class CircuitSpecs:
                 + "| "
                 + "| ".join(
                     _count_to_str(res.measurements.get(meas, 0)).ljust(max_column_size)
-                    for res in self.resources.values()
+                    for res in flat_resources.values()
                 )
             )
 
