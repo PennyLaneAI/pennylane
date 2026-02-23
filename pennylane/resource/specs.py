@@ -206,7 +206,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
     num_tape_levels = _get_last_transform_level(compile_pipeline) + 1
-    # breakpoint()
 
     # Maps to convert back and forth between marker name and int level
     marker_to_level: dict[str, int] = {
@@ -552,9 +551,6 @@ def specs(
         a real device.
 
         .. code-block:: python
-
-            qml.capture.enable()  # Enable program capture to allow these transforms to be applied only as MLIR passes
-
             dev = qml.device("lightning.qubit", wires=3)
 
             @qml.qjit
@@ -639,10 +635,11 @@ def specs(
         Measurements:      |
         - probs(all wires) | 1  | 1  | 1  | 1
 
-        When invoked with ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs` object's
-        ``resources`` field is a dictionary mapping levels to their associated :class:`~.resource.SpecsResources`
-        object. The keys to this dictionary also have human readable names, which can be retrieved
-        via the ``level`` attribute of the :class:`~.resource.CircuitSpecs` object.
+        When invoked with an iterable of levels, or ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs`
+        object's ``resources`` field is a dictionary mapping transform names (or marker labels) to their associated
+        :class:`~.resource.SpecsResources` object. The keys to this dictionary have human readable names. To use the int
+        level name directly, use the ``level`` attribute of the returned :class:`~.resource.CircuitSpecs` object, which
+        maps int levels to their associated transform or pass name. For example, the level names for the above example
 
         >>> print(all_specs.level)
         {0: 'Before transforms', 1: 'Before MLIR Passes (MLIR-0)', 2: 'cancel-inverses (MLIR-1)', 3: 'merge-rotations (MLIR-2)'}
@@ -660,6 +657,61 @@ def specs(
         <BLANKLINE>
         Measurements:
           probs(all wires): 1
+
+        Or, equivalently, by using the int level directly:
+
+        >>> print(all_specs.resources[all_specs.level[3]])
+        Total wire allocations: 3
+        Total gates: 2
+        Circuit depth: Not computed
+        <BLANKLINE>
+        Gate types:
+          RX: 1
+          CNOT: 1
+        <BLANKLINE>
+        Measurements:
+          probs(all wires): 1
+
+        .. warning::
+            Certain transforms, like the ``split-non-commuting`` transform, can result in multiple output tapes.
+            In this case, the resources for that level will be returned as a list of :class:`~.resource.SpecsResources`
+            objects. When printed, these split tapes will be shown as individual columns.
+
+        .. code-block:: python
+            dev = qml.device("lightning.qubit", wires=3)
+
+            @qml.qjit
+            @qml.transforms.cancel_inverses
+            @qml.transforms.split_non_commuting
+            @qml.qnode(dev)
+            def circuit():
+                qml.X(0)
+                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
+
+        >>> print(qml.specs(circuit, level="all")())
+        Device: lightning.qubit
+        Device wires: 3
+        Shots: Shots(total=None)
+        Levels:
+        - Before transforms (0)
+        - split_non_commuting (1)
+        - Before MLIR Passes (MLIR-0) (2)
+        - cancel-inverses (MLIR-1) (3)
+        <BLANKLINE>
+        Metric/Level     | 0    | 1-0  | 1-1  | 2    | 3
+        ----------------------------------------------------
+        Num allocs       | 1    | 1    | 1    | 6    | 6
+        Num Gates        | 2    | 2    | 2    | 4    | 0
+        Gate types:      |
+        - PauliX         | 2    | 2    | 2    | 4    | 0
+        Measurements:    |
+        - expval(PauliZ) | 1    | 1    | 0    | 1    | 1
+        - expval(PauliX) | 1    | 0    | 1    | 1    | 1
+
+        Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
+        ``1-0`` and ``1-1`` in the output. The resources for these tapes are shown separately, and the level name for
+        both tapes is the same since they come from the same transform. Multiple tapes may not display as separate
+        columns for MLIR passes since MLIR passes do not operate on tapes directly.
     """
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
