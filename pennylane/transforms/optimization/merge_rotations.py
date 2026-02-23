@@ -373,6 +373,7 @@ def merge_rotations(
         stopping_condition=stop_at,
         name="merge_rotations",
         error=qml.operation.DecompositionUndefinedError,
+        strict=False,
     )
     list_copy = expanded_tape.operations
     new_operations = []

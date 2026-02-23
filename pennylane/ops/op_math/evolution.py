@@ -19,7 +19,7 @@ from copy import copy
 from warnings import warn
 
 import pennylane as qml
-from pennylane import math
+from pennylane import math, queuing
 from pennylane.exceptions import GeneratorUndefinedError
 
 from .exp import Exp
@@ -157,3 +157,38 @@ class Evolution(Exp):
         copied = super().__copy__()
         copied._data = copy(self._data)
         return copied
+
+
+def _pauli_rot_decomp_condition(base):
+    with queuing.QueuingManager.stop_recording():
+        base = base.simplify()
+    # The PauliRot decomposition is only applicable when the base is a Pauli word
+    return qml.pauli.is_pauli_word(base)
+
+
+def _pauli_rot_decomp_resource(base):
+    with queuing.QueuingManager.stop_recording():
+        base = base.simplify()
+    return {qml.resource_rep(qml.PauliRot, pauli_word=qml.pauli.pauli_word_to_string(base)): 1}
+
+
+@qml.register_condition(_pauli_rot_decomp_condition)
+@qml.register_resources(_pauli_rot_decomp_resource)
+def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argument
+    """Decompose the operator into a single PauliRot operator."""
+    with queuing.QueuingManager.stop_recording():
+        base = base.simplify()
+    coeff = -1j * params[0]
+    if isinstance(base, qml.ops.SProd):
+        coeff, base = coeff * base.scalar, base.base
+    coeff = 2j * coeff  # The 2j cancels the coefficient added by PauliRot
+    coeff = (
+        math.real_if_close(coeff)
+        if math.get_interface(coeff) not in ("torch", "jax")
+        else math.real(coeff)
+    )
+    pauli_word = qml.pauli.pauli_word_to_string(base)
+    qml.PauliRot(coeff, pauli_word, base.wires)
+
+
+qml.add_decomps(Evolution, pauli_rot_decomp)

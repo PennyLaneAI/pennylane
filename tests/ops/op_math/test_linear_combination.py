@@ -26,7 +26,6 @@ import scipy
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
-from pennylane.exceptions import DeviceError
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
@@ -378,6 +377,11 @@ mul_LinearCombinations = [
 
 matmul_LinearCombinations = [
     (
+        qml.ops.LinearCombination([1], [X(0)]),
+        qml.ops.LinearCombination([0.5], [Z(3)]),
+        qml.ops.LinearCombination([0.5], [X(0) @ Z(3)]),
+    ),
+    (
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
         qml.ops.LinearCombination([0.5, 0.5], [Z(2), Z(3)]),
         qml.ops.LinearCombination(
@@ -402,15 +406,22 @@ matmul_LinearCombinations = [
                 Z(0) @ Z(2),
             ],
         ),
+    ),
+    (
+        qml.ops.LinearCombination([], []),
+        X(2),
+        qml.ops.LinearCombination([], []),
+    ),
+    (
+        qml.ops.LinearCombination([0.2], [Z(1)]),
+        X(2),
+        qml.ops.LinearCombination([0.2], [Z(1) @ X(2)]),
     ),
     (
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
         X(2),
         qml.ops.LinearCombination([1, 1], [X(0) @ X(2), Z(1) @ X(2)]),
     ),
-]
-
-rmatmul_LinearCombinations = [
     (
         qml.ops.LinearCombination([0.5, 0.5], [Z(2), Z(3)]),
         qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
@@ -437,10 +448,10 @@ rmatmul_LinearCombinations = [
             ],
         ),
     ),
-    (
-        qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
+    (  # This does not use __matmul__ of LinearCombination but of Operator
         X(2),
-        qml.ops.LinearCombination([1, 1], [X(2) @ X(0), X(2) @ Z(1)]),
+        qml.ops.LinearCombination([1, 1], [X(0), Z(1)]),
+        X(2) @ (1 * X(0) + 1 * Z(1)),
     ),
 ]
 
@@ -771,12 +782,11 @@ class TestLinearCombination:
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_LinearCombinations)
     def test_LinearCombination_matmul(self, H1, H2, H):
         """Tests that LinearCombinations are tensored correctly"""
-        assert H == (H1 @ H2)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_LinearCombinations)
-    def test_LinearCombination_rmatmul(self, H1, H2, H):
-        """Tests that LinearCombinations are tensored correctly when using __rmatmul__"""
-        assert H == (H1 @ H2)
+        with qml.queuing.AnnotatedQueue() as q:
+            H1.queue()
+            H2.queue()
+            assert H == (H1 @ H2)
+        assert len(q.queue) == 1
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
@@ -1926,8 +1936,6 @@ class TestLinearCombinationDifferentiation:
         assert grad[0] is None
         assert np.allclose(grad[1], grad_expected[1])
 
-    # TODO: update logic of adjoint differentiation to catch attempt to differentiate lincomb coeffs
-    @pytest.mark.xfail
     def test_not_supported_by_adjoint_differentiation(self):
         """Test that error is raised when attempting the adjoint differentiation method."""
         device = qml.device("default.qubit", wires=2)
@@ -1947,10 +1955,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         grad_fn = qml.grad(circuit)
-        with pytest.raises(
-            DeviceError,
-            match="not supported on adjoint",
-        ):
+        with pytest.warns(UserWarning, match="not supported with the adjoint differentiation"):
             grad_fn(coeffs, param)
 
 
