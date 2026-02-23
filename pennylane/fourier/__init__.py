@@ -13,9 +13,8 @@
 # limitations under the License.
 """This module contains functions to analyze the Fourier representation
 of quantum circuits."""
-import warnings
-
 from .circuit_spectrum import circuit_spectrum
+from .mark import mark
 from .coefficients import coefficients
 from .qnode_spectrum import qnode_spectrum
 from .reconstruct import reconstruct

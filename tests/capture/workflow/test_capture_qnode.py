@@ -297,6 +297,17 @@ def test_qnode_pytree_output():
     assert list(out.keys()) == ["a", "b"]
 
 
+def test_informative_error_raw_mcm_return():
+    """Test that a more informative error is raised when returning a raw mcm."""
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def c():
+        return qml.measure(0)
+
+    with pytest.raises(ValueError, match="Only Measurement Processes can be returned from QNode"):
+        jax.make_jaxpr(c)()
+
+
 class TestShots:
     """Tests for the number of shots."""
 
