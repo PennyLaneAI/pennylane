@@ -146,18 +146,23 @@ def _get_last_transform_level(compile_pipeline) -> int:
     return 0
 
 
-def _preprocess_level_input(level, marker_to_level, compile_pipeline) -> list[int]:
+def _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels) -> list[int]:
     """Preprocesses the level input to always return a sorted list of integers.
 
     Args:
         level (str | int | slice | iter[int | str]): The level input to preprocess
         marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers
+        compile_pipeline: The compile pipeline of the QNode
+        num_tape_levels (int): The number of tape levels
     Returns:
         list[int]: The preprocessed level input
     """
 
-    if level in ("all", "all-mlir"):
+    if level == "all" and num_tape_levels > 1:
         return list(range(len(compile_pipeline) + 2))
+
+    if level in ("all", "all-mlir"):
+        return list(range(num_tape_levels, len(compile_pipeline) + 1))
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -166,16 +171,12 @@ def _preprocess_level_input(level, marker_to_level, compile_pipeline) -> list[in
     else:
         level = list(level)
 
-    num_tape_levels = _get_last_transform_level(compile_pipeline) + 1
-
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):
         if isinstance(lvl, str):
             if lvl not in marker_to_level:
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
-            if level[i] >= num_tape_levels:
-                level[i] += 1  # Account for the MLIR lowering pass
         elif isinstance(lvl, int):
             if lvl < 0:
                 raise ValueError(
@@ -183,7 +184,7 @@ def _preprocess_level_input(level, marker_to_level, compile_pipeline) -> list[in
                     f"got {lvl}."
                 )
 
-    level_sorted = sorted(list(set(level)))
+    level_sorted = sorted(set(level))
     if level != level_sorted:
         warnings.warn(
             "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
@@ -205,32 +206,42 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     compile_pipeline = original_qnode.compile_pipeline
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
-    num_tape_levels = _get_last_transform_level(compile_pipeline) + 1
-    # breakpoint()
+    num_tape_levels = _get_last_transform_level(compile_pipeline)
+    mlir_only = (level == "all-mlir") or num_tape_levels <= 1
+    if not mlir_only:
+        # Account for the "Before transforms" tape at level 0
+        num_tape_levels += 1
 
     # Maps to convert back and forth between marker name and int level
-    marker_to_level: dict[str, int] = {
-        marker: compile_pipeline.get_marker_level(marker) for marker in compile_pipeline.markers
-    }
+    marker_to_level: dict[str, int] = {}
+    for marker in compile_pipeline.markers:
+        lvl = compile_pipeline.get_marker_level(marker)
+        marker_to_level[marker] = lvl
+
+        # Account for the MLIR lowering pass if necessary
+        if not mlir_only and lvl >= num_tape_levels:
+            marker_to_level[marker] += 1
+
     # Multiple markers can correspond to the same level
     level_to_markers = defaultdict(list)
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
     mlir_level_to_markers = {
-        lvl - num_tape_levels + 1: markers
+        lvl - num_tape_levels: markers
         for lvl, markers in level_to_markers.items()
         if lvl >= num_tape_levels
     }
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     # if level not in ("all", "all-mlir"):
-    mlir_only = level == "all-mlir"  # TODO: In a follow-up PR this will become more useful
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
-    level = _preprocess_level_input(level, marker_to_level, compile_pipeline)
+    level = _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels)
     output_level = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
     mlir_levels = [lvl - num_tape_levels for lvl in level if lvl >= num_tape_levels]
+
+    breakpoint()
 
     resources = {}
 
