@@ -23,6 +23,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 jaxopt = pytest.importorskip("jaxopt")
 
+
 @pytest.fixture
 def quadratic_problem():
     """
