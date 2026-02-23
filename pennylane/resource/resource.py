@@ -510,10 +510,9 @@ class CircuitSpecs:
 
         return "\n".join(lines)
 
-    def _to_pretty_str_tabular(self) -> str:
-        lines = []
-
-        # All resource values, flattened across levels if necessary
+    def _flattened_resources(self) -> dict[str, SpecsResources]:
+        """Helper for printing tabular format, flattens all resources across levels into a single
+        dictionary with string keys."""
         flat_resources = {}
         for level, res in zip(self.level.keys(), self.resources.values()):
             if isinstance(res, SpecsResources):
@@ -525,16 +524,13 @@ class CircuitSpecs:
                 raise ValueError(
                     "Resources must be either a SpecsResources object or a list of SpecsResources objects."
                 )  # pragma: no cover
+        return flat_resources
 
-        lines.append(f"Device: {self.device_name}")
-        lines.append(f"Device wires: {self.num_device_wires}")
-        lines.append(f"Shots: {self.shots}")
-        lines.append("Levels:")
-        for level, level_name in self.level.items():
-            lines.append(f"- {level_name} ({level})")
-
-        lines.append("")  # Blank line
-
+    def _get_table_format(
+        self, flat_resources: dict[str, SpecsResources]
+    ) -> tuple[int, int, dict[str, None], dict[str, None]]:
+        """Helper for printing tabular format, determines column widths and all gate and measurement
+        types across levels."""
         max_metric_length = 15
         max_column_size = max(len(level) for level in flat_resources.keys()) + 2
 
@@ -553,9 +549,28 @@ class CircuitSpecs:
                 max_metric_length = max(max_metric_length, len(meas) + 3)
                 max_column_size = max(max_column_size, len(_count_to_str(count)))
 
+        return max_metric_length, max_column_size, all_gate_types, all_meas_types
+
+    def _to_pretty_str_tabular(self) -> str:
+        lines = []
+
+        lines.append(f"Device: {self.device_name}")
+        lines.append(f"Device wires: {self.num_device_wires}")
+        lines.append(f"Shots: {self.shots}")
+        lines.append("Levels:")
+        for level, level_name in self.level.items():
+            lines.append(f"- {level_name} ({level})")
+
+        lines.append("")  # Blank line
+
+        flat_resources = self._flattened_resources()
+        max_metric_length, max_column_size, all_gate_types, all_meas_types = self._get_table_format(
+            flat_resources
+        )
+
         num_cols = len(flat_resources)
         lines.append(
-            f"Metric/Level".ljust(max_metric_length)
+            "Metric/Level".ljust(max_metric_length)
             + "| "
             + "| ".join(level.ljust(max_column_size) for level in flat_resources.keys())
         )
