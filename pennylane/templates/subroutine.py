@@ -17,20 +17,142 @@ Contains the abstractions for subroutines.
 import copy
 from collections.abc import Callable
 from copy import deepcopy
-from functools import lru_cache, update_wrapper
+from dataclasses import dataclass
+from functools import lru_cache, reduce, update_wrapper
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
 import numpy as np
 
-from pennylane import capture, queuing
+from pennylane import capture, math, queuing
 from pennylane.capture import subroutine as capture_subroutine
+from pennylane.decomposition import (
+    CompressedResourceOp,
+    add_decomps,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
-from pennylane.pytrees import flatten
+from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
 has_jax = find_spec("jax") is not None
+
+
+@dataclass(frozen=True)
+class AbstractArray:
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    This class is used with ``subroutine_resource_rep`` for specifying abstract information about
+    a :class:`~.Subroutine` for purposes of resource calculations used with graph decompositions.
+
+    Args:
+        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
+        dtype (type): the data type of the array. Defaults to ``int`` for easier use in specifying
+        wires.
+    """
+
+    shape: tuple[int, ...]
+    dtype: type = int
+
+    def __len__(self):
+        return reduce(lambda a, b: a * b, self.shape)
+
+
+def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> CompressedResourceOp:
+    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.resource_rep` that is more
+    specifically targeted for use with :class:`~.Subroutine` instances.
+
+    Args:
+        subroutine (Subroutine): the subroutine we are going to use in a decomposition.
+
+    Returns:
+        CompressedResourceOp: a condensed representation of the subroutine that can be used in specifying
+        the resources of another function.
+
+    .. warning:: Note that the following features only work with tape-based PennyLane, and
+        do not work with Catalyst.
+
+    Suppose we have a ``Subroutine`` we want to use in the decomposition of another ``Operator``.
+
+    .. code-block:: python
+
+        def S0_resources(params, wires, rotation):
+            return {qml.resource_rep(rotation): params.shape[0]}
+
+        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S0_resources)
+        def S0(params, wires, rotation):
+            for x in params:
+                rotation(x, wires)
+
+    We can add ``S0`` to the resources of another ``Operator`` by using this function together with
+    an abstract form of what it will be called with using :class:`~.AbstractArray`.
+
+    .. code-block:: python
+
+        from pennylane.templates import AbstractArray, subroutine_resource_rep
+
+        class MyOp(qml.operation.Operation):
+            pass
+
+        abstract_params = AbstractArray((4, ), float)
+        abstract_wires = AbstractArray(()) # a single wire
+        S0_resources = subroutine_resource_rep(S0, abstract_params, abstract_wires, qml.RX)
+
+        @qml.decomposition.register_resources({S0_resources: 1})
+        def MyOpDecomposition(wires):
+            # data of shape (4, ) and dtype float
+            params = np.array([1.0, 2.0, 3.0, 4.0])
+            S0(params, wires, qml.RX)
+
+        qml.add_decomps(MyOp, MyOpDecomposition)
+
+    We can now see ``MyOp`` decompose into the relevant subroutine:
+
+    .. code-block:: python
+
+        qml.decomposition.enable_graph()
+
+        @qml.qnode(qml.device('reference.qubit', wires=1))
+        def c():
+            MyOp(wires=0)
+            return qml.state()
+
+        >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
+        0: ──S0(M0)─┤  State
+        <BLANKLINE>
+        M0 =
+        [1. 2. 3. 4.]
+
+    """
+    bound = subroutine.signature.bind(*args, **kwargs)
+    for arg in subroutine.dynamic_argnames:
+        leaves, struct = flatten(bound.arguments[arg])
+        bound.arguments[arg] = (struct, tuple(leaves))
+    signature_key = tuple(bound.arguments.values())
+    return resource_rep(SubroutineOp, subroutine=subroutine, signature_key=signature_key)
+
+
+def _create_signature_key(
+    bound_args, wire_argnames: tuple[str, ...], static_argnames: tuple[str, ...]
+):
+    key = []
+    for arg, val in bound_args.arguments.items():
+        if arg in static_argnames:
+            key.append(val)
+        elif arg in wire_argnames:
+            key.append(AbstractArray(shape=(len(val),), dtype=int))
+        else:
+            leaves, struct = flatten(val)
+
+            shapes = (
+                AbstractArray(shape=math.shape(l), dtype=getattr(l, "dtype", type(l)))
+                for l in leaves
+            )
+            key.append((struct, tuple(shapes)))
+    return tuple(key)
 
 
 def _default_setup_inputs(*args, **kwargs):
@@ -80,6 +202,17 @@ class SubroutineOp(Operation):
     """
 
     _primitive = None
+
+    resource_keys = frozenset(("subroutine", "signature_key"))
+
+    @property
+    def resource_params(self) -> dict:
+        key = _create_signature_key(
+            self.bound_args,
+            wire_argnames=self.subroutine.wire_argnames,
+            static_argnames=self.subroutine.wire_argnames,
+        )
+        return {"subroutine": self.subroutine, "signature_key": key}
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -137,8 +270,12 @@ class SubroutineOp(Operation):
             wires.extend(reg_wires)
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
-        data = tuple(flatten(dynamic_args)[0])
+        data = flatten(dynamic_args)[0]
         super().__init__(*data, wires=wires, id=id)
+
+        self._hyperparameters = {
+            "decomposition": tuple(decomposition),
+        }
         self.name = subroutine.name
 
     @property
@@ -173,6 +310,22 @@ class SubroutineOp(Operation):
     ) -> str:
         return super().label(decimals, base_label=self.name, cache=cache)
 
+
+def _calculate_resources(subroutine: "Subroutine", signature_key):
+    sig = subroutine.signature.bind(*signature_key)
+    for arg in subroutine.dynamic_argnames:
+        struct, shapes = sig.arguments[arg]
+        sig.arguments[arg] = unflatten(shapes, struct)
+    return subroutine.compute_resources(**sig.arguments)
+
+
+# pylint: disable=unused-argument
+@register_resources(_calculate_resources)
+def _Subroutine_decomp(*data, wires, decomposition):
+    _ = [queuing.apply(op) for op in decomposition]
+
+
+add_decomps(SubroutineOp, _Subroutine_decomp)
 
 P = ParamSpec("P")
 
@@ -295,12 +448,12 @@ class Subroutine:
             for i in range(params.shape[0]):
                 qml.RX(params[i], wires[i])
 
-    For example, we should be able to calculate the resources using JAX's ``jax.core.ShapedArray``
-    instead of concrete array with real values.
+    For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
+    class.
 
-    >>> import jax
-    >>> abstract_params = jax.core.ShapedArray((10,), float)
-    >>> abstract_wires = jax.core.ShapedArray((10,), int)
+    >>> from pennylane.templates import AbstractArray
+    >>> abstract_params = AbstractArray((10,), float)
+    >>> abstract_wires = AbstractArray(10,))
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 

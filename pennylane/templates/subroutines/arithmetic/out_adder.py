@@ -18,17 +18,16 @@ from collections import defaultdict
 
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import Prod, change_op_basis
+from pennylane.ops import Adjoint, Prod
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import SubroutineOp
+from ... import AbstractArray, subroutine_resource_rep
 from .phase_adder import PhaseAdder
 
 
@@ -279,7 +278,11 @@ class OutAdder(Operation):
             PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
         ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
 
-        op_list = [change_op_basis(QFT.operator(wires=qft_new_output_wires), target_op)]
+        op_list = [
+            QFT.operator(wires=qft_new_output_wires),
+            target_op,
+            Adjoint(QFT.operator(wires=qft_new_output_wires)),
+        ]
 
         return op_list
 
@@ -305,9 +308,9 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     ] += 1
 
     return {
-        change_op_basis_resource_rep(
-            resource_rep(SubroutineOp), resource_rep(Prod, resources=target_resources)
-        ): 1
+        subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
+        resource_rep(Prod, resources=target_resources): 1,
+        adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
     }
 
 
@@ -320,15 +323,12 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
         qft_new_output_wires = output_wires
         work_wire = ()
 
-    change_op_basis(
-        QFT.operator(wires=qft_new_output_wires),
-        (
-            ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-            @ ControlledSequence(
-                PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
-            )
-        ),
+    QFT.operator(wires=qft_new_output_wires)
+    (
+        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
+        @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
     )
+    Adjoint(QFT.operator(wires=qft_new_output_wires))
 
 
 add_decomps(OutAdder, _out_adder_decomposition)

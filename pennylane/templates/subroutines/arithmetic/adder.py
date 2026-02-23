@@ -15,20 +15,16 @@
 Contains the Adder template.
 """
 from functools import partial
-from typing import Tuple
 
 from pennylane import capture, math
-from pennylane.ops import cond, Prod
+from pennylane.ops import cond, Adjoint
 
-from pennylane.decomposition import (
-    change_op_basis_resource_rep,
-)
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops.op_math import change_op_basis
 from pennylane.templates import Subroutine
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
+from ... import subroutine_resource_rep, AbstractArray
 from .phase_adder import PhaseAdder
 
 has_jax = True
@@ -72,12 +68,11 @@ def setup_adder(
 
 def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()) -> dict:
     num_x_wires = len(x_wires)
-    qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
+    qft_wires = num_x_wires if mod == 2 ** num_x_wires else 1 + num_x_wires
     return {
-        change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires),
-            resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
-        ): 1,
+        subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
+        resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod): 1,
+        adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
     }
 
 
@@ -170,9 +165,13 @@ def Adder(
         x_wires, work_wires = math.array(x_wires, like="jax"), math.array(work_wires, like="jax")
 
     def true_body(k, x_wires, mod, work_wires):
-        change_op_basis(Prod(*QFT.compute_decomposition(x_wires)), PhaseAdder(k, x_wires, mod, jnp.array([]) if capture.enabled() else []))
+        QFT(x_wires)
+        PhaseAdder(k, x_wires, mod, jnp.array([]) if capture.enabled() else [])
+        Adjoint(QFT)(x_wires)
     def false_body(k, x_wires, mod, work_wires):
         qft_wires = jnp.concatenate(work_wires[:1], x_wires) if capture.enabled() else work_wires[:1] + x_wires
-        change_op_basis(Prod(*QFT.compute_decomposition(qft_wires)), PhaseAdder(k, qft_wires, mod, work_wires[1:]))
+        QFT(qft_wires)
+        PhaseAdder(k, qft_wires, mod, work_wires[1:])
+        Adjoint(QFT)(qft_wires)
 
     cond(mod == 2 ** len(x_wires), true_body, false_body)(k, x_wires, mod, work_wires)

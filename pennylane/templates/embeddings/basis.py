@@ -18,6 +18,7 @@ import functools
 import math
 
 from pennylane import math
+from pennylane.ops import RX, GlobalPhase, PauliX
 from pennylane.ops.qubit.state_preparation import _basis_state_decomp
 from pennylane.templates import Subroutine, SubroutineOp
 from pennylane.typing import TensorLike
@@ -63,7 +64,7 @@ def basis_embedding_setup(features, wires):
 # pylint: disable=unused-argument
 def basis_embedding_resources(features, wires):
     """Calculate the resources for BasisEmbedding."""
-    return {SubroutineOp: 1}
+    return {PauliX: len(wires) - 1 or len(wires), RX: 1, GlobalPhase: 1}
 
 
 @functools.partial(
