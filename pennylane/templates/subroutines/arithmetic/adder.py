@@ -14,7 +14,7 @@
 """
 Contains the Adder template.
 """
-from pennylane import Adjoint
+from pennylane.ops import adjoint
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -214,7 +214,7 @@ class Adder(Operation):
         op_list = [
             QFT.operator(qft_wires),
             PhaseAdder(k, qft_wires, mod, work_wire),
-            Adjoint(QFT.operator(qft_wires)),
+            adjoint(QFT.operator(qft_wires)),
         ]
 
         return op_list
@@ -240,7 +240,7 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
 
     QFT(qft_wires)
     PhaseAdder(k, qft_wires, mod, work_wire)
-    Adjoint(QFT(qft_wires))
+    adjoint(QFT(qft_wires))
 
 
 add_decomps(Adder, _adder_decomposition)
