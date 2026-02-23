@@ -75,7 +75,7 @@ def bitflip_expval(
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
     """
-    Converts dictionary circuit definition into JAX-ready matrices.
+    Converts dictionary circuit definition into matrices.
 
     Args:
         circuit_def (dict[int, list[list[int]]]): Dictionary mapping parameter indices to lists of qubit indices.
