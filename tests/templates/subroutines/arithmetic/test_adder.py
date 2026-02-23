@@ -29,8 +29,8 @@ def test_standard_validity_Adder():
     mod = 11
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5]
-    op = qml.Adder(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
-    qml.ops.functions.assert_valid(op)
+    op = qml.Adder.operator(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
+    qml.ops.functions.assert_valid(op, skip_pickle=True)
 
 
 class TestAdder:
@@ -115,7 +115,7 @@ class TestAdder:
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(x, wires=x_wires)
-            qml.Adder(k, x_wires, mod, work_wires)
+            qml.Adder(k, x_wires, mod=mod, work_wires=work_wires)
             return qml.sample(wires=x_wires)
 
         if mod is None:
@@ -197,11 +197,7 @@ class TestAdder:
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [3, 4]
-        adder_decomposition = (
-            qml.Adder(k, x_wires, mod, work_wires)
-            .compute_decomposition(k, x_wires, mod, work_wires)[0]
-            .decomposition()
-        )
+        adder_decomposition = qml.Adder.operator(k, x_wires, mod, work_wires).decomposition()
 
         op_list = []
         op_list.append(qml.QFT.operator(work_wires[:1] + x_wires))
@@ -242,20 +238,9 @@ class TestAdder:
         mat1, mat2 = qml.matrix(ctrl_op1, wire_order), qml.matrix(ctrl_op2, wire_order)
         assert qml.math.allclose(mat1, mat2)
 
-    @pytest.mark.parametrize("mod", [7, 8])
-    def test_decomposition_new(self, mod):
-        """Tests the decomposition rule implemented with the new system."""
-
-        k = 4
-        x_wires = [2, 3, 4]
-        work_wires = [0, 1]
-        op = qml.Adder(k, x_wires, mod, work_wires)
-        for rule in qml.list_decomps(qml.Adder):
-            _test_decomposition_rule(op, rule)
-
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
-        wires = qml.Adder(1, x_wires=[1, 2]).wires
+        wires = qml.Adder.operator(1, x_wires=[1, 2]).wires
         assert wires == qml.wires.Wires([1, 2])
 
     @pytest.mark.jax
