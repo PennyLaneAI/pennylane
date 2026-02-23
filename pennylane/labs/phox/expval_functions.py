@@ -14,7 +14,6 @@
 """
 Pure function implementations for the expectation value functions.
 """
-import math
 from dataclasses import dataclass
 from typing import Callable
 
