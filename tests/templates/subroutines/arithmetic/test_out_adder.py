@@ -30,8 +30,8 @@ def test_standard_validity_OutAdder():
     output_wires = [4, 5, 8]
     mod = 7
     work_wires = [6, 7]
-    op = qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-    qml.ops.functions.assert_valid(op)
+    op = qml.OutAdder.operator(x_wires, y_wires, output_wires, mod, work_wires)
+    qml.ops.functions.assert_valid(op, skip_pickle=True)
 
 
 class TestOutAdder:
@@ -181,11 +181,9 @@ class TestOutAdder:
             7,
             [9, 10],
         )
-        _adder_decomposition = (
-            qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
-            .decomposition()
-        )
+        _adder_decomposition = qml.OutAdder.operator(
+            x_wires, y_wires, output_wires, mod, work_wires
+        ).decomposition()
         adder_decomposition = [
             _adder_decomposition[0],
             *_adder_decomposition[1].decomposition(),
@@ -229,7 +227,7 @@ class TestOutAdder:
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
-        wires = qml.OutAdder(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
+        wires = qml.OutAdder.operator(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
         assert wires == qml.wires.Wires([1, 2, 3, 4, 5, 6])
 
     @pytest.mark.jax
