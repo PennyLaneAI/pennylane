@@ -120,11 +120,11 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
             MyOp(wires=0)
             return qml.state()
 
-        >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
-        0: ──S0(M0)─┤  State
-        <BLANKLINE>
-        M0 =
-        [1. 2. 3. 4.]
+    >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
+    0: ──S0(M0)─┤  State
+    <BLANKLINE>
+    M0 =
+    [1. 2. 3. 4.]
 
     """
     bound = subroutine.signature.bind(*args, **kwargs)
