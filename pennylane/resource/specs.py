@@ -686,6 +686,7 @@ def specs(
             @qml.qnode(dev)
             def circuit():
                 qml.X(0)
+                qml.X(0)
                 return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))
 
         >>> print(qml.specs(circuit, level="all")())
