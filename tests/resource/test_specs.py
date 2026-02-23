@@ -64,6 +64,8 @@ def test_preprocess_levels(level, output, expect_warnings):
         "bar": 3,
         "baz": 5,
     }
+    # Dummy pipeline
+    compile_pipeline = ["1", "foo", "baz", "4", "bar"]
 
     if expect_warnings:
         with pytest.warns(
@@ -71,19 +73,29 @@ def test_preprocess_levels(level, output, expect_warnings):
             match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
-            assert _preprocess_level_input(level, marker_to_level) == output
+            assert (
+                _preprocess_level_input(
+                    level, marker_to_level, compile_pipeline, len(compile_pipeline) + 1
+                )
+                == output
+            )
     else:
-        assert _preprocess_level_input(level, marker_to_level) == output
+        assert (
+            _preprocess_level_input(
+                level, marker_to_level, compile_pipeline, len(compile_pipeline) + 1
+            )
+            == output
+        )
 
 
 def test_preprocess_levels_invalid():
     with pytest.raises(
         ValueError, match="The 'level' argument to qml.specs for QJIT'd QNodes must be non-negative"
     ):
-        _preprocess_level_input(-1, {})
+        _preprocess_level_input(-1, {}, [], 0)
 
     with pytest.raises(ValueError, match="Marker name 'foo' not found"):
-        _preprocess_level_input("foo", {})
+        _preprocess_level_input("foo", {}, [], 0)
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")

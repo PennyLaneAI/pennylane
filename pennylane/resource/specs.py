@@ -146,12 +146,14 @@ def _get_last_transform_level(compile_pipeline) -> int:
     return 0
 
 
-def _preprocess_level_input(level, marker_to_level, compile_pipeline) -> list[int]:
+def _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels) -> list[int]:
     """Preprocesses the level input to always return a sorted list of integers.
 
     Args:
         level (str | int | slice | iter[int | str]): The level input to preprocess
         marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers
+        compile_pipeline: The compile pipeline of the QNode
+        num_tape_levels (int): The number of tape levels
     Returns:
         list[int]: The preprocessed level input
     """
@@ -165,8 +167,6 @@ def _preprocess_level_input(level, marker_to_level, compile_pipeline) -> list[in
         level = list(range(level.start or 0, level.stop, level.step or 1))
     else:
         level = list(level)
-
-    num_tape_levels = _get_last_transform_level(compile_pipeline) + 1
 
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):
@@ -183,7 +183,7 @@ def _preprocess_level_input(level, marker_to_level, compile_pipeline) -> list[in
                     f"got {lvl}."
                 )
 
-    level_sorted = sorted(list(set(level)))
+    level_sorted = sorted(set(level))
     if level != level_sorted:
         warnings.warn(
             "The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
@@ -225,7 +225,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     # if level not in ("all", "all-mlir"):
     mlir_only = level == "all-mlir"  # TODO: In a follow-up PR this will become more useful
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
-    level = _preprocess_level_input(level, marker_to_level, compile_pipeline)
+    level = _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels)
     output_level = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
@@ -551,6 +551,7 @@ def specs(
         a real device.
 
         .. code-block:: python
+
             dev = qml.device("lightning.qubit", wires=3)
 
             @qml.qjit
@@ -678,6 +679,7 @@ def specs(
             objects. When printed, these split tapes will be shown as individual columns.
 
         .. code-block:: python
+
             dev = qml.device("lightning.qubit", wires=3)
 
             @qml.qjit
