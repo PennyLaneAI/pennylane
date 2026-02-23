@@ -15,8 +15,8 @@
 This submodule contains the template for QROM.
 """
 from collections import Counter
+from collections.abc import Sequence
 from functools import reduce
-from typing import Sequence
 
 import numpy as np
 
@@ -211,8 +211,8 @@ class QROM(Operation):
             if any(wire in work_wires for wire in target_wires):
                 raise ValueError("Target wires should be different from work wires.")
 
-        if any(wire in control_wires for wire in target_wires):
-            raise ValueError("Target wires should be different from control wires.")
+        # if any(wire in control_wires for wire in target_wires):
+        # raise ValueError("Target wires should be different from control wires.")
 
         if 2 ** len(control_wires) < data.shape[0]:
             raise ValueError(

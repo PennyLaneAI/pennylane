@@ -36,8 +36,10 @@ def _binary_repr_int(phi, precision):
     so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
     """
     phi = phi % (4 * np.pi)
-    phi_round = np.round(2**precision * phi / (2 * np.pi))
-    return bin(int(np.floor(phi_round / 2 + 1e-10)) + 2 * 2**precision)[-precision:]
+    phi_round = qp.math.round(2**precision * phi / (2 * np.pi))
+
+    _int = qp.math.floor(phi_round / 2 + 1e-10).astype(int) + 2 * 2**precision
+    return qp.math.int_to_binary(_int, width=precision)
 
 
 def fanout(wires):
@@ -61,7 +63,7 @@ def _rz_phase_gradient(
 
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = int(_binary_repr_int(phi * 2, precision), base=2)
+    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ _binary_repr_int(phi * 2, precision)
 
     compute_op = qp.ctrl(qp.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
     target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
@@ -71,7 +73,7 @@ def _rz_phase_gradient(
 
 # pylint: disable=too-many-arguments
 def _select_pauli_rot_phase_gradient(
-    phis: list,
+    phis: np.ndarray,
     control_wires: Wires,
     target_wire: Wires,
     angle_wires: Wires,
@@ -83,7 +85,7 @@ def _select_pauli_rot_phase_gradient(
     """
 
     precision = len(angle_wires)
-    binary_int = [_binary_repr_int(phi, precision) for phi in phis]
+    binary_int = _binary_repr_int(phis, precision)
 
     ops = [
         qp.QROM(
@@ -225,7 +227,7 @@ def rot_to_phase_gradient(
     for op in tape.operations:
         if isinstance(op, qp.SelectPauliRot):
             control_wires = op.wires[:-1]
-            target_wire = op.wires[-1]
+            target_wire = op.wires[-1:]
 
             pg_op = _select_pauli_rot_phase_gradient(
                 op.data[0],
@@ -280,7 +282,8 @@ def rot_to_phase_gradient(
         else:
             operations.append(op)
 
-    operations.append(qp.GlobalPhase(sum(global_phases)))
+    if len(global_phases) > 0:
+        operations.append(qp.GlobalPhase(sum(global_phases)))
     new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
@@ -289,4 +292,4 @@ def rot_to_phase_gradient(
         """
         return results[0]
 
-    return [new_tape], null_postprocessing
+    return (new_tape,), null_postprocessing
