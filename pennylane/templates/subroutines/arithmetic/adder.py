@@ -24,7 +24,7 @@ from pennylane.operation import Operation
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
-from ... import AbstractArray, SubroutineOp, subroutine_resource_rep
+from ... import subroutine_resource_rep, AbstractArray
 from .phase_adder import PhaseAdder
 
 
