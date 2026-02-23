@@ -563,6 +563,7 @@ def specs(
         a real device.
 
         .. code-block:: python
+
             dev = qml.device("lightning.qubit", wires=3)
 
             @qml.qjit
@@ -690,6 +691,7 @@ def specs(
             objects. When printed, these split tapes will be shown as individual columns.
 
         .. code-block:: python
+
             dev = qml.device("lightning.qubit", wires=3)
 
             @qml.qjit

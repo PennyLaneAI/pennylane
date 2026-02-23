@@ -814,7 +814,7 @@ class TestCircuitSpecs:
             device_name="default.qubit",
             num_device_wires=5,
             shots=Shots(1000),
-            level=[1, 2],
+            level={1: "l1", 2: "l2"},
             resources={
                 1: SpecsResources(
                     gate_types={"Hadamard": 4, "CNOT": 2},
@@ -928,7 +928,7 @@ class TestCircuitSpecs:
             "device_name": "default.qubit",
             "num_device_wires": 5,
             "shots": Shots(1000),
-            "level": [1, 2],
+            "level": {1: "l1", 2: "l2"},
             "resources": {
                 1: {
                     "gate_types": {"Hadamard": 4, "CNOT": 2},
@@ -980,26 +980,24 @@ class TestCircuitSpecs:
         """Test the string representation of a CircuitSpecs instance."""
 
         r = self.example_specs_result_multi()
+        assert [x.strip() for x in str(r).split()] == [
+            x.strip() for x in """Device: default.qubit
+Device wires: 5
+Shots: Shots(total=1000)
+Levels:
+- l1 (1)
+- l2 (2)
 
-        expected = "Device: default.qubit\n"
-        expected += "Device wires: 5\n"
-        expected += "Shots: Shots(total=1000)\n"
-        expected += "Level: [1, 2]\n"
-        expected += "\n"
-        expected += "Resource specifications:\n"
-
-        expected += "Level = 1:\n"
-        expected += r.resources[1].to_pretty_str(preindent=2)
-
-        expected += "\n\n" + "-" * 60 + "\n\n"
-
-        expected += "Level = 3:\n"
-        expected += "  Batched tape 0:\n"
-        expected += r.resources[3][0].to_pretty_str(preindent=4)
-        expected += "\n\n  Batched tape 1:\n"
-        expected += r.resources[3][1].to_pretty_str(preindent=4)
-
-        assert str(r) == expected
+Metric/Level     | 1    | 2-0  | 2-1
+--------------------------------------
+Num allocs       | 2    | 2    | 2
+Num Gates        | 6    | 1    | 1
+Gate types:      |
+- Hadamard       | 4    | 0    | 0
+- CNOT           | 2    | 1    | 1
+Measurements:    |
+- expval(PauliX) | 1    | 1    | 0
+- expval(PauliZ) | 1    | 0    | 1""".split()]
 
 
 class TestCountResources:
