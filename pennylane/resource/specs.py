@@ -385,7 +385,7 @@ def specs(
 
     Keyword Args:
         level (str | int | slice | iter[int]): An indication of which transforms, expansions, and passes to apply before
-            computing the resource information. See :func:`~pennylane.workflow.get_transform_program` for more details
+            computing the resource information. See :func:`~pennylane.workflow.get_compile_pipeline` for more details
             on the available levels. Default is ``"device"`` for qjit-compiled workflows or ``"gradient"`` otherwise.
         compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, circuit
             depth will not be included in the output. By default, ``specs`` will always attempt to calculate circuit
@@ -623,8 +623,8 @@ def specs(
 
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
-        >>> all_specs = qml.specs(circuit, level="all")(1.23) # doctest: +SKIP
-        >>> print(all_specs) # doctest: +SKIP
+        >>> all_specs = qml.specs(circuit, level="all")(1.23)
+        >>> print(all_specs)
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
@@ -692,12 +692,12 @@ def specs(
         object. The keys to this dictionary are returned as the ``level`` attribute of the :class:`~.resource.CircuitSpecs`
         object.
 
-        >>> print(all_specs.level) # doctest: +SKIP
+        >>> print(all_specs.level)
         ['Before transforms', 'Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
 
         The resources associated with a particular level can be accessed using the returned level name as follows:
 
-        >>> print(all_specs.resources['merge-rotations (MLIR-2)']) # doctest: +SKIP
+        >>> print(all_specs.resources['merge-rotations (MLIR-2)'])
         Total wire allocations: 3
         Total gates: 2
         Circuit depth: Not computed
