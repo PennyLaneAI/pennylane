@@ -233,15 +233,12 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     }
 
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
-    # if level not in ("all", "all-mlir"):
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
     level = _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels)
     output_level = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
     mlir_levels = [lvl - num_tape_levels for lvl in level if lvl >= num_tape_levels]
-
-    breakpoint()
 
     resources = {}
 
@@ -287,14 +284,13 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
             ) from ve
 
         for lvl, (level_name, res) in zip(mlir_levels, results.items()):
+            gate_types = {}
             gate_sizes = defaultdict(int)
-            for _, sizes in res.operations.items():
+
+            for res_name, sizes in res.operations.items():
                 for size, count in sizes.items():
                     gate_sizes[size] += count
 
-            gate_types = {}
-
-            for res_name, sizes in res.operations.items():
                 if res_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
                     # Separate out PPMs and PPRs by weight
                     for size, count in sizes.items():
