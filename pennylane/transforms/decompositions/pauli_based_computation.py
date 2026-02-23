@@ -90,21 +90,21 @@ def to_ppr_setup_inputs():
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 2
+    Level: to-ppr (MLIR-1)
     <BLANKLINE>
     Resource specifications:
         Total wire allocations: 2
         Total gates: 11
         Circuit depth: Not computed
     <BLANKLINE>
-    Gate types:
+      Gate types:
         GlobalPhase: 3
         PPR-pi/4-w1: 5
         PPR-pi/4-w2: 1
         PPM-w1: 1
         PPR-pi/8-w1: 1
     <BLANKLINE>
-    Measurements:
+      Measurements:
         expval(PauliZ): 1
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
@@ -196,19 +196,19 @@ def commute_ppr_setup_inputs(max_pauli_size: int = 0):
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 3
+    Level: commute-ppr (MLIR-2)
     <BLANKLINE>
     Resource specifications:
     Total wire allocations: 2
     Total gates: 7
     Circuit depth: Not computed
     <BLANKLINE>
-    Gate types:
+      Gate types:
         PPR-pi/8-w1: 1
         PPR-pi/4-w1: 5
         PPR-pi/4-w2: 1
     <BLANKLINE>
-    Measurements:
+      Measurements:
         expval(PauliZ): 1
 
     In the example above, the Clifford PPRs (:class:`~.PauliRot` instances with an angle of rotation
@@ -301,17 +301,17 @@ def merge_ppr_ppm_setup_inputs(max_pauli_size: int = 0):
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 3
+    Level: merge-ppr-ppm (MLIR-2)
     <BLANKLINE>
     Resource specifications:
         Total wire allocations: 2
         Total gates: 1
         Circuit depth: Not computed
     <BLANKLINE>
-    Gate types:
+      Gate types:
         PPM-w2: 1
     <BLANKLINE>
-    Measurements:
+      Measurements:
         No measurements.
 
     If a merging resulted in a PPM acting on more than ``max_pauli_size`` qubits, that merging
@@ -418,14 +418,14 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 3
+    Level: ppr-to-ppm (MLIR-2)
     <BLANKLINE>
     Resource specifications:
     Total wire allocations: 9
     Total gates: 24
     Circuit depth: Not computed
     <BLANKLINE>
-    Gate types:
+      Gate types:
         PPM-w2: 7
         PPM-w1: 8
         PPM-w3: 1
@@ -433,7 +433,7 @@ def ppr_to_ppm_setup_inputs(decompose_method="pauli-corrected", avoid_y_measure=
         PPR-pi/2-w2: 1
         pbc.fabricate: 1
     <BLANKLINE>
-    Measurements:
+      Measurements:
         expval(PauliZ): 1
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
@@ -533,14 +533,14 @@ def ppm_compilation_setup_inputs(
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: 2
+    Level: ppm-compilation (MLIR-1)
     <BLANKLINE>
     Resource specifications:
     Total wire allocations: 8
     Total gates: 25
     Circuit depth: Not computed
     <BLANKLINE>
-    Gate types:
+      Gate types:
         GlobalPhase: 3
         pbc.fabricate: 1
         PPM-w2: 6
@@ -549,7 +549,7 @@ def ppm_compilation_setup_inputs(
         PPR-pi/2-w1: 6
         PPR-pi/2-w2: 1
     <BLANKLINE>
-    Measurements:
+      Measurements:
         expval(PauliZ): 1
 
     In the above output, ``PPR-theta-w<int>`` denotes the type of PPR present in the circuit, where
@@ -733,7 +733,7 @@ def decompose_arbitrary_ppr_setup_inputs():
     Device: null.qubit
     Device wires: 3
     Shots: Shots(total=None)
-    Level: 3
+    Level: decompose-arbitrary-ppr (MLIR-2)
     <BLANKLINE>
     Resource specifications:
       Total wire allocations: 4

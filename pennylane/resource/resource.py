@@ -533,11 +533,11 @@ class CircuitSpecs:
         for res in self.resources.values():
             for gate, count in res.gate_types.items():
                 all_gate_types[gate] = True
-                max_metric_length = max(max_metric_length, len(gate) + 2)
+                max_metric_length = max(max_metric_length, len(gate) + 3)
                 max_column_size = max(max_column_size, len(_count_to_str(count)))
             for meas, count in res.measurements.items():
                 all_meas_types[meas] = True
-                max_metric_length = max(max_metric_length, len(meas) + 2)
+                max_metric_length = max(max_metric_length, len(meas) + 3)
                 max_column_size = max(max_column_size, len(_count_to_str(count)))
 
         num_cols = len(self.resources)
@@ -587,7 +587,7 @@ class CircuitSpecs:
 
         return "\n".join(lines).rstrip("\n")
 
-    def to_pretty_str(self, tabular: bool = False) -> str:
+    def to_pretty_str(self, tabular: bool = True) -> str:
         if tabular and isinstance(self.resources, dict):
             return self._to_pretty_str_tabular()
 

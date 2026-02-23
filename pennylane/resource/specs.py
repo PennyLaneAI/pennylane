@@ -194,11 +194,10 @@ def _preprocess_level_input(level, marker_to_level, compile_pipeline) -> list[in
     return level_sorted
 
 
-def _specs_qjit_intermediate_passes(
-    qjit, original_qnode, level, *args, **kwargs
-) -> (
-    SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]]
-):  # pragma: no cover
+def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
+    SpecsResources | list[SpecsResources] | dict[int, SpecsResources | list[SpecsResources]],
+    dict[int, str],
+]:  # pragma: no cover
     # pylint: disable=import-outside-toplevel,too-many-branches,too-many-statements
     from catalyst.python_interface.inspection import mlir_specs
 
@@ -308,9 +307,9 @@ def _specs_qjit_intermediate_passes(
     # Unpack dictionary to single item if only 1 level was given as input
     if return_single_level:
         resources = next(iter(resources.values()))
-        level = level[0]
+        output_level = next(iter(output_level.values()))
 
-    return resources
+    return resources, output_level
 
 
 # NOTE: Some information is missing from specs_qjit compared to specs_qnode
@@ -350,13 +349,12 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
                 " To compute the depth, please use level='device'.",
                 UserWarning,
             )
-        resources = _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs)
+        resources, level = _specs_qjit_intermediate_passes(
+            qjit, original_qnode, level, *args, **kwargs
+        )
 
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
-
-    if isinstance(resources, dict):
-        level = list(resources.keys())
 
     return CircuitSpecs(
         resources=resources,
@@ -366,7 +364,6 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  #
             len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
         ),
         level=level,
-        # level={i: lvl for i, lvl in enumerate(level)},  # TODO: temporary for testing
     )
 
 
@@ -628,72 +625,30 @@ def specs(
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
-        Level: ['Before transforms', 'Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
+        Levels:
+        - Before transforms (0)
+        - Before MLIR Passes (MLIR-0) (1)
+        - cancel-inverses (MLIR-1) (2)
+        - merge-rotations (MLIR-2) (3)
         <BLANKLINE>
-        Resource specifications:
-        Level = Before transforms:
-          Total wire allocations: 2
-          Total gates: 5
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            PauliX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
-        <BLANKLINE>
-        ------------------------------------------------------------
-        <BLANKLINE>
-        Level = Before MLIR Passes (MLIR-0):
-          Total wire allocations: 3
-          Total gates: 5
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            PauliX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
-        <BLANKLINE>
-        ------------------------------------------------------------
-        <BLANKLINE>
-        Level = cancel-inverses (MLIR-1):
-          Total wire allocations: 3
-          Total gates: 3
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 2
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
-        <BLANKLINE>
-        ------------------------------------------------------------
-        <BLANKLINE>
-        Level = merge-rotations (MLIR-2):
-          Total wire allocations: 3
-          Total gates: 2
-          Circuit depth: Not computed
-        <BLANKLINE>
-          Gate types:
-            RX: 1
-            CNOT: 1
-        <BLANKLINE>
-          Measurements:
-            probs(all wires): 1
+        Metric/Level       | 0  | 1  | 2  | 3
+        ---------------------------------------
+        Num allocs         | 2  | 3  | 3  | 3
+        Num Gates          | 5  | 5  | 3  | 2
+        Gate types:        |
+        - RX               | 2  | 2  | 2  | 1
+        - PauliX           | 2  | 2  | 0  | 0
+        - CNOT             | 1  | 1  | 1  | 1
+        Measurements:      |
+        - probs(all wires) | 1  | 1  | 1  | 1
 
         When invoked with ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs` object's
-        ``resources`` field is a dictionary mapping level names to their associated :class:`~.resource.SpecsResources`
-        object. The keys to this dictionary are returned as the ``level`` attribute of the :class:`~.resource.CircuitSpecs`
-        object.
+        ``resources`` field is a dictionary mapping levels to their associated :class:`~.resource.SpecsResources`
+        object. The keys to this dictionary also have human readable names, which can be retrieved
+        via the ``level`` attribute of the :class:`~.resource.CircuitSpecs` object.
 
         >>> print(all_specs.level)
-        ['Before transforms', 'Before MLIR Passes (MLIR-0)', 'cancel-inverses (MLIR-1)', 'merge-rotations (MLIR-2)']
+        {0: 'Before transforms', 1: 'Before MLIR Passes (MLIR-0)', 2: 'cancel-inverses (MLIR-1)', 3: 'merge-rotations (MLIR-2)'}
 
         The resources associated with a particular level can be accessed using the returned level name as follows:
 
