@@ -80,7 +80,9 @@ class TestPrivateHelpers:
     def decomposer(op):
         return op.decomposition()
 
-    @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
+    @pytest.mark.parametrize(
+        "op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.MultiControlledX(wires=range(3)))
+    )
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""
 
@@ -492,7 +494,7 @@ class TestDecomposeTransformations:
         device_wires = qml.wires.Wires([0, 1, 2, 3])
 
         # Create a tape with an operation that needs decomposition
-        tape = qml.tape.QuantumScript([qml.QFT(wires=[0, 1])], [qml.expval(qml.Z(0))])
+        tape = qml.tape.QuantumScript([qml.QFT.operator(wires=[0, 1])], [qml.expval(qml.Z(0))])
 
         # Test with device_wires and target_gates
         batch, _ = decompose(

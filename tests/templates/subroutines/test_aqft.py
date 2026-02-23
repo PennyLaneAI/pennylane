@@ -18,7 +18,19 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import math
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+
+
+def get_qft_mat(num_wires):
+    omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
+    mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
+
+    for m in range(2**num_wires):
+        for n in range(2**num_wires):
+            mat[m, n] = omega ** (m * n)
+
+    return 1 / math.sqrt(2**num_wires) * mat
 
 
 @pytest.mark.jax
@@ -78,10 +90,10 @@ class TestAQFT:
 
     @pytest.mark.parametrize("wires", [3, 4, 5, 6, 7, 8, 9])
     def test_matrix_higher_order(self, wires):
-        """Test if the matrix from AQFT and QFT are same for higher order"""
+        """Test the matrix from AQFT for higher order."""
 
         m1 = qml.matrix(qml.AQFT(order=10, wires=range(wires)))
-        m2 = qml.matrix(qml.QFT(wires=range(wires)))
+        m2 = qml.matrix(qml.QFT, wire_order=range(wires))(wires=range(wires))
 
         assert np.allclose(m1, m2)
 

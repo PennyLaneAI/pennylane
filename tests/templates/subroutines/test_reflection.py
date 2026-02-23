@@ -38,9 +38,9 @@ def test_standard_validity():
 @pytest.mark.parametrize(
     ("prod", "reflection_wires"),
     [
-        (qml.QFT([0, 1, 4]), [0, 1, 2]),
-        (qml.QFT([0, 1, 2]), [3]),
-        (qml.QFT([0, 1, 2]), [0, 1, 2, 3]),
+        (qml.QFT.operator([0, 1, 4]), [0, 1, 2]),
+        (qml.QFT.operator([0, 1, 2]), [3]),
+        (qml.QFT.operator([0, 1, 2]), [0, 1, 2, 3]),
     ],
 )
 def test_reflection_wires(prod, reflection_wires):
@@ -66,14 +66,14 @@ def test_reflection_wires(prod, reflection_wires):
             ],
         ),
         (
-            qml.Reflection(qml.QFT(wires=[0, 1]), 0.5),
+            qml.Reflection(qml.QFT.operator(wires=[0, 1]), 0.5),
             [
                 qml.GlobalPhase(np.pi),
-                qml.adjoint(qml.QFT(wires=[0, 1])),
+                qml.adjoint(qml.QFT.operator(wires=[0, 1])),
                 qml.PauliX(wires=[1]),
                 qml.ctrl(qml.PhaseShift(0.5, wires=[1]), control=0, control_values=[0]),
                 qml.PauliX(wires=[1]),
-                qml.QFT(wires=[0, 1]),
+                qml.QFT.operator(wires=[0, 1]),
             ],
         ),
     ],
@@ -88,7 +88,7 @@ def test_decomposition(op, expected):
     ("op"),
     [
         qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0]),
-        qml.Reflection(qml.QFT(wires=[0, 1]), 0.5),
+        qml.Reflection(qml.QFT.operator(wires=[0, 1]), 0.5),
     ],
 )
 def test_decomposition_new(op):
@@ -100,7 +100,7 @@ def test_decomposition_new(op):
 def test_default_values():
     """Test that the default values are correct"""
 
-    U = qml.QFT(wires=[0, 1, 4])
+    U = qml.MultiControlledX(wires=[0, 1, 4])
     op = qml.Reflection(U)
 
     assert op.alpha == np.pi

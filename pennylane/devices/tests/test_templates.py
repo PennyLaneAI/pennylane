@@ -219,7 +219,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
-            qml.adjoint(qml.BasisRotation(wires=[0, 1], unitary_matrix=unitary_matrix))
+            qml.adjoint(qml.BasisRotation.operator(wires=[0, 1], unitary_matrix=unitary_matrix))
             for idx, eigenval in enumerate(eigen_values):
                 qml.RZ(-eigenval, wires=[idx])
             qml.BasisRotation(wires=[0, 1], unitary_matrix=unitary_matrix)

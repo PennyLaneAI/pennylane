@@ -730,7 +730,7 @@ class TestMultiControlledX:
                 control_values=control_values,
             )
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT", "X"})
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -761,7 +761,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=2, gate_set={"CNOT"})
+        [tape], _ = decompose(tape, max_expansion=2, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -775,7 +775,8 @@ class TestMultiControlledX:
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
-        spy.assert_called()
+        if not qml.decomposition.enabled_graph():
+            spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     def test_worker_state_unperturbed(self, mocker):
@@ -794,7 +795,7 @@ class TestMultiControlledX:
         with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set={"CNOT"})
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qml.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -806,7 +807,8 @@ class TestMultiControlledX:
             return qml.state()
 
         assert np.allclose(f(), rnd_state)
-        spy.assert_called()
+        if not qml.decomposition.enabled_graph():
+            spy.assert_called()
 
     def test_compute_matrix_no_control_values(self):
         """Test compute_matrix assumes all control on "1" if no

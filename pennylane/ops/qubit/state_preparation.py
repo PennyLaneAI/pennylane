@@ -27,6 +27,7 @@ from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
+from pennylane.templates import AbstractArray, subroutine_resource_rep
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -413,7 +414,7 @@ class StatePrep(StatePrepBase):
         [MottonenStatePreparation(array([1, 0, 0, 0]), wires=[0, 1])]
 
         """
-        return [MottonenStatePreparation(state, wires)]
+        return [MottonenStatePreparation.operator(state, wires)]
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
@@ -586,7 +587,13 @@ class StatePrep(StatePrepBase):
 
 
 def _stateprep_resources(num_wires):
-    return {qml.resource_rep(qml.MottonenStatePreparation, num_wires=num_wires): 1}
+    return {
+        subroutine_resource_rep(
+            qml.MottonenStatePreparation,
+            AbstractArray((2**num_wires,)),
+            AbstractArray((num_wires,)),
+        ): 1
+    }
 
 
 @register_resources(_stateprep_resources)

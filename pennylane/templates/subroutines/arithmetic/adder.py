@@ -16,16 +16,24 @@ Contains the Adder template.
 """
 from functools import partial
 
-from pennylane.decomposition import (
-    change_op_basis_resource_rep,
-)
+from pennylane import capture, math
+from pennylane.ops import cond, Adjoint
+
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops.op_math import change_op_basis
 from pennylane.templates import Subroutine
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
 
+from ... import subroutine_resource_rep, AbstractArray
 from .phase_adder import PhaseAdder
+
+has_jax = True
+try:
+    import jax
+    from jax import numpy as jnp
+
+except ImportError:
+    has_jax = False
 
 
 def setup_adder(
@@ -60,12 +68,11 @@ def setup_adder(
 
 def adder_decomp_resources(k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()) -> dict:
     num_x_wires = len(x_wires)
-    qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
+    qft_wires = num_x_wires if mod == 2 ** num_x_wires else 1 + num_x_wires
     return {
-        change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires),
-            resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
-        ): 1,
+        subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
+        resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod): 1,
+        adjoint_subroutine_resource_rep(QFT, AbstractArray((qft_wires,))): 1,
     }
 
 
@@ -153,11 +160,18 @@ def Adder(
         Note that the ``Adder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo), that would be equivalent to setting
         the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
-    if mod == 2 ** len(x_wires):
-        qft_wires = x_wires
-        work_wire = ()
-    else:
-        qft_wires = work_wires[:1] + x_wires
-        work_wire = work_wires[1:]
 
-    change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+    if capture.enabled():
+        x_wires, work_wires = math.array(x_wires, like="jax"), math.array(work_wires, like="jax")
+
+    def true_body(k, x_wires, mod, work_wires):
+        QFT(x_wires)
+        PhaseAdder(k, x_wires, mod, jnp.array([]) if capture.enabled() else [])
+        Adjoint(QFT)(x_wires)
+    def false_body(k, x_wires, mod, work_wires):
+        qft_wires = jnp.concatenate(work_wires[:1], x_wires) if capture.enabled() else work_wires[:1] + x_wires
+        QFT(qft_wires)
+        PhaseAdder(k, qft_wires, mod, work_wires[1:])
+        Adjoint(QFT)(qft_wires)
+
+    cond(mod == 2 ** len(x_wires), true_body, false_body)(k, x_wires, mod, work_wires)

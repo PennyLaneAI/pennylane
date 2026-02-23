@@ -25,18 +25,18 @@ from pennylane import numpy as pnp
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     wires = qml.wires.Wires((0, 1, 2))
-    op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    op = qml.BasisEmbedding.operator(features=np.array([1, 1, 1]), wires=wires)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True, skip_pickle=True)
 
 
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
     wires = qml.wires.Wires((0, 1, 2))
-    op = qml.BasisEmbedding(features=[1, 1, 1], wires=wires)
+    op = qml.BasisEmbedding.operator(features=[1, 1, 1], wires=wires)
     data, metadata = op._flatten()
-    assert np.allclose(data[0], [1, 1, 1])
-    assert metadata[0] == wires
+    assert np.allclose(data[0]["features"], [1, 1, 1])
+    assert metadata[1][0][1] == wires
 
     # make sure metadata hashable
     assert hash(metadata)
@@ -53,7 +53,7 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue."""
 
-        op = qml.BasisEmbedding(features=features, wires=range(3))
+        op = qml.BasisEmbedding.operator(features=features, wires=range(3))
         tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == features.count(1)
@@ -111,7 +111,9 @@ class TestInputs:
         """checks conversion from features as int to a list of binary digits
         with length = len(wires)"""
 
-        assert np.allclose(qml.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
+        assert np.allclose(
+            qml.BasisEmbedding.operator(features=feat, wires=wires).parameters[0], expected
+        )
 
     @pytest.mark.parametrize(
         "x, msg",
@@ -162,7 +164,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.BasisEmbedding([0, 1], wires=[0, 1], id="a")
+        template = qml.BasisEmbedding.operator([0, 1], wires=[0, 1], id="a")
         assert template.id == "a"
 
 

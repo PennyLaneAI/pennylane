@@ -620,7 +620,7 @@ general_op_data = [
     # State Prep
     qml.BasisState([0, 1, 0], wires=(0, 1, 2)),
     ### Templates
-    qml.QFT(wires=range(3)),
+    qml.QFT.operator(wires=range(3)),
     qml.Permute([4, 2, 0, 1, 3], wires=(0, 1, 2, 3, 4)),
     qml.GroverOperator(wires=(0, 1, 2, 3, 4, 5)),
     ### Continuous Variable

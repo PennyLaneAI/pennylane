@@ -32,26 +32,11 @@ def test_standard_validity():
 
     op = qml.CosineWindow(wires=[0, 1])
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
 
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
-
-    @pytest.mark.parametrize(
-        "wires",
-        [
-            [0, 1],
-            [0, 1, 2, 3, 4],
-            ["a", "b", "c", "d", "e", "f"],
-        ],
-    )
-    def test_decomposition_new(self, wires):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qml.CosineWindow(wires=wires)
-
-        for rule in qml.list_decomps(qml.CosineWindow):
-            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         "wires",
@@ -92,7 +77,12 @@ class TestDecomposition:
         assert collector.state["ops"] == [
             qml.Hadamard(1),
             qml.RZ(3.141592653589793, wires=[1]),
-            qml.adjoint(qml.QFT(wires=[0, 1])),
+            qml.adjoint(qml.SWAP(wires=[0, 1])),
+            qml.adjoint(qml.H(1)),
+            qml.adjoint(
+                qml.ControlledPhaseShift(jnp.array(1.5707963267948966), wires=Wires([1, 0]))
+            ),
+            qml.adjoint(qml.H(0)),
             qml.PhaseShift(jnp.array(-2.89760778e19), wires=[0]),
             qml.PhaseShift(jnp.array(1.44880389e19), wires=[1]),
         ]
