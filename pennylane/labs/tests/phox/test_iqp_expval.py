@@ -211,7 +211,9 @@ class TestIQPExpval:
             ),
         ],
     )
-    def test_build_expval_func_vs_pennylane(self, n_qubits, gates, params, obs_strings, init_state_spec):
+    def test_build_expval_func_vs_pennylane(
+        self, n_qubits, gates, params, obs_strings, init_state_spec
+    ):
         # pylint: disable=too-many-arguments
         """Test that build_expval_func matches PennyLane default.qubit."""
         generators_binary, param_map = _parse_generator_dict(gates, n_qubits)

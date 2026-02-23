@@ -124,26 +124,26 @@ def build_expval_func(
     bitflips = jnp.array(is_Z | is_Y, dtype=jnp.int32)
     mask_XY = jnp.array(is_X | is_Y, dtype=jnp.int32)
     count_Y = jnp.array(is_Y.sum(axis=1), dtype=jnp.int32)
-    
+
     sign_flip = 1 - 2 * ((mask_XY @ samples.T) % 2)
     y_phase = (-1j) ** count_Y[:, jnp.newaxis]
     phases = sign_flip * y_phase
 
     vmapped_phase_func = None
     if config.phase_layer is not None:
+
         def compute_phase(p_params, sample, b_flips):
             return config.phase_layer(p_params, sample) - config.phase_layer(
                 p_params, (sample + b_flips) % 2
             )
-        
+
         vmapped_phase_func = jax.vmap(
-            jax.vmap(compute_phase, in_axes=(None, 0, None)), 
-            in_axes=(None, None, 0)
+            jax.vmap(compute_phase, in_axes=(None, 0, None)), in_axes=(None, None, 0)
         )
 
     def expval_execution(params, phase_params=None):
         B = 1 - 2 * ((samples @ generators.T) % 2)
-        
+
         C = 2 * ((bitflips @ generators.T) % 2)
 
         expanded_params = jnp.asarray(params)[param_map]
@@ -156,9 +156,9 @@ def build_expval_func(
 
         if config.init_state is not None:
             X, P = config.init_state
-            
+
             F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))
-            
+
             H1 = (1 - 2 * ((bitflips @ X.T) % 2)) @ F
             col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
             H = H1 * col_sums
@@ -166,7 +166,7 @@ def build_expval_func(
 
         expvals = jnp.real(M)
         std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
-        
+
         return jnp.mean(expvals, axis=1), std_err
 
     return expval_execution

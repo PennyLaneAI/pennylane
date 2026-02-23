@@ -14,12 +14,13 @@
 """
 Tests for the Phox training module.
 """
-import jax
-import jax.numpy as jnp
 import pytest
 
 from pennylane.labs.phox.expval_functions import CircuitConfig, build_expval_func
 from pennylane.labs.phox.training import TrainingOptions, train
+
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 
 @pytest.fixture
