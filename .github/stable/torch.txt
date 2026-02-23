@@ -21,7 +21,7 @@ diastatic-malt==2.15.2
 dill==0.4.1
 distlib==0.4.0
 execnet==2.1.2
-filelock==3.24.2
+filelock==3.24.3
 flaky==3.8.1
 fonttools==4.61.1
 fsspec==2026.2.0
@@ -63,11 +63,11 @@ nvidia-nvshmem-cu12==3.3.20
 nvidia-nvtx-cu12==12.8.90
 osqp==1.1.1
 packaging==26.0
-pandas==3.0.0
+pandas==3.0.1
 pathspec==1.0.4
-pennylane_lightning==0.45.0.dev18
+pennylane_lightning==0.45.0.dev19
 pillow==12.1.1
-platformdirs==4.9.1
+platformdirs==4.9.2
 pluggy==1.6.0
 pre_commit==4.5.1
 prompt_toolkit==3.0.52
@@ -76,7 +76,7 @@ py-cpuinfo==9.0.0
 pycparser==3.0
 pydot==4.0.1
 Pygments==2.19.2
-pylint==4.0.4
+pylint==4.0.5
 pyparsing==3.3.2
 pyproject_hooks==1.2.0
 pytest==9.0.2
@@ -91,13 +91,14 @@ python-dateutil==2.9.0.post0
 pytokens==0.4.1
 PyYAML==6.0.3
 requests==2.32.5
-rich==14.3.2
+rich==14.3.3
 rustworkx==0.17.1
-scipy==1.17.0
+scipy==1.17.1
 scipy-openblas32==0.3.31.22.1
 scs==3.2.11
 six==1.17.0
 smmap==5.0.2
+sybil==9.3.0
 sympy==1.14.0
 tach==0.32.2
 termcolor==3.3.0
@@ -108,5 +109,5 @@ torch==2.9.1
 triton==3.5.1
 typing_extensions==4.15.0
 urllib3==2.6.3
-virtualenv==20.36.1
+virtualenv==20.38.0
 wcwidth==0.6.0
