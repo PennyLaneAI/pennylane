@@ -20,6 +20,7 @@ import copy
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field, fields
+from decimal import Decimal
 from typing import Any
 
 from pennylane.measurements import MeasurementProcess, Shots, add_shots
@@ -32,7 +33,7 @@ from .error.error import _compute_algo_error
 
 def _count_to_str(count: int) -> str:
     """Helper for printing counts, converts large counts to scientific notation."""
-    return str(count) if count < 1000 else f"{count:.3E}"
+    return str(count) if count < 100_000 else f"{Decimal(count):.3E}"
 
 
 @dataclass(frozen=True)
@@ -503,7 +504,7 @@ class CircuitSpecs:
         if isinstance(self.level, dict):
             lines.append("Levels:")
             for level, level_name in self.level.items():
-                lines.append(f"- {level_name} ({level})")
+                lines.append(f"- {level}: {level_name}")
         else:
             lines.append(f"Level: {self.level}")
 
@@ -549,7 +550,7 @@ class CircuitSpecs:
     ) -> tuple[int, int, dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
-        max_metric_length = 15
+        max_metric_length = 16
         max_column_size = max(len(level) for level in flat_resources) + 2
 
         # Use dict for these since they are sorted by default unlike a set
@@ -560,12 +561,17 @@ class CircuitSpecs:
         for res in flat_resources.values():
             for gate, count in res.gate_types.items():
                 all_gate_types[gate] = True
-                max_metric_length = max(max_metric_length, len(gate) + 3)
-                max_column_size = max(max_column_size, len(_count_to_str(count)))
+                max_metric_length = max(max_metric_length, len(gate) + 2)
+                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
             for meas, count in res.measurements.items():
                 all_meas_types[meas] = True
-                max_metric_length = max(max_metric_length, len(meas) + 3)
-                max_column_size = max(max_column_size, len(_count_to_str(count)))
+                max_metric_length = max(max_metric_length, len(meas) + 2)
+                max_column_size = max(max_column_size, len(_count_to_str(count)) + 1)
+            max_column_size = max(
+                max_column_size,
+                len(_count_to_str(res.num_allocs)) + 1,
+                len(_count_to_str(res.num_gates)) + 1,
+            )
 
         return max_metric_length, max_column_size, all_gate_types, all_meas_types
 
@@ -582,44 +588,44 @@ class CircuitSpecs:
         num_cols = len(flat_resources)
         lines.append(
             "Metric/Level".ljust(max_metric_length)
-            + "| "
-            + "| ".join(level.ljust(max_column_size) for level in flat_resources)
+            + " |"
+            + " |".join(level.rjust(max_column_size) for level in flat_resources)
         )
         lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
         lines.append(
-            "Num allocs".ljust(max_metric_length)
-            + "| "
-            + "| ".join(
-                _count_to_str(res.num_allocs).ljust(max_column_size)
+            "Wire allocations".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.num_allocs).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
         lines.append(
-            "Num Gates".ljust(max_metric_length)
-            + "| "
-            + "| ".join(
-                _count_to_str(res.num_gates).ljust(max_column_size)
+            "Total gates".ljust(max_metric_length)
+            + " |"
+            + " |".join(
+                _count_to_str(res.num_gates).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
 
-        lines.append("Gate types:".ljust(max_metric_length) + "| ")
+        lines.append("Gate types:".ljust(max_metric_length) + " |")
         for gate in all_gate_types:
             lines.append(
                 f"- {gate}".ljust(max_metric_length)
-                + "| "
-                + "| ".join(
-                    _count_to_str(res.gate_types.get(gate, 0)).ljust(max_column_size)
+                + " |"
+                + " |".join(
+                    _count_to_str(res.gate_types.get(gate, 0)).rjust(max_column_size)
                     for res in flat_resources.values()
                 )
             )
-        lines.append("Measurements:".ljust(max_metric_length) + "| ")
+        lines.append("Measurements:".ljust(max_metric_length) + " |")
         for meas in all_meas_types:
             lines.append(
                 f"- {meas}".ljust(max_metric_length)
-                + "| "
-                + "| ".join(
-                    _count_to_str(res.measurements.get(meas, 0)).ljust(max_column_size)
+                + " |"
+                + " |".join(
+                    _count_to_str(res.measurements.get(meas, 0)).rjust(max_column_size)
                     for res in flat_resources.values()
                 )
             )

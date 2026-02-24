@@ -986,19 +986,19 @@ class TestCircuitSpecs:
 Device wires: 5
 Shots: Shots(total=1000)
 Levels:
-- l1 (1)
-- l2 (2)
+- 1: l1
+- 2: l2
 
-Metric/Level     | 1    | 2-0  | 2-1
---------------------------------------
-Num allocs       | 2    | 2    | 2
-Num Gates        | 6    | 1    | 1
+Metric/Level     |    1 |  2-0 |  2-1
+-------------------------------------
+Wire allocations |    2 |    2 |    2
+Total gates      |    6 |    1 |    1
 Gate types:      |
-- Hadamard       | 4    | 0    | 0
-- CNOT           | 2    | 1    | 1
+- Hadamard       |    4 |    0 |    0
+- CNOT           |    2 |    1 |    1
 Measurements:    |
-- expval(PauliX) | 1    | 1    | 0
-- expval(PauliZ) | 1    | 0    | 1""".split()
+- expval(PauliX) |    1 |    1 |    0
+- expval(PauliZ) |    1 |    0 |    1""".split()
         ]
 
     def test_str_multi_non_tabular(self):
@@ -1009,8 +1009,8 @@ Measurements:    |
         expected += "Device wires: 5\n"
         expected += "Shots: Shots(total=1000)\n"
         expected += "Levels:\n"
-        expected += "- l1 (1)\n"
-        expected += "- l2 (2)\n"
+        expected += "- 1: l1\n"
+        expected += "- 2: l2\n"
         expected += "\n"
         expected += "Resource specifications:\n"
 

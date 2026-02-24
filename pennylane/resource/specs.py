@@ -626,21 +626,21 @@ def specs(
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - Before transforms (0)
-        - Before MLIR Passes (MLIR-0) (1)
-        - cancel-inverses (MLIR-1) (2)
-        - merge-rotations (MLIR-2) (3)
+        - 0: Before transforms
+        - 1: Before MLIR Passes (MLIR-0)
+        - 2: cancel-inverses (MLIR-1)
+        - 3: merge-rotations (MLIR-2)
         <BLANKLINE>
-        Metric/Level       | 0  | 1  | 2  | 3
-        ---------------------------------------
-        Num allocs         | 2  | 3  | 3  | 3
-        Num Gates          | 5  | 5  | 3  | 2
+        Metric/Level       |  0 |  1 |  2 |  3
+        --------------------------------------
+        Wire allocations   |  2 |  3 |  3 |  3
+        Total gates        |  5 |  5 |  3 |  2
         Gate types:        |
-        - RX               | 2  | 2  | 2  | 1
-        - PauliX           | 2  | 2  | 0  | 0
-        - CNOT             | 1  | 1  | 1  | 1
+        - RX               |  2 |  2 |  2 |  1
+        - PauliX           |  2 |  2 |  0 |  0
+        - CNOT             |  1 |  1 |  1 |  1
         Measurements:      |
-        - probs(all wires) | 1  | 1  | 1  | 1
+        - probs(all wires) |  1 |  1 |  1 |  1
 
         When invoked with an iterable of levels, or ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs`
         object's ``resources`` field is a dictionary mapping transform names (or marker labels) to their associated
@@ -702,20 +702,20 @@ def specs(
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - Before transforms (0)
-        - split_non_commuting (1)
-        - Before MLIR Passes (MLIR-0) (2)
-        - cancel-inverses (MLIR-1) (3)
+        - 0: Before transforms
+        - 1: split_non_commuting
+        - 2: Before MLIR Passes (MLIR-0)
+        - 3: cancel-inverses (MLIR-1)
         <BLANKLINE>
-        Metric/Level     | 0    | 1-0  | 1-1  | 2    | 3
-        ----------------------------------------------------
-        Num allocs       | 1    | 1    | 1    | 6    | 6
-        Num Gates        | 2    | 2    | 2    | 4    | 0
+        Metric/Level     |    0 |  1-0 |  1-1 |    2 |    3
+        ---------------------------------------------------
+        Wire allocations |    1 |    1 |    1 |    6 |    6
+        Total gates      |    2 |    2 |    2 |    4 |    0
         Gate types:      |
-        - PauliX         | 2    | 2    | 2    | 4    | 0
+        - PauliX         |    2 |    2 |    2 |    4 |    0
         Measurements:    |
-        - expval(PauliZ) | 1    | 1    | 0    | 1    | 1
-        - expval(PauliX) | 1    | 0    | 1    | 1    | 1
+        - expval(PauliZ) |    1 |    1 |    0 |    1 |    1
+        - expval(PauliX) |    1 |    0 |    1 |    1 |    1
 
         Note that in the above example, the ``split_non_commuting`` transform results in two tapes, which are labeled as
         ``1-0`` and ``1-1`` in the output. The resources for these tapes are shown separately, and the level name for
