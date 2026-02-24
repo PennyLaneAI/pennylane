@@ -96,10 +96,6 @@ class Hadamard(Operation):
     def name(self) -> str:
         return "Hadamard"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -364,10 +360,6 @@ class PauliX(Operation):
     @property
     def name(self) -> str:
         return "PauliX"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -646,10 +638,6 @@ class PauliY(Operation):
     def name(self) -> str:
         return "PauliY"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -898,10 +886,6 @@ class PauliZ(Operation):
     @property
     def name(self) -> str:
         return "PauliZ"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -1159,10 +1143,6 @@ class S(Operation):
             return f"S('{wire}')"
         return f"S({wire})"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1328,10 +1308,6 @@ class T(Operation):
             return f"T('{wire}')"
         return f"T({wire})"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
@@ -1464,10 +1440,6 @@ class SX(Operation):
     basis = "X"
 
     resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -1728,10 +1700,6 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def pow(self, z: int | float) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
@@ -1836,10 +1804,6 @@ class ECR(Operation):
     batch_size = None
 
     resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -2003,10 +1967,6 @@ class ISWAP(Operation):
 
     batch_size = None
     resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
@@ -2186,10 +2146,6 @@ class SISWAP(Operation):
 
     batch_size = None
     resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @property
     def pauli_rep(self):
