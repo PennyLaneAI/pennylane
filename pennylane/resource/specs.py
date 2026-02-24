@@ -214,7 +214,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
 
     # This value is used to determine the last level which is a transform and not an MLIR pass
     num_tape_levels = _get_last_transform_level(compile_pipeline)
-    mlir_only = (level == "all-mlir") or num_tape_levels <= 1
+    mlir_only = (level == "all-mlir") or num_tape_levels == 0
     if not mlir_only:
         # Account for the "Before transforms" tape at level 0
         num_tape_levels += 1
@@ -621,11 +621,13 @@ def specs(
 
         .. note::
             The level arguments only take into account user-applied transforms and compilation passes.
-            Level 0 always corresponds to the original circuit before any user transforms have been applied,
-            and incremental levels correspond to the aggregate of user transforms in the order in which they were applied.
+            Level 0 always corresponds to the original circuit before any user transforms or passes have been applied,
+            and incremental levels correspond to the aggregate of user transforms and passes in the order in which they
+            were applied.
 
-            In addition, ``"all"`` may show an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for further compilation with Catalyst.
-            If such a pass is returned, it will be placed after all tape transforms but before all other MLIR passes.
+            This may include an MLIR "lowering" pass that indicates that the program had to be lowered into MLIR for
+            further compilation with Catalyst. If such a pass is included, it will be placed after all tape transforms
+            but before all other MLIR passes.
 
         Here is an example using ``level="all"`` on the circuit from the previous code example:
 
@@ -635,21 +637,20 @@ def specs(
         Device wires: 3
         Shots: Shots(total=None)
         Levels:
-        - Before transforms (0)
-        - Before MLIR Passes (MLIR-0) (1)
-        - cancel-inverses (MLIR-1) (2)
-        - merge-rotations (MLIR-2) (3)
+        - Before MLIR Passes (MLIR-0) (0)
+        - cancel-inverses (MLIR-1) (1)
+        - merge-rotations (MLIR-2) (2)
         <BLANKLINE>
-        Metric/Level       | 0  | 1  | 2  | 3
-        ---------------------------------------
-        Num allocs         | 2  | 3  | 3  | 3
-        Num Gates          | 5  | 5  | 3  | 2
+        Metric/Level       | 0  | 1  | 2
+        ----------------------------------
+        Num allocs         | 3  | 3  | 3
+        Num Gates          | 5  | 3  | 2
         Gate types:        |
-        - RX               | 2  | 2  | 2  | 1
-        - PauliX           | 2  | 2  | 0  | 0
-        - CNOT             | 1  | 1  | 1  | 1
+        - RX               | 2  | 2  | 1
+        - PauliX           | 2  | 0  | 0
+        - CNOT             | 1  | 1  | 1
         Measurements:      |
-        - probs(all wires) | 1  | 1  | 1  | 1
+        - probs(all wires) | 1  | 1  | 1
 
         When invoked with an iterable of levels, or ``"all"`` as above, the returned :class:`~.resource.CircuitSpecs`
         object's ``resources`` field is a dictionary mapping transform names (or marker labels) to their associated
@@ -658,7 +659,7 @@ def specs(
         maps int levels to their associated transform or pass name. For example, the level names for the above example
 
         >>> print(all_specs.level)
-        {0: 'Before transforms', 1: 'Before MLIR Passes (MLIR-0)', 2: 'cancel-inverses (MLIR-1)', 3: 'merge-rotations (MLIR-2)'}
+        {0: 'Before MLIR Passes (MLIR-0)', 1: 'cancel-inverses (MLIR-1)', 2: 'merge-rotations (MLIR-2)'}
 
         The resources associated with a particular level can be accessed using the returned level name as follows:
 
@@ -676,7 +677,7 @@ def specs(
 
         Or, equivalently, by using the int level directly:
 
-        >>> print(all_specs.resources[all_specs.level[3]])
+        >>> print(all_specs.resources[all_specs.level[2]])
         Total wire allocations: 3
         Total gates: 2
         Circuit depth: Not computed
