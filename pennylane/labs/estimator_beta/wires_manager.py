@@ -32,12 +32,13 @@ class _WireAction:
     """Base class for operations that manage wire resources."""
 
     def __init__(self, num_wires, state=AllocateState.ZERO, restored=False):
-        self.num_wires = num_wires
         self.state = state
         self.restored = restored
+        self.num_wires = num_wires
 
-    # def __eq__(self, other: "_WireAction") -> bool:
-    #     return isinstance(other, self.__class__) and self.num_wires == other.num_wires
+    def equal(self, other: "_WireAction") -> bool:
+        """Custom equal method. We avoid overriding `__eq__` due to concerns with hashing"""
+        return isinstance(other, self.__class__) and self.num_wires == other.num_wires
 
     def __mul__(self, other):
         if isinstance(other, int):
@@ -67,12 +68,10 @@ class Deallocate(_WireAction):
                     raise ValueError(
                         "Must provide `allocated_register` when deallocating an ANY state register with `restored=True`"
                     )
-            else:
-                raise ValueError(
-                    "When deallocating an ANY state, `restored=False` is not supported."
-                )
 
-        if num_wires is None:
+        if allocated_register is not None:
+            state = allocated_register.state
+            restored = allocated_register.restored
             num_wires = allocated_register.num_wires
 
         self.state = state
@@ -109,18 +108,15 @@ def _estimate_auxiliary_wires(
     num_available_any_state_aux: int = 0,
     num_active_qubits: int = 0,
 ) -> Iterable:
-    if scalar == 0:
-        return 0, 0, 0
-    if config is None:
-        config = ResourceConfig()
-    if gate_set is None:
-        gate_set = DefaultGateSet
-    local_num_available_any_state_aux = max(0, num_available_any_state_aux - num_active_qubits)
-    any_state_aux_allocation = {}
+    if scalar == 0: return 0, 0, 0
+    if config is None: config = ResourceConfig()
+    if gate_set is None: gate_set = DefaultGateSet
 
     total = 0
     max_alloc = 0
     max_dealloc = 0
+    any_state_aux_allocation = {}
+    local_num_available_any_state_aux = max(0, num_available_any_state_aux - num_active_qubits)
 
     for action in list_actions:
         if isinstance(action, GateCount):
