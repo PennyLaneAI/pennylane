@@ -5,7 +5,6 @@ on:
     # Run every weekday at 5:50 EDT (cron is in UTC)
     - cron: "50 9 * * 1-5"
   workflow_dispatch:
-  workflow_call:
 
 jobs:
   setup-rc:
@@ -62,7 +61,7 @@ jobs:
         git config --global user.name "ringo-but-quantum"
         git add $GITHUB_WORKSPACE/pennylane/_version.py
         git commit -m "[no ci] bump nightly version"
-        git push
+        # git push
 
     - name: Build wheels
       if: ${{ steps.check_rc.outputs.branch_exists == 'true' }}
