@@ -78,10 +78,20 @@ def test_preprocess_levels(level, output, expect_warnings):
         assert _preprocess_level_input(level, marker_to_level, 5, 6) == output
 
 
-@pytest.mark.parametrize("num_tapes", [0, 2, 5])
-def test_preprocess_levels_all(num_tapes):
+@pytest.mark.parametrize(
+    "num_tapes, expected",
+    [
+        (  # If there are no tape transforms, the "Before transforms" level should be skipped
+            0,
+            list(range(5)),
+        ),
+        (2, list(range(6))),
+        (5, list(range(6))),
+    ],
+)
+def test_preprocess_levels_all(num_tapes, expected):
     # Assume there are always 4 transforms in the pipeline
-    assert _preprocess_level_input("all", {}, 4, num_tapes) == list(range(6))
+    assert _preprocess_level_input("all", {}, 4, num_tapes) == expected
 
 
 def test_preprocess_levels_invalid():
