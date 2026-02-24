@@ -108,6 +108,7 @@
     return qml.probs()
   ```
 
+  ```pycon
   >>> print(qml.specs(circuit, level="all")())
   Device: lightning.qubit
   Device wires: 2
@@ -126,6 +127,7 @@
   - Hadamard         | 2  | 2  | 0
   Measurements:      |
   - probs(all wires) | 1  | 1  | 1
+  ```
 
   [(#9088)](https://github.com/PennyLaneAI/pennylane/pull/9088)
 

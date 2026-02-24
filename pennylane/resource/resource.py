@@ -493,6 +493,24 @@ class CircuitSpecs:
             f"key '{key}' not available. Options are {[field.name for field in fields(self)]}"
         )
 
+    def _get_specs_header(self) -> list[str]:
+        """Helper for main ``to_pretty_str`` method, gathers the header information about the specs such as device and level."""
+        lines = []
+
+        lines.append(f"Device: {self.device_name}")
+        lines.append(f"Device wires: {self.num_device_wires}")
+        lines.append(f"Shots: {self.shots}")
+        if isinstance(self.level, dict):
+            lines.append("Levels:")
+            for level, level_name in self.level.items():
+                lines.append(f"- {level_name} ({level})")
+        else:
+            lines.append(f"Level: {self.level}")
+
+        lines.append("")  # Blank line
+
+        return lines
+
     def _resources_to_str(self, res) -> str:
         """Helper for printing resources, prints list or single SpecsResources."""
         lines = []
@@ -554,16 +572,7 @@ class CircuitSpecs:
     def _to_pretty_str_tabular(self) -> str:
         """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
         are many levels to display."""
-        lines = []
-
-        lines.append(f"Device: {self.device_name}")
-        lines.append(f"Device wires: {self.num_device_wires}")
-        lines.append(f"Shots: {self.shots}")
-        lines.append("Levels:")
-        for level, level_name in self.level.items():
-            lines.append(f"- {level_name} ({level})")
-
-        lines.append("")  # Blank line
+        lines = self._get_specs_header()
 
         flat_resources = self._flattened_resources()
         max_metric_length, max_column_size, all_gate_types, all_meas_types = self._get_table_format(
@@ -630,19 +639,7 @@ class CircuitSpecs:
         if tabular and isinstance(self.resources, dict):
             return self._to_pretty_str_tabular()
 
-        lines = []
-
-        lines.append(f"Device: {self.device_name}")
-        lines.append(f"Device wires: {self.num_device_wires}")
-        lines.append(f"Shots: {self.shots}")
-        if isinstance(self.level, dict):
-            lines.append("Levels:")
-            for level, level_name in self.level.items():
-                lines.append(f"- {level_name} ({level})")
-        else:
-            lines.append(f"Level: {self.level}")
-
-        lines.append("")  # Blank line
+        lines = self._get_specs_header()
 
         lines.append("Resource specifications:")
         if isinstance(self.resources, dict):
