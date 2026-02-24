@@ -67,7 +67,7 @@ def _create_mid_measure_primitive():
 
     @mid_measure_p.def_abstract_eval
     def _abstract_eval(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        dtype = jax.numpy.bool_
         return jax.core.ShapedArray((), dtype)
 
     return mid_measure_p
