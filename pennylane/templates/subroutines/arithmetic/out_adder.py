@@ -22,7 +22,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import Adjoint, Prod
+from pennylane.ops import Prod, adjoint
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.wires import Wires, WiresLike
@@ -281,7 +281,7 @@ class OutAdder(Operation):
         op_list = [
             QFT.operator(wires=qft_new_output_wires),
             target_op,
-            Adjoint(QFT.operator(wires=qft_new_output_wires)),
+            adjoint(QFT.operator(wires=qft_new_output_wires)),
         ]
 
         return op_list
@@ -328,7 +328,7 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
         ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
         @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
     )
-    Adjoint(QFT.operator(wires=qft_new_output_wires))
+    adjoint(QFT.operator(wires=qft_new_output_wires))
 
 
 add_decomps(OutAdder, _out_adder_decomposition)
