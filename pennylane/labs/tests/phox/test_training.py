@@ -14,12 +14,14 @@
 """
 Tests for the Phox training module.
 """
-import jax
-import jax.numpy as jnp
 import pytest
 
 from pennylane.labs.phox.expval_functions import CircuitConfig, build_expval_func
-from pennylane.labs.phox.training import TrainingOptions, train
+from pennylane.labs.phox.training import TrainingOptions, train, training_iterator
+
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
+jaxopt = pytest.importorskip("jaxopt")
 
 
 @pytest.fixture
@@ -165,8 +167,6 @@ def test_history_logging_manual(quadratic_problem):
     Since we removed 'monitor_interval', we verify the user can manually
     log params using the lower-level iterator if they wish.
     """
-    from pennylane.labs.phox.training import training_iterator
-
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=10)
 

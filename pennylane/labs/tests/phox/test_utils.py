@@ -14,9 +14,13 @@
 """
 Tests for the Phox simulator utility functions.
 """
+import pytest
+
+jaxopt = pytest.importorskip("jaxopt")
+
 from pennylane.labs.phox.utils import (
-    create_local_gates,
     create_lattice_gates,
+    create_local_gates,
     create_random_gates,
     generate_pauli_observables,
 )
