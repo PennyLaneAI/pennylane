@@ -64,8 +64,6 @@ def test_preprocess_levels(level, output, expect_warnings):
         "bar": 3,
         "baz": 5,
     }
-    # Dummy pipeline
-    compile_pipeline = ["1", "foo", "baz", "4", "bar"]
 
     if expect_warnings:
         with pytest.warns(
