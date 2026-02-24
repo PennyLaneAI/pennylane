@@ -976,8 +976,8 @@ class TestCircuitSpecs:
 
         assert str(r) == expected
 
-    def test_str_multi(self):
-        """Test the string representation of a CircuitSpecs instance."""
+    def test_str_multi_tabular(self):
+        """Test the tabular string representation of a CircuitSpecs instance."""
 
         r = self.example_specs_result_multi()
         assert [x.strip() for x in str(r).split()] == [
@@ -1000,6 +1000,32 @@ Measurements:    |
 - expval(PauliX) | 1    | 1    | 0
 - expval(PauliZ) | 1    | 0    | 1""".split()
         ]
+
+    def test_str_multi_non_tabular(self):
+        """Test the non-tabular string representation of a CircuitSpecs instance."""
+        r = self.example_specs_result_multi()
+
+        expected = "Device: default.qubit\n"
+        expected += "Device wires: 5\n"
+        expected += "Shots: Shots(total=1000)\n"
+        expected += "Levels:\n"
+        expected += "- l1 (1)\n"
+        expected += "- l2 (2)\n"
+        expected += "\n"
+        expected += "Resource specifications:\n"
+
+        expected += "Level = 1:\n"
+        expected += r.resources[1].to_pretty_str(preindent=2)
+
+        expected += "\n\n" + "-" * 60 + "\n\n"
+
+        expected += "Level = 3:\n"
+        expected += "  Batched tape 0:\n"
+        expected += r.resources[3][0].to_pretty_str(preindent=4)
+        expected += "\n\n  Batched tape 1:\n"
+        expected += r.resources[3][1].to_pretty_str(preindent=4)
+
+        assert r.to_pretty_str(tabular=False) == expected
 
 
 class TestCountResources:

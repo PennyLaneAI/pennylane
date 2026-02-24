@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import Shots
 from pennylane.resource import SpecsResources
-from pennylane.resource.specs import _preprocess_level_input
+from pennylane.resource.specs import _get_last_transform_level, _preprocess_level_input
 
 devices_list = [
     (qml.device("default.qubit"), None),
@@ -73,19 +73,15 @@ def test_preprocess_levels(level, output, expect_warnings):
             match="The 'level' argument to qml.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
-            assert (
-                _preprocess_level_input(
-                    level, marker_to_level, compile_pipeline, len(compile_pipeline) + 1
-                )
-                == output
-            )
+            assert _preprocess_level_input(level, marker_to_level, 5, 6) == output
     else:
-        assert (
-            _preprocess_level_input(
-                level, marker_to_level, compile_pipeline, len(compile_pipeline) + 1
-            )
-            == output
-        )
+        assert _preprocess_level_input(level, marker_to_level, 5, 6) == output
+
+
+@pytest.mark.parametrize("num_tapes", [0, 2, 5])
+def test_preprocess_levels_all(num_tapes):
+    # Assume there are always 4 transforms in the pipeline
+    assert _preprocess_level_input("all", {}, 4, num_tapes) == list(range(6))
 
 
 def test_preprocess_levels_invalid():
@@ -96,6 +92,29 @@ def test_preprocess_levels_invalid():
 
     with pytest.raises(ValueError, match="Marker name 'foo' not found"):
         _preprocess_level_input("foo", {}, [], 0)
+
+
+def test_get_last_transform_level():
+    """Test that _get_last_transform_level works correctly"""
+
+    @qml.transform
+    def dummy_transform(tape):
+        return (tape,), lambda res: res[0]
+
+    # If there are no transforms, the last transform level should be 0
+    assert _get_last_transform_level(qml.CompilePipeline()) == 0
+    # If there are *any* tape transforms, this should return the number of tape transforms
+    # since there is an implied level 0 for "before transforms"
+    assert _get_last_transform_level(qml.CompilePipeline(dummy_transform)) == 1
+    assert _get_last_transform_level(qml.CompilePipeline(dummy_transform, dummy_transform)) == 2
+
+    # MLIR passes should not be counted
+    assert (
+        _get_last_transform_level(
+            qml.CompilePipeline(dummy_transform, qml.transforms.cancel_inverses)
+        )
+        == 1
+    )
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")

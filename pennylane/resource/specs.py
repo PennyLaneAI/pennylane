@@ -128,14 +128,16 @@ def _specs_qjit_device_level_tracking(
             os.remove(_RESOURCE_TRACKING_FILEPATH)
 
 
-def _get_last_transform_level(compile_pipeline) -> int:
+def _get_last_transform_level(compile_pipeline: "qml.CompilePipeline") -> int:
     """Helper function to get the last level which is a tape transform and not an MLIR pass.
+
+    Note that this includes an implicit level 0 which corresponds to the original circuit.
 
     Args:
         compile_pipeline: The compile pipeline of the QNode, which contains both user-applied tape transforms and MLIR passes
 
     Returns:
-        int: The last level which is a tape transform and not an MLIR pass
+        int: The last level which is a tape transform and not an MLIR pass, or 0 if there are no tape transforms
     """
     # Find the seam where transforms end and MLIR passes begin
     # If the pass name is None, it indicates a transform which is NOT also a Catalyst pass
@@ -146,20 +148,25 @@ def _get_last_transform_level(compile_pipeline) -> int:
     return 0
 
 
-def _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels) -> list[int]:
+def _preprocess_level_input(
+    level: str | int | slice | list[int | str],
+    marker_to_level: dict[str, int],
+    pipeline_len: int,
+    num_tape_levels: int,
+) -> list[int]:
     """Preprocesses the level input to always return a sorted list of integers.
 
     Args:
         level (str | int | slice | iter[int | str]): The level input to preprocess
         marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers
-        compile_pipeline: The compile pipeline of the QNode
-        num_tape_levels (int): The number of tape levels
+        pipeline_len (int): The length of the compile pipeline (number of transforms and passes)
+        num_tape_levels (int): The number of tape levels in the compile pipeline (including the implicit level 0)
     Returns:
         list[int]: The preprocessed level input
     """
 
     if level in ("all", "all-mlir"):
-        return list(range(len(compile_pipeline) + 2))
+        return list(range(pipeline_len + 2))
 
     if isinstance(level, (int, str)):
         level = [level]
@@ -224,7 +231,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     # Easier to assume level is always a sorted list of int levels (if not "all" or "all-mlir")
     mlir_only = level == "all-mlir"  # TODO: In a follow-up PR this will become more useful
     return_single_level = isinstance(level, (int, str)) and level not in ("all", "all-mlir")
-    level = _preprocess_level_input(level, marker_to_level, compile_pipeline, num_tape_levels)
+    level = _preprocess_level_input(level, marker_to_level, len(compile_pipeline), num_tape_levels)
     output_level = {}  # This will be a map of level to its name
 
     tape_levels = [lvl for lvl in level if lvl < num_tape_levels]
