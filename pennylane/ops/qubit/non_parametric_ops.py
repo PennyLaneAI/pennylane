@@ -75,9 +75,6 @@ class Hadamard(Operation):
     resource_keys = set()
 
     def __init__(self, wires: WiresLike, id: str | None = None):
-        self._hyperparameters = {
-            "wires": Wires(wires)
-        }
         super().__init__(wires=wires, id=id)
 
     def label(
@@ -343,9 +340,6 @@ class PauliX(Operation):
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike, id: str | None = None):
-        self._hyperparameters = {
-            "wires": Wires(wires)
-        }
         super().__init__(wires=wires, id=id)
 
     def label(
@@ -623,9 +617,6 @@ class PauliY(Operation):
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike, id: str | None = None):
-        self._hyperparameters = {
-            "wires": Wires(wires)
-        }
         super().__init__(wires=wires, id=id)
 
     def __repr__(self) -> str:
@@ -875,9 +866,6 @@ class PauliZ(Operation):
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike, id: str | None = None):
-        self._hyperparameters = {
-            "wires": Wires(wires)
-        }
         super().__init__(wires=wires, id=id)
 
     def __repr__(self) -> str:
