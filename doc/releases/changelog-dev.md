@@ -136,9 +136,9 @@ def c():
 
 * When the new graph-based decomposition system is enabled, the :func:`~pennylane.transforms.decompose`
   transform no longer raise duplicate warnings about operators that cannot be decomposed.
-  [(#9025)](https://github.
+  [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
 
-* No unnecessary classical registers from being created when using `qml.to_openqasm` with `measure_all=False`.
+* No unnecessary classical registers will be created now when using `qml.to_openqasm` with `measure_all=False`.
   [(#9033)](https://github.com/PennyLaneAI/pennylane/pull/9033)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
