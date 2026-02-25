@@ -111,10 +111,6 @@ class QubitCarry(Operation):
 
     resource_keys = set()
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -284,10 +280,6 @@ class QubitSum(Operation):
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Σ", cache=cache)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -417,7 +409,7 @@ class IntegerComparator(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "value", "geq", "num_work_wires"}
+    resource_keys = {"num_wires", "control_wires", "target_wires", "value", "geq", "work_wires"}
 
     def _flatten(self) -> FlatPytree:
         hp = self.hyperparameters
@@ -456,6 +448,7 @@ class IntegerComparator(Operation):
         if Wires.shared_wires([total_wires, work_wires]):
             raise ValueError("The work wires must be different from the control and target wires")
 
+        self.hyperparameters["num_wires"] = len(wires)
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["target_wires"] = wires
         self.hyperparameters["work_wires"] = work_wires
@@ -465,15 +458,6 @@ class IntegerComparator(Operation):
         self.value = value
 
         super().__init__(wires=total_wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-            "value": self.value,
-            "geq": self.geq,
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
 
     def label(
         self,
@@ -622,7 +606,8 @@ class IntegerComparator(Operation):
         return super().pow(z % 2)
 
 
-def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
+def _integer_comparator_lt_resource(num_wires, value, work_wires, **_):
+    num_work_wires = len(work_wires)
 
     if value == 0:
         return {}
@@ -756,7 +741,8 @@ def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
             qml.X(wires[i])
 
 
-def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
+def _integer_comparator_ge_resource(num_wires, value, work_wires, **_):
+    num_work_wires = len(work_wires)
 
     # If the value is 0, the flipping condition is always satisfied.
     if value == 0:
@@ -874,17 +860,12 @@ def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
             qml.X(wires[i])
 
 
-def _integer_comparator_flip_geq_resource(num_wires, value, num_work_wires, geq, **_):
+def _integer_comparator_flip_geq_resource(geq, **kwargs):
     """Resource estimation for flipping the geq condition."""
+
     return {
         qml.X: 1,
-        resource_rep(
-            qml.IntegerComparator,
-            num_wires=num_wires,
-            value=value,
-            geq=not geq,
-            num_work_wires=num_work_wires,
-        ): 1,
+        resource_rep(qml.IntegerComparator, geq=not geq, **kwargs): 1,
     }
 
 

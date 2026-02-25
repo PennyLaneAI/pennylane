@@ -276,7 +276,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
                 if isinstance(op, qml.ops.Conditional):
                     op = op.base  # decompose the base of a classically controlled operator.
                 if isinstance(op, Operator):
-                    op = resource_rep(type(op), **op.resource_params)
+                    op = resource_rep(type(op), **op.hyperparameters)
                 idx = self._add_op_node(op, 0)
                 self._original_ops_indices.add(idx)
                 self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
