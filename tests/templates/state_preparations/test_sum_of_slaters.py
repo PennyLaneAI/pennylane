@@ -467,7 +467,11 @@ class TestSumOfSlatersPrep:
         assert sizes["mcx_cache_wires"] == int(num_entries > 7)
 
         op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
-        exp_resource_params = {"D": num_entries, "num_bits": new_num_bits, "num_wires": num_wires}
+        exp_resource_params = {
+            "num_entries": num_entries,
+            "num_bits": new_num_bits,
+            "num_wires": num_wires,
+        }
         assert exp_resource_params == op.resource_params
 
         registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
@@ -495,7 +499,7 @@ class TestSumOfSlatersPrep:
         assert sizes["mcx_cache_wires"] == int(n > 7)
 
         op = SumOfSlatersPrep(coefficients, range(n), indices)
-        exp_resource_params = {"D": n, "num_bits": num_bits, "num_wires": n}
+        exp_resource_params = {"num_entries": n, "num_bits": num_bits, "num_wires": n}
         assert exp_resource_params == op.resource_params
 
         registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)

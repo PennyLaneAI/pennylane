@@ -184,7 +184,7 @@ def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> n
         set_M (np.ndarray): Set of ``n`` bitstrings of length ``r`` that are representable by
             all but the last basis bitstring in ``bits_basis``. Should have shape ``(r, n)``
         set_N (np.ndarray): Set of ``D-1-n`` bitstrings (where ``n`` is given by the shape of
-            ``set_M`` and ``D`` is the number of all Slaters in the SOS algorithm) that
+            ``set_M`` and ``D`` is the number of all Slater determinants in the SOS algorithm) that
             require the last basis bitstring in their representation in ``bits_basis``. Should have
             shape ``(r, D-1-n)``.
 
@@ -791,7 +791,7 @@ class SumOfSlatersPrep(Operation):
 
     """
 
-    resource_keys = {"D", "num_bits", "num_wires"}
+    resource_keys = {"num_entries", "num_bits", "num_wires"}
 
     @property
     def resource_params(self):
@@ -799,7 +799,7 @@ class SumOfSlatersPrep(Operation):
         n = len(self.wires)
         v_bits = math.int_to_binary(np.array(indices), n).T
         selector_ids, _ = select_sos_rows(v_bits)
-        return {"D": len(indices), "num_bits": len(selector_ids), "num_wires": n}
+        return {"num_entries": len(indices), "num_bits": len(selector_ids), "num_wires": n}
 
     def __init__(self, coefficients, wires, indices):
         super().__init__(coefficients, wires)
@@ -822,13 +822,13 @@ class SumOfSlatersPrep(Operation):
         raise DecompositionUndefinedError
 
     @staticmethod
-    def required_register_sizes(D, num_bits, num_wires):
+    def required_register_sizes(num_entries, num_bits, num_wires):
         """Compute the register sizes required for ``SumOfSlatersPrep``, for given
-        numbers of bitstrings ``D``, of bits per bitstring (``num_bits``, already reduced via
-        ``select_sos_rows``) and target wires (``num_wires``).
+        numbers of bitstrings ``num_entries``, of bits per bitstring (``num_bits``, already
+        reduced via ``select_sos_rows``) and target wires (``num_wires``).
 
         Args:
-            D (int): Number of bitstrings encoded by ``SumOfSlatersPrep``.
+            num_entries (int): Number of bitstrings encoded by ``SumOfSlatersPrep``.
             num_bits (int): Number of bits per bitstring.
             num_wires (int): Number of target wires on which ``SumOfSlatersPrep`` will prepare
                 the state.
@@ -837,7 +837,7 @@ class SumOfSlatersPrep(Operation):
             dict[str, int]: Required register size per register name
 
         """
-        if D == 1:
+        if num_entries == 1:
             # Simple computational basis state preparation, does not require auxiliary qubits
             return {
                 "wires": num_wires,
@@ -847,7 +847,7 @@ class SumOfSlatersPrep(Operation):
                 "mcx_cache_wires": 0,
             }
 
-        d = math.ceil_log2(D)
+        d = math.ceil_log2(num_entries)
         m = 2 * d - 1
         if num_bits <= m:
             # Identity encoding. We do not need the identification register but can use the
@@ -857,9 +857,9 @@ class SumOfSlatersPrep(Operation):
             # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
             num_identification = m
 
-        # If D<=7, we only have encoded bits with bit count at most 2, so that we will not use
+        # If num_entries<=7, we only have encoded bits with bit count at most 2, so that we will not use
         # a cache qubit for the MultiControlledX ops.
-        num_mcx_cache = int(D > 7)
+        num_mcx_cache = int(num_entries > 7)
 
         return {
             "wires": num_wires,
@@ -870,13 +870,13 @@ class SumOfSlatersPrep(Operation):
         }
 
 
-def _sos_state_prep_resources(D, num_bits, num_wires):
+def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     """Compute the resources for _sos_state_prep. These are upper-bounded resources due to
     the way MultiControlledX gates are accounted for at the moment.
     We can remedy this once [sc-110068] is completed."""
-    if D == 1:
+    if num_entries == 1:
         return {resource_rep(qml.BasisState, num_wires=num_wires): 1}
-    d = math.ceil_log2(D)
+    d = math.ceil_log2(num_entries)
     m = min(num_bits, 2 * d - 1)
 
     identity_encoding = num_bits == m
@@ -888,7 +888,7 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
 
     # Step 2 in paper (p.7)
     qrom_params = {
-        "num_bitstrings": D,
+        "num_bitstrings": num_entries,
         "num_control_wires": d,
         "num_target_wires": num_wires,
         "num_work_wires": d - 1,
@@ -910,7 +910,7 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
 
     # Calculate the bit counts of all integers that need to be uncomputed. Depending on the bit
     # count, we need to apply one or two MCX gates or two MCX and multiple CNOT gates, see below
-    bit_counts = np.bitwise_count(np.arange(1, D)).astype(int)
+    bit_counts = np.bitwise_count(np.arange(1, num_entries)).astype(int)
     counts = dict(zip(*np.unique(bit_counts, return_counts=True)))
 
     # If k is a power of two, we can directly use an MCX gate
@@ -947,26 +947,26 @@ def _sos_state_prep_resources(D, num_bits, num_wires):
     return resources
 
 
-def _sos_state_prep_work_wires(D, num_bits, num_wires):
+def _sos_state_prep_work_wires(num_entries, num_bits, num_wires):
     """See SumOfSlatersPrep.required_register_sizes for details."""
-    sizes = SumOfSlatersPrep.required_register_sizes(D, num_bits, num_wires)
+    sizes = SumOfSlatersPrep.required_register_sizes(num_entries, num_bits, num_wires)
     return {"zeroed": sum(sizes.values()) - num_wires}
 
 
 def _preprocess(v_bits, wires):
     """Preprocess the bits for SumOfSlatersPrep and compute some characterizing integers."""
-    D = v_bits.shape[1]
-    # if selector_ids has length r, vtilde_bits has shape (r, D)
+    num_entries = v_bits.shape[1]
+    # if selector_ids has length r, vtilde_bits has shape (r, num_entries)
     selector_ids, vtilde_bits = select_sos_rows(v_bits)
     selected_target_wires = [wires[idx] for idx in selector_ids]
-    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, D)
+    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, num_entries)
     u_bits, b_bits = compute_sos_encoding(vtilde_bits)
 
     r = len(vtilde_bits)
-    d = math.ceil_log2(D)
+    d = math.ceil_log2(num_entries)
     m = min(r, 2 * d - 1)
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
-    assert b_bits.shape == (m, D)
+    assert b_bits.shape == (m, num_entries)
 
     return selected_target_wires, u_bits, b_bits, d, m, r
 
@@ -976,17 +976,17 @@ def _sos_state_prep(coefficients, wires, indices, **__):
     """Compute the decomposition of the sum-of-Slaters state preparation technique."""
     # pylint: disable=no-value-for-parameter
     n = len(wires)
-    D = len(indices)
-    v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, D)
-    if D == 1:
+    num_entries = len(indices)
+    v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+    if num_entries == 1:
         qml.BasisState(v_bits[:, 0], wires=wires)
         return
-    assert v_bits.shape == (n, D)
+    assert v_bits.shape == (n, num_entries)
 
     selected_target_wires, u_bits, b_bits, d, m, r = _preprocess(v_bits, wires)
     identity_encoding = r == m
 
-    sizes = SumOfSlatersPrep.required_register_sizes(D, r, n)
+    sizes = SumOfSlatersPrep.required_register_sizes(num_entries, r, n)
     all_allocate_wires = sum(sizes.values()) - n
     with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
         start = 0
@@ -1066,7 +1066,7 @@ def _sos_state_prep(coefficients, wires, indices, **__):
 
             qml.MultiControlledX(**mcx_kwargs)
 
-        @for_loop(1, D)
+        @for_loop(1, num_entries)
         def uncompute_enumeration(k):
             bits = list(map(int, b_bits[:, k]))
             bit_count = np.bitwise_count(k)
