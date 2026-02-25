@@ -95,7 +95,7 @@ def ppr_to_mbqc_setup_inputs():
 
     Example MLIR excerpt (structure only):
 
-    .. code-block:: mlir
+    .. code-block::
 
         ...
         %cst = arith.constant -1.5707963267948966 : f64
