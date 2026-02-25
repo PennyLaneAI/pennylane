@@ -33,6 +33,12 @@ from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr, parity
 
+ppr_to_mbqc = transform(pass_name="ppr_to_mbqc")
+
+decompose_clifford_ppr = transform(pass_name="decompose-clifford-ppr")
+
+decompose_non_clifford_ppr = transform(pass_name="decompose-non-clifford-ppr")
+
 
 @register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
