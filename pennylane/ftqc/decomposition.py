@@ -74,7 +74,7 @@ def ppr_to_mbqc_setup_inputs():
     MBQC-style circuit. Note that this pass should be applied before
     :func:`~.passes.ppr_to_ppm` since it requires the actual PPR/PPM operations.
 
-    .. code-block:: python
+    .. code-block::
 
         import pennylane as qml
         from pennylane.ftqc.decomposition import ppr_to_mbqc
