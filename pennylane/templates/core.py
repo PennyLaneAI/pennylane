@@ -12,7 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the abstractions for subroutines.
+Contains the abstractions for defining subroutines.
+
+.. currentmodule:: pennylane.templates.core
+
+.. autosummary::
+    :toctree: api
+
+    ~Subroutine
+    ~SubroutineOp
+
 """
 import copy
 from collections.abc import Callable
@@ -462,3 +471,6 @@ class Subroutine:
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
         op = self.operator(*args, id=id, **kwargs)
         return op.output
+
+
+__all__ = ["Subroutine", "SubroutineOp"]
