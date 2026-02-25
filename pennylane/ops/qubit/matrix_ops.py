@@ -308,6 +308,10 @@ class QubitUnitary(Operation):
     def has_matrix(self) -> bool:
         return not self._issparse
 
+    @classmethod
+    def _unflatten(cls, data, wires_and_params):
+        return QubitUnitary(U=data[0], wires=wires_and_params[0])
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self) -> bool:
@@ -453,6 +457,10 @@ class DiagonalQubitUnitary(Operation):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(D, wires)
+
+    @classmethod
+    def _unflatten(cls, data, wires_and_params):
+        return DiagonalQubitUnitary(D=data[0], wires=wires_and_params[0])
 
     @staticmethod
     def compute_matrix(D: TensorLike, **_) -> TensorLike:  # pylint: disable=arguments-differ

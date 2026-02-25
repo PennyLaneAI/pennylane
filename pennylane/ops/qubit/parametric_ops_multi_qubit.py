@@ -203,10 +203,6 @@ class MultiRZ(Operation):
 
         return ops
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
-
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
@@ -383,10 +379,6 @@ class PauliRot(Operation):
             op_label += param_string
 
         return op_label
-
-    @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
 
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:
@@ -734,13 +726,10 @@ class PCPhase(Operation):
 
         super().__init__(phi, wires=wires, id=id)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
+        self.hyperparameters["num_wires"] = len(wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
+    def compute_matrix(phi: TensorLike, dimension: tuple[int, int], **_) -> TensorLike:
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = dimension
 
@@ -1163,10 +1152,6 @@ class IsingXX(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1331,10 +1316,6 @@ class IsingYY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -1508,10 +1489,6 @@ class IsingZZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike):
@@ -1734,10 +1711,6 @@ class IsingXY(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
@@ -1935,10 +1908,6 @@ class PSWAP(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
@@ -2147,10 +2116,6 @@ class CPhaseShift00(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -2372,10 +2337,6 @@ class CPhaseShift01(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def label(
         self,
         decimals: int | None = None,
@@ -2585,10 +2546,6 @@ class CPhaseShift10(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
