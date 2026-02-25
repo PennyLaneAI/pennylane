@@ -50,6 +50,7 @@
   of `Operator`/ `Operation`.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
+  [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
 
   ```python
   from pennylane.templates import Subroutine
