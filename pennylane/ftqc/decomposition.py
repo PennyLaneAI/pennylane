@@ -14,6 +14,7 @@
 """
 Contains functions to convert a PennyLane tape to the textbook MBQC formalism
 """
+
 from functools import partial, singledispatch
 
 import networkx as nx
@@ -33,11 +34,33 @@ from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
 from .utils import QubitMgr, parity
 
-ppr_to_mbqc = transform(pass_name="ppr_to_mbqc")
 
-decompose_clifford_ppr = transform(pass_name="decompose-clifford-ppr")
+def ppr_to_mbqc_setup_inputs():
+    """Dummy set-up inputs."""
+    return (), {}
 
-decompose_non_clifford_ppr = transform(pass_name="decompose-non-clifford-ppr")
+
+ppr_to_mbqc = transform(pass_name="ppr_to_mbqc", setup_inputs=ppr_to_mbqc_setup_inputs)
+
+
+def decompose_clifford_ppr_setup_inputs():
+    """Dummy set-up inputs."""
+    return (), {}
+
+
+decompose_clifford_ppr = transform(
+    pass_name="decompose-clifford-ppr", setup_inputs=decompose_clifford_ppr_setup_inputs
+)
+
+
+def decompose_non_clifford_ppr_setup_inputs():
+    """Dummy set-up inputs."""
+    return (), {}
+
+
+decompose_non_clifford_ppr = transform(
+    pass_name="decompose-non-clifford-ppr", setup_inputs=decompose_non_clifford_ppr_setup_inputs
+)
 
 
 @register_resources({RotXZX: 1})
