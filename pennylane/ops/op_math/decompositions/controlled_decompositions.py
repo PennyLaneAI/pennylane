@@ -249,9 +249,7 @@ def _ctrl_decomp_bisect_resources(target_wires, control_wires, work_wires, **__)
                 {},
                 control_wires=control_wires,
                 work_wires=(
-                    [work_wires[0]]
-                    if len(work_wires)
-                    else [num_target_wires + num_control_wires]  # TODO: double check this!
+                    [work_wires[0]] if len(work_wires) else [num_target_wires + num_control_wires]  # TODO: double check this!
                 ),
                 work_wire_type="borrowed",
             ): 1,
@@ -280,9 +278,7 @@ def _ctrl_decomp_bisect_resources(target_wires, control_wires, work_wires, **__)
             {},
             control_wires=control_wires,
             work_wires=(
-                [work_wires[0]]
-                if len(work_wires)
-                else [num_target_wires + num_control_wires]  # TODO: double check this!
+                [work_wires[0]] if len(work_wires) else [num_target_wires + num_control_wires]  # TODO: double check this!
             ),
             work_wire_type="borrowed",
         ): 1,
