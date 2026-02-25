@@ -194,7 +194,6 @@ class value_and_grad:
             return qml.value_and_grad(circuit)(x)
 
     >>> workflow(0.2)
-    (Array(-0.58778525, dtype=float64),
     (Array(-0.58778525, dtype=float64), Array(-2.54160185, dtype=float64)))
 
     **Example 2 (Classical preprocessing and postprocessing)**
