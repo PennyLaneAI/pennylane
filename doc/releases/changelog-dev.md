@@ -93,6 +93,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Allow to pass ``alt_decomps`` and ``fixed_decomps`` to the device preprocessing function 
+  :func:`~.devices.preprocess.decompose` , which are then passed through to the 
+  graph-based decomposition system.
+  [(#9___)](https://github.com/PennyLaneAI/pennylane/pull/9___)
+
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
   Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
