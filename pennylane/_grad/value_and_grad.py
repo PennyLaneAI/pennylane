@@ -154,7 +154,7 @@ class value_and_grad:
                         specified by the QNode, while the classical computation is differentiated
                         using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
                         ``"adjoint"`` on internal QNodes. Notably, QNodes with
-                        ``diff_method="finite-diff"`` is not supported with ``"auto"``.
+                        ``diff_method="finite-diff"`` are not supported with ``"auto"``.
 
                       - ``"fd"`` represents first-order finite-differences for the entire hybrid
                         function.
