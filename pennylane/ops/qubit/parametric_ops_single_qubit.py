@@ -98,10 +98,6 @@ class RX(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     has_decomposition = False
 
     @staticmethod
@@ -301,10 +297,6 @@ class RY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     has_decomposition = False
 
@@ -612,10 +604,6 @@ class RZ(Operation):
 
     def adjoint(self) -> "RZ":
         return RZ(-self.data[0], wires=self.wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]
@@ -1017,10 +1005,6 @@ class Rot(Operation):
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     def compute_matrix(
         phi: TensorLike,
@@ -1403,10 +1387,6 @@ class U2(Operation):
     def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, delta, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
     def compute_matrix(phi: TensorLike, delta: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1584,10 +1564,6 @@ class U3(Operation):
         id: str | None = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     def compute_matrix(theta: TensorLike, phi: TensorLike, delta: TensorLike) -> TensorLike:
