@@ -75,7 +75,11 @@ class SymbolicOp(Operator):
 
     # pylint: disable=super-init-not-called
     def __init__(self, base, id=None):
-        self.hyperparameters["base"] = base
+        self.hyperparameters["base_class"] = type(base)
+        self.hyperparameters["base_params"] = (
+            base._flatten()
+        )  # TODO: maybe we experiment with taking these as params instead of base
+        self.base = base
         if isinstance(base, (qml.ops.MidMeasure, qml.ops.PauliMeasure)):
             raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
         if id is not None:
@@ -93,11 +97,6 @@ class SymbolicOp(Operator):
     @property
     def batch_size(self):
         return self.base.batch_size
-
-    @property
-    def base(self) -> Operator:
-        """The base operator."""
-        return self.hyperparameters["base"]
 
     @property
     def data(self):
@@ -159,7 +158,7 @@ class SymbolicOp(Operator):
     def map_wires(self, wire_map: dict):
         new_op = copy(self)
         new_base = self.base.map_wires(wire_map=wire_map)
-        new_op.hyperparameters["base"] = new_base
+        new_op.base = new_base
         new_op._wires = new_base.wires  # pylint:disable=protected-access
         if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access

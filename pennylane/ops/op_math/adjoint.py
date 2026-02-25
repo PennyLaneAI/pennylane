@@ -367,10 +367,6 @@ class Adjoint(SymbolicOp):
         return f"Adjoint({self.base})"
 
     @property
-    def resource_params(self) -> dict:
-        return {"base_class": type(self.base), "base_params": self.base.resource_params}
-
-    @property
     def ndim_params(self):
         return self.base.ndim_params
 
