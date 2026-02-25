@@ -275,7 +275,9 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     skip_initial_state_prep: bool = True,
     decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
     device_wires: Wires | None = None,
-    target_gates: set | None = None,
+    target_gates: set | dict | None = None,
+    fixed_decomps: dict | None = None,
+    alt_decomps: dict | None = None,
     name: str = "device",
     error: type[Exception] | None = None,
     strict: bool = True,
@@ -382,8 +384,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             target_gates=target_gates,
             num_work_wires=num_available_work_wires,
             minimize_work_wires=False,
-            fixed_decomps=None,
-            alt_decomps=None,
+            fixed_decomps=fixed_decomps,
+            alt_decomps=alt_decomps,
             strict=strict,
         )
 
