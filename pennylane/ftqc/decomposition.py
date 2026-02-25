@@ -36,7 +36,90 @@ from .utils import QubitMgr, parity
 
 
 def ppr_to_mbqc_setup_inputs():
-    """Dummy set-up inputs."""
+    R"""
+    Specify that the MLIR compiler pass for lowering Pauli Product Rotations (PPR)
+    and Pauli Product Measurements (PPM) to a measurement-based quantum computing
+    (MBQC) style circuit will be applied.
+
+    This pass replaces PBC operations (``pbc.ppr`` and ``pbc.ppm``) with a
+    gate-based sequence in the Quantum dialect using universal gates and
+    measurements that supported as MBQC gate set.
+    For details, see the Figure 2 of [Measurement-based Quantum Computation on cluster states](https://arxiv.org/abs/quant-ph/0301052).
+
+    Conceptually, each Pauli product is handled by:
+
+    - Mapping its Pauli string to the Z basis via per-qubit conjugations
+      (e.g., ``H`` for ``X``; specialized ``RotXZX`` sequences for ``Y``).
+    - Accumulating parity onto the first qubit with a right-to-left CNOT ladder.
+    - Emitting the kernel operation:
+      - **PPR**: apply an ``RZ`` with an angle derived from the rotation kind.
+      - **PPM**: perform a measurement and return an ``i1`` result.
+    - Uncomputing by reversing the CNOT ladder and the conjugations.
+    - Conjugating the qubits back to the original basis.
+
+    .. note::
+
+        This pass expects PPR/PPM operations to be present. In practice, use it
+        after :func:`~.passes.to_ppr`.
+
+    Args:
+        fn (QNode): QNode to apply the pass to.
+
+    Returns:
+        :class:`QNode <pennylane.QNode>`
+
+    **Example**
+
+    Convert a simple Clifford+T circuit to PPRs, then lower them to an
+    MBQC-style circuit. Note that this pass should be applied before
+    :func:`~.passes.ppr_to_ppm` since it requires the actual PPR/PPM operations.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.ftqc.decomposition import ppr_to_mbqc
+        from pennylane.transforms.decompositions import to_ppr
+
+        p = [("my_pipe", ["quantum-compilation-stage"])]
+
+        @qml.qjit(pipelines=p, target="mlir", keep_intermediate=True)
+        @ppr_to_mbqc
+        @to_ppr
+        @qml.qnode(qml.device("null.qubit", wires=2))
+        def circuit():
+            qml.H(0)
+            qml.CNOT([0, 1])
+            return
+
+        print(circuit.mlir_opt)
+
+    Example MLIR excerpt (structure only):
+
+    .. code-block:: mlir
+        ...
+        %cst = arith.constant -1.5707963267948966 : f64
+        %cst_0 = arith.constant 1.5707963267948966 : f64
+        %0 = quantum.alloc( 2) : !quantum.reg
+        %1 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+        %2 = quantum.extract %0[ 1] : !quantum.reg -> !quantum.bit
+        %out_qubits = quantum.custom "RZ"(%cst_0) %1 : !quantum.bit
+        %out_qubits_1 = quantum.custom "H"() %out_qubits : !quantum.bit
+        %out_qubits_2 = quantum.custom "RZ"(%cst_0) %out_qubits_1 : !quantum.bit
+        %out_qubits_3 = quantum.custom "H"() %out_qubits_2 : !quantum.bit
+        %out_qubits_4 = quantum.custom "RZ"(%cst_0) %out_qubits_3 : !quantum.bit
+        %out_qubits_5 = quantum.custom "H"() %2 : !quantum.bit
+        %out_qubits_6:2 = quantum.custom "CNOT"() %out_qubits_5, %out_qubits_4 : !quantum.bit, !quantum.bit
+        %out_qubits_7 = quantum.custom "RZ"(%cst_0) %out_qubits_6#1 : !quantum.bit
+        %out_qubits_8:2 = quantum.custom "CNOT"() %out_qubits_6#0, %out_qubits_7 : !quantum.bit, !quantum.bit
+        %out_qubits_9 = quantum.custom "H"() %out_qubits_8#0 : !quantum.bit
+        %out_qubits_10 = quantum.custom "RZ"(%cst) %out_qubits_8#1 : !quantum.bit
+        %out_qubits_11 = quantum.custom "H"() %out_qubits_9 : !quantum.bit
+        %out_qubits_12 = quantum.custom "RZ"(%cst) %out_qubits_11 : !quantum.bit
+        %out_qubits_13 = quantum.custom "H"() %out_qubits_12 : !quantum.bit
+        %mres, %out_qubit = quantum.measure %out_qubits_13 : i1, !quantum.bit
+        ...
+
+    """
     return (), {}
 
 
@@ -44,7 +127,10 @@ ppr_to_mbqc = transform(pass_name="ppr_to_mbqc", setup_inputs=ppr_to_mbqc_setup_
 
 
 def decompose_clifford_ppr_setup_inputs():
-    """Dummy set-up inputs."""
+    """
+    Decompose the PPR (pi/4) into PPR and PPMs operations via flattening method
+    as described in Figure 11(b) in the paper: `arXiv:1808.02892. <https://arxiv.org/abs/1808.02892>_`
+    """
     return (), {}
 
 
@@ -54,7 +140,10 @@ decompose_clifford_ppr = transform(
 
 
 def decompose_non_clifford_ppr_setup_inputs():
-    """Dummy set-up inputs."""
+    """
+    Decompose the Non-Clifford (pi/8) PPR into PPR and PPMs operations via pauli corrected method
+    as described in Figure 13(a) in the paper: `arXiv:2211.15465. <https://arxiv.org/pdf/2211.15465>_`
+    """
     return (), {}
 
 
