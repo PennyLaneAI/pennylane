@@ -606,7 +606,6 @@ def ceil_log2(n: int) -> int:
     Returns:
         int: Rounded-up base-2 logarithm of ``n``.
 
-
     **Example**
 
     On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
@@ -629,4 +628,6 @@ def ceil_log2(n: int) -> int:
     >>> qml.math.ceil_log2(9)
     4
     """
+    if is_abstract(n):
+        return np.ceil(np.log2(n)).astype(int)
     return int(np.ceil(np.log2(n)))
