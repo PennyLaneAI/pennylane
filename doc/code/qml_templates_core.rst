@@ -1,5 +1,5 @@
 qml.templates.core
-===============
+==================
 
 .. currentmodule:: pennylane.templates.core
 
