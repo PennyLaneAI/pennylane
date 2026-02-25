@@ -354,6 +354,7 @@ def handle_add_3(self, x):  # pylint: disable=unused-argument
     return x + scalar
 
 
+#  pylint: disable=too-many-public-methods
 class TestHigherOrderPrimitiveRegistrations:
 
     @pytest.mark.parametrize("lazy", (True, False))
