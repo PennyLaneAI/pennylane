@@ -170,6 +170,8 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
+        self.hyperparameters["num_wires"] = len(wires)
+
         super().__init__(U, wires=wires, id=id)
 
     @staticmethod
@@ -184,12 +186,8 @@ class QubitUnitary(Operation):
             atol=1e-6,
         )
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
     @staticmethod
-    def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_matrix(U: TensorLike, **_):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -217,7 +215,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(U: TensorLike, format="csr", **_):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -246,7 +244,7 @@ class QubitUnitary(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(U: TensorLike, wires: WiresLike):
+    def compute_decomposition(U: TensorLike, wires: WiresLike, **_):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -447,12 +445,17 @@ class DiagonalQubitUnitary(Operation):
 
     resource_keys = {"num_wires"}
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
+    def __init__(
+        self,
+        D: TensorLike | csr_matrix,
+        wires: WiresLike,
+    ):
+        wires = Wires(wires)
+        self.hyperparameters["num_wires"] = len(wires)
+        super().__init__(D, wires)
 
     @staticmethod
-    def compute_matrix(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(D: TensorLike, **_) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -486,7 +489,7 @@ class DiagonalQubitUnitary(Operation):
         return qml.math.diag(D)
 
     @staticmethod
-    def compute_eigvals(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_eigvals(D: TensorLike, **_) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -522,7 +525,9 @@ class DiagonalQubitUnitary(Operation):
         return D
 
     @staticmethod
-    def compute_decomposition(D: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(
+        D: TensorLike, wires: WiresLike, **_
+    ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -656,7 +661,7 @@ def _diagonal_qu_resource(num_wires):
 
 
 @register_resources(_diagonal_qu_resource)
-def _diagonal_qu_decomp(D, wires):
+def _diagonal_qu_decomp(D, wires, **_):
     angles = qml.math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
