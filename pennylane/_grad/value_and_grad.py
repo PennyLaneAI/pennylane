@@ -237,7 +237,7 @@ class value_and_grad:
         self._argnums = argnums
         self._method = method
         self._h = h
-        # need to preserve input siganture for use in catalyst AOT compilation, but
+        # need to preserve input signature for use in catalyst AOT compilation, but
         # get rid of return annotation to placate autograd
         self.__signature__ = inspect.signature(self._func).replace(
             return_annotation=inspect.Signature.empty
