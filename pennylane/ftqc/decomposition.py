@@ -36,7 +36,7 @@ from .utils import QubitMgr, parity
 
 
 def ppr_to_mbqc_setup_inputs():
-    R"""
+    """
     Specify that the MLIR compiler pass for lowering Pauli Product Rotations (PPR)
     and Pauli Product Measurements (PPM) to a measurement-based quantum computing
     (MBQC) style circuit will be applied.
