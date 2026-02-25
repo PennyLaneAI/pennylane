@@ -105,7 +105,7 @@ class TestInitialization:
         op = Adjoint(base)
 
         assert op.base is base
-        assert op.hyperparameters["base"] is base
+        assert op.hyperparameters["base_class"] is type(base)
         assert op.name == "Adjoint(PauliX)"
 
         assert op.num_params == 0
@@ -122,7 +122,7 @@ class TestInitialization:
         op = Adjoint(base)
 
         assert op.base is base
-        assert op.hyperparameters["base"] is base
+        assert op.hyperparameters["base_class"] is type(base)
         assert op.name == "Adjoint(Rot)"
 
         assert op.num_params == 3
@@ -141,7 +141,7 @@ class TestInitialization:
         op = Adjoint(base)
 
         assert op.base is base
-        assert op.hyperparameters["base"] is base
+        assert op.hyperparameters["base_class"] is type(base)
         assert op.name == "Adjoint(StronglyEntanglingLayers)"
 
         assert op.num_params == 1
