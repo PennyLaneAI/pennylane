@@ -380,13 +380,13 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     num_available_work_wires = None  # no constraint on work wires / not applicable with old system
     graph_solution = None
+    if device_wires is not None:
+        # Calculate work wires as device wires that are not used by the tape
+        num_available_work_wires = len(set(device_wires) - set(tape.wires))
 
     if target_gates is not None and enabled_graph():
         # Compute parameters for graph decomposition if device_wires and target_gates are provided
-        if device_wires is not None:
-            # Calculate work wires as device wires that are not used by the tape
-            num_available_work_wires = len(set(device_wires) - set(tape.wires))
-        else:
+        if num_available_work_wires is None:
             num_available_work_wires = num_work_wires
 
         # Filter out instances of ops that don't need to be decomposed
