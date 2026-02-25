@@ -21,7 +21,7 @@ from pennylane import capture
 from pennylane.compiler import compiler
 from pennylane.exceptions import CompileError
 
-from .grad import _args_and_argnums, _setup_h, _setup_method, _shape
+from .grad import _args_and_argnums, _setup_h, _setup_method, _ShapedArray
 
 has_jax = True
 try:
@@ -58,13 +58,13 @@ def _get_value_and_grad_prim():
     def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
         in_avals = tuple(args[i] for i in argnums)
         out_shapes = [outvar.aval.shape for outvar in jaxpr.outvars]
-        grad_shape = [
-            _shape(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
+        grad_avals = [
+            _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
             for out_shape in out_shapes
             for in_aval in in_avals
         ]
         res_avals = [outvar.aval for outvar in jaxpr.outvars]
-        return res_avals + grad_shape
+        return res_avals + grad_avals
 
     return value_and_grad_prim
 
@@ -135,8 +135,7 @@ class value_and_grad:
     function.
 
     This function allows the value and the gradient of a hybrid quantum-classical function to be
-    computed within the compiled program. Outside of a compiled function, this function will
-    simply dispatch to its JAX counterpart ``jax.value_and_grad``.
+    computed within the compiled program.
 
     Note that ``value_and_grad`` can be more efficient, and reduce overall quantum executions,
     compared to separately executing the function and then computing its gradient.
@@ -176,7 +175,7 @@ class value_and_grad:
         Any JAX-compatible optimization library, such as `Optax
         <https://optax.readthedocs.io/en/stable/index.html>`_, can be used
         alongside ``value_and_grad`` for JIT-compatible variational workflows.
-        See the :doc:`/dev/quick_start` for examples.
+        See the :doc:`quickstart guide <catalyst:dev/quick_start>` for examples.
 
     .. seealso:: :func:`~.grad`, :func:`~.jacobian`
 

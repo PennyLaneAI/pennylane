@@ -76,7 +76,7 @@ def _get_jacobian_prim():
         in_avals = tuple(args[i + n_consts] for i in argnums)
         out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
         return [
-            _shape(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
+            _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
             for out_shape in out_shapes
             for in_aval in in_avals
         ]
@@ -84,8 +84,8 @@ def _get_jacobian_prim():
     return jacobian_prim
 
 
-def _shape(shape, dtype, weak_type=False):
-    if jax.config.jax_dynamic_shapes and any(
+def _ShapedArray(shape, dtype, weak_type=False):
+    if jax.config.jax_dynamic_ShapedArrays and any(
         not isinstance(s, int) for s in shape
     ):  # pragma: no cover
         return jax.core.DShapedArray(shape, dtype, weak_type=weak_type)

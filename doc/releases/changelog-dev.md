@@ -94,6 +94,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.value_and_grad` is now available to simultaneously calculate the results and gradients in Catalyst.
+  [(#8814)](https://github.com/PennyLaneAI/pennylane/pull/8814)
+
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
   Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
