@@ -20,9 +20,12 @@ import functools
 from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
+from typing import Iterable
 
 import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import WiresLike
 
 from .utils import to_name
 
@@ -300,9 +303,9 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
 def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class: type[Operator],
     base_params: dict,
-    num_control_wires: int,
-    num_zero_control_values: int = 0,
-    num_work_wires: int = 0,
+    control_wires: WiresLike,
+    control_values: Iterable[int] = None,
+    work_wires: WiresLike = [],
     work_wire_type="borrowed",
 ):
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
@@ -321,26 +324,30 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
         work_wire_type (str): the type of work wire
 
     """
+    if control_values is None:
+        control_values = math.ones(len(control_wires))
 
     _validate_resource_rep(base_class, base_params)
 
     # Flattens nested controlled structures.
     if base_class in (qml.ops.Controlled, qml.ops.ControlledOp):
-        num_control_wires += base_params["num_control_wires"]
-        num_zero_control_values += base_params["num_zero_control_values"]
-        num_work_wires += base_params["num_work_wires"]
+        control_wires += base_params["control_wires"]
+        control_values += base_params["control_values"]
+        work_wires += base_params["work_wires"]
         return controlled_resource_rep(
             base_class=base_params["base_class"],
             base_params=base_params["base_params"],
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
+            control_wires=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
 
+    num_control_wires = len(control_wires)
+
     custom_controlled_map = qml.ops.op_math.controlled.base_to_custom_ctrl_op()
     custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
-    if num_zero_control_values == 0 and custom_ctrl:
+    if math.sum(not val for val in control_values) == 0 and custom_ctrl:
         return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
 
     # When the base class is a custom controlled op, update the base to the base of the op.
@@ -354,9 +361,9 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
         return _controlled_qubit_unitary_rep(
             base_class,
             base_params,
-            num_control_wires,
-            num_zero_control_values,
-            num_work_wires,
+            control_wires,
+            control_values,
+            work_wires,
             work_wire_type,
         )
 
@@ -365,9 +372,9 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
         return _controlled_x_rep(
             base_class,
             base_params,
-            num_control_wires,
-            num_zero_control_values,
-            num_work_wires,
+            control_wires,
+            control_values,
+            work_wires,
             work_wire_type,
         )
 
@@ -376,9 +383,9 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
         {
             "base_class": base_class,
             "base_params": base_params,
-            "num_control_wires": num_control_wires,
-            "num_zero_control_values": num_zero_control_values,
-            "num_work_wires": num_work_wires,
+            "control_wires": num_control_wires,
+            "control_values": control_values,
+            "work_wires": work_wires,
             "work_wire_type": work_wire_type,
         },
     )
@@ -522,23 +529,33 @@ def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-ma
 def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class,
     base_params,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
+    control_wires,
+    control_values,
+    work_wires,
     work_wire_type="borrowed",
 ) -> CompressedResourceOp | None:
     """Helper function that handles custom logic for controlled X gates."""
+    num_control_wires = len(control_wires)
+    num_zero_control_values = len(control_values) - math.sum(control_values)
+    num_work_wires = len(work_wires)
 
     if base_class is qml.X:
         if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qml.CNOT)
+            return resource_rep(
+                qml.CNOT,
+                control_values=control_values,
+                work_wires=work_wires,
+                base=base_class,
+                control_wires=control_wires,
+                work_wire_type=work_wire_type,
+            )
         if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
             return resource_rep(qml.Toffoli)
         return resource_rep(
             qml.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
+            control_wires=num_control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
 

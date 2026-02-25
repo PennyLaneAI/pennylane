@@ -218,13 +218,15 @@ def ctrl_decomp_zyz(
 #######################
 
 
-def _ctrl_decomp_bisect_condition(num_target_wires, num_control_wires, **__):
+def _ctrl_decomp_bisect_condition(target_wires, control_wires, **__):
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
     # Also, it is not helpful when there's only a single control wire.
-    return num_target_wires == 1 and num_control_wires > 1
+    return len(target_wires) == 1 and len(control_wires) > 1
 
 
-def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
+def _ctrl_decomp_bisect_resources(target_wires, control_wires, work_wires, **__):
+    num_target_wires = len(target_wires)
+    num_control_wires = len(control_wires)
 
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
@@ -236,8 +238,8 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             controlled_resource_rep(
                 ops.X,
                 {},
-                num_control_wires=len_k2,
-                num_work_wires=len_k1,
+                control_wires=control_wires[0:len_k1],
+                work_wires=control_wires[len_k1:],
                 work_wire_type="borrowed",
             ): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
@@ -245,8 +247,10 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
             controlled_resource_rep(
                 ops.GlobalPhase,
                 {},
-                num_control_wires=num_control_wires,
-                num_work_wires=1,
+                control_wires=control_wires,
+                work_wires=(
+                    [work_wires[0]] if len(work_wires) else [num_target_wires + num_control_wires]  # TODO: double check this!
+                ),
                 work_wire_type="borrowed",
             ): 1,
         }
@@ -256,15 +260,15 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         controlled_resource_rep(
             ops.X,
             {},
-            num_control_wires=len_k2,
-            num_work_wires=len_k1,
+            control_wires=control_wires[len_k1:],
+            work_wires=control_wires[0:len_k1],
             work_wire_type="borrowed",
         ): 4,
         controlled_resource_rep(
             ops.X,
             {},
-            num_control_wires=len_k1,
-            num_work_wires=len_k2,
+            control_wires=control_wires[0:len_k1],
+            work_wires=control_wires[len_k1:],
             work_wire_type="borrowed",
         ): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
@@ -272,8 +276,10 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
         controlled_resource_rep(
             ops.GlobalPhase,
             {},
-            num_control_wires=num_control_wires,
-            num_work_wires=1,
+            control_wires=control_wires,
+            work_wires=(
+                [work_wires[0]] if len(work_wires) else [num_target_wires + num_control_wires]  # TODO: double check this!
+            ),
             work_wire_type="borrowed",
         ): 1,
     }
@@ -304,8 +310,8 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
-def _single_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
-    return num_target_wires == 1 and num_control_wires == 1
+def _single_ctrl_decomp_zyz_condition(target_wires, control_wires, **__):
+    return len(target_wires) == 1 and len(control_wires) == 1
 
 
 def _single_ctrl_decomp_zyz_resources(**__):
@@ -329,8 +335,8 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
 
-def _multi_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
-    return num_target_wires == 1 and num_control_wires > 1
+def _multi_ctrl_decomp_zyz_condition(target_wires, control_wires, **__):
+    return len(target_wires) == 1 and len(control_wires) > 1
 
 
 def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wire_type, **__):
@@ -374,26 +380,26 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
 
 
 def _controlled_two_qubit_unitary_resource(
-    num_target_wires,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
+    target_wires,
+    control_wires,
+    control_values,
+    work_wires,
     work_wire_type,
     **__,
 ):
-    base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
+    base_resources = two_qubit_decomp_rule.compute_resources(num_wires=len(target_wires))
     gate_counts = {
         controlled_resource_rep(
             base_class=base_op_rep.op_type,
             base_params=base_op_rep.params,
-            num_control_wires=num_control_wires,
+            num_control_wires=len(control_wires),
             num_zero_control_values=0,
-            num_work_wires=num_work_wires,
+            num_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
         ): count
         for base_op_rep, count in base_resources.gate_counts.items()
     }
-    gate_counts[ops.X] = num_zero_control_values * 2
+    gate_counts[ops.X] = (len(control_values) - math.sum(control_values)) * 2
     return gate_counts
 
 
@@ -415,12 +421,12 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
         ops.PauliX(w)
 
 
-def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
-    return num_control_wires > 2 and num_work_wires >= num_control_wires - 2
+def _mcx_many_workers_condition(control_wires, work_wires, **__):
+    return len(control_wires) > 2 and len(work_wires) >= len(control_wires) - 2
 
 
-def _mcx_many_workers_resource(num_control_wires, work_wire_type, **__):
-
+def _mcx_many_workers_resource(control_wires, work_wire_type, **__):
+    num_control_wires = len(control_wires)
     if work_wire_type == "borrowed":
         return {ops.Toffoli: 4 * (num_control_wires - 2)}
     return {
@@ -471,11 +477,11 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
 decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 
 
-@register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda work_wires, **_: not len(work_wires))
+@register_condition(lambda control_wires, **_: len(control_wires) > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "zeroed"),
-    work_wires=lambda num_control_wires, **_: {"zeroed": num_control_wires - 2},
+    lambda control_wires, **_: _mcx_many_workers_resource(len(control_wires), "zeroed"),
+    work_wires=lambda control_wires, **_: {"zeroed": len(control_wires) - 2},
 )
 def _mcx_many_zeroed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
@@ -488,11 +494,11 @@ def _mcx_many_zeroed_workers(wires, **kwargs):
 decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 
 
-@register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda work_wires, **_: not len(work_wires))
+@register_condition(lambda control_wires, **_: len(control_wires) > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "borrowed"),
-    work_wires=lambda num_control_wires, **_: {"borrowed": num_control_wires - 2},
+    lambda control_wires, **_: _mcx_many_workers_resource(len(control_wires), "borrowed"),
+    work_wires=lambda control_wires, **_: {"borrowed": len(control_wires) - 2},
 )
 def _mcx_many_borrowed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
@@ -505,14 +511,16 @@ def _mcx_many_borrowed_workers(wires, **kwargs):
 decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_workers)
 
 
-def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
+def _mcx_two_workers_condition(control_wires, work_wires, **__):
+    num_control_wires = len(control_wires)
+    num_work_wires = len(work_wires)
     return num_control_wires > 2 and (
         num_work_wires >= 2 or (num_work_wires == 1 and num_control_wires < 6)
     )
 
 
-def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
-
+def _mcx_two_workers_resource(control_wires, work_wire_type, **__):
+    num_control_wires = len(control_wires)
     is_small_mcx = num_control_wires < 6
 
     if work_wire_type == "zeroed":
@@ -594,8 +602,8 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
-    work_wires=lambda num_control_wires, **_: {"zeroed": 1 + (num_control_wires >= 6)},
+    lambda control_wires, **_: _mcx_two_workers_resource(len(control_wires), "zeroed"),
+    work_wires=lambda control_wires, **_: {"zeroed": 1 + (len(control_wires) >= 6)},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
     is_small_mcx = (len(wires) - 1) < 6
@@ -607,11 +615,11 @@ def _mcx_two_zeroed_workers(wires, **kwargs):
 decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 
 
-@register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda work_wires, **_: not len(work_wires))
+@register_condition(lambda control_wires, **_: len(control_wires) > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
-    work_wires=lambda num_control_wires, **_: {"borrowed": 2 - (num_control_wires < 6)},
+    lambda control_wires, **_: _mcx_two_workers_resource(len(control_wires), "borrowed"),
+    work_wires=lambda control_wires, **_: {"borrowed": 2 - (len(control_wires) < 6)},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
     is_small_mcx = (len(wires) - 1) < 6
@@ -623,11 +631,12 @@ def _mcx_two_borrowed_workers(wires, **kwargs):
 decompose_mcx_two_borrowed_workers = flip_zero_control(_mcx_two_borrowed_workers)
 
 
-def _mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
-    return num_control_wires > 2 and num_work_wires == 1
+def _mcx_one_worker_condition(control_wires, work_wires, **__):
+    return len(control_wires) > 2 and len(work_wires) == 1
 
 
-def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
+def _mcx_one_worker_resource(control_wires, work_wire_type, **__):
+    num_control_wires = len(control_wires)
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 5
         return {
@@ -688,10 +697,10 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
 decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
 
 
-@register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda work_wires, **_: not len(work_wires))
+@register_condition(lambda control_wires, **_: len(control_wires) > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "zeroed"),
+    lambda control_wires, **_: _mcx_one_worker_resource(len(control_wires), "zeroed"),
     work_wires={"zeroed": 1},
 )
 def _mcx_one_zeroed_worker(wires, **kwargs):
@@ -703,10 +712,10 @@ def _mcx_one_zeroed_worker(wires, **kwargs):
 decompose_mcx_one_zeroed_worker = flip_zero_control(_mcx_one_zeroed_worker)
 
 
-@register_condition(lambda num_work_wires, **_: not num_work_wires)
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda work_wires, **_: not len(work_wires))
+@register_condition(lambda control_wires, **_: len(control_wires) > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "borrowed"),
+    lambda control_wires, **_: _mcx_one_worker_resource(len(control_wires), "borrowed"),
     work_wires={"borrowed": 1},
 )
 def _mcx_one_borrowed_worker(wires, **kwargs):
@@ -718,7 +727,8 @@ def _mcx_one_borrowed_worker(wires, **kwargs):
 decompose_mcx_one_borrowed_worker = flip_zero_control(_mcx_one_borrowed_worker)
 
 
-def _decompose_mcx_no_worker_resource(num_control_wires, **__):
+def _decompose_mcx_no_worker_resource(control_wires, **__):
+    num_control_wires = len(control_wires)
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
     if len_k1 == len_k2:
@@ -757,7 +767,7 @@ def _decompose_mcx_no_worker_resource(num_control_wires, **__):
     }
 
 
-@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_condition(lambda control_wires, **_: len(control_wires) > 2)
 @register_resources(_decompose_mcx_no_worker_resource)
 def _decompose_mcx_with_no_worker(wires, **_):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""

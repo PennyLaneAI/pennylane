@@ -246,14 +246,14 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
 
     def _condition_fn(**resource_params):
         new_params = resource_params.copy()
-        new_params["num_zero_control_values"] = 0
+        new_params["control_values"] = [1 for _ in new_params["control_values"]]
         return inner_decomp.is_applicable(**new_params)
 
     def _resource_fn(**resource_params):
         new_params = resource_params.copy()
-        new_params["num_zero_control_values"] = 0
+        new_params["control_values"] = [1 for _ in new_params["control_values"]]
         inner_resource = inner_decomp.compute_resources(**new_params)
-        num_x = resource_params["num_zero_control_values"]
+        num_x = len(resource_params["control_values"]) - math.sum(resource_params["control_values"])
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
         gate_counts[resource_rep(qml.X)] = gate_counts.get(resource_rep(qml.X), 0) + num_x * 2

@@ -137,11 +137,12 @@ class ControlledQubitUnitary(ControlledOp):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     resource_keys = {
-        "num_target_wires",
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
+        "target_wires",
+        "control_wires",
+        "control_values",
+        "work_wires",
         "work_wire_type",
+        "base",
     }
 
     grad_method = None
@@ -157,6 +158,7 @@ class ControlledQubitUnitary(ControlledOp):
 
     @classmethod
     def _unflatten(cls, data, metadata):
+        # TODO: validate this metadata is indexed properly
         return cls(
             data[0],
             wires=metadata[0],
@@ -215,6 +217,12 @@ class ControlledQubitUnitary(ControlledOp):
             qml.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check
         )
 
+        self.hyperparameters["target_wires"] = target_wires
+        self.hyperparameters["control_wires"] = control_wires
+        self.hyperparameters["control_values"] = control_values
+        self.hyperparameters["work_wires"] = work_wires
+        self.hyperparameters["work_wire_type"] = work_wire_type
+
         super().__init__(
             base,
             control_wires,
@@ -224,16 +232,6 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
         self._name = "ControlledQubitUnitary"
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_target_wires": len(self.base.wires),
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
 
     def _controlled(self, wire):
         ctrl_wires = wire + self.control_wires
@@ -251,12 +249,12 @@ class ControlledQubitUnitary(ControlledOp):
         )
 
 
-def _to_general_c_qu_resource(num_target_wires, **kwargs):
+def _to_general_c_qu_resource(target_wires, **kwargs):
     return {
         resource_rep(
             qml.ops.Controlled,
             base_class=qml.QubitUnitary,
-            base_params={"num_wires": num_target_wires},
+            base_params={"num_wires": len(target_wires)},
             **kwargs,
         ): 1
     }
@@ -349,10 +347,6 @@ class CH(ControlledOp):
 
     def adjoint(self):
         return CH(self.wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     @staticmethod
     @lru_cache
@@ -486,10 +480,6 @@ class CY(ControlledOp):
 
     def __repr__(self):
         return f"CY(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CY(self.wires)
@@ -637,10 +627,6 @@ class CZ(ControlledOp):
     def __repr__(self):
         return f"CZ(wires={self.wires.tolist()})"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def adjoint(self):
         return CZ(self.wires)
 
@@ -777,10 +763,6 @@ class CSWAP(ControlledOp):
 
     def __repr__(self):
         return f"CSWAP(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CSWAP(self.wires)
@@ -955,10 +937,6 @@ class CCZ(ControlledOp):
     def __repr__(self):
         return f"CCZ(wires={self.wires.tolist()})"
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def adjoint(self):
         return CCZ(self.wires)
 
@@ -1132,7 +1110,7 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    resource_keys = {"base", "control_wires", "work_wire_type", "work_wires", "control_values"}
 
     name = "CNOT"
 
@@ -1181,10 +1159,6 @@ class CNOT(ControlledOp):
             qml.DecompositionUndefinedError
         """
         raise qml.operation.DecompositionUndefinedError
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
@@ -1311,10 +1285,6 @@ class Toffoli(ControlledOp):
 
     def __repr__(self):
         return f"Toffoli(wires={self.wires.tolist()})"
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return Toffoli(self.wires)
@@ -1565,9 +1535,9 @@ class MultiControlledX(ControlledOp):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     resource_keys = {
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
+        "control_wires",
+        "control_values",
+        "work_wires",
         "work_wire_type",
     }
 
@@ -1635,6 +1605,11 @@ class MultiControlledX(ControlledOp):
 
         control_values = _check_and_convert_control_values(control_values, control_wires)
 
+        self.hyperparameters["control_wires"] = control_wires
+        self.hyperparameters["control_values"] = control_values
+        self.hyperparameters["work_wires"] = work_wires
+        self.hyperparameters["work_wire_type"] = work_wire_type
+
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
         base = type.__call__(qml.X, wires=wires)
@@ -1654,15 +1629,6 @@ class MultiControlledX(ControlledOp):
     @property
     def wires(self):
         return self.control_wires + self.target_wires
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
 
     def adjoint(self):
         return MultiControlledX(
@@ -1783,13 +1749,16 @@ class MultiControlledX(ControlledOp):
         )
 
 
-def _mcx_to_cnot_or_toffoli_resource(num_control_wires, num_zero_control_values, **__):
+def _mcx_to_cnot_or_toffoli_resource(control_wires, control_values, **__):
+    num_control_wires = (len(control_wires),)
+    num_zero_control_values = [val for val in control_values if not val]
+
     if num_control_wires == 1:
         return {qml.CNOT: 1, qml.X: num_zero_control_values}
     return {qml.Toffoli: 1, qml.X: num_zero_control_values * 2}
 
 
-@register_condition(lambda num_control_wires, **_: num_control_wires < 3)
+@register_condition(lambda control_wires, **_: len(control_wires) < 3)
 @register_resources(_mcx_to_cnot_or_toffoli_resource)
 def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
     if len(wires) == 2 and not control_values[0]:
@@ -1896,10 +1865,6 @@ class CRX(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires: WiresLike, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CRX(-self.data[0], wires=self.wires)
@@ -2114,10 +2079,6 @@ class CRY(ControlledOp):
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def adjoint(self):
         return CRY(-self.data[0], wires=self.wires)
 
@@ -2310,10 +2271,6 @@ class CRZ(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return CRZ(-self.data[0], wires=self.wires)
@@ -2545,10 +2502,6 @@ class CRot(ControlledOp):
     def _primitive_bind_call(cls, phi, theta, omega, wires, id=None):
         return cls._primitive.bind(phi, theta, omega, *wires, n_wires=len(wires))
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     def adjoint(self):
         phi, theta, omega = self.parameters
         return CRot(-omega, -theta, -phi, wires=self.wires)
@@ -2751,10 +2704,6 @@ class ControlledPhaseShift(ControlledOp):
     @classmethod
     def _primitive_bind_call(cls, phi, wires, id=None):
         return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
