@@ -557,7 +557,7 @@ class TestInterfaces:
 
         dev = qml.device(device_name, wires=3)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev), static_argnames="check")
+        circuit = jax.jit(qml.QNode(circuit_template, dev))
         circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(unitary_matrix)
@@ -574,6 +574,42 @@ class TestInterfaces:
         grads2 = grad_fn2(unitary_matrix)
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "unitary",
+        [
+            np.array(
+                [
+                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                    [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+                ]
+            ),  # complex unitary
+            np.array(
+                [
+                    [-0.22081075, -0.29306608, -0.93024453],
+                    [-0.67705210, -0.64047179, 0.36248634],
+                    [-0.70202783, 0.70986489, -0.05699795],
+                ]
+            ),  # real unitary
+        ],
+    )
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_qjit(self, unitary):
+        """Test compilation with qjit."""
+        dev = qml.device("null.qubit", wires=3)
+
+        gate_set = {"SingleExcitation", "BasisState", "PhaseShift"}
+        circuit = qml.QNode(circuit_template, dev)
+        circuit = qml.qjit(qml.decompose(circuit, gate_set=gate_set))
+        specs = qml.specs(circuit)(unitary)
+        gates = specs["resources"].gate_types
+        exp_gates = {"BasisState": 1, "SingleExcitation": 3}
+        if unitary.dtype == np.complex128:
+            assert gates.pop("PhaseShift", 0) <= 6
+
+        assert gates == exp_gates
 
     @pytest.mark.slow
     @pytest.mark.tf
