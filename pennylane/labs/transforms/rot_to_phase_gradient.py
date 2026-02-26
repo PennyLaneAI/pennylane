@@ -35,7 +35,7 @@ def _binary_repr_int(phi, precision):
     e.g. representing (1, 1, 1, 1) with only 3 digits we want to obtain (1, 1, 1)
     so overall we floor but make sure we add a little term to not accidentally write 14 when the result is 14.999..
     """
-    phi = phi % (4 * np.pi)
+    phi = qp.math.mod(phi, 4 * np.pi)
     phi_round = qp.math.round(2**precision * phi / (2 * np.pi))
 
     _int = qp.math.floor(phi_round / 2 + 1e-10).astype(int) + 2 * 2**precision

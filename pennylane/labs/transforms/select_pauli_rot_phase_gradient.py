@@ -15,43 +15,12 @@ r"""
 Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
 import pennylane as qml
-from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-from .rot_to_phase_gradient import _binary_repr_int
-
-
-# pylint: disable=too-many-arguments
-def _select_pauli_rot_phase_gradient(
-    phis: list,
-    control_wires: Wires,
-    target_wire: Wires,
-    angle_wires: Wires,
-    phase_grad_wires: Wires,
-    work_wires: Wires,
-) -> Operator:
-    """Function that transforms the SelectPauliRot gate to the phase gradient circuit
-    The precision is implicitly defined by the length of ``angle_wires``
-    """
-
-    precision = len(angle_wires)
-    binary_int = [_binary_repr_int(phi, precision) for phi in phis]
-
-    ops = [
-        qml.QROM(
-            binary_int, control_wires, angle_wires, work_wires=work_wires[len(angle_wires) - 1 :]
-        )
-    ] + [
-        qml.ctrl(qml.X(wire), control=target_wire, control_values=[0]) for wire in phase_grad_wires
-    ]
-
-    return qml.change_op_basis(
-        qml.prod(*ops[::-1]),
-        qml.SemiAdder(angle_wires, phase_grad_wires, work_wires[: len(angle_wires) - 1]),
-    )
+from .rot_to_phase_gradient import _select_pauli_rot_phase_gradient
 
 
 @transform
