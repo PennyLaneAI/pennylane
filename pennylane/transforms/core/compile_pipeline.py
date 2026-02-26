@@ -610,7 +610,9 @@ class CompilePipeline:
 
             sep = ", " if args_str and kwargs_str else ""
             transform_name = (
-                getattr(transform.tape_transform, "__name__", None) or transform.pass_name
+                transform.tape_transform.__name__
+                if transform.tape_transform
+                else transform.pass_name
             )
             transform_str = f"{transform_name}({args_str}{sep}{kwargs_str})"
             lines.append(f"  [{i + 1}] {transform_str}" + "," * bool(i != len(self) - 1))
