@@ -672,6 +672,9 @@
 * Fixes a discontinuity in the gradient of the single-qubit unitary decompositions.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
 
+* Fixes a bug where `Select` operators were not been compared properly.
+  [(#9099)](https://github.com/PennyLaneAI/pennylane/pull/9099)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

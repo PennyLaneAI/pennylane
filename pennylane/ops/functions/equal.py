@@ -898,4 +898,6 @@ def _equal_select(op1: Select, op2: Select, **kwargs):
         comparer = _equal(_t1, _t2, **kwargs)
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
+        if op1.hyperparameters["partial"] != op2.hyperparameters["partial"]:
+            return "op1 and op2 have different partial argument"
     return True
