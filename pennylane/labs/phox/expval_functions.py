@@ -145,14 +145,19 @@ def _core_expval_execution(
     """The pure mathematical core of the expectation value computation."""
     bitflips, mask_XY, y_phase = obs_data
 
-    sign_flip = 1 - 2 * ((mask_XY @ samples.T) % 2)
+    s_f = samples.astype(jnp.float32)
+    m_f = mask_XY.astype(jnp.float32)
+    g_f = generators.astype(jnp.float32)
+    b_f = bitflips.astype(jnp.float32)
+
+    sign_flip = 1 - 2 * ((m_f @ s_f.T) % 2)
     phases = sign_flip * y_phase
 
-    B = 1 - 2 * ((samples @ generators.T) % 2)
-    C = 2 * ((bitflips @ generators.T) % 2)
-
+    B = 1 - 2 * ((s_f @ g_f.T) % 2)
+    C = 2 * ((b_f @ g_f.T) % 2)
     expanded_params = jnp.asarray(params)[param_map]
     E = (C * expanded_params) @ B.T
+    
     if vmapped_phase_func is not None:
         E += vmapped_phase_func(phase_params, samples, bitflips)
 
