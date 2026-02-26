@@ -126,6 +126,11 @@ state preparation is typically used as the first operation.
     :description: :doc:`MultiplexerStatePreparation <../code/api/pennylane.MultiplexerStatePreparation>`
     :figure: _static/templates/state_preparations/multiplexerSP_template.png
 
+.. gallery-item::
+    :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
+    :figure: _static/templates/state_preparations/sumofslatersprep_template.png
+
+
 .. raw:: html
 
         <div style='clear:both'></div>
