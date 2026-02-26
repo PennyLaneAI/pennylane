@@ -75,6 +75,7 @@ def test_single_wire_error(bad_wires):
         qml.GroverOperator(wires=bad_wires)
 
 
+@pytest.mark.usefixtures("ignore_id_deprecation")
 def test_id():
     """Assert id keyword works"""
 

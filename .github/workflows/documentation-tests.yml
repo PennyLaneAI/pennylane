@@ -12,7 +12,8 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-
+  workflow_call:
+  
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -59,9 +60,13 @@ jobs:
         run: |
           pip install -e .
 
-      - name: Install external packages
+      - name: Install testing packages
         run: |
-          pip install sybil pytest "jax==0.7.1" "jaxlib==0.7.1" torch matplotlib pyzx
+          pip install sybil pytest
+
+      - name: Install additional packages
+        run: |
+          pip install "jax==0.7.1" "jaxlib==0.7.1" torch pyzx matplotlib
 
       - name: Print Dependencies
         run: |

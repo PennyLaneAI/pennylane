@@ -102,12 +102,11 @@ class TestInitialization:
         """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op = Adjoint(base, id="something")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(PauliX)"
-        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -120,12 +119,11 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op = Adjoint(base, id="id")
+        op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(Rot)"
-        assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -509,6 +507,28 @@ class TestQueueing:
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
+        with qml.queuing.AnnotatedQueue() as q:
+            op = Adjoint(base)
+
+        assert len(q) == 1
+        assert q.queue[0] is op
+
+    def test_queueing_observable(self):
+        """Test queuing and metadata when both Adjoint and a Hermitian
+        base defined inside a recording context."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            base = qml.Hermitian(np.eye(4), wires=[0, "x"])
+            _ = Adjoint(base)
+
+        assert base not in q
+        assert len(q) == 1
+
+    def test_queuing_base_defined_outside_observable(self):
+        """Test that a Hermitian base isn't added to queue if it's
+        defined outside the recording context."""
+
+        base = qml.Hermitian(np.eye(4), wires=[0, "x"])
         with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 

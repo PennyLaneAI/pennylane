@@ -438,6 +438,7 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             circuit()
 
+    @pytest.mark.usefixtures("ignore_id_deprecation")
     def test_id(self):
         """Test that the id attribute can be set."""
         template = qml.kUpCCGSD(
