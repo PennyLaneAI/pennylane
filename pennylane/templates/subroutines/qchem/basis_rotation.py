@@ -403,7 +403,7 @@ def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
     if isinstance(wires, Wires):
         wires = wires.labels
 
-    if capture.enabled():
+    if capture.enabled() or compiler.active():
         matrix, wires = math.array(matrix, like="jax"), math.array(wires, like="jax")
 
     def real_unitary(unitary, wires):
@@ -418,7 +418,7 @@ def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
         _, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
-        if capture.enabled():
+        if capture.enabled() or compiler.active():
             givens_ids = math.array(givens_ids, like="jax")
             givens_matrices = math.array(givens_matrices, like="jax")
 
@@ -435,7 +435,7 @@ def _basis_rotation_decomp(matrix, wires: WiresLike, **__):
         phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
         givens_matrices, givens_ids = zip(*givens_list)
 
-        if capture.enabled():
+        if capture.enabled() or compiler.active():
             phase_list = math.array(phase_list, like="jax")
             givens_ids = math.array(givens_ids, like="jax")
             givens_matrices = math.array(givens_matrices, like="jax")
