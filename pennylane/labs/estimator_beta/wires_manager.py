@@ -19,7 +19,7 @@ from pennylane.allocation import AllocateState
 from pennylane.estimator.estimate import _get_resource_decomposition
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_mapping import _map_to_resource_op
-from pennylane.estimator.resource_operator import GateCount, ResourceOperator, CompressedResourceOp
+from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet
 from pennylane.measurements.measurements import MeasurementProcess
 from pennylane.operation import Operator
@@ -307,8 +307,10 @@ def estimate_wires_from_resources(
     zeroed: int = 0,
     any_state: int = 0,
 ):
-    if config is None: config = ResourceConfig()
-    if gate_set is None: gate_set = DefaultGateSet
+    if config is None:
+        config = ResourceConfig()
+    if gate_set is None:
+        gate_set = DefaultGateSet
     list_actions = [GateCount(gate, count) for gate, count in gate_counts.items()]
 
     total = any_state
@@ -325,7 +327,7 @@ def estimate_wires_from_resources(
             action.count,
             gate_set,
             config,
-            num_available_any_state_aux = algo + total,
+            num_available_any_state_aux=algo + total,
             num_active_qubits=action.gate.num_wires,
         )
 
@@ -334,7 +336,6 @@ def estimate_wires_from_resources(
         if total + sub_max_alloc > max_alloc:
             max_alloc = total + sub_max_alloc
         total += sub_total
-
 
     if total < 0 or max_dealloc < 0:
         raise ValueError("Deallocated more qubits than available to allocate.")

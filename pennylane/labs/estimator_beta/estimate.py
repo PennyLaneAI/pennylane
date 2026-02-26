@@ -297,7 +297,12 @@ def _resources_from_resource(
         )
 
     new_any_state, new_zeroed = estimate_wires_from_resources(
-        workflow.gate_types, gate_set, config, workflow.algo_wires, zeroed, any_state,
+        workflow.gate_types,
+        gate_set,
+        config,
+        workflow.algo_wires,
+        zeroed,
+        any_state,
     )
 
     return Resources(
