@@ -241,6 +241,7 @@ class TestQROM:
             target_wires=[2],
             work_wires=[3],
             clean=True,
+            partial=False,
         ).decomposition()
 
         expected_gates = [
@@ -268,6 +269,72 @@ class TestQROM:
 
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qml.assert_equal(op1, op2)
+
+    def test_decomposition_partial(self):
+        """Test that compute_decomposition and `partial` works as expected."""
+
+        # case 1. partial=True has not effect if SelectSwap is applied
+        qrom_decomposition = qml.QROM(
+            [[1], [0], [0], [1]],
+            control_wires=[0, 1],
+            target_wires=[2],
+            work_wires=[3],
+            clean=True,
+            partial=True,
+        ).decomposition()
+
+        expected_gates = [
+            qml.Hadamard(wires=[2]),
+            qml.CSWAP(wires=[1, 2, 3]),
+            qml.Select(
+                ops=(
+                    qml.BasisEmbedding(1, wires=[2]) @ qml.BasisEmbedding(0, wires=[3]),
+                    qml.BasisEmbedding(0, wires=[2]) @ qml.BasisEmbedding(1, wires=[3]),
+                ),
+                control=[0],
+                partial=False,
+            ),
+            qml.CSWAP(wires=[1, 2, 3]),
+            qml.Hadamard(wires=[2]),
+            qml.CSWAP(wires=[1, 2, 3]),
+            qml.Select(
+                ops=(
+                    qml.BasisEmbedding(1, wires=[2]) @ qml.BasisEmbedding(0, wires=[3]),
+                    qml.BasisEmbedding(0, wires=[2]) @ qml.BasisEmbedding(1, wires=[3]),
+                ),
+                control=0,
+                partial=False,
+            ),
+            qml.CSWAP(wires=[1, 2, 3]),
+        ]
+
+        for op1, op2 in zip(qrom_decomposition, expected_gates):
+            qml.assert_equal(op1, op2)
+
+    # case 2. partial=True is applied when QROM decomposed to Select
+    qrom_decomposition = qml.QROM(
+        [[1], [0], [0]],
+        control_wires=[0, 1],
+        target_wires=[2],
+        work_wires=[],
+        clean=True,
+        partial=True,
+    ).decomposition()
+
+    expected_gates = [
+        qml.Select(
+            ops=(
+                qml.BasisEmbedding(1, wires=[2]),
+                qml.BasisEmbedding(0, wires=[2]),
+                qml.BasisEmbedding(0, wires=[2]),
+            ),
+            control=[0, 1],
+            partial=True,
+        ),
+    ]
+
+    for op1, op2 in zip(qrom_decomposition, expected_gates):
+        qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         ("data", "control_wires", "target_wires", "work_wires", "clean"),
@@ -342,6 +409,7 @@ class TestQROM:
                 work_wires=None,
                 control_wires=[],
                 clean=False,
+                partial=False,
             ),
             [qml.probs(wires=[0, 1])],
         )
@@ -449,10 +517,20 @@ def test_none_work_wires_case():
     """Test that clean version is not applied if work wires are not used"""
 
     gates_clean = qml.QROM.compute_decomposition(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
+        np.array([[1], [0], [0], [1]]),
+        [0, 1],
+        [2],
+        [],
+        clean=True,
+        partial=False,
     )
     expected_gates = qml.QROM.compute_decomposition(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
+        np.array([[1], [0], [0], [1]]),
+        [0, 1],
+        [2],
+        [],
+        clean=False,
+        partial=False,
     )
 
     assert gates_clean == expected_gates
@@ -462,7 +540,12 @@ def test_too_many_work_wires_case():
     """Test that QROM works when more work wires are given than necessary"""
 
     gates_clean = qml.QROM.compute_decomposition(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [3, 4, 5], clean=False
+        np.array([[1], [0], [0], [1]]),
+        [0, 1],
+        [2],
+        [3, 4, 5],
+        clean=False,
+        partial=False,
     )
     expected_gates = qml.QROM.compute_decomposition(
         np.array([[1], [0], [0], [1]]),
@@ -470,6 +553,7 @@ def test_too_many_work_wires_case():
         [2],
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         clean=False,
+        partial=False,
     )
 
     assert gates_clean == expected_gates

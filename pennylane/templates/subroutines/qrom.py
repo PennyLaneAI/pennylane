@@ -65,15 +65,22 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, data):
     return new_ops
 
 
-def _select_ops(control_wires, depth, target_wires, swap_wires, data):
+def _select_ops(control_wires, depth, target_wires, swap_wires, data, partial):
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
     if control_select_wires:
-        Select(
-            _new_ops(depth, target_wires, control_wires, swap_wires, data),
-            control=control_select_wires,
-        )
+        if depth == 1:
+            Select(
+                _new_ops(depth, target_wires, control_wires, swap_wires, data),
+                control=control_select_wires,
+                partial=partial,
+            )
+        else:
+            Select(
+                _new_ops(depth, target_wires, control_wires, swap_wires, data),
+                control=control_select_wires,
+            )
     else:
         _new_ops(depth, target_wires, control_wires, swap_wires, data)
 
@@ -107,6 +114,10 @@ class QROM(Operation):
         target_wires (Sequence[int]): the wires where the bitstring is loaded
         work_wires (Sequence[int]): the auxiliary wires used for the computation
         clean (bool): if True, the work wires are not altered by operator, default is ``True``
+        partial (bool): Whether the state on the wires provided in ``control`` are compatible with
+            a `partial Select <https://pennylane.ai/compilation/partial-select>`__ decomposition.
+            See the note below for details. This parameter is applied when the operator decompose in a single
+            ``Select`` operator.
 
     .. seealso:: :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
 
@@ -176,6 +187,7 @@ class QROM(Operation):
         "num_target_wires",
         "num_work_wires",
         "clean",
+        "partial",
     }
 
     def __init__(
@@ -185,6 +197,7 @@ class QROM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
+        partial=False,
         id=None,
     ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
 
@@ -203,6 +216,7 @@ class QROM(Operation):
         self.hyperparameters["target_wires"] = target_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["clean"] = clean
+        self.hyperparameters["partial"] = partial
 
         if len(work_wires) != 0:
             if any(wire in work_wires for wire in control_wires):
@@ -239,6 +253,7 @@ class QROM(Operation):
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
             "clean": self.hyperparameters["clean"],
+            "partial": self.hyperparameters["partial"],
         }
 
     @classmethod
@@ -261,6 +276,7 @@ class QROM(Operation):
             new_dict["target_wires"],
             new_dict["work_wires"],
             self.clean,
+            self.partial,
         )
 
     def __copy__(self):
@@ -281,11 +297,12 @@ class QROM(Operation):
             target_wires=self.target_wires,
             work_wires=self.work_wires,
             clean=self.clean,
+            partial=self.partial,
         )
 
     @staticmethod
     def compute_decomposition(
-        data, control_wires, target_wires, work_wires, clean
+        data, control_wires, target_wires, work_wires, clean, partial
     ):  # pylint: disable=arguments-differ
 
         if len(control_wires) == 0:
@@ -321,7 +338,10 @@ class QROM(Operation):
 
             select_ops = []
             if control_select_wires:
-                select_ops += [Select(new_ops, control=control_select_wires)]
+                if depth == 1:
+                    select_ops += [Select(new_ops, control=control_select_wires, partial=partial)]
+                else:
+                    select_ops += [Select(new_ops, control=control_select_wires)]
             else:
                 select_ops = new_ops
 
@@ -390,9 +410,14 @@ class QROM(Operation):
         """Boolean to select the version of QROM."""
         return self.hyperparameters["clean"]
 
+    @property
+    def partial(self):
+        """Boolean that defines the partial property of Select."""
+        return self.hyperparameters["partial"]
+
 
 def _qrom_decomposition_resources(
-    num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
+    num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean, partial
 ):  # pylint: disable=too-many-branches
     if num_control_wires == 0:
         return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
@@ -430,15 +455,26 @@ def _qrom_decomposition_resources(
     )
 
     if num_control_select_wires > 0:
-        select_ops = {
-            resource_rep(
-                Select,
-                num_control_wires=num_control_select_wires,
-                op_reps=tuple(new_ops_reps),
-                partial=False,
-                num_work_wires=0,
-            ): 1
-        }
+        if depth == 1:
+            select_ops = {
+                resource_rep(
+                    Select,
+                    num_control_wires=num_control_select_wires,
+                    op_reps=tuple(new_ops_reps),
+                    partial=partial,
+                    num_work_wires=0,
+                ): 1
+            }
+        else:
+            select_ops = {
+                resource_rep(
+                    Select,
+                    num_control_wires=num_control_select_wires,
+                    op_reps=tuple(new_ops_reps),
+                    partial=False,
+                    num_work_wires=0,
+                ): 1
+            }
     else:
         select_ops = new_ops
 
@@ -480,7 +516,7 @@ def _qrom_decomposition_resources(
 
 @register_resources(_qrom_decomposition_resources)
 def _qrom_decomposition(
-    data, control_wires, target_wires, work_wires, clean, **__
+    data, control_wires, target_wires, work_wires, clean, partial, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         BasisEmbedding(data[0, :], wires=target_wires)
@@ -493,7 +529,7 @@ def _qrom_decomposition(
     depth = min(depth, data.shape[0])
 
     if not clean or depth == 1:
-        _select_ops(control_wires, depth, target_wires, swap_wires, data)
+        _select_ops(control_wires, depth, target_wires, swap_wires, data, partial)
         _swap_ops(control_wires, depth, swap_wires, target_wires)
 
     else:
@@ -501,7 +537,7 @@ def _qrom_decomposition(
             for w in target_wires:
                 qml_ops.Hadamard(wires=w)
             qml_ops.adjoint(_swap_ops, lazy=False)(control_wires, depth, swap_wires, target_wires)
-            _select_ops(control_wires, depth, target_wires, swap_wires, data)
+            _select_ops(control_wires, depth, target_wires, swap_wires, data, partial)
             _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
