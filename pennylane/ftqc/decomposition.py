@@ -60,7 +60,7 @@ def ppr_to_mbqc_setup_inputs():
     .. note::
 
         This pass expects PPR/PPM operations to be present. In practice, use it
-        after :func:`~.passes.to_ppr`.
+        after ``to_ppr``.
 
     Args:
         fn (QNode): QNode to apply the pass to.
@@ -72,7 +72,7 @@ def ppr_to_mbqc_setup_inputs():
 
     Convert a simple Clifford+T circuit to PPRs, then lower them to an
     MBQC-style circuit. Note that this pass should be applied before
-    :func:`~.passes.ppr_to_ppm` since it requires the actual PPR/PPM operations.
+    ``ppr_to_ppm`` since it requires the actual PPR/PPM operations.
 
     .. code-block::
 
