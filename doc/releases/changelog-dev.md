@@ -36,6 +36,7 @@
   logarithm of its input and casts the result to an ``int``. It is equivalent to 
   ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
+  [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
@@ -49,7 +50,10 @@
   at a higher, algorithmic layer of abstraction should switch to using this class instead
   of `Operator`/ `Operation`.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
+  [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
+  [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
 
   ```python
   from pennylane.templates import Subroutine
@@ -92,6 +96,19 @@
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
+
+* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
+  be a tuple instead of a list.
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
+
+* Allow to pass ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device 
+  preprocessing function :func:`~.devices.preprocess.decompose` , which are then passed through 
+  to the graph-based decomposition system.
+  [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
+
+* Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
+  states, as well as with ``jax.jit`` and static input states.
+  [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
 * When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
   markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
@@ -445,6 +462,55 @@
 
 <h3>Deprecations 👋</h3>
 
+* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+  [(#9077)](https://github.com/PennyLaneAI/pennylane/pull/9077)
+
+* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid` and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid` and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+
+* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+
+* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+  [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)  
+
+  The ``id`` argument previously served two purposes: (1) adding custom labels
+  to operator instances which were rendered in circuit drawings and (2)
+  tagging encoding gates for Fourier spectrum analysis.
+
+  These are now handled by dedicated functions:
+
+  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
+     as the original behaviour was never supported.
+
+  - Use :func:`~.drawer.label` to attach a custom label to an operator instance
+  for circuit drawing:
+
+      ```python
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="my-rx")
+
+      # New method:
+      qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
+      ```
+
+  - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+    for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
+
+      ```python
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="x0")
+
+      # New method:
+      qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
+      ```
+  
 * Setting `_queue_category=None` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom `queue` method for the respective class instead.
   Operator classes that used to have `_queue_category=None` have been updated
@@ -483,6 +549,9 @@
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
+  [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
 
 * Add `sybil` to `dev` dependency group in `pyproject.toml`.
   [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
@@ -537,6 +606,14 @@
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
 <h3>Bug fixes 🐛</h3>
+
+* Jacobian-level caching is now unconditionally enabled for `autograd` interface,
+  preventing redundant derivative tape executions during the backward pass.
+  [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
+
+* Fixed a bug where `qml.transforms.transpile` would fail when `qml.GlobalPhase` gates
+  were present in a circuit.
+  [(#9041)](https://github.com/PennyLaneAI/pennylane/pull/9041)
 
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
   of an operator product via the dunder method ``__matmul__``. 
@@ -610,6 +687,7 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Olivia Di Matteo,
 Marcus Edwards,
 Sengthai Heng,
 Christina Lee,
