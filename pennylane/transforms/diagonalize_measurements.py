@@ -14,7 +14,7 @@
 """Transform to diagonalize measurements on a tape, assuming all measurements are commuting."""
 
 from copy import copy
-from functools import singledispatch
+from functools import partial, singledispatch
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
@@ -31,6 +31,13 @@ from pennylane.transforms.core import transform
 _default_supported_obs = (qml.Z, qml.Identity)
 
 
+def diagonalize_measurements_setup_inputs(
+    to_eigvals: bool = False, supported_base_obs: list[str] = "PauliZ"
+):
+    "Docstring for my_transform."
+    return (), {"to_eigvals": to_eigvals, "supported_base_obs": supported_base_obs}
+
+
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
@@ -38,7 +45,11 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@partial(
+    transform,
+    pass_name="diagonalize-measurements",
+    setup_inputs=diagonalize_measurements_setup_inputs,
+)
 def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to_eigvals=False):
     """Diagonalize a set of measurements into the standard basis. Raises an error if the
     measurements do not commute.
