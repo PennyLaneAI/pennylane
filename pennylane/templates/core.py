@@ -453,6 +453,19 @@ class Subroutine:
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
 
+    ``setup_inputs`` can also help us set default values for dynamic inputs. If an input
+    is numerical (not static), but needs to default to a value contingent on the other inputs, that
+    is allowed to occur in ``setup_inputs``. This has to happen in ``setup_inputs`` because
+    a dynamic, numerical input like ``y`` cannot be ``None`` when it hits the quantum function
+    definition.
+
+    .. code-block:: python
+
+        def setup_default_value(y : int | None = None, wires=()):
+            if y is None:
+                y = len(wires)
+            return (y, wires), {}
+
 
     ``setup_inputs`` should only interact with with compile-time information like
     static arguments, pytree structures, shapes, and dtypes, and *not* interact with any
@@ -472,19 +485,7 @@ class Subroutine:
             if metadata:
                 # do something else
             ...
-            
-    ``setup_inputs`` can also help us set default values for dynamic inputs. If an input
-    is numerical (not static), but needs to default to a value contingent on the other inputs, that
-    is allowed to occur in ``setup_inputs``. This has to happen in ``setup_inputs`` because
-    a dynamic, numerical input like ``y`` cannot be ``None`` when it hits the quantum function
-    definition.
 
-    .. code-block:: python
-
-        def setup_default_value(y : int | None = None, wires=()):
-            if y is None:
-                y = len(wires)
-            return (y, wires), {}
 
     **Integration with Graph decompositions:**
 
