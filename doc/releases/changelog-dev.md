@@ -270,6 +270,11 @@
   ``pbc.fabricate`` and ``pbc.prepare``.
   [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
+* The operator :class:`~.QROM` now has a ``partial`` argument that is passed to the :class:`~.Select` operator. 
+  This generates a more efficient decomposition in some scenarios.
+  [(#9099)](https://github.com/PennyLaneAI/pennylane/pull/9099)
+
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Removed all of the resource estimation functionality from the `labs.resource_estimation`
@@ -671,6 +676,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
