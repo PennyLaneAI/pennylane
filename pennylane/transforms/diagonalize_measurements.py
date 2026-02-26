@@ -32,10 +32,10 @@ _default_supported_obs = (qml.Z, qml.Identity)
 
 
 def diagonalize_measurements_setup_inputs(
-    to_eigvals: bool = False, supported_base_obs: list[str] = "PauliZ"
+    supported_base_obs: tuple[str] = ("PauliZ", "Identity"), to_eigvals: bool = False
 ):
     "Docstring for my_transform."
-    return (), {"to_eigvals": to_eigvals, "supported_base_obs": supported_base_obs}
+    return (), {"supported_base_obs": supported_base_obs, "to_eigvals": to_eigvals}
 
 
 def null_postprocessing(results):
