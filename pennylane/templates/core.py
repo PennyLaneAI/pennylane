@@ -56,8 +56,9 @@ class AbstractArray:
     """An abstract representation of an array that contains the shape and dtype
     attributes necessary for resource calculations.
 
-    This class is used with ``subroutine_resource_rep`` for specifying abstract information about
-    a :class:`~.Subroutine` for purposes of resource calculations used with graph decompositions.
+    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
+    for specifying abstract information about a :class:`~.Subroutine` for
+    purposes of resource calculations used with graph decompositions.
 
     Args:
         shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
@@ -73,15 +74,16 @@ class AbstractArray:
 
 
 def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> CompressedResourceOp:
-    """Generate a :class:`~.CompressedResourceOp` similar to :func:`~.resource_rep` that is more
+    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to
+    :func:`~pennylane.decomposition.resource_rep` that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     Args:
         subroutine (Subroutine): the subroutine we are going to use in a decomposition.
 
     Returns:
-        CompressedResourceOp: a condensed representation of the subroutine that can be used in specifying
-        the resources of another function.
+        pennylane.decomposition.CompressedResourceOp: a condensed representation of the subroutine
+        that can be used in specifying the resources of another function.
 
     .. warning:: Note that the following features only work with tape-based PennyLane, and
         do not work with Catalyst.
@@ -92,15 +94,15 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
         from functools import partial
 
-        def S0_resources(params, wires, rotation):
+        def S_resources(params, wires, rotation):
             return {qml.resource_rep(rotation): params.shape[0]}
 
-        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S0_resources)
-        def S0(params, wires, rotation):
+        @partial(qml.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
+        def S(params, wires, rotation):
             for x in params:
                 rotation(x, wires)
 
-    We can add ``S0`` to the resources of another ``Operator`` by using this function together with
+    We can add ``S`` to the resources of another ``Operator`` by using this function together with
     an abstract form of the arguments it will be called with, using :class:`~.AbstractArray`.
 
     .. code-block:: python
@@ -112,9 +114,9 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
         abstract_params = AbstractArray((4, ), float)
         abstract_wires = AbstractArray(()) # a single wire
-        S0_rep = subroutine_resource_rep(S0, abstract_params, abstract_wires, qml.RX)
+        S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qml.RX)
 
-        @qml.decomposition.register_resources({S0_rep: 1})
+        @qml.decomposition.register_resources({S_rep: 1})
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
