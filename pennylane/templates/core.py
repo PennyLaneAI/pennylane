@@ -12,7 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the abstractions for subroutines.
+This module contains the abstractions for defining subroutines.
+
+.. currentmodule:: pennylane.templates.core
+
+.. autosummary::
+    :toctree: api
+
+    ~Subroutine
+    ~SubroutineOp
+    ~AbstractArray
+    ~subroutine_resource_rep
+
 """
 import copy
 from collections.abc import Callable
@@ -419,6 +430,8 @@ class Subroutine:
         def WithStaticArg(x, wires, pauli_word: str):
             qml.PauliRot(x, pauli_word, wires)
 
+    **Setup Inputs:**
+
     Sometimes we want to allow the user to be able to provide a static input in a
     non-hashable format. For example, the user might provide an input as a ``list``
     instead of a ``tuple``.  This can be done by providing the ``setup_inputs`` function.
@@ -439,6 +452,39 @@ class Subroutine:
     >>> print(qml.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
+
+
+    ``setup_inputs`` should only interact with with compile-time information like
+    static arguments, pytree structures, shapes, and dtypes, and *not* interact with any
+    numerical values. Any manipulation or checks on values should occur inside the quantum
+    function definition itself.
+
+    .. code-block::
+
+        def BAD(x, wires, metadata):
+            if x < 0:
+                # do something
+            ...
+
+        def GOOD(x, wires, metadata):
+            if x.shape == ():
+                # do something
+            if metadata:
+                # do something else
+            ...
+            
+    ``setup_inputs`` can also help us set default values for dynamic inputs. If an input
+    is numerical (not static), but needs to default to a value contingent on the other inputs, that
+    is allowed to occur in ``setup_inputs``. This has to happen in ``setup_inputs`` because
+    a dynamic, numerical input like ``y`` cannot be ``None`` when it hits the quantum function
+    definition.
+
+    .. code-block:: python
+
+        def setup_default_value(y : int | None = None, wires=()):
+            if y is None:
+                y = len(wires)
+            return (y, wires), {}
 
     **Integration with Graph decompositions:**
 
@@ -680,3 +726,6 @@ class Subroutine:
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
         op = self.operator(*args, id=id, **kwargs)
         return op.output
+
+
+__all__ = ["Subroutine", "SubroutineOp", "AbstractArray", "subroutine_resource_rep"]
