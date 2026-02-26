@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+* Added the function :func:`~.drawer.label` to attach custom labels to operator instances
+  for circuit drawing.
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+
+* Added the function :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+  for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`.
+  [(#9078)](https://github.com/PennyLaneAI/pennylane/pull/9078)  
+
 * Prepared new state preparation template :class:`~.SumOfSlatersStatePrep`.
   It prepares sparse states using a smaller dense state preparation, :class:`~.QROM`\ s and 
   reversible bit encodings. For now, only classical preprocessing required to implement the
@@ -28,6 +36,7 @@
   logarithm of its input and casts the result to an ``int``. It is equivalent to 
   ``int(np.ceil(np.log2(n)))``.
   [(#8972)](https://github.com/PennyLaneAI/pennylane/pull/8972)
+  [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
 
 * Added a ``qml.gate_sets`` that contains pre-defined gate sets such as ``qml.gate_sets.CLIFFORD_T_PLUS_RZ``
   that can be plugged into the ``gate_set`` argument of the :func:`~pennylane.transforms.decompose` transform.
@@ -41,7 +50,10 @@
   at a higher, algorithmic layer of abstraction should switch to using this class instead
   of `Operator`/ `Operation`.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
+  [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
+  [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
 
   ```python
   from pennylane.templates import Subroutine
@@ -70,6 +82,10 @@ The following classes have been ported over:
   [(#8955)](https://github.com/PennyLaneAI/pennylane/pull/8955)
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
+* Added a `qml.workflow.get_compile_pipeline(qnode, level)(*args, **kwargs)` function to extract the 
+  compile pipeline of a given QNode at a specific level.
+  [(#8979)](https://github.com/PennyLaneAI/pennylane/pull/8979)
+  
 * Added a `strict` keyword to the :func:`~pennylane.transforms.decompose` transform that, when set to ``False``,
   allows the decomposition graph to treat operators without a decomposition as part of the gate set.
   [(#9025)](https://github.com/PennyLaneAI/pennylane/pull/9025)
@@ -83,6 +99,72 @@ The following classes have been ported over:
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
+
+* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
+  be a tuple instead of a list.
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
+
+* Allow to pass ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device 
+  preprocessing function :func:`~.devices.preprocess.decompose` , which are then passed through 
+  to the graph-based decomposition system.
+  [(#9094)](https://github.com/PennyLaneAI/pennylane/pull/9094)
+
+* Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
+  states, as well as with ``jax.jit`` and static input states.
+  [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
+
+* When inspecting a circuit with an integer ``level`` argument in `qml.draw` or `qml.specs`,
+  markers in the compilation pipeline are no longer counted towards the level, making inspection more intuitive. 
+  Integer levels now exclusively refer to transforms, so `level=1` means "after the first transform" regardless 
+  of how many markers are present.
+
+  Additionally, markers can now be added directly to a :class:`~.CompilePipeline` with the `add_marker` method, and the
+  pipeline's string representation now shows both transforms and markers:
+
+  As an example, we now have the following behaviour:
+
+  ```python
+  pipeline = qml.CompilePipeline()
+  pipeline.add_marker("no-transforms")
+  pipeline += qml.transforms.cancel_inverses
+
+  @qml.marker("after-cancel-inverses")
+  @pipeline
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit():
+    qml.X(0)
+    qml.H(0)
+    qml.H(0)
+    return qml.probs()
+  ```
+
+  The compilation pipeline has a new string representation that can be used to 
+  inspect the transforms and markers,
+
+  ```pycon
+  >>> print(circuit.compile_pipeline)
+  CompilePipeline(
+     ├─▶ no-transforms
+    [1] cancel_inverses()
+     └─▶ after-cancel-inverses
+  )
+  ```
+
+  As usual, marker labels can be used as an argument to `level` in `draw`
+  and `specs`, showing the cumulative result of applying transforms up to said marker:
+
+  ```pycon
+  >>> print(qml.draw(c, level="no-transforms")()) # or level=0
+  0: ──X──H──H─┤  Probs
+  >>> print(qml.draw(c, level="after-cancel-inverses")()) # or level=1
+  0: ──X─┤  Probs
+  ```
+  [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
+  [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
+  
+* Raises a more informative error if something that is not a measurement process is returned from a 
+  QNode when program capture is turned on.
+  [(#9072)](https://github.com/PennyLaneAI/pennylane/pull/9072)
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have 
   been added for fast and efficient resource estimation. These operations are available under the `qp.estimator` module as:
@@ -195,6 +277,11 @@ The following classes have been ported over:
 * When the new graph-based decomposition system is enabled, the `decompose` transform no longer tries to find
   a decomposition for an operator that is not in the statically defined gate set but meets the stopping_condition.
   [(#9036)](https://github.com/PennyLaneAI/pennylane/pull/9036)
+
+* Updated docstring examples in the Pauli-based computation module to reflect the QEC-to-PBC
+  dialect rename in Catalyst. References to ``qec.fabricate`` and ``qec.prepare`` are now
+  ``pbc.fabricate`` and ``pbc.prepare``.
+  [(#9071)](https://github.com/PennyLaneAI/pennylane/pull/9071)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -378,6 +465,55 @@ The following classes have been ported over:
 
 <h3>Deprecations 👋</h3>
 
+* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
+  [(#9077)](https://github.com/PennyLaneAI/pennylane/pull/9077)
+
+* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid` and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid` and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+
+* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+
+* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
+  [(#8951)](https://github.com/PennyLaneAI/pennylane/pull/8951)
+  [(#9051)](https://github.com/PennyLaneAI/pennylane/pull/9051)  
+
+  The ``id`` argument previously served two purposes: (1) adding custom labels
+  to operator instances which were rendered in circuit drawings and (2)
+  tagging encoding gates for Fourier spectrum analysis.
+
+  These are now handled by dedicated functions:
+
+  > :warning: Neither of these functions are supported in a :func:`~.qjit`-compiled circuit,
+     as the original behaviour was never supported.
+
+  - Use :func:`~.drawer.label` to attach a custom label to an operator instance
+  for circuit drawing:
+
+      ```python
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="my-rx")
+
+      # New method:
+      qml.drawer.label(qml.RX(0.5, wires=0), "my-rx")
+      ```
+
+  - Use :func:`~.fourier.mark` to mark an operator as an input-encoding gate
+    for :func:`~.fourier.circuit_spectrum`, and :func:`~.fourier.qnode_spectrum`:
+
+      ```python
+      # Legacy method (deprecated):
+      qml.RX(0.5, wires=0, id="x0")
+
+      # New method:
+      qml.fourier.mark(qml.RX(0.5, wires=0), "x0")
+      ```
+  
 * Setting `_queue_category=None` in an operator class in order to deactivate its instances being
   queued has been deprecated. Implement a custom `queue` method for the respective class instead.
   Operator classes that used to have `_queue_category=None` have been updated
@@ -416,6 +552,12 @@ The following classes have been ported over:
   [(#8945)](https://github.com/PennyLaneAI/pennylane/pull/8945)
 
 <h3>Internal changes ⚙️</h3>
+
+* A new AI policy document is now applied across the PennyLaneAI organization for all AI contributions.
+  [(#9079)](https://github.com/PennyLaneAI/pennylane/pull/9079)
+
+* Add `sybil` to `dev` dependency group in `pyproject.toml`.
+  [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
 
 * `qml.counts` of mid circuit measurements can now be captured into jaxpr.
   [(#9022)](https://github.com/PennyLaneAI/pennylane/pull/9022)
@@ -467,6 +609,14 @@ The following classes have been ported over:
   [(#9046)](https://github.com/PennyLaneAI/pennylane/pull/9046)
 
 <h3>Bug fixes 🐛</h3>
+
+* Jacobian-level caching is now unconditionally enabled for `autograd` interface,
+  preventing redundant derivative tape executions during the backward pass.
+  [(#9081)](https://github.com/PennyLaneAI/pennylane/pull/9081)
+
+* Fixed a bug where `qml.transforms.transpile` would fail when `qml.GlobalPhase` gates
+  were present in a circuit.
+  [(#9041)](https://github.com/PennyLaneAI/pennylane/pull/9041)
 
 * Fixed a bug where :class:`~.ops.LinearCombination` did not correctly de-queue the constituents
   of an operator product via the dunder method ``__matmul__``. 
@@ -540,7 +690,9 @@ This release contains contributions from (in alphabetical order):
 Ali Asadi,
 Astral Cai,
 Yushao Chen,
+Olivia Di Matteo,
 Marcus Edwards,
+Sengthai Heng,
 Christina Lee,
 Andrija Paurevic,
 Omkar Sarkar,
