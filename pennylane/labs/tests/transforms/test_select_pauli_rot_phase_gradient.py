@@ -20,8 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.labs.transforms.rot_to_phase_gradient import _binary_repr_int
 from pennylane.labs.transforms.select_pauli_rot_phase_gradient import (
-    _binary_repr_int,
     _select_pauli_rot_phase_gradient,
     select_pauli_rot_phase_gradient,
 )
@@ -39,17 +39,17 @@ def prepare_phase_gradient(wires):
 @pytest.mark.parametrize(
     "phi, p, expected",
     [
-        (1 / 2 * 4 * np.pi, 2, "10"),
-        (1 / 2 * 4 * np.pi, 3, "100"),
-        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 2, "11"),
-        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 3, "110"),
-        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 5, "10111"),
+        (1 / 2 * 4 * np.pi, 2, [1, 0]),
+        (1 / 2 * 4 * np.pi, 3, [1, 0, 0]),
+        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 2, [1, 1]),
+        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 3, [1, 1, 0]),
+        ((1 / 2 + 1 / 8 + 1 / 16 + 1 / 32) * 4 * np.pi, 5, [1, 0, 1, 1, 1]),
     ],
 )
 def test_binary_repr_int(phi, expected, p):
     """Test that the binary representation or approximation of the angle is correct"""
 
-    assert expected == _binary_repr_int(phi, p)
+    assert all(np.equal(expected, _binary_repr_int(phi, p)))
 
 
 @pytest.mark.parametrize("p", [2, 3, 4])

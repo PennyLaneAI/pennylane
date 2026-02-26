@@ -45,7 +45,6 @@ def _rz_phase_gradient(
     The precision is implicitly defined by the length of ``angle_wires``
     Note that the global phases are collected and added as one big global phase in the main function
     """
-
     precision = len(angle_wires)
     # BasisEmbedding can handle integer inputs, no need to actually translate to binary
     binary_int = _binary_repr_int(phi, precision)
