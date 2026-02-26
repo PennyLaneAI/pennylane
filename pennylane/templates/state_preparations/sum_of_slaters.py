@@ -1044,6 +1044,8 @@ def _sos_state_prep(
     # Step 5) in paper (p.7): Use identification register to uncompute the enumeration register
     mcx_ctrl_wires = selected_target_wires if identity_encoding else identification_wires
 
+    if qml.compiler.active():
+        enumeration_wires = qml.math.array(enumeration_wires, like="jax")
     # The following functions are called conditionally from within `uncompute_enumeration`
 
     def single_mcx(k, bits):
@@ -1091,7 +1093,7 @@ def _sos_state_prep(
     @for_loop(1, num_entries)
     def uncompute_enumeration(k):
         if qml.math.is_abstract(k):
-            bits = qml.math.array(b_bits, interface="jax")[:, k]
+            bits = qml.math.array(b_bits, like="jax")[:, k]
         else:
             bits = list(map(int, b_bits[:, k]))
         bit_count = qml.math.bitwise_count(k)
