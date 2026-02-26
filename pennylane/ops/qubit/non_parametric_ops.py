@@ -1710,8 +1710,11 @@ class SWAP(Operation):
         return qml.CSWAP(wires=wire + self.wires)
 
 
-def _swap_to_cnot_resources():
-    return {qml.CNOT: 3}
+def _swap_to_cnot_resources(first_wire, second_wire):
+    return {
+        controlled_resource_rep(qml.X, {"wires": second_wire}, first_wire, [1]): 2,
+        controlled_resource_rep(qml.X, {"wires": first_wire}, second_wire, [1]): 1,
+    }
 
 
 @register_resources(_swap_to_cnot_resources)

@@ -32,7 +32,7 @@ from pennylane.decomposition import (
     change_op_basis_resource_rep,
     register_condition,
     register_resources,
-    resource_rep,
+    resource_rep, controlled_resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
@@ -603,7 +603,7 @@ class CZ(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    resource_keys = {"work_wires", "work_wire_type", "base_class", "control_wires", "base_params", "control_values"}
 
     name = "CZ"
 
@@ -1110,7 +1110,7 @@ class CNOT(ControlledOp):
     ndim_params = ()
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"base", "control_wires", "work_wire_type", "work_wires", "control_values"}
+    resource_keys = {"base_class", "base_params", "control_wires", "work_wire_type", "work_wires", "control_values"}
 
     name = "CNOT"
 
@@ -1191,8 +1191,8 @@ class CNOT(ControlledOp):
         return qml.Toffoli(wires=wire + self.wires)
 
 
-def _cnot_cz_h_resources():
-    return {qml.H: 2, qml.CZ: 1}
+def _cnot_cz_h_resources(*args, base_class, **kwargs):
+    return {qml.H: 2, controlled_resource_rep(qml.Z, **kwargs): 1}
 
 
 @register_resources(_cnot_cz_h_resources)

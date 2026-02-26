@@ -106,7 +106,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
 
     assert set(op.hyperparameters.keys()) == set(
         op_type.resource_keys
-    ), "hyperparameters must have the same keys as specified by resource_keys"
+    ), f"Hyperparameters of {op.name} must have the same keys as specified by resource_keys. Got {op.hyperparameters.keys()}, expected {op_type.resource_keys}"
 
     for rule in qml.list_decomps(op_type):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)

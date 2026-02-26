@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import allocation, math
+from pennylane.queuing import QueuingManager
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
@@ -145,12 +146,14 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 0:
             return {}
         if z_mod_period == 1:
-            return {resource_rep(base_class, **base_params): 1}
-        return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
+            return {resource_rep(base_class, **dict(base_params[1][1])): 1}
+        return {pow_resource_rep(base_class, base_params[1][1], z_mod_period): 1}
 
     @register_condition(_condition_fn)
     @register_resources(_resource_fn)
-    def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+    def _impl(*params, wires, base_class, base_params, z, **__):  # pylint: disable=unused-argument
+        with QueuingManager.stop_recording():
+            base = base_class._unflatten(*base_params)
         z_mod_period = z % period
         if z_mod_period == 1:
             qml.pytrees.unflatten(*qml.pytrees.flatten(base))

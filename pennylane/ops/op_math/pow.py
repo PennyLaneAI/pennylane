@@ -169,6 +169,9 @@ class Pow(ScalarSymbolicOp):
 
     def __init__(self, base=None, z=1, id=None):
         self.hyperparameters["z"] = z
+        self.hyperparameters["base_class"] = type(base)
+        self.hyperparameters["base_params"] = base._flatten()
+
         self._name = f"{base.name}**{z}"
 
         super().__init__(base, scalar=z, id=id)
@@ -192,14 +195,6 @@ class Pow(ScalarSymbolicOp):
             if self.base.arithmetic_depth > 0
             else f"{self.base}**{self.z}"
         )
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "base_class": type(self.base),
-            "base_params": self.base.resource_params,
-            "z": self.z,
-        }
 
     @property
     def z(self):

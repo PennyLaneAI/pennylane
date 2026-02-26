@@ -444,7 +444,7 @@ def pow_resource_rep(base_class, base_params, z):
         z (int or float): the power
 
     """
-    base_resource_rep = resource_rep(base_class, **base_params)
+    base_resource_rep = resource_rep(base_class, **dict(base_params))
     return CompressedResourceOp(
         qml.ops.Pow,
         {"base_class": base_resource_rep.op_type, "base_params": base_resource_rep.params, "z": z},

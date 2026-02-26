@@ -58,11 +58,7 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    resource_keys = {"n_wires"}
 
     @classmethod
     def _primitive_bind_call(
