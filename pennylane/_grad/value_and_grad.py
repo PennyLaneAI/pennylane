@@ -90,9 +90,9 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
         abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(tuple(flat_args))
         jaxpr = jax.make_jaxpr(flat_fn, abstracted_axes=abstracted_axes)(*flat_args, **kwargs)
 
-        if len(jaxpr.out_avals) > 1:
+        if len(jaxpr.out_avals) > 1 or jaxpr.out_avals[0].shape != ():
             raise TypeError(
-                f"Gradient only defined for scalar-output functions. Got {jaxpr.out_avals}"
+                f"value_and_grad only defined for scalar-output functions. Got {jaxpr.out_avals}"
             )
 
         num_abstract_shapes = len(abstract_shapes)
