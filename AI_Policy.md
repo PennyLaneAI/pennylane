@@ -29,8 +29,7 @@ To ensure sufficient self review and understanding of the work, it is strongly r
 
 An important implication of this policy is that it bans agents that take action in our digital spaces without human approval, such as the GitHub [`@claude` agent](https://github.com/claude/). Similarly, automated review tools that publish comments without human review are not allowed. However, an opt-in review tool that **keeps a human in the loop** is acceptable under this policy. As another example, using an LLM to generate documentation, which a contributor manually reviews for correctness, edits, and then posts as a PR, is an approved use of tools under this policy.
 
-AI tools must not be used to fix GitHub issues labelled `good first issue`. These issues are generally not urgent, and are intended to be learning opportunities for new contributors to get familiar with the codebase. Whether you are a newcomer or not, fully automating the process of fixing this issue squanders the learning opportunity and doesn't add much value to the project. **Using AI tools to fix issues labelled as "good first**  
-**issues" is forbidden**.
+AI tools must not be used to fix GitHub issues labelled `good first issue`. These issues are generally not urgent, and are intended to be learning opportunities for new contributors to get familiar with the codebase. Whether you are a newcomer or not, fully automating the process of fixing this issue squanders the learning opportunity and doesn't add much value to the project. **Using AI tools to fix issues labelled as "good first issues" is forbidden**.
 
 ## Extractive Contributions
 
