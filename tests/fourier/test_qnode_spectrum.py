@@ -24,6 +24,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.fourier.mark import mark
 from pennylane.fourier.qnode_spectrum import _process_ids, qnode_spectrum
 from pennylane.measurements import SampleMP, StateMP, VarianceMP
 
@@ -361,6 +362,7 @@ class TestCircuits:
         with pytest.raises(ValueError, match="Only pure numpy arguments"):
             _ = qnode_spectrum(circuit, argnum=[0, 1])(x, y)
 
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_multi_par_error(self):
         """Test that an error is thrown if the spectrum of
         a multi-parameter gate that cannot be decomposed is requested."""
@@ -565,7 +567,7 @@ class TestJax:
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.StatePrep(initial_state, wires=dev.wires)
-            qml.RZ(x, wires=0, id="x")
+            mark(qml.RZ(x, wires=0), "x")
             return qml.expval(qml.Hermitian(hermitian_matrix, wires=dev.wires))
 
         x = jnp.array(0.5)

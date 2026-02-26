@@ -24,6 +24,8 @@ from functools import cached_property
 import pennylane as qml
 from pennylane.operation import Operator
 
+from .utils import to_name
+
 
 @dataclass(frozen=False)
 class Resources:
@@ -572,3 +574,8 @@ def auto_wrap(op_type):
             f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
             f"representation must be explicitly constructed using qml.resource_rep"
         ) from e
+
+
+@to_name.register
+def _compressed_op_to_name(op: CompressedResourceOp):
+    return to_name(op.name)
