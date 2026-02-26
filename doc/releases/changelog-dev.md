@@ -484,6 +484,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update nightly RC builds to be triggered by Lightning. 
+  [(#9092)](https://github.com/PennyLaneAI/pennylane/pull/9092)
+  
 * Add `sybil` to `dev` dependency group in `pyproject.toml`.
   [(#9060)](https://github.com/PennyLaneAI/pennylane/pull/9060)
 
