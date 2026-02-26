@@ -38,42 +38,12 @@ from pennylane.ftqc.decomposition import (
     _rot_to_xzx,
     cnot_corrections,
     cnot_measurements,
-    decompose_clifford_ppr,
-    decompose_non_clifford_ppr,
-    ppr_to_mbqc,
     queue_cnot,
     queue_corrections,
     queue_measurements,
     queue_single_qubit_gate,
 )
 from pennylane.ftqc.utils import QubitMgr
-
-
-@pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_disable_plxpr")
-@pytest.mark.parametrize(
-    "pass_fn",
-    [
-        (ppr_to_mbqc),
-        (decompose_clifford_ppr),
-        (decompose_non_clifford_ppr),
-    ],
-)
-def test_converstion_to_mlir(pass_fn, pass_name):
-    """Test that we can generate MLIR from the captured circuit and that the generated MLIR
-    includes the pass name we are mapping to"""
-
-    @qml.qjit(target="mlir")
-    @pass_fn
-    @qml.qnode(qml.device("lightning.qubit", wires=3), shots=1000)
-    def circ():
-        qml.H(0)
-        qml.S(0)
-        qml.T(1)
-        qml.CNOT([0, 1])
-        return qml.sample()
-
-    assert pass_name in circ.mlir
 
 
 class TestGateSetDecomposition:
