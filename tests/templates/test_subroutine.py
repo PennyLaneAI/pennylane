@@ -596,7 +596,7 @@ class TestGraphDecomposition:
         assert rp["signature_key"] == key
 
     def test_subroutine_resource_rep(self):
-        """Test creating a CondensedResourceRep specific to templates."""
+        """Test creating a CompressedResourceRep specific to templates."""
 
         # use a non-standard order
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))

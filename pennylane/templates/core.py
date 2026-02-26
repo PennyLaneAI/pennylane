@@ -101,7 +101,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
                 rotation(x, wires)
 
     We can add ``S0`` to the resources of another ``Operator`` by using this function together with
-    an abstract form of what it will be called with using :class:`~.AbstractArray`.
+    an abstract form of the arguments it will be called with, using :class:`~.AbstractArray`.
 
     .. code-block:: python
 
@@ -112,15 +112,15 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
         abstract_params = AbstractArray((4, ), float)
         abstract_wires = AbstractArray(()) # a single wire
-        S0_resources = subroutine_resource_rep(S0, abstract_params, abstract_wires, qml.RX)
+        S0_rep = subroutine_resource_rep(S0, abstract_params, abstract_wires, qml.RX)
 
-        @qml.decomposition.register_resources({S0_resources: 1})
-        def MyOpDecomposition(wires):
+        @qml.decomposition.register_resources({S0_rep: 1})
+        def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
             S0(params, wires, qml.RX)
 
-        qml.add_decomps(MyOp, MyOpDecomposition)
+        qml.add_decomps(MyOp, my_op_decomposition)
 
     We can now see ``MyOp`` decompose into the relevant subroutine:
 
