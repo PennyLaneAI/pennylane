@@ -446,12 +446,6 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
         down_gate = qml.TemporaryAND
         up_gate = ops.adjoint(qml.TemporaryAND)
 
-    if qml.compiler.active() or qml.capture.enabled():
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
-        control_wires = jnp.array(control_wires)
-        work_wires = jnp.array(work_wires)
-
     @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
         up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
@@ -571,10 +565,8 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
             _skip_toggle_detection=True,
         )
 
-    lazy = qml.compiler.active() or qml.capture.enabled()
-
     # Uncompute the first ladder
-    ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=lazy)(wires[:-1])
+    ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
     right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qml.adjoint(qml.TemporaryAND)
     right_elbow([wires[0], wires[1], work0])
@@ -593,7 +585,7 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
                 _skip_toggle_detection=True,
             )
 
-        ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=lazy)(wires[:-1])
+        ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
 
 decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
@@ -676,11 +668,9 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         _skip_toggle_detection = True
         qml.TemporaryAND([wires[0], wires[1], work_wires[0]])
 
-    lazy = qml.compiler.active() or qml.capture.enabled()
-
     final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
-    ops.adjoint(_build_linear_depth_ladder, lazy=lazy)(wires[:-1])
+    ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
     if work_wire_type == "borrowed":
         ops.Toffoli([wires[0], wires[1], work_wires[0]])
@@ -692,7 +682,7 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", _skip_toggle_det
         # is skipped for `work_wire_type="zeroed"` but not for `work_wire_type="borrowed"`.
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
-        ops.adjoint(_build_linear_depth_ladder, lazy=lazy)(wires[:-1])
+        ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
 
 decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
@@ -897,10 +887,7 @@ def _param_su2(ar, ai, br, bi):
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return math.array(
-        [[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]],
-        like=math.get_interface(ar, ai, br, bi),
-    )
+    return math.array([[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]])
 
 
 def _bisect_compute_a(u):
@@ -920,11 +907,11 @@ def _bisect_compute_a(u):
         mul = 1 / (2 * math.sqrt((zr + 1) * (math.sqrt((zr + 1) / 2) + 1)))
         ai = zi * mul
         br = x * mul
-        bi = 0.0
+        bi = 0
         return _param_su2(ar, ai, br, bi)
 
     return math.cond(
-        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1 + 0j]]) * 2**-0.5, _compute_a, ()
+        math.allclose(zr, -1), lambda: math.array([[1, -1], [1, 1]]) * 2**-0.5, _compute_a, ()
     )
 
 
@@ -1066,13 +1053,6 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
-
-    if qml.compiler.active() or qml.capture.enabled():
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-
-        control_wires_x = jnp.array(control_wires_x)
-        control_wires_y = jnp.array(control_wires_y)
-        target_wires = jnp.array(target_wires)
 
     @control_flow.for_loop(0, len(control_wires_x), 1)
     def loop(i):
