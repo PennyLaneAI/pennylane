@@ -42,4 +42,3 @@ class TestDeallocate:
 
 class TestMarkClean:
     pass
-
