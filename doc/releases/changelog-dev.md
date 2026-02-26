@@ -153,6 +153,7 @@
   ```
   [(#9007)](https://github.com/PennyLaneAI/pennylane/pull/9007)
   [(#9076)](https://github.com/PennyLaneAI/pennylane/pull/9076)
+  [(#9102)](https://github.com/PennyLaneAI/pennylane/pull/9102)
   
 * Raises a more informative error if something that is not a measurement process is returned from a 
   QNode when program capture is turned on.
