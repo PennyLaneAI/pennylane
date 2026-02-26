@@ -1595,7 +1595,11 @@ class TestModifiedTemplates:
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
     qml.templates."""
-    return inspect.isclass(member) and member.__module__.startswith("pennylane.templates")
+    return (
+        inspect.isclass(member)
+        and member.__module__.startswith("pennylane.templates")
+        and issubclass(member, qml.operation.Operator)
+    )
 
 
 _, all_templates = zip(*inspect.getmembers(qml.templates, filter_fn))
