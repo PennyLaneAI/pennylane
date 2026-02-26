@@ -120,7 +120,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
-            S0(params, wires, qml.RX)
+            S(params, wires, qml.RX)
 
         qml.add_decomps(MyOp, my_op_decomposition)
 
@@ -136,7 +136,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
             return qml.state()
 
     >>> print(qml.draw(qml.decompose(c, max_expansion=1))())
-    0: ──S0(M0)─┤  State
+    0: ──S(M0)─┤  State
     <BLANKLINE>
     M0 =
     [1. 2. 3. 4.]
