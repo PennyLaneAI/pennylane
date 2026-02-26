@@ -96,6 +96,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Made decompositions of :class:`~.MultiControlledX` JIT-compatible.
+  [(#9044)](https://github.com/PennyLaneAI/pennylane/pull/9044)
+
 * Made the decomposition of :class:`~.BasisState` compatible with ``qjit`` for static wires and
   states, as well as with ``jax.jit`` and static input states.
   [(#9069)](https://github.com/PennyLaneAI/pennylane/pull/9069)
