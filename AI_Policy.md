@@ -4,8 +4,7 @@ This document closely follows the [LLVM AI Tool Use Policy](https://github.com/l
 
 ## Policy
 
-PennyLane ecosystem’s policy is that contributors can use whatever tools they would like to  
-craft their contributions, but there must be a **human in the loop**. **Contributors must read and review all LLM-generated code or text before they ask other project members to review it.** The contributor is always the author and is fully accountable for their contributions (for further clarification, please see the Copyright section). Contributors should be sufficiently confident that the contribution is high enough quality that asking for a review is a good use of scarce maintainer time, and they should be **able to answer questions about their work** during review.
+PennyLane ecosystem’s policy is that contributors can use whatever tools they would like to craft their contributions, but there must be a **human in the loop**. **Contributors must read and review all LLM-generated code or text before they ask other project members to review it.** The contributor is always the author and is fully accountable for their contributions (for further clarification, please see the Copyright section). Contributors should be sufficiently confident that the contribution is high enough quality that asking for a review is a good use of scarce maintainer time, and they should be **able to answer questions about their work** during review.
 
 We expect that new contributors will be less confident in their contributions, and our guidance to them is to \*\*start with small contributions\*\* that they can fully understand to build confidence. We aspire to be a welcoming community that helps new contributors grow their expertise, but learning involves taking small steps, getting feedback, and iterating. Passing maintainer feedback to an LLM doesn't help anyone grow, and does not sustain our community.
 
