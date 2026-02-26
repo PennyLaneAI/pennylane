@@ -1090,8 +1090,11 @@ def _sos_state_prep(
 
     @for_loop(1, num_entries)
     def uncompute_enumeration(k):
-        bits = list(map(int, b_bits[:, k]))
-        bit_count = np.bitwise_count(k)
+        if qml.math.is_abstract(k):
+            bits = qml.math.array(b_bits, interface="jax")[:, k]
+        else:
+            bits = list(map(int, b_bits[:, k]))
+        bit_count = qml.math.bitwise_count(k)
         qml.cond(
             bit_count == 1,
             true_fn=single_mcx,
