@@ -50,6 +50,7 @@
   at a higher, algorithmic layer of abstraction should switch to using this class instead
   of `Operator`/ `Operation`.
   [(#8929)](https://github.com/PennyLaneAI/pennylane/pull/8929)
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
   [(#9096)](https://github.com/PennyLaneAI/pennylane/pull/9096)
   [(#9070)](https://github.com/PennyLaneAI/pennylane/pull/9070)
   [(#9097)](https://github.com/PennyLaneAI/pennylane/pull/9097)
@@ -95,6 +96,10 @@
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
 
 <h3>Improvements 🛠</h3>
+
+* `qp.pytrees.PyTreeStructure` is now frozen and hashable. `PyTreeStructure.children` should now
+  be a tuple instead of a list.
+  [(#9080)](https://github.com/PennyLaneAI/pennylane/pull/9080)
 
 * Allow to pass ``num_work_wires``, ``alt_decomps`` and ``fixed_decomps`` to the device 
   preprocessing function :func:`~.devices.preprocess.decompose` , which are then passed through 
