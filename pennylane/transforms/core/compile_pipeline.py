@@ -609,7 +609,11 @@ class CompilePipeline:
             kwargs_str = ", ".join(f"{k}={truncate(v)}" for k, v in transform.kwargs.items())
 
             sep = ", " if args_str and kwargs_str else ""
-            transform_str = f"{transform.tape_transform.__name__}({args_str}{sep}{kwargs_str})"
+            if getattr(transform, "tape_transform", None) is not None:
+                transform_name = transform.tape_transform.__name__
+            else:
+                transform_name = transform.pass_name
+            transform_str = f"{transform_name}({args_str}{sep}{kwargs_str})"
             lines.append(f"  [{i + 1}] {transform_str}" + "," * bool(i != len(self) - 1))
 
             if marker := inv_marker_map.get(i + 1):
